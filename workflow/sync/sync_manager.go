@@ -258,9 +258,10 @@ func (cm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
 
 	for _, node := range wf.Status.Nodes {
 		if node.SynchronizationStatus != nil && node.SynchronizationStatus.Waiting != "" {
-			lock := cm.syncLockMap[node.SynchronizationStatus.Waiting]
-			lock.removeFromQueue(getHolderKey(wf, node.ID))
-
+			lock, ok := cm.syncLockMap[node.SynchronizationStatus.Waiting]
+			if ok {
+				lock.removeFromQueue(getHolderKey(wf, node.ID))
+			}
 			node.SynchronizationStatus = nil
 			wf.Status.Nodes[node.ID] = node
 		}

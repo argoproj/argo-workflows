@@ -5665,10 +5665,12 @@ func TestWFWithRetryAndWithParam(t *testing.T) {
 		pods, err := listPods(woc)
 		assert.NoError(t, err)
 		assert.True(t, len(pods.Items) > 0)
-		for _, pod := range pods.Items {
-			podbyte, err := json.Marshal(pod)
-			assert.NoError(t, err)
-			assert.Contains(t, string(podbyte), "includeScriptOutput")
+		if assert.Len(t, pods.Items, 3) {
+			ctrs := pods.Items[0].Spec.Containers
+			assert.Len(t, ctrs, 2)
+			envs := ctrs[1].Env
+			assert.Len(t, envs, 2)
+			assert.Equal(t, apiv1.EnvVar{Name: "ARGO_INCLUDE_SCRIPT_OUTPUT", Value: "true"}, envs[1])
 		}
 	})
 }
@@ -6784,4 +6786,101 @@ func TestMutexWfPendingWithNoPod(t *testing.T) {
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	assert.Equal(t, wfv1.NodePending, woc.wf.Status.Nodes.FindByDisplayName("hello-world-mpdht").Phase)
+}
+
+var wfGlopalArtifactNil = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: global-outputs-ttsfq
+  namespace: default
+spec:
+  entrypoint: generate-globals
+  onExit: consume-globals
+  templates:
+  - name: generate-globals
+    steps:
+    - - name: generate
+        template: global-output
+    - - name: consume-globals
+        template: consume-globals
+  - container:
+      args:
+      - sleep 1; exit 1
+      command:
+      - sh
+      - -c
+      image: alpine:3.7
+    name: global-output
+    outputs:
+      artifacts:
+      - globalName: my-global-art
+        name: hello-art
+        path: /tmp/hello_world.txt
+      parameters:
+      - globalName: my-global-param
+        name: hello-param
+        valueFrom:
+          path: /tmp/hello_world.txt
+  - name: consume-globals
+    steps:
+    - - name: consume-global-param
+        template: consume-global-param
+      - arguments:
+          artifacts:
+          - from: '{{workflow.outputs.artifacts.my-global-art}}'
+            name: art
+        name: consume-global-art
+        template: consume-global-art
+  - container:
+      args:
+      - echo {{inputs.parameters.param}}
+      command:
+      - sh
+      - -c
+      image: alpine:3.7
+    inputs:
+      parameters:
+      - name: param
+        value: '{{workflow.outputs.parameters.my-global-param}}'
+    name: consume-global-param
+  - container:
+      args:
+      - cat /art
+      command:
+      - sh
+      - -c
+      image: alpine:3.7
+    inputs:
+      artifacts:
+      - name: art
+        path: /art
+    name: consume-global-art
+`
+
+func TestWFGlobalArtifactNil(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(wfGlopalArtifactNil)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodRunning)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodFailed, func(pod *apiv1.Pod) {
+		pod.Annotations[common.AnnotationKeyOutputs] = string("{\"parameters\":[{\"name\":\"hello-param\",\"valueFrom\":{\"path\":\"/tmp/hello_world.txt\"},\"globalName\":\"my-global-param\"}],\"artifacts\":[{\"name\":\"hello-art\",\"path\":\"/tmp/hello_world.txt\",\"globalName\":\"my-global-art\"}]}")
+		pod.Status.ContainerStatuses = []apiv1.ContainerStatus{
+			{
+				Name: "main",
+				State: apiv1.ContainerState{
+					Terminated: &apiv1.ContainerStateTerminated{
+						ExitCode: 1,
+						Message:  "",
+					},
+				},
+			},
+		}
+	})
+	woc.operate(ctx)
+	assert.NotPanics(t, func() { woc.operate(ctx) })
 }

@@ -320,11 +320,19 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		}
 	}
 
+	// Add standard environment variables, making pod spec larger
+	envVars := []apiv1.EnvVar{
+		{Name: common.EnvVarIncludeScriptOutput, Value: strconv.FormatBool(opts.includeScriptOutput)},
+	}
+
+	for i, c := range pod.Spec.InitContainers {
+		c.Env = append(c.Env, apiv1.EnvVar{Name: common.EnvVarContainerName, Value: c.Name})
+		c.Env = append(c.Env, envVars...)
+		pod.Spec.InitContainers[i] = c
+	}
 	for i, c := range pod.Spec.Containers {
-		c.Env = append(c.Env,
-			apiv1.EnvVar{Name: common.EnvVarContainerName, Value: c.Name},
-			apiv1.EnvVar{Name: common.EnvVarIncludeScriptOutput, Value: strconv.FormatBool(c.Name == common.MainContainerName && opts.includeScriptOutput)},
-		)
+		c.Env = append(c.Env, apiv1.EnvVar{Name: common.EnvVarContainerName, Value: c.Name})
+		c.Env = append(c.Env, envVars...)
 		pod.Spec.Containers[i] = c
 	}
 
@@ -411,6 +419,10 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		}
 		woc.log.Debugf("Setting new activeDeadlineSeconds %d for pod %s/%s due to templateDeadline", newActiveDeadlineSeconds, pod.Namespace, pod.Name)
 		pod.Spec.ActiveDeadlineSeconds = &newActiveDeadlineSeconds
+	}
+
+	if !woc.controller.rateLimiter.Allow() {
+		return nil, ErrResourceRateLimitReached
 	}
 
 	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
@@ -679,9 +691,7 @@ func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template, opts
 		pod.ObjectMeta.Labels[k] = v
 	}
 
-	execCtl := common.ExecutionControl{
-		IncludeScriptOutput: opts.includeScriptOutput,
-	}
+	execCtl := common.ExecutionControl{}
 
 	if woc.workflowDeadline != nil {
 		execCtl.Deadline = woc.workflowDeadline
@@ -693,7 +703,7 @@ func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template, opts
 		execCtl.Deadline = &opts.executionDeadline
 	}
 
-	if execCtl.Deadline != nil || opts.includeScriptOutput {
+	if execCtl.Deadline != nil {
 		execCtlBytes, err := json.Marshal(execCtl)
 		if err != nil {
 			panic(err)

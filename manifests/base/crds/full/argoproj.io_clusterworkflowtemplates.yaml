@@ -370,6 +370,8 @@ spec:
                             depth:
                               format: int64
                               type: integer
+                            disableSubmodules:
+                              type: boolean
                             fetch:
                               items:
                                 type: string
@@ -1302,6 +1304,8 @@ spec:
                           depth:
                             format: int64
                             type: integer
+                          disableSubmodules:
+                            type: boolean
                           fetch:
                             items:
                               type: string
@@ -2729,6 +2733,8 @@ spec:
                                           depth:
                                             format: int64
                                             type: integer
+                                          disableSubmodules:
+                                            type: boolean
                                           fetch:
                                             items:
                                               type: string
@@ -3097,6 +3103,8 @@ spec:
                                                 depth:
                                                   format: int64
                                                   type: integer
+                                                disableSubmodules:
+                                                  type: boolean
                                                 fetch:
                                                   items:
                                                     type: string
@@ -3506,6 +3514,8 @@ spec:
                                   depth:
                                     format: int64
                                     type: integer
+                                  disableSubmodules:
+                                    type: boolean
                                   fetch:
                                     items:
                                       type: string
@@ -4435,6 +4445,8 @@ spec:
                                 depth:
                                   format: int64
                                   type: integer
+                                disableSubmodules:
+                                  type: boolean
                                 fetch:
                                   items:
                                     type: string
@@ -4891,6 +4903,8 @@ spec:
                                 depth:
                                   format: int64
                                   type: integer
+                                disableSubmodules:
+                                  type: boolean
                                 fetch:
                                   items:
                                     type: string
@@ -7438,6 +7452,8 @@ spec:
                             depth:
                               format: int64
                               type: integer
+                            disableSubmodules:
+                              type: boolean
                             fetch:
                               items:
                                 type: string
@@ -8865,6 +8881,8 @@ spec:
                                             depth:
                                               format: int64
                                               type: integer
+                                            disableSubmodules:
+                                              type: boolean
                                             fetch:
                                               items:
                                                 type: string
@@ -9233,6 +9251,8 @@ spec:
                                                   depth:
                                                     format: int64
                                                     type: integer
+                                                  disableSubmodules:
+                                                    type: boolean
                                                   fetch:
                                                     items:
                                                       type: string
@@ -9642,6 +9662,8 @@ spec:
                                     depth:
                                       format: int64
                                       type: integer
+                                    disableSubmodules:
+                                      type: boolean
                                     fetch:
                                       items:
                                         type: string
@@ -10571,6 +10593,8 @@ spec:
                                   depth:
                                     format: int64
                                     type: integer
+                                  disableSubmodules:
+                                    type: boolean
                                   fetch:
                                     items:
                                       type: string
@@ -11027,6 +11051,8 @@ spec:
                                   depth:
                                     format: int64
                                     type: integer
+                                  disableSubmodules:
+                                    type: boolean
                                   fetch:
                                     items:
                                       type: string

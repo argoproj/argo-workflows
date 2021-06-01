@@ -3,8 +3,11 @@ package commands
 import (
 	"crypto/tls"
 	"fmt"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"reflect"
+	"strconv"
 	"time"
 
 	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
@@ -151,6 +154,18 @@ See %s`, help.ArgoSever),
 			server, err := apiserver.NewArgoServer(ctx, opts)
 			if err != nil {
 				return err
+			}
+
+			// disabled by default, for security
+			if x, enabled := os.LookupEnv("ARGO_SERVER_PPROF"); enabled {
+				port, err := strconv.Atoi(x)
+				if err != nil {
+					return err
+				}
+				go func() {
+					log.Infof("starting server for pprof on :%d, see https://golang.org/pkg/net/http/pprof/", port)
+					log.Println(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
+				}()
 			}
 
 			server.Run(ctx, port, browserOpenFunc)

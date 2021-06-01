@@ -1,5 +1,110 @@
 # Changelog
 
+## v3.1.0-rc10 (2021-05-27)
+
+ * [a83ec048](https://github.com/argoproj/argo-workflows/commit/a83ec048fd9c19fba3bcc0062aa720c19d4968a3) Merge branch 'master' into release-3.1
+ * [73539fad](https://github.com/argoproj/argo-workflows/commit/73539fadbe81b644b912ef0ddddebb178c97cc94) feat(controller): Support rate-limitng pod creation. (#4892)
+ * [e566c106](https://github.com/argoproj/argo-workflows/commit/e566c106bbe9baf8ab3628a80235467bb867b57e) fix(server): Only hydrate nodes if they are needed. Fixes #6000 (#6004)
+ * [c21af210](https://github.com/argoproj/argo-workflows/commit/c21af210a3afa23c51f7787fcf154b4841d5ac94) docs: Update Go version to 1.15 in local dev guide (#6035)
+ * [2e70ff2f](https://github.com/argoproj/argo-workflows/commit/2e70ff2f90d00203ac1c9cdecf7f87e0d9ef37c2) ci: Dry-run publish-release on master (#6029)
+ * [d218ea71](https://github.com/argoproj/argo-workflows/commit/d218ea71776fa7d072bbeafa614b36eb34940023) fix(ui): typo (#6027)
+ * [02be2422](https://github.com/argoproj/argo-workflows/commit/02be2422838c486cdc98a8cc938b259bcaa04b7c) docs: updated CHANGELOG.md (#6026)
+
+### Contributors
+
+ * Alex Collins
+ * Stephan van Maris
+ * Yuan Tang
+ * github-actions[bot]
+
+## v3.1.0-rc9 (2021-05-26)
+
+ * [5c6322d3](https://github.com/argoproj/argo-workflows/commit/5c6322d386a0d5f98dc3bcd683dae27b1b49eb05) Merge branch 'master' into release-3.1
+ * [c3895e4c](https://github.com/argoproj/argo-workflows/commit/c3895e4ce32019c5f419c3f11bbb047e058bbf51) docs: updated CHANGELOG.md (#6025)
+ * [bad61555](https://github.com/argoproj/argo-workflows/commit/bad61555093f59a647b20df75f83e1cf9687f7b5) fix(ui): Fix link for archived logs (#6019)
+ * [2d077e4d](https://github.com/argoproj/argo-workflows/commit/2d077e4d5c54ef9d07f51ce80cf0ec88b40305a6) docs: Add FAQ (#6023)
+ * [3cfc96b7](https://github.com/argoproj/argo-workflows/commit/3cfc96b7c3c90edec77be0841152dad4d9f18f52) revert: "fix(executor): Fix compatibility issue with k8s>=1.21 when s… (#6012)
+ * [7e27044b](https://github.com/argoproj/argo-workflows/commit/7e27044b71620dc7c7dd338eac873e0cff244e2d) fix(controller): Increase readiness timeout from 1s to 30s (#6007)
+ * [79f5fa5f](https://github.com/argoproj/argo-workflows/commit/79f5fa5f3e348fca5255d9c98b3fb186bc23cb3e) feat: Pass include script output as an environment variable (#5994)
+ * [d7517cfc](https://github.com/argoproj/argo-workflows/commit/d7517cfcaf141fc06e19720996d7b43ddb3fa7b6) Mention that 'archive' do not support logs of pods (#6005)
+ * [6cda063a](https://github.com/argoproj/argo-workflows/commit/6cda063aca83610f11d28252e928f730694bf218) ci: only run changelog job on tag (#6003)
+ * [d7c5cf6c](https://github.com/argoproj/argo-workflows/commit/d7c5cf6c95056a82ea94e37da925ed566991e548) fix(executor): Fix compatibility issue with k8s>=1.21 when selfLink is no longer populated (#5992)
+ * [a2c6241a](https://github.com/argoproj/argo-workflows/commit/a2c6241ae21e749a3c5865153755136ddd878d5c) fix(validate): Fix DAG validation on task names when depends/dependencies is not used. Fixes #5993 (#5998)
+ * [8b256150](https://github.com/argoproj/argo-workflows/commit/8b256150233b0de18bc156da0e762be6ab04a9f6) docs: updated CHANGELOG.md (#5999)
+ * [516c54a7](https://github.com/argoproj/argo-workflows/commit/516c54a7f04e6a0042028674c5b172fbc8efdd5b) docs: Correct quoting. Fixes #5957 (#6001)
+ * [a99d5b82](https://github.com/argoproj/argo-workflows/commit/a99d5b821bee5edb296f8af1c3badb503025f026) fix(controller): Fix sync manager panic. Fixes #5939 (#5991)
+ * [80f8473a](https://github.com/argoproj/argo-workflows/commit/80f8473a13482387b9f54f9288f4a982a210cdea) fix(executor): resource patch for non-json patches regression (#5951)
+ * [7cebfc5c](https://github.com/argoproj/argo-workflows/commit/7cebfc5c85f85576a4213f2594acea363104ce28) docs: updated CHANGELOG.md (#5989)
+
+### Contributors
+
+ * Alex Collins
+ * Antony Chazapis
+ * Christophe Blin
+ * Peixuan Ding
+ * William Reed
+ * Yuan Tang
+ * amit
+ * github-actions[bot]
+
+## v3.1.0-rc8 (2021-05-24)
+
+ * [c8df5eae](https://github.com/argoproj/argo-workflows/commit/c8df5eae262223e8d32d740f43b8a7c013aba4ce) Merge branch 'master' into release-3.1
+ * [f3d95821](https://github.com/argoproj/argo-workflows/commit/f3d95821faf8b87d416a2d6ee1334b9e45869c84) fix(controller): Listen on :6060 (#5988)
+ * [ffd429ea](https://github.com/argoproj/argo-workflows/commit/ffd429ea9be4be848237f281b8788e46c5eb5a14) docs: Update releasing.md (#5803)
+ * [c8ffc970](https://github.com/argoproj/argo-workflows/commit/c8ffc9700223f8919c03a4de3287fd44694a24da) docs: updated CHANGELOG.md (#5986)
+ * [75ceb9bf](https://github.com/argoproj/argo-workflows/commit/75ceb9bf30fe0f26a658f275375ae4bbed54b9f9) docs: updated CHANGELOG.md (#5985)
+
+### Contributors
+
+ * Alex Collins
+ * Simon Behar
+ * github-actions[bot]
+
+## v3.1.0-rc7 (2021-05-24)
+
+ * [546fd3a6](https://github.com/argoproj/argo-workflows/commit/546fd3a644eec65eb8f558d2f05d6dcfd32193dc) Merge branch 'master' into release-3.1
+ * [d55a8dbb](https://github.com/argoproj/argo-workflows/commit/d55a8dbb841a55db70b96568fdd9ef402548d567) feat(controller): Add liveness probe (#5875)
+ * [46dcaea5](https://github.com/argoproj/argo-workflows/commit/46dcaea53d91b522dfd87b442ce949e3a4de7e76) fix(controller): Lock nodes in pod reconciliation. Fixes #5979 (#5982)
+ * [60b6b5cf](https://github.com/argoproj/argo-workflows/commit/60b6b5cf64adec380bc195aa87e4f0b12182fe16) fix(controller): Empty global output param crashes (#5931)
+ * [453086f9](https://github.com/argoproj/argo-workflows/commit/453086f94c9b540205784bd2944541b1b43555bd) fix(ui): ensure that the artifacts property exists before inspecting it (#5977)
+ * [079a506e](https://github.com/argoproj/argo-workflows/commit/079a506e432fd08b6465dc2d0b688ed2b78e9691) docs: update bug_report.md (#5971)
+ * [adda0e46](https://github.com/argoproj/argo-workflows/commit/adda0e46e746e99c4e4bfd8d89b8a291d4ada60f) docs: fix indentation (#5970)
+ * [7a8d16c0](https://github.com/argoproj/argo-workflows/commit/7a8d16c0d73a0fa2331112bc73146cd9302c7b40) docs: updated CHANGELOG.md (#5968)
+
+### Contributors
+
+ * Alex Collins
+ * Maximilian Roos
+ * Saravanan Balasubramanian
+ * dherman
+ * github-actions[bot]
+
+## v3.1.0-rc6 (2021-05-21)
+
+ * [82b38150](https://github.com/argoproj/argo-workflows/commit/82b3815015652bb0df529a34dc6f6363608c3b09) Merge branch 'master' into release-3.1
+ * [e6e8dec9](https://github.com/argoproj/argo-workflows/commit/e6e8dec95ca17da555a1ac94cbbc9f39351939a9) docs: Fix typo on examples page, add link to GH directory (#5961)
+ * [67a38e33](https://github.com/argoproj/argo-workflows/commit/67a38e33ed1a4d33085c9f566bf64b8b15c8199e) feat: add disableSubmodules for git artifacts (#5910)
+ * [4dd8d4b9](https://github.com/argoproj/argo-workflows/commit/4dd8d4b9894043cb7e1ce54e725d736d2d5f1e63) docs: Update code of conduct link. (#5872)
+ * [7b54b182](https://github.com/argoproj/argo-workflows/commit/7b54b182cfec367d876aead36ae03a1a16632527) small fixes of spelling mistakes (#5886)
+ * [edb5933a](https://github.com/argoproj/argo-workflows/commit/edb5933abdd243f12bafd752ea34ff1d45cfc5b3) docs: fixed typo (#5890)
+ * [b42c3e2f](https://github.com/argoproj/argo-workflows/commit/b42c3e2ffb6e158b8c7d755271852ebdca416ea2) docs: correct workflow-pod-security-context.md (#5949)
+ * [76612794](https://github.com/argoproj/argo-workflows/commit/7661279417d6b4a89e8c40990fd4c9cb79933e38) docs: updated CHANGELOG.md (#5945)
+ * [56b71d07](https://github.com/argoproj/argo-workflows/commit/56b71d07d91a5aae05b087577f1b47c2acf745df) fix(controller): Revert cb9676e88857193b762b417f2c45b38e2e0967f9. Fixes #5852 (#5933)
+ * [8cb0e5c7](https://github.com/argoproj/argo-workflows/commit/8cb0e5c7d316e2741abbf776ad6bab867285ecfd) docs: Correct the order of versions in the CHANGELOG.md (#5941)
+ * [3659e679](https://github.com/argoproj/argo-workflows/commit/3659e679e7d1fcc97427d617c853e16d8e3657d4) chore: fix whitespace issue (#5940)
+ * [f0540a9b](https://github.com/argoproj/argo-workflows/commit/f0540a9ba486d33fc6a1d4934edf281bc6ea9f44) docs: updated CHANGELOG.md (#5932)
+
+### Contributors
+
+ * Alex Collins
+ * Caelan U
+ * Johannes Olsson
+ * Lars Kerick
+ * Michael Crenshaw
+ * Zach Aller
+ * github-actions[bot]
+
 ## v3.1.0-rc5 (2021-05-17)
 
  * [a899c7e0](https://github.com/argoproj/argo-workflows/commit/a899c7e0947a00e9c4131741804a0486d5892ea2) Merge branch 'master' into release-3.1
@@ -377,6 +482,38 @@
  * tobisinghania
  * uucloud
  * wanglong001
+
+## v3.0.7 (2021-05-25)
+
+ * [e79e7ccd](https://github.com/argoproj/argo-workflows/commit/e79e7ccda747fa4487bf889142c744457c26e9f7) Update manifests to v3.0.7
+ * [b6e986c8](https://github.com/argoproj/argo-workflows/commit/b6e986c85f36e6a182bf1e58a992d2e26bce1feb) fix(controller): Increase readiness timeout from 1s to 30s (#6007)
+
+### Contributors
+
+ * Alex Collins
+
+## v3.0.6 (2021-05-24)
+
+ * [4a7004d0](https://github.com/argoproj/argo-workflows/commit/4a7004d045e2d8f5f90f9e8caaa5e44c013be9d6) Update manifests to v3.0.6
+ * [10ecb7e5](https://github.com/argoproj/argo-workflows/commit/10ecb7e5b1264c283d5b88a214431743c8da3468) fix(controller): Listen on :6060 (#5988)
+
+### Contributors
+
+ * Alex Collins
+
+## v3.0.5 (2021-05-24)
+
+ * [98b930cb](https://github.com/argoproj/argo-workflows/commit/98b930cb1a9f4304f879e33177d1c6e5b45119b7) Update manifests to v3.0.5
+ * [f893ea68](https://github.com/argoproj/argo-workflows/commit/f893ea682f1c30619195f32b58ebc4499f318d21) feat(controller): Add liveness probe (#5875)
+ * [e64607ef](https://github.com/argoproj/argo-workflows/commit/e64607efac779113dd57a9925cd06f9017186f63) fix(controller): Empty global output param crashes (#5931)
+ * [eeb5acba](https://github.com/argoproj/argo-workflows/commit/eeb5acba4565a178cde119ab92a36b291d0b3bb8) fix(ui): ensure that the artifacts property exists before inspecting it (#5977)
+ * [49979c2f](https://github.com/argoproj/argo-workflows/commit/49979c2fa5c08602b56cb21ef5e31594a1a9ddd4) fix(controller): Revert cb9676e88857193b762b417f2c45b38e2e0967f9. Fixes #5852 (#5933)
+
+### Contributors
+
+ * Alex Collins
+ * Saravanan Balasubramanian
+ * dherman
 
 ## v3.0.4 (2021-05-06)
 
@@ -1022,6 +1159,307 @@
  * [2a3ab1ac](https://github.com/argoproj/argo-workflows/commit/2a3ab1acc3d97873f8a582dbc81db099bc22bed2) docs: Fix a typo in example (#4590)
  * [15fd5794](https://github.com/argoproj/argo-workflows/commit/15fd5794250a2e54e388b394fd288420482df924) feat(controller): Make MAX_OPERATION_TIME configurable. Close #4239 (#4562)
  * [da4ff259](https://github.com/argoproj/argo-workflows/commit/da4ff259545d27cd915b1882c4bf04f34877562c) docs: Updated kubectl apply command in manifests README (#4577)
+
+### Contributors
+
+ * Alastair Maw
+ * Alex Capras
+ * Alex Collins
+ * Alexey Volkov
+ * Amim Knabben
+ * Arthur Outhenin-Chalandre
+ * BOOK
+ * Basanth Jenu H B
+ * Daisuke Taniwaki
+ * Dylan Hellems
+ * Florian
+ * Huan-Cheng Chang
+ * Isaac Gaskin
+ * J.P. Zivalich
+ * Jesse Suen
+ * Kaan C. Fidan
+ * Ken Kaizu
+ * Kristoffer Johansson
+ * Marcin Gucki
+ * Maximilian Roos
+ * Michael Albers
+ * Nelson Rodrigues
+ * Noah Hanjun Lee
+ * Paavo Pokkinen
+ * Paul Brabban
+ * Roi Kramer
+ * RossyWhite
+ * Saravanan Balasubramanian
+ * Simeon H.K. Fitch
+ * Simon Behar
+ * Simon Frey
+ * Song Juchao
+ * Stefan Gloutnikov
+ * Stéphane Este-Gracias
+ * Takayoshi Nishida
+ * Tomáš Coufal
+ * Trevor Wood
+ * Viktor Farcic
+ * Wylie Hobbs
+ * Yuan Tang
+ * Zach Aller
+ * aletepe
+ * bei-re
+ * bellevuerails
+ * cocotyty
+ * dherman
+ * drannenberg
+ * ermeaney
+ * fsiegmund
+ * hermanhobnob
+ * joyciep
+ * kennytrytek
+ * lonsdale8734
+ * makocchi
+ * markterm
+ * nishant-d
+ * saranyaeu2987
+ * tczhao
+ * zhengchenyu
+
+## v2.12.11 (2021-04-05)
+
+ * [71d00c78](https://github.com/argoproj/argo-workflows/commit/71d00c7878e2b904ad35ca25712bef7e84893ae2) Update manifests to v2.12.11
+ * [d5e0823f](https://github.com/argoproj/argo-workflows/commit/d5e0823f1a237bffc56a61601a5d2ef011e66b0e) fix: InsecureSkipVerify true
+ * [3b6c53af](https://github.com/argoproj/argo-workflows/commit/3b6c53af00843a17dc2f030e08dec1b1c070e3f2) fix(executor): GODEBUG=x509ignoreCN=0 (#5562)
+ * [051413e0](https://github.com/argoproj/argo-workflows/commit/051413e0d4c11a14e27e6623c967c4f268b26f9a) chore: Handling panic in go routines (#5489)
+ * [631e55d0](https://github.com/argoproj/argo-workflows/commit/631e55d006a342b20180e6cbd82d10f891e4d60f) feat(server): Enforce TLS >= v1.2 (#5172)
+
+### Contributors
+
+ * Alex Collins
+ * Saravanan Balasubramanian
+ * Simon Behar
+
+## v2.12.10 (2021-03-08)
+
+ * [f1e0c617](https://github.com/argoproj/argo-workflows/commit/f1e0c6174b48af69d6e8ecd235a2d709f44f8095) Update manifests to v2.12.10
+ * [1ecc5c00](https://github.com/argoproj/argo-workflows/commit/1ecc5c0093cbd4e74efbd3063cbe0499ce81d54a) fix(test): Flaky TestWorkflowShutdownStrategy  (#5331)
+ * [fa8f63c6](https://github.com/argoproj/argo-workflows/commit/fa8f63c6db3dfc0dfed2fb99f40850beee4f3981) Cherry-pick 5289
+ * [d56c420b](https://github.com/argoproj/argo-workflows/commit/d56c420b7af25bca13518180da185ac70380446e) fix: Disallow object names with more than 63 chars (#5324)
+ * [6ccfe46d](https://github.com/argoproj/argo-workflows/commit/6ccfe46d68c6ddca231c746d8d0f6444546b20ad) fix: Backward compatible workflowTemplateRef from 2.11.x to  2.12.x (#5314)
+ * [0ad73462](https://github.com/argoproj/argo-workflows/commit/0ad7346230ef148b1acd5e78de69bd552cb9d49c) fix: Ensure whitespaces is allowed between name and bracket (#5176)
+
+### Contributors
+
+ * Saravanan Balasubramanian
+ * Simon Behar
+
+## v2.12.9 (2021-02-16)
+
+ * [73790534](https://github.com/argoproj/argo-workflows/commit/737905345d70ba1ebd566ce1230e4f971993dfd0) Update manifests to v2.12.9
+ * [20e4c401](https://github.com/argoproj/argo-workflows/commit/20e4c401ccfc482e4516c58d52ba62eb67f1731a) chore: Add SHA256 checksums to release (#5122)
+ * [81c07344](https://github.com/argoproj/argo-workflows/commit/81c07344fe5d84e09284bd1fea4f01239524a842) codegen
+ * [26d2ec0a](https://github.com/argoproj/argo-workflows/commit/26d2ec0a10913b7df994f7d354fea2be1db04ea9) cherry-picked 5081
+ * [92ad730a](https://github.com/argoproj/argo-workflows/commit/92ad730a28a4eb613b8e5105c9c2ccbb2ed2c3f3) fix: Revert "fix(controller): keep special characters in json string when … … 19da392 …use withItems (#4814)" (#5076)
+ * [1e868ec1](https://github.com/argoproj/argo-workflows/commit/1e868ec1adf95dd0e53e7939cc8a9d7834cf8fbf) fix(controller): Fix creator dashes (#5082)
+
+### Contributors
+
+ * Alex Collins
+ * Saravanan Balasubramanian
+ * Simon Behar
+
+## v2.12.8 (2021-02-08)
+
+ * [d19d4eee](https://github.com/argoproj/argo-workflows/commit/d19d4eeed3224ea7e854c658d3544663e86cd509) Update manifests to v2.12.8
+ * [cf3b1980](https://github.com/argoproj/argo-workflows/commit/cf3b1980dc35c615de53b0d07d13a2c828f94bbf) fix: Fix build
+ * [a8d0b67e](https://github.com/argoproj/argo-workflows/commit/a8d0b67e87daac56f310136e56f4dbe5acb98267) fix(cli): Add insecure-skip-verify for HTTP1. Fixes #5008 (#5015)
+ * [a3134de9](https://github.com/argoproj/argo-workflows/commit/a3134de95090c7b980a741f28dde9ca94650ab18) fix: Skip the Workflow not found error in Concurrency policy (#5030)
+ * [a60e4105](https://github.com/argoproj/argo-workflows/commit/a60e4105d0e15ba94625ae83dbd728841576a5ee) fix: Unmark daemoned nodes after stopping them (#5005)
+
+### Contributors
+
+ * Alex Collins
+ * Saravanan Balasubramanian
+ * Simon Behar
+
+## v2.12.7 (2021-02-01)
+
+ * [5f515073](https://github.com/argoproj/argo-workflows/commit/5f5150730c644865a5867bf017100732f55811dd) Update manifests to v2.12.7
+ * [637154d0](https://github.com/argoproj/argo-workflows/commit/637154d02b0829699a31b283eaf9045708d96acf) feat: Support retry on transient errors during executor status checking (#4946)
+ * [8e7ed235](https://github.com/argoproj/argo-workflows/commit/8e7ed235e8b4411fda6d0b6c088dd4a6e931ffb9) feat(server): Add Prometheus metrics. Closes #4751 (#4952)
+ * [372cef03](https://github.com/argoproj/argo-workflows/commit/372cef03b4f8b78a38097236a9ffa60f5028d741) chore: Remove self-referential replace directive in go.mod (#4959)
+ * [77b34e3c](https://github.com/argoproj/argo-workflows/commit/77b34e3c9cb603a46512f485bdfaeede3d562d8d) chore: Set Go mod to /v2 (#4916)
+
+### Contributors
+
+ * Alex Collins
+ * Simon Behar
+ * Yuan Tang
+
+## v2.12.6 (2021-01-25)
+
+ * [4cb5b7eb](https://github.com/argoproj/argo-workflows/commit/4cb5b7eb807573e167f3429fb5fc8bf5ade0685d) Update manifests to v2.12.6
+ * [2696898b](https://github.com/argoproj/argo-workflows/commit/2696898b3334a08af47bdbabb85a7d9fa1f37050) fix: Mutex not being released on step completion (#4847)
+ * [067b6036](https://github.com/argoproj/argo-workflows/commit/067b60363f260edf8a680c4cb5fa36cc561ff20a) feat(server): Support email for SSO+RBAC. Closes #4612 (#4644)
+
+### Contributors
+
+ * Alex Collins
+ * Saravanan Balasubramanian
+ * Simon Behar
+
+## v2.12.5 (2021-01-19)
+
+ * [53f022c3](https://github.com/argoproj/argo-workflows/commit/53f022c3f740b5a8636d74873462011702403e42) Update manifests to v2.12.5
+ * [86d7b3b6](https://github.com/argoproj/argo-workflows/commit/86d7b3b6b4fc4d9336eefea0a0ff44201e35fa47) fix tests
+ * [63390940](https://github.com/argoproj/argo-workflows/commit/6339094024e23d9dcea1f24981c366e00f36099b) fix tests
+ * [0c7aa149](https://github.com/argoproj/argo-workflows/commit/0c7aa1498c900b6fb65b72f82186bab2ff7f0130) fix: Mutex not being released on step completion (#4847)
+ * [b3742193](https://github.com/argoproj/argo-workflows/commit/b3742193ef19ffeb33795a39456b3bc1a3a667f5) fix(controller): Consider processed retry node in metrics. Fixes #4846 (#4872)
+ * [9063a94d](https://github.com/argoproj/argo-workflows/commit/9063a94d6fc5ab684e3c52c3d99e4dc4a0d034f6) fix(controller): make creator label DNS compliant. Fixes #4880 (#4881)
+ * [84b44cfd](https://github.com/argoproj/argo-workflows/commit/84b44cfdb44c077b190070fac98b9ee45c06bfc8) fix(controller): Fix node status when daemon pod deleted but its children nodes are still running (#4683)
+ * [8cd96352](https://github.com/argoproj/argo-workflows/commit/8cd963520fd2a560b5f2df84c98936c72b894997) fix: Do not error on duplicate workflow creation by cron (#4871)
+
+### Contributors
+
+ * Saravanan Balasubramanian
+ * Simon Behar
+ * ermeaney
+ * lonsdale8734
+
+## v2.12.4 (2021-01-12)
+
+ * [f97bef5d](https://github.com/argoproj/argo-workflows/commit/f97bef5d00361f3d1cbb8574f7f6adf632673008) Update manifests to v2.12.4
+ * [daba40ea](https://github.com/argoproj/argo-workflows/commit/daba40eaf199f5ec0ead4c38e3c37a6a74adb5d9) build: Fix lint (#4837)
+ * [c521b27e](https://github.com/argoproj/argo-workflows/commit/c521b27e04e2fc40d69d215cf80808a72ed22f1d) feat: Publish images on Quay.io (#4860)
+ * [1cd2570c](https://github.com/argoproj/argo-workflows/commit/1cd2570c75a56b50bc830a5727221082b422d0c9) feat: Publish images to Quay.io (#4854)
+ * [7eb16e61](https://github.com/argoproj/argo-workflows/commit/7eb16e617034a9798bef3e0d6c51c798a42758ac) fix: Preserve the original slice when removing string (#4835)
+ * [e64183db](https://github.com/argoproj/argo-workflows/commit/e64183dbcb80e8b654acec517487661de7cf7dd4) fix(controller): keep special characters in json string when use withItems (#4814)
+ * [cd1b8b27](https://github.com/argoproj/argo-workflows/commit/cd1b8b272da0f3854adcfc633c24259da9987971) chore: add missing phase option to node cli command (#4825)
+
+### Contributors
+
+ * Alex Collins
+ * Simon Behar
+ * Song Juchao
+ * cocotyty
+ * markterm
+
+## v2.12.3 (2021-01-04)
+
+ * [93ee5301](https://github.com/argoproj/argo-workflows/commit/93ee530126cc1fc154ada84d5656ca82d491dc7f) Update manifests to v2.12.3
+ * [3ce298e2](https://github.com/argoproj/argo-workflows/commit/3ce298e2972a67267d9783e2c094be5af8b48eb7) fix tests
+ * [9bb1168e](https://github.com/argoproj/argo-workflows/commit/9bb1168e2fbb502d50c2e7e977583f321be29339) test: Fix TestDeletingRunningPod (#4779)
+ * [8177b53c](https://github.com/argoproj/argo-workflows/commit/8177b53c299a7e4fb64bc3b024ad46a3584b6de0) fix(controller): Various v2.12 fixes. Fixes #4798, #4801, #4806 (#4808)
+ * [19c7bdab](https://github.com/argoproj/argo-workflows/commit/19c7bdabdc6d4de43896527ec850f14f38678e38) fix: load all supported authentication plugins for k8s client-go (#4802)
+ * [331aa4ee](https://github.com/argoproj/argo-workflows/commit/331aa4ee896a83504144175da404c580dbfdc48c) fix(server): Do not silently ignore sso secret creation error (#4775)
+ * [0bbc082c](https://github.com/argoproj/argo-workflows/commit/0bbc082cf33a78cc332e75c31321c80c357aa83b) feat(controller): Rate-limit workflows. Closes #4718 (#4726)
+ * [a6027982](https://github.com/argoproj/argo-workflows/commit/a60279827f50579d2624f4fa150af5d2e9458588) fix(controller): Support default database port. Fixes #4756 (#4757)
+ * [5d857358](https://github.com/argoproj/argo-workflows/commit/5d8573581913ae265c869638904ec74b87f07a6b) feat(controller): Enhanced TTL controller scalability (#4736)
+
+### Contributors
+
+ * Alex Collins
+ * Kristoffer Johansson
+ * Simon Behar
+
+## v2.12.2 (2020-12-18)
+
+ * [7868e723](https://github.com/argoproj/argo-workflows/commit/7868e723704bcfe1b943bc076c2e0b83777d6267) Update manifests to v2.12.2
+ * [e8c4aa4a](https://github.com/argoproj/argo-workflows/commit/e8c4aa4a99a5ea06c8c0cf1807df40e99d86da85) fix(controller): Requeue when the pod was deleted. Fixes #4719 (#4742)
+ * [11bc9c41](https://github.com/argoproj/argo-workflows/commit/11bc9c41abb1786bbd06f83bf3222865c7da320c) feat(controller): Pod deletion grace period. Fixes #4719 (#4725)
+
+### Contributors
+
+ * Alex Collins
+
+## v2.12.1 (2020-12-17)
+
+ * [9a7e044e](https://github.com/argoproj/argo-workflows/commit/9a7e044e27b1e342748d9f41ea60d1998b8907ab) Update manifests to v2.12.1
+ * [d21c4528](https://github.com/argoproj/argo-workflows/commit/d21c452869330658083b5066bd84b6cbd9f1f745) Change argo-server crt/key owner (#4750)
+ * [53029017](https://github.com/argoproj/argo-workflows/commit/53029017f05a369575a1ff73387bafff9fc9b451) Update manifests to v2.12.0
+ * [43458066](https://github.com/argoproj/argo-workflows/commit/4345806690634f23427ade69a72bae2e0b289fc7) fix(controller): Fixes resource version misuse. Fixes #4714 (#4741)
+ * [e192fb15](https://github.com/argoproj/argo-workflows/commit/e192fb15616e3a192e1b4b3db0a596a6c70e2430) fix(executor): Copy main/executor container resources from controller by value instead of reference (#4737)
+ * [4fb0d96d](https://github.com/argoproj/argo-workflows/commit/4fb0d96d052136914f3772276f155b92db9289fc) fix(controller): Fix incorrect main container customization precedence and isResourcesSpecified check (#4681)
+ * [1aac79e9](https://github.com/argoproj/argo-workflows/commit/1aac79e9bf04d2fb15f080db1359ba09e0c1a257) feat(controller): Allow to configure main container resources (#4656)
+
+### Contributors
+
+ * Alex Collins
+ * Daisuke Taniwaki
+ * Simon Behar
+ * Yuan Tang
+
+## v2.12.0-rc6 (2020-12-15)
+
+ * [e55b886e](https://github.com/argoproj/argo-workflows/commit/e55b886ed4706a403a8895b2819b168bd638b256) Update manifests to v2.12.0-rc6
+ * [1fb0d8b9](https://github.com/argoproj/argo-workflows/commit/1fb0d8b970f95e98a324e106f431b4782eb2b88f) fix(controller): Fixed workflow stuck with mutex lock (#4744)
+ * [4059820e](https://github.com/argoproj/argo-workflows/commit/4059820ea4c0fd7c278c3a8b5cf05cb00c2e3380) fix(executor): Always check if resource has been deleted in checkResourceState() (#4738)
+ * [739af45b](https://github.com/argoproj/argo-workflows/commit/739af45b5cf018332d9c5397e6beda826cf4a143) fix(ui): Fix YAML for workflows with storedWorkflowTemplateSpec. Fixes #4691 (#4695)
+ * [35980343](https://github.com/argoproj/argo-workflows/commit/3598034335bb6eb9bb95dd79375570e19bb07e1e) fix: Allow Bearer token in server mode (#4735)
+ * [bf589b01](https://github.com/argoproj/argo-workflows/commit/bf589b014cbe81d1ba46b3a08d9426e97c2683c3) fix(executor): Deal with the pod watch API call timing out (#4734)
+ * [71edcfd4](https://github.com/argoproj/argo-workflows/commit/71edcfd445ee5550ac7da00b8e81ff105e3d3318) ci: Pin kustomize version (#4704)
+ * [fabf20b5](https://github.com/argoproj/argo-workflows/commit/fabf20b5928cc1314e20e9047a9b122fdbe5ed62) fix(controller): Increate default EventSpamBurst in Eventrecorder (#4698)
+
+### Contributors
+
+ * Alex Collins
+ * Saravanan Balasubramanian
+ * Simon Behar
+ * Yuan Tang
+ * hermanhobnob
+
+## v2.12.0-rc5 (2020-12-10)
+
+ * [3aa86fff](https://github.com/argoproj/argo-workflows/commit/3aa86fffb7c975e3a39302f5b2e37f99fe58fa4f) Update manifests to v2.12.0-rc5
+ * [3581a1e7](https://github.com/argoproj/argo-workflows/commit/3581a1e77c927830908ba42f9b63b31c28501346) fix: Consider optional artifact arguments (#4672)
+ * [50210fc3](https://github.com/argoproj/argo-workflows/commit/50210fc38bdd80fec1c1affd9836b8b0fcf41e31) feat(controller): Use deterministic name for cron workflow children (#4638)
+ * [3a4e974c](https://github.com/argoproj/argo-workflows/commit/3a4e974c0cf14ba24df70258a5b5ae19a966397d) fix(controller): Only patch status.active in cron workflows when syncing (#4659)
+ * [2aaad26f](https://github.com/argoproj/argo-workflows/commit/2aaad26fe129a6c4eeccb60226941b14664aca4a) fix(ui): DataLoaderDropdown fix input type from promise to function that (#4655)
+ * [72ca92cb](https://github.com/argoproj/argo-workflows/commit/72ca92cb4459007968b13e097ef68f3e307454ce) fix: Count Workflows with no phase as Pending for metrics (#4628)
+ * [8ea219b8](https://github.com/argoproj/argo-workflows/commit/8ea219b860bc85622c120d495860d8a62eb67e5a) fix(ui): Reference secrets in EnvVars. Fixes #3973  (#4419)
+ * [3b35ba2b](https://github.com/argoproj/argo-workflows/commit/3b35ba2bdee31c8d512acf145c10bcb3f73d7286) fix: derive jsonschema and fix up issues, validate examples dir… (#4611)
+ * [20f59de9](https://github.com/argoproj/argo-workflows/commit/20f59de9780e0291760eb133aded3a6da1562078) docs: Add JSON schema for IDE validation (#4581)
+ * [2f49720a](https://github.com/argoproj/argo-workflows/commit/2f49720aa7bea619b8691cb6d9e41b20971a178e) fix(ui): Fixed reconnection hot-loop. Fixes #4580 (#4663)
+ * [4f8e4a51](https://github.com/argoproj/argo-workflows/commit/4f8e4a515dbde688a23147a40625198e1f9b91a0) fix(controller): Cleanup the synchronize  pending queue once Workflow deleted (#4664)
+ * [12859847](https://github.com/argoproj/argo-workflows/commit/128598478bdd6a5d35d76101feb85c04b4d6c7a8) fix(controller): Deal with hyphen in creator. Fixes #4058 (#4643)
+ * [2d05d56e](https://github.com/argoproj/argo-workflows/commit/2d05d56ea0af726f9a0906f72119105f27453ff9) feat(controller): Make MAX_OPERATION_TIME configurable. Close #4239 (#4562)
+ * [c00ff714](https://github.com/argoproj/argo-workflows/commit/c00ff7144bda39995823b8f0e3668c88958d9736) fix: Fix TestCleanFieldsExclude (#4625)
+
+### Contributors
+
+ * Alex Collins
+ * Paul Brabban
+ * Saravanan Balasubramanian
+ * Simon Behar
+ * aletepe
+ * tczhao
+
+## v2.12.0-rc4 (2020-12-02)
+
+ * [e34bc3b7](https://github.com/argoproj/argo-workflows/commit/e34bc3b7237669ae1d0a800f8210a462cb6e4cfa) Update manifests to v2.12.0-rc4
+ * [feea63f0](https://github.com/argoproj/argo-workflows/commit/feea63f029f2416dc7002852c5541a9638a03d72) feat(executor): More informative log when executors do not support output param from base image layer (#4620)
+ * [65f5aefe](https://github.com/argoproj/argo-workflows/commit/65f5aefefe592f11a387b5db715b4895e47e1af1) fix(argo-server): fix global variable validation error with reversed dag.tasks (#4369)
+ * [e6870664](https://github.com/argoproj/argo-workflows/commit/e6870664e16db166529363f85ed90632f66ca9de) fix(server): Correct webhook event payload marshalling. Fixes #4572 (#4594)
+ * [b1d682e7](https://github.com/argoproj/argo-workflows/commit/b1d682e71c8f3f3a66b71d47f8db22db55637629) fix: Perform fields filtering server side (#4595)
+ * [61b67048](https://github.com/argoproj/argo-workflows/commit/61b670481cb693b25dfc0186ff28dfe29dfa9353) fix: Null check pagination variable (#4617)
+ * [ace0ee1b](https://github.com/argoproj/argo-workflows/commit/ace0ee1b23273ac982d0c8885d50755608849258) fix(executor): Fixed waitMainContainerStart returning prematurely. Closes #4599 (#4601)
+ * [f03f99ef](https://github.com/argoproj/argo-workflows/commit/f03f99ef69b60e91f2dc08c6729ba58d27e56d1d) refactor: Use polling model for workflow phase metric (#4557)
+ * [8e887e73](https://github.com/argoproj/argo-workflows/commit/8e887e7315a522998e810021d10334e860a3b307) fix(executor): Handle sidecar killing in a process-namespace-shared pod (#4575)
+ * [991fa674](https://github.com/argoproj/argo-workflows/commit/991fa6747bce82bef9919384925e0a6b2f7f3668) fix(server): serve artifacts directly from disk to support large artifacts (#4589)
+ * [2eeb1fce](https://github.com/argoproj/argo-workflows/commit/2eeb1fcef6896e0518c3ab1d1cd715de93fe4c41) fix(server): use the correct name when downloading artifacts (#4579)
+ * [d1a37d5f](https://github.com/argoproj/argo-workflows/commit/d1a37d5fbabc1f3c90b15a266858d207275e31ab) feat(controller): Retry transient offload errors. Resolves #4464 (#4482)
+
+### Contributors
+
+ * Alex Collins
+ * Daisuke Taniwaki
+ * Simon Behar
+ * Yuan Tang
+ * dherman
+ * fsiegmund
+ * zhengchenyu
+
+## v2.12.0-rc3 (2020-11-23)
+
+ * [85cafe6e](https://github.com/argoproj/argo-workflows/commit/85cafe6e882f9a49e402c29d14e04ded348b07b2) Update manifests to v2.12.0-rc3
+ * [42e3af7a](https://github.com/argoproj/argo-workflows/commit/42e3af7a9f9bb7068b51382212a380fdc9faa298) Merge branch 'master' into release-2.12
  * [fdafc4ba](https://github.com/argoproj/argo-workflows/commit/fdafc4badc1f2e76983f69a42e2708be3c59e207) chore: Updated stress test YAML (#4569)
  * [916b4549](https://github.com/argoproj/argo-workflows/commit/916b4549b9b4e2a74902aea16cfc04996dccb263) feat(ui): Add Template/Cron workflow filter to workflow page. Closes #4532 (#4543)
  * [6e2b0cf3](https://github.com/argoproj/argo-workflows/commit/6e2b0cf37bdd14022d0fe6437a013d0bf06159a8) docs: Clean-up examples. Fixes #4124 (#4128)
@@ -1036,6 +1474,7 @@
  * [0980ead3](https://github.com/argoproj/argo-workflows/commit/0980ead36d39620c914e04e2aa207e688a631e9a) fix(test): fix TestWFDefaultWithWFTAndWf flakiness (#4538)
  * [564e69f3](https://github.com/argoproj/argo-workflows/commit/564e69f3fdef6239f9091401ec4472bd8bd248bd) fix(ui): Do not auto-reload doc.location. Fixes #4530 (#4535)
  * [eebcb8b8](https://github.com/argoproj/argo-workflows/commit/eebcb8b8a621e37ae0c66d2248d83af821a1ade8) docs: Add "Argo Workflows in 5 min" link to README (#4533)
+ * [5147f0a1](https://github.com/argoproj/argo-workflows/commit/5147f0a19c262a4f139aa2c4333942e6e97a6d12) Merge branch 'master' into release-2.12
  * [176d890c](https://github.com/argoproj/argo-workflows/commit/176d890c1cac25856f67fbed4cc39a396aa87a93) fix(controller): support float for param value (#4490)
  * [4bacbc12](https://github.com/argoproj/argo-workflows/commit/4bacbc121ae028557b7f0718f02fbb25e8e63850) feat(controller): make sso timeout configurable via cm (#4494)
  * [02e1f0e0](https://github.com/argoproj/argo-workflows/commit/02e1f0e0d1c8ad8422984000bb2b49dc3709b1a0) fix(server): Add `list sa` and `create secret` to `argo-server` roles. Closes #4526 (#4514)
@@ -1043,6 +1482,28 @@
  * [411bde37](https://github.com/argoproj/argo-workflows/commit/411bde37c2b146c1fb52d913bf5629a36e0a5af1) feat: adds millisecond-level timestamps to argo and workflow-controller (#4518)
  * [2c54ca3f](https://github.com/argoproj/argo-workflows/commit/2c54ca3fbee675815566508fc10c137e7b4f9f2f) add bonprix to argo users (#4520)
  * [754a201d](https://github.com/argoproj/argo-workflows/commit/754a201da01aa7aef2d82dcdafa8d054dd879634) build: Reuse IMAGE_OS instead of hard-coded linux (#4519)
+
+### Contributors
+
+ * Alex Collins
+ * Alexander Mikhailian
+ * Arghya Sadhu
+ * Boolman
+ * David Gibbons
+ * Espen Finnesand
+ * Lennart Kindermann
+ * Ludovic Cléroux
+ * Oleg Borodai
+ * Saravanan Balasubramanian
+ * Simon Behar
+ * Yuan Tang
+ * Zach
+ * tczhao
+
+## v2.12.0-rc2 (2020-11-12)
+
+ * [f509fa55](https://github.com/argoproj/argo-workflows/commit/f509fa550b0694907bb9447084df11af171f9cc9) Update manifests to v2.12.0-rc2
+ * [c297b2aa](https://github.com/argoproj/argo-workflows/commit/c297b2aa293942f2621fb4b5c0e460abc0f7c251) Merge branch 'master' into release-2.12
  * [2dab2d15](https://github.com/argoproj/argo-workflows/commit/2dab2d15868c5f52ca4e3f7ba1c5276d55c26a42) fix(test):  fix TestWFDefaultWithWFTAndWf flakiness (#4507)
  * [64ae3303](https://github.com/argoproj/argo-workflows/commit/64ae33034d30a943dca71b0c5e4ebd97018448bf) fix(controller): prepend script path to the script template args. Resolves #4481 (#4492)
  * [0931baf5](https://github.com/argoproj/argo-workflows/commit/0931baf5fbe48487278b9a6c2fa206ab02406e5b) feat: Redirect to requested URL after SSO login (#4495)
@@ -1052,6 +1513,101 @@
  * [d56ce890](https://github.com/argoproj/argo-workflows/commit/d56ce890c900c300bd396c5050cea9fb2b4aa358) feat(cli): add selector and field-selector option to terminate (#4448)
  * [e501fcca](https://github.com/argoproj/argo-workflows/commit/e501fcca16a908781a786b93417cc41644b62ea4) fix(controller): Refactor the Merge Workflow, WorkflowTemplate and WorkflowDefaults (#4354)
  * [2ee3f5a7](https://github.com/argoproj/argo-workflows/commit/2ee3f5a71f4791635192d7cd4e1b583d80e81077) fix(ui): fix the `all` option in the workflow archive list (#4486)
+
+### Contributors
+
+ * Noah Hanjun Lee
+ * Saravanan Balasubramanian
+ * Simon Behar
+ * Vlad Losev
+ * dherman
+ * ivancili
+
+## v2.12.0-rc1 (2020-11-06)
+
+ * [5e2c656b](https://github.com/argoproj/argo-workflows/commit/5e2c656b04aa206d248073262960c56da33cc0ec) chore: Correct manifests
+
+### Contributors
+
+ * Alex Collins
+
+## v2.12.0 (2020-12-17)
+
+ * [53029017](https://github.com/argoproj/argo-workflows/commit/53029017f05a369575a1ff73387bafff9fc9b451) Update manifests to v2.12.0
+ * [43458066](https://github.com/argoproj/argo-workflows/commit/4345806690634f23427ade69a72bae2e0b289fc7) fix(controller): Fixes resource version misuse. Fixes #4714 (#4741)
+ * [e192fb15](https://github.com/argoproj/argo-workflows/commit/e192fb15616e3a192e1b4b3db0a596a6c70e2430) fix(executor): Copy main/executor container resources from controller by value instead of reference (#4737)
+ * [4fb0d96d](https://github.com/argoproj/argo-workflows/commit/4fb0d96d052136914f3772276f155b92db9289fc) fix(controller): Fix incorrect main container customization precedence and isResourcesSpecified check (#4681)
+ * [1aac79e9](https://github.com/argoproj/argo-workflows/commit/1aac79e9bf04d2fb15f080db1359ba09e0c1a257) feat(controller): Allow to configure main container resources (#4656)
+ * [e55b886e](https://github.com/argoproj/argo-workflows/commit/e55b886ed4706a403a8895b2819b168bd638b256) Update manifests to v2.12.0-rc6
+ * [1fb0d8b9](https://github.com/argoproj/argo-workflows/commit/1fb0d8b970f95e98a324e106f431b4782eb2b88f) fix(controller): Fixed workflow stuck with mutex lock (#4744)
+ * [4059820e](https://github.com/argoproj/argo-workflows/commit/4059820ea4c0fd7c278c3a8b5cf05cb00c2e3380) fix(executor): Always check if resource has been deleted in checkResourceState() (#4738)
+ * [739af45b](https://github.com/argoproj/argo-workflows/commit/739af45b5cf018332d9c5397e6beda826cf4a143) fix(ui): Fix YAML for workflows with storedWorkflowTemplateSpec. Fixes #4691 (#4695)
+ * [35980343](https://github.com/argoproj/argo-workflows/commit/3598034335bb6eb9bb95dd79375570e19bb07e1e) fix: Allow Bearer token in server mode (#4735)
+ * [bf589b01](https://github.com/argoproj/argo-workflows/commit/bf589b014cbe81d1ba46b3a08d9426e97c2683c3) fix(executor): Deal with the pod watch API call timing out (#4734)
+ * [71edcfd4](https://github.com/argoproj/argo-workflows/commit/71edcfd445ee5550ac7da00b8e81ff105e3d3318) ci: Pin kustomize version (#4704)
+ * [fabf20b5](https://github.com/argoproj/argo-workflows/commit/fabf20b5928cc1314e20e9047a9b122fdbe5ed62) fix(controller): Increate default EventSpamBurst in Eventrecorder (#4698)
+ * [3aa86fff](https://github.com/argoproj/argo-workflows/commit/3aa86fffb7c975e3a39302f5b2e37f99fe58fa4f) Update manifests to v2.12.0-rc5
+ * [3581a1e7](https://github.com/argoproj/argo-workflows/commit/3581a1e77c927830908ba42f9b63b31c28501346) fix: Consider optional artifact arguments (#4672)
+ * [50210fc3](https://github.com/argoproj/argo-workflows/commit/50210fc38bdd80fec1c1affd9836b8b0fcf41e31) feat(controller): Use deterministic name for cron workflow children (#4638)
+ * [3a4e974c](https://github.com/argoproj/argo-workflows/commit/3a4e974c0cf14ba24df70258a5b5ae19a966397d) fix(controller): Only patch status.active in cron workflows when syncing (#4659)
+ * [2aaad26f](https://github.com/argoproj/argo-workflows/commit/2aaad26fe129a6c4eeccb60226941b14664aca4a) fix(ui): DataLoaderDropdown fix input type from promise to function that (#4655)
+ * [72ca92cb](https://github.com/argoproj/argo-workflows/commit/72ca92cb4459007968b13e097ef68f3e307454ce) fix: Count Workflows with no phase as Pending for metrics (#4628)
+ * [8ea219b8](https://github.com/argoproj/argo-workflows/commit/8ea219b860bc85622c120d495860d8a62eb67e5a) fix(ui): Reference secrets in EnvVars. Fixes #3973  (#4419)
+ * [3b35ba2b](https://github.com/argoproj/argo-workflows/commit/3b35ba2bdee31c8d512acf145c10bcb3f73d7286) fix: derive jsonschema and fix up issues, validate examples dir… (#4611)
+ * [20f59de9](https://github.com/argoproj/argo-workflows/commit/20f59de9780e0291760eb133aded3a6da1562078) docs: Add JSON schema for IDE validation (#4581)
+ * [2f49720a](https://github.com/argoproj/argo-workflows/commit/2f49720aa7bea619b8691cb6d9e41b20971a178e) fix(ui): Fixed reconnection hot-loop. Fixes #4580 (#4663)
+ * [4f8e4a51](https://github.com/argoproj/argo-workflows/commit/4f8e4a515dbde688a23147a40625198e1f9b91a0) fix(controller): Cleanup the synchronize  pending queue once Workflow deleted (#4664)
+ * [12859847](https://github.com/argoproj/argo-workflows/commit/128598478bdd6a5d35d76101feb85c04b4d6c7a8) fix(controller): Deal with hyphen in creator. Fixes #4058 (#4643)
+ * [2d05d56e](https://github.com/argoproj/argo-workflows/commit/2d05d56ea0af726f9a0906f72119105f27453ff9) feat(controller): Make MAX_OPERATION_TIME configurable. Close #4239 (#4562)
+ * [c00ff714](https://github.com/argoproj/argo-workflows/commit/c00ff7144bda39995823b8f0e3668c88958d9736) fix: Fix TestCleanFieldsExclude (#4625)
+ * [e34bc3b7](https://github.com/argoproj/argo-workflows/commit/e34bc3b7237669ae1d0a800f8210a462cb6e4cfa) Update manifests to v2.12.0-rc4
+ * [feea63f0](https://github.com/argoproj/argo-workflows/commit/feea63f029f2416dc7002852c5541a9638a03d72) feat(executor): More informative log when executors do not support output param from base image layer (#4620)
+ * [65f5aefe](https://github.com/argoproj/argo-workflows/commit/65f5aefefe592f11a387b5db715b4895e47e1af1) fix(argo-server): fix global variable validation error with reversed dag.tasks (#4369)
+ * [e6870664](https://github.com/argoproj/argo-workflows/commit/e6870664e16db166529363f85ed90632f66ca9de) fix(server): Correct webhook event payload marshalling. Fixes #4572 (#4594)
+ * [b1d682e7](https://github.com/argoproj/argo-workflows/commit/b1d682e71c8f3f3a66b71d47f8db22db55637629) fix: Perform fields filtering server side (#4595)
+ * [61b67048](https://github.com/argoproj/argo-workflows/commit/61b670481cb693b25dfc0186ff28dfe29dfa9353) fix: Null check pagination variable (#4617)
+ * [ace0ee1b](https://github.com/argoproj/argo-workflows/commit/ace0ee1b23273ac982d0c8885d50755608849258) fix(executor): Fixed waitMainContainerStart returning prematurely. Closes #4599 (#4601)
+ * [f03f99ef](https://github.com/argoproj/argo-workflows/commit/f03f99ef69b60e91f2dc08c6729ba58d27e56d1d) refactor: Use polling model for workflow phase metric (#4557)
+ * [8e887e73](https://github.com/argoproj/argo-workflows/commit/8e887e7315a522998e810021d10334e860a3b307) fix(executor): Handle sidecar killing in a process-namespace-shared pod (#4575)
+ * [991fa674](https://github.com/argoproj/argo-workflows/commit/991fa6747bce82bef9919384925e0a6b2f7f3668) fix(server): serve artifacts directly from disk to support large artifacts (#4589)
+ * [2eeb1fce](https://github.com/argoproj/argo-workflows/commit/2eeb1fcef6896e0518c3ab1d1cd715de93fe4c41) fix(server): use the correct name when downloading artifacts (#4579)
+ * [d1a37d5f](https://github.com/argoproj/argo-workflows/commit/d1a37d5fbabc1f3c90b15a266858d207275e31ab) feat(controller): Retry transient offload errors. Resolves #4464 (#4482)
+ * [85cafe6e](https://github.com/argoproj/argo-workflows/commit/85cafe6e882f9a49e402c29d14e04ded348b07b2) Update manifests to v2.12.0-rc3
+ * [42e3af7a](https://github.com/argoproj/argo-workflows/commit/42e3af7a9f9bb7068b51382212a380fdc9faa298) Merge branch 'master' into release-2.12
+ * [fdafc4ba](https://github.com/argoproj/argo-workflows/commit/fdafc4badc1f2e76983f69a42e2708be3c59e207) chore: Updated stress test YAML (#4569)
+ * [916b4549](https://github.com/argoproj/argo-workflows/commit/916b4549b9b4e2a74902aea16cfc04996dccb263) feat(ui): Add Template/Cron workflow filter to workflow page. Closes #4532 (#4543)
+ * [6e2b0cf3](https://github.com/argoproj/argo-workflows/commit/6e2b0cf37bdd14022d0fe6437a013d0bf06159a8) docs: Clean-up examples. Fixes #4124 (#4128)
+ * [4998b2d6](https://github.com/argoproj/argo-workflows/commit/4998b2d6574adfe039b9c037251ecc717e7f1996) chore: Remove unused image build and push hooks (#4539)
+ * [48af0244](https://github.com/argoproj/argo-workflows/commit/48af024450f6a395ca887073343d3296d69d836a) fix: executor/pns containerid prefix fix (#4555)
+ * [53195ed5](https://github.com/argoproj/argo-workflows/commit/53195ed56029c639856a395ed5c92db82d49a2d9) fix: Respect continueOn for leaf tasks (#4455)
+ * [e3d59f08](https://github.com/argoproj/argo-workflows/commit/e3d59f08497070b2d002049ffd5e2e7d5243a6e5) docs: Added CloudSeeds as one of the users for argo (#4553)
+ * [ad11180e](https://github.com/argoproj/argo-workflows/commit/ad11180e0673e6ed5e12b537dd994e88ab4aa696) docs: Update cost optimisation  to include information about cleaning up workflows and archiving (#4549)
+ * [7e121509](https://github.com/argoproj/argo-workflows/commit/7e121509c6745dc7f6fa40cc35790012521f1f12) fix(controller): Correct default port logic (#4547)
+ * [a712e535](https://github.com/argoproj/argo-workflows/commit/a712e535bec3b196219188236d4063ecc1153ba4) fix: Validate metric key names (#4540)
+ * [c469b053](https://github.com/argoproj/argo-workflows/commit/c469b053f8ca27ca03d36343fa17277ad374edc9) fix: Missing arg lines caused files not to copy into containers (#4542)
+ * [0980ead3](https://github.com/argoproj/argo-workflows/commit/0980ead36d39620c914e04e2aa207e688a631e9a) fix(test): fix TestWFDefaultWithWFTAndWf flakiness (#4538)
+ * [564e69f3](https://github.com/argoproj/argo-workflows/commit/564e69f3fdef6239f9091401ec4472bd8bd248bd) fix(ui): Do not auto-reload doc.location. Fixes #4530 (#4535)
+ * [eebcb8b8](https://github.com/argoproj/argo-workflows/commit/eebcb8b8a621e37ae0c66d2248d83af821a1ade8) docs: Add "Argo Workflows in 5 min" link to README (#4533)
+ * [5147f0a1](https://github.com/argoproj/argo-workflows/commit/5147f0a19c262a4f139aa2c4333942e6e97a6d12) Merge branch 'master' into release-2.12
+ * [176d890c](https://github.com/argoproj/argo-workflows/commit/176d890c1cac25856f67fbed4cc39a396aa87a93) fix(controller): support float for param value (#4490)
+ * [4bacbc12](https://github.com/argoproj/argo-workflows/commit/4bacbc121ae028557b7f0718f02fbb25e8e63850) feat(controller): make sso timeout configurable via cm (#4494)
+ * [02e1f0e0](https://github.com/argoproj/argo-workflows/commit/02e1f0e0d1c8ad8422984000bb2b49dc3709b1a0) fix(server): Add `list sa` and `create secret` to `argo-server` roles. Closes #4526 (#4514)
+ * [d0082e8f](https://github.com/argoproj/argo-workflows/commit/d0082e8fb87fb731c7247f28da0c1b29b6fa3f02) fix: link templates not replacing multiple templates with same name (#4516)
+ * [411bde37](https://github.com/argoproj/argo-workflows/commit/411bde37c2b146c1fb52d913bf5629a36e0a5af1) feat: adds millisecond-level timestamps to argo and workflow-controller (#4518)
+ * [2c54ca3f](https://github.com/argoproj/argo-workflows/commit/2c54ca3fbee675815566508fc10c137e7b4f9f2f) add bonprix to argo users (#4520)
+ * [754a201d](https://github.com/argoproj/argo-workflows/commit/754a201da01aa7aef2d82dcdafa8d054dd879634) build: Reuse IMAGE_OS instead of hard-coded linux (#4519)
+ * [f509fa55](https://github.com/argoproj/argo-workflows/commit/f509fa550b0694907bb9447084df11af171f9cc9) Update manifests to v2.12.0-rc2
+ * [c297b2aa](https://github.com/argoproj/argo-workflows/commit/c297b2aa293942f2621fb4b5c0e460abc0f7c251) Merge branch 'master' into release-2.12
+ * [2dab2d15](https://github.com/argoproj/argo-workflows/commit/2dab2d15868c5f52ca4e3f7ba1c5276d55c26a42) fix(test):  fix TestWFDefaultWithWFTAndWf flakiness (#4507)
+ * [64ae3303](https://github.com/argoproj/argo-workflows/commit/64ae33034d30a943dca71b0c5e4ebd97018448bf) fix(controller): prepend script path to the script template args. Resolves #4481 (#4492)
+ * [0931baf5](https://github.com/argoproj/argo-workflows/commit/0931baf5fbe48487278b9a6c2fa206ab02406e5b) feat: Redirect to requested URL after SSO login (#4495)
+ * [465447c0](https://github.com/argoproj/argo-workflows/commit/465447c039a430f675a2c0cc10e71e7024fc79a3) fix: Ensure ContainerStatus in PNS is terminated before continuing (#4469)
+ * [f7287687](https://github.com/argoproj/argo-workflows/commit/f7287687b61c7e2d8e27864e9768c216a53fd071) fix(ui): Check node children before counting them. (#4498)
+ * [bfc13c3f](https://github.com/argoproj/argo-workflows/commit/bfc13c3f5b9abe2980826dee1283433b7cb22385) fix: Ensure redirect to login when using empty auth token (#4496)
+ * [d56ce890](https://github.com/argoproj/argo-workflows/commit/d56ce890c900c300bd396c5050cea9fb2b4aa358) feat(cli): add selector and field-selector option to terminate (#4448)
+ * [e501fcca](https://github.com/argoproj/argo-workflows/commit/e501fcca16a908781a786b93417cc41644b62ea4) fix(controller): Refactor the Merge Workflow, WorkflowTemplate and WorkflowDefaults (#4354)
+ * [2ee3f5a7](https://github.com/argoproj/argo-workflows/commit/2ee3f5a71f4791635192d7cd4e1b583d80e81077) fix(ui): fix the `all` option in the workflow archive list (#4486)
+ * [98be709d](https://github.com/argoproj/argo-workflows/commit/98be709d88647a10231825f13aff03d08217a35a) Update manifests to v2.12.0-rc1
  * [a441a97b](https://github.com/argoproj/argo-workflows/commit/a441a97bd53a92b8cc5fb918edd1f66701d1cf5c) refactor(server): Use patch instead of update to resume/suspend (#4468)
  * [9ecf0499](https://github.com/argoproj/argo-workflows/commit/9ecf0499195b05bac1bb9fe6268c7d77bc12a963) fix(controller): When semaphore lock config gets updated, enqueue the waiting workflows (#4421)
  * [c31d1722](https://github.com/argoproj/argo-workflows/commit/c31d1722e6e5f800a62b30e9773c5e6049c243f5) feat(cli): Support ARGO_HTTP1 for HTTP/1 CLI requests. Fixes #4394 (#4416)
@@ -1273,6 +1829,297 @@
  * [24c77838](https://github.com/argoproj/argo-workflows/commit/24c778388a56792e847fcc30bd92a10299451959) fix: Custom metrics are not recorded for DAG tasks Fixes #3872 (#3886)
  * [d4cf0d26](https://github.com/argoproj/argo-workflows/commit/d4cf0d26788676c4075044d9917e4bb33902317b) docs: Update workflow-controller-configmap.yaml with SSL options (#3924)
  * [7e6a8910](https://github.com/argoproj/argo-workflows/commit/7e6a8910c3946dcc64d4f30f463d76a6eaf30df7) docs: update docs for upgrading readiness probe to HTTPS. Closes #3859 (#3877)
+
+### Contributors
+
+ * Aayush Rangwala
+ * Alex Capras
+ * Alex Collins
+ * Alexander Matyushentsev
+ * Alexander Mikhailian
+ * Amim Knabben
+ * Ang Gao
+ * Antoine Dao
+ * Arghya Sadhu
+ * Bailey Hayes
+ * Basanth Jenu H B
+ * Bikramdeep Singh
+ * Boolman
+ * Byungjin Park (BJ)
+ * Daisuke Taniwaki
+ * David Gibbons
+ * Douglas Lehr
+ * Elli Ludwigson
+ * Elvis Jakupovic
+ * Espen Finnesand
+ * Fischer Jemison
+ * Florian
+ * Floris Van den Abeele
+ * Francesco Murdaca
+ * Greg Roodt
+ * Huan-Cheng Chang
+ * Hussein Awala
+ * Ids van der Molen
+ * Igor Stepura
+ * InvictusMB
+ * James Laverack
+ * Juan C. Müller
+ * Justen Walker
+ * Lennart Kindermann
+ * Ludovic Cléroux
+ * Lénaïc Huard
+ * Markus Lippert
+ * Martin Suchanek
+ * Matt Campbell
+ * Michael Crenshaw
+ * Michael Ruoss
+ * Michael Weibel
+ * Michal Cwienczek
+ * Mike Chau
+ * Naisisor
+ * Nicwalle
+ * Niklas Vest
+ * Nirav Patel
+ * Noah Hanjun Lee
+ * Noj Vek
+ * Oleg Borodai
+ * Paul Brabban
+ * Pavel Čižinský
+ * Pranaye Karnati
+ * Remington Breeze
+ * Rush Tehrani
+ * Saravanan Balasubramanian
+ * Simon Behar
+ * Snyk bot
+ * Takahiro Tsuruda
+ * Theodore Omtzigt
+ * Tomáš Coufal
+ * Vlad Losev
+ * Wouter Remijn
+ * Yuan Tang
+ * Zach
+ * aletepe
+ * boundless-thread
+ * conanoc
+ * dherman
+ * duluong
+ * fsiegmund
+ * hermanhobnob
+ * ivancili
+ * jacky
+ * omerfsen
+ * saranyaeu2987
+ * tczhao
+ * tianfeiyu
+ * tomgoren
+ * zhengchenyu
+
+## v2.11.8 (2020-11-20)
+
+ * [310e099f](https://github.com/argoproj/argo-workflows/commit/310e099f82520030246a7c9d66f3efaadac9ade2) Update manifests to v2.11.8
+ * [0f82b7f6](https://github.com/argoproj/argo-workflows/commit/0f82b7f69b577603de5b43755c1ed7fb311f44b4) ci: Picked :add-env lines from master
+ * [0a9e69b0](https://github.com/argoproj/argo-workflows/commit/0a9e69b089c4e4fceb6e75469c21c858d43805d9) chore: Removed unused parameter
+ * [e8ba1ed8](https://github.com/argoproj/argo-workflows/commit/e8ba1ed8303f1e816628e0b3aa5c96710e046629) feat(controller): Make MAX_OPERATION_TIME configurable. Close #4239 (#4562)
+ * [66f2306b](https://github.com/argoproj/argo-workflows/commit/66f2306bb4ddf0794f92360c35783c1941df30c8) feat(controller): Allow whitespace in variable substitution. Fixes #4286 (#4310)
+
+### Contributors
+
+ * Alex Collins
+ * Ids van der Molen
+
+## v2.11.7 (2020-11-02)
+
+ * [bf3fec17](https://github.com/argoproj/argo-workflows/commit/bf3fec176cf6bdf3e23b2cb73ec7d4e3d051ca40) Update manifests to v2.11.7
+ * [0f18ab1f](https://github.com/argoproj/argo-workflows/commit/0f18ab1f149a02f01e7f031da2b0770b569974ec) fix: Assume controller is in UTC when calculating NextScheduledRuntime (#4417)
+ * [6026ba5f](https://github.com/argoproj/argo-workflows/commit/6026ba5fd1762d8e006d779d5907f10fd6c2463d) fix: Ensure resourceDuration variables in metrics are always in seconds (#4411)
+ * [ca5adbc0](https://github.com/argoproj/argo-workflows/commit/ca5adbc05ceb518b634dfdb7857786b247b8d39f) fix: Use correct template when processing metrics (#4399)
+ * [0a0255a7](https://github.com/argoproj/argo-workflows/commit/0a0255a7e594f6ae9c80f35e05bcd2804d129428) fix(ui): Reconnect to DAG. Fixes #4301 (#4378)
+ * [8dd7d3ba](https://github.com/argoproj/argo-workflows/commit/8dd7d3ba820af499d1d3cf0eb82417d5c4b0b48b) fix: Use DeletionHandlingMetaNamespaceKeyFunc in cron controller (#4379)
+ * [47f58008](https://github.com/argoproj/argo-workflows/commit/47f5800894767b947628cc5a8a64d3089ce9a2cb) fix(server): Download artifacts from UI. Fixes #4338 (#4350)
+ * [0416aba5](https://github.com/argoproj/argo-workflows/commit/0416aba50d13baabfa0f677b744a9c47ff8d8426) fix(controller): Enqueue the front workflow if semaphore lock is available (#4380)
+ * [a2073d58](https://github.com/argoproj/argo-workflows/commit/a2073d58e68cf15c75b7997afb49845db6a1423f) fix: Fix intstr nil dereference (#4376)
+ * [89080cf8](https://github.com/argoproj/argo-workflows/commit/89080cf8f6f904a162100d279993f4d835a27ba2) fix(controller): Only warn if cron job missing. Fixes #4351 (#4352)
+ * [a4186dfd](https://github.com/argoproj/argo-workflows/commit/a4186dfd71325ec8b0f1882e17d0d4ef7f5b0f56) fix(executor): Increase pod patch backoff. Fixes #4339 (#4340)
+
+### Contributors
+
+ * Alex Collins
+ * Saravanan Balasubramanian
+ * Simon Behar
+
+## v2.11.6 (2020-10-19)
+
+ * [5eebce9a](https://github.com/argoproj/argo-workflows/commit/5eebce9af4409da9de536f189877542dd88692e0) Update manifests to v2.11.6
+ * [38a4a2e3](https://github.com/argoproj/argo-workflows/commit/38a4a2e351771e7960b347c266b7d6592efe90a2) chore(controller): Refactor the CronWorkflow schedule logic with sync.Map (#4320)
+ * [79e7a12a](https://github.com/argoproj/argo-workflows/commit/79e7a12a08070235fbf944d68e694d343498a49c) fix(executor): Remove IsTransientErr check for ExponentialBackoff. Fixes #4144 (#4149)
+
+### Contributors
+
+ * Alex Collins
+ * Ang Gao
+ * Saravanan Balasubramanian
+
+## v2.11.5 (2020-10-15)
+
+ * [076bf89c](https://github.com/argoproj/argo-workflows/commit/076bf89c4658adbd3b96050599f81424d1b08d6e) Update manifests to v2.11.5
+ * [7919768d](https://github.com/argoproj/argo-workflows/commit/7919768d60bfdc2fbd1bf41033830bfac431a2a7) test: Fix test
+ * [b9d8c96b](https://github.com/argoproj/argo-workflows/commit/b9d8c96b7d023a1d260472883f44daf57bfa41ad) fix(controller): Patch rather than update cron workflows. (#4294)
+ * [3d122426](https://github.com/argoproj/argo-workflows/commit/3d1224264f6b61d62dfd598826647689391aa804) fix: TestMutexInDAG failure in master (#4283)
+ * [05519427](https://github.com/argoproj/argo-workflows/commit/05519427db492bfb092c44c562c4ac7d3324989a) fix(controller): Synchronization lock didn't release on DAG call flow Fixes #4046 (#4263)
+ * [74b905f6](https://github.com/argoproj/argo-workflows/commit/74b905f69946ae0efe46a28dd9e24ab23c3e9c33) Merge branch 'release-2.11' of https://github.com/argoproj/argo into release-2.11
+ * [ff2abd63](https://github.com/argoproj/argo-workflows/commit/ff2abd63207f2aa949d31f09139650240f751c6b) fix: Increase deafult number of CronWorkflow workers (#4215)
+
+### Contributors
+
+ * Alex Collins
+ * Saravanan Balasubramanian
+ * Simon Behar
+
+## v2.11.4 (2020-10-14)
+
+ * [571bff1f](https://github.com/argoproj/argo-workflows/commit/571bff1fe4ad7e6610ad04d9a048091b1e453c5a) Update manifests to v2.11.4
+ * [05a6078d](https://github.com/argoproj/argo-workflows/commit/05a6078d8de135525c0094a02a72b8dc0f0faa5c) fix(controller): Fix argo retry with PVCs. Fixes #4275 (#4277)
+ * [08216ec7](https://github.com/argoproj/argo-workflows/commit/08216ec7557b2e2b2d1cb160e74ff2623661214a) fix(ui): Ignore missing nodes in DAG. Fixes #4232 (#4280)
+ * [476ea70f](https://github.com/argoproj/argo-workflows/commit/476ea70fea0a981a736ccd2f070a7f9de8bb9d13) fix(controller): Fix cron-workflow re-apply error. (#4278)
+ * [448ae113](https://github.com/argoproj/argo-workflows/commit/448ae1137b3e9d34fb0b44cd8f6e7bdfa31f702f) fix(controller): Check the correct object for Cronworkflow reapply error log (#4243)
+ * [e3dfd788](https://github.com/argoproj/argo-workflows/commit/e3dfd7884863a9368776dd51517553069ec0ab21) fix(ui): Revert bad part of commit (#4248)
+ * [249e8329](https://github.com/argoproj/argo-workflows/commit/249e8329c64754cda691110a39d4c7c43a075413) fix(ui): Fix bugs with DAG view. Fixes #4232 & #4236 (#4241)
+
+### Contributors
+
+ * Alex Collins
+ * Juan C. Müller
+ * Saravanan Balasubramanian
+
+## v2.11.3 (2020-10-07)
+
+ * [a00a8f14](https://github.com/argoproj/argo-workflows/commit/a00a8f141c221f50e397aea8f86a54171441e395) Update manifests to v2.11.3
+ * [e48fe222](https://github.com/argoproj/argo-workflows/commit/e48fe222d405efc84331e8f3d9dadd8072d18325) fixed merge conflict
+ * [3f8ebfdd](https://github.com/argoproj/argo-workflows/commit/3f8ebfdda02c4b9186595d556d7daa9bc7a7a670) chore: Fix merge issues
+ * [51068f72](https://github.com/argoproj/argo-workflows/commit/51068f72d5cc014576b4977b1a651c0d5b89f925) fix(controller): Support int64 for param value. Fixes #4169 (#4202)
+
+### Contributors
+
+ * Alex Collins
+ * Saravanan Balasubramanian
+
+## v2.11.2 (2020-10-05)
+
+ * [0dfeb8e5](https://github.com/argoproj/argo-workflows/commit/0dfeb8e56071e7a1332370732949bc2e15073005) Update manifests to v2.11.2
+ * [5b69ab42](https://github.com/argoproj/argo-workflows/commit/5b69ab429c0da3d1cf63f209c2d4f61a3ea05d16) chore: Enahnce logging around pod failures (#4220)
+ * [461a36a1](https://github.com/argoproj/argo-workflows/commit/461a36a15ecb8c11dcb62694c0c5bd624b835bd4) fix(controller): Apply Workflow default on normal workflow scenario Fixes #4208 (#4213)
+ * [4b9cf5d2](https://github.com/argoproj/argo-workflows/commit/4b9cf5d28ae661873847238203b0098a2722a97a) fix(controller): reduce withItem/withParams memory usage. Fixes #3907 (#4207)
+ * [8fea7bf6](https://github.com/argoproj/argo-workflows/commit/8fea7bf6b5cf0c89cf9c3bb0c3f57c1397236f5e) Revert "Revert "chore: use build matrix and cache (#4111)""
+ * [efb20eea](https://github.com/argoproj/argo-workflows/commit/efb20eea05afc919652ebf17c6456791a283d4d2) Revert "chore: use build matrix and cache (#4111)"
+ * [de1c9e52](https://github.com/argoproj/argo-workflows/commit/de1c9e52d48d8f91545dcfd32f426c235d001469) refactor: Refactor Synchronization code (#4114)
+ * [605d0895](https://github.com/argoproj/argo-workflows/commit/605d0895aa436d8543ad43eee179cc169b792863) fix: Ensure CronWorkflows are persisted once per operation (#4172)
+ * [6f738db0](https://github.com/argoproj/argo-workflows/commit/6f738db0733da6aa16f851d1dbefa235e987bcf8) Revert "chore: Update Go module to argo/v2"
+ * [bcebdf00](https://github.com/argoproj/argo-workflows/commit/bcebdf0043028613f8849e84520e2ea9fb92d52a) chore: Update Go module to argo/v2
+
+### Contributors
+
+ * Alex Collins
+ * Saravanan Balasubramanian
+ * Simon Behar
+
+## v2.11.1 (2020-09-29)
+
+ * [13b51d56](https://github.com/argoproj/argo-workflows/commit/13b51d569d580ab9493e977fe2944889784d2a0a) Update manifests to v2.11.1
+ * [3f88216e](https://github.com/argoproj/argo-workflows/commit/3f88216e61e3b408083956ad848c1603145c8507) fix: Render full tree of onExit nodes in UI (#4109)
+ * [d6c2a57b](https://github.com/argoproj/argo-workflows/commit/d6c2a57be0b0c3cc4d46bff36cdf3e426f760b82) fix: Fix unintended inf recursion (#4067)
+ * [4fda60f4](https://github.com/argoproj/argo-workflows/commit/4fda60f402bbbd5d3c0cadbd886feb065f255e19) fix: Tolerate malformed workflows when retrying (#4028)
+ * [995d59cc](https://github.com/argoproj/argo-workflows/commit/995d59cc52d054f92c8ac54959e8115d4117dbf2) fix: Changing DeletePropagation to background in TTL Controller and Argo CLI (#4133)
+ * [aaef0a28](https://github.com/argoproj/argo-workflows/commit/aaef0a2846afc0943f9bb7688d2fba6e11b49f62) fix(ui): Ignore referenced nodes that don't exist in UI. Fixes #4079 (#4099)
+ * [fedae45a](https://github.com/argoproj/argo-workflows/commit/fedae45ad6e4bfe297d1078928a6deb4269ebac0) fix(controller): Process workflows at least once every 20m (#4103)
+ * [6de464e8](https://github.com/argoproj/argo-workflows/commit/6de464e809ecf39bfe9b12eaf28fb8e7b20a27a9) fix(server): argo-server-role to allow submitting cronworkflows from UI (#4112)
+ * [ce3b90e2](https://github.com/argoproj/argo-workflows/commit/ce3b90e2553d4646f8f5bc95a88e48765ad1de19) fix(controller): Treat annotation and conditions changes as significant (#4104)
+ * [bf98b977](https://github.com/argoproj/argo-workflows/commit/bf98b9778b556e68ef39a4290e489819d3142d6f) fix(ui): No longer redirect to `undefined` namespace. See #4084 (#4115)
+ * [af60b37d](https://github.com/argoproj/argo-workflows/commit/af60b37dc5909c70730da01e9322605ad2852283) fix(cli): Reinstate --gloglevel flag. Fixes #4093 (#4100)
+ * [38b63008](https://github.com/argoproj/argo-workflows/commit/38b63008abac9450b3677bbb620193efcc8d55b2) chore: use build matrix and cache (#4111)
+ * [2cd6a967](https://github.com/argoproj/argo-workflows/commit/2cd6a9677f0665931230fbdb6c8203381d9c9b77) fix(server): Optional timestamp inclusion when retrieving workflow logs. Closes #4033 (#4075)
+ * [2f7c4035](https://github.com/argoproj/argo-workflows/commit/2f7c4035fe7f16b75bf418a67778db97c836ecf0) fix(controller): Correct the order merging the fields in WorkflowTemplateRef scenario. Fixes #4044 (#4063)
+ * [f8e750de](https://github.com/argoproj/argo-workflows/commit/f8e750de5ebab6f3c494c972889b31ef24c73c9b) Update manifests to v2.11.0
+ * [c06db575](https://github.com/argoproj/argo-workflows/commit/c06db57572843b38322b301aba783685c774045b) fix(ui): Tiny modal DAG tweaks. Fixes #4039 (#4043)
+
+### Contributors
+
+ * Alex Collins
+ * Markus Lippert
+ * Saravanan Balasubramanian
+ * Simon Behar
+ * Tomáš Coufal
+ * ivancili
+
+## v2.11.0-rc3 (2020-09-14)
+
+ * [1b4cf3f1](https://github.com/argoproj/argo-workflows/commit/1b4cf3f1f26f6abf93355a0108f5048be9677978) Update manifests to v2.11.0-rc3
+ * [e2594eca](https://github.com/argoproj/argo-workflows/commit/e2594eca965ec2ea14b07f3c1acee4b288b02789) fix: Fix children is not defined error (#3950)
+ * [2ed8025e](https://github.com/argoproj/argo-workflows/commit/2ed8025eb0fbf0599c20efc1bccfedfe51c88215) fix: Fix UI selection issues (#3928)
+ * [8dc0e94e](https://github.com/argoproj/argo-workflows/commit/8dc0e94e68881693b504f6f2777f937e6f3c3e42) fix: Create global scope before workflow-level realtime metrics (#3979)
+ * [cdeabab7](https://github.com/argoproj/argo-workflows/commit/cdeabab722fac97a326e70b956a92d4cb5d58f2c) fix(controller): Script Output didn't set if template has RetryStrategy (#4002)
+ * [9c83fac8](https://github.com/argoproj/argo-workflows/commit/9c83fac80594fb0abef18b0de0ff563132ee84ae) fix(ui): Do not save undefined namespace. Fixes #4019 (#4021)
+ * [7fd2ecb1](https://github.com/argoproj/argo-workflows/commit/7fd2ecb1d057cbf1e1b8139c30c20eccf86611ea) fix(ui): Correctly show pod events. Fixes #4016 (#4018)
+ * [11242c8b](https://github.com/argoproj/argo-workflows/commit/11242c8be5c3bbaf2dbcff68198958504ea88e43) fix(ui): Allow you to view timeline tab. Fixes #4005 (#4006)
+ * [3770f618](https://github.com/argoproj/argo-workflows/commit/3770f618ab073fbac6654c9edcc4b53a1e010fea) fix(ui): Report errors when uploading files. Fixes #3994 (#3995)
+ * [0fed28ce](https://github.com/argoproj/argo-workflows/commit/0fed28ce26f12a42f3321afee9188e9f59acfea7) fix: Custom metrics are not recorded for DAG tasks Fixes #3872 (#3886)
+ * [9146636e](https://github.com/argoproj/argo-workflows/commit/9146636e75e950149ce39df33e4fc6f7346c7282) feat(ui): Introduce modal DAG renderer. Fixes: #3595 (#3967)
+ * [4b7a4694](https://github.com/argoproj/argo-workflows/commit/4b7a4694c436c724cb75e09564fcd8c87923d6d7) fix(controller): Revert `resubmitPendingPods` mistake. Fixes #4001 (#4004)
+ * [49752fb5](https://github.com/argoproj/argo-workflows/commit/49752fb5f9aa6ab151f311bb62faa021b2ebffa5) fix(controller): Revert parameter value to `*string`. Fixes #3960 (#3963)
+ * [ddf850b1](https://github.com/argoproj/argo-workflows/commit/ddf850b1bd99a8343b5e94e7d3634912031e8d44) fix: Consider WorkflowTemplate metadata during validation (#3988)
+ * [a8ba447e](https://github.com/argoproj/argo-workflows/commit/a8ba447e3ed4fff3d90cd772fc551db8c225a1c0) fix(server): Remove XSS vulnerability. Fixes #3942 (#3975)
+
+### Contributors
+
+ * Alex Collins
+ * Saravanan Balasubramanian
+ * Simon Behar
+
+## v2.11.0-rc2 (2020-09-09)
+
+ * [f930c029](https://github.com/argoproj/argo-workflows/commit/f930c0296c41c8723a6f826260a098bb0647efce) Update manifests to v2.11.0-rc2
+ * [21cceb0f](https://github.com/argoproj/argo-workflows/commit/21cceb0fd743777c696245ad988a78f03fd5dc08) build: Allow build with older `docker`. Fixes #3977
+ * [b6890adb](https://github.com/argoproj/argo-workflows/commit/b6890adb1b5c40ddb4b1aa41c39c337f0f08df12) fix(cli): Allow `argo version` without KUBECONFIG. Fixes #3943 (#3945)
+ * [354733e7](https://github.com/argoproj/argo-workflows/commit/354733e72f8b50645d4818236a5842c258d5627c) fix(swagger): Correct item type. Fixes #3926 (#3932)
+ * [1e461766](https://github.com/argoproj/argo-workflows/commit/1e461766f2e7214c5723d15c724a77d14e908340) fix(server): Adds missing webhook permissions. Fixes #3927 (#3929)
+ * [88486192](https://github.com/argoproj/argo-workflows/commit/8848619262850a9f1c44d08084300a445a0c0ffb) feat: Step and Task Level Global Timeout (#3686)
+
+### Contributors
+
+ * Alex Collins
+ * Saravanan Balasubramanian
+
+## v2.11.0-rc1 (2020-09-01)
+
+
+### Contributors
+
+
+## v2.11.0 (2020-09-17)
+
+ * [f8e750de](https://github.com/argoproj/argo-workflows/commit/f8e750de5ebab6f3c494c972889b31ef24c73c9b) Update manifests to v2.11.0
+ * [c06db575](https://github.com/argoproj/argo-workflows/commit/c06db57572843b38322b301aba783685c774045b) fix(ui): Tiny modal DAG tweaks. Fixes #4039 (#4043)
+ * [1b4cf3f1](https://github.com/argoproj/argo-workflows/commit/1b4cf3f1f26f6abf93355a0108f5048be9677978) Update manifests to v2.11.0-rc3
+ * [e2594eca](https://github.com/argoproj/argo-workflows/commit/e2594eca965ec2ea14b07f3c1acee4b288b02789) fix: Fix children is not defined error (#3950)
+ * [2ed8025e](https://github.com/argoproj/argo-workflows/commit/2ed8025eb0fbf0599c20efc1bccfedfe51c88215) fix: Fix UI selection issues (#3928)
+ * [8dc0e94e](https://github.com/argoproj/argo-workflows/commit/8dc0e94e68881693b504f6f2777f937e6f3c3e42) fix: Create global scope before workflow-level realtime metrics (#3979)
+ * [cdeabab7](https://github.com/argoproj/argo-workflows/commit/cdeabab722fac97a326e70b956a92d4cb5d58f2c) fix(controller): Script Output didn't set if template has RetryStrategy (#4002)
+ * [9c83fac8](https://github.com/argoproj/argo-workflows/commit/9c83fac80594fb0abef18b0de0ff563132ee84ae) fix(ui): Do not save undefined namespace. Fixes #4019 (#4021)
+ * [7fd2ecb1](https://github.com/argoproj/argo-workflows/commit/7fd2ecb1d057cbf1e1b8139c30c20eccf86611ea) fix(ui): Correctly show pod events. Fixes #4016 (#4018)
+ * [11242c8b](https://github.com/argoproj/argo-workflows/commit/11242c8be5c3bbaf2dbcff68198958504ea88e43) fix(ui): Allow you to view timeline tab. Fixes #4005 (#4006)
+ * [3770f618](https://github.com/argoproj/argo-workflows/commit/3770f618ab073fbac6654c9edcc4b53a1e010fea) fix(ui): Report errors when uploading files. Fixes #3994 (#3995)
+ * [0fed28ce](https://github.com/argoproj/argo-workflows/commit/0fed28ce26f12a42f3321afee9188e9f59acfea7) fix: Custom metrics are not recorded for DAG tasks Fixes #3872 (#3886)
+ * [9146636e](https://github.com/argoproj/argo-workflows/commit/9146636e75e950149ce39df33e4fc6f7346c7282) feat(ui): Introduce modal DAG renderer. Fixes: #3595 (#3967)
+ * [4b7a4694](https://github.com/argoproj/argo-workflows/commit/4b7a4694c436c724cb75e09564fcd8c87923d6d7) fix(controller): Revert `resubmitPendingPods` mistake. Fixes #4001 (#4004)
+ * [49752fb5](https://github.com/argoproj/argo-workflows/commit/49752fb5f9aa6ab151f311bb62faa021b2ebffa5) fix(controller): Revert parameter value to `*string`. Fixes #3960 (#3963)
+ * [ddf850b1](https://github.com/argoproj/argo-workflows/commit/ddf850b1bd99a8343b5e94e7d3634912031e8d44) fix: Consider WorkflowTemplate metadata during validation (#3988)
+ * [a8ba447e](https://github.com/argoproj/argo-workflows/commit/a8ba447e3ed4fff3d90cd772fc551db8c225a1c0) fix(server): Remove XSS vulnerability. Fixes #3942 (#3975)
+ * [f930c029](https://github.com/argoproj/argo-workflows/commit/f930c0296c41c8723a6f826260a098bb0647efce) Update manifests to v2.11.0-rc2
+ * [21cceb0f](https://github.com/argoproj/argo-workflows/commit/21cceb0fd743777c696245ad988a78f03fd5dc08) build: Allow build with older `docker`. Fixes #3977
+ * [b6890adb](https://github.com/argoproj/argo-workflows/commit/b6890adb1b5c40ddb4b1aa41c39c337f0f08df12) fix(cli): Allow `argo version` without KUBECONFIG. Fixes #3943 (#3945)
+ * [354733e7](https://github.com/argoproj/argo-workflows/commit/354733e72f8b50645d4818236a5842c258d5627c) fix(swagger): Correct item type. Fixes #3926 (#3932)
+ * [1e461766](https://github.com/argoproj/argo-workflows/commit/1e461766f2e7214c5723d15c724a77d14e908340) fix(server): Adds missing webhook permissions. Fixes #3927 (#3929)
+ * [88486192](https://github.com/argoproj/argo-workflows/commit/8848619262850a9f1c44d08084300a445a0c0ffb) feat: Step and Task Level Global Timeout (#3686)
+ * [f446f735](https://github.com/argoproj/argo-workflows/commit/f446f735b4c8c16c95f1306ad3453af7f8ed0108) Update manifests to v2.11.0-rc1
  * [de2185c8](https://github.com/argoproj/argo-workflows/commit/de2185c81ae54736177e0476acae42b8e2dc0af5) feat(controller): Set retry factor to 2. Closes #3911 (#3919)
  * [be91d762](https://github.com/argoproj/argo-workflows/commit/be91d7621d82c6fb23e18ab4eebc9be58a59d81f) fix: Workflow should fail on Pod failure before container starts Fixes #3879 (#3890)
  * [c4c80069](https://github.com/argoproj/argo-workflows/commit/c4c800691b20fccf894422075cf41094c39cffc0) test: Fix TestRetryOmit and TestStopBehavior (#3910)
@@ -1418,6 +2265,260 @@
  * [ab4ef5c5](https://github.com/argoproj/argo-workflows/commit/ab4ef5c5a290196878d3cf18a9a7036c8bfc9144) fix: Panic on CLI Watch command (#3532)
  * [b901b279](https://github.com/argoproj/argo-workflows/commit/b901b2790fe3c7c350b393e9a0943721ea76f3af) fix(controller): Backoff exponent is off by one. Fixes #3513 (#3514)
  * [49ef5c0f](https://github.com/argoproj/argo-workflows/commit/49ef5c0fe5b7b92ec0035e859a09cf906e4f02f2) fix: String interpreted as boolean in labels (#3518)
+
+### Contributors
+
+ * Alex Collins
+ * Alexander Zigelski
+ * Ang Gao
+ * Antoine Dao
+ * Carlos Montemuino
+ * Chris Hepner
+ * Greg Roodt
+ * Guillaume Hormiere
+ * Jared Welch
+ * Jie Zhang
+ * Jonny
+ * Kaushik B
+ * Lucas Theisen
+ * Michael Weibel
+ * Nirav Patel
+ * Noorain Panjwani
+ * Remington Breeze
+ * Saravanan Balasubramanian
+ * Sebastian Ortan
+ * Shannon
+ * Simon Behar
+ * Simon Frey
+ * Weston Platter
+ * Yuan Tang
+ * Zadjad Rezai
+ * dgiebert
+ * dherman
+ * haibingzhao
+ * joe
+ * juliusvonkohout
+ * sh-tatsuno
+ * yonirab
+
+## v2.10.2 (2020-09-14)
+
+ * [ed79a540](https://github.com/argoproj/argo-workflows/commit/ed79a5401162db7a3060111aff1b0fae5e8c2117) Update manifests to v2.10.2
+ * [d27bf2d2](https://github.com/argoproj/argo-workflows/commit/d27bf2d29afaaad608943f238c821d94952a8b85) fix: Fix UI selection issues (#3928)
+ * [51220389](https://github.com/argoproj/argo-workflows/commit/51220389ac2a0f109b5411851f29f9ee2ff3d968) fix: Create global scope before workflow-level realtime metrics (#3979)
+ * [857ef750](https://github.com/argoproj/argo-workflows/commit/857ef750f595f292775bace1129d9c01b08a8ddd) fix: Custom metrics are not recorded for DAG tasks Fixes #3872 (#3886)
+ * [b9a0bb00](https://github.com/argoproj/argo-workflows/commit/b9a0bb00b03344c720485c8103f21b90beffc78e) fix: Consider WorkflowTemplate metadata during validation (#3988)
+ * [089e1862](https://github.com/argoproj/argo-workflows/commit/089e1862ab1e6c34ff33b7f453ca2f7bad021eb4) fix(server): Remove XSS vulnerability. Fixes #3942 (#3975)
+ * [1215d9e1](https://github.com/argoproj/argo-workflows/commit/1215d9e1e3250ec482363430d50c6ea4e5ca05ab) fix(cli): Allow `argo version` without KUBECONFIG. Fixes #3943 (#3945)
+
+### Contributors
+
+ * Alex Collins
+ * Saravanan Balasubramanian
+ * Simon Behar
+
+## v2.10.1 (2020-09-02)
+
+ * [854444e4](https://github.com/argoproj/argo-workflows/commit/854444e47ac00d146cb83d174049bfbb2066bfb2) Update manifests to v2.10.1
+ * [69861fc9](https://github.com/argoproj/argo-workflows/commit/69861fc919495b4215fe24f549ce1a55bf0674db) fix: Workflow should fail on Pod failure before container starts Fixes #3879 (#3890)
+ * [670fc618](https://github.com/argoproj/argo-workflows/commit/670fc618c52f8672a99d1159f4c922a7f1b1f1f5) fix(controller): Cron re-apply update (#3883)
+ * [4b30fa4e](https://github.com/argoproj/argo-workflows/commit/4b30fa4ef82acba373b9e0d33809f63aa3c2632b) fix(executor): Replace default retry in executor with an increased value retryer (#3891)
+ * [ae537cd7](https://github.com/argoproj/argo-workflows/commit/ae537cd769ca57842fe92a463e78a0f9f3b74d32) fix(ui): use absolute URL to redirect from autocomplete list. Closes #3903 (#3906)
+ * [0e4b3902](https://github.com/argoproj/argo-workflows/commit/0e4b39027f9fefe4ea0c000b5514c055a61e1b4c) chore: Added unittest for PVC exceed quota Closes #3561 (#3860)
+ * [56dc9f7a](https://github.com/argoproj/argo-workflows/commit/56dc9f7a77ce68880a8c95c43b380d6167d5f4c9) fix: Consider all children of TaskGroups in DAGs (#3740)
+ * [8ac7369b](https://github.com/argoproj/argo-workflows/commit/8ac7369bf66af992a23d23eb6713000b95101e52) fix(controller): Support exit handler on workflow templates.  Fixes #3737 (#3782)
+ * [ee848921](https://github.com/argoproj/argo-workflows/commit/ee848921348676718a8ab4cef8e8c2f52b86d124) fix(controller): Failure tolerant workflow archiving and offloading. Fixes #3786 and #3837 (#3787)
+ * [c367d93e](https://github.com/argoproj/argo-workflows/commit/c367d93e9b12263d53792d419ff0148afb755057) build: Copy Dockerfile lines from master
+ * [f491bbc6](https://github.com/argoproj/argo-workflows/commit/f491bbc676a18e2d930440056ba16c5c7c253ef7) chore: Merge .gitignore from master to prevent dirty
+ * [195c6d83](https://github.com/argoproj/argo-workflows/commit/195c6d8310a70b07043b9df5c988d5a62dafe00d) Update manifests to v2.10.0
+ * [08117f0c](https://github.com/argoproj/argo-workflows/commit/08117f0cd1206647644f1f14580046268d1c8639) fix: Increase the requeue duration on checkForbiddenErrorAndResubmitAllowed (#3794)
+ * [5ea2ed0d](https://github.com/argoproj/argo-workflows/commit/5ea2ed0dbdb4003fc457b7cd76cf5cec9edc6799) fix(server): Trucate creator label at 63 chars. Fixes #3756 (#3758)
+
+### Contributors
+
+ * Alex Collins
+ * Ang Gao
+ * Nirav Patel
+ * Saravanan Balasubramanian
+ * Simon Behar
+
+## v2.10.0-rc7 (2020-08-13)
+
+ * [267da535](https://github.com/argoproj/argo-workflows/commit/267da535b66ed1dab8bcc90410260b7cf4b80e2c) Update manifests to v2.10.0-rc7
+ * [baeb0fed](https://github.com/argoproj/argo-workflows/commit/baeb0fed2b3ab53f35297a764f983059600d4b44) fix: Revert merge error
+ * [66bae22f](https://github.com/argoproj/argo-workflows/commit/66bae22f147cd248f1a88f913eaeac13ec873bcd) fix(executor): Add retry on pods watch to handle timeout. (#3675)
+ * [971f1153](https://github.com/argoproj/argo-workflows/commit/971f115373c8f01f0e21991b14fc3b27876f3cbf) removed unused test-report files
+ * [8c0b9f0a](https://github.com/argoproj/argo-workflows/commit/8c0b9f0a52922485a1bdf6a8954cdc09060dbc29) fix: Couldn't Terminate/Stop the ResourceTemplate Workflow (#3679)
+ * [a04d72f9](https://github.com/argoproj/argo-workflows/commit/a04d72f95a433eaa37202418809e1877eb167a1a) fix(controller): Tolerate PDB delete race. Fixes #3706 (#3717)
+ * [a7635763](https://github.com/argoproj/argo-workflows/commit/a76357638598174812bb749ea539ca4061284d89) fix: Fix bug with 'argo delete --older' (#3699)
+ * [fe8129cf](https://github.com/argoproj/argo-workflows/commit/fe8129cfc766f875985f0f09d37dc351a1e5f933) fix(controller): Carry-over labels for re-submitted workflows. Fixes #3622 (#3638)
+ * [e12d26e5](https://github.com/argoproj/argo-workflows/commit/e12d26e52a42d91ec4d2dbc3d188cf3b1a623a26) fix(controller): Treat TooManyError same as Forbidden (i.e. try again). Fixes #3606 (#3607)
+ * [9a5febec](https://github.com/argoproj/argo-workflows/commit/9a5febec11d231ed1cd5e085a841069b9106dafe) fix: Ensure target task's onExit handlers are run (#3716)
+ * [c3a58e36](https://github.com/argoproj/argo-workflows/commit/c3a58e36d18e3c3cbb7bffcd3a6ae4c5c08a66ea) fix: Enforce metric Help must be the same for each metric Name (#3613)
+
+### Contributors
+
+ * Alex Collins
+ * Guillaume Hormiere
+ * Saravanan Balasubramanian
+ * Simon Behar
+
+## v2.10.0-rc6 (2020-08-06)
+
+ * [cb3536f9](https://github.com/argoproj/argo-workflows/commit/cb3536f9d1dd64258c1c3d737bb115bdab923e58) Update manifests to v2.10.0-rc6
+ * [6e004ace](https://github.com/argoproj/argo-workflows/commit/6e004ace2710e17ed2a282c6570a97b567946e58) lint
+ * [b31fc1f8](https://github.com/argoproj/argo-workflows/commit/b31fc1f8612a93c907b375de2e9a3c9326dca34b) fix(controller): Adds ALL_POD_CHANGES_SIGNIFICANT (#3689)
+ * [0b7cd5b3](https://github.com/argoproj/argo-workflows/commit/0b7cd5b3181eece7636b99d4761e96c61c17c453) fix: Fixed workflow queue duration if PVC creation is forbidden (#3691)
+ * [03b84162](https://github.com/argoproj/argo-workflows/commit/03b8416271002bfc88c11dd27d86fa08f95b33e9) fix: Re-introduce 1 second sleep to reconcile informer (#3684)
+
+### Contributors
+
+ * Alex Collins
+ * Saravanan Balasubramanian
+ * Simon Behar
+
+## v2.10.0-rc5 (2020-08-03)
+
+ * [e9ca55ec](https://github.com/argoproj/argo-workflows/commit/e9ca55ec1cdbf37a43ee68da756ac91abb4edf73) Update manifests to v2.10.0-rc5
+ * [85ddda05](https://github.com/argoproj/argo-workflows/commit/85ddda0533d7b60614bee5a93d60bbfe0209ea83) lint
+ * [fb367f5e](https://github.com/argoproj/argo-workflows/commit/fb367f5e8f2faff6eeba751dc13c73336c112236) fix(controller): Fix nested maps. Fixes #3653 (#3661)
+ * [2385cca5](https://github.com/argoproj/argo-workflows/commit/2385cca59396eb53c03eac5bd87611b57f2a47a2) fix: interface{} values should be expanded with '%v' (#3659)
+ * [263e4bad](https://github.com/argoproj/argo-workflows/commit/263e4bad78092310ad405919b607e2ef696c8bf9) fix(server): Report v1.Status errors. Fixes #3608 (#3652)
+ * [718f802b](https://github.com/argoproj/argo-workflows/commit/718f802b8ed1533da2d2a0b666d2a80b51f476b2) fix: Avoid overriding the Workflow parameter when it is merging with WorkflowTemplate parameter (#3651)
+ * [9735df32](https://github.com/argoproj/argo-workflows/commit/9735df3275d456a868028b51a2386241f0d207ef) fix: Fixed flaky unit test TestFailSuspendedAndPendingNodesAfterDeadline (#3640)
+ * [662d22e4](https://github.com/argoproj/argo-workflows/commit/662d22e4f10566a4ce34c3080ba38788d58fd681) fix: Don't panic on invalid template creation (#3643)
+ * [854aaefa](https://github.com/argoproj/argo-workflows/commit/854aaefaa9713155a62deaaf041a36527d7f1718) fix: Fix 'malformed request: field selector' error (#3636)
+ * [9d56eb29](https://github.com/argoproj/argo-workflows/commit/9d56eb29c268c7a1f73068e17edf10b6affc51a8) fix: DAG level Output Artifacts on K8S and Kubelet executor (#3624)
+ * [c7512b6c](https://github.com/argoproj/argo-workflows/commit/c7512b6ce53e9b3fc5f7792a6c7c6d016aa66734) fix: Simplify the WorkflowTemplateRef field validation to support all fields in WorkflowSpec except `Templates` (#3632)
+
+### Contributors
+
+ * Alex Collins
+ * Saravanan Balasubramanian
+ * Simon Behar
+
+## v2.10.0-rc4 (2020-07-28)
+
+ * [8d6dae61](https://github.com/argoproj/argo-workflows/commit/8d6dae6128074445d9bd0222c449643053568db8) Update manifests to v2.10.0-rc4
+ * [a4b1dde5](https://github.com/argoproj/argo-workflows/commit/a4b1dde573754556db1e635491189960721920a8) build(cli)!: Zip binaries binaries. Closes #3576 (#3614)
+ * [dea03a9c](https://github.com/argoproj/argo-workflows/commit/dea03a9c7f1016cfb0b47e1b5152cb07c111b436) fix(server): Re-establish watch on v1.Status errors. Fixes #3608 (#3609)
+ * [c063f9f1](https://github.com/argoproj/argo-workflows/commit/c063f9f1c3a5d1ce0fd5fb9dd5ce3938de18edce) fix: Fix panic and provide better error message on watch endpoint (#3605)
+ * [35a00498](https://github.com/argoproj/argo-workflows/commit/35a00498dcc62ebecb9dd476c90fddb2800fdeb7) fix: Argo Workflows does not honour global timeout if step/pod is not able to schedule (#3581)
+ * [3879827c](https://github.com/argoproj/argo-workflows/commit/3879827cb6bfa3f9e29e81dbd3bdbf0ffeeec233) fix(controller): Fix bug in util/RecoverWorkflowNameFromSelectorString. Add error handling (#3596)
+ * [5f4dec75](https://github.com/argoproj/argo-workflows/commit/5f4dec750a3be0d1ed8808d90535e90ee532f111) fix(ui): Fix multiple UI issues (#3573)
+ * [e94cf8a2](https://github.com/argoproj/argo-workflows/commit/e94cf8a21cd1c97f1a415d015038145a241a7b23) fix(ui): cannot push to nil when filtering by label (#3555)
+ * [61b5bd93](https://github.com/argoproj/argo-workflows/commit/61b5bd931045a2e423f1126300ab332f606cff9c) fix: Fix flakey TestRetryOmitted (#3552)
+ * [d53c883b](https://github.com/argoproj/argo-workflows/commit/d53c883b713ad281b33603567a92d4dbe61a5b47) fix: Fix links in fields doc (#3539)
+ * [d2bd5879](https://github.com/argoproj/argo-workflows/commit/d2bd5879f47badbd9dddef8308e20c3434caa95e) fix(artifacts): support optional input artifacts, Fixes #3491 (#3512)
+ * [652956e0](https://github.com/argoproj/argo-workflows/commit/652956e04c88c347d018367c8f11398ae2ced9dc) fix: Fix when retrying Workflows with Omitted nodes (#3528)
+ * [32c36d78](https://github.com/argoproj/argo-workflows/commit/32c36d785be4394b96615fbb4c716ae74177ed20) fix(controller): Backoff exponent is off by one. Fixes #3513 (#3514)
+ * [75d29574](https://github.com/argoproj/argo-workflows/commit/75d2957473c4783a6db18fda08907f62375c002e) fix: String interpreted as boolean in labels (#3518)
+
+### Contributors
+
+ * Alex Collins
+ * Jie Zhang
+ * Jonny
+ * Remington Breeze
+ * Saravanan Balasubramanian
+ * Simon Behar
+ * haibingzhao
+
+## v2.10.0-rc3 (2020-07-23)
+
+ * [37f4f9da](https://github.com/argoproj/argo-workflows/commit/37f4f9da2b921c96f4d8919a17d4303e588e86c9) Update manifests to v2.10.0-rc3
+ * [37297af7](https://github.com/argoproj/argo-workflows/commit/37297af7ddf7d9fcebfed0dff5f76d9c4cc3199f) Update manifests to v2.10.0-rc2
+ * [cbf27edf](https://github.com/argoproj/argo-workflows/commit/cbf27edf17e84c86b9c969ed19f67774c27c50bd) fix: Panic on CLI Watch command (#3532)
+ * [a3666482](https://github.com/argoproj/argo-workflows/commit/a366648233e5fb7e992188034e0bc0e250279feb) fix: Skip TestStorageQuotaLimit (#3566)
+ * [802c18ed](https://github.com/argoproj/argo-workflows/commit/802c18ed6ea8b1e481ef2feb6d0552eac7dab67d) fix: Exceeding quota with volumeClaimTemplates (#3490)
+ * [94b20124](https://github.com/argoproj/argo-workflows/commit/94b201241a88aac9a4ffa28a4fc8e4e0032e79be) ci: Make builds marginally faster. Fixes #3515 (#3519)
+ * [38caab7c](https://github.com/argoproj/argo-workflows/commit/38caab7cbb5b6e474d6e1df887741019667aa1de) chore: `make lint`
+ * [bbee82a0](https://github.com/argoproj/argo-workflows/commit/bbee82a086d32e721e60880139a91064c0b3abb6) fix(server): Ignore not-JWT server tokens. Fixes #3562 (#3579)
+ * [f72ae881](https://github.com/argoproj/argo-workflows/commit/f72ae8813aa570eb13769de606b07dd72d991db8) fix(controller): Do not panic on nil output value. Fixes #3505 (#3509)
+ * [18c7440f](https://github.com/argoproj/argo-workflows/commit/18c7440f5693410678f5f1e407d5e86dff12a4a8) build: Fix version and do not push images. Fixes #3515
+ * [66d6f964](https://github.com/argoproj/argo-workflows/commit/66d6f964553e6d5f908a2fe67f694cc806cfce7f) build: Fix version and do not push images. Fixes #3515
+
+### Contributors
+
+ * Alex Collins
+ * Saravanan Balasubramanian
+
+## v2.10.0-rc2 (2020-07-18)
+
+ * [4bba17f3](https://github.com/argoproj/argo-workflows/commit/4bba17f3956708c4e50b54d932b516201f368b8b) Update manifests to v2.10.0-rc2
+ * [953f50e4](https://github.com/argoproj/argo-workflows/commit/953f50e498a09692d37864650d4ced4af8a6693e) build: Fix version and do not push images. Fixes #3515
+ * [616c79df](https://github.com/argoproj/argo-workflows/commit/616c79df09c435fa7659bf7e5194529d948ee93b) Update manifests to v2.10.0-rc1
+
+### Contributors
+
+ * Alex Collins
+
+## v2.10.0-rc1 (2020-07-17)
+
+
+### Contributors
+
+
+## v2.10.0 (2020-08-18)
+
+ * [195c6d83](https://github.com/argoproj/argo-workflows/commit/195c6d8310a70b07043b9df5c988d5a62dafe00d) Update manifests to v2.10.0
+ * [08117f0c](https://github.com/argoproj/argo-workflows/commit/08117f0cd1206647644f1f14580046268d1c8639) fix: Increase the requeue duration on checkForbiddenErrorAndResubmitAllowed (#3794)
+ * [5ea2ed0d](https://github.com/argoproj/argo-workflows/commit/5ea2ed0dbdb4003fc457b7cd76cf5cec9edc6799) fix(server): Trucate creator label at 63 chars. Fixes #3756 (#3758)
+ * [267da535](https://github.com/argoproj/argo-workflows/commit/267da535b66ed1dab8bcc90410260b7cf4b80e2c) Update manifests to v2.10.0-rc7
+ * [baeb0fed](https://github.com/argoproj/argo-workflows/commit/baeb0fed2b3ab53f35297a764f983059600d4b44) fix: Revert merge error
+ * [66bae22f](https://github.com/argoproj/argo-workflows/commit/66bae22f147cd248f1a88f913eaeac13ec873bcd) fix(executor): Add retry on pods watch to handle timeout. (#3675)
+ * [971f1153](https://github.com/argoproj/argo-workflows/commit/971f115373c8f01f0e21991b14fc3b27876f3cbf) removed unused test-report files
+ * [8c0b9f0a](https://github.com/argoproj/argo-workflows/commit/8c0b9f0a52922485a1bdf6a8954cdc09060dbc29) fix: Couldn't Terminate/Stop the ResourceTemplate Workflow (#3679)
+ * [a04d72f9](https://github.com/argoproj/argo-workflows/commit/a04d72f95a433eaa37202418809e1877eb167a1a) fix(controller): Tolerate PDB delete race. Fixes #3706 (#3717)
+ * [a7635763](https://github.com/argoproj/argo-workflows/commit/a76357638598174812bb749ea539ca4061284d89) fix: Fix bug with 'argo delete --older' (#3699)
+ * [fe8129cf](https://github.com/argoproj/argo-workflows/commit/fe8129cfc766f875985f0f09d37dc351a1e5f933) fix(controller): Carry-over labels for re-submitted workflows. Fixes #3622 (#3638)
+ * [e12d26e5](https://github.com/argoproj/argo-workflows/commit/e12d26e52a42d91ec4d2dbc3d188cf3b1a623a26) fix(controller): Treat TooManyError same as Forbidden (i.e. try again). Fixes #3606 (#3607)
+ * [9a5febec](https://github.com/argoproj/argo-workflows/commit/9a5febec11d231ed1cd5e085a841069b9106dafe) fix: Ensure target task's onExit handlers are run (#3716)
+ * [c3a58e36](https://github.com/argoproj/argo-workflows/commit/c3a58e36d18e3c3cbb7bffcd3a6ae4c5c08a66ea) fix: Enforce metric Help must be the same for each metric Name (#3613)
+ * [cb3536f9](https://github.com/argoproj/argo-workflows/commit/cb3536f9d1dd64258c1c3d737bb115bdab923e58) Update manifests to v2.10.0-rc6
+ * [6e004ace](https://github.com/argoproj/argo-workflows/commit/6e004ace2710e17ed2a282c6570a97b567946e58) lint
+ * [b31fc1f8](https://github.com/argoproj/argo-workflows/commit/b31fc1f8612a93c907b375de2e9a3c9326dca34b) fix(controller): Adds ALL_POD_CHANGES_SIGNIFICANT (#3689)
+ * [0b7cd5b3](https://github.com/argoproj/argo-workflows/commit/0b7cd5b3181eece7636b99d4761e96c61c17c453) fix: Fixed workflow queue duration if PVC creation is forbidden (#3691)
+ * [03b84162](https://github.com/argoproj/argo-workflows/commit/03b8416271002bfc88c11dd27d86fa08f95b33e9) fix: Re-introduce 1 second sleep to reconcile informer (#3684)
+ * [e9ca55ec](https://github.com/argoproj/argo-workflows/commit/e9ca55ec1cdbf37a43ee68da756ac91abb4edf73) Update manifests to v2.10.0-rc5
+ * [85ddda05](https://github.com/argoproj/argo-workflows/commit/85ddda0533d7b60614bee5a93d60bbfe0209ea83) lint
+ * [fb367f5e](https://github.com/argoproj/argo-workflows/commit/fb367f5e8f2faff6eeba751dc13c73336c112236) fix(controller): Fix nested maps. Fixes #3653 (#3661)
+ * [2385cca5](https://github.com/argoproj/argo-workflows/commit/2385cca59396eb53c03eac5bd87611b57f2a47a2) fix: interface{} values should be expanded with '%v' (#3659)
+ * [263e4bad](https://github.com/argoproj/argo-workflows/commit/263e4bad78092310ad405919b607e2ef696c8bf9) fix(server): Report v1.Status errors. Fixes #3608 (#3652)
+ * [718f802b](https://github.com/argoproj/argo-workflows/commit/718f802b8ed1533da2d2a0b666d2a80b51f476b2) fix: Avoid overriding the Workflow parameter when it is merging with WorkflowTemplate parameter (#3651)
+ * [9735df32](https://github.com/argoproj/argo-workflows/commit/9735df3275d456a868028b51a2386241f0d207ef) fix: Fixed flaky unit test TestFailSuspendedAndPendingNodesAfterDeadline (#3640)
+ * [662d22e4](https://github.com/argoproj/argo-workflows/commit/662d22e4f10566a4ce34c3080ba38788d58fd681) fix: Don't panic on invalid template creation (#3643)
+ * [854aaefa](https://github.com/argoproj/argo-workflows/commit/854aaefaa9713155a62deaaf041a36527d7f1718) fix: Fix 'malformed request: field selector' error (#3636)
+ * [9d56eb29](https://github.com/argoproj/argo-workflows/commit/9d56eb29c268c7a1f73068e17edf10b6affc51a8) fix: DAG level Output Artifacts on K8S and Kubelet executor (#3624)
+ * [c7512b6c](https://github.com/argoproj/argo-workflows/commit/c7512b6ce53e9b3fc5f7792a6c7c6d016aa66734) fix: Simplify the WorkflowTemplateRef field validation to support all fields in WorkflowSpec except `Templates` (#3632)
+ * [8d6dae61](https://github.com/argoproj/argo-workflows/commit/8d6dae6128074445d9bd0222c449643053568db8) Update manifests to v2.10.0-rc4
+ * [a4b1dde5](https://github.com/argoproj/argo-workflows/commit/a4b1dde573754556db1e635491189960721920a8) build(cli)!: Zip binaries binaries. Closes #3576 (#3614)
+ * [dea03a9c](https://github.com/argoproj/argo-workflows/commit/dea03a9c7f1016cfb0b47e1b5152cb07c111b436) fix(server): Re-establish watch on v1.Status errors. Fixes #3608 (#3609)
+ * [c063f9f1](https://github.com/argoproj/argo-workflows/commit/c063f9f1c3a5d1ce0fd5fb9dd5ce3938de18edce) fix: Fix panic and provide better error message on watch endpoint (#3605)
+ * [35a00498](https://github.com/argoproj/argo-workflows/commit/35a00498dcc62ebecb9dd476c90fddb2800fdeb7) fix: Argo Workflows does not honour global timeout if step/pod is not able to schedule (#3581)
+ * [3879827c](https://github.com/argoproj/argo-workflows/commit/3879827cb6bfa3f9e29e81dbd3bdbf0ffeeec233) fix(controller): Fix bug in util/RecoverWorkflowNameFromSelectorString. Add error handling (#3596)
+ * [5f4dec75](https://github.com/argoproj/argo-workflows/commit/5f4dec750a3be0d1ed8808d90535e90ee532f111) fix(ui): Fix multiple UI issues (#3573)
+ * [e94cf8a2](https://github.com/argoproj/argo-workflows/commit/e94cf8a21cd1c97f1a415d015038145a241a7b23) fix(ui): cannot push to nil when filtering by label (#3555)
+ * [61b5bd93](https://github.com/argoproj/argo-workflows/commit/61b5bd931045a2e423f1126300ab332f606cff9c) fix: Fix flakey TestRetryOmitted (#3552)
+ * [d53c883b](https://github.com/argoproj/argo-workflows/commit/d53c883b713ad281b33603567a92d4dbe61a5b47) fix: Fix links in fields doc (#3539)
+ * [d2bd5879](https://github.com/argoproj/argo-workflows/commit/d2bd5879f47badbd9dddef8308e20c3434caa95e) fix(artifacts): support optional input artifacts, Fixes #3491 (#3512)
+ * [652956e0](https://github.com/argoproj/argo-workflows/commit/652956e04c88c347d018367c8f11398ae2ced9dc) fix: Fix when retrying Workflows with Omitted nodes (#3528)
+ * [32c36d78](https://github.com/argoproj/argo-workflows/commit/32c36d785be4394b96615fbb4c716ae74177ed20) fix(controller): Backoff exponent is off by one. Fixes #3513 (#3514)
+ * [75d29574](https://github.com/argoproj/argo-workflows/commit/75d2957473c4783a6db18fda08907f62375c002e) fix: String interpreted as boolean in labels (#3518)
+ * [37f4f9da](https://github.com/argoproj/argo-workflows/commit/37f4f9da2b921c96f4d8919a17d4303e588e86c9) Update manifests to v2.10.0-rc3
+ * [37297af7](https://github.com/argoproj/argo-workflows/commit/37297af7ddf7d9fcebfed0dff5f76d9c4cc3199f) Update manifests to v2.10.0-rc2
+ * [cbf27edf](https://github.com/argoproj/argo-workflows/commit/cbf27edf17e84c86b9c969ed19f67774c27c50bd) fix: Panic on CLI Watch command (#3532)
+ * [a3666482](https://github.com/argoproj/argo-workflows/commit/a366648233e5fb7e992188034e0bc0e250279feb) fix: Skip TestStorageQuotaLimit (#3566)
+ * [802c18ed](https://github.com/argoproj/argo-workflows/commit/802c18ed6ea8b1e481ef2feb6d0552eac7dab67d) fix: Exceeding quota with volumeClaimTemplates (#3490)
+ * [94b20124](https://github.com/argoproj/argo-workflows/commit/94b201241a88aac9a4ffa28a4fc8e4e0032e79be) ci: Make builds marginally faster. Fixes #3515 (#3519)
+ * [38caab7c](https://github.com/argoproj/argo-workflows/commit/38caab7cbb5b6e474d6e1df887741019667aa1de) chore: `make lint`
+ * [bbee82a0](https://github.com/argoproj/argo-workflows/commit/bbee82a086d32e721e60880139a91064c0b3abb6) fix(server): Ignore not-JWT server tokens. Fixes #3562 (#3579)
+ * [f72ae881](https://github.com/argoproj/argo-workflows/commit/f72ae8813aa570eb13769de606b07dd72d991db8) fix(controller): Do not panic on nil output value. Fixes #3505 (#3509)
+ * [18c7440f](https://github.com/argoproj/argo-workflows/commit/18c7440f5693410678f5f1e407d5e86dff12a4a8) build: Fix version and do not push images. Fixes #3515
+ * [66d6f964](https://github.com/argoproj/argo-workflows/commit/66d6f964553e6d5f908a2fe67f694cc806cfce7f) build: Fix version and do not push images. Fixes #3515
+ * [4bba17f3](https://github.com/argoproj/argo-workflows/commit/4bba17f3956708c4e50b54d932b516201f368b8b) Update manifests to v2.10.0-rc2
+ * [953f50e4](https://github.com/argoproj/argo-workflows/commit/953f50e498a09692d37864650d4ced4af8a6693e) build: Fix version and do not push images. Fixes #3515
+ * [616c79df](https://github.com/argoproj/argo-workflows/commit/616c79df09c435fa7659bf7e5194529d948ee93b) Update manifests to v2.10.0-rc1
  * [19e700a3](https://github.com/argoproj/argo-workflows/commit/19e700a3388552d9440ae75dd259efcbeb0a3657) fix(cli): Check mutual exclusivity for argo CLI flags (#3493)
  * [7d45ff7f](https://github.com/argoproj/argo-workflows/commit/7d45ff7f014d011ef895b9c808da781000ea32a5) fix: Panic on releaseAllWorkflowLocks if Object is not Unstructured type (#3504)
  * [1b68a5a1](https://github.com/argoproj/argo-workflows/commit/1b68a5a15af12fb0866f4d5a4dcd9fb5da3f2ab4) fix: ui/package.json & ui/yarn.lock to reduce vulnerabilities (#3501)
@@ -1526,152 +2627,29 @@
 ### Contributors
 
  * 0x1D-1983
- * Aayush Rangwala
- * Alastair Maw
- * Alex Capras
  * Alex Collins
- * Alexander Matyushentsev
- * Alexander Mikhailian
- * Alexander Zigelski
- * Alexey Volkov
- * Amim Knabben
- * Ang Gao
- * Antoine Dao
- * Arghya Sadhu
- * Arthur Outhenin-Chalandre
- * BOOK
- * Bailey Hayes
- * Basanth Jenu H B
- * Bikramdeep Singh
- * Boolman
- * Byungjin Park (BJ)
- * Carlos Montemuino
- * Chris Hepner
  * Daisuke Taniwaki
- * David Gibbons
- * Douglas Lehr
- * Dylan Hellems
- * Elli Ludwigson
- * Elvis Jakupovic
- * Espen Finnesand
- * Fischer Jemison
- * Florian
- * Floris Van den Abeele
- * Francesco Murdaca
  * Galen Han
- * Greg Roodt
  * Guillaume Hormiere
- * Huan-Cheng Chang
- * Hussein Awala
- * Ids van der Molen
- * Igor Stepura
- * InvictusMB
- * Isaac Gaskin
- * J.P. Zivalich
- * James Laverack
- * Jared Welch
  * Jeff Uren
- * Jesse Suen
  * Jie Zhang
  * Jonny
- * Juan C. Müller
- * Justen Walker
- * Kaan C. Fidan
- * Kaushik B
- * Ken Kaizu
- * Kristoffer Johansson
- * Lennart Kindermann
- * Lucas Theisen
- * Ludovic Cléroux
- * Lénaïc Huard
- * Marcin Gucki
  * Markus Lippert
- * Martin Suchanek
- * Matt Campbell
- * Maximilian Roos
- * Michael Albers
  * Michael Crenshaw
- * Michael Ruoss
- * Michael Weibel
- * Michal Cwienczek
- * Mike Chau
- * Naisisor
- * Nelson Rodrigues
- * Nicwalle
  * Niklas Vest
- * Nirav Patel
- * Noah Hanjun Lee
- * Noj Vek
- * Noorain Panjwani
- * Oleg Borodai
- * Paavo Pokkinen
- * Paul Brabban
- * Pavel Čižinský
- * Pranaye Karnati
  * Remington Breeze
- * Roi Kramer
- * RossyWhite
- * Rush Tehrani
  * Saravanan Balasubramanian
- * Sebastian Ortan
- * Shannon
- * Simeon H.K. Fitch
  * Simon Behar
- * Simon Frey
  * Snyk bot
- * Song Juchao
- * Stefan Gloutnikov
- * Stéphane Este-Gracias
- * Takahiro Tsuruda
- * Takayoshi Nishida
- * Theodore Omtzigt
- * Tomáš Coufal
  * Trevor Foster
- * Trevor Wood
- * Viktor Farcic
  * Vlad Losev
  * Weston Platter
- * Wouter Remijn
- * Wylie Hobbs
  * Yuan Tang
- * Zach
  * Zach Aller
  * Zach Himsel
- * Zadjad Rezai
- * aletepe
- * bei-re
- * bellevuerails
- * boundless-thread
  * candonov
- * cocotyty
- * conanoc
- * dgiebert
- * dherman
- * drannenberg
- * duluong
- * ermeaney
- * fsiegmund
  * haibingzhao
- * hermanhobnob
- * ivancili
- * jacky
- * joe
- * joyciep
- * juliusvonkohout
- * kennytrytek
- * lonsdale8734
  * maguowei
- * makocchi
- * markterm
- * nishant-d
- * omerfsen
- * saranyaeu2987
- * sh-tatsuno
- * tczhao
- * tianfeiyu
- * tomgoren
- * yonirab
- * zhengchenyu
 
 ## v2.9.5 (2020-08-06)
 
@@ -3138,14 +4116,37 @@
  * [11d2232e](https://github.com/argoproj/argo-workflows/commit/11d2232edfc4ac1176cc1ed4a47c77aeec48aeb7) Update manifests to v2.5.0
  * [661f8a11](https://github.com/argoproj/argo-workflows/commit/661f8a1113a2a02eb521a6a5e5286d38b42e5f84) fix: Ignore bookmark events for restart. Fixes #2249 (#2253)
  * [6c1a6601](https://github.com/argoproj/argo-workflows/commit/6c1a6601b151efb4a9ada9a9c997130e319daf3f) fix(offloading): Change offloaded nodes datatype to JSON to support 1GB. Fixes #2246 (#2250)
+
+### Contributors
+
+ * Alex Collins
+ * tkilpela
+
+## v2.5.0-rc12 (2020-02-13)
+
  * [befd3594](https://github.com/argoproj/argo-workflows/commit/befd3594f1d54e9e1bedd08d781025d43e6bed5b) Update manifests to v2.5.0-rc12
  * [4670c99e](https://github.com/argoproj/argo-workflows/commit/4670c99ec819dcc91c807def6c2b4e7128e2b987) fix(offload): Fix bug which deleted completed workflows. Fixes #2233 (#2234)
+
+### Contributors
+
+ * Alex Collins
+
+## v2.5.0-rc11 (2020-02-11)
+
  * [47d9a41a](https://github.com/argoproj/argo-workflows/commit/47d9a41a902c18797e36c9371e3ab7a3e261605b) Update manifests to v2.5.0-rc11
  * [04917cde](https://github.com/argoproj/argo-workflows/commit/04917cde047098c1fdf07965a01e07c97d2e36af) fix: Remove quotes from UI (#2213)
  * [2705a114](https://github.com/argoproj/argo-workflows/commit/2705a114195aa7dfc2617f2ebba54fbf603b1fd2) fix(offloading): Correctly deleted offloaded data. Fixes #2206 (#2207)
  * [cee3a771](https://github.com/argoproj/argo-workflows/commit/cee3a771bda5667183b704af0da92e3a257d67ee) Merge commit '930ced39241b427a521b609c403e7a39f6cc8c48' into release-2.5
  * [930ced39](https://github.com/argoproj/argo-workflows/commit/930ced39241b427a521b609c403e7a39f6cc8c48) fix(ui): fixed workflow filtering and ordering. Fixes #2201 (#2202)
  * [88112312](https://github.com/argoproj/argo-workflows/commit/8811231299434e89ee9279e400db3445d83fec39) fix: Correct login instructions. (#2198)
+
+### Contributors
+
+ * Alex Collins
+ * fsiegmund
+
+## v2.5.0-rc10 (2020-02-07)
+
  * [b557eeb9](https://github.com/argoproj/argo-workflows/commit/b557eeb981f0e7ac3b12f4e861ff9ca099338143) Update manifests to v2.5.0-rc10
  * [f8b8efc7](https://github.com/argoproj/argo-workflows/commit/f8b8efc788f42edf7c2015fe675e23aed93975d5) Merge branch 'master' into release-2.5
  * [d6f5953d](https://github.com/argoproj/argo-workflows/commit/d6f5953d73d3940e0151011b7c32446c4c1c0ec4) Update ReadMe for EBSCO (#2195)
@@ -3166,8 +4167,6 @@
  * Saravanan Balasubramanian
  * Simon Behar
  * Tom Wieczorek
- * fsiegmund
- * tkilpela
 
 ## v2.5.0-rc9 (2020-02-06)
 
@@ -3324,137 +4323,11 @@
 
 ## v2.5.0-rc2 (2020-01-24)
 
-
-### Contributors
-
-
-## v2.5.0-rc12 (2020-02-13)
-
- * [befd3594](https://github.com/argoproj/argo-workflows/commit/befd3594f1d54e9e1bedd08d781025d43e6bed5b) Update manifests to v2.5.0-rc12
- * [4670c99e](https://github.com/argoproj/argo-workflows/commit/4670c99ec819dcc91c807def6c2b4e7128e2b987) fix(offload): Fix bug which deleted completed workflows. Fixes #2233 (#2234)
-
-### Contributors
-
- * Alex Collins
-
-## v2.5.0-rc11 (2020-02-11)
-
- * [47d9a41a](https://github.com/argoproj/argo-workflows/commit/47d9a41a902c18797e36c9371e3ab7a3e261605b) Update manifests to v2.5.0-rc11
- * [04917cde](https://github.com/argoproj/argo-workflows/commit/04917cde047098c1fdf07965a01e07c97d2e36af) fix: Remove quotes from UI (#2213)
- * [2705a114](https://github.com/argoproj/argo-workflows/commit/2705a114195aa7dfc2617f2ebba54fbf603b1fd2) fix(offloading): Correctly deleted offloaded data. Fixes #2206 (#2207)
- * [cee3a771](https://github.com/argoproj/argo-workflows/commit/cee3a771bda5667183b704af0da92e3a257d67ee) Merge commit '930ced39241b427a521b609c403e7a39f6cc8c48' into release-2.5
- * [930ced39](https://github.com/argoproj/argo-workflows/commit/930ced39241b427a521b609c403e7a39f6cc8c48) fix(ui): fixed workflow filtering and ordering. Fixes #2201 (#2202)
- * [88112312](https://github.com/argoproj/argo-workflows/commit/8811231299434e89ee9279e400db3445d83fec39) fix: Correct login instructions. (#2198)
-
-### Contributors
-
- * Alex Collins
- * fsiegmund
-
-## v2.5.0-rc10 (2020-02-07)
-
- * [b557eeb9](https://github.com/argoproj/argo-workflows/commit/b557eeb981f0e7ac3b12f4e861ff9ca099338143) Update manifests to v2.5.0-rc10
- * [f8b8efc7](https://github.com/argoproj/argo-workflows/commit/f8b8efc788f42edf7c2015fe675e23aed93975d5) Merge branch 'master' into release-2.5
- * [d6f5953d](https://github.com/argoproj/argo-workflows/commit/d6f5953d73d3940e0151011b7c32446c4c1c0ec4) Update ReadMe for EBSCO (#2195)
- * [b024c46c](https://github.com/argoproj/argo-workflows/commit/b024c46c8fec8a682802c1d6667a79fede959ae4) feat: Add ability to submit CronWorkflow from CLI (#2003)
- * [c97527ce](https://github.com/argoproj/argo-workflows/commit/c97527cee961b00472ce566226e1c6824b6e9793) test: Invoke tests using s.T() (#2194)
- * [073216c8](https://github.com/argoproj/argo-workflows/commit/073216c8fc3c440f3f0d84afd9bf5c3adf28a9b9) Merge branch 'master' into release-2.5
- * [72a54fe1](https://github.com/argoproj/argo-workflows/commit/72a54fe1628ff7a1daeb69875356607829d595ed) chore: Move info.proto et al to correct package (#2193)
- * [cbfbb98b](https://github.com/argoproj/argo-workflows/commit/cbfbb98b504e110ec61003efa6f28a0dde52b24f) Merge branch 'master' into release-2.5
- * [f6600fa4](https://github.com/argoproj/argo-workflows/commit/f6600fa499470ea7bd9fe68303759257c329d7ae) fix: Namespace and phase selection in UI (#2191)
- * [c4a24dca](https://github.com/argoproj/argo-workflows/commit/c4a24dcab016e82a4f1dc764dc67e0d8d324ded3) fix(k8sapi-executor): Fix KillContainer impl (#2160)
- * [d22a5fe6](https://github.com/argoproj/argo-workflows/commit/d22a5fe69c2d5a1fd4c268822cf5e2cd76893a18) Update cli_with_server_test.go (#2189)
- * [ff18180f](https://github.com/argoproj/argo-workflows/commit/ff18180f838b8f0d56bae95a2cab57d939e2a353) test: Remove podGC (#2187)
- * [bea41b49](https://github.com/argoproj/argo-workflows/commit/bea41b498fd3ece93e0d2f344b58ca31e1f28080) Update manifests to v2.5.0-rc9
- * [58f38ba7](https://github.com/argoproj/argo-workflows/commit/58f38ba788b9569bf2698de48c93f0725f375686) Merge branch 'master' into release-2.5
- * [78245305](https://github.com/argoproj/argo-workflows/commit/78245305d369fe9e4ba4c15e4acff7fcee07d62a) chore: Improved error handling and refactor (#2184)
- * [b9c828ad](https://github.com/argoproj/argo-workflows/commit/b9c828ad3a8fe6e92263aafd5eb14f21a284f3fc) fix(archive): Only delete offloaded data we do not need. Fixes #2170 and #2156 (#2172)
- * [73cb5418](https://github.com/argoproj/argo-workflows/commit/73cb5418f13e359612bb6844ef1747c9e7e6522c) feat: Allow CronWorkflows to have instanceId (#2081)
- * [3fed36f0](https://github.com/argoproj/argo-workflows/commit/3fed36f0016f2317a0d59158c74b8c7fb024aa2d) Merge branch 'master' into release-2.5
- * [9efea660](https://github.com/argoproj/argo-workflows/commit/9efea660b611f02a1eeaa5dc5be857686ed82de2) Sort list and add Greenhouse (#2182)
- * [cae399ba](https://github.com/argoproj/argo-workflows/commit/cae399bae466266bef0351efae77162615f9790f) fix: Fixed the Exec Provider token bug (#2181)
- * [fc476b2a](https://github.com/argoproj/argo-workflows/commit/fc476b2a4f09c12c0eb4a669b5cc1a18adca206e) fix(ui): Retry workflow event stream on connection loss. Fixes #2179 (#2180)
- * [4d53cc47](https://github.com/argoproj/argo-workflows/commit/4d53cc47b261d69b8beea1a7627384f64cb234e4) Merge branch 'master' into release-2.5
- * [65058a27](https://github.com/argoproj/argo-workflows/commit/65058a2798fd31ebd4fb99afc41da6a9171ca5be) fix: Correctly create code from changed protos. (#2178)
- * [585d1eef](https://github.com/argoproj/argo-workflows/commit/585d1eefd71062f42f8d80c85722fc7c262a08cf) chore: Update lint command to use apiclient. See #2116 (#2131)
- * [299d467c](https://github.com/argoproj/argo-workflows/commit/299d467c17cd89e9f33e48e464eb26ec8a3e413a) build: Update release process and docs (#2128)
- * [fcfe1d43](https://github.com/argoproj/argo-workflows/commit/fcfe1d43693c98f0e6c5fe3e2b02ac6a4a9836e6) feat: Implemented open default browser in local mode (#2122)
- * [f6cee552](https://github.com/argoproj/argo-workflows/commit/f6cee552532702089e62e5fece4dae77e4c99336) fix: Specify download .tgz extension (#2164)
- * [8a1e611a](https://github.com/argoproj/argo-workflows/commit/8a1e611a03da8374567c9654f8baf29b66c83c6e) feat: Update archived workdflow column to be JSON. Closes #2133 (#2152)
- * [f591c471](https://github.com/argoproj/argo-workflows/commit/f591c471c336e99c206094d21567fe01c978bf3c) fix!: Change `argo token` to `argo auth token`. Closes #2149 (#2150)
- * [392de814](https://github.com/argoproj/argo-workflows/commit/392de814471abb3ca6c12ad7243c72c1a52591ff) Update manifests to v2.5.0-rc8
- * [519c9434](https://github.com/argoproj/argo-workflows/commit/519c94344a91c86d60ce27b383fa50846432cc9f) chore: Add Mock gen to make codegen (#2148)
- * [3d84a935](https://github.com/argoproj/argo-workflows/commit/3d84a9356b7ccc12973ee048a5c25681e8c10777) Merge branch 'master' into release-2.5
- * [409a5154](https://github.com/argoproj/argo-workflows/commit/409a5154726dd16475b3aaf97f05f191cdb65808) fix: Add certs to argocli image. Fixes #2129 (#2143)
- * [9b327658](https://github.com/argoproj/argo-workflows/commit/9b3276580c8abd503320f4c1fc045651d881e45f) Merge branch 'master' into release-2.5
- * [b094802a](https://github.com/argoproj/argo-workflows/commit/b094802a03406328699bffad6deeceb5bdb61777) fix: Allow download of artifacs in server auth-mode. Fixes #2129 (#2147)
- * [a61f1457](https://github.com/argoproj/argo-workflows/commit/a61f14576728d95bc9117554d4e11e6bfa7ca0be) Merge branch 'master' into release-2.5
- * [520fa540](https://github.com/argoproj/argo-workflows/commit/520fa54073ab20a9bcd2f115f65f50d9761dc230) fix: Correct SQL syntax. (#2141)
- * [059cb9b1](https://github.com/argoproj/argo-workflows/commit/059cb9b1879361b77a293b3156bc9dfab2cefe71) fix: logs UI should fall back to archive (#2139)
- * [1d0a5234](https://github.com/argoproj/argo-workflows/commit/1d0a52342e8d3c9c343b92f9a292fced20d48dd1) Merge branch 'master' into release-2.5
- * [4cda9a05](https://github.com/argoproj/argo-workflows/commit/4cda9a05bf8cee20027132e4b3428ca9654bed5a) fix: route all unknown web content requests to index.html (#2134)
- * [14d8b5d3](https://github.com/argoproj/argo-workflows/commit/14d8b5d3913c2a6b320c564d6fc11c1d90769a97) fix: archiveLogs needs to copy stderr (#2136)
- * [91319ee4](https://github.com/argoproj/argo-workflows/commit/91319ee49f1fefec13233cb843b46f42cf5a9830) fixed ui navigation issues with basehref (#2130)
- * [7881b980](https://github.com/argoproj/argo-workflows/commit/7881b980bfdc6319d229956866e9131f95be412f) docs: Add CronWorkflow usage docs (#2124)
- * [adbe67c0](https://github.com/argoproj/argo-workflows/commit/adbe67c00f63ec2a6ab3b59c9085204e2f72863d) Merge branch 'master' into release-2.5
- * [badfd183](https://github.com/argoproj/argo-workflows/commit/badfd18335ec1b26d395ece0ad65d12aeb11beec) feat: Add support to delete by using labels. Depended on by #2116 (#2123)
- * [706d0f23](https://github.com/argoproj/argo-workflows/commit/706d0f231542e80156f93e39d28cd8e28f5d7042) test: Try and make e2e more robust. Fixes #2125 (#2127)
- * [7bee02d8](https://github.com/argoproj/argo-workflows/commit/7bee02d89f68ef207bf038e40ca2c04646e33492) build: correct version
- * [40e7ca37](https://github.com/argoproj/argo-workflows/commit/40e7ca37cf5834e5ad8f799ea9ede61f7549a7d9) Update manifests to v2.5.0-rc7
- * [98702cae](https://github.com/argoproj/argo-workflows/commit/98702caea70c18f4a3c1b8c83cb00d58c83c0885) Merge branch 'master' into release-2.5
- * [a75ac1b4](https://github.com/argoproj/argo-workflows/commit/a75ac1b487a50bad19b3c58262fb3b170640ab4a) fix: mark CLI common.go vars and funcs as DEPRECATED (#2119)
- * [be21a0f1](https://github.com/argoproj/argo-workflows/commit/be21a0f17ed851032a16cfa90934a04662da6d2d) feat(server): Restart server when config changes. Fixes #2090 (#2092)
- * [b5cd72b0](https://github.com/argoproj/argo-workflows/commit/b5cd72b083fd173fe2552be9ea83e342cf395ceb) test: Parallelize Cron tests (#2118)
- * [26f9bcad](https://github.com/argoproj/argo-workflows/commit/26f9bcadcf8adb255de3477b20aff26ca29123b4) Merge branch 'master' into release-2.5
- * [b2bd25bc](https://github.com/argoproj/argo-workflows/commit/b2bd25bc2ba15f1ffa39bade75b09af5e3bb81a4) fix: Disable webpack dot rule (#2112)
- * [865b4f3a](https://github.com/argoproj/argo-workflows/commit/865b4f3a2b51cc08cf4a80423933a97f876af4a2) addcompany (#2109)
- * [213e3a9d](https://github.com/argoproj/argo-workflows/commit/213e3a9d9ec43b9f05fe7c5cf11d3f704a8649dd) fix: Fix Resource Deletion Bug (#2084)
- * [ab1de233](https://github.com/argoproj/argo-workflows/commit/ab1de233b47ec7c284fd20705b9efa00626877f7) refactor(cli): Introduce v1.Interface for CLI. Closes #2107 (#2048)
- * [3c8eced6](https://github.com/argoproj/argo-workflows/commit/3c8eced61b2c952268c4a256d9a9e9106b1147dd) Merge branch 'master' into release-2.5
- * [7a19f85c](https://github.com/argoproj/argo-workflows/commit/7a19f85caa8760f28ffae6227a529823a0867218) feat: Implemented Basic Auth scheme (#2093)
- * [7b7fcf01](https://github.com/argoproj/argo-workflows/commit/7b7fcf01a2c7819aa7da8d4ab6e5ae93e5b81436) Update manifests to v2.5.0-rc6
- * [c1cb415e](https://github.com/argoproj/argo-workflows/commit/c1cb415ef13ae5f171716bb67753f84bec892135) Merge branch 'master' into release-2.5
- * [7611b9f6](https://github.com/argoproj/argo-workflows/commit/7611b9f6c6359680a4d450116ee893e4dc174811) fix(ui): Add support for bash href. Fixes ##2100 (#2105)
- * [516d05f8](https://github.com/argoproj/argo-workflows/commit/516d05f81a86c586bc19aad7836f35bb85130025)  fix: Namespace redirects no longer error and are snappier (#2106)
- * [16aed5c8](https://github.com/argoproj/argo-workflows/commit/16aed5c8ec0256fc78d95149435c37dac1db087a) fix: Skip running --token testing if it is not on CI (#2104)
- * [aece7e6e](https://github.com/argoproj/argo-workflows/commit/aece7e6ebdf2478dd7efa5706490c5c7abe858e6) Parse container ID in correct way on CRI-O. Fixes #2095 (#2096)
- * [4609f3d7](https://github.com/argoproj/argo-workflows/commit/4609f3d70fef44c35634c743b15060d7865e0879) Update manifests to v2.5.0-rc5
- * [af14e452](https://github.com/argoproj/argo-workflows/commit/af14e4523f0df8064adf0b6b1a00e11a40b54caf) Merge branch 'master' into release-2.5
- * [b6a2be89](https://github.com/argoproj/argo-workflows/commit/b6a2be89689222470288339570aa0a719e775002) feat: support arg --token when talking to argo-server (#2027) (#2089)
- * [01d8cae1](https://github.com/argoproj/argo-workflows/commit/01d8cae1f49da35c135463ff45dc1a4d13ab1af7) build: adds `make env` to make testing easier (#2087)
- * [492842aa](https://github.com/argoproj/argo-workflows/commit/492842aa17cc447d68f1181c02990bfa7a78913a) docs(README): Add Capital One to user list (#2094)
- * [ed223e9d](https://github.com/argoproj/argo-workflows/commit/ed223e9d1e922ac35c56b2b1e7c02819fe3762e3) build: use the latest tag for codegen
- * [2db76d24](https://github.com/argoproj/argo-workflows/commit/2db76d2426e6ebe4da2d4cfd96d34401487ecffc) Merge branch 'master' into release-2.5
- * [d56a0e12](https://github.com/argoproj/argo-workflows/commit/d56a0e12a283aaa5398e03fe423fed83d60ca370) fix(controller): Fix template resolution for step groups. Fixes #1868  (#1920)
- * [b97044d2](https://github.com/argoproj/argo-workflows/commit/b97044d2a47a79fab26fb0e3142c82e88a582f64) fix(security): Fixes an issue that allowed you to list archived workf… (#2079)
- * [2afcb0f2](https://github.com/argoproj/argo-workflows/commit/2afcb0f27cd32cf5a6600f8d4826ace578f9ee20) Update manifests to v2.5.0-rc4
- * [e2f4d640](https://github.com/argoproj/argo-workflows/commit/e2f4d6406c1aea3a0dcbc63a05532cd8e7839c34) Merge branch 'master' into release-2.5
- * [091c2f7e](https://github.com/argoproj/argo-workflows/commit/091c2f7e892bed287cf701cafe9bee0ccf5c0ce8) lint
- * [67a51858](https://github.com/argoproj/argo-workflows/commit/67a5185895379e7299be3739c4d708132b0a6fc8) build: simplify release
- * [c4f49cf0](https://github.com/argoproj/argo-workflows/commit/c4f49cf074ad874996145674d635165f6256ca15) refactor: Move server code (cmd/server/ -> server/) (#2071)
- * [2542454c](https://github.com/argoproj/argo-workflows/commit/2542454c1daf61bc3826fa370c21799059904093) fix(controller): Do not crash if cm is empty. Fixes #2069 (#2070)
- * [3572d4df](https://github.com/argoproj/argo-workflows/commit/3572d4dfb59d888ccfa06a97e81c00d31a6a14ef) build: force tag
- * [f1c03bb3](https://github.com/argoproj/argo-workflows/commit/f1c03bb375f4120b6faee385945c4826cdeee6df) build: only tag if committing changes
- * [30775fac](https://github.com/argoproj/argo-workflows/commit/30775fac8a92cf7bdf84ada11746a7643d464885) Update manifests to v2.5.0-rc3
- * [9afa6783](https://github.com/argoproj/argo-workflows/commit/9afa6783292b85353f8775aa799aecae623f26fc) Merge branch 'master' into release-2.5
- * [85fa9aaf](https://github.com/argoproj/argo-workflows/commit/85fa9aafa70a98ce999157bb900971f24bd81101) fix: Do not expect workflowChange to always be defined (#2068)
- * [6f65bc2b](https://github.com/argoproj/argo-workflows/commit/6f65bc2b77ddcf4616c78d6db4955bf839a0c21a) fix: "base64 -d" not always available, using "base64 --decode" (#2067)
- * [5e755c61](https://github.com/argoproj/argo-workflows/commit/5e755c61e15b6fc4eed5000f91dfdef9cc266c74) build: correct image tag
- * [e7cf886b](https://github.com/argoproj/argo-workflows/commit/e7cf886bb51735c27dce7f800a7cd62ad0d72c3d) ci: install kustomize
- * [5328389a](https://github.com/argoproj/argo-workflows/commit/5328389aac14da059148ad840a9a72c322947e9e) adds "verify-manifests" target
- * [ef1c403e](https://github.com/argoproj/argo-workflows/commit/ef1c403e3f49cf06f9bbed2bfdcc7d89548031cb) fix: generate no-db manifests
- * [6f2c8802](https://github.com/argoproj/argo-workflows/commit/6f2c880280d490ba746a86d828ade61d8b58c7a5) feat(ui): Use cookies in the UI. Closes #1949 (#2058)
- * [4592aec6](https://github.com/argoproj/argo-workflows/commit/4592aec6805ce1110edcb7dc4e3e7454a2042441) fix(api): Change `CronWorkflowName` to `Name`. Fixes #1982 (#2033)
- * [a37562a0](https://github.com/argoproj/argo-workflows/commit/a37562a0e2af06f932332a53573d12920b3301e8) ci: DEV_IMAGE=true
- * [4676a946](https://github.com/argoproj/argo-workflows/commit/4676a9465ac4c2faa856f971706766f46e08edef) try and improve the release tasks
- * [fe64ae11](https://github.com/argoproj/argo-workflows/commit/fe64ae11c7e2ca3bd3cec93b38036be82eee39e7) Merge branch 'master' into release-2.5
- * [e26c11af](https://github.com/argoproj/argo-workflows/commit/e26c11af747651c6642cf0abd3cbc4ccac7b95de) fix: only run archived wf testing when persistence is enabled (#2059)
  * [243eeceb](https://github.com/argoproj/argo-workflows/commit/243eecebc96fe2c8905cf4a5a7870e7d6c7c60e8) make manifests
  * [c74d0f40](https://github.com/argoproj/argo-workflows/commit/c74d0f4067ad390dc390e9b6ade10ec623bc1dff) build: use GIT_TAG as VERSION
  * [b1fd43f7](https://github.com/argoproj/argo-workflows/commit/b1fd43f7b725733b2de3545b3261d59fde14f471) Merge branch 'release-2.5' of https://github.com/argoproj/argo into release-2.5
  * [8663652a](https://github.com/argoproj/argo-workflows/commit/8663652a75717ea77f983a9602ccf32aa187b137) make manifesets
  * [c8abcb92](https://github.com/argoproj/argo-workflows/commit/c8abcb921d4387472427b2889cec37a2b1bdfab8) Merge branch 'master' into release-2.5
- * [b3cab5df](https://github.com/argoproj/argo-workflows/commit/b3cab5dfbb5e5973b1dc448946d16ee0cd690d6a) fix: Fix permission test cases (#2035)
  * [6cf64a21](https://github.com/argoproj/argo-workflows/commit/6cf64a21bbe4ab1abd210844298a28b5803d6f59) Update Makefile
  * [216d14ad](https://github.com/argoproj/argo-workflows/commit/216d14ad10d0e8508a58ebe54383880f5d513160) fixed makefile
  * [ba2f7891](https://github.com/argoproj/argo-workflows/commit/ba2f7891ae8021ac2d235080aa35cd6391226989) merge conflict
@@ -3471,19 +4344,8 @@
 ### Contributors
 
  * Alex Collins
- * Daisuke Taniwaki
- * Derek Wang
- * Dineshmohan Rajaveeran
  * Ed Lee
- * Jialu Zhu
- * Juan C. Muller
- * Nick Groszewski
- * Rafał Bigaj
  * Saravanan Balasubramanian
- * Simon Behar
- * Tom Wieczorek
- * Tristan Colgate-McFarlane
- * fsiegmund
 
 ## v2.5.0-rc1 (2020-01-23)
 
@@ -4442,1876 +5304,6 @@
 
 ## v2.2.0 (2018-08-30)
 
-
-### Contributors
-
-
-## v2.12.9 (2021-02-16)
-
- * [73790534](https://github.com/argoproj/argo-workflows/commit/737905345d70ba1ebd566ce1230e4f971993dfd0) Update manifests to v2.12.9
- * [20e4c401](https://github.com/argoproj/argo-workflows/commit/20e4c401ccfc482e4516c58d52ba62eb67f1731a) chore: Add SHA256 checksums to release (#5122)
- * [81c07344](https://github.com/argoproj/argo-workflows/commit/81c07344fe5d84e09284bd1fea4f01239524a842) codegen
- * [26d2ec0a](https://github.com/argoproj/argo-workflows/commit/26d2ec0a10913b7df994f7d354fea2be1db04ea9) cherry-picked 5081
- * [92ad730a](https://github.com/argoproj/argo-workflows/commit/92ad730a28a4eb613b8e5105c9c2ccbb2ed2c3f3) fix: Revert "fix(controller): keep special characters in json string when … … 19da392 …use withItems (#4814)" (#5076)
- * [1e868ec1](https://github.com/argoproj/argo-workflows/commit/1e868ec1adf95dd0e53e7939cc8a9d7834cf8fbf) fix(controller): Fix creator dashes (#5082)
-
-### Contributors
-
- * Alex Collins
- * Saravanan Balasubramanian
- * Simon Behar
-
-## v2.12.8 (2021-02-08)
-
- * [d19d4eee](https://github.com/argoproj/argo-workflows/commit/d19d4eeed3224ea7e854c658d3544663e86cd509) Update manifests to v2.12.8
- * [cf3b1980](https://github.com/argoproj/argo-workflows/commit/cf3b1980dc35c615de53b0d07d13a2c828f94bbf) fix: Fix build
- * [a8d0b67e](https://github.com/argoproj/argo-workflows/commit/a8d0b67e87daac56f310136e56f4dbe5acb98267) fix(cli): Add insecure-skip-verify for HTTP1. Fixes #5008 (#5015)
- * [a3134de9](https://github.com/argoproj/argo-workflows/commit/a3134de95090c7b980a741f28dde9ca94650ab18) fix: Skip the Workflow not found error in Concurrency policy (#5030)
- * [a60e4105](https://github.com/argoproj/argo-workflows/commit/a60e4105d0e15ba94625ae83dbd728841576a5ee) fix: Unmark daemoned nodes after stopping them (#5005)
-
-### Contributors
-
- * Alex Collins
- * Saravanan Balasubramanian
- * Simon Behar
-
-## v2.12.7 (2021-02-01)
-
- * [5f515073](https://github.com/argoproj/argo-workflows/commit/5f5150730c644865a5867bf017100732f55811dd) Update manifests to v2.12.7
- * [637154d0](https://github.com/argoproj/argo-workflows/commit/637154d02b0829699a31b283eaf9045708d96acf) feat: Support retry on transient errors during executor status checking (#4946)
- * [8e7ed235](https://github.com/argoproj/argo-workflows/commit/8e7ed235e8b4411fda6d0b6c088dd4a6e931ffb9) feat(server): Add Prometheus metrics. Closes #4751 (#4952)
- * [372cef03](https://github.com/argoproj/argo-workflows/commit/372cef03b4f8b78a38097236a9ffa60f5028d741) chore: Remove self-referential replace directive in go.mod (#4959)
- * [77b34e3c](https://github.com/argoproj/argo-workflows/commit/77b34e3c9cb603a46512f485bdfaeede3d562d8d) chore: Set Go mod to /v2 (#4916)
-
-### Contributors
-
- * Alex Collins
- * Simon Behar
- * Yuan Tang
-
-## v2.12.6 (2021-01-25)
-
- * [4cb5b7eb](https://github.com/argoproj/argo-workflows/commit/4cb5b7eb807573e167f3429fb5fc8bf5ade0685d) Update manifests to v2.12.6
- * [2696898b](https://github.com/argoproj/argo-workflows/commit/2696898b3334a08af47bdbabb85a7d9fa1f37050) fix: Mutex not being released on step completion (#4847)
- * [067b6036](https://github.com/argoproj/argo-workflows/commit/067b60363f260edf8a680c4cb5fa36cc561ff20a) feat(server): Support email for SSO+RBAC. Closes #4612 (#4644)
-
-### Contributors
-
- * Alex Collins
- * Saravanan Balasubramanian
- * Simon Behar
-
-## v2.12.5 (2021-01-19)
-
- * [53f022c3](https://github.com/argoproj/argo-workflows/commit/53f022c3f740b5a8636d74873462011702403e42) Update manifests to v2.12.5
- * [86d7b3b6](https://github.com/argoproj/argo-workflows/commit/86d7b3b6b4fc4d9336eefea0a0ff44201e35fa47) fix tests
- * [63390940](https://github.com/argoproj/argo-workflows/commit/6339094024e23d9dcea1f24981c366e00f36099b) fix tests
- * [0c7aa149](https://github.com/argoproj/argo-workflows/commit/0c7aa1498c900b6fb65b72f82186bab2ff7f0130) fix: Mutex not being released on step completion (#4847)
- * [b3742193](https://github.com/argoproj/argo-workflows/commit/b3742193ef19ffeb33795a39456b3bc1a3a667f5) fix(controller): Consider processed retry node in metrics. Fixes #4846 (#4872)
- * [9063a94d](https://github.com/argoproj/argo-workflows/commit/9063a94d6fc5ab684e3c52c3d99e4dc4a0d034f6) fix(controller): make creator label DNS compliant. Fixes #4880 (#4881)
- * [84b44cfd](https://github.com/argoproj/argo-workflows/commit/84b44cfdb44c077b190070fac98b9ee45c06bfc8) fix(controller): Fix node status when daemon pod deleted but its children nodes are still running (#4683)
- * [8cd96352](https://github.com/argoproj/argo-workflows/commit/8cd963520fd2a560b5f2df84c98936c72b894997) fix: Do not error on duplicate workflow creation by cron (#4871)
-
-### Contributors
-
- * Saravanan Balasubramanian
- * Simon Behar
- * ermeaney
- * lonsdale8734
-
-## v2.12.4 (2021-01-12)
-
- * [f97bef5d](https://github.com/argoproj/argo-workflows/commit/f97bef5d00361f3d1cbb8574f7f6adf632673008) Update manifests to v2.12.4
- * [daba40ea](https://github.com/argoproj/argo-workflows/commit/daba40eaf199f5ec0ead4c38e3c37a6a74adb5d9) build: Fix lint (#4837)
- * [c521b27e](https://github.com/argoproj/argo-workflows/commit/c521b27e04e2fc40d69d215cf80808a72ed22f1d) feat: Publish images on Quay.io (#4860)
- * [1cd2570c](https://github.com/argoproj/argo-workflows/commit/1cd2570c75a56b50bc830a5727221082b422d0c9) feat: Publish images to Quay.io (#4854)
- * [7eb16e61](https://github.com/argoproj/argo-workflows/commit/7eb16e617034a9798bef3e0d6c51c798a42758ac) fix: Preserve the original slice when removing string (#4835)
- * [e64183db](https://github.com/argoproj/argo-workflows/commit/e64183dbcb80e8b654acec517487661de7cf7dd4) fix(controller): keep special characters in json string when use withItems (#4814)
- * [cd1b8b27](https://github.com/argoproj/argo-workflows/commit/cd1b8b272da0f3854adcfc633c24259da9987971) chore: add missing phase option to node cli command (#4825)
-
-### Contributors
-
- * Alex Collins
- * Simon Behar
- * Song Juchao
- * cocotyty
- * markterm
-
-## v2.12.3 (2021-01-04)
-
- * [93ee5301](https://github.com/argoproj/argo-workflows/commit/93ee530126cc1fc154ada84d5656ca82d491dc7f) Update manifests to v2.12.3
- * [3ce298e2](https://github.com/argoproj/argo-workflows/commit/3ce298e2972a67267d9783e2c094be5af8b48eb7) fix tests
- * [9bb1168e](https://github.com/argoproj/argo-workflows/commit/9bb1168e2fbb502d50c2e7e977583f321be29339) test: Fix TestDeletingRunningPod (#4779)
- * [8177b53c](https://github.com/argoproj/argo-workflows/commit/8177b53c299a7e4fb64bc3b024ad46a3584b6de0) fix(controller): Various v2.12 fixes. Fixes #4798, #4801, #4806 (#4808)
- * [19c7bdab](https://github.com/argoproj/argo-workflows/commit/19c7bdabdc6d4de43896527ec850f14f38678e38) fix: load all supported authentication plugins for k8s client-go (#4802)
- * [331aa4ee](https://github.com/argoproj/argo-workflows/commit/331aa4ee896a83504144175da404c580dbfdc48c) fix(server): Do not silently ignore sso secret creation error (#4775)
- * [0bbc082c](https://github.com/argoproj/argo-workflows/commit/0bbc082cf33a78cc332e75c31321c80c357aa83b) feat(controller): Rate-limit workflows. Closes #4718 (#4726)
- * [a6027982](https://github.com/argoproj/argo-workflows/commit/a60279827f50579d2624f4fa150af5d2e9458588) fix(controller): Support default database port. Fixes #4756 (#4757)
- * [5d857358](https://github.com/argoproj/argo-workflows/commit/5d8573581913ae265c869638904ec74b87f07a6b) feat(controller): Enhanced TTL controller scalability (#4736)
-
-### Contributors
-
- * Alex Collins
- * Kristoffer Johansson
- * Simon Behar
-
-## v2.12.2 (2020-12-18)
-
-
-### Contributors
-
-
-## v2.12.11 (2021-04-05)
-
- * [71d00c78](https://github.com/argoproj/argo-workflows/commit/71d00c7878e2b904ad35ca25712bef7e84893ae2) Update manifests to v2.12.11
- * [d5e0823f](https://github.com/argoproj/argo-workflows/commit/d5e0823f1a237bffc56a61601a5d2ef011e66b0e) fix: InsecureSkipVerify true
- * [3b6c53af](https://github.com/argoproj/argo-workflows/commit/3b6c53af00843a17dc2f030e08dec1b1c070e3f2) fix(executor): GODEBUG=x509ignoreCN=0 (#5562)
- * [051413e0](https://github.com/argoproj/argo-workflows/commit/051413e0d4c11a14e27e6623c967c4f268b26f9a) chore: Handling panic in go routines (#5489)
- * [631e55d0](https://github.com/argoproj/argo-workflows/commit/631e55d006a342b20180e6cbd82d10f891e4d60f) feat(server): Enforce TLS >= v1.2 (#5172)
-
-### Contributors
-
- * Alex Collins
- * Saravanan Balasubramanian
- * Simon Behar
-
-## v2.12.10 (2021-03-08)
-
- * [f1e0c617](https://github.com/argoproj/argo-workflows/commit/f1e0c6174b48af69d6e8ecd235a2d709f44f8095) Update manifests to v2.12.10
- * [1ecc5c00](https://github.com/argoproj/argo-workflows/commit/1ecc5c0093cbd4e74efbd3063cbe0499ce81d54a) fix(test): Flaky TestWorkflowShutdownStrategy  (#5331)
- * [fa8f63c6](https://github.com/argoproj/argo-workflows/commit/fa8f63c6db3dfc0dfed2fb99f40850beee4f3981) Cherry-pick 5289
- * [d56c420b](https://github.com/argoproj/argo-workflows/commit/d56c420b7af25bca13518180da185ac70380446e) fix: Disallow object names with more than 63 chars (#5324)
- * [6ccfe46d](https://github.com/argoproj/argo-workflows/commit/6ccfe46d68c6ddca231c746d8d0f6444546b20ad) fix: Backward compatible workflowTemplateRef from 2.11.x to  2.12.x (#5314)
- * [0ad73462](https://github.com/argoproj/argo-workflows/commit/0ad7346230ef148b1acd5e78de69bd552cb9d49c) fix: Ensure whitespaces is allowed between name and bracket (#5176)
- * [73790534](https://github.com/argoproj/argo-workflows/commit/737905345d70ba1ebd566ce1230e4f971993dfd0) Update manifests to v2.12.9
- * [20e4c401](https://github.com/argoproj/argo-workflows/commit/20e4c401ccfc482e4516c58d52ba62eb67f1731a) chore: Add SHA256 checksums to release (#5122)
- * [81c07344](https://github.com/argoproj/argo-workflows/commit/81c07344fe5d84e09284bd1fea4f01239524a842) codegen
- * [26d2ec0a](https://github.com/argoproj/argo-workflows/commit/26d2ec0a10913b7df994f7d354fea2be1db04ea9) cherry-picked 5081
- * [92ad730a](https://github.com/argoproj/argo-workflows/commit/92ad730a28a4eb613b8e5105c9c2ccbb2ed2c3f3) fix: Revert "fix(controller): keep special characters in json string when … … 19da392 …use withItems (#4814)" (#5076)
- * [1e868ec1](https://github.com/argoproj/argo-workflows/commit/1e868ec1adf95dd0e53e7939cc8a9d7834cf8fbf) fix(controller): Fix creator dashes (#5082)
- * [d19d4eee](https://github.com/argoproj/argo-workflows/commit/d19d4eeed3224ea7e854c658d3544663e86cd509) Update manifests to v2.12.8
- * [cf3b1980](https://github.com/argoproj/argo-workflows/commit/cf3b1980dc35c615de53b0d07d13a2c828f94bbf) fix: Fix build
- * [a8d0b67e](https://github.com/argoproj/argo-workflows/commit/a8d0b67e87daac56f310136e56f4dbe5acb98267) fix(cli): Add insecure-skip-verify for HTTP1. Fixes #5008 (#5015)
- * [a3134de9](https://github.com/argoproj/argo-workflows/commit/a3134de95090c7b980a741f28dde9ca94650ab18) fix: Skip the Workflow not found error in Concurrency policy (#5030)
- * [a60e4105](https://github.com/argoproj/argo-workflows/commit/a60e4105d0e15ba94625ae83dbd728841576a5ee) fix: Unmark daemoned nodes after stopping them (#5005)
- * [5f515073](https://github.com/argoproj/argo-workflows/commit/5f5150730c644865a5867bf017100732f55811dd) Update manifests to v2.12.7
- * [637154d0](https://github.com/argoproj/argo-workflows/commit/637154d02b0829699a31b283eaf9045708d96acf) feat: Support retry on transient errors during executor status checking (#4946)
- * [8e7ed235](https://github.com/argoproj/argo-workflows/commit/8e7ed235e8b4411fda6d0b6c088dd4a6e931ffb9) feat(server): Add Prometheus metrics. Closes #4751 (#4952)
- * [372cef03](https://github.com/argoproj/argo-workflows/commit/372cef03b4f8b78a38097236a9ffa60f5028d741) chore: Remove self-referential replace directive in go.mod (#4959)
- * [77b34e3c](https://github.com/argoproj/argo-workflows/commit/77b34e3c9cb603a46512f485bdfaeede3d562d8d) chore: Set Go mod to /v2 (#4916)
- * [4cb5b7eb](https://github.com/argoproj/argo-workflows/commit/4cb5b7eb807573e167f3429fb5fc8bf5ade0685d) Update manifests to v2.12.6
- * [2696898b](https://github.com/argoproj/argo-workflows/commit/2696898b3334a08af47bdbabb85a7d9fa1f37050) fix: Mutex not being released on step completion (#4847)
- * [067b6036](https://github.com/argoproj/argo-workflows/commit/067b60363f260edf8a680c4cb5fa36cc561ff20a) feat(server): Support email for SSO+RBAC. Closes #4612 (#4644)
- * [53f022c3](https://github.com/argoproj/argo-workflows/commit/53f022c3f740b5a8636d74873462011702403e42) Update manifests to v2.12.5
- * [86d7b3b6](https://github.com/argoproj/argo-workflows/commit/86d7b3b6b4fc4d9336eefea0a0ff44201e35fa47) fix tests
- * [63390940](https://github.com/argoproj/argo-workflows/commit/6339094024e23d9dcea1f24981c366e00f36099b) fix tests
- * [0c7aa149](https://github.com/argoproj/argo-workflows/commit/0c7aa1498c900b6fb65b72f82186bab2ff7f0130) fix: Mutex not being released on step completion (#4847)
- * [b3742193](https://github.com/argoproj/argo-workflows/commit/b3742193ef19ffeb33795a39456b3bc1a3a667f5) fix(controller): Consider processed retry node in metrics. Fixes #4846 (#4872)
- * [9063a94d](https://github.com/argoproj/argo-workflows/commit/9063a94d6fc5ab684e3c52c3d99e4dc4a0d034f6) fix(controller): make creator label DNS compliant. Fixes #4880 (#4881)
- * [84b44cfd](https://github.com/argoproj/argo-workflows/commit/84b44cfdb44c077b190070fac98b9ee45c06bfc8) fix(controller): Fix node status when daemon pod deleted but its children nodes are still running (#4683)
- * [8cd96352](https://github.com/argoproj/argo-workflows/commit/8cd963520fd2a560b5f2df84c98936c72b894997) fix: Do not error on duplicate workflow creation by cron (#4871)
- * [f97bef5d](https://github.com/argoproj/argo-workflows/commit/f97bef5d00361f3d1cbb8574f7f6adf632673008) Update manifests to v2.12.4
- * [daba40ea](https://github.com/argoproj/argo-workflows/commit/daba40eaf199f5ec0ead4c38e3c37a6a74adb5d9) build: Fix lint (#4837)
- * [c521b27e](https://github.com/argoproj/argo-workflows/commit/c521b27e04e2fc40d69d215cf80808a72ed22f1d) feat: Publish images on Quay.io (#4860)
- * [1cd2570c](https://github.com/argoproj/argo-workflows/commit/1cd2570c75a56b50bc830a5727221082b422d0c9) feat: Publish images to Quay.io (#4854)
- * [7eb16e61](https://github.com/argoproj/argo-workflows/commit/7eb16e617034a9798bef3e0d6c51c798a42758ac) fix: Preserve the original slice when removing string (#4835)
- * [e64183db](https://github.com/argoproj/argo-workflows/commit/e64183dbcb80e8b654acec517487661de7cf7dd4) fix(controller): keep special characters in json string when use withItems (#4814)
- * [cd1b8b27](https://github.com/argoproj/argo-workflows/commit/cd1b8b272da0f3854adcfc633c24259da9987971) chore: add missing phase option to node cli command (#4825)
- * [93ee5301](https://github.com/argoproj/argo-workflows/commit/93ee530126cc1fc154ada84d5656ca82d491dc7f) Update manifests to v2.12.3
- * [3ce298e2](https://github.com/argoproj/argo-workflows/commit/3ce298e2972a67267d9783e2c094be5af8b48eb7) fix tests
- * [9bb1168e](https://github.com/argoproj/argo-workflows/commit/9bb1168e2fbb502d50c2e7e977583f321be29339) test: Fix TestDeletingRunningPod (#4779)
- * [8177b53c](https://github.com/argoproj/argo-workflows/commit/8177b53c299a7e4fb64bc3b024ad46a3584b6de0) fix(controller): Various v2.12 fixes. Fixes #4798, #4801, #4806 (#4808)
- * [19c7bdab](https://github.com/argoproj/argo-workflows/commit/19c7bdabdc6d4de43896527ec850f14f38678e38) fix: load all supported authentication plugins for k8s client-go (#4802)
- * [331aa4ee](https://github.com/argoproj/argo-workflows/commit/331aa4ee896a83504144175da404c580dbfdc48c) fix(server): Do not silently ignore sso secret creation error (#4775)
- * [0bbc082c](https://github.com/argoproj/argo-workflows/commit/0bbc082cf33a78cc332e75c31321c80c357aa83b) feat(controller): Rate-limit workflows. Closes #4718 (#4726)
- * [a6027982](https://github.com/argoproj/argo-workflows/commit/a60279827f50579d2624f4fa150af5d2e9458588) fix(controller): Support default database port. Fixes #4756 (#4757)
- * [5d857358](https://github.com/argoproj/argo-workflows/commit/5d8573581913ae265c869638904ec74b87f07a6b) feat(controller): Enhanced TTL controller scalability (#4736)
- * [7868e723](https://github.com/argoproj/argo-workflows/commit/7868e723704bcfe1b943bc076c2e0b83777d6267) Update manifests to v2.12.2
- * [e8c4aa4a](https://github.com/argoproj/argo-workflows/commit/e8c4aa4a99a5ea06c8c0cf1807df40e99d86da85) fix(controller): Requeue when the pod was deleted. Fixes #4719 (#4742)
- * [11bc9c41](https://github.com/argoproj/argo-workflows/commit/11bc9c41abb1786bbd06f83bf3222865c7da320c) feat(controller): Pod deletion grace period. Fixes #4719 (#4725)
-
-### Contributors
-
- * Alex Collins
- * Kristoffer Johansson
- * Saravanan Balasubramanian
- * Simon Behar
- * Song Juchao
- * Yuan Tang
- * cocotyty
- * ermeaney
- * lonsdale8734
- * markterm
-
-## v2.12.1 (2020-12-17)
-
- * [9a7e044e](https://github.com/argoproj/argo-workflows/commit/9a7e044e27b1e342748d9f41ea60d1998b8907ab) Update manifests to v2.12.1
- * [d21c4528](https://github.com/argoproj/argo-workflows/commit/d21c452869330658083b5066bd84b6cbd9f1f745) Change argo-server crt/key owner (#4750)
- * [53029017](https://github.com/argoproj/argo-workflows/commit/53029017f05a369575a1ff73387bafff9fc9b451) Update manifests to v2.12.0
- * [43458066](https://github.com/argoproj/argo-workflows/commit/4345806690634f23427ade69a72bae2e0b289fc7) fix(controller): Fixes resource version misuse. Fixes #4714 (#4741)
- * [e192fb15](https://github.com/argoproj/argo-workflows/commit/e192fb15616e3a192e1b4b3db0a596a6c70e2430) fix(executor): Copy main/executor container resources from controller by value instead of reference (#4737)
- * [4fb0d96d](https://github.com/argoproj/argo-workflows/commit/4fb0d96d052136914f3772276f155b92db9289fc) fix(controller): Fix incorrect main container customization precedence and isResourcesSpecified check (#4681)
- * [1aac79e9](https://github.com/argoproj/argo-workflows/commit/1aac79e9bf04d2fb15f080db1359ba09e0c1a257) feat(controller): Allow to configure main container resources (#4656)
-
-### Contributors
-
- * Alex Collins
- * Daisuke Taniwaki
- * Simon Behar
- * Yuan Tang
-
-## v2.12.0-rc6 (2020-12-15)
-
- * [e55b886e](https://github.com/argoproj/argo-workflows/commit/e55b886ed4706a403a8895b2819b168bd638b256) Update manifests to v2.12.0-rc6
- * [1fb0d8b9](https://github.com/argoproj/argo-workflows/commit/1fb0d8b970f95e98a324e106f431b4782eb2b88f) fix(controller): Fixed workflow stuck with mutex lock (#4744)
- * [4059820e](https://github.com/argoproj/argo-workflows/commit/4059820ea4c0fd7c278c3a8b5cf05cb00c2e3380) fix(executor): Always check if resource has been deleted in checkResourceState() (#4738)
- * [739af45b](https://github.com/argoproj/argo-workflows/commit/739af45b5cf018332d9c5397e6beda826cf4a143) fix(ui): Fix YAML for workflows with storedWorkflowTemplateSpec. Fixes #4691 (#4695)
- * [35980343](https://github.com/argoproj/argo-workflows/commit/3598034335bb6eb9bb95dd79375570e19bb07e1e) fix: Allow Bearer token in server mode (#4735)
- * [bf589b01](https://github.com/argoproj/argo-workflows/commit/bf589b014cbe81d1ba46b3a08d9426e97c2683c3) fix(executor): Deal with the pod watch API call timing out (#4734)
- * [71edcfd4](https://github.com/argoproj/argo-workflows/commit/71edcfd445ee5550ac7da00b8e81ff105e3d3318) ci: Pin kustomize version (#4704)
- * [fabf20b5](https://github.com/argoproj/argo-workflows/commit/fabf20b5928cc1314e20e9047a9b122fdbe5ed62) fix(controller): Increate default EventSpamBurst in Eventrecorder (#4698)
-
-### Contributors
-
- * Alex Collins
- * Saravanan Balasubramanian
- * Simon Behar
- * Yuan Tang
- * hermanhobnob
-
-## v2.12.0-rc5 (2020-12-10)
-
- * [3aa86fff](https://github.com/argoproj/argo-workflows/commit/3aa86fffb7c975e3a39302f5b2e37f99fe58fa4f) Update manifests to v2.12.0-rc5
- * [3581a1e7](https://github.com/argoproj/argo-workflows/commit/3581a1e77c927830908ba42f9b63b31c28501346) fix: Consider optional artifact arguments (#4672)
- * [50210fc3](https://github.com/argoproj/argo-workflows/commit/50210fc38bdd80fec1c1affd9836b8b0fcf41e31) feat(controller): Use deterministic name for cron workflow children (#4638)
- * [3a4e974c](https://github.com/argoproj/argo-workflows/commit/3a4e974c0cf14ba24df70258a5b5ae19a966397d) fix(controller): Only patch status.active in cron workflows when syncing (#4659)
- * [2aaad26f](https://github.com/argoproj/argo-workflows/commit/2aaad26fe129a6c4eeccb60226941b14664aca4a) fix(ui): DataLoaderDropdown fix input type from promise to function that (#4655)
- * [72ca92cb](https://github.com/argoproj/argo-workflows/commit/72ca92cb4459007968b13e097ef68f3e307454ce) fix: Count Workflows with no phase as Pending for metrics (#4628)
- * [8ea219b8](https://github.com/argoproj/argo-workflows/commit/8ea219b860bc85622c120d495860d8a62eb67e5a) fix(ui): Reference secrets in EnvVars. Fixes #3973  (#4419)
- * [3b35ba2b](https://github.com/argoproj/argo-workflows/commit/3b35ba2bdee31c8d512acf145c10bcb3f73d7286) fix: derive jsonschema and fix up issues, validate examples dir… (#4611)
- * [20f59de9](https://github.com/argoproj/argo-workflows/commit/20f59de9780e0291760eb133aded3a6da1562078) docs: Add JSON schema for IDE validation (#4581)
- * [2f49720a](https://github.com/argoproj/argo-workflows/commit/2f49720aa7bea619b8691cb6d9e41b20971a178e) fix(ui): Fixed reconnection hot-loop. Fixes #4580 (#4663)
- * [4f8e4a51](https://github.com/argoproj/argo-workflows/commit/4f8e4a515dbde688a23147a40625198e1f9b91a0) fix(controller): Cleanup the synchronize  pending queue once Workflow deleted (#4664)
- * [12859847](https://github.com/argoproj/argo-workflows/commit/128598478bdd6a5d35d76101feb85c04b4d6c7a8) fix(controller): Deal with hyphen in creator. Fixes #4058 (#4643)
- * [2d05d56e](https://github.com/argoproj/argo-workflows/commit/2d05d56ea0af726f9a0906f72119105f27453ff9) feat(controller): Make MAX_OPERATION_TIME configurable. Close #4239 (#4562)
- * [c00ff714](https://github.com/argoproj/argo-workflows/commit/c00ff7144bda39995823b8f0e3668c88958d9736) fix: Fix TestCleanFieldsExclude (#4625)
-
-### Contributors
-
- * Alex Collins
- * Paul Brabban
- * Saravanan Balasubramanian
- * Simon Behar
- * aletepe
- * tczhao
-
-## v2.12.0-rc4 (2020-12-02)
-
- * [e34bc3b7](https://github.com/argoproj/argo-workflows/commit/e34bc3b7237669ae1d0a800f8210a462cb6e4cfa) Update manifests to v2.12.0-rc4
- * [feea63f0](https://github.com/argoproj/argo-workflows/commit/feea63f029f2416dc7002852c5541a9638a03d72) feat(executor): More informative log when executors do not support output param from base image layer (#4620)
- * [65f5aefe](https://github.com/argoproj/argo-workflows/commit/65f5aefefe592f11a387b5db715b4895e47e1af1) fix(argo-server): fix global variable validation error with reversed dag.tasks (#4369)
- * [e6870664](https://github.com/argoproj/argo-workflows/commit/e6870664e16db166529363f85ed90632f66ca9de) fix(server): Correct webhook event payload marshalling. Fixes #4572 (#4594)
- * [b1d682e7](https://github.com/argoproj/argo-workflows/commit/b1d682e71c8f3f3a66b71d47f8db22db55637629) fix: Perform fields filtering server side (#4595)
- * [61b67048](https://github.com/argoproj/argo-workflows/commit/61b670481cb693b25dfc0186ff28dfe29dfa9353) fix: Null check pagination variable (#4617)
- * [ace0ee1b](https://github.com/argoproj/argo-workflows/commit/ace0ee1b23273ac982d0c8885d50755608849258) fix(executor): Fixed waitMainContainerStart returning prematurely. Closes #4599 (#4601)
- * [f03f99ef](https://github.com/argoproj/argo-workflows/commit/f03f99ef69b60e91f2dc08c6729ba58d27e56d1d) refactor: Use polling model for workflow phase metric (#4557)
- * [8e887e73](https://github.com/argoproj/argo-workflows/commit/8e887e7315a522998e810021d10334e860a3b307) fix(executor): Handle sidecar killing in a process-namespace-shared pod (#4575)
- * [991fa674](https://github.com/argoproj/argo-workflows/commit/991fa6747bce82bef9919384925e0a6b2f7f3668) fix(server): serve artifacts directly from disk to support large artifacts (#4589)
- * [2eeb1fce](https://github.com/argoproj/argo-workflows/commit/2eeb1fcef6896e0518c3ab1d1cd715de93fe4c41) fix(server): use the correct name when downloading artifacts (#4579)
- * [d1a37d5f](https://github.com/argoproj/argo-workflows/commit/d1a37d5fbabc1f3c90b15a266858d207275e31ab) feat(controller): Retry transient offload errors. Resolves #4464 (#4482)
-
-### Contributors
-
- * Alex Collins
- * Daisuke Taniwaki
- * Simon Behar
- * Yuan Tang
- * dherman
- * fsiegmund
- * zhengchenyu
-
-## v2.12.0-rc3 (2020-11-23)
-
- * [85cafe6e](https://github.com/argoproj/argo-workflows/commit/85cafe6e882f9a49e402c29d14e04ded348b07b2) Update manifests to v2.12.0-rc3
- * [42e3af7a](https://github.com/argoproj/argo-workflows/commit/42e3af7a9f9bb7068b51382212a380fdc9faa298) Merge branch 'master' into release-2.12
- * [fdafc4ba](https://github.com/argoproj/argo-workflows/commit/fdafc4badc1f2e76983f69a42e2708be3c59e207) chore: Updated stress test YAML (#4569)
- * [916b4549](https://github.com/argoproj/argo-workflows/commit/916b4549b9b4e2a74902aea16cfc04996dccb263) feat(ui): Add Template/Cron workflow filter to workflow page. Closes #4532 (#4543)
- * [6e2b0cf3](https://github.com/argoproj/argo-workflows/commit/6e2b0cf37bdd14022d0fe6437a013d0bf06159a8) docs: Clean-up examples. Fixes #4124 (#4128)
- * [4998b2d6](https://github.com/argoproj/argo-workflows/commit/4998b2d6574adfe039b9c037251ecc717e7f1996) chore: Remove unused image build and push hooks (#4539)
- * [48af0244](https://github.com/argoproj/argo-workflows/commit/48af024450f6a395ca887073343d3296d69d836a) fix: executor/pns containerid prefix fix (#4555)
- * [53195ed5](https://github.com/argoproj/argo-workflows/commit/53195ed56029c639856a395ed5c92db82d49a2d9) fix: Respect continueOn for leaf tasks (#4455)
- * [e3d59f08](https://github.com/argoproj/argo-workflows/commit/e3d59f08497070b2d002049ffd5e2e7d5243a6e5) docs: Added CloudSeeds as one of the users for argo (#4553)
- * [ad11180e](https://github.com/argoproj/argo-workflows/commit/ad11180e0673e6ed5e12b537dd994e88ab4aa696) docs: Update cost optimisation  to include information about cleaning up workflows and archiving (#4549)
- * [7e121509](https://github.com/argoproj/argo-workflows/commit/7e121509c6745dc7f6fa40cc35790012521f1f12) fix(controller): Correct default port logic (#4547)
- * [a712e535](https://github.com/argoproj/argo-workflows/commit/a712e535bec3b196219188236d4063ecc1153ba4) fix: Validate metric key names (#4540)
- * [c469b053](https://github.com/argoproj/argo-workflows/commit/c469b053f8ca27ca03d36343fa17277ad374edc9) fix: Missing arg lines caused files not to copy into containers (#4542)
- * [0980ead3](https://github.com/argoproj/argo-workflows/commit/0980ead36d39620c914e04e2aa207e688a631e9a) fix(test): fix TestWFDefaultWithWFTAndWf flakiness (#4538)
- * [564e69f3](https://github.com/argoproj/argo-workflows/commit/564e69f3fdef6239f9091401ec4472bd8bd248bd) fix(ui): Do not auto-reload doc.location. Fixes #4530 (#4535)
- * [eebcb8b8](https://github.com/argoproj/argo-workflows/commit/eebcb8b8a621e37ae0c66d2248d83af821a1ade8) docs: Add "Argo Workflows in 5 min" link to README (#4533)
- * [5147f0a1](https://github.com/argoproj/argo-workflows/commit/5147f0a19c262a4f139aa2c4333942e6e97a6d12) Merge branch 'master' into release-2.12
- * [176d890c](https://github.com/argoproj/argo-workflows/commit/176d890c1cac25856f67fbed4cc39a396aa87a93) fix(controller): support float for param value (#4490)
- * [4bacbc12](https://github.com/argoproj/argo-workflows/commit/4bacbc121ae028557b7f0718f02fbb25e8e63850) feat(controller): make sso timeout configurable via cm (#4494)
- * [02e1f0e0](https://github.com/argoproj/argo-workflows/commit/02e1f0e0d1c8ad8422984000bb2b49dc3709b1a0) fix(server): Add `list sa` and `create secret` to `argo-server` roles. Closes #4526 (#4514)
- * [d0082e8f](https://github.com/argoproj/argo-workflows/commit/d0082e8fb87fb731c7247f28da0c1b29b6fa3f02) fix: link templates not replacing multiple templates with same name (#4516)
- * [411bde37](https://github.com/argoproj/argo-workflows/commit/411bde37c2b146c1fb52d913bf5629a36e0a5af1) feat: adds millisecond-level timestamps to argo and workflow-controller (#4518)
- * [2c54ca3f](https://github.com/argoproj/argo-workflows/commit/2c54ca3fbee675815566508fc10c137e7b4f9f2f) add bonprix to argo users (#4520)
- * [754a201d](https://github.com/argoproj/argo-workflows/commit/754a201da01aa7aef2d82dcdafa8d054dd879634) build: Reuse IMAGE_OS instead of hard-coded linux (#4519)
-
-### Contributors
-
- * Alex Collins
- * Alexander Mikhailian
- * Arghya Sadhu
- * Boolman
- * David Gibbons
- * Espen Finnesand
- * Lennart Kindermann
- * Ludovic Cléroux
- * Oleg Borodai
- * Saravanan Balasubramanian
- * Simon Behar
- * Yuan Tang
- * Zach
- * tczhao
-
-## v2.12.0-rc2 (2020-11-12)
-
- * [f509fa55](https://github.com/argoproj/argo-workflows/commit/f509fa550b0694907bb9447084df11af171f9cc9) Update manifests to v2.12.0-rc2
- * [c297b2aa](https://github.com/argoproj/argo-workflows/commit/c297b2aa293942f2621fb4b5c0e460abc0f7c251) Merge branch 'master' into release-2.12
- * [2dab2d15](https://github.com/argoproj/argo-workflows/commit/2dab2d15868c5f52ca4e3f7ba1c5276d55c26a42) fix(test):  fix TestWFDefaultWithWFTAndWf flakiness (#4507)
- * [64ae3303](https://github.com/argoproj/argo-workflows/commit/64ae33034d30a943dca71b0c5e4ebd97018448bf) fix(controller): prepend script path to the script template args. Resolves #4481 (#4492)
- * [0931baf5](https://github.com/argoproj/argo-workflows/commit/0931baf5fbe48487278b9a6c2fa206ab02406e5b) feat: Redirect to requested URL after SSO login (#4495)
- * [465447c0](https://github.com/argoproj/argo-workflows/commit/465447c039a430f675a2c0cc10e71e7024fc79a3) fix: Ensure ContainerStatus in PNS is terminated before continuing (#4469)
- * [f7287687](https://github.com/argoproj/argo-workflows/commit/f7287687b61c7e2d8e27864e9768c216a53fd071) fix(ui): Check node children before counting them. (#4498)
- * [bfc13c3f](https://github.com/argoproj/argo-workflows/commit/bfc13c3f5b9abe2980826dee1283433b7cb22385) fix: Ensure redirect to login when using empty auth token (#4496)
- * [d56ce890](https://github.com/argoproj/argo-workflows/commit/d56ce890c900c300bd396c5050cea9fb2b4aa358) feat(cli): add selector and field-selector option to terminate (#4448)
- * [e501fcca](https://github.com/argoproj/argo-workflows/commit/e501fcca16a908781a786b93417cc41644b62ea4) fix(controller): Refactor the Merge Workflow, WorkflowTemplate and WorkflowDefaults (#4354)
- * [2ee3f5a7](https://github.com/argoproj/argo-workflows/commit/2ee3f5a71f4791635192d7cd4e1b583d80e81077) fix(ui): fix the `all` option in the workflow archive list (#4486)
-
-### Contributors
-
- * Noah Hanjun Lee
- * Saravanan Balasubramanian
- * Simon Behar
- * Vlad Losev
- * dherman
- * ivancili
-
-## v2.12.0-rc1 (2020-11-06)
-
- * [5e2c656b](https://github.com/argoproj/argo-workflows/commit/5e2c656b04aa206d248073262960c56da33cc0ec) chore: Correct manifests
-
-### Contributors
-
- * Alex Collins
-
-## v2.12.0 (2020-12-17)
-
- * [53029017](https://github.com/argoproj/argo-workflows/commit/53029017f05a369575a1ff73387bafff9fc9b451) Update manifests to v2.12.0
- * [43458066](https://github.com/argoproj/argo-workflows/commit/4345806690634f23427ade69a72bae2e0b289fc7) fix(controller): Fixes resource version misuse. Fixes #4714 (#4741)
- * [e192fb15](https://github.com/argoproj/argo-workflows/commit/e192fb15616e3a192e1b4b3db0a596a6c70e2430) fix(executor): Copy main/executor container resources from controller by value instead of reference (#4737)
- * [4fb0d96d](https://github.com/argoproj/argo-workflows/commit/4fb0d96d052136914f3772276f155b92db9289fc) fix(controller): Fix incorrect main container customization precedence and isResourcesSpecified check (#4681)
- * [1aac79e9](https://github.com/argoproj/argo-workflows/commit/1aac79e9bf04d2fb15f080db1359ba09e0c1a257) feat(controller): Allow to configure main container resources (#4656)
- * [e55b886e](https://github.com/argoproj/argo-workflows/commit/e55b886ed4706a403a8895b2819b168bd638b256) Update manifests to v2.12.0-rc6
- * [1fb0d8b9](https://github.com/argoproj/argo-workflows/commit/1fb0d8b970f95e98a324e106f431b4782eb2b88f) fix(controller): Fixed workflow stuck with mutex lock (#4744)
- * [4059820e](https://github.com/argoproj/argo-workflows/commit/4059820ea4c0fd7c278c3a8b5cf05cb00c2e3380) fix(executor): Always check if resource has been deleted in checkResourceState() (#4738)
- * [739af45b](https://github.com/argoproj/argo-workflows/commit/739af45b5cf018332d9c5397e6beda826cf4a143) fix(ui): Fix YAML for workflows with storedWorkflowTemplateSpec. Fixes #4691 (#4695)
- * [35980343](https://github.com/argoproj/argo-workflows/commit/3598034335bb6eb9bb95dd79375570e19bb07e1e) fix: Allow Bearer token in server mode (#4735)
- * [bf589b01](https://github.com/argoproj/argo-workflows/commit/bf589b014cbe81d1ba46b3a08d9426e97c2683c3) fix(executor): Deal with the pod watch API call timing out (#4734)
- * [71edcfd4](https://github.com/argoproj/argo-workflows/commit/71edcfd445ee5550ac7da00b8e81ff105e3d3318) ci: Pin kustomize version (#4704)
- * [fabf20b5](https://github.com/argoproj/argo-workflows/commit/fabf20b5928cc1314e20e9047a9b122fdbe5ed62) fix(controller): Increate default EventSpamBurst in Eventrecorder (#4698)
- * [3aa86fff](https://github.com/argoproj/argo-workflows/commit/3aa86fffb7c975e3a39302f5b2e37f99fe58fa4f) Update manifests to v2.12.0-rc5
- * [3581a1e7](https://github.com/argoproj/argo-workflows/commit/3581a1e77c927830908ba42f9b63b31c28501346) fix: Consider optional artifact arguments (#4672)
- * [50210fc3](https://github.com/argoproj/argo-workflows/commit/50210fc38bdd80fec1c1affd9836b8b0fcf41e31) feat(controller): Use deterministic name for cron workflow children (#4638)
- * [3a4e974c](https://github.com/argoproj/argo-workflows/commit/3a4e974c0cf14ba24df70258a5b5ae19a966397d) fix(controller): Only patch status.active in cron workflows when syncing (#4659)
- * [2aaad26f](https://github.com/argoproj/argo-workflows/commit/2aaad26fe129a6c4eeccb60226941b14664aca4a) fix(ui): DataLoaderDropdown fix input type from promise to function that (#4655)
- * [72ca92cb](https://github.com/argoproj/argo-workflows/commit/72ca92cb4459007968b13e097ef68f3e307454ce) fix: Count Workflows with no phase as Pending for metrics (#4628)
- * [8ea219b8](https://github.com/argoproj/argo-workflows/commit/8ea219b860bc85622c120d495860d8a62eb67e5a) fix(ui): Reference secrets in EnvVars. Fixes #3973  (#4419)
- * [3b35ba2b](https://github.com/argoproj/argo-workflows/commit/3b35ba2bdee31c8d512acf145c10bcb3f73d7286) fix: derive jsonschema and fix up issues, validate examples dir… (#4611)
- * [20f59de9](https://github.com/argoproj/argo-workflows/commit/20f59de9780e0291760eb133aded3a6da1562078) docs: Add JSON schema for IDE validation (#4581)
- * [2f49720a](https://github.com/argoproj/argo-workflows/commit/2f49720aa7bea619b8691cb6d9e41b20971a178e) fix(ui): Fixed reconnection hot-loop. Fixes #4580 (#4663)
- * [4f8e4a51](https://github.com/argoproj/argo-workflows/commit/4f8e4a515dbde688a23147a40625198e1f9b91a0) fix(controller): Cleanup the synchronize  pending queue once Workflow deleted (#4664)
- * [12859847](https://github.com/argoproj/argo-workflows/commit/128598478bdd6a5d35d76101feb85c04b4d6c7a8) fix(controller): Deal with hyphen in creator. Fixes #4058 (#4643)
- * [2d05d56e](https://github.com/argoproj/argo-workflows/commit/2d05d56ea0af726f9a0906f72119105f27453ff9) feat(controller): Make MAX_OPERATION_TIME configurable. Close #4239 (#4562)
- * [c00ff714](https://github.com/argoproj/argo-workflows/commit/c00ff7144bda39995823b8f0e3668c88958d9736) fix: Fix TestCleanFieldsExclude (#4625)
- * [e34bc3b7](https://github.com/argoproj/argo-workflows/commit/e34bc3b7237669ae1d0a800f8210a462cb6e4cfa) Update manifests to v2.12.0-rc4
- * [feea63f0](https://github.com/argoproj/argo-workflows/commit/feea63f029f2416dc7002852c5541a9638a03d72) feat(executor): More informative log when executors do not support output param from base image layer (#4620)
- * [65f5aefe](https://github.com/argoproj/argo-workflows/commit/65f5aefefe592f11a387b5db715b4895e47e1af1) fix(argo-server): fix global variable validation error with reversed dag.tasks (#4369)
- * [e6870664](https://github.com/argoproj/argo-workflows/commit/e6870664e16db166529363f85ed90632f66ca9de) fix(server): Correct webhook event payload marshalling. Fixes #4572 (#4594)
- * [b1d682e7](https://github.com/argoproj/argo-workflows/commit/b1d682e71c8f3f3a66b71d47f8db22db55637629) fix: Perform fields filtering server side (#4595)
- * [61b67048](https://github.com/argoproj/argo-workflows/commit/61b670481cb693b25dfc0186ff28dfe29dfa9353) fix: Null check pagination variable (#4617)
- * [ace0ee1b](https://github.com/argoproj/argo-workflows/commit/ace0ee1b23273ac982d0c8885d50755608849258) fix(executor): Fixed waitMainContainerStart returning prematurely. Closes #4599 (#4601)
- * [f03f99ef](https://github.com/argoproj/argo-workflows/commit/f03f99ef69b60e91f2dc08c6729ba58d27e56d1d) refactor: Use polling model for workflow phase metric (#4557)
- * [8e887e73](https://github.com/argoproj/argo-workflows/commit/8e887e7315a522998e810021d10334e860a3b307) fix(executor): Handle sidecar killing in a process-namespace-shared pod (#4575)
- * [991fa674](https://github.com/argoproj/argo-workflows/commit/991fa6747bce82bef9919384925e0a6b2f7f3668) fix(server): serve artifacts directly from disk to support large artifacts (#4589)
- * [2eeb1fce](https://github.com/argoproj/argo-workflows/commit/2eeb1fcef6896e0518c3ab1d1cd715de93fe4c41) fix(server): use the correct name when downloading artifacts (#4579)
- * [d1a37d5f](https://github.com/argoproj/argo-workflows/commit/d1a37d5fbabc1f3c90b15a266858d207275e31ab) feat(controller): Retry transient offload errors. Resolves #4464 (#4482)
- * [85cafe6e](https://github.com/argoproj/argo-workflows/commit/85cafe6e882f9a49e402c29d14e04ded348b07b2) Update manifests to v2.12.0-rc3
- * [42e3af7a](https://github.com/argoproj/argo-workflows/commit/42e3af7a9f9bb7068b51382212a380fdc9faa298) Merge branch 'master' into release-2.12
- * [fdafc4ba](https://github.com/argoproj/argo-workflows/commit/fdafc4badc1f2e76983f69a42e2708be3c59e207) chore: Updated stress test YAML (#4569)
- * [916b4549](https://github.com/argoproj/argo-workflows/commit/916b4549b9b4e2a74902aea16cfc04996dccb263) feat(ui): Add Template/Cron workflow filter to workflow page. Closes #4532 (#4543)
- * [6e2b0cf3](https://github.com/argoproj/argo-workflows/commit/6e2b0cf37bdd14022d0fe6437a013d0bf06159a8) docs: Clean-up examples. Fixes #4124 (#4128)
- * [4998b2d6](https://github.com/argoproj/argo-workflows/commit/4998b2d6574adfe039b9c037251ecc717e7f1996) chore: Remove unused image build and push hooks (#4539)
- * [48af0244](https://github.com/argoproj/argo-workflows/commit/48af024450f6a395ca887073343d3296d69d836a) fix: executor/pns containerid prefix fix (#4555)
- * [53195ed5](https://github.com/argoproj/argo-workflows/commit/53195ed56029c639856a395ed5c92db82d49a2d9) fix: Respect continueOn for leaf tasks (#4455)
- * [e3d59f08](https://github.com/argoproj/argo-workflows/commit/e3d59f08497070b2d002049ffd5e2e7d5243a6e5) docs: Added CloudSeeds as one of the users for argo (#4553)
- * [ad11180e](https://github.com/argoproj/argo-workflows/commit/ad11180e0673e6ed5e12b537dd994e88ab4aa696) docs: Update cost optimisation  to include information about cleaning up workflows and archiving (#4549)
- * [7e121509](https://github.com/argoproj/argo-workflows/commit/7e121509c6745dc7f6fa40cc35790012521f1f12) fix(controller): Correct default port logic (#4547)
- * [a712e535](https://github.com/argoproj/argo-workflows/commit/a712e535bec3b196219188236d4063ecc1153ba4) fix: Validate metric key names (#4540)
- * [c469b053](https://github.com/argoproj/argo-workflows/commit/c469b053f8ca27ca03d36343fa17277ad374edc9) fix: Missing arg lines caused files not to copy into containers (#4542)
- * [0980ead3](https://github.com/argoproj/argo-workflows/commit/0980ead36d39620c914e04e2aa207e688a631e9a) fix(test): fix TestWFDefaultWithWFTAndWf flakiness (#4538)
- * [564e69f3](https://github.com/argoproj/argo-workflows/commit/564e69f3fdef6239f9091401ec4472bd8bd248bd) fix(ui): Do not auto-reload doc.location. Fixes #4530 (#4535)
- * [eebcb8b8](https://github.com/argoproj/argo-workflows/commit/eebcb8b8a621e37ae0c66d2248d83af821a1ade8) docs: Add "Argo Workflows in 5 min" link to README (#4533)
- * [5147f0a1](https://github.com/argoproj/argo-workflows/commit/5147f0a19c262a4f139aa2c4333942e6e97a6d12) Merge branch 'master' into release-2.12
- * [176d890c](https://github.com/argoproj/argo-workflows/commit/176d890c1cac25856f67fbed4cc39a396aa87a93) fix(controller): support float for param value (#4490)
- * [4bacbc12](https://github.com/argoproj/argo-workflows/commit/4bacbc121ae028557b7f0718f02fbb25e8e63850) feat(controller): make sso timeout configurable via cm (#4494)
- * [02e1f0e0](https://github.com/argoproj/argo-workflows/commit/02e1f0e0d1c8ad8422984000bb2b49dc3709b1a0) fix(server): Add `list sa` and `create secret` to `argo-server` roles. Closes #4526 (#4514)
- * [d0082e8f](https://github.com/argoproj/argo-workflows/commit/d0082e8fb87fb731c7247f28da0c1b29b6fa3f02) fix: link templates not replacing multiple templates with same name (#4516)
- * [411bde37](https://github.com/argoproj/argo-workflows/commit/411bde37c2b146c1fb52d913bf5629a36e0a5af1) feat: adds millisecond-level timestamps to argo and workflow-controller (#4518)
- * [2c54ca3f](https://github.com/argoproj/argo-workflows/commit/2c54ca3fbee675815566508fc10c137e7b4f9f2f) add bonprix to argo users (#4520)
- * [754a201d](https://github.com/argoproj/argo-workflows/commit/754a201da01aa7aef2d82dcdafa8d054dd879634) build: Reuse IMAGE_OS instead of hard-coded linux (#4519)
- * [f509fa55](https://github.com/argoproj/argo-workflows/commit/f509fa550b0694907bb9447084df11af171f9cc9) Update manifests to v2.12.0-rc2
- * [c297b2aa](https://github.com/argoproj/argo-workflows/commit/c297b2aa293942f2621fb4b5c0e460abc0f7c251) Merge branch 'master' into release-2.12
- * [2dab2d15](https://github.com/argoproj/argo-workflows/commit/2dab2d15868c5f52ca4e3f7ba1c5276d55c26a42) fix(test):  fix TestWFDefaultWithWFTAndWf flakiness (#4507)
- * [64ae3303](https://github.com/argoproj/argo-workflows/commit/64ae33034d30a943dca71b0c5e4ebd97018448bf) fix(controller): prepend script path to the script template args. Resolves #4481 (#4492)
- * [0931baf5](https://github.com/argoproj/argo-workflows/commit/0931baf5fbe48487278b9a6c2fa206ab02406e5b) feat: Redirect to requested URL after SSO login (#4495)
- * [465447c0](https://github.com/argoproj/argo-workflows/commit/465447c039a430f675a2c0cc10e71e7024fc79a3) fix: Ensure ContainerStatus in PNS is terminated before continuing (#4469)
- * [f7287687](https://github.com/argoproj/argo-workflows/commit/f7287687b61c7e2d8e27864e9768c216a53fd071) fix(ui): Check node children before counting them. (#4498)
- * [bfc13c3f](https://github.com/argoproj/argo-workflows/commit/bfc13c3f5b9abe2980826dee1283433b7cb22385) fix: Ensure redirect to login when using empty auth token (#4496)
- * [d56ce890](https://github.com/argoproj/argo-workflows/commit/d56ce890c900c300bd396c5050cea9fb2b4aa358) feat(cli): add selector and field-selector option to terminate (#4448)
- * [e501fcca](https://github.com/argoproj/argo-workflows/commit/e501fcca16a908781a786b93417cc41644b62ea4) fix(controller): Refactor the Merge Workflow, WorkflowTemplate and WorkflowDefaults (#4354)
- * [2ee3f5a7](https://github.com/argoproj/argo-workflows/commit/2ee3f5a71f4791635192d7cd4e1b583d80e81077) fix(ui): fix the `all` option in the workflow archive list (#4486)
- * [98be709d](https://github.com/argoproj/argo-workflows/commit/98be709d88647a10231825f13aff03d08217a35a) Update manifests to v2.12.0-rc1
- * [a441a97b](https://github.com/argoproj/argo-workflows/commit/a441a97bd53a92b8cc5fb918edd1f66701d1cf5c) refactor(server): Use patch instead of update to resume/suspend (#4468)
- * [9ecf0499](https://github.com/argoproj/argo-workflows/commit/9ecf0499195b05bac1bb9fe6268c7d77bc12a963) fix(controller): When semaphore lock config gets updated, enqueue the waiting workflows (#4421)
- * [c31d1722](https://github.com/argoproj/argo-workflows/commit/c31d1722e6e5f800a62b30e9773c5e6049c243f5) feat(cli): Support ARGO_HTTP1 for HTTP/1 CLI requests. Fixes #4394 (#4416)
- * [b8fb2a8b](https://github.com/argoproj/argo-workflows/commit/b8fb2a8b3b7577d46e25c55829310df2f72fb335) chore(docs): Fix docgen (#4459)
- * [6c5ab780](https://github.com/argoproj/argo-workflows/commit/6c5ab7804d708981e250f1af6b8cb4e78c2291a7) feat: Add the --no-utf8 parameter to `argo get` command (#4449)
- * [933a4db0](https://github.com/argoproj/argo-workflows/commit/933a4db0cfdc3b39309b83dcc8105e4424df4775) refactor: Simplify grpcutil.TranslateError (#4465)
- * [24015065](https://github.com/argoproj/argo-workflows/commit/240150651b2d25547fe8b8cf8e0c3161d7966902) docs: Add DDEV to USERS.md (#4456)
- * [d752e2fa](https://github.com/argoproj/argo-workflows/commit/d752e2fa4fd69204e2c5989c8adceeb19963f2d4) feat: Add resume/suspend endpoints for CronWorkflows (#4457)
- * [42d06050](https://github.com/argoproj/argo-workflows/commit/42d060500a04fce181b09cb7f1cec108a9b8b522) fix: localhost not being resolved. Resolves #4460, #3564 (#4461)
- * [59843e1f](https://github.com/argoproj/argo-workflows/commit/59843e1faa91ab30e06e550d1df8e81adfcdac71) fix(controller): Trigger no of workflows based on available lock (#4413)
- * [1be03db7](https://github.com/argoproj/argo-workflows/commit/1be03db7e7604fabbbfce58eb45776d583d9bdf1) fix: Return copy of stored templates to ensure they are not modified (#4452)
- * [854883bd](https://github.com/argoproj/argo-workflows/commit/854883bdebd6ea07937a2860d8f3287c9a079709) fix(controller): Fix throttler. Fixes #1554 and #4081 (#4132)
- * [b956bc1a](https://github.com/argoproj/argo-workflows/commit/b956bc1acd141f73b2f3182c10efcc68fbf55e74) chore(controller): Refactor and tidy up (#4453)
- * [3e451114](https://github.com/argoproj/argo-workflows/commit/3e451114d58bc0c5a210dda15a4b264aeed635a6) fix(docs): timezone DST note on Cronworkflow (#4429)
- * [f4f68a74](https://github.com/argoproj/argo-workflows/commit/f4f68a746b7d0c5e2e71f99d69307b86d03b69c1) fix: Resolve inconsistent CronWorkflow persistence (#4440)
- * [76887cfd](https://github.com/argoproj/argo-workflows/commit/76887cfd3d39bd370b0e274faeae9e2d2c4f83db) chore: Update pull request template (#4437)
- * [da93545f](https://github.com/argoproj/argo-workflows/commit/da93545f687bfb3235d79ba31f6651da9b77ff66) feat(server): Add WorkflowLogs API. See #4394 (#4450)
- * [3960a0ee](https://github.com/argoproj/argo-workflows/commit/3960a0ee5daecfbde241d0a46b0179c88bad6b61) fix: Fix validation with Argo Variable in activeDeadlineSeconds (#4451)
- * [dedf0521](https://github.com/argoproj/argo-workflows/commit/dedf0521e8e799051cd3cde8c29ee419bb4a68f9) feat(ui): Visualisation of the suspended CronWorkflows in the list. Fixes #4264 (#4446)
- * [6016ebdd](https://github.com/argoproj/argo-workflows/commit/6016ebdd94115ae3fb13cadbecd27cf2bc390657) ci: Speed up e2e tests (#4436)
- * [0d13f40d](https://github.com/argoproj/argo-workflows/commit/0d13f40d673ca5da6ba6066776d8d01d297671c0) fix(controller): Tolerate int64 parameters. Fixes #4359 (#4401)
- * [2628be91](https://github.com/argoproj/argo-workflows/commit/2628be91e4a19404c66c7d16b8fbc02b475b6399) fix(server): Only try to use auth-mode if enabled. Fixes #4400 (#4412)
- * [7f2ff80f](https://github.com/argoproj/argo-workflows/commit/7f2ff80f130b3cd5834b4c49ab6c1692dd93a76c) fix: Assume controller is in UTC when calculating NextScheduledRuntime (#4417)
- * [45fbc951](https://github.com/argoproj/argo-workflows/commit/45fbc951f51eee34151d51aa1cea3426efa1595f) fix(controller): Design-out event errors. Fixes #4364 (#4383)
- * [5a18c674](https://github.com/argoproj/argo-workflows/commit/5a18c674b43d304165efc16ca92635971bb21074) fix(docs): update link to container spec (#4424)
- * [8006da12](https://github.com/argoproj/argo-workflows/commit/8006da129122a4e0046e0d016924d73af88be398) fix: Add x-frame config option (#4420)
- * [46f0ca0f](https://github.com/argoproj/argo-workflows/commit/46f0ca0ffdf075b0dbec7c16ce59257c211fe71a) docs: Add Acquia to USERS.md (#4415)
- * [462e55e9](https://github.com/argoproj/argo-workflows/commit/462e55e97467330f30248b1f9d1dd12e2ee93fa3) fix: Ensure resourceDuration variables in metrics are always in seconds (#4411)
- * [3aeb1741](https://github.com/argoproj/argo-workflows/commit/3aeb1741e720a7e7e005321451b2701f263ed85a) fix(executor): artifact chmod should only if err != nil (#4409)
- * [2821e4e8](https://github.com/argoproj/argo-workflows/commit/2821e4e8fe27d744256b1621a81ac4ce9d1da68c) fix: Use correct template when processing metrics (#4399)
- * [b34b91f9](https://github.com/argoproj/argo-workflows/commit/b34b91f9b97be152ef9d50af25295a94b45df412) ci: Split e2e tests to make them faster (#4404)
- * [e8f82614](https://github.com/argoproj/argo-workflows/commit/e8f826147cebc1a04ced90044689319f8e8c9a14) fix(validate): Local parameters should be validated locally. Fixes #4326 (#4358)
- * [ddd45b6e](https://github.com/argoproj/argo-workflows/commit/ddd45b6e8a2754e872a9a36a037d0288d617e9e3) fix(ui): Reconnect to DAG. Fixes #4301 (#4378)
- * [252c4633](https://github.com/argoproj/argo-workflows/commit/252c46335f544617d675e733fe417729b37846e0) feat(ui): Sign-post examples and the catalog. Fixes #4360 (#4382)
- * [334d1340](https://github.com/argoproj/argo-workflows/commit/334d1340f32d927fa119bdebd1318977f7a3b159) feat(server): Enable RBAC for SSO. Closes #3525 (#4198)
- * [e409164b](https://github.com/argoproj/argo-workflows/commit/e409164ba37ae0b75ee995d206498b1c750b486e) fix(ui): correct log viewer only showing first log line (#4389)
- * [28bdb6ff](https://github.com/argoproj/argo-workflows/commit/28bdb6ffff8308677af6d8ccf7b0ea70b53bb2fd) fix(ui): Ignore running workflows in report. Fixes #4387 (#4397)
- * [7ace8f85](https://github.com/argoproj/argo-workflows/commit/7ace8f85f1cb9cf716a30a53da2a78c07d3e13fc) fix(controller): Fix estimation bug. Fixes #4386 (#4396)
- * [bdac65b0](https://github.com/argoproj/argo-workflows/commit/bdac65b09750ee0afe7bd3697792d9e4b3a10255) fix(ui): correct typing errors in workflow-drawer (#4373)
- * [cc9c0580](https://github.com/argoproj/argo-workflows/commit/cc9c05804ab07ea5a2a283244554f8e35be5a57e) docs: Update events.md (#4391)
- * [db5e28ed](https://github.com/argoproj/argo-workflows/commit/db5e28ed26f4c35e0c429907c930cd098717c32e) fix: Use DeletionHandlingMetaNamespaceKeyFunc in cron controller (#4379)
- * [99d33eed](https://github.com/argoproj/argo-workflows/commit/99d33eed5b953952762dbfed4f44384bcbd46e8b) fix(server): Download artifacts from UI. Fixes #4338 (#4350)
- * [db8a6d0b](https://github.com/argoproj/argo-workflows/commit/db8a6d0b5a13259b6705b222e28dab1d0f999dc7) fix(controller): Enqueue the front workflow if semaphore lock is available (#4380)
- * [933ba834](https://github.com/argoproj/argo-workflows/commit/933ba83407b9e33e5d6e16660d28c33782d122df) fix: Fix intstr nil dereference (#4376)
- * [52520aac](https://github.com/argoproj/argo-workflows/commit/52520aace67e6ecf8bcdfee267c458535c824c00) build: Fix clean-up of vendor (#4363)
- * [f206b83b](https://github.com/argoproj/argo-workflows/commit/f206b83b58ad201143d337ff987a2a423ac726f5) chore: match code comments to the generated documentation (#4375)
- * [220ac736](https://github.com/argoproj/argo-workflows/commit/220ac736c1297c566667d3fb621a9dadea955c76) fix(controller): Only warn if cron job missing. Fixes #4351 (#4352)
- * [dbbe95cc](https://github.com/argoproj/argo-workflows/commit/dbbe95ccca01d985c5fbb81a2329f0bdb7fa5b1d) Use '[[:blank:]]' instead of ' ' to match spaces/tabs (#4361)
- * [b03bd12a](https://github.com/argoproj/argo-workflows/commit/b03bd12a463e3375bdd620c4fda85846597cdad4) fix: Do not allow tasks using 'depends' to begin with a digit (#4218)
- * [c237f3f5](https://github.com/argoproj/argo-workflows/commit/c237f3f57ccb1f6d54fa1c1d559c6bfcb2446237) docs: Fix a copy-paste typo in the docs (#4357)
- * [b76246e2](https://github.com/argoproj/argo-workflows/commit/b76246e2894def70f4ad6902d05e64e3db0224ac) fix(executor): Increase pod patch backoff. Fixes #4339 (#4340)
- * [7bfe303c](https://github.com/argoproj/argo-workflows/commit/7bfe303c7552f6447c11b2001c3129f8db2b6e5d) docs: Update pvc example with correct resource indentation. Fixes #4330 (#4346)
- * [ec671ddc](https://github.com/argoproj/argo-workflows/commit/ec671ddceb1c8d18fa0410e22106659a1572683c) feat(executor): Wait for termination using pod watch for PNS and K8SAPI executors. (#4253)
- * [3156559b](https://github.com/argoproj/argo-workflows/commit/3156559b40afe4248a3fd124a9611992e7459930) fix: ui/package.json & ui/yarn.lock to reduce vulnerabilities (#4342)
- * [f5e23f79](https://github.com/argoproj/argo-workflows/commit/f5e23f79da253d3b29f718b71251ece464fd88f2) refactor: De-couple config (#4307)
- * [36002a26](https://github.com/argoproj/argo-workflows/commit/36002a264187bd53a08dcd005c3685f7ac668df3) docs: Fix typos (/priviledged/privileged/) (#4335)
- * [37a2ae06](https://github.com/argoproj/argo-workflows/commit/37a2ae06e05ec5698c902f76dc231cf839ac2041) fix(ui): correct typing errors in events-panel (#4334)
- * [03ef9d61](https://github.com/argoproj/argo-workflows/commit/03ef9d615bac1b38309189e77b38235aaa7f5713) fix(ui): correct typing errors in workflows-toolbar (#4333)
- * [4de64c61](https://github.com/argoproj/argo-workflows/commit/4de64c618dea85334c0fa04a4dbc310629335c47) fix(ui): correct typing errors in cron-workflow-details (#4332)
- * [595aaa55](https://github.com/argoproj/argo-workflows/commit/595aaa55595a5c34e66ea0be58025cfe4b2c59a0) docs: Update releasing guide (#4284)
- * [939d8c30](https://github.com/argoproj/argo-workflows/commit/939d8c30153b4f7d82da9b2df13aa235d3118070) feat(controller): add enum support in parameters (fixes #4192) (#4314)
- * [e14f4f92](https://github.com/argoproj/argo-workflows/commit/e14f4f922ff158b1fa1e0592fc072474e3257bd9) fix(executor): Fix the artifacts option in k8sapi and PNS executor Fixes#4244 (#4279)
- * [ea9db436](https://github.com/argoproj/argo-workflows/commit/ea9db43622c6b035b5cf800bb4cb112fcace7eac) fix(cli): Return exit code on Argo template lint command (#4292)
- * [aa4a435b](https://github.com/argoproj/argo-workflows/commit/aa4a435b4892f7881f4eeeb03d3d8e24ee4695ef) fix(cli): Fix panic on argo template lint without argument (#4300)
- * [640998e3](https://github.com/argoproj/argo-workflows/commit/640998e37e53c6c89aa4b53d0527462d4702b192) docs: Fix incorrect link to static code analysis document (#4329)
- * [04586fdb](https://github.com/argoproj/argo-workflows/commit/04586fdb6abb5aa41df0d7f52abceb6088bbdce5) docs: Add diagram (#4295)
- * [f7116fc7](https://github.com/argoproj/argo-workflows/commit/f7116fc789f0fdf0dde2b835a85ed6c3ef4bf6fe) build: Refactor `codegen` to make target dependencies clearer (#4315)
- * [20b3b1ba](https://github.com/argoproj/argo-workflows/commit/20b3b1baf7c06d288134e638e6107339f9c4ec3a) fix: merge artifact arguments from workflow template. Fixes #4296 (#4316)
- * [cae8d1dc](https://github.com/argoproj/argo-workflows/commit/cae8d1dca4f45ce06a24e0894b23a071839a820f) docs: Ye olde whitespace fix (#4323)
- * [3c63c3c4](https://github.com/argoproj/argo-workflows/commit/3c63c3c407c13a3cbf5089c0a00d029b7da85706) chore(controller): Refactor the CronWorkflow schedule logic with sync.Map (#4320)
- * [1db63e52](https://github.com/argoproj/argo-workflows/commit/1db63e5272096a9039703e3cbea3cd4ff4dbc1a2) docs: Fix typo in docs for artifact repository
- * [40648bcf](https://github.com/argoproj/argo-workflows/commit/40648bcfe98828796edcac73548d681ffe9f0853) Update USERS.md (#4322)
- * [07b2ef62](https://github.com/argoproj/argo-workflows/commit/07b2ef62f44f94d90a2fff79c47f015ceae40b8d) fix(executor): Retrieve containerId from cri-containerd /proc/{pid}/cgroup. Fixes #4302 (#4309)
- * [e6b02490](https://github.com/argoproj/argo-workflows/commit/e6b02490042065990f1f0053d0be0abb89c90d5e) feat(controller): Allow whitespace in variable substitution. Fixes #4286 (#4310)
- * [9119682b](https://github.com/argoproj/argo-workflows/commit/9119682b016e95b8ae766bf7d2688b981a267736) fix(build): Some minor Makefile fixes (#4311)
- * [db20b4f2](https://github.com/argoproj/argo-workflows/commit/db20b4f2c7ecf4388f70a5e422dc19fc78c4e753) feat(ui): Submit resources without namespace to current namespace. Fixes #4293 (#4298)
- * [240cd792](https://github.com/argoproj/argo-workflows/commit/240cd79254c890db7b2bc4fbb8766fbc971e94d5) docs: improve ingress documentation for argo-server (#4306)
- * [26f39b6d](https://github.com/argoproj/argo-workflows/commit/26f39b6d1aff8bee60826dde5b7e58d09e38d1ee) fix(ci): add non-root user to Dockerfile (#4305)
- * [1cc68d89](https://github.com/argoproj/argo-workflows/commit/1cc68d8939a7e144a798687f6d8b8ecc8c0f4195) fix(ui): undefined namespace in constructors (#4303)
- * [d04f68fd](https://github.com/argoproj/argo-workflows/commit/d04f68fd8bf9a24ac2e083c87b3329af1bc4d909) docs: Docker TLS env config (#4299)
- * [e54bf815](https://github.com/argoproj/argo-workflows/commit/e54bf815d6494aa8c466eea6caec6165249a3003) fix(controller): Patch rather than update cron workflows. (#4294)
- * [9157ef2a](https://github.com/argoproj/argo-workflows/commit/9157ef2ad60920866ca029711f4a7cb5705771d0) fix: TestMutexInDAG failure in master (#4283)
- * [2d6f4e66](https://github.com/argoproj/argo-workflows/commit/2d6f4e66fd8ad8d0535afc9a328fc090a5700c30) fix: WorkflowEventBinding typo in aggregated roles (#4287)
- * [c02bb7f0](https://github.com/argoproj/argo-workflows/commit/c02bb7f0bb50e18cdf95f2bbd2305be6d065d006) fix(controller): Fix argo retry with PVCs. Fixes #4275 (#4277)
- * [c0423a22](https://github.com/argoproj/argo-workflows/commit/c0423a2238399f5db9e39618c93c8212e359831c) fix(ui): Ignore missing nodes in DAG. Fixes #4232 (#4280)
- * [58144290](https://github.com/argoproj/argo-workflows/commit/58144290d78e038fbcb7dbbdd6db291ff0a6aa86) fix(controller): Fix cron-workflow re-apply error. (#4278)
- * [c605c6d7](https://github.com/argoproj/argo-workflows/commit/c605c6d73452b8dff899c0ff1b166c726181dd9f) fix(controller): Synchronization lock didn't release on DAG call flow Fixes #4046 (#4263)
- * [3cefc147](https://github.com/argoproj/argo-workflows/commit/3cefc1471f62f148221713ad80660c50f224ff92) feat(ui): Add a nudge for users who have not set their security context. Closes #4233  (#4255)
- * [e07abe27](https://github.com/argoproj/argo-workflows/commit/e07abe27e73d805068c6a0aefaa1289ad88d0f95) test: Tidy up E2E tests (#4276)
- * [8ed799fa](https://github.com/argoproj/argo-workflows/commit/8ed799fa7b5d904c1dfde2495016b1a02e0f813e) docs: daemon example: clarify prefix usage (#4258)
- * [a461b076](https://github.com/argoproj/argo-workflows/commit/a461b076bc044c6cca04744be4c692e2edd44eb2) feat(cli): add `--field-selector` option for `delete` command (#4274)
- * [d7fac63e](https://github.com/argoproj/argo-workflows/commit/d7fac63e12518e43174584fdc984d3163c55dc24) chore(controller): N/W progress fixes (#4269)
- * [d377b7c0](https://github.com/argoproj/argo-workflows/commit/d377b7c026aeb395901193c999fe733a57922c2b) docs: Add docs for `securityContext` and `emptyDir`. Closes #2239 (#4251)
- * [4c423453](https://github.com/argoproj/argo-workflows/commit/4c42345374346c07852d3ea57d481832ebb42154) feat(controller): Track N/M progress. See #2717 (#4194)
- * [afbb957a](https://github.com/argoproj/argo-workflows/commit/afbb957a890fc1c2774a54b83887e586558e5a87) fix: Add WorkflowEventBinding to aggregated roles (#4268)
- * [9bc675eb](https://github.com/argoproj/argo-workflows/commit/9bc675eb3a93ac8ac0e08d72660e71eec2dde667) docs: Minor formatting fixes (#4259)
- * [4dfe7551](https://github.com/argoproj/argo-workflows/commit/4dfe75515de4c55dcc113e641e5c7101118ea8e6) docs: correct a typo (#4261)
- * [6ce6bf49](https://github.com/argoproj/argo-workflows/commit/6ce6bf499a3a68b95eb9de3ef3748e34e4da022f) fix(controller): Make the delay before the first workflow reconciliation configurable. Fixes #4107 (#4224)
- * [42b797b8](https://github.com/argoproj/argo-workflows/commit/42b797b8a47923cab3d36b813727b22e4d239cce) chore(api): Update swagger.json with Kubernetes v1.17.5 types. Closes #4204 (#4226)
- * [346292b1](https://github.com/argoproj/argo-workflows/commit/346292b1b0152d5bfdc0387a8b2c11b5d6d5bac1) feat(controller): Reduce reconcilliation time by exiting earlier. (#4225)
- * [407ac349](https://github.com/argoproj/argo-workflows/commit/407ac3498846d8879d785e985b88695dbf693f43) fix(ui): Revert bad part of commit (#4248)
- * [eaae2309](https://github.com/argoproj/argo-workflows/commit/eaae2309dcd89435c657d8e647968f0f1e13bcae) fix(ui): Fix bugs with DAG view. Fixes #4232 & #4236 (#4241)
- * [04f7488a](https://github.com/argoproj/argo-workflows/commit/04f7488abea14544880ac7957d873963b13112cc) feat(ui): Adds a report page which shows basic historical workflow metrics. Closes #3557 (#3558)
- * [a545a53f](https://github.com/argoproj/argo-workflows/commit/a545a53f6e1d03f9b016c8032c05a377a79bfbcc) fix(controller): Check the correct object for Cronworkflow reapply error log (#4243)
- * [ec7a5a40](https://github.com/argoproj/argo-workflows/commit/ec7a5a40227979703c7e9a39a8419be6270e4805) fix(Makefile): removed deprecated k3d cmds. Fixes #4206 (#4228)
- * [1706a395](https://github.com/argoproj/argo-workflows/commit/1706a3954a7ec0aad2ff3f5c7ba47e010b87d207) fix: Increase deafult number of CronWorkflow workers (#4215)
- * [270e6925](https://github.com/argoproj/argo-workflows/commit/270e69255d9724e0ff52ca58a35a04fa94bea264) docs: Correct formatting of variables example YAML (#4237)
- * [c5ff60b3](https://github.com/argoproj/argo-workflows/commit/c5ff60b3dd98a5c07c8c4725fc0af3e8a3bfcdfe) docs: Reinstate swagger.md so docs can build. (#4227)
- * [50f23181](https://github.com/argoproj/argo-workflows/commit/50f23181911998c13096dd15980380e1ecaeaa2d) feat(cli): Print 'no resource msg' when `argo list` returns zero workflows (#4166)
- * [2143a501](https://github.com/argoproj/argo-workflows/commit/2143a5019df31b7d2d6ccb86b81ac70b98714827) fix(controller): Support workflowDefaults on TTLController for WorkflowTemplateRef Fixes #4188 (#4195)
- * [cac10f13](https://github.com/argoproj/argo-workflows/commit/cac10f1306ae6f28eee4b2485f802b7512920474) fix(controller): Support int64 for param value. Fixes #4169 (#4202)
- * [e910b701](https://github.com/argoproj/argo-workflows/commit/e910b70159f6f92ef3dacf6382b42b430e15a388) feat: Controller/server runAsNonRoot. Closes #1824 (#4184)
- * [f3d1e9f8](https://github.com/argoproj/argo-workflows/commit/f3d1e9f81fe90ab8dcbc6804dcc526dc0c253e95) chore: Enahnce logging around pod failures (#4220)
- * [4bd5fe10](https://github.com/argoproj/argo-workflows/commit/4bd5fe10a2ef4f36acd5be7523f72bdbdb7e150c) fix(controller): Apply Workflow default on normal workflow scenario Fixes #4208 (#4213)
- * [f9b65c52](https://github.com/argoproj/argo-workflows/commit/f9b65c52321d6e49d7fbc78f69d18e7d1ee442ad) chore(build): Update `make codegen` to only run on changes (#4205)
- * [0879067a](https://github.com/argoproj/argo-workflows/commit/0879067a48d7b1d667c827d064a9aa00a3595a6e) chore(build): re-add #4127 and steps to verify image pull (#4219)
- * [b17b569e](https://github.com/argoproj/argo-workflows/commit/b17b569eae0b518a649790daf9e4af87b900a91e) fix(controller): reduce withItem/withParams memory usage. Fixes #3907 (#4207)
- * [524049f0](https://github.com/argoproj/argo-workflows/commit/524049f01b00d1fb04f169860217553869b79b53) fix: Revert "chore: try out pre-pushing linux/amd64 images and updating ma… Fixes #4216 (#4217)
- * [9c08433f](https://github.com/argoproj/argo-workflows/commit/9c08433f37dde41fbe7dbae32e97c4b3f70e8081) feat(executor): Decompress zip file input artifacts. Fixes #3585 (#4068)
- * [300634af](https://github.com/argoproj/argo-workflows/commit/300634af42a3017a5354468a2779ef1fa5e37931) docs: add Mixpanel to argo/USERS.md (#4137)
- * [14650339](https://github.com/argoproj/argo-workflows/commit/14650339df95916d7a676354289d4dfac1ea7776) fix(executor): Update executor retry config for ExponentialBackoff. (#4196)
- * [2b127625](https://github.com/argoproj/argo-workflows/commit/2b127625a837e6225b9b803523e02b617df9cb20) fix(executor): Remove IsTransientErr check for ExponentialBackoff. Fixes #4144 (#4149)
- * [f7e85f04](https://github.com/argoproj/argo-workflows/commit/f7e85f04b11fd65e45b9408d5413be3bbb95e5cb) feat(server): Make Argo Server issue own JWE for SSO. Fixes #4027 & #3873 (#4095)
- * [951d38f8](https://github.com/argoproj/argo-workflows/commit/951d38f8eb19460268d9640dce8f94d3287ff6e2) refactor: Refactor Synchronization code (#4114)
- * [9319c074](https://github.com/argoproj/argo-workflows/commit/9319c074e742c5d9cb97d6c5bbbf076afe886f76) fix(ui): handle logging disconnects gracefully (#4150)
- * [88ee7e13](https://github.com/argoproj/argo-workflows/commit/88ee7e133b9fcedf6b1430b7b52c74eb9c8011f2) docs: Add map-reduce example. Closes #4165  (#4175)
- * [6265c709](https://github.com/argoproj/argo-workflows/commit/6265c70915de42e4eb5c472379743a44d283e463) fix: Ensure CronWorkflows are persisted once per operation (#4172)
- * [2a992aee](https://github.com/argoproj/argo-workflows/commit/2a992aee733aaa73bb43ab1c4ff3b7919ee8b640) fix: Provide helpful hint when creating workflow with existing name (#4156)
- * [de3a90dd](https://github.com/argoproj/argo-workflows/commit/de3a90dd155023ede63a537c113ac0e58e6c6c73) refactor: upgrade argo-ui library version (#4178)
- * [b7523369](https://github.com/argoproj/argo-workflows/commit/b7523369bb6d278c504d1e90cd96d1dbe7f8f6d6) feat(controller): Estimate workflow & node duration. Closes #2717 (#4091)
- * [b3db0f5f](https://github.com/argoproj/argo-workflows/commit/b3db0f5fd735b0dc26b36ac4f4c1232c9eaa2278) chore: Update Github issue templates (#4161)
- * [c468b34d](https://github.com/argoproj/argo-workflows/commit/c468b34d1b7b26d36d2f7a365e71635d1d6cb0db) fix(controller): Correct unstructured API version. Caused by #3719 (#4148)
- * [d298706f](https://github.com/argoproj/argo-workflows/commit/d298706f759e46b70eab230d6e14af061b00ae9a) chore: Deprecate unused RuntimeResolution field (#4155)
- * [de81242e](https://github.com/argoproj/argo-workflows/commit/de81242ec681003d65b84862f6584d075889f523) fix: Render full tree of onExit nodes in UI (#4109)
- * [109876e6](https://github.com/argoproj/argo-workflows/commit/109876e62f239397accbd451bb1b52a775998f36) fix: Changing DeletePropagation to background in TTL Controller and Argo CLI (#4133)
- * [c8eed1f2](https://github.com/argoproj/argo-workflows/commit/c8eed1f23adcdb9dfd99c81e2ba1a053ab27d558) chore: try out pre-pushing linux/amd64 images and updating manifest later (#4127)
- * [1e10e0cc](https://github.com/argoproj/argo-workflows/commit/1e10e0ccbf366fa9052ad720373dc11a4d2cb671) Documentation (#4122)
- * [3a508a39](https://github.com/argoproj/argo-workflows/commit/3a508a3904719e0d29d400673bf45b5a191bd5f0) docs: Add Onepanel to USERS.md (#4147)
- * [b3682d4f](https://github.com/argoproj/argo-workflows/commit/b3682d4f117cecf1fe6d2a54c281870f15e201a1) fix(cli): add validate args in delete command (#4142)
- * [45fe5173](https://github.com/argoproj/argo-workflows/commit/45fe51736bd8d2cb1433c9acfcac0466acdc287c) test: Fix retry (attempt 3). Fixes #4101 (#4146)
- * [373543d1](https://github.com/argoproj/argo-workflows/commit/373543d114bfba727ef60645c3d9cb05e671808c) feat(controller): Sum resources duration for DAGs and steps (#4089)
- * [4829e9ab](https://github.com/argoproj/argo-workflows/commit/4829e9abd7f58e6332527830b0892222f901c8bd) feat: Add MaxAge to memoization (#4060)
- * [af53a4b0](https://github.com/argoproj/argo-workflows/commit/af53a4b008055d24c52dffa0b9483beb14de1ecb) fix(docs): Update k3d command for running argo locally (#4139)
- * [554d6616](https://github.com/argoproj/argo-workflows/commit/554d66168fc3aaa34f982c181bfdc0d499befb27) fix(ui): Ignore referenced nodes that don't exist in UI. Fixes #4079 (#4099)
- * [e8b79921](https://github.com/argoproj/argo-workflows/commit/e8b79921e777e0262b7cdfa80795e1f1ff580d1b) fix(executor): race condition in docker kill (#4097)
- * [1af88d68](https://github.com/argoproj/argo-workflows/commit/1af88d6862c91d1b7519d9e6f8fe0fc7ce99e31e) docs: Adding reserved.ai to users list (#4116)
- * [3bb0c2a1](https://github.com/argoproj/argo-workflows/commit/3bb0c2a17cabdd1e5b1d736531ef801a930790f9) feat(artifacts): Allow HTTP artifact load to set request headers (#4010)
- * [63b41375](https://github.com/argoproj/argo-workflows/commit/63b41375484502fe96cc9e66d99a3f96304b8e27) fix(cli): Add retry to retry, again. Fixes #4101 (#4118)
- * [bd4289ec](https://github.com/argoproj/argo-workflows/commit/bd4289ec476629ec4599616301a90d35baae79e1) docs: Added PDOK to USERS.md (#4110)
- * [76cbfa9d](https://github.com/argoproj/argo-workflows/commit/76cbfa9defa7da45a363304c9a7acba839fcf64a) fix(ui): Show "waiting" msg while waiting for pod logs. Fixes #3916 (#4119)
- * [196c5eed](https://github.com/argoproj/argo-workflows/commit/196c5eed7b604f6bac14c59450624706cbee3228) fix(controller): Process workflows at least once every 20m (#4103)
- * [4825b7ec](https://github.com/argoproj/argo-workflows/commit/4825b7ec766bd32004354be0233b92b07d8afdfb) fix(server): argo-server-role to allow submitting cronworkflows from UI (#4112)
- * [29aba3d1](https://github.com/argoproj/argo-workflows/commit/29aba3d1007e47805aa51b820a0007ebdeb228ca) fix(controller): Treat annotation and conditions changes as significant (#4104)
- * [befcbbce](https://github.com/argoproj/argo-workflows/commit/befcbbcee77edb6438fea575be052bd8e063fd22) feat(ui): Improve error recovery. Close #4087 (#4094)
- * [5cb99a43](https://github.com/argoproj/argo-workflows/commit/5cb99a434ccfe167110bae618a2c882b59b2bb5b) fix(ui): No longer redirect to `undefined` namespace. See #4084 (#4115)
- * [fafc5a90](https://github.com/argoproj/argo-workflows/commit/fafc5a904d2e2eff15bb1b3e8c4ae3963f522fa8) fix(cli): Reinstate --gloglevel flag. Fixes #4093 (#4100)
- * [c4d91023](https://github.com/argoproj/argo-workflows/commit/c4d910233c01c659799a916a33b1052fbd5eafe6) fix(cli): Add retry to retry ;). Fixes #4101 (#4105)
- * [ff195f2e](https://github.com/argoproj/argo-workflows/commit/ff195f2ee759ac1b72e2efecdc46ffcedc5367de) chore: use build matrix and cache (#4111)
- * [6b350b09](https://github.com/argoproj/argo-workflows/commit/6b350b09519d705d28252f14c5935016c42a507c) fix(controller): Correct the order merging the fields in WorkflowTemplateRef scenario. Fixes #4044 (#4063)
- * [764b56ba](https://github.com/argoproj/argo-workflows/commit/764b56baccb1bb4c12b520f815d1e78b2e037373) fix(executor): windows output artifacts. Fixes #4082 (#4083)
- * [7c92b3a5](https://github.com/argoproj/argo-workflows/commit/7c92b3a5b743b0755862c3eeabbc3d7fcdf3a7d1) fix(server): Optional timestamp inclusion when retrieving workflow logs. Closes #4033 (#4075)
- * [1bf651b5](https://github.com/argoproj/argo-workflows/commit/1bf651b51136d3999c8d88cbfa37ac5d0033a709) feat(controller): Write back workflow to informer to prevent conflict errors. Fixes #3719 (#4025)
- * [fdf0b056](https://github.com/argoproj/argo-workflows/commit/fdf0b056fc18d9494e5924dc7f189bc7a93ad23a) feat(controller): Workflow-level `retryStrategy`/resubmit pending pods by default. Closes #3918 (#3965)
- * [d7a297c0](https://github.com/argoproj/argo-workflows/commit/d7a297c07e61be5f51c329b4d0bbafe7a816886f) feat(controller): Use pod informer for performance. (#4024)
- * [d8d0ecbb](https://github.com/argoproj/argo-workflows/commit/d8d0ecbb52eefea8df4bf100ca15ccc79de4aa46) fix(ui): [Snyk] Fix for 1 vulnerabilities (#4031)
- * [ed59408f](https://github.com/argoproj/argo-workflows/commit/ed59408fe3ff0d01a066d6e6d17b1491945e7c26) fix: Improve better handling on Pod deletion scenario  (#4064)
- * [e2f4966b](https://github.com/argoproj/argo-workflows/commit/e2f4966bc018f98e84d3dd0c99fb3c0f1be0cd98) fix: make cross-plattform compatible filepaths/keys (#4040)
- * [e94b9649](https://github.com/argoproj/argo-workflows/commit/e94b96497f10f3885c5880a6fe06b8154e5a9fca) docs: Update release guide (#4054)
- * [4b673a51](https://github.com/argoproj/argo-workflows/commit/4b673a517b74c00712f7f98b210e180e2f1ef791) chore: Fix merge error (#4073)
- * [dcc8c23a](https://github.com/argoproj/argo-workflows/commit/dcc8c23a93d8323b972c9e8b93473220bfa7d032) docs: Update SSO docs to clarify the user must create K8S secrets for holding the OAuth2 values (#4070)
- * [5461d541](https://github.com/argoproj/argo-workflows/commit/5461d5418928a74d0df223916c69be72e1d23618) feat(controller): Retry archiving later on error. Fixes #3786 (#3862)
- * [4e085226](https://github.com/argoproj/argo-workflows/commit/4e08522615ea248ba0b9563c084ae30c387c1c4a) fix: Fix unintended inf recursion (#4067)
- * [f1083f39](https://github.com/argoproj/argo-workflows/commit/f1083f39a4fc8ffc84b700b3be8c45b041e34756) fix: Tolerate malformed workflows when retrying (#4028)
- * [a0753951](https://github.com/argoproj/argo-workflows/commit/a07539514ec6d1dea861c79a0f3c5ca5bb0fe55f) chore(executor): upgrade `kubectl` to 1.18.8. Closes #3996 (#3999) (#3999)
- * [513ed9fd](https://github.com/argoproj/argo-workflows/commit/513ed9fd1122007764a81f1eb82d153dfeae9c4f) docs: Add `buildkit` example. Closes #2325 (#4008)
- * [fc77beec](https://github.com/argoproj/argo-workflows/commit/fc77beec37e5b958450c4e05049b031159c53751) fix(ui): Tiny modal DAG tweaks. Fixes #4039 (#4043)
- * [3f1792ab](https://github.com/argoproj/argo-workflows/commit/3f1792ab8a69f824580e936e75f6735cf3d1d779) docs: Update USERS.md (#4041)
- * [74da0672](https://github.com/argoproj/argo-workflows/commit/74da06721b5194f649c2d4bb629215552d01a653) docs(Windows): Add more information on artifacts and limitations (#4032)
- * [81c0e427](https://github.com/argoproj/argo-workflows/commit/81c0e427afa2358f008b4509973c7abff5ab6458) docs: Add Data4Risk to users list (#4037)
- * [ef0ce47e](https://github.com/argoproj/argo-workflows/commit/ef0ce47e154b554f78496e442ce2137263881231) feat(controller): Support different volume GC strategies. Fixes #3095 (#3938)
- * [d61a91c4](https://github.com/argoproj/argo-workflows/commit/d61a91c43ee4f34083d926614bbfed8463720938) chore: Add stress testing code. Closes #2899 (#3934)
- * [9f120624](https://github.com/argoproj/argo-workflows/commit/9f120624621949e3f8d20d082b8cdf7fabf499fb) fix: Don't save label filter in local storage (#4022)
- * [0123c9a8](https://github.com/argoproj/argo-workflows/commit/0123c9a8be196406d72be789e08c0dee6020954b) fix(controller): use interpolated values for mutexes and semaphores #3955 (#3957)
- * [25f12441](https://github.com/argoproj/argo-workflows/commit/25f12441f94dfb8e8b7ade5f20c79687e4ac1471) docs: Update pages to GA. Closes #4000 (#4007)
- * [5be25442](https://github.com/argoproj/argo-workflows/commit/5be254425e3bb98850b31a2ae59f66953468d890) feat(controller): Panic or error on mis-matched resource version (#3949)
- * [ae779599](https://github.com/argoproj/argo-workflows/commit/ae779599ee0589f13a44c6ad4dd51ca7c3d452ac) fix: Delete realtime metrics of running Workflows that are deleted (#3993)
- * [4557c713](https://github.com/argoproj/argo-workflows/commit/4557c7137eb113a260cc14564a664a966dd4b8ab) fix(controller): Script Output didn't set if template has RetryStrategy (#4002)
- * [a013609c](https://github.com/argoproj/argo-workflows/commit/a013609cdd499acc9eebbf8382533b964449752f) fix(ui): Do not save undefined namespace. Fixes #4019 (#4021)
- * [f8145f83](https://github.com/argoproj/argo-workflows/commit/f8145f83dee3ad76bfbe5d3a3fdf6c1472ffd79d) fix(ui): Correctly show pod events. Fixes #4016 (#4018)
- * [2d722f1f](https://github.com/argoproj/argo-workflows/commit/2d722f1ff218cff7afcc77fb347e24f7319035a5) fix(ui): Allow you to view timeline tab. Fixes #4005 (#4006)
- * [f36ad2bb](https://github.com/argoproj/argo-workflows/commit/f36ad2bb20bbb5706463e480929c7566ba116432) fix(ui): Report errors when uploading files. Fixes #3994 (#3995)
- * [b5f31919](https://github.com/argoproj/argo-workflows/commit/b5f3191901d5f7e763047fd6421d642c8edeb2b2) feat(ui): Introduce modal DAG renderer. Fixes: #3595 (#3967)
- * [ad607469](https://github.com/argoproj/argo-workflows/commit/ad607469c1f03f390e2b782d1474b53d5ac4656b) fix(controller): Revert `resubmitPendingPods` mistake. Fixes #4001 (#4004)
- * [fd1465c9](https://github.com/argoproj/argo-workflows/commit/fd1465c91bf3f765a247889a2161969c80451673) fix(controller): Revert parameter value to `*string`. Fixes #3960 (#3963)
- * [13879341](https://github.com/argoproj/argo-workflows/commit/1387934132252a479f441ae50273d79434305b27) fix: argo-cluster-role pvc get (#3986)
- * [f09babdb](https://github.com/argoproj/argo-workflows/commit/f09babdbb83b63f9b5867e81922209e40507286c) fix: Default PDB example typo (#3914)
- * [f81b006a](https://github.com/argoproj/argo-workflows/commit/f81b006af19081f661b81e1c33ace65f67c1eb25) fix: Step and Task level timeout examples (#3997)
- * [91c49c14](https://github.com/argoproj/argo-workflows/commit/91c49c14a4600f873972af9960f6b0f55271b426) fix: Consider WorkflowTemplate metadata during validation (#3988)
- * [7b1d17a0](https://github.com/argoproj/argo-workflows/commit/7b1d17a006378d8f3c2e60eb201e2add4d4b13ba) fix(server): Remove XSS vulnerability. Fixes #3942 (#3975)
- * [20c518ca](https://github.com/argoproj/argo-workflows/commit/20c518ca81d0594efb46e6cec178830ff4ddcbea) fix(controller): End DAG execution on deadline exceeded error. Fixes #3905 (#3921)
- * [74a68d47](https://github.com/argoproj/argo-workflows/commit/74a68d47cfce851ab1393ce2ac45837074001f04) feat(ui): Add `startedAt` and `finishedAt` variables to configurable links. Fixes #3898 (#3946)
- * [8e89617b](https://github.com/argoproj/argo-workflows/commit/8e89617bd651139d1dbed7034019d53b372c403e) fix: typo of argo server cli (#3984) (#3985)
- * [557531c7](https://github.com/argoproj/argo-workflows/commit/557531c7bb66324d73091f7cb9a69c754c6dfb59) docs: Adding Stillwater Supercomputing (#3987)
- * [1def65b1](https://github.com/argoproj/argo-workflows/commit/1def65b1f129457e2be1a0db2fb33fd75a5f570b) fix: Create global scope before workflow-level realtime metrics (#3979)
- * [df816958](https://github.com/argoproj/argo-workflows/commit/df816958890c3b51771361d5c3b1a1fd83f470e2) build: Allow build with older `docker`. Fixes #3977 (#3978)
- * [ca55c835](https://github.com/argoproj/argo-workflows/commit/ca55c835ded1a07f5e1cbe0f5fcd2fcb284fbad7) docs: fixed typo (#3972)
- * [29363b6b](https://github.com/argoproj/argo-workflows/commit/29363b6b660782b36d9a8ca6fe4f18f37935bd26) docs: Correct indentation to display correctly docs in the website (#3969)
- * [402fc0bf](https://github.com/argoproj/argo-workflows/commit/402fc0bf65c11fa2c6bee3b407d6696089a3387e) fix(executor): set artifact mode recursively. Fixes #3444 (#3832)
- * [ff5ed7e4](https://github.com/argoproj/argo-workflows/commit/ff5ed7e42f0f583e78961f49c8580deb94eb1d69) fix(cli): Allow `argo version` without KUBECONFIG. Fixes #3943 (#3945)
- * [d4210ff3](https://github.com/argoproj/argo-workflows/commit/d4210ff3735dddb9e1c5e1742069c8334aa3184a) fix(server): Adds missing webhook permissions. Fixes #3927 (#3929)
- * [184884af](https://github.com/argoproj/argo-workflows/commit/184884af007b41290e53d20a145eb294b834b60c) fix(swagger): Correct item type. Fixes #3926 (#3932)
- * [97764ba9](https://github.com/argoproj/argo-workflows/commit/97764ba92d3bc1e6b42f3502aadbce5701797bfe) fix: Fix UI selection issues (#3928)
- * [b4329afd](https://github.com/argoproj/argo-workflows/commit/b4329afd8981a8db0d56df93968aac5e95ec38e4) fix: Fix children is not defined error (#3950)
- * [3b16a023](https://github.com/argoproj/argo-workflows/commit/3b16a023370c469120ab2685c61a223869c57971) chore(doc): fixed java client project link (#3947)
- * [946da359](https://github.com/argoproj/argo-workflows/commit/946da359afb2bd7974f3d6e7c3f5d5e439f7dc70) chore: Fixed  TestTemplateTimeoutDuration testcase (#3940)
- * [c977aa27](https://github.com/argoproj/argo-workflows/commit/c977aa279f7a573204afb0b0d1c8bed1e67cfca9) docs: Adds roadmap. Closes #3835 (#3863)
- * [5a0c515c](https://github.com/argoproj/argo-workflows/commit/5a0c515c45f8fbcf0811c25774c1c5f97e72286d) feat: Step and Task Level Global Timeout (#3686)
- * [a8d10340](https://github.com/argoproj/argo-workflows/commit/a8d10340921d363b9e0c006652fb43b9ea6630ab) docs: add Nikkei to user list (#3935)
- * [24c77838](https://github.com/argoproj/argo-workflows/commit/24c778388a56792e847fcc30bd92a10299451959) fix: Custom metrics are not recorded for DAG tasks Fixes #3872 (#3886)
- * [d4cf0d26](https://github.com/argoproj/argo-workflows/commit/d4cf0d26788676c4075044d9917e4bb33902317b) docs: Update workflow-controller-configmap.yaml with SSL options (#3924)
- * [7e6a8910](https://github.com/argoproj/argo-workflows/commit/7e6a8910c3946dcc64d4f30f463d76a6eaf30df7) docs: update docs for upgrading readiness probe to HTTPS. Closes #3859 (#3877)
- * [de2185c8](https://github.com/argoproj/argo-workflows/commit/de2185c81ae54736177e0476acae42b8e2dc0af5) feat(controller): Set retry factor to 2. Closes #3911 (#3919)
- * [be91d762](https://github.com/argoproj/argo-workflows/commit/be91d7621d82c6fb23e18ab4eebc9be58a59d81f) fix: Workflow should fail on Pod failure before container starts Fixes #3879 (#3890)
- * [c4c80069](https://github.com/argoproj/argo-workflows/commit/c4c800691b20fccf894422075cf41094c39cffc0) test: Fix TestRetryOmit and TestStopBehavior (#3910)
- * [650869fd](https://github.com/argoproj/argo-workflows/commit/650869fde66158a9e03e58aae8aeabe698fe0da5) feat(server): Display events involved in the workflow. Closes #3673 (#3726)
- * [5b5d2359](https://github.com/argoproj/argo-workflows/commit/5b5d2359ef9f573121fe6429e386f03dd8652ece) fix(controller): Cron re-apply update (#3883)
- * [fd3fca80](https://github.com/argoproj/argo-workflows/commit/fd3fca804ef998c875ce0ee2914605a918d9d01a) feat(artifacts): retrieve subpath from unarchived ref artifact. Closes #3061 (#3063)
- * [6a452ccd](https://github.com/argoproj/argo-workflows/commit/6a452ccd4de538ca3b95febf395151e72195c25f) test: Fix flaky e2e tests (#3909)
- * [6e82bf38](https://github.com/argoproj/argo-workflows/commit/6e82bf382a0b41df46db2cc3a1a3925d009f42e1) feat(controller): Emit events for malformed cron workflows. See #3881 (#3889)
- * [f04bdd6a](https://github.com/argoproj/argo-workflows/commit/f04bdd6afa9f17d86833f1537f8ad6713a441bcb) Update workflow-controller-configmap.yaml (#3901)
- * [bb79e3f5](https://github.com/argoproj/argo-workflows/commit/bb79e3f5a00a62e58056e4abd07b129a0f01617d) fix(executor): Replace default retry in executor with an increased value retryer (#3891)
- * [b681c113](https://github.com/argoproj/argo-workflows/commit/b681c1130a41942291e964f29336f8dca53ec4b2) fix(ui): use absolute URL to redirect from autocomplete list. Closes #3903 (#3906)
- * [712c77f5](https://github.com/argoproj/argo-workflows/commit/712c77f5c46cdbb6f03ec2b020fbca9de08d6894) chore(users): Add Fynd Trak to the list of Users (#3900)
- * [d55402db](https://github.com/argoproj/argo-workflows/commit/d55402db1072ee0598597142807407029f4e728e) ci: Fix broken Multiplatform builds (#3908)
- * [9681a4e2](https://github.com/argoproj/argo-workflows/commit/9681a4e2d22d64bbbd4dab6f377fbd0e7a5e39e5) fix(ui): Improve error recovery. Fixes #3867 (#3869)
- * [b926f8c0](https://github.com/argoproj/argo-workflows/commit/b926f8c0c318dd0012f445abd885b918b5c7d2d7) chore: Remove unused imports (#3892)
- * [4c18a06b](https://github.com/argoproj/argo-workflows/commit/4c18a06ba0a46037d40713a91f69320869b3bdc8) feat(controller): Always retry when `IsTransientErr` to tolerate transient errors. Fixes #3217 (#3853)
- * [0cf7709f](https://github.com/argoproj/argo-workflows/commit/0cf7709ff5b9409fcbaa5322601c5a9045ecbe40) fix(controller): Failure tolerant workflow archiving and offloading. Fixes #3786 and #3837 (#3787)
- * [359ee8db](https://github.com/argoproj/argo-workflows/commit/359ee8db4e89d15effd542680aaebdddcbbb2fd0) fix: Corrects CRD and Swagger types. Fixes #3578 (#3809)
- * [58ac52b8](https://github.com/argoproj/argo-workflows/commit/58ac52b892c15c785f9209aac86d6374199400f1) chore(ui): correct a typo (#3876)
- * [dae0f2df](https://github.com/argoproj/argo-workflows/commit/dae0f2df1ffcc8a2ff4f3dce1ea7da3f34587e2f) feat(controller): Do not try to create pods we know exists to prevent `exceeded quota` errors. Fixes #3791 (#3851)
- * [9781a1de](https://github.com/argoproj/argo-workflows/commit/9781a1de7ebe8d920207329dbf3b104d7061c33e) ci: Create manifest from images again (#3871)
- * [c6b51362](https://github.com/argoproj/argo-workflows/commit/c6b51362eb91f042c63ce64e5c6996fef13c90a7) test: E2E test refactoring (#3849)
- * [04898fee](https://github.com/argoproj/argo-workflows/commit/04898fee31dd362c31f2e57e03c772c0b4b20d5d) chore: Added unittest for PVC exceed quota Closes #3561 (#3860)
- * [4e42208c](https://github.com/argoproj/argo-workflows/commit/4e42208c05cafce169c043040944125a37a64e6d) ci: Changed tagging and amend multi-arch manifest. (#3854)
- * [c352f69d](https://github.com/argoproj/argo-workflows/commit/c352f69d95ce6cb72bbd1f464655b6ba519b8b87) chore: Reduce the 2x workflow save on Semaphore scenario (#3846)
- * [a24bc944](https://github.com/argoproj/argo-workflows/commit/a24bc944822c9f5eed92c0b5b07284d7992908fa) feat(controller): Mutexes. Closes #2677 (#3631)
- * [a821c6d4](https://github.com/argoproj/argo-workflows/commit/a821c6d47c404d676672617fc6b8b60e43e94952) ci: Fix build by providing clean repo inside Docker (#3848)
- * [99fe11a7](https://github.com/argoproj/argo-workflows/commit/99fe11a7b9b2c26c25701c6aa29ee535089c979d) feat: Show next scheduled cron run in UI/CLI (#3847)
- * [6aaceeb9](https://github.com/argoproj/argo-workflows/commit/6aaceeb9541f46ee6af97e072be8d935812b7bc5) fix: Treat collapsed nodes as their siblings (#3808)
- * [7f5acd6f](https://github.com/argoproj/argo-workflows/commit/7f5acd6f2df9310fee45e6dff740ed610fefd93f) docs: Add 23mofang to USERS.md
- * [10cb447a](https://github.com/argoproj/argo-workflows/commit/10cb447a92b5f1be814e4b8a03be47aced7bd531) docs: Update example README for duration (#3844)
- * [1678e58c](https://github.com/argoproj/argo-workflows/commit/1678e58c76160f8a5d862e374ec07b35c777783b) ci: Remove external build dependency (#3831)
- * [743ec536](https://github.com/argoproj/argo-workflows/commit/743ec53652bf1989931a2c23c2db5e29043e3582) fix(ui): crash when workflow node has no memoization info (#3839)
- * [a2f54da1](https://github.com/argoproj/argo-workflows/commit/a2f54da15de54b025859f7ba48779a062d42d8f3) fix(docs): Amend link to the Workflow CRD (#3828)
- * [ca8ab468](https://github.com/argoproj/argo-workflows/commit/ca8ab468dc72eb3fc2c038b4916c3b124a7e7b99) fix: Carry over ownerReferences from resubmitted workflow. Fixes #3818 (#3820)
- * [da43086a](https://github.com/argoproj/argo-workflows/commit/da43086a19f88c0b7ac71fdb888f913fd619962b) fix(docs): Add Entrypoint Cron Backfill example  Fixes #3807 (#3814)
- * [ed749a55](https://github.com/argoproj/argo-workflows/commit/ed749a5581b3478ee3cad8931f970acdaf9df190) test: Skip TestStopBehavior and TestRetryOmit (#3822)
- * [9292ae1e](https://github.com/argoproj/argo-workflows/commit/9292ae1e84cd93ed05c53ce70fe1eac9819ecbb8) ci: static files not being built with Homebrew and dirty binary. Fixes #3769 (#3801)
- * [c840adb2](https://github.com/argoproj/argo-workflows/commit/c840adb246122c2da6609339af1a573718a8dc93) docs: memory base amount denominator documentation
- * [8e1a3db5](https://github.com/argoproj/argo-workflows/commit/8e1a3db58c2edf73c36f21a8ef87a1a1e40576d9) feat(ui): add node memoization information to node summary view (#3741)
- * [9de49e2e](https://github.com/argoproj/argo-workflows/commit/9de49e2e657f272ecd81a8fdeafed4401c7a0dcc) ci: Change workflow for pushing images. Fixes #2080
- * [d235c7d5](https://github.com/argoproj/argo-workflows/commit/d235c7d52810d701e473723ab3d1a85c0c38e9c4) fix: Consider all children of TaskGroups in DAGs (#3740)
- * [3540d152](https://github.com/argoproj/argo-workflows/commit/3540d152a62261d0af25c48756acbae710684db0) Add SYS_PTRACE to ease the setup of non-root deployments with PNS executor. (#3785)
- * [2f654971](https://github.com/argoproj/argo-workflows/commit/2f6549714e1502f2efce4a6d96e5e5f5a1d982f3) chore: add New Relic to USERS.md (#3810)
- * [ce5da590](https://github.com/argoproj/argo-workflows/commit/ce5da590abf3946c2c939109cd2feb37b98d5892) docs: Add section on CronWorkflow crash recovery (#3804)
- * [0ca83924](https://github.com/argoproj/argo-workflows/commit/0ca8392485f32c3acdef312befe348ced037b7fb) feat: Github Workflow multi arch. Fixes #2080 (#3744)
- * [bee0e040](https://github.com/argoproj/argo-workflows/commit/bee0e040d0921b9d6d5c15c5d1d1ea6c27bdc2d5) docs: Remove confusing namespace (#3772)
- * [7ad6eb84](https://github.com/argoproj/argo-workflows/commit/7ad6eb8456456f3aea1bf35f1b5bae5058ffd962) fix(ui): Remove outdated download links. Fixes #3762 (#3783)
- * [22636782](https://github.com/argoproj/argo-workflows/commit/226367827dbf62f0a3155abbdc9de0b6d57f693c) fix(ui): Correctly load and store namespace. Fixes #3773 and #3775 (#3778)
- * [a9577ab9](https://github.com/argoproj/argo-workflows/commit/a9577ab96d226dc68a62e9a38093efca8607f81b) test: Increase cron test timeout to 7m (#3799)
- * [ed90d403](https://github.com/argoproj/argo-workflows/commit/ed90d4039d73894bf3073dd39735152833b87457) fix(controller): Support exit handler on workflow templates.  Fixes #3737 (#3782)
- * [dc75ee81](https://github.com/argoproj/argo-workflows/commit/dc75ee8116ceb75e0ec9b6d9175d26ab5f08912e) test: Simplify E2E test tear-down (#3749)
- * [821e40a2](https://github.com/argoproj/argo-workflows/commit/821e40a2b210fe71f82b445c2c72621ac34e4742) build: Retry downloading Kustomize (#3792)
- * [f15a8f77](https://github.com/argoproj/argo-workflows/commit/f15a8f77834e369b291c9e6955bdcef324afc6cd) fix: workflow template ref does not work in other namespace (#3795)
- * [ef44a03d](https://github.com/argoproj/argo-workflows/commit/ef44a03d363b1e7e2a89d268260e9a834553de7b) fix: Increase the requeue duration on checkForbiddenErrorAndResubmitAllowed (#3794)
- * [0125ab53](https://github.com/argoproj/argo-workflows/commit/0125ab5307249e6713d6706975d870a78c5046a5) fix(server): Trucate creator label at 63 chars. Fixes #3756 (#3758)
- * [a38101f4](https://github.com/argoproj/argo-workflows/commit/a38101f449cd462847a3ac99ee65fa70e40acd80) feat(ui): Sign-post IDE set-up. Closes #3720 (#3723)
- * [21dc23db](https://github.com/argoproj/argo-workflows/commit/21dc23dbe3571f745bd124edd0f0e0c7cf09aced) chore: Format test code (#3777)
- * [ee910b55](https://github.com/argoproj/argo-workflows/commit/ee910b5510c9e00bd07c32d2e8ef0846663a330a) feat(server): Emit audit events for workflow event binding errors (#3704)
- * [e9b29e8c](https://github.com/argoproj/argo-workflows/commit/e9b29e8c1f2cdc99e7ccde11f939b865b51e2320) fix: TestWorkflowLevelSemaphore flakiness (#3764)
- * [fadd6d82](https://github.com/argoproj/argo-workflows/commit/fadd6d828e152f88236bcd5483bae39c619d2622) fix: Fix workflow onExit nodes not being displayed in UI (#3765)
- * [df06e901](https://github.com/argoproj/argo-workflows/commit/df06e90193f706da48946e03642b1f758f0d3f2d) docs: Correct typo in `--instanceid`
- * [82a671c0](https://github.com/argoproj/argo-workflows/commit/82a671c00da25b99470a297ed98c794745a3241a) build: Lint e2e test files (#3752)
- * [513675bc](https://github.com/argoproj/argo-workflows/commit/513675bc5b9be6eda48983cb5c8b4ad4d42c9efb) fix(executor): Add retry on pods watch to handle timeout. (#3675)
- * [e35a86ff](https://github.com/argoproj/argo-workflows/commit/e35a86ff108e247b6fd7dfbf947300f086d2e912) feat: Allow parametrizable int fields (#3610)
- * [da115f9d](https://github.com/argoproj/argo-workflows/commit/da115f9db328af9bcc9152afd58b55ba929f7764) fix(controller): Tolerate malformed resources. Fixes #3677 (#3680)
- * [407f9e63](https://github.com/argoproj/argo-workflows/commit/407f9e63c065d154ee2e6a77a7040ae863e329aa) docs: Remove misleading argument in workflow template dag examples. (#3735) (#3736)
- * [f8053ae3](https://github.com/argoproj/argo-workflows/commit/f8053ae379a8244b53a8da6787fe6d9769158cbe) feat(operator): Add scope params for step startedAt and finishedAt (#3724)
- * [54c2134f](https://github.com/argoproj/argo-workflows/commit/54c2134fcdf4a4143b99590730340b79e57e180d) fix: Couldn't Terminate/Stop the ResourceTemplate Workflow (#3679)
- * [12ddc1f6](https://github.com/argoproj/argo-workflows/commit/12ddc1f69a0495331eea83a3cd6be9c453658c9a) fix: Argo linting does not respect namespace of declared resource (#3671)
- * [acfda260](https://github.com/argoproj/argo-workflows/commit/acfda260e78e4035757bdfb7923238b7e48bf0f9) feat(controller): controller logs to be structured #2308 (#3727)
- * [cc2e42a6](https://github.com/argoproj/argo-workflows/commit/cc2e42a691e01b6c254124c7aed52c11540e8475) fix(controller): Tolerate PDB delete race. Fixes #3706 (#3717)
- * [5eda8b86](https://github.com/argoproj/argo-workflows/commit/5eda8b867d32ab09be6643ad111383014f58b0e9) fix: Ensure target task's onExit handlers are run (#3716)
- * [811a4419](https://github.com/argoproj/argo-workflows/commit/811a441938ebfe1a9f7e634e6b4b8c1a98084df4) docs(windows): Add note about artifacts on windows (#3714)
- * [5e5865fb](https://github.com/argoproj/argo-workflows/commit/5e5865fb7ad2eddfefaf6192492bccbd07cbfc35) fix: Ingress docs (#3713)
- * [eeb3c9d1](https://github.com/argoproj/argo-workflows/commit/eeb3c9d1afb6b8e19423a71ca7eb24838358be8d) fix: Fix bug with 'argo delete --older' (#3699)
- * [6134a565](https://github.com/argoproj/argo-workflows/commit/6134a56540e9bbb744fe06ce5be69eca99e95b32) chore: Introduce convenience methods for intstr. (#3702)
- * [7aa536ed](https://github.com/argoproj/argo-workflows/commit/7aa536edaeb24d271593b4633cd211039df8beb6) feat: Upgrade Minio v7 with support IRSA (#3700)
- * [4065f265](https://github.com/argoproj/argo-workflows/commit/4065f265bafd1a5e410f48a8fb0e25b505ad3b61) docs: Correct version. Fixes #3697 (#3701)
- * [71d61281](https://github.com/argoproj/argo-workflows/commit/71d6128154587f2e966d1fc2bad4195bc0b4fba8) feat(server): Trigger workflows from webhooks. Closes #2667  (#3488)
- * [a5d995dc](https://github.com/argoproj/argo-workflows/commit/a5d995dc49caa9837e0ccf86290fd485f72ec065) fix(controller): Adds ALL_POD_CHANGES_SIGNIFICANT (#3689)
- * [9f00cdc9](https://github.com/argoproj/argo-workflows/commit/9f00cdc9d73b44569a071d18535586e28c469b8e) fix: Fixed workflow queue duration if PVC creation is forbidden (#3691)
- * [2baaf914](https://github.com/argoproj/argo-workflows/commit/2baaf914dfa0de517a5e39490e44ad682404f5c3) chore: Update issue templates (#3681)
- * [41ebbe8e](https://github.com/argoproj/argo-workflows/commit/41ebbe8e38861e1ad09db6687512757fda2487d7) fix: Re-introduce 1 second sleep to reconcile informer (#3684)
- * [6e3c5bef](https://github.com/argoproj/argo-workflows/commit/6e3c5bef5c2bbfbef4a74b4c9c91e288b8e94735) feat(ui): Make UI errors recoverable. Fixes #3666 (#3674)
- * [27fea1bb](https://github.com/argoproj/argo-workflows/commit/27fea1bbd3dcb5f420beb85926a1fb2434b33b7e) chore(ui): Add label to 'from' section in Workflow Drawer (#3685)
- * [32d6f752](https://github.com/argoproj/argo-workflows/commit/32d6f75212e07004bcbf2c34973160c0ded2023a) feat(ui): Add links to wft, cwf, or cwft to workflow list and details. Closes #3621 (#3662)
- * [1c95a985](https://github.com/argoproj/argo-workflows/commit/1c95a985b486c4e23622322faf8caccbdd991c89) fix: Fix collapsible nodes rendering (#3669)
- * [87b62bbb](https://github.com/argoproj/argo-workflows/commit/87b62bbb56241c948e8c46bef4e9d01fe2c67429) build: Use http in dev server (#3670)
- * [dbb39368](https://github.com/argoproj/argo-workflows/commit/dbb39368295cbc0ef886e78236338572c37607a1) feat: Add submit options to 'argo cron create' (#3660)
- * [2b6db45b](https://github.com/argoproj/argo-workflows/commit/2b6db45b2775cf8bff22b89b0a30e4dda700ecf9) fix(controller): Fix nested maps. Fixes #3653 (#3661)
- * [3f293a4d](https://github.com/argoproj/argo-workflows/commit/3f293a4d647c6c10cf1bafc8d340453e87bd4351) fix: interface{} values should be expanded with '%v' (#3659)
- * [f08ab972](https://github.com/argoproj/argo-workflows/commit/f08ab9727d6c2f3f12f42f554ad896a21abb6b9c) docs: Fix type in default-workflow-specs.md (#3654)
- * [a8f4da00](https://github.com/argoproj/argo-workflows/commit/a8f4da00b6157a2a457eef74cfe9c46b7a39f9ff) fix(server): Report v1.Status errors. Fixes #3608 (#3652)
- * [a3a4ea0a](https://github.com/argoproj/argo-workflows/commit/a3a4ea0a43c1421d04198dacd2000a0b8ecb17ad) fix: Avoid overriding the Workflow parameter when it is merging with WorkflowTemplate parameter (#3651)
- * [9ce1d824](https://github.com/argoproj/argo-workflows/commit/9ce1d824eb0ad607035db7d3bfaa6a54fbe6dc34) fix: Enforce metric Help must be the same for each metric Name (#3613)
- * [4eca0481](https://github.com/argoproj/argo-workflows/commit/4eca048136a2ef5a5e066b0458315655ba40ea76) docs: Update link to examples so works in raw github.com view (#3623)
- * [f77780f5](https://github.com/argoproj/argo-workflows/commit/f77780f5bdeb875506b4f619b63c40295b66810a) fix(controller): Carry-over labels for re-submitted workflows. Fixes #3622 (#3638)
- * [3f3a4c91](https://github.com/argoproj/argo-workflows/commit/3f3a4c916229acde263933fb689187b8c4fcb278) docs: Add comment to config map about SSO auth-mode (#3634)
- * [d9090c99](https://github.com/argoproj/argo-workflows/commit/d9090c993907bb8e96481c64af214b4941f88418) build: Disable TLS for dev mode. Fixes #3617 (#3618)
- * [bcc6e1f7](https://github.com/argoproj/argo-workflows/commit/bcc6e1f79c42f006b2720e1e185af59a984103d5) fix: Fixed flaky unit test TestFailSuspendedAndPendingNodesAfterDeadline (#3640)
- * [8f70d224](https://github.com/argoproj/argo-workflows/commit/8f70d2243e07c04254222b1cabf8088245ca55e2) fix: Don't panic on invalid template creation (#3643)
- * [5b0210dc](https://github.com/argoproj/argo-workflows/commit/5b0210dccff725b6288799a0c215550fe6fc6247) fix: Simplify the WorkflowTemplateRef field validation to support all fields in WorkflowSpec except `Templates` (#3632)
- * [2375878a](https://github.com/argoproj/argo-workflows/commit/2375878af4ce02af81326e7a672b32c7ce8bfbb1) fix: Fix 'malformed request: field selector' error (#3636)
- * [87ea54c9](https://github.com/argoproj/argo-workflows/commit/87ea54c9dec767f617a1b8fcdd466dd00264f2ea) docs: Add documentation for configuring OSS artifact storage (#3639)
- * [861afd36](https://github.com/argoproj/argo-workflows/commit/861afd369ce63e46c085c0e95ca7bf9ed2175373) docs: Correct indentation for codeblocks within bullet-points for "workflow-templates" (#3627)
- * [0f37e81a](https://github.com/argoproj/argo-workflows/commit/0f37e81abd42fbdece9ea70b2091256dbecd1220) fix: DAG level Output Artifacts on K8S and Kubelet executor (#3624)
- * [a89261bf](https://github.com/argoproj/argo-workflows/commit/a89261bf6b6ab5b83037044c30f3a55cc1162d62) build(cli)!: Zip binaries binaries. Closes #3576 (#3614)
- * [7f844473](https://github.com/argoproj/argo-workflows/commit/7f844473167df32840720437953da478b3bdffa2) fix(controller): Panic when outputs in a cache entry are nil (#3615)
- * [86f03a3f](https://github.com/argoproj/argo-workflows/commit/86f03a3fbd871164cff95005d00b04c220ba58be) fix(controller): Treat TooManyError same as Forbidden (i.e. try again). Fixes #3606 (#3607)
- * [2e299df3](https://github.com/argoproj/argo-workflows/commit/2e299df34f86e0ad80122f84083e7b92bd542171) build: Increase timeout (#3616)
- * [e0a4f13d](https://github.com/argoproj/argo-workflows/commit/e0a4f13d1f3df93fd2c003146d7db2dd2dd924e6) fix(server): Re-establish watch on v1.Status errors. Fixes #3608 (#3609)
- * [cdbb5711](https://github.com/argoproj/argo-workflows/commit/cdbb57116fc12d28be3060ff1fff2498ebc18837) docs: Memoization Documentation (#3598)
- * [7abead2a](https://github.com/argoproj/argo-workflows/commit/7abead2a564876a695201cf7539bd20d1fc67888) docs: fix typo - replace "workfow" with "workflow" (#3612)
- * [f7be20c1](https://github.com/argoproj/argo-workflows/commit/f7be20c1cc0e7b6ab708d7d7a1f60c6898c834e4) fix: Fix panic and provide better error message on watch endpoint (#3605)
- * [491f4f74](https://github.com/argoproj/argo-workflows/commit/491f4f747619783384937348effaaa56143ea8f1) fix: Argo Workflows does not honour global timeout if step/pod is not able to schedule (#3581)
- * [5d8f85d5](https://github.com/argoproj/argo-workflows/commit/5d8f85d5072b5e580a33358cf5fea1fac372baa4) feat(ui): Enhanced workflow submission. Closes #3498 (#3580)
- * [a4a26414](https://github.com/argoproj/argo-workflows/commit/a4a26414e5eef85b61e96789264a4b96a6effc10) build: Initialize npm before installing swagger-markdown (#3602)
- * [ad3441dc](https://github.com/argoproj/argo-workflows/commit/ad3441dc84b207df57094df570f01915634c073d) feat: Add 'argo node set' command (#3277)
- * [a43bf129](https://github.com/argoproj/argo-workflows/commit/a43bf129e4c7e1f6fcea2af0acdd2f07cc5a2287) docs: Migrate to homebrew-core (#3567) (#3568)
- * [17b46bdb](https://github.com/argoproj/argo-workflows/commit/17b46bdbbe72072d87f83625b4cf1873f9c5379b) fix(controller): Fix bug in util/RecoverWorkflowNameFromSelectorString. Add error handling (#3596)
- * [c968877c](https://github.com/argoproj/argo-workflows/commit/c968877c82dc5ad4019d11c449477af6e060aec1) docs: Document ingress set-up. Closes #3080 (#3592)
- * [8b6e43f6](https://github.com/argoproj/argo-workflows/commit/8b6e43f6dafbb95168eaa8c0b2a52f9e177ba075) fix(ui): Fix multiple UI issues (#3573)
- * [cdc935ae](https://github.com/argoproj/argo-workflows/commit/cdc935ae76b3d7cc50a486695b40ff2f647b49bc) feat(cli): Support deleting resubmitted workflows (#3554)
- * [1b757ea9](https://github.com/argoproj/argo-workflows/commit/1b757ea9bc75a379262928be76a4179ea75aa658) feat(ui): Change default language for Resource Editor to YAML and store preference in localStorage. Fixes #3543 (#3560)
- * [c583bc04](https://github.com/argoproj/argo-workflows/commit/c583bc04c672d3aac6955024568a7daebe928932) fix(server): Ignore not-JWT server tokens. Fixes #3562 (#3579)
- * [5afbc131](https://github.com/argoproj/argo-workflows/commit/5afbc131f2e43a0096857534a2814a9fdd9b95f9) fix(controller): Do not panic on nil output value. Fixes #3505 (#3509)
- * [c409624b](https://github.com/argoproj/argo-workflows/commit/c409624b43cdc8823ab02b30ff9f3bc5b4d66c1a) docs: Synchronization documentation (#3537)
- * [0bca0769](https://github.com/argoproj/argo-workflows/commit/0bca07696ccf930ebdf4b3af7c6a44ddcb65e679) docs: Workflow of workflows pattern (#3536)
- * [827106de](https://github.com/argoproj/argo-workflows/commit/827106de2f8f3e03f267a3ebbb6095a1f9b4a0e6) fix: Skip TestStorageQuotaLimit (#3566)
- * [13b1d3c1](https://github.com/argoproj/argo-workflows/commit/13b1d3c19e94047ae97a071e4468b1050b8e292b) feat(controller): Step level memoization. Closes #944 (#3356)
- * [96e520eb](https://github.com/argoproj/argo-workflows/commit/96e520eb68afb36894b5d2373d55505cc3703a94) fix: Exceeding quota with volumeClaimTemplates (#3490)
- * [144c9b65](https://github.com/argoproj/argo-workflows/commit/144c9b65ecbc671c30d41a0bd65546957a34c713) fix(ui): cannot push to nil when filtering by label (#3555)
- * [7e4a7808](https://github.com/argoproj/argo-workflows/commit/7e4a780854fc5f39fcfc77e4354620c307ee21f1) feat: Collapse children in UI Workflow viewer (#3526)
- * [7536982a](https://github.com/argoproj/argo-workflows/commit/7536982ae7451a1a8bcd4b9ddfe6385b138fd782) fix: Fix flakey TestRetryOmitted (#3552)
- * [05d573d7](https://github.com/argoproj/argo-workflows/commit/05d573d789d4c95ece17e058a72c487fad0992ff) docs: Change formatting to put content into code block (#3553)
- * [dcee3484](https://github.com/argoproj/argo-workflows/commit/dcee34849ba6302a126d2eaf684a06d246080fd0) fix: Fix links in fields doc (#3539)
- * [fb67c1be](https://github.com/argoproj/argo-workflows/commit/fb67c1beb69c141604322bb19cf43596f9059cf9) Fix issue #3546 (#3547)
- * [d07a0e74](https://github.com/argoproj/argo-workflows/commit/d07a0e74888254fe78fa653e532c5f1963056598) ci: Make builds marginally faster. Fixes #3515 (#3519)
- * [4cb6aa04](https://github.com/argoproj/argo-workflows/commit/4cb6aa0488ca43158c9a7809c23126e062becd20) chore: Enable no-response bot (#3510)
- * [31afa92a](https://github.com/argoproj/argo-workflows/commit/31afa92ab0c91e8026bba29d216e6fcc2d150ee7) fix(artifacts): support optional input artifacts, Fixes #3491 (#3512)
- * [977beb46](https://github.com/argoproj/argo-workflows/commit/977beb462dcb11afd1913a4e1397136b1b14915b) fix: Fix when retrying Workflows with Omitted nodes (#3528)
- * [ab4ef5c5](https://github.com/argoproj/argo-workflows/commit/ab4ef5c5a290196878d3cf18a9a7036c8bfc9144) fix: Panic on CLI Watch command (#3532)
- * [b901b279](https://github.com/argoproj/argo-workflows/commit/b901b2790fe3c7c350b393e9a0943721ea76f3af) fix(controller): Backoff exponent is off by one. Fixes #3513 (#3514)
- * [49ef5c0f](https://github.com/argoproj/argo-workflows/commit/49ef5c0fe5b7b92ec0035e859a09cf906e4f02f2) fix: String interpreted as boolean in labels (#3518)
- * [19e700a3](https://github.com/argoproj/argo-workflows/commit/19e700a3388552d9440ae75dd259efcbeb0a3657) fix(cli): Check mutual exclusivity for argo CLI flags (#3493)
- * [7d45ff7f](https://github.com/argoproj/argo-workflows/commit/7d45ff7f014d011ef895b9c808da781000ea32a5) fix: Panic on releaseAllWorkflowLocks if Object is not Unstructured type (#3504)
- * [1b68a5a1](https://github.com/argoproj/argo-workflows/commit/1b68a5a15af12fb0866f4d5a4dcd9fb5da3f2ab4) fix: ui/package.json & ui/yarn.lock to reduce vulnerabilities (#3501)
- * [7f262fd8](https://github.com/argoproj/argo-workflows/commit/7f262fd81bae1f8b9bc7707d8bf02f10174cc87d) fix(cli)!: Enable CLI to work without kube config. Closes #3383, #2793 (#3385)
- * [2976e7ac](https://github.com/argoproj/argo-workflows/commit/2976e7ac517ec680b1077e64aa499d92c5d39a0d) build: Clear cmd docs before generating them (#3499)
- * [27528ba3](https://github.com/argoproj/argo-workflows/commit/27528ba34538b764db9254d41761a4edeba6694c) feat: Support completions for more resources (#3494)
- * [5bd2ad7a](https://github.com/argoproj/argo-workflows/commit/5bd2ad7a9d0ad5437fb7d1b7955e0b8e0c9b52ca) fix: Merge WorkflowTemplateRef with defaults workflow spec (#3480)
- * [e244337b](https://github.com/argoproj/argo-workflows/commit/e244337be239e462086a2bcad46f71ffb57a7a62) chore: Added examples for exit handler for step and dag level (#3495)
- * [bcb32547](https://github.com/argoproj/argo-workflows/commit/bcb325476ba49877df6b2dd9622bc64dfe9ad5f4) build: Use `git rev-parse` to accomodate older gits (#3497)
- * [3eb6e2f9](https://github.com/argoproj/argo-workflows/commit/3eb6e2f90c700070c4f1d2730a727aea7746c776) docs: Add link to GitHub Actions in the badge (#3492)
- * [69179e72](https://github.com/argoproj/argo-workflows/commit/69179e72c0872cde9131cc9d68192d5c472d64c9) fix: link to server auth mode docs, adds Tulip as official user (#3486)
- * [7a8e2b34](https://github.com/argoproj/argo-workflows/commit/7a8e2b34631aa8ae7037059deb5c2108a2ca2cb4) docs: Add comments to NodePhase definition. Closes #1117. (#3467)
- * [24d1e529](https://github.com/argoproj/argo-workflows/commit/24d1e52996d8af27909cf4477a5a14950a9a6da7) build: Simplify builds (#3478)
- * [acf56f9f](https://github.com/argoproj/argo-workflows/commit/acf56f9f0d2da426eab9cacc03b7ebadb4aa9ea3) feat(server): Label workflows with creator. Closes #2437 (#3440)
- * [3b8ac065](https://github.com/argoproj/argo-workflows/commit/3b8ac065a1db8ebe629d7cf02c1a8585b34ea2b7) fix: Pass resolved arguments to onExit handler (#3477)
- * [58097a9e](https://github.com/argoproj/argo-workflows/commit/58097a9ec2a9203dfebce9c75fdddc84ac48885e) docs: Add controller-level metrics (#3464)
- * [f6f1844b](https://github.com/argoproj/argo-workflows/commit/f6f1844b73d4e643614f575075401946b9aa7a7c) feat: Attempt to resolve nested tags (#3339)
- * [48e15d6f](https://github.com/argoproj/argo-workflows/commit/48e15d6fce2f980ae5dd5b5d2ff405f496b8f644) feat(cli): List only resubmitted workflows option (#3357)
- * [25e9c0cd](https://github.com/argoproj/argo-workflows/commit/25e9c0cdf73a3c9fa712fc3b544f1f8f33980515) docs, quick-start. Use http, not https for link (#3476)
- * [7a2d7642](https://github.com/argoproj/argo-workflows/commit/7a2d76427da0ae6440f91adbb2f97e62b28355e6) fix: Metric emission with retryStrategy (#3470)
- * [f5876e04](https://github.com/argoproj/argo-workflows/commit/f5876e041a2d87c8d48983751d2c3b4959fb1d93) test(controller): Ensure resubmitted workflows have correct labels (#3473)
- * [aa92ec03](https://github.com/argoproj/argo-workflows/commit/aa92ec03885b2c58c537b33161809f9966faf968) fix(controller): Correct fail workflow when pod is deleted with --force. Fixes #3097 (#3469)
- * [a1945d63](https://github.com/argoproj/argo-workflows/commit/a1945d635b24963af7f52bd73b19a7da52d647e3) fix(controller): Respect the volumes of a workflowTemplateRef. Fixes … (#3451)
- * [847ba530](https://github.com/argoproj/argo-workflows/commit/847ba5305273a16a65333c278e705dc157b9c723) test(controller): Add memoization tests. See #3214 (#3455) (#3466)
- * [f5183aed](https://github.com/argoproj/argo-workflows/commit/f5183aed8bb42b5c267b838c7b31b0f38fec28e8) docs: Fix CLI docs (#3465)
- * [1e42813a](https://github.com/argoproj/argo-workflows/commit/1e42813aaaaee55b9e4483338f7a8554ba9f9eab) test(controller): Add memoization tests. See #3214 (#3455)
- * [abe768c4](https://github.com/argoproj/argo-workflows/commit/abe768c4ba5433fe72f9e6d5a1dde09d37d4d20d) feat(cli): Allow to view previously terminated container logs (#3423)
- * [7581025f](https://github.com/argoproj/argo-workflows/commit/7581025ffac0da6a4c9b125dac3173d0c84aef4f) fix: Allow ints for sequence start/end/count. Fixes #3420 (#3425)
- * [b82f900a](https://github.com/argoproj/argo-workflows/commit/b82f900ae5e446d14a9899302c143c8e32447eab) Fixed typos (#3456)
- * [23760119](https://github.com/argoproj/argo-workflows/commit/23760119d4664f0825536d368b65cdde356e0ff3) feat: Workflow Semaphore Support (#3141)
- * [81cba832](https://github.com/argoproj/argo-workflows/commit/81cba832ed1d4f5b116dc9e43f1f3ad79c190c44) feat: Support WorkflowMetadata in WorkflowTemplate and ClusterWorkflowTemplate (#3364)
- * [568c032b](https://github.com/argoproj/argo-workflows/commit/568c032b3b86c39b39ae38d772b33bc1cbb757de) chore: update aws-sdk-go version (#3376)
- * [bd27d9f3](https://github.com/argoproj/argo-workflows/commit/bd27d9f3216bae609de2cb482a89af3783f0d132) chore: Upgrade node-sass (#3450)
- * [b1e601e5](https://github.com/argoproj/argo-workflows/commit/b1e601e586d376ef3b022acf684cf5de648dc3dc) docs: typo in argo stop --help (#3439)
- * [308c7083](https://github.com/argoproj/argo-workflows/commit/308c7083bded1b6a1fb91bcd963e1e9b8d0b4152) fix(controller): Prevent panic on nil node. Fixes #3436 (#3437)
- * [8ab06f53](https://github.com/argoproj/argo-workflows/commit/8ab06f532b24944e5e9c3ed33c4adc249203cad4) feat(controller): Add log message count as metrics. (#3362)
- * [5d0c436d](https://github.com/argoproj/argo-workflows/commit/5d0c436d3d148d70fd766fa50f97be6b2fef0d45) chore: Fix GitHub Actions Docker Image build  (#3442)
- * [e54b4ab5](https://github.com/argoproj/argo-workflows/commit/e54b4ab5cfaddec4e5f3e3cdecd6ea931501f6fb) docs: Add Sohu as official Argo user (#3430)
- * [ee6c8760](https://github.com/argoproj/argo-workflows/commit/ee6c8760e3d46dfdab0f8d3a63dbf1995322ad4b) fix: Ensure task dependencies run after onExit handler is fulfilled (#3435)
- * [6dc04b39](https://github.com/argoproj/argo-workflows/commit/6dc04b39c7986046c2be1535d2a933e4cba25e03) chore: Use GitHub Actions to build Docker Images to allow publishing Windows Images (#3291)
- * [05b3590b](https://github.com/argoproj/argo-workflows/commit/05b3590b5dc70963700b4a7a5cef4afd76b4943d) feat(controller): Add support for Docker workflow executor for Windows nodes (#3301)
- * [676868f3](https://github.com/argoproj/argo-workflows/commit/676868f31da1bce361e89bebfa1eea81471784ac) fix(docs): Update kubectl proxy URL (#3433)
- * [3507c3e6](https://github.com/argoproj/argo-workflows/commit/3507c3e6e8e9c420a6028a43b930a3ef6b221705) docs: Make https://argoproj.github.io/argo/  (#3369)
- * [733e95f7](https://github.com/argoproj/argo-workflows/commit/733e95f742ff14fb7c303d8b1dbf30403e9e8983) fix: Add struct-wide RWMutext to metrics (#3421)
- * [0463f241](https://github.com/argoproj/argo-workflows/commit/0463f24165e360344b5ff743915d16a12fef0ba0) fix: Use a unique queue to visit nodes (#3418)
- * [eddcac63](https://github.com/argoproj/argo-workflows/commit/eddcac6398e674aa24b59aea2e449492cf2c0c02) fix: Script steps fail with exceededQuota (#3407)
- * [c631a545](https://github.com/argoproj/argo-workflows/commit/c631a545e824682652569e49eb764844a7f5cb05) feat(ui): Add Swagger UI (#3358)
- * [910f636d](https://github.com/argoproj/argo-workflows/commit/910f636dcfad66c999aa859e11a31a9a772ccc79) fix: No panic on watch. Fixes #3411 (#3426)
- * [b4da1bcc](https://github.com/argoproj/argo-workflows/commit/b4da1bccc7f961200b8fe8551e4b286d1d5d5a9f) fix(sso): Remove unused `groups` claim. Fixes #3411 (#3427)
- * [330d4a0a](https://github.com/argoproj/argo-workflows/commit/330d4a0a2085b986855f9d3f4c5e27fbbe261ca9) fix: panic on wait command if event is null (#3424)
- * [7c439424](https://github.com/argoproj/argo-workflows/commit/7c4394245437d36245a4c9246a51ceb92edeaf42) docs: Include timezone name reference (#3414)
- * [03cbb8cf](https://github.com/argoproj/argo-workflows/commit/03cbb8cf2c75f5b241ae543259ea9db02e9339fd) fix(ui): Render DAG with exit node (#3408)
- * [3d50f985](https://github.com/argoproj/argo-workflows/commit/3d50f9852b481692235a3f075c4c0966e6404104) feat: Expose certain queue metrics (#3371)
- * [c7b35e05](https://github.com/argoproj/argo-workflows/commit/c7b35e054e3eee38f750c0eaf4a5431a56f80c49) fix: Ensure non-leaf DAG tasks have their onExit handler's run (#3403)
- * [70111600](https://github.com/argoproj/argo-workflows/commit/70111600d464bd7dd99014aa88b5f2cbab64a573) fix: Fix concurrency issues with metrics (#3401)
- * [d307f96f](https://github.com/argoproj/argo-workflows/commit/d307f96f2307da4897685b96ef54251b064de239) docs: Update config example to include useSDKCreds (#3398)
- * [637d50bc](https://github.com/argoproj/argo-workflows/commit/637d50bc132c346885caa4e70eee47ad5c96648e) chore: maybe -> may be (#3392)
- * [e70a8863](https://github.com/argoproj/argo-workflows/commit/e70a8863582e6fab7e2c5ea7c95a7fc0b4ab374d) chore: Added CWFT WorkflowTemplateRef example (#3386)
- * [bc4faf5f](https://github.com/argoproj/argo-workflows/commit/bc4faf5f739e9172b7968e198dc595f27d506f7b) fix: Fix bug parsing parmeters (#3372)
- * [4934ad22](https://github.com/argoproj/argo-workflows/commit/4934ad227f043a5554c9a4f717f09f70d2c18cbf) fix: Running pods are garaged in PodGC onSuccess
- * [0541cfda](https://github.com/argoproj/argo-workflows/commit/0541cfda611a656ab16dbfcd7bed858b7c8b2f3c) chore(ui): Remove unused interfaces for artifacts (#3377)
- * [20382cab](https://github.com/argoproj/argo-workflows/commit/20382cab7bbbbd5646a3dbfac6ee18586a6eada5) docs: Fix incorrect example of global parameter (#3375)
- * [1db93c06](https://github.com/argoproj/argo-workflows/commit/1db93c062c4f7e417bf74afe253e9a44e5381802) perf: Optimize time-based filtering on large number of workflows (#3340)
- * [2ab9495f](https://github.com/argoproj/argo-workflows/commit/2ab9495f0f3d944243d845411bafe7ebe496642b) fix: Don't double-count metric events (#3350)
- * [7bd3e720](https://github.com/argoproj/argo-workflows/commit/7bd3e7209018d0d7716ca0dbd0ffb1863165892d) fix(ui): Confirmation of workflow actions (#3370)
- * [488790b2](https://github.com/argoproj/argo-workflows/commit/488790b247191dd22babadd9592efae11f4fd245) Wellcome is using Argo in our Data Labs division (#3365)
- * [63e71192](https://github.com/argoproj/argo-workflows/commit/63e71192852138685d68156a0f6b1133ecfdaf74) chore: Remove unused code (#3367)
- * [a64ceb03](https://github.com/argoproj/argo-workflows/commit/a64ceb03f165513e30e5c9614d1bb64273219140) build: Enable Stale Bot (#3363)
- * [e4b08abb](https://github.com/argoproj/argo-workflows/commit/e4b08abbcfe6f3886e0cd28e8ea8c1860ef8c9e1) fix(server): Remove `context cancelled` error. Fixes #3073 (#3359)
- * [74ba5162](https://github.com/argoproj/argo-workflows/commit/74ba516220423cae5960b7dd51c4a8d5a37012b5) fix: Fix UI bug in DAGs (#3368)
- * [5e60decf](https://github.com/argoproj/argo-workflows/commit/5e60decf96e85a4077cd70d1d4e8da299d1d963d) feat(crds)!: Adds CRD generation and enhanced UI resource editor. Closes #859 (#3075)
- * [c2347f35](https://github.com/argoproj/argo-workflows/commit/c2347f3542d48467e8a0bede67db17ecce890f56) chore: Simplify deps by removing YAML (#3353)
- * [1323f9f4](https://github.com/argoproj/argo-workflows/commit/1323f9f418a407d7cbb92e7bb67e00faefe17e51) test: Add e2e tags (#3354)
- * [731a1b4a](https://github.com/argoproj/argo-workflows/commit/731a1b4a670078b8ba8e2f36bdd433afe22f2631) fix(controller): Allow events to be sent to non-argo namespace. Fixes #3342 (#3345)
- * [916e0db2](https://github.com/argoproj/argo-workflows/commit/916e0db25880cef3058e4c3c3f6d118e14312be1) Adding InVision to Users (#3352)
- * [6caf10fa](https://github.com/argoproj/argo-workflows/commit/6caf10fad7b116f9e3a6aaee4eb02243e37f2779) fix: Ensure child pods respect maxDuration (#3280)
- * [8f4945f5](https://github.com/argoproj/argo-workflows/commit/8f4945f5e6f7a6d503f400079b607715151a2a41) docs: Field fix (ParallelSteps -> WorkflowStep) (#3338)
- * [2b4b7340](https://github.com/argoproj/argo-workflows/commit/2b4b7340a6afb8317e27e3d58c46fba3c3db8ff0) fix: Remove broken SSO from quick-starts (#3327)
- * [26570fd5](https://github.com/argoproj/argo-workflows/commit/26570fd51ec2eebe86cd0f3bc05ab43272f957c5) fix(controller)!: Support nested items. Fixes #3288 (#3290)
- * [c3d85716](https://github.com/argoproj/argo-workflows/commit/c3d85716420048dd0567ccc5cda894a9717598ae) chore: Avoid variable name collision with imported package name (#3335)
- * [ca822af0](https://github.com/argoproj/argo-workflows/commit/ca822af0c4353bb30a51f0a4edfccdd4226c7043) build: Fix path to go-to-protobuf binary (#3308)
- * [769a964f](https://github.com/argoproj/argo-workflows/commit/769a964fcf51f58c76f2d4900c736f4dd945bd7f) feat(controller): Label workflows with their source workflow template (#3328)
- * [0785be24](https://github.com/argoproj/argo-workflows/commit/0785be24caaf93d62f5b77b2ee142a0691992b86) fix(ui): runtime error from null savedOptions props (#3330)
- * [200be0e1](https://github.com/argoproj/argo-workflows/commit/200be0e1e34f9cf6689e9739e3e4aea7f5bf7fde) feat: Save pagination limit and selected phases/labels to local storage (#3322)
- * [b5ed90fe](https://github.com/argoproj/argo-workflows/commit/b5ed90fe8611a10df7982e3fb2e6670400acf2d2) feat: Allow to change priority when resubmitting workflows (#3293)
- * [60c86c84](https://github.com/argoproj/argo-workflows/commit/60c86c84c60ac38c5a876d8df5362b5896700d73) fix(ui): Compiler error from workflows toolbar (#3317)
- * [3fe6ecc4](https://github.com/argoproj/argo-workflows/commit/3fe6ecc424fe1474b2ce765e47f1dc69ec9ef98e) docs: Document access token creation and usage (#3316)
- * [ab3c081e](https://github.com/argoproj/argo-workflows/commit/ab3c081e310835f7f2e7a3424042944adde39afd) docs: Rename Ant Financial to Ant Group (#3304)
- * [baad42ea](https://github.com/argoproj/argo-workflows/commit/baad42ea8fed83b2158721766e518b203664ebe1) feat(ui): Add ability to select multiple workflows from list and perform actions on them. Fixes #3185 (#3234)
- * [b6118939](https://github.com/argoproj/argo-workflows/commit/b6118939bf0948e856bb20955f6911743106af4d) fix(controller): Fix panic logging. (#3315)
- * [633ea71e](https://github.com/argoproj/argo-workflows/commit/633ea71ebf624530c75b1f9aeb713a92510cf62a) build: Pin `goimports` to working version (#3311)
- * [436c1259](https://github.com/argoproj/argo-workflows/commit/436c12590d80010e300a63be3acb3bd24ac3bf93) ci: Remove CircleCI (#3302)
- * [8e340229](https://github.com/argoproj/argo-workflows/commit/8e340229cfd3fb976b1261dbf32d038bfd2f7706) build: Remove generated Swagger files. (#3297)
- * [e021d7c5](https://github.com/argoproj/argo-workflows/commit/e021d7c512f01721e2f25d39836829752226c290) Clean up unused constants (#3298)
- * [48d86f03](https://github.com/argoproj/argo-workflows/commit/48d86f03ce9ac49f5099c46dd7995305eb59eb11) build: Upload E2E diagnostics after failure (#3294)
- * [8b12f433](https://github.com/argoproj/argo-workflows/commit/8b12f433a2e32cc69714ee456ee0d83e904ff31c) feat(cli): Add --logs to `argo [submit|resubmit|retry]. Closes #3183 (#3279)
- * [07b450e8](https://github.com/argoproj/argo-workflows/commit/07b450e8134e1afe0b58c45b21dc0c13d91ecdb5) fix: Reapply Update if CronWorkflow resource changed (#3272)
- * [8af01491](https://github.com/argoproj/argo-workflows/commit/8af014911901678ee24bea9b2ab652fb0af5bc48) docs: ArchiveLabelSelector document (#3284)
- * [38c908a2](https://github.com/argoproj/argo-workflows/commit/38c908a272e8a59b2843ad5514c6334ba1c7a693) docs: Add example for handling large output resutls (#3276)
- * [d44d264c](https://github.com/argoproj/argo-workflows/commit/d44d264c72649c540204ccb54e9a57550f48d1fc) Fixes validation of overridden ref template parameters. (#3286)
- * [62e54fb6](https://github.com/argoproj/argo-workflows/commit/62e54fb68778030245bed87f0675694ef3c58b57) fix: Fix delete --complete (#3278)
- * [a3c379bb](https://github.com/argoproj/argo-workflows/commit/a3c379bb5df171d635a200b9dec7a9ca89c3295d) docs: Updated WorkflowTemplateRef  on WFT and CWFT (#3137)
- * [824de95b](https://github.com/argoproj/argo-workflows/commit/824de95bfb2de0e325f92c0544f42267242486e4) fix(git): Fixes Git when using auth or fetch. Fixes #2343 (#3248)
- * [018fcc23](https://github.com/argoproj/argo-workflows/commit/018fcc23dc9fad051d15db2f9a83c2710d50c828) Update releasing.md (#3283)
- * [acee573b](https://github.com/argoproj/argo-workflows/commit/acee573b88bf96160b69d18bcc8031caf119c647) docs: Update CI Badges (#3282)
- * [9eb182c0](https://github.com/argoproj/argo-workflows/commit/9eb182c04957f2ca587ff1de84b79fc274f91788) build: Allow to change k8s namespace for installation (#3281)
- * [2bcfafb5](https://github.com/argoproj/argo-workflows/commit/2bcfafb56230194fd2d23adcfa5a1294066ec91e) fix: Add {{workflow.status}} to workflow-metrics (#3271)
- * [e6aab605](https://github.com/argoproj/argo-workflows/commit/e6aab605122356a10cb21df3a08e1ddeac6d2593) fix(jqFilter)!: remove extra quotes around output parameter value (#3251)
- * [f4580163](https://github.com/argoproj/argo-workflows/commit/f4580163f4187f798f93b8d778415e8bec001dda) fix(ui): Allow render of templates without entrypoint. Fixes #2891 (#3274)
- * [f30c05c7](https://github.com/argoproj/argo-workflows/commit/f30c05c74f598b6400b66bb20a752d78eca05e45) build: Add warning to ensure 'v' is present on release versions (#3273)
- * [d1cb1992](https://github.com/argoproj/argo-workflows/commit/d1cb1992cd22e9f69894532f214fa0e00312ff36) fixed archiveLabelSelector nil (#3270)
- * [c7e4c180](https://github.com/argoproj/argo-workflows/commit/c7e4c1808cf097857b8ee89d326ef9f32384fc1b) fix(ui): Update workflow drawer with new duration format (#3256)
- * [f2381a54](https://github.com/argoproj/argo-workflows/commit/f2381a5448e9d49a7b6ed0c9583ac8cf9b257938) fix(controller): More structured logging. Fixes #3260 (#3262)
- * [acba084a](https://github.com/argoproj/argo-workflows/commit/acba084abb01b967c239952d49e8e3d7775cbf2c) fix: Avoid unnecessary nil check for annotations of resubmitted workflow (#3268)
- * [55e13705](https://github.com/argoproj/argo-workflows/commit/55e13705ae57f86ca6c5846eb5de3e80370bc1d4) feat: Append previous workflow name as label to resubmitted workflow (#3261)
- * [2dae7244](https://github.com/argoproj/argo-workflows/commit/2dae724496a96ce2e0993daea0a3b6a473f784da) feat: Add mode to require Workflows to use workflowTemplateRef (#3149)
- * [56694abe](https://github.com/argoproj/argo-workflows/commit/56694abe27267c1cb855064b44bc7c32d61ca66c) Fixed onexit on workflowtempalteRef (#3263)
- * [54dd72c2](https://github.com/argoproj/argo-workflows/commit/54dd72c2439b5a6ef389eab4cb39bd412db9fd42) update mysql yaml port (#3258)
- * [fb502632](https://github.com/argoproj/argo-workflows/commit/fb502632419409e528e23f1ef70e7f610812d175) feat: Configure ArchiveLabelSelector for Workflow Archive (#3249)
- * [5467c899](https://github.com/argoproj/argo-workflows/commit/5467c8995e07e5501d685384e44585fc1b02c6b8) fix(controller): set pod finish timestamp when it is deleted (#3230)
- * [04bc5492](https://github.com/argoproj/argo-workflows/commit/04bc5492d582d45633a4a18ec691a10d913a73a3) build: Disable Circle CI and Sonar (#3253)
- * [23ca07a7](https://github.com/argoproj/argo-workflows/commit/23ca07a790714ad8c97ecab71ffa439843a7ad6c) chore: Covered steps.<STEPNAME>.outputs.parameters in variables document (#3245)
- * [4bd33c6c](https://github.com/argoproj/argo-workflows/commit/4bd33c6c6ce6dcb9f0c85dab40f162608d5f67a6) chore(cli): Add examples of @latest alias for relevant commands. Fixes #3225 (#3242)
- * [17108df1](https://github.com/argoproj/argo-workflows/commit/17108df1cea937f49f099ec26b7a25bd376b16a5) fix: Ensure subscription is closed in log viewer (#3247)
- * [495dc89b](https://github.com/argoproj/argo-workflows/commit/495dc89b5cfb2419b0438c4a53cfb3b13cb5785a) docs: Correct available fields in {{workflow.failures}} (#3238)
- * [4db1c4c8](https://github.com/argoproj/argo-workflows/commit/4db1c4c8495d0b8e13c718207175273fe98555a2) fix: Support the TTLStrategy for WorkflowTemplateRef (#3239)
- * [47f50693](https://github.com/argoproj/argo-workflows/commit/47f5069376f3c61b09ff02ff5729e5c3e6e58e45) feat(logging): Made more controller err/warn logging structured (#3240)
- * [c25e2880](https://github.com/argoproj/argo-workflows/commit/c25e28809863435d718d7e5ab303591d8039c724) build: Migrate to Github Actions (#3233)
- * [ef159f9a](https://github.com/argoproj/argo-workflows/commit/ef159f9ad6be552de1abf58c3dc4dc6911c49733) feat: Tick CLI Workflow watch even if there are no new events (#3219)
- * [ff1627b7](https://github.com/argoproj/argo-workflows/commit/ff1627b71789c42f604c0f83a9a3328d7e6b8248) fix(events): Adds config flag. Reduce number of dupe events emitted. (#3205)
- * [eae8f681](https://github.com/argoproj/argo-workflows/commit/eae8f68144acaf5c2ec0145ef0d136097cca7fcc) feat: Validate CronWorkflows before execution (#3223)
- * [4470a8a2](https://github.com/argoproj/argo-workflows/commit/4470a8a29bca9e16ac7e5d7d8c8a2310d0200efa) fix(ui/server): Fix broken label filter functionality on UI due to bug on server. Fix #3226 (#3228)
- * [e5e6456b](https://github.com/argoproj/argo-workflows/commit/e5e6456be37b52856205c4f7600a05ffef6daab1) feat(cli): Add --latest flag for argo get command as per #3128 (#3179)
- * [34608594](https://github.com/argoproj/argo-workflows/commit/34608594b98257c4ae47a280831d462bab7c53b4) fix(ui): Correctly update workflow list when workflow are modified/deleted (#3220)
- * [a7d8546c](https://github.com/argoproj/argo-workflows/commit/a7d8546cf9515ea70d686b8c669bf0a1d9b7538d) feat(controller): Improve throughput of many workflows. Fixes #2908 (#2921)
- * [a37d0a72](https://github.com/argoproj/argo-workflows/commit/a37d0a729c206040463d41e88e09814c1bf622dd) build: Change "DB=..." to "PROFILE=..." (#3216)
- * [15885d3e](https://github.com/argoproj/argo-workflows/commit/15885d3edc6d4754bc66f950251450eea8f29170) feat(sso): Allow reading SSO clientID from a secret. (#3207)
- * [723e9d5f](https://github.com/argoproj/argo-workflows/commit/723e9d5f40448ae425631fac8af2863a1f1ff1f5) fix: Ensrue image name is present in containers (#3215)
- * [0ee5e112](https://github.com/argoproj/argo-workflows/commit/0ee5e11253282eb5c36a5163086c20306cc09019) feat: Only process significant pod changes (#3181)
- * [c89a81f3](https://github.com/argoproj/argo-workflows/commit/c89a81f3ad3a76e22b98570a6045fd8eb358dbdb) feat: Add '--schedule' flag to 'argo cron create' (#3199)
- * [591f649a](https://github.com/argoproj/argo-workflows/commit/591f649a306edf826b667d0069ee04cb345dcd26) refactor: Refactor assesDAGPhase logic (#3035)
- * [285eda6b](https://github.com/argoproj/argo-workflows/commit/285eda6bbe9008ffa394edbc4b510e88119a1fd0) chore: Remove unused pod in addArchiveLocation() (#3200)
- * [8e1d56cb](https://github.com/argoproj/argo-workflows/commit/8e1d56cb78f8e039f4dbeea991bdaa1935738130) feat(controller): Add default name for artifact repository ref. (#3060)
- * [f1cdba18](https://github.com/argoproj/argo-workflows/commit/f1cdba18b3ef476e11f02e50a69fc33924158be7) feat(controller): Add `--qps` and `--burst` flags to controller (#3180)
- * [b86949f0](https://github.com/argoproj/argo-workflows/commit/b86949f0e9523e10c69e0f6b10b0f35413a20520) fix: Ensure stable desc/hash for metrics (#3196)
- * [e26d2f08](https://github.com/argoproj/argo-workflows/commit/e26d2f08c2d08dd83413b91a35e38ea6ed0d3839) docs: Update Getting Started (#3099)
- * [47bfea5d](https://github.com/argoproj/argo-workflows/commit/47bfea5d4e23d506c616fa8726c6bc751104bc94) docs: Add Graviti as official Argo user (#3187)
- * [04c77f49](https://github.com/argoproj/argo-workflows/commit/04c77f490b00ffc05f74a941f1c9ccf76a5bf789) fix(server): Allow field selection for workflow-event endpoint (fixes #3163) (#3165)
- * [0c38e66e](https://github.com/argoproj/argo-workflows/commit/0c38e66e619e243a5344f0f11a5e01194c7c5cb6) chore: Update Community Meeting link and specify Go@v1.13 (#3178)
- * [81846d41](https://github.com/argoproj/argo-workflows/commit/81846d416ecc84241ae8423d91280d6a39d9b4c2) build: Only check Dex in hosts file when SSO is enabled (#3177)
- * [a130d488](https://github.com/argoproj/argo-workflows/commit/a130d488ab69cf4d4d543c7348a45e4cd34f972e) feat(ui): Add drawer with more details for each workflow in Workflow List (#3151)
- * [fa84e203](https://github.com/argoproj/argo-workflows/commit/fa84e203239b35976210a441387d6480d951f034) fix: Do not use alphabetical order if index exists (#3174)
- * [138af597](https://github.com/argoproj/argo-workflows/commit/138af5977b81e619681eb2cfa20fd3891c752510) fix(cli): Sort expanded nodes by index. Closes #3145 (#3146)
- * [a9ec4d08](https://github.com/argoproj/argo-workflows/commit/a9ec4d08bf1e3a4b4ae55055011d5c64a1197bc0) docs: Fix api swagger file path in docs (#3167)
- * [c42e4d3a](https://github.com/argoproj/argo-workflows/commit/c42e4d3aeaf4093581d0a5d92b4d7750be205225) feat(metrics): Add node-level resources duration as Argo variable for metrics. Closes #3110 (#3161)
- * [e36fe66e](https://github.com/argoproj/argo-workflows/commit/e36fe66ee795fcde237360e593c34879873f0e36) docs: Add instructions on using Minikube as an alternative to K3D (#3162)
- * [edfa5b93](https://github.com/argoproj/argo-workflows/commit/edfa5b93fb58c0b243e1f019b92f02e846f7b83d) feat(metrics): Report controller error counters via metrics. Closes #3034 (#3144)
- * [8831e4ea](https://github.com/argoproj/argo-workflows/commit/8831e4ead39acfe3d49801271a95907a3b737d49) feat(argo-server): Add support for SSO. See #1813 (#2745)
- * [b62184c2](https://github.com/argoproj/argo-workflows/commit/b62184c2e3715fd7ddd9077e11513db25a512c93) feat(cli): More `argo list` and `argo delete` options (#3117)
- * [c6565d7c](https://github.com/argoproj/argo-workflows/commit/c6565d7c3c8c4b40c6725a1f682186e04e0a8f36) fix(controller): Maybe bug with nil woc.wfSpec. Fixes #3121 (#3160)
- * [06ca71d7](https://github.com/argoproj/argo-workflows/commit/06ca71d7a8b5f9ecc448006d3fae73baf88f9d18) build: Fix path to staticfiles and goreman binaries (#3159)
- * [cad84cab](https://github.com/argoproj/argo-workflows/commit/cad84cab7817141d259785f7565f82fd3c3dc540) chore: Remove unused nodeType in initializeNodeOrMarkError() (#3153)
- * [be425513](https://github.com/argoproj/argo-workflows/commit/be42551364ec9a792171588a662489ff32347ec1) chore: Master needs lint (#3152)
- * [70b56f25](https://github.com/argoproj/argo-workflows/commit/70b56f25baf78d67253a2f29bd4057279b0e9558) enhancement(ui): Add workflow labels column to workflow list. Fixes #2782 (#3143)
- * [3318c115](https://github.com/argoproj/argo-workflows/commit/3318c1152ac0654816e36c0b4eb8679c45b6250b) chore: Move default metrics server port/path to consts (#3135)
- * [a0062adf](https://github.com/argoproj/argo-workflows/commit/a0062adfe895ee39572db3aa6f259913279c6db3) feat(ui): Add Alibaba Cloud OSS related models in UI (#3140)
- * [1469991c](https://github.com/argoproj/argo-workflows/commit/1469991ce34333697df07ca750adb247b21cc3a9) fix: Update container delete grace period to match Kubernetes default (#3064)
- * [df725bbd](https://github.com/argoproj/argo-workflows/commit/df725bbddac2f3a216010b069363f0344a2f5a80) fix(ui): Input artifacts labelled in UI. Fixes #3098 (#3131)
- * [c0d59cc2](https://github.com/argoproj/argo-workflows/commit/c0d59cc283a62f111123728f70c24df5954d98e4) feat: Persist DAG rendering options in local storage (#3126)
- * [8715050b](https://github.com/argoproj/argo-workflows/commit/8715050b441f0fb5c84ae0a0a19695c89bf2e7b9) fix(ui): Fix label error (#3130)
- * [1814ea2e](https://github.com/argoproj/argo-workflows/commit/1814ea2e4a6702eacd567aefd1194bd6aec212ed) fix(item): Support ItemValue.Type == List. Fixes #2660 (#3129)
- * [12b72546](https://github.com/argoproj/argo-workflows/commit/12b72546eb49b8af5b4374577107f30484a6e975) fix: Panic on invalid WorkflowTemplateRef (#3127)
- * [09092147](https://github.com/argoproj/argo-workflows/commit/09092147cf26939e775848d75f687d5c8fc15aa9) fix(ui): Display error message instead of DAG when DAG cannot be rendered. Fixes #3091 (#3125)
- * [2d9a74de](https://github.com/argoproj/argo-workflows/commit/2d9a74de9b2ad28318dfb6bfdbc1db6f4db716db) docs: Document cost optimizations. Fixes #1139 (#2972)
- * [69c9e5f0](https://github.com/argoproj/argo-workflows/commit/69c9e5f053195e46871176c6a31d646144532c3a) fix: Remove unnecessary panic (#3123)
- * [2f3aca89](https://github.com/argoproj/argo-workflows/commit/2f3aca8988cee483f5fac116a8e99cdec7fd89cc) add AppDirect to the list of users (#3124)
- * [257355e4](https://github.com/argoproj/argo-workflows/commit/257355e4c54b8ca37e056e73718a112441faddb4) feat: Add 'submit --from' to CronWorkflow and WorkflowTemplate in UI. Closes #3112 (#3116)
- * [6e5dd2e1](https://github.com/argoproj/argo-workflows/commit/6e5dd2e19a3094f88e6f927f786f866eccc5f500) Add Alibaba OSS to the list of supported artifacts (#3108)
- * [1967b45b](https://github.com/argoproj/argo-workflows/commit/1967b45b1465693b71e3a0ccac9563886641694c) support sso (#3079)
- * [9229165f](https://github.com/argoproj/argo-workflows/commit/9229165f83011b3d5b867ac511793f8934bdcfab) feat(ui): Add cost optimisation nudges. (#3089)
- * [e88124db](https://github.com/argoproj/argo-workflows/commit/e88124dbf64128388cf0e6fa6d30b2f756e57d23) fix(controller): Do not panic of woc.orig in not hydrated. Fixes #3118 (#3119)
- * [132b947a](https://github.com/argoproj/argo-workflows/commit/132b947ad6ba5a5b81e281c469f08cb97748e42d) fix: Differentiate between Fulfilled and Completed (#3083)
- * [a93968ff](https://github.com/argoproj/argo-workflows/commit/a93968ff36a1472402ec9655458e6ad7b04401a8) docs: Document how to backfill a cron workflow (#3094)
- * [4de99746](https://github.com/argoproj/argo-workflows/commit/4de9974681034d7bb7223d2131eba1cd0e5d254d) feat: Added Label selector and Field selector in Argo list  (#3088)
- * [6229353b](https://github.com/argoproj/argo-workflows/commit/6229353b2355c9425f42509e3504e64ee7c7ae92) chore: goimports (#3107)
- * [8491e00f](https://github.com/argoproj/argo-workflows/commit/8491e00f31f1f744ee1af729e5598a7e8894ff5f) docs: Add link to USERS.md in PR template (#3086)
- * [bb2ce9f7](https://github.com/argoproj/argo-workflows/commit/bb2ce9f77894982f5bcae4e772795d0e679bf405) fix: Graceful error handling of malformatted log lines in watch (#3071)
- * [4fd27c31](https://github.com/argoproj/argo-workflows/commit/4fd27c314810ae43b39a5c2d36cef2dbbf5691af) build(swagger): Fix Swagger build problems (#3084)
- * [e4e0dfb6](https://github.com/argoproj/argo-workflows/commit/e4e0dfb6c66fd2c0dbbba240b1cfe8c12dcb93c2) test: fix TestContinueOnFailDag (#3101)
- * [fa69c1bb](https://github.com/argoproj/argo-workflows/commit/fa69c1bb7157e19755eea669bf44434e2bedd157) feat: Add CronWorkflowConditions to report errors (#3055)
- * [50ad3cec](https://github.com/argoproj/argo-workflows/commit/50ad3cec2b002b81e30a5d6975e7dc044a83b301) adds millisecond-level timestamps to argoexec (#2950)
- * [6464bd19](https://github.com/argoproj/argo-workflows/commit/6464bd199eff845da66d59d263f2d04479663020) fix(controller): Implement offloading for workflow updates that are re-applied. Fixes #2856 (#2941)
- * [6c369e61](https://github.com/argoproj/argo-workflows/commit/6c369e614281df0342d5cc46871551282da71ea9) chore: Rename files that include 'top-level' terminology (#3076)
- * [bd40b80b](https://github.com/argoproj/argo-workflows/commit/bd40b80bc0c6b81a824da04cbb892a5e93deeebb) docs: Document work avoidance. (#3066)
- * [6df0b2d3](https://github.com/argoproj/argo-workflows/commit/6df0b2d3538cd1525223c8d85581662ece172cf9) feat: Support Top level workflow template reference  (#2912)
- * [0709ad28](https://github.com/argoproj/argo-workflows/commit/0709ad28c3dbd4696404aa942478a7505e9e9a67) feat: Enhanced filters for argo {watch,get,submit} (#2450)
- * [784c1385](https://github.com/argoproj/argo-workflows/commit/784c1385f3bec1bacdc1ef80e223a33476696ed0) build: Use goreman for starting locally. (#3074)
- * [5b5bae9a](https://github.com/argoproj/argo-workflows/commit/5b5bae9a6e46a82f5830f68f87598ee0c7dc2ff7) docs: Add Isbank to users.md (#3068)
- * [2b038ed2](https://github.com/argoproj/argo-workflows/commit/2b038ed2e61781e5c4b8a796aba4c4afe4850305) feat: Enhanced depends logic (#2673)
- * [4c3387b2](https://github.com/argoproj/argo-workflows/commit/4c3387b273d802419a1552345dfb95dd05b8555b) fix: Linters should error if nothing was validated (#3011)
- * [51dd05b5](https://github.com/argoproj/argo-workflows/commit/51dd05b5f16e0554bdd33511f8332f3198604690) fix(artifacts): Explicit archive strategy. Fixes #2140 (#3052)
- * [ada2209e](https://github.com/argoproj/argo-workflows/commit/ada2209ef94e2380c4415cf19a8e321324650405) Revert "fix(artifacts): Allow tar check to be ignored. Fixes #2140 (#3024)" (#3047)
- * [b7ff9f09](https://github.com/argoproj/argo-workflows/commit/b7ff9f09c46c8f313378f7f6091260be4f6363e5) chore: Add ability to configure maximum DB connection lifetime (#3032)
- * [38a995b7](https://github.com/argoproj/argo-workflows/commit/38a995b749b83a76b5f1f2542df959898489210b) fix(executor): Properly handle empty resource results, like for a missing get (#3037)
- * [a1ac8bcf](https://github.com/argoproj/argo-workflows/commit/a1ac8bcf548c4f8fcff6b7df25aa61ad9e4c15ed) fix(artifacts): Allow tar check to be ignored. Fixes #2140 (#3024)
- * [f12d79ca](https://github.com/argoproj/argo-workflows/commit/f12d79cad9d4a9b2169f634183b6c7837c9e4615) fix(controller)!: Correctly format workflow.creationTimepstamp as RFC3339. Fixes #2974 (#3023)
- * [d10e949a](https://github.com/argoproj/argo-workflows/commit/d10e949a061de541f5312645dfa19c5732a302ff) fix: Consider metric nodes that were created and completed in the same operation (#3033)
- * [202d4ab3](https://github.com/argoproj/argo-workflows/commit/202d4ab31a2883d4f2448c309c30404f67761727) fix(executor): Optional input artifacts. Fixes #2990 (#3019)
- * [f17e946c](https://github.com/argoproj/argo-workflows/commit/f17e946c4d006cda4e161380fb5a0ba52dcebfd1) fix(executor): Save script results before artifacts in case of error. Fixes #1472 (#3025)
- * [3d216ae6](https://github.com/argoproj/argo-workflows/commit/3d216ae6d5ad96b996ce40c42793a2031a392bb1) fix: Consider missing optional input/output artifacts with same name (#3029)
- * [3717dd63](https://github.com/argoproj/argo-workflows/commit/3717dd636949e4a78e8a6ddee4320e6a98cc3c81) fix: Improve robustness of releases. Fixes #3004 (#3009)
- * [9f86a4e9](https://github.com/argoproj/argo-workflows/commit/9f86a4e941ecca4399267f7780fbb2e7ddcd2199) feat(ui): Enable CSP, HSTS, X-Frame-Options. Fixes #2760, #1376, #2761 (#2971)
- * [cb71d585](https://github.com/argoproj/argo-workflows/commit/cb71d585c73c72513aead057d570c279ba46e74b) refactor(metrics)!: Refactor Metric interface (#2979)
- * [c0ee1eb2](https://github.com/argoproj/argo-workflows/commit/c0ee1eb2293f268f6c56f343e77ff64480562f4a) docs: Add Ravelin as a user of Argo (#3020)
- * [052e6c51](https://github.com/argoproj/argo-workflows/commit/052e6c5197a6e8b4dfb14d18c2b923ca93fcb84c) Fix isTarball to handle the small gzipped file (#3014)
- * [cdcba3c4](https://github.com/argoproj/argo-workflows/commit/cdcba3c4d6849668238180903e59f37affdff01d) fix(ui): Displays command args correctl pre-formatted. (#3018)
- * [b5160988](https://github.com/argoproj/argo-workflows/commit/b516098804443b6741e9253cc211ddbf208898ab) build: Mockery v1.1.1 (#3015)
- * [a04d8f28](https://github.com/argoproj/argo-workflows/commit/a04d8f28b3028ebb3c9dacd525c563c448b19215) docs: Add StatefulSet and Service doc (#3008)
- * [8412526c](https://github.com/argoproj/argo-workflows/commit/8412526cb2d3675b4e9df5c0d4abb369eaf16380) docs: Fix Deprecated formatting (#3010)
- * [cc0fe433](https://github.com/argoproj/argo-workflows/commit/cc0fe433aebc0397c648ff4ddc8c1f99df042568) fix(events): Correct event API Version. Fixes #2994 (#2999)
- * [d5d6f750](https://github.com/argoproj/argo-workflows/commit/d5d6f750bf9324e8277fc0f05d8214b5dee255cd) feat(controller)!: Updates the resource duration calculation. Fixes #2934 (#2937)
- * [fa3801a5](https://github.com/argoproj/argo-workflows/commit/fa3801a5d89d58208f07977b73a8686e3aa2c3c9) feat(ui): Render 2000+ nodes DAG acceptably. (#2959)
- * [f952df51](https://github.com/argoproj/argo-workflows/commit/f952df517bae1f423063d61e7542c4f0c4c667e1) fix(executor/pns): remove sleep before sigkill (#2995)
- * [2a9ee21f](https://github.com/argoproj/argo-workflows/commit/2a9ee21f47dbd36ba1d2020d0939c73fc198b333) feat(ui): Add Suspend and Resume to CronWorkflows in UI (#2982)
- * [eefe120f](https://github.com/argoproj/argo-workflows/commit/eefe120f9f1e0fe5eb4876a24b00b1eb5147cebb) test: Upgrade to argosay:v2 (#3001)
- * [47472f73](https://github.com/argoproj/argo-workflows/commit/47472f73d9cec8ac601814a41388064185d2eae7) chore: Update Mockery (#3000)
- * [46b11e1e](https://github.com/argoproj/argo-workflows/commit/46b11e1eca9d25ab3dc936e959316ec587a86f52) docs: Use keyFormat instead of keyPrefix in docs (#2997)
- * [60d5fdc7](https://github.com/argoproj/argo-workflows/commit/60d5fdc7f91b675055ab0b1c7f450fa6feb0fac5) fix: Begin counting maxDuration from first child start (#2976)
- * [76aca493](https://github.com/argoproj/argo-workflows/commit/76aca4936290823c5fd0da0be8429e6d4d92efee) build: Fix Docker build. Fixes #2983 (#2984)
- * [d8cb66e7](https://github.com/argoproj/argo-workflows/commit/d8cb66e785c170030bd503ca4626ab4e6e4f8c6c) feat: Add Argo variable {{retries}} to track retry attempt (#2911)
- * [14b7a459](https://github.com/argoproj/argo-workflows/commit/14b7a459ec4ad58a3ae77c74c293a283cafdc33b) docs: Fix typo with WorkflowTemplates link (#2977)
- * [3c442232](https://github.com/argoproj/argo-workflows/commit/3c4422326dceea456df94a71270df80e9cbf7177) fix: Remove duplicate node event. Fixes #2961 (#2964)
- * [d8ab13f2](https://github.com/argoproj/argo-workflows/commit/d8ab13f24031eae58354b9ac1c59bad69968cbe6) fix: Consider Shutdown when assesing DAG Phase for incomplete Retry node (#2966)
- * [8a511e10](https://github.com/argoproj/argo-workflows/commit/8a511e109dc55d9f9c7b69614f110290c2536858) fix: Nodes with pods deleted out-of-band should be Errored, not Failed (#2855)
- * [ca4e08f7](https://github.com/argoproj/argo-workflows/commit/ca4e08f7ed861cf4e1d0a17617d210287ed83730) build: Build dev images from cache (#2968)
- * [5f01c4a5](https://github.com/argoproj/argo-workflows/commit/5f01c4a5945a9d89d5194efbbaaf1d4d2c40532d) Upgraded to Node 14.0.0 (#2816)
- * [849d876c](https://github.com/argoproj/argo-workflows/commit/849d876c835982bbfa814714e713b4d19b35148d) Fixes error with unknown flag: --show-all (#2960)
- * [93bf6609](https://github.com/argoproj/argo-workflows/commit/93bf6609cf407d6cd374a6dd3bc137b1c82e88df) fix: Don't update backoff message to save operations (#2951)
- * [3413a5df](https://github.com/argoproj/argo-workflows/commit/3413a5dfa7c29711d9bf0d227437a10bf0de9d3b) fix(cli): Remove info logging from watches. Fixes #2955 (#2958)
- * [fe9f9019](https://github.com/argoproj/argo-workflows/commit/fe9f90191fac2fb7909c8e0b31c5f3b5a31236c4) fix: Display Workflow finish time in UI (#2896)
- * [f281199a](https://github.com/argoproj/argo-workflows/commit/f281199a1df65a6716d29a8e29ba756aa31f36dc) docs: Update README with new features (#2807)
- * [c8bd0bb8](https://github.com/argoproj/argo-workflows/commit/c8bd0bb82e174cca8d733e7b75748273172efa37) fix(ui): Change default pagination to all and sort workflows (#2943)
- * [e3ed686e](https://github.com/argoproj/argo-workflows/commit/e3ed686e13eacf0174b3e1088fe3cf2eb7706b39) fix(cli): Re-establish watch on EOF (#2944)
- * [67355372](https://github.com/argoproj/argo-workflows/commit/673553729e12d4ad83387eba68b3cbfb0aea8fe4) fix(swagger)!: Fixes invalid K8S definitions in `swagger.json`. Fixes #2888 (#2907)
- * [023f2338](https://github.com/argoproj/argo-workflows/commit/023f233896ac90fdf1529f747c56ab19028b6a9c) fix(argo-server)!: Implement missing instanceID code. Fixes #2780 (#2786)
- * [7b0739e0](https://github.com/argoproj/argo-workflows/commit/7b0739e0b846cff7d2bc3340e88859ab655d25ff) Fix typo (#2939)
- * [20d69c75](https://github.com/argoproj/argo-workflows/commit/20d69c75662653523dc6276e7e57084ec1c7334f) Detect ctrl key when a link is clicked (#2935)
- * [f32cec31](https://github.com/argoproj/argo-workflows/commit/f32cec31027b7112a9a51069c2ad7b1cfbedd960) fix default null value for timestamp column - MySQL 5.7 (#2933)
- * [9773cfeb](https://github.com/argoproj/argo-workflows/commit/9773cfebcdcba9a6ab199c7001711c500f6f69a3) docs: Add docs/scaling.md (#2918)
- * [99858ea5](https://github.com/argoproj/argo-workflows/commit/99858ea53d79e964530f4a3840936d5da79585d9) feat(controller): Remove the excessive logging of node data (#2925)
- * [03ad694c](https://github.com/argoproj/argo-workflows/commit/03ad694c42a782dc9f45f7ff0ba94b32cbbfa2f1) feat(cli): Refactor `argo list --chunk-size` and add `argo archive list --chunk-size`. Fixes #2820 (#2854)
- * [1c45d5ea](https://github.com/argoproj/argo-workflows/commit/1c45d5eafe1c44b6dc53aba80ab3ef978db04afa) test: Use argoproj/argosay:v1 (#2917)
- * [f311a5a7](https://github.com/argoproj/argo-workflows/commit/f311a5a70a8f299f05363175e27afffc6772457b) build: Fix Darwin build (#2920)
- * [a06cb5e0](https://github.com/argoproj/argo-workflows/commit/a06cb5e0e02d7b480d20713e9c67f83d09fa2b24) fix: remove doubled entry in server cluster role deployment (#2904)
- * [c71116dd](https://github.com/argoproj/argo-workflows/commit/c71116ddedafde0f2931fbd489b9b17b8bd81e65) feat: Windows Container Support. Fixes #1507 and #1383 (#2747)
- * [3afa7b2f](https://github.com/argoproj/argo-workflows/commit/3afa7b2f1b4ecb9e64b2c9dee1e91dcf548f82c3) fix(ui): Use LogsViewer for container logs (#2825)
- * [9ecd5226](https://github.com/argoproj/argo-workflows/commit/9ecd522618b390b27c784092c3dc83e84785dcbb) docs: Document node field selector. Closes #2860 (#2882)
- * [7d8818ca](https://github.com/argoproj/argo-workflows/commit/7d8818ca2a335f5cb200d9b088305d032cacd020) fix(controller): Workflow stop and resume by node didn't properly support offloaded nodes. Fixes #2543 (#2548)
- * [e013f29d](https://github.com/argoproj/argo-workflows/commit/e013f29dd224a91023b5fc4cc9fed2879994ddb1) ci: Remove context to stop unauthozied errors on test jobs (#2910)
- * [db52e7ba](https://github.com/argoproj/argo-workflows/commit/db52e7bac649a7b101f846e7f7354d10a45c9e62) fix(controller): Add mutex to nameEntryIDMap in cron controller. Fix #2638 (#2851)
- * [9a33aa2d](https://github.com/argoproj/argo-workflows/commit/9a33aa2d3c0ffedf33625bd3339c2006937c0953) docs(users): Adding Habx to the users list (#2781)
- * [9e4ac9b3](https://github.com/argoproj/argo-workflows/commit/9e4ac9b3c8c7028c9759278931a76c5f26481e53) feat(cli): Tolerate deleted workflow when running `argo delete`. Fixes #2821 (#2877)
- * [a0035dd5](https://github.com/argoproj/argo-workflows/commit/a0035dd58609d744a6fa304e51d61474f25c817d) fix: ConfigMap syntax (#2889)
- * [c05c3859](https://github.com/argoproj/argo-workflows/commit/c05c3859cf911502597456f5ed374c8604af85f0) ci: Build less and therefore faster (#2839)
- * [56143eb1](https://github.com/argoproj/argo-workflows/commit/56143eb1e1e80275da2742135ef147e563cae737) feat(ui): Add pagination to workflow list. Fixes #1080 and #976 (#2863)
- * [e0ad7de9](https://github.com/argoproj/argo-workflows/commit/e0ad7de97a82b2e509bb4bc8bb5fcf5b9c26dea3) test: Fixes various tests (#2874)
- * [e378ca47](https://github.com/argoproj/argo-workflows/commit/e378ca470f1a97d624d3aceb3c53b55155fd02a9) fix: Cannot create WorkflowTemplate with un-supplied inputs (#2869)
- * [c3e30c50](https://github.com/argoproj/argo-workflows/commit/c3e30c5052b9544d363c4c73315be5136b593f9a) fix(swagger): Generate correct Swagger for inline objects. Fixes #2835 (#2837)
- * [c0143d34](https://github.com/argoproj/argo-workflows/commit/c0143d3478c6ff2ec5138f7c6b272fc8e36c6734) feat: Add metric retention policy (#2836)
- * [f03cda61](https://github.com/argoproj/argo-workflows/commit/f03cda61a73243eea225fe4d0a49f2ada0523d0d) Update getting-started.md (#2872)
- * [d66224e1](https://github.com/argoproj/argo-workflows/commit/d66224e12613c36f8fa91956509fad9fc450af74) fix: Don't error when deleting already-deleted WFs (#2866)
- * [e84acb50](https://github.com/argoproj/argo-workflows/commit/e84acb502cbbba88a700c511ffbf7feee609ccb8) chore: Display wf.Status.Conditions in CLI (#2858)
- * [3c7f3a07](https://github.com/argoproj/argo-workflows/commit/3c7f3a07d90ea6dcdf91673d4e5b4075216628f7) docs: Fix typo ".yam" -> ".yaml" (#2862)
- * [d7f8e0c4](https://github.com/argoproj/argo-workflows/commit/d7f8e0c4742b62d9271b6272a8f87c53a4fddea2) fix(CLI): Re-establish workflow watch on disconnect. Fixes #2796 (#2830)
- * [31358d6e](https://github.com/argoproj/argo-workflows/commit/31358d6e255e28f20803575f5ee0fdf2015ecb68) feat(CLI): Add -v and --verbose to Argo CLI (#2814)
- * [1d30f708](https://github.com/argoproj/argo-workflows/commit/1d30f70896b8b5f7ddc29e255c2dce0c6d01f4bd) ci: Don't configure Sonar on CI for release branches (#2811)
- * [d9c54075](https://github.com/argoproj/argo-workflows/commit/d9c54075b71baad2742829fe0874e4f07c67c67a) docs: Fix exit code example and docs (#2853)
- * [90743353](https://github.com/argoproj/argo-workflows/commit/90743353fcaf46dae04872935e95ce858e1792b3) feat: Expose workflow.serviceAccountName as global variable (#2838)
- * [f07f7bf6](https://github.com/argoproj/argo-workflows/commit/f07f7bf61147b3444255117c26bfd38261220e95) note that tar.gz'ing output artifacts is optional (#2797)
- * [3fd3fc6c](https://github.com/argoproj/argo-workflows/commit/3fd3fc6c3c789e7a3b357e16aacb02d0f880892b) docs: Document how to label creator (#2827)
- * [b956ec65](https://github.com/argoproj/argo-workflows/commit/b956ec65f372194e0f110e672a2ad50bd51a10d8) fix: Add Step node outputs to global scope (#2826)
- * [bac339af](https://github.com/argoproj/argo-workflows/commit/bac339afe10013a63bc1bb2fb83a883c07e19cb9) chore: Configure webpack dev server to proxy using HTTPS (#2812)
- * [cc136f9c](https://github.com/argoproj/argo-workflows/commit/cc136f9c3d76a5c50a9c03613233c62d118d3457) test: Skip TestStopBehavior. See #2833 (#2834)
- * [52ff43b5](https://github.com/argoproj/argo-workflows/commit/52ff43b54a76f934ae3b491c74e2350fbd2298f2) fix: Artifact panic on unknown artifact. Fixes #2824 (#2829)
- * [554fd06c](https://github.com/argoproj/argo-workflows/commit/554fd06c9daf7ce1147f949d397e489d508c58ba) fix: Enforce metric naming validation (#2819)
- * [dd223669](https://github.com/argoproj/argo-workflows/commit/dd223669a30acc58369a70288fee6ed6e006c189) docs: Add Microba as official Argo user (#2822)
- * [8151f0c4](https://github.com/argoproj/argo-workflows/commit/8151f0c49aea618a6dfcf92ec8388ccb7a5de985) docs: Update tls.md (#2813)
- * [0dbd78ff](https://github.com/argoproj/argo-workflows/commit/0dbd78ff223e592f8761f1334f952e97c9e6ac48) feat: Add TLS support. Closes #2764 (#2766)
- * [510e11b6](https://github.com/argoproj/argo-workflows/commit/510e11b639e0b797cc4253d84e96fb070691b7ab) fix: Allow empty strings in valueFrom.default (#2805)
- * [d7f41ac8](https://github.com/argoproj/argo-workflows/commit/d7f41ac8df15b8ed1e68b2e4f44d64418e4c4000) fix: Print correct version in logs. (#2806)
- * [e9c21120](https://github.com/argoproj/argo-workflows/commit/e9c2112064293b3a71e47b493666bdc9b311dfa6) chore: Add GCS native example for output artifact (#2789)
- * [e0f2697e](https://github.com/argoproj/argo-workflows/commit/e0f2697e252e7b62842af3b56f924f324f2c48ec) fix(controller): Include global params when using withParam (#2757)
- * [3441b11a](https://github.com/argoproj/argo-workflows/commit/3441b11aa5bde5fa5d0a6652fbb8fa05a4225686) docs: Fix typo in CronWorkflow doc (#2804)
- * [a2d2b848](https://github.com/argoproj/argo-workflows/commit/a2d2b848a9b6f3cf6fe5c0f0dd3b7b3084f83e37) docs: Add example of recursive for loop (#2801)
- * [29d39e29](https://github.com/argoproj/argo-workflows/commit/29d39e297c93355b68a9726aadeef4c67d4767b2) docs: Update the contributing docs  (#2791)
- * [1ea286eb](https://github.com/argoproj/argo-workflows/commit/1ea286eb237ed86bfde5a4c954927b335ab588f2) fix: ClusterWorkflowTemplate RBAC for  argo server (#2753)
- * [1f14f2a5](https://github.com/argoproj/argo-workflows/commit/1f14f2a5f6054a88f740c6799d443216f694f08f) feat(archive): Implement data retention. Closes #2273 (#2312)
- * [d0cc7764](https://github.com/argoproj/argo-workflows/commit/d0cc7764fe477465ac2c76de9cc406bbf2aac807) feat: Display argo-server version in `argo version` and in UI. (#2740)
- * [8de57281](https://github.com/argoproj/argo-workflows/commit/8de572813ee9f028cf8e06834f45a3592bc73f14) feat(controller): adds Kubernetes node name to workflow node detail in web UI and CLI output. Implements #2540 (#2732)
- * [52fa5fde](https://github.com/argoproj/argo-workflows/commit/52fa5fdee9f021b73eca30a199c65a3760462bd9) MySQL config fix (#2681)
- * [43d9eebb](https://github.com/argoproj/argo-workflows/commit/43d9eebb479242ef23e84135bbe4b9dd252dea46) fix: Rename Submittable API endpoint to `submit` (#2778)
- * [69333a87](https://github.com/argoproj/argo-workflows/commit/69333a87b0ae411972f7f25b196db989500bbe0c) Fix template scope tests (#2779)
- * [bb1abf7f](https://github.com/argoproj/argo-workflows/commit/bb1abf7f4c425494a0878d6cbc2d2cb677e88a97) chore: Add CODEOWNERS file (#2776)
- * [905e0b99](https://github.com/argoproj/argo-workflows/commit/905e0b99312e579dcd8aa8036c2ee57df6fa7a29) fix: Naming error in Makefile (#2774)
- * [7cb2fd17](https://github.com/argoproj/argo-workflows/commit/7cb2fd17765aad691eda25ca4c5acecb89f84394) fix: allow non path output params (#2680)
- * [af9f61ea](https://github.com/argoproj/argo-workflows/commit/af9f61ea7ce53f629a284a44f0106b9ed73f24e2) ci: Recurl (#2769)
- * [ef08e642](https://github.com/argoproj/argo-workflows/commit/ef08e642b5c92de0571998909b2b34ab3ac89fd4) build: Retry curl 3x (#2768)
- * [dedec906](https://github.com/argoproj/argo-workflows/commit/dedec906f0391b63b341c90e43a67047303c4728) test: Get tests running on release branches (#2767)
- * [1c8318eb](https://github.com/argoproj/argo-workflows/commit/1c8318eb92d17fa2263675cabce5134d3f1e37a2) fix: Add compatiblity mode to templateReference (#2765)
- * [7975952b](https://github.com/argoproj/argo-workflows/commit/7975952b0aa3ac84ea4559b302236598d1d47954) fix: Consider expanded tasks in getTaskFromNode (#2756)
- * [bc421380](https://github.com/argoproj/argo-workflows/commit/bc421380c9dfce1b8a25950d2bdc6a71b2e74a2d) fix: Fix template resolution in UI (#2754)
- * [391c0f78](https://github.com/argoproj/argo-workflows/commit/391c0f78a496dbe0334686dfcabde8c9af8a474f) Make phase and templateRef available for unsuspend and retry selectors (#2723)
- * [a6fa3f71](https://github.com/argoproj/argo-workflows/commit/a6fa3f71fa6bf742cb2fa90292180344f3744def) fix: Improve cookie security. Fixes #2759 (#2763)
- * [57f0183c](https://github.com/argoproj/argo-workflows/commit/57f0183cd194767af8f9bcb5fb84ab083c1661c3) Fix typo on the documentation. It causes error unmarshaling JSON: while (#2730)
- * [c6ef1ff1](https://github.com/argoproj/argo-workflows/commit/c6ef1ff19e1c3f74b4ef146be37e74bd0b748cd7) feat(manifests): add name on workflow-controller-metrics service port (#2744)
- * [af5cd1ae](https://github.com/argoproj/argo-workflows/commit/af5cd1ae0030b20f71ad345f21456100fec74639) docs: Update OWNERS (#2750)
- * [06c4bd60](https://github.com/argoproj/argo-workflows/commit/06c4bd60cf2dc85362b3370acd44e4bc3977dcbc) fix: Make ClusterWorkflowTemplate optional for namespaced Installation (#2670)
- * [25c62463](https://github.com/argoproj/argo-workflows/commit/25c624636d80605c08dd423528cb22b89cebf687) docs: Update README (#2752)
- * [908e1685](https://github.com/argoproj/argo-workflows/commit/908e1685d78d12c87fe955eec8ad0df964b3d98b) docs: Update README.md (#2751)
- * [4ea43e2d](https://github.com/argoproj/argo-workflows/commit/4ea43e2d63385211cc0a29c2aa1b237797a62f71) fix: Children of onExit nodes are also onExit nodes (#2722)
- * [3f1b6667](https://github.com/argoproj/argo-workflows/commit/3f1b6667282cf3d1b7944f7fdc075ef0f1b8ff36) feat: Add Kustomize as supported install option. Closes #2715 (#2724)
- * [691459ed](https://github.com/argoproj/argo-workflows/commit/691459ed3591f72251dc230982d7b03dc3d6f9db) fix: Error pending nodes w/o Pods unless resubmitPendingPods is set (#2721)
- * [874d8776](https://github.com/argoproj/argo-workflows/commit/874d8776c22f54ede8a07ef87b9d18c6ba8198ec) test: Longer timeout for deletion (#2737)
- * [3c8149fa](https://github.com/argoproj/argo-workflows/commit/3c8149fabfcb84bc57d1973c10fe6dbce96232a0) Fix typo (#2741)
- * [98f60e79](https://github.com/argoproj/argo-workflows/commit/98f60e7985ebd77d42ff99c6d6e1276048fb07f6) feat: Added Workflow SubmitFromResource API (#2544)
- * [6253997a](https://github.com/argoproj/argo-workflows/commit/6253997a7e25f3ad9fd3c322ea9ca9ad0b710c83) fix: Reset all conditions when resubmitting (#2702)
- * [e7c67de3](https://github.com/argoproj/argo-workflows/commit/e7c67de30df90ba7bbd649a2833dc6efed8a18de) fix: Maybe fix watch. Fixes #2678 (#2719)
- * [cef6dfb6](https://github.com/argoproj/argo-workflows/commit/cef6dfb6a25445624f864863da45c36380049e6d) fix: Print correct version string. (#2713)
- * [e9589d28](https://github.com/argoproj/argo-workflows/commit/e9589d28a5dbc7cb620f206bd1fee457a8b29dfe) feat: Increase pod workers and workflow workers both to 32 by default. (#2705)
- * [3a1990e0](https://github.com/argoproj/argo-workflows/commit/3a1990e09b353cd963b5dfbf50a702266d49b2fc) test: Fix Goroutine leak that was making controller unit tests slow. (#2701)
- * [9894c29f](https://github.com/argoproj/argo-workflows/commit/9894c29f4258fd40b604ee2c33bd877d03ff5b00) ci: Fix Sonar analysis on master. (#2709)
- * [54f5be36](https://github.com/argoproj/argo-workflows/commit/54f5be361f597d45c97469095a2e5cb5678436a8) style: Camelcase "clusterScope" (#2720)
- * [db6d1416](https://github.com/argoproj/argo-workflows/commit/db6d1416a11dbd9d963a2df6740908a1d8086ff6) fix: Flakey TestNestedClusterWorkflowTemplate testcase failure (#2613)
- * [b4fd4475](https://github.com/argoproj/argo-workflows/commit/b4fd4475c2661f12a92ba48a71b52067536044fe) feat(ui): Add a YAML panel to view the workflow manifest. (#2700)
- * [65d413e5](https://github.com/argoproj/argo-workflows/commit/65d413e5d68b2f1667ef09f3c5938a07c3442fe8) build(ui): Fix compression of UI package. (#2704)
- * [4129528d](https://github.com/argoproj/argo-workflows/commit/4129528d430be282099e94d7e98d61e40d9c78ba) fix: Don't use docker cache when building release images (#2707)
- * [8d0956c9](https://github.com/argoproj/argo-workflows/commit/8d0956c9eb8533d5a399246ffed68f6d343d47a1) test: Increase runCli timeout to 1m (#2703)
- * [9d93e971](https://github.com/argoproj/argo-workflows/commit/9d93e971a66d8f50ad92ff9e15175c6bbfe292c4) Update getting-started.md (#2697)
- * [ee644a35](https://github.com/argoproj/argo-workflows/commit/ee644a35ce4ec6a5565327fbf8cbae17a742603f) docs: Fix CONTRIBUTING.md and running-locally.md. Fixes #2682 (#2699)
- * [2737c0ab](https://github.com/argoproj/argo-workflows/commit/2737c0abf77f1555c9a9a59e564d0f1242d2656e) feat: Allow to pass optional flags to resource template (#1779)
- * [c1a2fc7c](https://github.com/argoproj/argo-workflows/commit/c1a2fc7ca8be7b9286ec01a12a185d8d4360b9f6) Update running-locally.md - fixing incorrect protoc install (#2689)
- * [a1226c46](https://github.com/argoproj/argo-workflows/commit/a1226c4616ad327400b37be19703e65a31919248) fix: Enhanced WorkflowTemplate and ClusterWorkflowTemplate validation to support Global Variables   (#2644)
- * [c21cc2f3](https://github.com/argoproj/argo-workflows/commit/c21cc2f31fead552cbab5f4664d20d56cf291619) fix a typo (#2669)
- * [9430a513](https://github.com/argoproj/argo-workflows/commit/9430a513fe7b5587048a5e74d3c9abc9e36e4304) fix: Namespace-related validation in UI (#2686)
- * [f3eeca6e](https://github.com/argoproj/argo-workflows/commit/f3eeca6e3b72f27f86678de840d1b6b7497e9473) feat: Add exit code as output variable (#2111)
- * [9f95e23a](https://github.com/argoproj/argo-workflows/commit/9f95e23a4dc9104da2218c66c66c4475285dfc3e) fix: Report metric emission errors via Conditions (#2676)
- * [c67f5ff5](https://github.com/argoproj/argo-workflows/commit/c67f5ff55b8e41b465e481d7a38d54d551c07ee4) fix: Leaf task with continueOn should not fail DAG (#2668)
- * [3c20d4c0](https://github.com/argoproj/argo-workflows/commit/3c20d4c072f1ec69954a3db8a9383bf312b495fd) ci: Migrate to use Sonar instead of CodeCov for analysis (#2666)
- * [9c6351fa](https://github.com/argoproj/argo-workflows/commit/9c6351fa643f76a7cf36eef3b80cff9bf5880463) feat: Allow step restart on workflow retry. Closes #2334 (#2431)
- * [cf277eb5](https://github.com/argoproj/argo-workflows/commit/cf277eb5114cd2db4f00d34e400a132d3344bf97) docs: Updates docs for CII. See #2641 (#2643)
- * [e2d0aa23](https://github.com/argoproj/argo-workflows/commit/e2d0aa23ab4ee9b91b018bb556959c60981586e2) fix: Consider offloaded and compressed node in retry and resume (#2645)
- * [a25c6a20](https://github.com/argoproj/argo-workflows/commit/a25c6a20d0ff7b7b7b211fcfe207200036ed5df8) build: Fix codegen for releases (#2662)
- * [4a3ca930](https://github.com/argoproj/argo-workflows/commit/4a3ca930ef1d944dfd8659d5886d8abc7f6ce42f) fix: Correctly emit events. Fixes #2626 (#2629)
- * [4a7d4bdb](https://github.com/argoproj/argo-workflows/commit/4a7d4bdba522870ab9883c4f6ccac7b244bc5bcb) test: Fix flakey DeleteCompleted test (#2659)
- * [41f91e18](https://github.com/argoproj/argo-workflows/commit/41f91e18a4f65d8a6626782ebc8920ca02b3cc86) fix: Add DAG as default in UI filter and reorder (#2661)
- * [f138ada6](https://github.com/argoproj/argo-workflows/commit/f138ada68ba0b3c46f546bfef574e212833759ac) fix: DAG should not fail if its tasks have continueOn (#2656)
- * [e5cbdf6a](https://github.com/argoproj/argo-workflows/commit/e5cbdf6a4be8f111f6353534079fa4a71384e401) ci: Only run CI jobs if needed (#2655)
- * [4c452d5f](https://github.com/argoproj/argo-workflows/commit/4c452d5f7287179b6a7967fc7d60fb0837bd36ca) fix: Don't attempt to resolve artifacts if task is going to be skipped (#2657)
- * [2caf570a](https://github.com/argoproj/argo-workflows/commit/2caf570a35565617ae9af04682883ab34e2692b6) chore: Add newline to fields.md (#2654)
- * [2cb596da](https://github.com/argoproj/argo-workflows/commit/2cb596da3dac3c5683ed44e7a363c014e73a38a5) Storage region should be specified (#2538)
- * [271e4551](https://github.com/argoproj/argo-workflows/commit/271e45512be56bb6187d7665e9b5b65eb2500ad6) chore: Fix-up Yarn deps (#2649)
- * [4c1b0777](https://github.com/argoproj/argo-workflows/commit/4c1b077725a22d183ecdb24f2f147fee0a6e320c) fix: Sort log entries. (#2647)
- * [268fc461](https://github.com/argoproj/argo-workflows/commit/268fc46197ac411339c78018f05d76e102447eef)  docs: Added doc generator code (#2632)
- * [d58b7fc3](https://github.com/argoproj/argo-workflows/commit/d58b7fc39620fb24e40bb4f55f69c4e0fb5fc017) fix: Add input paremeters to metric scope (#2646)
- * [cc3af0b8](https://github.com/argoproj/argo-workflows/commit/cc3af0b83381e2d4a8da1959c36fd0a466c414ff) fix: Validating Item Param in Steps Template (#2608)
- * [6c685c5b](https://github.com/argoproj/argo-workflows/commit/6c685c5baf281116340b7b0708f8a29764d72c47) fix: allow onExit to run if wf exceeds activeDeadlineSeconds. Fixes #2603 (#2605)
- * [ffc43ce9](https://github.com/argoproj/argo-workflows/commit/ffc43ce976973c7c20d6c58d7b27a28969ae206f) feat: Added Client validation on Workflow/WFT/CronWF/CWFT (#2612)
- * [24655cd9](https://github.com/argoproj/argo-workflows/commit/24655cd93246e2a25dc858238116f7acec45ea42) feat(UI): Move Workflow parameters to top of submit (#2640)
- * [0a3b159a](https://github.com/argoproj/argo-workflows/commit/0a3b159ab87bd313896174f8464ffd277b14264c) Use error equals (#2636)
- * [8c29e05c](https://github.com/argoproj/argo-workflows/commit/8c29e05cb5befe5f9f0263ff138eab66f75c54d0) ci: Fix codegen job (#2648)
- * [a78ecb7f](https://github.com/argoproj/argo-workflows/commit/a78ecb7fe040c0040fb12731997351a02e0808a0) docs(users): Add CoreWeave and ConciergeRender (#2641)
- * [14be4670](https://github.com/argoproj/argo-workflows/commit/14be46707f4051db71e9495472e842fbb1eb5ea0) fix: Fix logs part 2 (#2639)
- * [4da6f4f3](https://github.com/argoproj/argo-workflows/commit/4da6f4f3ee75b2e50206381dad1809d5a21c6cce) feat: Add 'outputs.result' to Container templates (#2584)
- * [51bc876d](https://github.com/argoproj/argo-workflows/commit/51bc876d576b6e61f508bb56ab9f2dfbf91b0e85) test: Fixes TestCreateWorkflowDryRun. Closes #2618 (#2628)
- * [212c6d75](https://github.com/argoproj/argo-workflows/commit/212c6d75fa7e5e8d568e80992d1924a2c51cd631) fix: Support minimal mysql version 5.7.8 (#2633)
- * [8facacee](https://github.com/argoproj/argo-workflows/commit/8facaceeb3515d804c3fd276b1802dbd6cf773e8) refactor: Refactor Template context interfaces (#2573)
- * [812813a2](https://github.com/argoproj/argo-workflows/commit/812813a288608e196006d4b8369702d020e61dc4) fix: fix test cases (#2631)
- * [ed028b25](https://github.com/argoproj/argo-workflows/commit/ed028b25f6c925a02596f90d722283856b003ff8) fix: Fix logging problems. See #2589 (#2595)
- * [d4e81238](https://github.com/argoproj/argo-workflows/commit/d4e8123816f3883d876ed715036c5d91d3fe0586) test: Fix teething problems (#2630)
- * [4aad6d55](https://github.com/argoproj/argo-workflows/commit/4aad6d55ed4e7a6c9eaa9a36b78e123655dd4ca4) chore: Add comments to issues (#2627)
- * [54f7a013](https://github.com/argoproj/argo-workflows/commit/54f7a0134ad9933608993bc09eda2032e7a16a80) test: Enhancements and repairs to e2e test framework (#2609)
- * [d95926fe](https://github.com/argoproj/argo-workflows/commit/d95926fe40e48932c25a0f70c671ad99f4149505) fix: Fix WorkflowTemplate icons to be more cohesive (#2607)
- * [0130e1fd](https://github.com/argoproj/argo-workflows/commit/0130e1fd85b7fa5b3b48b07b873858670e1a61a0) docs: Add fields and core concepts doc (#2610)
- * [5a1ac203](https://github.com/argoproj/argo-workflows/commit/5a1ac20352ab6042958f49a59d0f5227329f654c) fix: Fixes panic in toWorkflow method (#2604)
- * [51910292](https://github.com/argoproj/argo-workflows/commit/5191029247ac817dd6ce811e044459c45b2846ee) chore: Lint UI on CI, test diagnostics, skip bad test (#2587)
- * [232bb115](https://github.com/argoproj/argo-workflows/commit/232bb115eba8e2667653fdbdc9831bee112daa85) fix(error handling): use Errorf instead of New when throwing errors with formatted text (#2598)
- * [eeb2f97b](https://github.com/argoproj/argo-workflows/commit/eeb2f97be5c8787180af9f32f2d5e8baee63ed2f) fix(controller): dag continue on failed. Fixes #2596 (#2597)
- * [99c35129](https://github.com/argoproj/argo-workflows/commit/99c35129eae2d283c2e6d81b578d786b494aab11) docs: Fix inaccurate field name in docs (#2591)
- * [21c73779](https://github.com/argoproj/argo-workflows/commit/21c7377932825cd30f67a840d30853f4a48951fa) fix: Fixes lint errors (#2594)
- * [38aca5fa](https://github.com/argoproj/argo-workflows/commit/38aca5fa2a153393b3edb93be07ddce375ad13f4) chore: Added ClusterWorkflowTemplate RBAC on quick-start manifests (#2576)
- * [59f746e1](https://github.com/argoproj/argo-workflows/commit/59f746e1a551180d11e57676f8a2a384b3741599) feat: UI enhancement for Cluster Workflow Template (#2525)
- * [0801a428](https://github.com/argoproj/argo-workflows/commit/0801a4284a948bbeced83852af27a019e7b33535) fix(cli): Show lint errors of all files (#2552)
- * [c3535ba5](https://github.com/argoproj/argo-workflows/commit/c3535ba5ac85e1071a08ccbc930f2ff45cd2f295) docs: Fix wrong Configuring Your Artifact Repository document. (#2586)
- * [79217bc8](https://github.com/argoproj/argo-workflows/commit/79217bc89e892ee82bdd5018b2bba65425924d36) feat(archive): allow specifying a compression level (#2575)
- * [88d261d7](https://github.com/argoproj/argo-workflows/commit/88d261d7fa72faea19745de588c19de45e7fab88) fix: Use outputs of last child instead of retry node itslef (#2565)
- * [5c08292e](https://github.com/argoproj/argo-workflows/commit/5c08292e4ee388c1c5ca5291c601d50b2b3374e7) style: Correct the confused logic (#2577)
- * [3d146144](https://github.com/argoproj/argo-workflows/commit/3d14614459d50b96838fcfd83809ee29499e2917) fix: Fix bug in deleting pods. Fixes #2571 (#2572)
- * [cb739a68](https://github.com/argoproj/argo-workflows/commit/cb739a6897591969b959bd2feebd8ded97b9cb33) feat: Cluster scoped workflow template (#2451)
- * [c63e3d40](https://github.com/argoproj/argo-workflows/commit/c63e3d40be50479ca3c9a7325bfeb5fd9d31fa7c) feat: Show workflow duration in the index UI page (#2568)
- * [1520452a](https://github.com/argoproj/argo-workflows/commit/1520452a381319b414618d8429d6d7e0bb23790d) chore: Error -> Warn when Parent CronWf no longer exists (#2566)
- * [ffbb3b89](https://github.com/argoproj/argo-workflows/commit/ffbb3b899912f7af888d8216bd2ab55bc7106880) fix: Fixes empty/missing CM. Fixes #2285 (#2562)
- * [d0fba6f4](https://github.com/argoproj/argo-workflows/commit/d0fba6f443da013fd9ae8e48f658b337a0a18015) chore: fix typos in the workflow template docs (#2563)
- * [49801e32](https://github.com/argoproj/argo-workflows/commit/49801e32f1624ba20926f1b07a6ddafa2f162301) chore(docker): upgrade base image for executor image (#2561)
- * [c4efb8f8](https://github.com/argoproj/argo-workflows/commit/c4efb8f8b6e28a591794c018f5e61f55dd7d75e3) Add Riskified to the user list (#2558)
- * [8b92d33e](https://github.com/argoproj/argo-workflows/commit/8b92d33eb2f2de3b593459140576ea8eaff8fb4b) feat: Create K8S events on node completion. Closes #2274 (#2521)
- * [2902e144](https://github.com/argoproj/argo-workflows/commit/2902e144ddba2f8c5a93cdfc8e2437c04705065b) feat: Add node type and phase filter to UI (#2555)
- * [fb74ba1c](https://github.com/argoproj/argo-workflows/commit/fb74ba1ce27b96473411c2c5cfe9a86972af589e) fix: Separate global scope processing from local scope building (#2528)
- * [618b6dee](https://github.com/argoproj/argo-workflows/commit/618b6dee4de973b3f3ef1d1164a44b9cb176355e) fix: Fixes --kubeconfig flag. Fixes #2492 (#2553)
- * [79dc969f](https://github.com/argoproj/argo-workflows/commit/79dc969f73e0ec90bdc202e936afec970ff66fc6) test: Increase timeout for flaky test (#2543)
- * [15a3c990](https://github.com/argoproj/argo-workflows/commit/15a3c990359c40d791be64a34736e2a1ffa40178) feat: Report SpecWarnings in status.conditions (#2541)
- * [f142f30a](https://github.com/argoproj/argo-workflows/commit/f142f30a99aa9b12cdfbeed31129abb8d4266762) docs: Add example of template-level volume declaration. (#2542)
- * [93b6be61](https://github.com/argoproj/argo-workflows/commit/93b6be619523ec3d9d8c52c75d9fa540e0272c7f) fix(archive): Fix bug that prevents listing archive workflows. Fixes … (#2523)
- * [b4c9c54f](https://github.com/argoproj/argo-workflows/commit/b4c9c54f79d902f2372192f017192fa519800fd8) fix: Omit config key in configure artifact document. (#2539)
- * [864bf1e5](https://github.com/argoproj/argo-workflows/commit/864bf1e56812b0ea1434b3952073a3e15dd9f046) fix: Show template on its own field in CLI (#2535)
- * [555aaf06](https://github.com/argoproj/argo-workflows/commit/555aaf06306d066268c04e4dd50ec2fecadd22cc) test: fix master (#2534)
- * [94862b98](https://github.com/argoproj/argo-workflows/commit/94862b985ef97e39d01fcafc95109b1b3507b21e) chore: Remove deprecated example (#2533)
- * [5e1e7829](https://github.com/argoproj/argo-workflows/commit/5e1e78295df4df0205a47adcedde6f1d5915af95) fix: Validate CronWorkflow before creation (#2532)
- * [c9241339](https://github.com/argoproj/argo-workflows/commit/c92413393404bd4caeb00606b3ba8775eeadf231) fix: Fix wrong assertions (#2531)
- * [67fe04bb](https://github.com/argoproj/argo-workflows/commit/67fe04bb78ac7b402bb6ef5b58d5cca33ecd74db) Revert "fix: fix template scope tests (#2498)" (#2526)
- * [ddfa1ad0](https://github.com/argoproj/argo-workflows/commit/ddfa1ad03f2835b64efac96eb4fb10d14e3ed987) docs: couple of examples for REST API usage of argo-server (#2519)
- * [30542be7](https://github.com/argoproj/argo-workflows/commit/30542be7a121cf8774352bf987ee658b5d8b96c8) chore(docs): Update docs for useSDKCreds (#2518)
- * [e2cc6988](https://github.com/argoproj/argo-workflows/commit/e2cc6988018e50956c05ed20c665ead01766278d) feat: More control over resuming suspended nodes Fixes #1893 (#1904)
- * [b2771249](https://github.com/argoproj/argo-workflows/commit/b2771249b0be9c782ee2ae190dd76ec3bba2a562) chore: minor fix and refactory (#2517)
- * [b1ad163a](https://github.com/argoproj/argo-workflows/commit/b1ad163ac17312d103c03bf6a88069f1b055ea7d) fix: fix template scope tests (#2498)
- * [661d1b67](https://github.com/argoproj/argo-workflows/commit/661d1b6748b25488b288811dc5c0089b49b75a52) Increase client gRPC max size to match server (#2514)
- * [d8aa477f](https://github.com/argoproj/argo-workflows/commit/d8aa477f7f5089505df5fd26560f53f508f5b29f) fix: Fix potential panic (#2516)
- * [1afb692e](https://github.com/argoproj/argo-workflows/commit/1afb692eeb6a63cb0539cbc6762d8219b2b2dd00) fix: Allow runtime resolution for workflow parameter names (#2501)
- * [243ea338](https://github.com/argoproj/argo-workflows/commit/243ea338de767a39947f5fb4450321083a6f9c67) fix(controller): Ensure we copy any executor securityContext when creating wait containers; fixes #2512 (#2510)
- * [6e8c7bad](https://github.com/argoproj/argo-workflows/commit/6e8c7badcfa3f2eb7d5cb76f229e0570f3325f61) feat: Extend workflowDefaults to full Workflow and clean up docs and code (#2508)
- * [06cfc129](https://github.com/argoproj/argo-workflows/commit/06cfc1294a5a913a8b23bc4337ffa019717c4af2) feat: Native Google Cloud Storage support for artifact. Closes #1911 (#2484)
- * [999b1e1d](https://github.com/argoproj/argo-workflows/commit/999b1e1d9a6c9d69def35fd43d01b03c75748e62)  fix: Read ConfigMap before starting servers  (#2507)
- * [3d6e9b61](https://github.com/argoproj/argo-workflows/commit/3d6e9b61b3c7214ab5c62438e7d0ea750c3ae3f7) docs: Add separate ConfigMap doc for 2.7+ (#2505)
- * [e5bd6a7e](https://github.com/argoproj/argo-workflows/commit/e5bd6a7ed35a4d5ed75023719814541423affc48) fix(controller): Updates GetTaskAncestry to skip visited nod. Fixes #1907 (#1908)
- * [183a29e4](https://github.com/argoproj/argo-workflows/commit/183a29e40314ac97dfa6d7ff2e61f59ee6484279) docs: add official user (#2499)
- * [e636000b](https://github.com/argoproj/argo-workflows/commit/e636000bc457d654d487e065c1bcacd15ed75a74) feat: Updated arm64 support patch (#2491)
- * [559cb005](https://github.com/argoproj/argo-workflows/commit/559cb00596acbcc9a6a9cce001ca25fdcc561b2b) feat(ui): Report resources duration in UI. Closes #2460 (#2489)
- * [09291d9d](https://github.com/argoproj/argo-workflows/commit/09291d9d59e1fe51b1622b90ac18c6a5985b6a85) feat: Add default field in parameters.valueFrom (#2500)
- * [33cd4f2b](https://github.com/argoproj/argo-workflows/commit/33cd4f2b86e8b0993563d70c6b0d6f0f91b14535) feat(config): Make configuration mangement easier. Closes #2463 (#2464)
- * [f3df9660](https://github.com/argoproj/argo-workflows/commit/f3df9660be9f4d52975720e79bd01a6efe6fa18d) test: Fix test (#2490)
- * [bfaf1c21](https://github.com/argoproj/argo-workflows/commit/bfaf1c215f5491526edd020055ed8a15eb804a04) chore: Move quickstart Prometheus port to 9090 (#2487)
- * [487ed425](https://github.com/argoproj/argo-workflows/commit/487ed425840dc5698a4ef3a3c8f214b6c08949cc) feat: Logging the Pod Spec in controller log (#2476)
- * [96c80e3e](https://github.com/argoproj/argo-workflows/commit/96c80e3e2c6eb6867e360dde3dea97047b963c2f) fix(cli): Rearrange the order of chunk size argument in list command. Closes #2420 (#2485)
- * [47bd70a0](https://github.com/argoproj/argo-workflows/commit/47bd70a092debe980075195efd802e7bfb59c82f) chore: Fix Swagger for PDB to support Java client (#2483)
- * [53a10564](https://github.com/argoproj/argo-workflows/commit/53a10564aebc6ee17eb8e3e121b4c36b2a334b87) feat(usage): Report resource duration. Closes #1066 (#2219)
- * [063d9bc6](https://github.com/argoproj/argo-workflows/commit/063d9bc657b00e23ce7722d5d08ca69347fe7205) Revert "feat: Add support for arm64 platform (#2364)" (#2482)
- * [735d25e9](https://github.com/argoproj/argo-workflows/commit/735d25e9d719b409a7517685bcb4148278bef5a1) fix: Build image with SHA tag when a git tag is not available (#2479)
- * [c55bb3b2](https://github.com/argoproj/argo-workflows/commit/c55bb3b211be8ccc9680f8282f98f8a8bf647ca7) ci: Run lint on CI and fix GolangCI (#2470)
- * [e1c9f7af](https://github.com/argoproj/argo-workflows/commit/e1c9f7afcb4f685f615235ae1d0b6000add93635) fix ParallelSteps child type so replacements happen correctly; fixes argoproj-labs/argo-client-gen#5 (#2478)
- * [55c315db](https://github.com/argoproj/argo-workflows/commit/55c315db2e87fe28dcc26f49f4ee969bae9c7ea1) feat: Add support for IRSA and aws default provider chain. (#2468)
- * [c724c7c1](https://github.com/argoproj/argo-workflows/commit/c724c7c1afca646e09c0cb82acf8b59f8c413780) feat: Add support for arm64 platform (#2364)
- * [315dc164](https://github.com/argoproj/argo-workflows/commit/315dc164dcd24d0443b49ac95d49eb06b2c2a64f) feat: search archived wf by startat. Closes #2436 (#2473)
- * [23d230bd](https://github.com/argoproj/argo-workflows/commit/23d230bd54e04af264a0977545db365a2c0d6a6d) feat(ui): add Env to Node Container Info pane. Closes #2471 (#2472)
- * [10a0789b](https://github.com/argoproj/argo-workflows/commit/10a0789b9477b1b6c1b7adda71101925989d02de) fix: ParallelSteps swagger.json (#2459)
- * [a59428e7](https://github.com/argoproj/argo-workflows/commit/a59428e72c092e12b17c2bd8f22ee2e86eec043f) fix: Duration must be a string. Make it a string. (#2467)
- * [47bc6f3b](https://github.com/argoproj/argo-workflows/commit/47bc6f3b7450895aa35f9275b326077bb08453b5) feat: Add `argo stop` command (#2352)
- * [14478bc0](https://github.com/argoproj/argo-workflows/commit/14478bc07f42ae9ee362cc1531b1cf00d923211d) feat(ui): Add the ability to have links to logging facility in UI. Closes #2438 (#2443)
- * [2864c745](https://github.com/argoproj/argo-workflows/commit/2864c745877c9e44a5b14140f4317f8e2d45975a) chore: make codegen + make start (#2465)
- * [a85f62c5](https://github.com/argoproj/argo-workflows/commit/a85f62c5e8ee1a51f5fa8fd715ebdf4140d2483d) feat: Custom, step-level, and usage metrics (#2254)
- * [64ac0298](https://github.com/argoproj/argo-workflows/commit/64ac02980ea641d92f22328442e5a12893600d67) fix: Deprecate template.{template,templateRef,arguments} (#2447)
- * [6cb79e4e](https://github.com/argoproj/argo-workflows/commit/6cb79e4e5414277932e5cf755761cec4cda7e1b7) fix: Postgres persistence SSL Mode (#1866) (#1867)
- * [2205c0e1](https://github.com/argoproj/argo-workflows/commit/2205c0e162c93645a5ae1d883aec6ae33fec3c8f) fix(controller): Updates to add condition to workflow status. Fixes #2421 (#2453)
- * [9d96ab2f](https://github.com/argoproj/argo-workflows/commit/9d96ab2ffd6cec9fc65f0182234e103664ab9cd5) fix: make dir if needed (#2455)
- * [5346609e](https://github.com/argoproj/argo-workflows/commit/5346609e79de4fc4f6fc9d833f0f2a85790821aa) test: Maybe fix TestPendingRetryWorkflowWithRetryStrategy. Fixes #2446 (#2456)
- * [3448ccf9](https://github.com/argoproj/argo-workflows/commit/3448ccf91cbff2e3901a99e23e57a0e1ad97044c) fix: Delete PVCs unless WF Failed/Errored (#2449)
- * [782bc8e7](https://github.com/argoproj/argo-workflows/commit/782bc8e7c5d1fd102f1a16d07f209aed3bfdc689) fix: Don't error when optional artifacts are not found (#2445)
- * [fc18f3cf](https://github.com/argoproj/argo-workflows/commit/fc18f3cf27c525ff94a6b190a0aff0a9a3d45426) chore: Master needs codegen (#2448)
- * [32fc2f78](https://github.com/argoproj/argo-workflows/commit/32fc2f78212d031f99f1dfc5ad3a3642617ce7e7) feat: Support workflow templates submission. Closes #2007 (#2222)
- * [050a143d](https://github.com/argoproj/argo-workflows/commit/050a143d7639ad38dc01a685edce536917409a37) fix(archive): Fix edge-cast error for archiving. Fixes #2427 (#2434)
- * [9455c1b8](https://github.com/argoproj/argo-workflows/commit/9455c1b88d85f80091aa4fd2c8d4dc53b6cc73f8) doc: update CHANGELOG.md (#2425)
- * [1baa7ee4](https://github.com/argoproj/argo-workflows/commit/1baa7ee4ec7149afe789d73ed6e64abfe13387a7) feat(ui): cache namespace selection. Closes #2439 (#2441)
- * [91d29881](https://github.com/argoproj/argo-workflows/commit/91d29881f41642273fe0494bef70f2b9c41350e2) feat: Retry pending nodes (#2385)
- * [7094433e](https://github.com/argoproj/argo-workflows/commit/7094433e12b668236a87c034445daf88d659231f) test: Skip flakey tests in operator_template_scope_test.go. See #2432 (#2433)
- * [30332b14](https://github.com/argoproj/argo-workflows/commit/30332b14fb1043e22a66db594f1af252c5932853) fix: Allow numbers in steps.args.params.value (#2414)
- * [e9a06dde](https://github.com/argoproj/argo-workflows/commit/e9a06dde297e9f907d10ec88da93fbb90df5ebaf) feat: instanceID support for argo server. Closes #2004 (#2365)
- * [3f8be0cd](https://github.com/argoproj/argo-workflows/commit/3f8be0cd48963958c493e7669a1d03bb719b375a) fix "Unable to retry workflow" on argo-server (#2409)
- * [dd3029ab](https://github.com/argoproj/argo-workflows/commit/dd3029abdd13a6b4053934660ca1078e23780809) docs: Example showing how to use default settings for workflow spec. Related to ##2388 (#2411)
- * [13508828](https://github.com/argoproj/argo-workflows/commit/135088284acd1ced004374d20928c017fbf9cac7) fix: Check child node status before backoff in retry (#2407)
- * [b59419c9](https://github.com/argoproj/argo-workflows/commit/b59419c9f58422f60c7d5185c89b4d55ac278660) fix: Build with the correct version if you check out a specific version (#2423)
- * [6d834d54](https://github.com/argoproj/argo-workflows/commit/6d834d545bc816cde9b74b224116d9746db5b799) chore: document BASE_HREF (#2418)
- * [184c3653](https://github.com/argoproj/argo-workflows/commit/184c3653085bc8821bdcd65f5476fbe24f24b00e) fix: Remove lazy workflow template (#2417)
- * [918d0d17](https://github.com/argoproj/argo-workflows/commit/918d0d17c0455b6a0644c6d851dbea3f945db21c) docs: Added Survey Results (#2416)
- * [20d6e27b](https://github.com/argoproj/argo-workflows/commit/20d6e27bdf11389f23b2efe1be4ef737f333221d) Update CONTRIBUTING.md (#2410)
- * [f2ca045e](https://github.com/argoproj/argo-workflows/commit/f2ca045e1cad03d5ec7566ff7200fd8ca575ec5d) feat: Allow WF metadata spec on Cron WF (#2400)
- * [068a4336](https://github.com/argoproj/argo-workflows/commit/068a43362b2088f53d408623bc7ab078e0e7a9d0) fix: Correctly report version. Fixes #2374 (#2402)
- * [e19a398c](https://github.com/argoproj/argo-workflows/commit/e19a398c810fada879facd624a7663501306e1ef) Update pull_request_template.md (#2401)
- * [7c99c109](https://github.com/argoproj/argo-workflows/commit/7c99c109e3dd726f6453c94a594d69bca709ccf6) chore: Fix typo (#2405)
- * [175b164c](https://github.com/argoproj/argo-workflows/commit/175b164c33aee7fe2873df60915a881502ec9163) Change font family for class yaml (#2394)
- * [d1194755](https://github.com/argoproj/argo-workflows/commit/d11947558bc758e5102238162036650890731ec6) fix: Don't display Retry Nodes in UI if len(children) == 1 (#2390)
- * [b8623ec7](https://github.com/argoproj/argo-workflows/commit/b8623ec7b4a19713f5965cc0d628f26b81af39a2) docs: Create USERS.md (#2389)
- * [1d21d3f5](https://github.com/argoproj/argo-workflows/commit/1d21d3f5600feca4b63e3dc4b1d94d2830fa6e24) fix(doc strings): Fix bug related documentation/clean up of default configurations #2331 (#2388)
- * [77e11fc4](https://github.com/argoproj/argo-workflows/commit/77e11fc4838ff92de9d9cae91159fb88755dff0b) chore: add noindex meta tag to solve #2381; add kustomize to build docs (#2383)
- * [42200fad](https://github.com/argoproj/argo-workflows/commit/42200fad45b4925b8f4aac48a580e6e369de2ad4) fix(controller): Mount volumes defined in script templates. Closes #1722 (#2377)
- * [96af36d8](https://github.com/argoproj/argo-workflows/commit/96af36d85d70d4721b1ac3e6e0ef14db65e7aec3) fix: duration must be a string (#2380)
- * [7bf08192](https://github.com/argoproj/argo-workflows/commit/7bf0819267543808d80acaa5f39f40c1fdba511e) fix: Say no logs were outputted when pod is done (#2373)
- * [847c3507](https://github.com/argoproj/argo-workflows/commit/847c3507dafdd3ff2cd1acca4669c1a54a680ee2) fix(ui): Removed tailLines from EventSource (#2330)
- * [3890a124](https://github.com/argoproj/argo-workflows/commit/3890a12431bfacc83cc75d862f956ddfbc1d2a37) feat: Allow for setting default configurations for workflows, Fixes #1923, #2044 (#2331)
- * [81ab5385](https://github.com/argoproj/argo-workflows/commit/81ab538594ad0428a97e99f34b18041f31a1c753) Update readme (#2379)
- * [91810273](https://github.com/argoproj/argo-workflows/commit/91810273318ab3ea84ecf73b9d0a6f1ba7f43c2a) feat: Log version (structured) on component start-up (#2375)
- * [d0572a74](https://github.com/argoproj/argo-workflows/commit/d0572a74069a1a6c38fa860e1964fa0564fd28cd) docs: Make Getting Started agnostic to version (#2371)
- * [d3a3f6b1](https://github.com/argoproj/argo-workflows/commit/d3a3f6b195b984a97eb214e99f29498c0bd39c85) docs: Add Prudential to the users list (#2353)
- * [4714c880](https://github.com/argoproj/argo-workflows/commit/4714c88099f25a3ffe2db14574016b069f85335d) chore: Master needs codegen (#2369)
- * [5b6b8257](https://github.com/argoproj/argo-workflows/commit/5b6b8257890d3c7aa93d8e98b10090add08a22e1) fix(docker): fix streaming of combined stdout/stderr (#2368)
- * [97438313](https://github.com/argoproj/argo-workflows/commit/9743831306714cc85b762487ac070f77e25f85d6) fix: Restart server ConfigMap watch when closed (#2360)
- * [64d0cec0](https://github.com/argoproj/argo-workflows/commit/64d0cec080bb27e147632fb8993f75e16c92e4a7) chore: Master needs make lint (#2361)
- * [12386fc6](https://github.com/argoproj/argo-workflows/commit/12386fc6029f5533921c75797455efc62e4cc9ce) fix: rerun codegen after merging OSS artifact support (#2357)
- * [40586ed5](https://github.com/argoproj/argo-workflows/commit/40586ed5c3a539d2e13f8a34509a40367563874a) fix: Always validate templates (#2342)
- * [897db894](https://github.com/argoproj/argo-workflows/commit/897db89434079fa3b3b902253d1c624c39af1422) feat: Add support for Alibaba Cloud OSS artifact (#1919)
- * [7e2dba03](https://github.com/argoproj/argo-workflows/commit/7e2dba03674219ec35e88b2ce785fdf120f855fd) feat(ui): Circles for nodes (#2349)
- * [e85f6169](https://github.com/argoproj/argo-workflows/commit/e85f6169fadf503c220ecc2385334fc0f2073ca4) chore: update getting started guide to use 2.6.0 (#2350)
- * [7ae4ec78](https://github.com/argoproj/argo-workflows/commit/7ae4ec78f627b620197a323b190fa33c31ffcbcc) docker: remove NopCloser from the executor. (#2345)
- * [5895b364](https://github.com/argoproj/argo-workflows/commit/5895b3642a691629b6c8aa145cf17627a227665f) feat: Expose workflow.paramteres with JSON string of all params (#2341)
- * [a9850b43](https://github.com/argoproj/argo-workflows/commit/a9850b43b16e05d9f74f52c789a8475d493f4c92) Fix the default (#2346)
- * [c3763d34](https://github.com/argoproj/argo-workflows/commit/c3763d34ed02bc63d166e8ef4f2f724786a2cf7c) fix: Simplify completion detection logic in DAGs (#2344)
- * [d8a9ea09](https://github.com/argoproj/argo-workflows/commit/d8a9ea09be395241664d929e8dbca7d02aecb049) fix(auth): Fixed returning  expired  Auth token for GKE (#2327)
- * [6fef0454](https://github.com/argoproj/argo-workflows/commit/6fef0454073fb60b4dd6216accef07f5195ec7e9) fix: Add timezone support to startingDeadlineSeconds (#2335)
- * [c28731b9](https://github.com/argoproj/argo-workflows/commit/c28731b9f602b3ed79c76dd4e3383f39419e463f) chore: Add go mod tidy to codegen (#2332)
- * [a66c8802](https://github.com/argoproj/argo-workflows/commit/a66c8802c7d0dbec9b13d408b91655e41531a97a) feat: Allow Worfklows to be submitted as files from UI (#2340)
- * [a9c1d547](https://github.com/argoproj/argo-workflows/commit/a9c1d547e5b044d9d375ebf527c132b0545455b0) docs: Update Argo Rollouts description (#2336)
- * [8672b97f](https://github.com/argoproj/argo-workflows/commit/8672b97f134dacb553592c367399229891aaf5c8) fix(Dockerfile): Using `--no-install-recommends` (Optimization) (#2329)
- * [c3fe1ae1](https://github.com/argoproj/argo-workflows/commit/c3fe1ae1b3ad662bc94a4b46e72f20c957dd4475) fix(ui): fixed worflow UI refresh. Fixes ##2337 (#2338)
- * [d7690e32](https://github.com/argoproj/argo-workflows/commit/d7690e32faf2ac5842468831daf1443283703c25) feat(ui): Adds ability zoom and hide successful steps. POC (#2319)
- * [e9e13d4c](https://github.com/argoproj/argo-workflows/commit/e9e13d4cbbc0f456c2d1dafbb1a95739127f6ab4) feat: Allow retry strategy on non-leaf nodes, eg for step groups. Fixes #1891 (#1892)
- * [62e6db82](https://github.com/argoproj/argo-workflows/commit/62e6db826ea4e0a02ac839bc59ec5f70ce3b9b29) feat: Ability to include or exclude fields in the response (#2326)
- * [52ba89ad](https://github.com/argoproj/argo-workflows/commit/52ba89ad4911fd4c7b13fd6dbc7f019971354ea0) fix(swagger): Fix the broken swagger. (#2317)
- * [efb8a1ac](https://github.com/argoproj/argo-workflows/commit/efb8a1ac8fc9961f0caa00ec6df7cf006d25e87a) docs: Update CODE_OF_CONDUCT.md (#2323)
- * [1c77e864](https://github.com/argoproj/argo-workflows/commit/1c77e864ac004f9cc6aff0e204ea9fd4b056c84b) fix(swagger): Fix the broken swagger. (#2317)
- * [aa052346](https://github.com/argoproj/argo-workflows/commit/aa05234694bc79e649e02adcc9790778cef0154d) feat: Support workflow level poddisruptionbudge for workflow pods #1728 (#2286)
- * [8da88d7e](https://github.com/argoproj/argo-workflows/commit/8da88d7ed20d8e533252e610337c15737445a225) chore: update getting-started guide for 2.5.2 and apply other tweaks (#2311)
- * [2f97c261](https://github.com/argoproj/argo-workflows/commit/2f97c261a9eafa022b464e0aea5b5d34d6f99100) build: Improve reliability of release. (#2309)
- * [5dcb84bb](https://github.com/argoproj/argo-workflows/commit/5dcb84bb549429ba5f46a21873e873a2c1c5bf67) chore(cli): Clean-up code. Closes #2117 (#2303)
- * [e49dd8c4](https://github.com/argoproj/argo-workflows/commit/e49dd8c4f9f69551be7e31c2044fef043d2992b2) chore(cli): Migrate `argo logs` to use API client. See #2116 (#2177)
- * [5c3d9cf9](https://github.com/argoproj/argo-workflows/commit/5c3d9cf93079ecbbfb024ea273d6e57e56c2506d) chore(cli): Migrate `argo wait` to use API client. See #2116 (#2282)
- * [baf03f67](https://github.com/argoproj/argo-workflows/commit/baf03f672728a6ed8b2aeb986d84ce35e9d7717a) fix(ui): Provide a link to archived logs. Fixes #2300 (#2301)
- * [b5947165](https://github.com/argoproj/argo-workflows/commit/b5947165564246a3c55375500f3fc1aea4dc6966) feat: Create API clients (#2218)
- * [214c4515](https://github.com/argoproj/argo-workflows/commit/214c451535ebeb6e68f1599c2c0a4a4d174ade25) fix(controller): Get correct Step or DAG name. Fixes #2244 (#2304)
- * [c4d26466](https://github.com/argoproj/argo-workflows/commit/c4d2646612d190ec73f38ec840259110a9ce89e0) fix: Remove active wf from Cron when deleted (#2299)
- * [0eff938d](https://github.com/argoproj/argo-workflows/commit/0eff938d62764abffcfdc741dfaca5fd6c8ae53f) fix: Skip empty withParam steps (#2284)
- * [636ea443](https://github.com/argoproj/argo-workflows/commit/636ea443c38869beaccfff19f4b72dd23755b2ff) chore(cli): Migrate `argo terminate` to use API client. See #2116 (#2280)
- * [d0a9b528](https://github.com/argoproj/argo-workflows/commit/d0a9b528e383a1b9ea737e0f919c93969d3d393b) chore(cli): Migrate `argo template` to use API client. Closes #2115 (#2296)
- * [f69a6c5f](https://github.com/argoproj/argo-workflows/commit/f69a6c5fa487d3b6c2d5383aa588695d6dcdb6de) chore(cli): Migrate `argo cron` to use API client. Closes #2114 (#2295)
- * [80b9b590](https://github.com/argoproj/argo-workflows/commit/80b9b590ebca1dbe69c5c7df0dd1c2f1feae5eea) chore(cli): Migrate `argo retry` to use API client. See #2116 (#2277)
- * [cdbc6194](https://github.com/argoproj/argo-workflows/commit/cdbc61945e09ae4dab8a56a085d050a0c358b896) fix(sequence): broken in 2.5. Fixes #2248 (#2263)
- * [0d3955a7](https://github.com/argoproj/argo-workflows/commit/0d3955a7f617c58f74c2892894036dfbdebaa5aa) refactor(cli): 2x simplify migration to API client. See #2116 (#2290)
- * [df8493a1](https://github.com/argoproj/argo-workflows/commit/df8493a1c05d3bac19a8f95f608d5543ba96ac82) fix: Start Argo server with out Configmap #2285 (#2293)
- * [51cdf95b](https://github.com/argoproj/argo-workflows/commit/51cdf95b18c8532f0bdb72c7ca20d56bdafc3a60) doc: More detail for namespaced installation (#2292)
- * [a7302697](https://github.com/argoproj/argo-workflows/commit/a730269767bdd10c4a9c5901c7e73f6bb25429c2) build(swagger): Fix argo-server swagger so version does not change. (#2291)
- * [47b4fc28](https://github.com/argoproj/argo-workflows/commit/47b4fc284df3cff9dfb4ea6622a0236bf1613096) fix(cli): Reinstate `argo wait`. Fixes #2281 (#2283)
- * [1793887b](https://github.com/argoproj/argo-workflows/commit/1793887b95446d341102b81523931403e30ef0f7) chore(cli): Migrate `argo suspend` and `argo resume` to use API client. See #2116 (#2275)
- * [1f3d2f5a](https://github.com/argoproj/argo-workflows/commit/1f3d2f5a0c9d772d7b204b13529f56bc33703a45) chore(cli): Update `argo resubmit` to support client API. See #2116 (#2276)
- * [c33f6cda](https://github.com/argoproj/argo-workflows/commit/c33f6cda39a3be40cc2e829c4c8d0b4c54704896) fix(archive): Fix bug in migrating cluster name. Fixes #2272 (#2279)
- * [fb0acbbf](https://github.com/argoproj/argo-workflows/commit/fb0acbbffb0a7c754223e516f55a40b957277fe4) fix: Fixes double logging in UI. Fixes #2270 (#2271)
- * [acf37c2d](https://github.com/argoproj/argo-workflows/commit/acf37c2db0d69def2045a6fc0f37a2b9db0c41fe) fix: Correctly report version. Fixes #2264 (#2268)
- * [b30f1af6](https://github.com/argoproj/argo-workflows/commit/b30f1af6528046a3af29c82ac1e29d9d300eec22) fix: Removes Template.Arguments as this is never used. Fixes #2046 (#2267)
- * [79b09ed4](https://github.com/argoproj/argo-workflows/commit/79b09ed43550bbf958c631386f8514b2d474062c) fix: Removed duplicate Watch Command (#2262)
- * [b5c47266](https://github.com/argoproj/argo-workflows/commit/b5c47266c4e33ba8739277ea43fe4b8023542367) feat(ui): Add filters for archived workflows (#2257)
- * [d30aa335](https://github.com/argoproj/argo-workflows/commit/d30aa3357738a272e1864d9f352f3c160c1608fc) fix(archive): Return correct next page info. Fixes #2255 (#2256)
- * [8c97689e](https://github.com/argoproj/argo-workflows/commit/8c97689e5d9d956a0dd9493c4c53088a6e8a87fa) fix: Ignore bookmark events for restart. Fixes #2249 (#2253)
- * [63858eaa](https://github.com/argoproj/argo-workflows/commit/63858eaa919c430bf0683dc33d81c94d4237b45b) fix(offloading): Change offloaded nodes datatype to JSON to support 1GB. Fixes #2246 (#2250)
- * [4d88374b](https://github.com/argoproj/argo-workflows/commit/4d88374b70e272eb454395f066c371ad2977abef) Add Cartrack into officially using Argo (#2251)
- * [d309d5c1](https://github.com/argoproj/argo-workflows/commit/d309d5c1a134502a11040757ff85230f7199510f) feat(archive): Add support to filter list by labels. Closes #2171 (#2205)
- * [79f13373](https://github.com/argoproj/argo-workflows/commit/79f13373fd8c4d0e9c9ff56f2133fa6009d1ed07) feat: Add a new symbol for suspended nodes. Closes #1896 (#2240)
- * [82b48821](https://github.com/argoproj/argo-workflows/commit/82b48821a83e012ac7ea5740d45addb046e3c8ee) Fix presumed typo (#2243)
- * [af94352f](https://github.com/argoproj/argo-workflows/commit/af94352f6c93e4bdbb69a1fc92b5d596c647d1a0) feat: Reduce API calls when changing filters. Closes #2231 (#2232)
- * [a58cbc7d](https://github.com/argoproj/argo-workflows/commit/a58cbc7dd12fe919614768ca0fa4714853091b7f) BasisAI uses Argo (#2241)
- * [68e3c9fd](https://github.com/argoproj/argo-workflows/commit/68e3c9fd9f597b6b4599dc7e9dbc5d71252ac5cf) feat: Add Pod Name to UI (#2227)
- * [eef85072](https://github.com/argoproj/argo-workflows/commit/eef85072691a9302e4168a072cfdffed6908a5d6) fix(offload): Fix bug which deleted completed workflows. Fixes #2233 (#2234)
- * [4e4565cd](https://github.com/argoproj/argo-workflows/commit/4e4565cdbb5d2e5c215af1b8b2f03695b45c2bba) feat: Label workflow-created pvc with workflow name (#1890)
- * [8bd5ecbc](https://github.com/argoproj/argo-workflows/commit/8bd5ecbc16f1063ef332ca3445ed9a9b953efa4f) fix: display error message when deleting archived workflow fails. (#2235)
- * [ae381ae5](https://github.com/argoproj/argo-workflows/commit/ae381ae57e5d2d3226114c773264595b3d672c39) feat: This add support to enable debug logging for all CLI commands (#2212)
- * [1b1927fc](https://github.com/argoproj/argo-workflows/commit/1b1927fc6fa519b7bf277e4273f4c7cede16ed64) feat(swagger): Adds a make api/argo-server/swagger.json (#2216)
- * [5d7b4c8c](https://github.com/argoproj/argo-workflows/commit/5d7b4c8c2d5819116b060f1ee656571b77b873bd) Update README.md (#2226)
- * [170abfa5](https://github.com/argoproj/argo-workflows/commit/170abfa5875227a74381764de93aa345aa5cca19) chore: Run `go mod tidy` (#2225)
- * [2981e6ff](https://github.com/argoproj/argo-workflows/commit/2981e6ff4c053b898a425d366fa696c8530ffeb0) fix: Enforce UnknownField requirement in WorkflowStep (#2210)
- * [affc235c](https://github.com/argoproj/argo-workflows/commit/affc235cd07bb01ee0ef8bb226b7a4c6470dc1e7) feat: Add failed node info to exit handler (#2166)
- * [af1f6d60](https://github.com/argoproj/argo-workflows/commit/af1f6d60078c5562b2c9d538d2b104c277c82593) fix: UI Responsive design on filter box (#2221)
- * [a445049c](https://github.com/argoproj/argo-workflows/commit/a445049ca3f67b499b9bef95c9e43075c8e10250) fix: Fixed race condition in kill container method. Fixes #1884 (#2208)
- * [2672857f](https://github.com/argoproj/argo-workflows/commit/2672857f2fbaabf727e354b040b1af2431ea70e5) feat: upgrade to Go 1.13. Closes #1375 (#2097)
- * [7466efa9](https://github.com/argoproj/argo-workflows/commit/7466efa99adfeeb3833b02c5afa7a33cdf8f87bc) feat: ArtifactRepositoryRef ConfigMap is now taken from the workflow namespace (#1821)
- * [50f331d0](https://github.com/argoproj/argo-workflows/commit/50f331d0e686f603440500c026ffe9d1f5133c1c) build: Fix ARGO_TOKEN (#2215)
- * [7f090351](https://github.com/argoproj/argo-workflows/commit/7f09035156e5dce68af203df21e688476d05ce12) test: Correctly report diagnostics (#2214)
- * [f2bd74bc](https://github.com/argoproj/argo-workflows/commit/f2bd74bca116f1b1ad9990aef9dbad98e0068900) fix: Remove quotes from UI (#2213)
- * [62f46680](https://github.com/argoproj/argo-workflows/commit/62f4668064e71046532505a11c67a675aa29afcf) fix(offloading): Correctly deleted offloaded data. Fixes #2206 (#2207)
- * [e30b77fc](https://github.com/argoproj/argo-workflows/commit/e30b77fcd5b140074065491988985779b800c4d7) feat(ui): Add label filter to workflow list page. Fixes #802 (#2196)
- * [930ced39](https://github.com/argoproj/argo-workflows/commit/930ced39241b427a521b609c403e7a39f6cc8c48) fix(ui): fixed workflow filtering and ordering. Fixes #2201 (#2202)
- * [88112312](https://github.com/argoproj/argo-workflows/commit/8811231299434e89ee9279e400db3445d83fec39) fix: Correct login instructions. (#2198)
- * [d6f5953d](https://github.com/argoproj/argo-workflows/commit/d6f5953d73d3940e0151011b7c32446c4c1c0ec4) Update ReadMe for EBSCO (#2195)
- * [b024c46c](https://github.com/argoproj/argo-workflows/commit/b024c46c8fec8a682802c1d6667a79fede959ae4) feat: Add ability to submit CronWorkflow from CLI (#2003)
- * [c97527ce](https://github.com/argoproj/argo-workflows/commit/c97527cee961b00472ce566226e1c6824b6e9793) test: Invoke tests using s.T() (#2194)
- * [72a54fe1](https://github.com/argoproj/argo-workflows/commit/72a54fe1628ff7a1daeb69875356607829d595ed) chore: Move info.proto et al to correct package (#2193)
- * [f6600fa4](https://github.com/argoproj/argo-workflows/commit/f6600fa499470ea7bd9fe68303759257c329d7ae) fix: Namespace and phase selection in UI (#2191)
- * [c4a24dca](https://github.com/argoproj/argo-workflows/commit/c4a24dcab016e82a4f1dc764dc67e0d8d324ded3) fix(k8sapi-executor): Fix KillContainer impl (#2160)
- * [d22a5fe6](https://github.com/argoproj/argo-workflows/commit/d22a5fe69c2d5a1fd4c268822cf5e2cd76893a18) Update cli_with_server_test.go (#2189)
- * [ff18180f](https://github.com/argoproj/argo-workflows/commit/ff18180f838b8f0d56bae95a2cab57d939e2a353) test: Remove podGC (#2187)
- * [78245305](https://github.com/argoproj/argo-workflows/commit/78245305d369fe9e4ba4c15e4acff7fcee07d62a) chore: Improved error handling and refactor (#2184)
- * [b9c828ad](https://github.com/argoproj/argo-workflows/commit/b9c828ad3a8fe6e92263aafd5eb14f21a284f3fc) fix(archive): Only delete offloaded data we do not need. Fixes #2170 and #2156 (#2172)
- * [73cb5418](https://github.com/argoproj/argo-workflows/commit/73cb5418f13e359612bb6844ef1747c9e7e6522c) feat: Allow CronWorkflows to have instanceId (#2081)
- * [9efea660](https://github.com/argoproj/argo-workflows/commit/9efea660b611f02a1eeaa5dc5be857686ed82de2) Sort list and add Greenhouse (#2182)
- * [cae399ba](https://github.com/argoproj/argo-workflows/commit/cae399bae466266bef0351efae77162615f9790f) fix: Fixed the Exec Provider token bug (#2181)
- * [fc476b2a](https://github.com/argoproj/argo-workflows/commit/fc476b2a4f09c12c0eb4a669b5cc1a18adca206e) fix(ui): Retry workflow event stream on connection loss. Fixes #2179 (#2180)
- * [65058a27](https://github.com/argoproj/argo-workflows/commit/65058a2798fd31ebd4fb99afc41da6a9171ca5be) fix: Correctly create code from changed protos. (#2178)
- * [585d1eef](https://github.com/argoproj/argo-workflows/commit/585d1eefd71062f42f8d80c85722fc7c262a08cf) chore: Update lint command to use apiclient. See #2116 (#2131)
- * [299d467c](https://github.com/argoproj/argo-workflows/commit/299d467c17cd89e9f33e48e464eb26ec8a3e413a) build: Update release process and docs (#2128)
- * [fcfe1d43](https://github.com/argoproj/argo-workflows/commit/fcfe1d43693c98f0e6c5fe3e2b02ac6a4a9836e6) feat: Implemented open default browser in local mode (#2122)
- * [f6cee552](https://github.com/argoproj/argo-workflows/commit/f6cee552532702089e62e5fece4dae77e4c99336) fix: Specify download .tgz extension (#2164)
- * [8a1e611a](https://github.com/argoproj/argo-workflows/commit/8a1e611a03da8374567c9654f8baf29b66c83c6e) feat: Update archived workdflow column to be JSON. Closes #2133 (#2152)
- * [f591c471](https://github.com/argoproj/argo-workflows/commit/f591c471c336e99c206094d21567fe01c978bf3c) fix!: Change `argo token` to `argo auth token`. Closes #2149 (#2150)
- * [519c9434](https://github.com/argoproj/argo-workflows/commit/519c94344a91c86d60ce27b383fa50846432cc9f) chore: Add Mock gen to make codegen (#2148)
- * [409a5154](https://github.com/argoproj/argo-workflows/commit/409a5154726dd16475b3aaf97f05f191cdb65808) fix: Add certs to argocli image. Fixes #2129 (#2143)
- * [b094802a](https://github.com/argoproj/argo-workflows/commit/b094802a03406328699bffad6deeceb5bdb61777) fix: Allow download of artifacs in server auth-mode. Fixes #2129 (#2147)
- * [520fa540](https://github.com/argoproj/argo-workflows/commit/520fa54073ab20a9bcd2f115f65f50d9761dc230) fix: Correct SQL syntax. (#2141)
- * [059cb9b1](https://github.com/argoproj/argo-workflows/commit/059cb9b1879361b77a293b3156bc9dfab2cefe71) fix: logs UI should fall back to archive (#2139)
- * [4cda9a05](https://github.com/argoproj/argo-workflows/commit/4cda9a05bf8cee20027132e4b3428ca9654bed5a) fix: route all unknown web content requests to index.html (#2134)
- * [14d8b5d3](https://github.com/argoproj/argo-workflows/commit/14d8b5d3913c2a6b320c564d6fc11c1d90769a97) fix: archiveLogs needs to copy stderr (#2136)
- * [91319ee4](https://github.com/argoproj/argo-workflows/commit/91319ee49f1fefec13233cb843b46f42cf5a9830) fixed ui navigation issues with basehref (#2130)
- * [7881b980](https://github.com/argoproj/argo-workflows/commit/7881b980bfdc6319d229956866e9131f95be412f) docs: Add CronWorkflow usage docs (#2124)
- * [badfd183](https://github.com/argoproj/argo-workflows/commit/badfd18335ec1b26d395ece0ad65d12aeb11beec) feat: Add support to delete by using labels. Depended on by #2116 (#2123)
- * [706d0f23](https://github.com/argoproj/argo-workflows/commit/706d0f231542e80156f93e39d28cd8e28f5d7042) test: Try and make e2e more robust. Fixes #2125 (#2127)
- * [a75ac1b4](https://github.com/argoproj/argo-workflows/commit/a75ac1b487a50bad19b3c58262fb3b170640ab4a) fix: mark CLI common.go vars and funcs as DEPRECATED (#2119)
- * [be21a0f1](https://github.com/argoproj/argo-workflows/commit/be21a0f17ed851032a16cfa90934a04662da6d2d) feat(server): Restart server when config changes. Fixes #2090 (#2092)
- * [b5cd72b0](https://github.com/argoproj/argo-workflows/commit/b5cd72b083fd173fe2552be9ea83e342cf395ceb) test: Parallelize Cron tests (#2118)
- * [b2bd25bc](https://github.com/argoproj/argo-workflows/commit/b2bd25bc2ba15f1ffa39bade75b09af5e3bb81a4) fix: Disable webpack dot rule (#2112)
- * [865b4f3a](https://github.com/argoproj/argo-workflows/commit/865b4f3a2b51cc08cf4a80423933a97f876af4a2) addcompany (#2109)
- * [213e3a9d](https://github.com/argoproj/argo-workflows/commit/213e3a9d9ec43b9f05fe7c5cf11d3f704a8649dd) fix: Fix Resource Deletion Bug (#2084)
- * [ab1de233](https://github.com/argoproj/argo-workflows/commit/ab1de233b47ec7c284fd20705b9efa00626877f7) refactor(cli): Introduce v1.Interface for CLI. Closes #2107 (#2048)
- * [7a19f85c](https://github.com/argoproj/argo-workflows/commit/7a19f85caa8760f28ffae6227a529823a0867218) feat: Implemented Basic Auth scheme (#2093)
- * [7611b9f6](https://github.com/argoproj/argo-workflows/commit/7611b9f6c6359680a4d450116ee893e4dc174811) fix(ui): Add support for bash href. Fixes ##2100 (#2105)
- * [516d05f8](https://github.com/argoproj/argo-workflows/commit/516d05f81a86c586bc19aad7836f35bb85130025)  fix: Namespace redirects no longer error and are snappier (#2106)
- * [16aed5c8](https://github.com/argoproj/argo-workflows/commit/16aed5c8ec0256fc78d95149435c37dac1db087a) fix: Skip running --token testing if it is not on CI (#2104)
- * [aece7e6e](https://github.com/argoproj/argo-workflows/commit/aece7e6ebdf2478dd7efa5706490c5c7abe858e6) Parse container ID in correct way on CRI-O. Fixes #2095 (#2096)
- * [b6a2be89](https://github.com/argoproj/argo-workflows/commit/b6a2be89689222470288339570aa0a719e775002) feat: support arg --token when talking to argo-server (#2027) (#2089)
- * [01d8cae1](https://github.com/argoproj/argo-workflows/commit/01d8cae1f49da35c135463ff45dc1a4d13ab1af7) build: adds `make env` to make testing easier (#2087)
- * [492842aa](https://github.com/argoproj/argo-workflows/commit/492842aa17cc447d68f1181c02990bfa7a78913a) docs(README): Add Capital One to user list (#2094)
- * [d56a0e12](https://github.com/argoproj/argo-workflows/commit/d56a0e12a283aaa5398e03fe423fed83d60ca370) fix(controller): Fix template resolution for step groups. Fixes #1868  (#1920)
- * [b97044d2](https://github.com/argoproj/argo-workflows/commit/b97044d2a47a79fab26fb0e3142c82e88a582f64) fix(security): Fixes an issue that allowed you to list archived workf… (#2079)
- * [c4f49cf0](https://github.com/argoproj/argo-workflows/commit/c4f49cf074ad874996145674d635165f6256ca15) refactor: Move server code (cmd/server/ -> server/) (#2071)
- * [2542454c](https://github.com/argoproj/argo-workflows/commit/2542454c1daf61bc3826fa370c21799059904093) fix(controller): Do not crash if cm is empty. Fixes #2069 (#2070)
- * [85fa9aaf](https://github.com/argoproj/argo-workflows/commit/85fa9aafa70a98ce999157bb900971f24bd81101) fix: Do not expect workflowChange to always be defined (#2068)
- * [6f65bc2b](https://github.com/argoproj/argo-workflows/commit/6f65bc2b77ddcf4616c78d6db4955bf839a0c21a) fix: "base64 -d" not always available, using "base64 --decode" (#2067)
- * [6f2c8802](https://github.com/argoproj/argo-workflows/commit/6f2c880280d490ba746a86d828ade61d8b58c7a5) feat(ui): Use cookies in the UI. Closes #1949 (#2058)
- * [4592aec6](https://github.com/argoproj/argo-workflows/commit/4592aec6805ce1110edcb7dc4e3e7454a2042441) fix(api): Change `CronWorkflowName` to `Name`. Fixes #1982 (#2033)
- * [e26c11af](https://github.com/argoproj/argo-workflows/commit/e26c11af747651c6642cf0abd3cbc4ccac7b95de) fix: only run archived wf testing when persistence is enabled (#2059)
- * [b3cab5df](https://github.com/argoproj/argo-workflows/commit/b3cab5dfbb5e5973b1dc448946d16ee0cd690d6a) fix: Fix permission test cases (#2035)
- * [b408e7cd](https://github.com/argoproj/argo-workflows/commit/b408e7cd28b95a08498f6e30fcbef385d0ff89f5) fix: nil pointer in GC (#2055)
- * [4ac11560](https://github.com/argoproj/argo-workflows/commit/4ac115606bf6f0b3c5c837020efd41bf90789a00) fix: offload Node Status in Get and List api call (#2051)
- * [dfdde1d0](https://github.com/argoproj/argo-workflows/commit/dfdde1d08b2a39d074729f1d64053a6e37453b32) ci: Run using our own cowsay image (#2047)
- * [71ba8238](https://github.com/argoproj/argo-workflows/commit/71ba823822c190bfdb71073604bb987bb938cff4) Update README.md (#2045)
- * [c7953052](https://github.com/argoproj/argo-workflows/commit/c795305268d5793e6672252ae6ff7fb6a54f23fd) fix(persistence): Allow `argo server` to run without persistence (#2050)
- * [1db74e1a](https://github.com/argoproj/argo-workflows/commit/1db74e1a2658fa7de925cd4c81fbfd98f648cd99) fix(archive): upsert archive + ci: Pin images on CI, add readiness probes, clean-up logging and other tweaks (#2038)
- * [c46c6836](https://github.com/argoproj/argo-workflows/commit/c46c6836706dce54aea4a13deee864bd3c6cb906) feat: Allow workflow-level parameters to be modified in the UI when submitting a workflow (#2030)
- * [faa9dbb5](https://github.com/argoproj/argo-workflows/commit/faa9dbb59753a068c64a1aa5923e3e359c0866d8) fix(Makefile): Rename staticfiles make target. Fixes #2010 (#2040)
- * [79a42d48](https://github.com/argoproj/argo-workflows/commit/79a42d48cec9c41269fbe736a61f3975fe2a9aea) docs: Update link to configure-artifact-repository.md (#2041)
- * [1a96007f](https://github.com/argoproj/argo-workflows/commit/1a96007fed6a57d14a0e364000b54a364293438b) fix: Redirect to correct page when using managed namespace. Fixes #2015 (#2029)
- * [78726314](https://github.com/argoproj/argo-workflows/commit/787263142162b62085572660f5e6497279f82ab1) fix(api): Updates proto message naming (#2034)
- * [4a1307c8](https://github.com/argoproj/argo-workflows/commit/4a1307c89e58f554af8e0cdc44e5e66e4623dfb4) feat: Adds support for MySQL. Fixes #1945 (#2013)
- * [d843e608](https://github.com/argoproj/argo-workflows/commit/d843e6085d51f409d32aefe6b6cf18bf6fd6bbd1) chore: Smoke tests are timing out, give them more time (#2032)
- * [5c98a14e](https://github.com/argoproj/argo-workflows/commit/5c98a14ecdc78a5be48f34c455d90782157c4cbe) feat(controller): Add audit logs to workflows. Fixes #1769 (#1930)
- * [2982c1a8](https://github.com/argoproj/argo-workflows/commit/2982c1a82cd6f1e7fb755a948d7a165aa0aeebc0) fix(validate): Allow placeholder in values taken from inputs. Fixes #1984 (#2028)
- * [3293c83f](https://github.com/argoproj/argo-workflows/commit/3293c83f6170ad4dc022067bb37f12d07d2834c1) feat: Add version to offload nodes. Fixes #1944 and #1946 (#1974)
- * [283bbf8d](https://github.com/argoproj/argo-workflows/commit/283bbf8df50d615dee867becc21569be760fc59e) build: `make clean` now only deletes dist directories (#2019)
- * [72fa88c9](https://github.com/argoproj/argo-workflows/commit/72fa88c9daf9ae42a8a1feb297a0b118505b32b0) build: Enable linting for tests. Closes #1971 (#2025)
- * [f8569ae9](https://github.com/argoproj/argo-workflows/commit/f8569ae913053c8ba4cd9ca72c9c237dd83200c0) feat: Auth refactoring to support single version token (#1998)
- * [eb360d60](https://github.com/argoproj/argo-workflows/commit/eb360d60ea81e8deefbaf41bcb76921acd08b16f) Fix README (#2023)
- * [ef1bd3a3](https://github.com/argoproj/argo-workflows/commit/ef1bd3a32c434c565defc7b325463e8d831262f2) fix typo (#2021)
- * [f25a45de](https://github.com/argoproj/argo-workflows/commit/f25a45deb4a7179044034da890884432e750d98a) feat(controller): Exposes container runtime executor as CLI option. (#2014)
- * [3b26af7d](https://github.com/argoproj/argo-workflows/commit/3b26af7dd4cc3d08ee50f3bc2f389efd516b9248) Enable s3 trace support. Bump version to v2.5.0. Tweak proto id to match Workflow (#2009)
- * [5eb15bb5](https://github.com/argoproj/argo-workflows/commit/5eb15bb5409f54f1a4759dde2479b7569e5f81e4) fix: Fix workflow level timeouts (#1369)
- * [5868982b](https://github.com/argoproj/argo-workflows/commit/5868982bcddf3b9c9ddb98151bf458f6868dce81) fix: Fixes the `test` job on master (#2008)
- * [29c85072](https://github.com/argoproj/argo-workflows/commit/29c850728fa701d62078910e1641588c959c28c5) fix: Fixed grammar on TTLStrategy (#2006)
- * [2f58d202](https://github.com/argoproj/argo-workflows/commit/2f58d202c21910500ecc4abdb9e23270c9791d0a) fix: v2 token bug (#1991)
- * [ed36d92f](https://github.com/argoproj/argo-workflows/commit/ed36d92f99ea65e06dc78b82923d74c57130dfc3) feat: Add quick start manifests to Git. Change auth-mode to default to server. Fixes #1990 (#1993)
- * [d1965c93](https://github.com/argoproj/argo-workflows/commit/d1965c9352c43d486b2d7cf99b0141fdb17eac2b) docs: Encourage users to upvote issues relevant to them (#1996)
- * [91331a89](https://github.com/argoproj/argo-workflows/commit/91331a894d713f085207e30406e72b8f65ad0227) fix: No longer delete the argo ns as this is dangerous (#1995)
- * [1a777cc6](https://github.com/argoproj/argo-workflows/commit/1a777cc6662b0c95ccf3de12c1a328c4cb12bc78) feat(cron): Added timezone support to cron workflows. Closes #1931 (#1986)
- * [48b85e57](https://github.com/argoproj/argo-workflows/commit/48b85e5705a235257b5926d0714eeb173b4347cb) fix: WorkflowTempalteTest fix (#1992)
- * [51dab8a4](https://github.com/argoproj/argo-workflows/commit/51dab8a4a79e5180d795ef10586e31ecf4075214) feat: Adds `argo server` command. Fixes #1966 (#1972)
- * [732e03bb](https://github.com/argoproj/argo-workflows/commit/732e03bb6cdc94ecd264fa76ecf71c29114b7769) chore: Added WorkflowTemplate test (#1989)
- * [27387d4b](https://github.com/argoproj/argo-workflows/commit/27387d4b52e99f83fe1c6ac9a0e65add669463d9) chore: Fix UI TODOs (#1987)
- * [dd704dd6](https://github.com/argoproj/argo-workflows/commit/dd704dd6557e972c8dc3c9816996305a23c80f37) feat: Renders namespace in UI. Fixes #1952 and #1959 (#1965)
- * [14d58036](https://github.com/argoproj/argo-workflows/commit/14d58036faa444ee49a4905a632db7e0a5ab60ba) feat(server): Argo Server. Closes #1331 (#1882)
- * [f69655a0](https://github.com/argoproj/argo-workflows/commit/f69655a09c82236d91703fbce2ee1a07fc3641be) fix: Added decompress in retry, resubmit and resume. (#1934)
- * [1e7ccb53](https://github.com/argoproj/argo-workflows/commit/1e7ccb53e8604654c073f6578ae024fd341f048a) updated jq version to 1.6 (#1937)
- * [c51c1302](https://github.com/argoproj/argo-workflows/commit/c51c1302f48cec5b9c6009b9b7e50962d338c679) feat: Enhancement for namespace installation mode configuration (#1939)
- * [6af100d5](https://github.com/argoproj/argo-workflows/commit/6af100d5470137cc17c019546f3cad2acf5e4a31) feat: Add suspend and resume to CronWorkflows CLI (#1925)
- * [232a465d](https://github.com/argoproj/argo-workflows/commit/232a465d00b6104fe4801b773b0b3ceffdafb116) feat: Added onExit handlers to Step and DAG (#1716)
- * [071eb112](https://github.com/argoproj/argo-workflows/commit/071eb1126cae351c5059246d2c375dc47175a3d6) docs: Update PR template to demand tests. (#1929)
- * [ae58527e](https://github.com/argoproj/argo-workflows/commit/ae58527eed40947078a7cb71da1dc3ab9c052a56) docs: Add CyberAgent to the list of Argo users (#1926)
- * [02022e4b](https://github.com/argoproj/argo-workflows/commit/02022e4bb36977253ff2e362f844b9596e768102) docs: Minor formatting fix (#1922)
- * [e4107bb8](https://github.com/argoproj/argo-workflows/commit/e4107bb831af9eb4b99753f7e324ec33042cdc55) Updated Readme.md for companies using Argo: (#1916)
- * [7e9b2b58](https://github.com/argoproj/argo-workflows/commit/7e9b2b58915c5cb51276e21c81344e010472cbae) feat: Support for scheduled Workflows with CronWorkflow CRD (#1758)
- * [5d7e9185](https://github.com/argoproj/argo-workflows/commit/5d7e91852b09ca2f3f912a8f1efaa6c28e07b524) feat: Provide values of withItems maps as JSON in {{item}}. Fixes #1905 (#1906)
- * [de3ffd78](https://github.com/argoproj/argo-workflows/commit/de3ffd78b9c16ed09065aeb16e966904e964a572)  feat: Enhanced Different TTLSecondsAfterFinished depending on if job is in Succeeded, Failed or Error, Fixes (#1883)
- * [94449876](https://github.com/argoproj/argo-workflows/commit/94449876f4a571ab279802d5ca4d5e938ca3d44d) docs: Add question option to issue templates (#1910)
- * [83ae2df4](https://github.com/argoproj/argo-workflows/commit/83ae2df4130468a95b720ce33c9b9e27e7005b17) fix: Decrease docker build time by ignoring node_modules (#1909)
- * [59a19069](https://github.com/argoproj/argo-workflows/commit/59a190697286bf19ee4a5c398c1af590a2419003) feat: support iam roles for service accounts in artifact storage (#1899)
- * [6526b6cc](https://github.com/argoproj/argo-workflows/commit/6526b6cc5e4671317fa0bc8c62440364c37a9700) fix: Revert node creation logic (#1818)
- * [160a7940](https://github.com/argoproj/argo-workflows/commit/160a794046299c9d0420ae1710641814f30a9b7f) fix: Update Gopkg.lock with dep ensure -update (#1898)
- * [ce78227a](https://github.com/argoproj/argo-workflows/commit/ce78227abe5a3c901e5b7a7dd823fb2551dff584) fix: quick fail after pod termination (#1865)
- * [cd3bd235](https://github.com/argoproj/argo-workflows/commit/cd3bd235f550fbc24c31d1763fde045c9c321fbe) refactor: Format Argo UI using prettier (#1878)
- * [b48446e0](https://github.com/argoproj/argo-workflows/commit/b48446e09e29d4f18f6a0cf0e6ff1166770286b1) fix: Fix support for continueOn failed for DAG. Fixes #1817 (#1855)
- * [48256961](https://github.com/argoproj/argo-workflows/commit/482569615734d7cb5e24c90d399f3ec98fb2ed96) fix: Fix template scope (#1836)
- * [eb585ef7](https://github.com/argoproj/argo-workflows/commit/eb585ef7381c4c9547eb9c2e922e175c0556da03) fix: Use dynamically generated placeholders (#1844)
- * [c821cfcc](https://github.com/argoproj/argo-workflows/commit/c821cfcce488222bcd5a4514cd94c66582885f33) test: Adds 'test' and 'ui' jobs to CI (#1869)
- * [54f44909](https://github.com/argoproj/argo-workflows/commit/54f44909a0e68bc24209e9e83999421b814e80c9) feat: Always archive logs if in config. Closes #1790 (#1860)
- * [1e25d6cf](https://github.com/argoproj/argo-workflows/commit/1e25d6cfa9c4c2f805717f94bd67ec612746a862) docs: Fix e2e testing link (#1873)
- * [f5f40728](https://github.com/argoproj/argo-workflows/commit/f5f40728c4be2d852e8199a5754aee39ed72399f) fix: Minor comment fix (#1872)
- * [72fad7ec](https://github.com/argoproj/argo-workflows/commit/72fad7ec0cf3aa463bd9c2c8c8f961738408cf93) Update docs (#1870)
- * [90352865](https://github.com/argoproj/argo-workflows/commit/9035286554768119b83e00294ea7c0b400b5de83) docs: Update doc based on helm 3.x changes (#1843)
- * [78889895](https://github.com/argoproj/argo-workflows/commit/788898954f7eff5b096f7597e74fc68104d8bf78) Move Workflows UI from https://github.com/argoproj/argo-ui (#1859)
- * [4b96172f](https://github.com/argoproj/argo-workflows/commit/4b96172f71f3fb36a691499b11e52a0d5650448a) docs: Refactored and cleaned up docs (#1856)
- * [6ba4598f](https://github.com/argoproj/argo-workflows/commit/6ba4598fd19c4add40b66d32df18592194c4cf4c) test: Adds core e2e test infra. Fixes #678 (#1854)
- * [87f26c8d](https://github.com/argoproj/argo-workflows/commit/87f26c8de2adc9563a3811aacc1eb31475a84f0b) fix: Move ISSUE_TEMPLATE/ under .github/ (#1858)
- * [bd78d159](https://github.com/argoproj/argo-workflows/commit/bd78d1597e82bf2bf0193e4bf49b6386c68e8222) fix: Ensure timer channel is empty after stop (#1829)
- * [afc63024](https://github.com/argoproj/argo-workflows/commit/afc63024de79c2e211a1ed0e0ede87b99825c63f) Code duplication (#1482)
- * [5b136713](https://github.com/argoproj/argo-workflows/commit/5b1367137d2b511b0310ac322596ff5395ed148d) docs: biobox analytics (#1830)
- * [68b72a8f](https://github.com/argoproj/argo-workflows/commit/68b72a8fd1773ba5f1afb4ec6ba9bf8a4d2b7ad4) add CCRi to list of users in README (#1845)
- * [941f30aa](https://github.com/argoproj/argo-workflows/commit/941f30aaf4e51e1eec13e842a0b8d46767929cec) Add Sidecar Technologies to list of who uses Argo (#1850)
- * [a08048b6](https://github.com/argoproj/argo-workflows/commit/a08048b6de84ff7355728b85851aa84b08be0851) Adding Wavefront to the users list (#1852)
- * [1cb68c98](https://github.com/argoproj/argo-workflows/commit/1cb68c9829099eb5218995159fb11fb58a147032) docs: Updates issue and PR templates. (#1848)
- * [cb0598ea](https://github.com/argoproj/argo-workflows/commit/cb0598ea82bd676fefd98e2040752cfa06516a98) Fixed Panic if DB context has issue (#1851)
- * [e5fb8848](https://github.com/argoproj/argo-workflows/commit/e5fb884853d2ad0d1f32022723e211b902841945) fix: Fix a couple of nil derefs (#1847)
- * [b3d45850](https://github.com/argoproj/argo-workflows/commit/b3d458504b319b3b02b82a872a5e13c59cb3128f) Add HOVER to the list of who uses Argo (#1825)
- * [99db30d6](https://github.com/argoproj/argo-workflows/commit/99db30d67b42cbd9c7fa35bbdd35a57040c2f222) InsideBoard uses Argo (#1835)
- * [ac8efcf4](https://github.com/argoproj/argo-workflows/commit/ac8efcf40e45750ae3c78f696f160049ea85dc8e) Red Hat uses Argo (#1828)
- * [41ed3acf](https://github.com/argoproj/argo-workflows/commit/41ed3acfb68c1200ea5f03643120cac81f7d3df6) Adding Fairwinds to the list of companies that use Argo (#1820)
- * [5274afb9](https://github.com/argoproj/argo-workflows/commit/5274afb97686a4d2a58c50c3b23dd2b680b881e6) Add exponential back-off to retryStrategy (#1782)
- * [e522e30a](https://github.com/argoproj/argo-workflows/commit/e522e30acebc17793540ac4270d14747b2617b26) Handle operation level errors PVC in Retry (#1762)
- * [f2e6054e](https://github.com/argoproj/argo-workflows/commit/f2e6054e9376f2d2be1d928ee79746b8b49937df) Do not resolve remote templates in lint (#1787)
- * [3852bc3f](https://github.com/argoproj/argo-workflows/commit/3852bc3f3311e9ac174976e9a3e8f625b87888eb) SSL enabled database connection for workflow repository (#1712) (#1756)
- * [f2676c87](https://github.com/argoproj/argo-workflows/commit/f2676c875e0af8e43b8967c669a33871bc02995c) Fix retry node name issue on error (#1732)
- * [d38a107c](https://github.com/argoproj/argo-workflows/commit/d38a107c84b91ad476f4760d984450efda296fdc) Refactoring Template Resolution Logic (#1744)
- * [23e94604](https://github.com/argoproj/argo-workflows/commit/23e9460451566e04b14acd336fccf54b0623efc4) Error occurred on pod watch should result in an error on the wait container (#1776)
- * [57d051b5](https://github.com/argoproj/argo-workflows/commit/57d051b52de7c9b78d926f0be7b158adb08803c8) Added hint when using certain tokens in when expressions (#1810)
- * [0e79edff](https://github.com/argoproj/argo-workflows/commit/0e79edff4b879558a19132035446fca2fbe3f2ca) Make kubectl print status and start/finished time (#1766)
- * [723b3c15](https://github.com/argoproj/argo-workflows/commit/723b3c15e55d2f8dceb86f1ac0a6dc7d1a58f10b) Fix code-gen docs (#1811)
- * [711bb114](https://github.com/argoproj/argo-workflows/commit/711bb11483a0ccb46600795c636c98d9c3a7f16c) Fix withParam node naming issue (#1800)
- * [4351a336](https://github.com/argoproj/argo-workflows/commit/4351a3360f6b20298a28a06be545bc349b22b9e4) Minor doc fix (#1808)
- * [efb748fe](https://github.com/argoproj/argo-workflows/commit/efb748fe35c6f24c736db8e002078abd02b57141) Fix some issues in examples (#1804)
- * [a3e31289](https://github.com/argoproj/argo-workflows/commit/a3e31289915e4d129a743b9284442775ef41a15c) Add documentation for executors (#1778)
- * [1ac75b39](https://github.com/argoproj/argo-workflows/commit/1ac75b39040e6f292ee322122a157e05f55f1f73) Add  to linter (#1777)
- * [3bead0db](https://github.com/argoproj/argo-workflows/commit/3bead0db3d2777638992ba5e11a2de1c65be162c) Add ability to retry nodes after errors (#1696)
- * [b50845e2](https://github.com/argoproj/argo-workflows/commit/b50845e22e8910d27291bab30f0c3dbef1fe5dad) Support no-headers flag (#1760)
- * [7ea2b2f8](https://github.com/argoproj/argo-workflows/commit/7ea2b2f8c10c3004c3c13a49d200df704895f93c) Minor rework of suspened node (#1752)
- * [9ab1bc88](https://github.com/argoproj/argo-workflows/commit/9ab1bc88f58c551208ce5e76eea0c6fb83359710) Update README.md (#1768)
- * [e66fa328](https://github.com/argoproj/argo-workflows/commit/e66fa328e396fe35dfad8ab1e3088ab088aea8be) Fixed lint issues (#1739)
- * [63e12d09](https://github.com/argoproj/argo-workflows/commit/63e12d0986cb4b138715b8f2b9c483de5547f64e) binary up version (#1748)
- * [1b7f9bec](https://github.com/argoproj/argo-workflows/commit/1b7f9becdfc47688018e6d71ac417fb7278637ab) Minor typo fix (#1754)
- * [4c002677](https://github.com/argoproj/argo-workflows/commit/4c002677e360beb9d6e4398618bafdce025cda42) fix blank lines (#1753)
- * [fae73826](https://github.com/argoproj/argo-workflows/commit/fae7382686d917d78e3909d1f6db79c272a1aa11) Fail suspended steps after deadline (#1704)
- * [b2d7ee62](https://github.com/argoproj/argo-workflows/commit/b2d7ee62e903c062b62da35dc390e38c05ba1591) Fix typo in docs (#1745)
- * [f2592448](https://github.com/argoproj/argo-workflows/commit/f2592448636bc35b7f9ec0fdc48b92135ba9852f) Removed uneccessary debug Println (#1741)
- * [846d01ed](https://github.com/argoproj/argo-workflows/commit/846d01eddc271f330e00414d1ea2277ac390651b) Filter workflows in list  based on name prefix (#1721)
- * [8ae688c6](https://github.com/argoproj/argo-workflows/commit/8ae688c6cbcc9494195431be7754fe69eb33a9f4) Added ability to auto-resume from suspended state (#1715)
- * [fb617b63](https://github.com/argoproj/argo-workflows/commit/fb617b63a09679bb74427cd5d13192b1fd8f48cf) unquote strings from parameter-file (#1733)
- * [34120341](https://github.com/argoproj/argo-workflows/commit/34120341747e0261425b49a5600c42efbb1812a3) example for pod spec from output of previous step (#1724)
- * [12b983f4](https://github.com/argoproj/argo-workflows/commit/12b983f4c00bda3f9bedd14a316b0beade6158ed) Add gonum.org/v1/gonum/graph to Gopkg.toml (#1726)
- * [327fcb24](https://github.com/argoproj/argo-workflows/commit/327fcb242b20107c859142b3dd68745b3440e5eb) Added  Protobuf extension  (#1601)
- * [602e5ad8](https://github.com/argoproj/argo-workflows/commit/602e5ad8e4002f7df0bd02014505cbc7de3fd37c) Fix invitation link. (#1710)
- * [eb29ae4c](https://github.com/argoproj/argo-workflows/commit/eb29ae4c89b89d4d4192a5f8c08d44ad31fa4cd2) Fixes bugs in demo (#1700)
- * [ebb25b86](https://github.com/argoproj/argo-workflows/commit/ebb25b861b1b452207582b6dea0060bf418037ff) `restartPolicy` -> `retryStrategy` in examples (#1702)
- * [167d65b1](https://github.com/argoproj/argo-workflows/commit/167d65b15ac0d3483071e0506f3e98a92a034183) Fixed incorrect `pod.name` in retry pods (#1699)
- * [e0818029](https://github.com/argoproj/argo-workflows/commit/e0818029d190cfd616527cccf208b5a9866224e1) fixed broke metrics endpoint per #1634 (#1695)
- * [36fd09a1](https://github.com/argoproj/argo-workflows/commit/36fd09a1321fd145b36b4f9067b61fabad363926) Apply Strategic merge patch against the pod spec (#1687)
- * [d3546467](https://github.com/argoproj/argo-workflows/commit/d35464670439b660c7c9ab0bcd9d3686ffe08687) Fix retry node processing (#1694)
- * [dd517e4c](https://github.com/argoproj/argo-workflows/commit/dd517e4c2db59b4c704ed7aeaed8505a757a60f7) Print multiple workflows in one command (#1650)
- * [09a6cb4e](https://github.com/argoproj/argo-workflows/commit/09a6cb4e81c1d9f5c8c082c9e96ce783fa20796f) Added status of previous steps as variables (#1681)
- * [ad3dd4d4](https://github.com/argoproj/argo-workflows/commit/ad3dd4d4a41b58e30983e8a93f06c1526c8aa9a0) Fix issue that workflow.priority substitution didn't pass validation (#1690)
- * [095d67f8](https://github.com/argoproj/argo-workflows/commit/095d67f8d0f1d309529c8a400cb16d0a0e2765b9) Store locally referenced template properly (#1670)
- * [30a91ef0](https://github.com/argoproj/argo-workflows/commit/30a91ef002e7c8850f45e6fe7ac01a7966ff31b8) Handle retried node properly (#1669)
- * [263cb703](https://github.com/argoproj/argo-workflows/commit/263cb7038b927fabe0f67b4455e17534b51c2989) Update README.md  Argo Ansible role: Provisioning Argo Workflows on Kubernetes/OpenShift (#1673)
- * [867f5ff7](https://github.com/argoproj/argo-workflows/commit/867f5ff7e72bc8b5d9b6be5a5f8849ccd2a1108c) Handle sidecar killing properly (#1675)
- * [f0ab9df9](https://github.com/argoproj/argo-workflows/commit/f0ab9df9ef8090fc388c32adbe9180dbaee683f5) Fix typo (#1679)
- * [502db42d](https://github.com/argoproj/argo-workflows/commit/502db42db84f317af8660d862ddd48c28cbd3b8e) Don't provision VM for empty artifacts (#1660)
- * [b5dcac81](https://github.com/argoproj/argo-workflows/commit/b5dcac8114d6f4b5fe32bae049d2c70b4dea4d15) Resolve WorkflowTemplate lazily (#1655)
- * [d15994bb](https://github.com/argoproj/argo-workflows/commit/d15994bbbb0a1ca8fc60b452ae532b10510c4762) [User] Update Argo users list (#1661)
- * [4a654ca6](https://github.com/argoproj/argo-workflows/commit/4a654ca6914923656bd1dc21ca5b8c4aa75b9e25) Stop failing if artifact file exists, but empty (#1653)
- * [c6cddafe](https://github.com/argoproj/argo-workflows/commit/c6cddafe19854d91bff41f093f48ac444a781c0d) Bug fixes in getting started (#1656)
- * [ec788373](https://github.com/argoproj/argo-workflows/commit/ec7883735e20f87fe483b26c947bd891a695a2bd) Update workflow_level_host_aliases.yaml (#1657)
- * [7e5af474](https://github.com/argoproj/argo-workflows/commit/7e5af4748d406f244378da86fda339a0c9e74476) Fix child node template handling (#1654)
- * [7f385a6b](https://github.com/argoproj/argo-workflows/commit/7f385a6bbf67ab780ab86c941cbd426f9b003834) Use stored templates to raggregate step outputs (#1651)
- * [cd6f3627](https://github.com/argoproj/argo-workflows/commit/cd6f3627992b6947dd47c98420d0a0fec4de9112) Fix dag output aggregation correctly (#1649)
- * [706075a5](https://github.com/argoproj/argo-workflows/commit/706075a55f694f94cfe729efca8eacb31d14f7f0) Fix DAG output aggregation (#1648)
- * [fa32dabd](https://github.com/argoproj/argo-workflows/commit/fa32dabdc0a5a74469a0e86e04b9868508503a73) Fix missing merged changes in validate.go (#1647)
- * [45716027](https://github.com/argoproj/argo-workflows/commit/457160275cc42be4c5fa6c1050c6e61a614b9544) fixed example wrong comment (#1643)
- * [69fd8a58](https://github.com/argoproj/argo-workflows/commit/69fd8a58d4877d616f3b576a2e8c8cbd224e029a) Delay killing sidecars until artifacts are saved (#1645)
- * [ec5f9860](https://github.com/argoproj/argo-workflows/commit/ec5f98605429f8d757f3b92fe6b2a2e8a4cb235f) pin colinmarc/hdfs to the next commit, which no longer has vendored deps (#1622)
- * [4b84f975](https://github.com/argoproj/argo-workflows/commit/4b84f975f14714cedad2dc9697c9a181075b04ea) Fix global lint issue (#1641)
- * [bb579138](https://github.com/argoproj/argo-workflows/commit/bb579138c6104baab70f859e8ed05954718c5ee8) Fix regression where global outputs were unresolveable in DAGs (#1640)
- * [cbf99682](https://github.com/argoproj/argo-workflows/commit/cbf99682c7a84306066b059834a625892b86d28c) Fix regression where parallelism could cause workflow to fail (#1639)
- * [76461f92](https://github.com/argoproj/argo-workflows/commit/76461f925e4e53cdf65b362115d09aa5325dea6b) Update CHANGELOG for v2.4.0 (#1636)
- * [c75a0861](https://github.com/argoproj/argo-workflows/commit/c75a08616e8e6bd1aeb37fc9fc824197491aec9c) Regenerate installation manifests (#1638)
- * [e20cb28c](https://github.com/argoproj/argo-workflows/commit/e20cb28cf8a4f331316535dcfd793ea91c281feb) Grant get secret role to controller to support persistence (#1615)
- * [644946e4](https://github.com/argoproj/argo-workflows/commit/644946e4e07672051f9be0f71ca0d2ca7641648e) Save stored template ID in nodes (#1631)
- * [5d530bec](https://github.com/argoproj/argo-workflows/commit/5d530becae49e1e235d72dd5ac29cc40282bc401) Fix retry workflow state (#1632)
- * [2f0af522](https://github.com/argoproj/argo-workflows/commit/2f0af5221030858e6a5306545ca3577aad17ac1a) Update operator.go (#1630)
- * [6acea0c1](https://github.com/argoproj/argo-workflows/commit/6acea0c1c21a17e14dc95632e80655f7fff09e2e) Store resolved templates (#1552)
- * [df8260d6](https://github.com/argoproj/argo-workflows/commit/df8260d6f64fcacc24c13cf5cc4a3fc3f0a6db18) Increase timeout of golangci-lint (#1623)
- * [138f89f6](https://github.com/argoproj/argo-workflows/commit/138f89f684cec5a8b237584e46199815922f98c3) updated invite link (#1621)
- * [d027188d](https://github.com/argoproj/argo-workflows/commit/d027188d0fce8e44bb0cefb2d46c1e55b9f112a2) Updated the API Rule Violations list (#1618)
- * [a317fbf1](https://github.com/argoproj/argo-workflows/commit/a317fbf1412c4636066def42cd6b7adc732319f3) Prevent controller from crashing due to glog writing to /tmp (#1613)
- * [20e91ea5](https://github.com/argoproj/argo-workflows/commit/20e91ea580e532b9c62f3bd16c5f6f8ed0838fdd) Added WorkflowStatus and NodeStatus types to the Open API Spec. (#1614)
- * [ffb281a5](https://github.com/argoproj/argo-workflows/commit/ffb281a5567666db68a5acab03ba7a0188954bf8) Small code cleanup and add tests (#1562)
- * [1cb8345d](https://github.com/argoproj/argo-workflows/commit/1cb8345de0694cffc30882eac59a05cb8eb06bc4) Add merge keys to Workflow objects to allow for StrategicMergePatches (#1611)
- * [c855a66a](https://github.com/argoproj/argo-workflows/commit/c855a66a6a9e3239fe5d585f5b5f36a07d48c5ed) Increased Lint timeout (#1612)
- * [4bf83fc3](https://github.com/argoproj/argo-workflows/commit/4bf83fc3d0d6b1e1d2c85f7b9b10a051134f7b0a) Fix DAG enable failFast will hang in some case (#1595)
- * [e9f3d9cb](https://github.com/argoproj/argo-workflows/commit/e9f3d9cbc029a9d55cf35ea51c2486078110bb2d) Do not relocate the mounted docker.sock (#1607)
- * [1bd50fa2](https://github.com/argoproj/argo-workflows/commit/1bd50fa2dfd828a04ff012868c98ba33bac41136) Added retry around RuntimeExecutor.Wait call when waiting for main container completion (#1597)
- * [0393427b](https://github.com/argoproj/argo-workflows/commit/0393427b54f397237152f5b74f6d09d0c20c1618) Issue1571  Support ability to assume IAM roles in S3 Artifacts  (#1587)
- * [ffc0c84f](https://github.com/argoproj/argo-workflows/commit/ffc0c84f509226f02d47cb2d5280faa7e2b92841) Update Gopkg.toml and Gopkg.lock (#1596)
- * [aa3a8f1c](https://github.com/argoproj/argo-workflows/commit/aa3a8f1c99fcb70bb199750644f74b17812cc586) Update from github.com/ghodss/yaml to sigs.k8s.io/yaml (#1572)
- * [07a26f16](https://github.com/argoproj/argo-workflows/commit/07a26f16747e3c71e76ba83b43336fd7a49622fb) Regard resource templates as leaf nodes (#1593)
- * [89e959e7](https://github.com/argoproj/argo-workflows/commit/89e959e7aaf396bc09cc012014e425ece2b5d644) Fix workflow template in namespaced controller (#1580)
- * [cd04ab8b](https://github.com/argoproj/argo-workflows/commit/cd04ab8bb923012182f2dc2b35dbf14726f7b1a4) remove redundant codes (#1582)
- * [5bba8449](https://github.com/argoproj/argo-workflows/commit/5bba8449ac7f3c563282eec1cb1f0dfc28d0d7c8) Add entrypoint label to workflow default labels (#1550)
- * [9685d7b6](https://github.com/argoproj/argo-workflows/commit/9685d7b67be91bf81059c1c96120a4fe6288399e) Fix inputs and arguments during template resolution (#1545)
- * [19210ba6](https://github.com/argoproj/argo-workflows/commit/19210ba635a4288f51eb2dd827f03715aea72750) added DataStax as an organization that uses Argo (#1576)
- * [b5f2fdef](https://github.com/argoproj/argo-workflows/commit/b5f2fdef097fe0fd69c60c6ada893547fd944d22) Support AutomountServiceAccountToken and executor specific service account(#1480)
- * [8808726c](https://github.com/argoproj/argo-workflows/commit/8808726cf3d0bc3aa71e3f1653262685dbfa0acf) Fix issue saving outputs which overlap paths with inputs (#1567)
- * [ba7a1ed6](https://github.com/argoproj/argo-workflows/commit/ba7a1ed650e7251dfadf5e9ae1fc2cdda7e9eaa2) Add coverage make target (#1557)
- * [ced0ee96](https://github.com/argoproj/argo-workflows/commit/ced0ee96ced59d9b070a1e81a9c148f78a69bfb9) Document workflow controller dockerSockPath config (#1555)
- * [3e95f2da](https://github.com/argoproj/argo-workflows/commit/3e95f2da6af78cc482009692b65cdc565a0ff412) Optimize argo binary install documentation (#1563)
- * [e2ebb166](https://github.com/argoproj/argo-workflows/commit/e2ebb166683d8a6c96502ce6e72f1a3ae48f0b4b) docs(readme): fix workflow types link (#1560)
- * [6d150a15](https://github.com/argoproj/argo-workflows/commit/6d150a15eb96183fb21faf6a49b0997e6150880b) Initialize the wfClientset before using it (#1548)
- * [5331fc02](https://github.com/argoproj/argo-workflows/commit/5331fc02e257266a4a5887dfe6277e5a0b42e7fc) Remove GLog config from argo executor (#1537)
- * [ed4ac6d0](https://github.com/argoproj/argo-workflows/commit/ed4ac6d0697401da6dec3989ecd63dd7567f0750) Update main.go (#1536)
- * [9fca1441](https://github.com/argoproj/argo-workflows/commit/9fca144128c97499d11f07a0ee008a9921e1f5f8) Update argo dependencies to kubernetes v1.14 (#1530)
- * [0246d184](https://github.com/argoproj/argo-workflows/commit/0246d184add04e44f77ffbe00e796b3adaf535d2) Use cache to retrieve WorkflowTemplates (#1534)
- * [4864c32f](https://github.com/argoproj/argo-workflows/commit/4864c32ffa40861c5ca066f67615da6d52eaa8b5) Update README.md (#1533)
- * [4df114fa](https://github.com/argoproj/argo-workflows/commit/4df114fae66e87727cfcb871731ec002af1515c7) Update CHANGELOG for v2.4 (#1531)
- * [c7e5cba1](https://github.com/argoproj/argo-workflows/commit/c7e5cba14a835fbfd0aba88b99197675ce1f0c66) Introduce podGC strategy for deleting completed/successful pods (#1234)
- * [bb0d14af](https://github.com/argoproj/argo-workflows/commit/bb0d14af9d320a141cb307b6a883c1eaafa498c3) Update ISSUE_TEMPLATE.md (#1528)
- * [b5702d8a](https://github.com/argoproj/argo-workflows/commit/b5702d8ae725c5caa4058d39f77e6d1e7e549da4) Format sources and order imports with the help of goimports (#1504)
- * [d3ff77bf](https://github.com/argoproj/argo-workflows/commit/d3ff77bf475095c73f034fb3b23c279c62f4269e) Added Architecture doc (#1515)
- * [fc1ec1a5](https://github.com/argoproj/argo-workflows/commit/fc1ec1a51462c9a114417db801e3a9715d3dc6b4) WorkflowTemplate CRD (#1312)
- * [f99d3266](https://github.com/argoproj/argo-workflows/commit/f99d3266d1879579338f124c56f1fc14867308a3) Expose all input parameters to template as JSON (#1488)
- * [bea60526](https://github.com/argoproj/argo-workflows/commit/bea605261be82d8bb91bf703ad68875f1093ebb8) Fix argo logs empty content when workflow run in virtual kubelet env (#1201)
- * [d82de881](https://github.com/argoproj/argo-workflows/commit/d82de8813910afaf9b3fb77d029faa7953bfee3a) Implemented support for WorkflowSpec.ArtifactRepositoryRef (#1350)
- * [0fa20c7b](https://github.com/argoproj/argo-workflows/commit/0fa20c7ba317d8c9a837bcc37d92f3fe79808499) Fix validation (#1508)
- * [87e2cb60](https://github.com/argoproj/argo-workflows/commit/87e2cb6043a305839ca37cc77c7611aaa7bdbd44) Add --dry-run option to `argo submit` (#1506)
- * [e7e50af6](https://github.com/argoproj/argo-workflows/commit/e7e50af6e56b1eeddccc82a2dbc8b421d1a63942) Support git shallow clones and additional ref fetches (#1521)
- * [605489cd](https://github.com/argoproj/argo-workflows/commit/605489cd5dd688527e60efee0aff239e3439c2dc) Allow overriding workflow labels in 'argo submit' (#1475)
- * [47eba519](https://github.com/argoproj/argo-workflows/commit/47eba519107c229edf61dbe024a6a5e0f1618a8d) Fix issue [Documentation] kubectl get service argo-artifacts -o wide (#1516)
- * [02f38262](https://github.com/argoproj/argo-workflows/commit/02f38262c40901346ddd622685bc6bfd344a2717) Fixed #1287 Executor kubectl version is obsolete (#1513)
- * [f62105e6](https://github.com/argoproj/argo-workflows/commit/f62105e659a22ccc0875151698eab540090885f6) Allow Makefile variables to be set from the command line (#1501)
- * [e62be65b](https://github.com/argoproj/argo-workflows/commit/e62be65ba25ae68a1bed10bddf33b4dae4991249) Fix a compiler error in a unit test (#1514)
- * [5c5c29af](https://github.com/argoproj/argo-workflows/commit/5c5c29af729b39f5f9b8a7fe6b8c1dede53eae3a) Fix the lint target (#1505)
- * [e03287bf](https://github.com/argoproj/argo-workflows/commit/e03287bfb7f97f639c8d81617808f709ca547eaa) Allow output parameters with .value, not only .valueFrom (#1336)
- * [781d3b8a](https://github.com/argoproj/argo-workflows/commit/781d3b8ae243b2c32ea3c4abd5b4a99fe9fc9cad) Implemented Conditionally annotate outputs of script template only when consumed #1359 (#1462)
- * [b028e61d](https://github.com/argoproj/argo-workflows/commit/b028e61db71e74b5730469a5f23a734937ddb8d9) change 'continue-on-fail' example to better reflect its description (#1494)
- * [97e824c9](https://github.com/argoproj/argo-workflows/commit/97e824c9a5b71baea658e8de6130bee089fb764d) Readme update to add argo and airflow comparison (#1502)
- * [414d6ce7](https://github.com/argoproj/argo-workflows/commit/414d6ce7b8aebcbd3b8822f407ec71ed465c103d) Fix a compiler error (#1500)
- * [ca1d5e67](https://github.com/argoproj/argo-workflows/commit/ca1d5e671519aaa9f38f5f2564eb70c138fadda7) Fix: Support the List within List type in withParam #1471 (#1473)
- * [75cb8b9c](https://github.com/argoproj/argo-workflows/commit/75cb8b9cd92cd7fcce4b921b88232bb05f2672b2) Fix #1366 unpredictable global artifact behavior (#1461)
- * [082e5c4f](https://github.com/argoproj/argo-workflows/commit/082e5c4f617c4120584ad601a8d85e0a3ce36a26) Exposed workflow priority as a variable (#1476)
- * [38c4def7](https://github.com/argoproj/argo-workflows/commit/38c4def7fb100e954757649553db8c04ea64f318) Fix: Argo CLI should show warning if there is no workflow definition in file #1486
- * [af7e496d](https://github.com/argoproj/argo-workflows/commit/af7e496db6ee8c10c9a2b6b51a27265bc6b0ee6d) Add Commodus Tech as official user (#1484)
- * [8c559642](https://github.com/argoproj/argo-workflows/commit/8c559642f2ec8abaea3204279fa3d6ff5ad40add) Update OWNERS (#1485)
- * [007d1f88](https://github.com/argoproj/argo-workflows/commit/007d1f8816736a758fa3720f0081e01dbc4200e3) Fix: 1008 `argo wait` and `argo submit --wait` should exit 1 if workflow fails  (#1467)
- * [3ab7bc94](https://github.com/argoproj/argo-workflows/commit/3ab7bc94c01d7a470bd05198b99c33e1a0221847) Document the insecureIgnoreHostKey git flag (#1483)
- * [7d9bb51a](https://github.com/argoproj/argo-workflows/commit/7d9bb51ae328f1a8cc7daf7d8ef108cf190df0ce) Fix failFast bug:   When a node in the middle fails, the entire workflow will hang (#1468)
- * [42adbf32](https://github.com/argoproj/argo-workflows/commit/42adbf32e8d4c626c544795c2fc1adb70676e968) Add --no-color flag to logs (#1479)
- * [67fc29c5](https://github.com/argoproj/argo-workflows/commit/67fc29c57db795a7020f355ab32cd883cfaf701e) fix typo: symboloic > symbolic (#1478)
- * [7c3e1901](https://github.com/argoproj/argo-workflows/commit/7c3e1901f49fe34cbe9d084274f6e64c48270635) Added Codec to the Argo community list (#1477)
- * [0a9cf9d3](https://github.com/argoproj/argo-workflows/commit/0a9cf9d3b06a3b304c0c690a298d8dc3d51c015b) Add doc about failFast feature (#1453)
- * [6a590300](https://github.com/argoproj/argo-workflows/commit/6a5903000fe8a7b3610c32435b2363cbf6334d1b) Support PodSecurityContext (#1463)
- * [e392d854](https://github.com/argoproj/argo-workflows/commit/e392d854bf78db89413782a23e62b0e38cf9c780) issue-1445: changing temp directory for output artifacts from root to tmp (#1458)
- * [7a21adfe](https://github.com/argoproj/argo-workflows/commit/7a21adfeb0af18c2452648a8bb3698a687f99b5e) New Feature:  provide failFast flag, allow a DAG to run all branches of the DAG (either success or failure) (#1443)
- * [b9b87b7f](https://github.com/argoproj/argo-workflows/commit/b9b87b7fa0cd3177c2b89cacff189f4893c5af95) Centralized Longterm workflow persistence storage  (#1344)
- * [cb09609b](https://github.com/argoproj/argo-workflows/commit/cb09609bd646a394c3a6f739dd447022a2bdb327) mention sidecar in failure message for sidecar containers (#1430)
- * [373bbe6e](https://github.com/argoproj/argo-workflows/commit/373bbe6ec9e819c39152292f79752792ce40b94d) Fix demo's doc issue of install minio chart (#1450)
- * [83552334](https://github.com/argoproj/argo-workflows/commit/835523341bcc96b6e9358be71e7432d0ac4058c5) Add threekit to user list (#1444)
- * [83f82ad1](https://github.com/argoproj/argo-workflows/commit/83f82ad172de0472643495d3ef3e0ce6d959900a) Improve bash completion (#1437)
- * [ee0ec78a](https://github.com/argoproj/argo-workflows/commit/ee0ec78ac98eaa112d343906a6e9b6490c39817f) Update documentation for workflow.outputs.artifacts (#1439)
- * [9e30c06e](https://github.com/argoproj/argo-workflows/commit/9e30c06e32b072b87e0d17095448d114175c713f) Revert "Update demo.md (#1396)" (#1433)
- * [c08de630](https://github.com/argoproj/argo-workflows/commit/c08de6300c3b394c34a5b3596455dcb50c29af48) Add paging function for list command (#1420)
- * [bba2f9cb](https://github.com/argoproj/argo-workflows/commit/bba2f9cbe9aa0eb053c19b03bc8fa7c002f579b0) Fixed:  Implemented Template level service account (#1354)
- * [d635c1de](https://github.com/argoproj/argo-workflows/commit/d635c1def74936869edbd8b9037ac81ea0af1772) Ability to configure hostPath mount for `/var/run/docker.sock` (#1419)
- * [d2f7162a](https://github.com/argoproj/argo-workflows/commit/d2f7162ac26550642ebe1792c65fb5e6ca9c0e7a) Terminate all containers within pod after main container completes (#1423)
- * [1607d74a](https://github.com/argoproj/argo-workflows/commit/1607d74a8de0704b82627364645a99b699d40cc0) PNS executor intermitently failed to capture entire log of script templates (#1406)
- * [5e47256c](https://github.com/argoproj/argo-workflows/commit/5e47256c7f86b56cfbf2ce53f73ed093eef2e3b6) Fix typo (#1431)
- * [5635c33a](https://github.com/argoproj/argo-workflows/commit/5635c33aa263080fe84e29a11a52f86fee583ca2) Update demo.md (#1396)
- * [83425455](https://github.com/argoproj/argo-workflows/commit/83425455bff34527e65ca1371347eed5203ae99a) Add OVH as official user (#1417)
- * [82e5f63d](https://github.com/argoproj/argo-workflows/commit/82e5f63d3680e7e4a22747803b0753b5ec31d2ad) Typo fix in ARTIFACT_REPO.md (#1425)
- * [15fa6f52](https://github.com/argoproj/argo-workflows/commit/15fa6f52d926ee5e839321900f613f6e546e6b6e) Update OWNERS (#1429)
- * [96b9a40e](https://github.com/argoproj/argo-workflows/commit/96b9a40e9aafe9c0132ce1b9f1eb01f05c3894ca) Orders uses alphabetically (#1411)
- * [6550e2cb](https://github.com/argoproj/argo-workflows/commit/6550e2cb10112ddf6435755958387ffa6ada0ef5) chore: add IBM to official users section in README.md (#1409)
- * [bc81fe28](https://github.com/argoproj/argo-workflows/commit/bc81fe288ebf9811774b36dd6eba9a851ac7717e) Fiixed: persistentvolumeclaims already exists #1130 (#1363)
- * [6a042d1f](https://github.com/argoproj/argo-workflows/commit/6a042d1f7eb01f1f369c2325aecebf71a3bea3a4) Update README.md (#1404)
- * [aa811fbd](https://github.com/argoproj/argo-workflows/commit/aa811fbdb914fe386cfbf3fa84a51bfd5104b5d0) Update README.md (#1402)
- * [abe3c99f](https://github.com/argoproj/argo-workflows/commit/abe3c99f19a1ec28775a276b50ad588a2dd660ca) Add Mirantis as an official user (#1401)
- * [18ab750a](https://github.com/argoproj/argo-workflows/commit/18ab750aea4de8f7dc67433f4e73505c80e13222) Added Argo Rollouts to README (#1388)
- * [67714f99](https://github.com/argoproj/argo-workflows/commit/67714f99b4bf664eb5e853b25ebf4b12bb98f733) Make locating kubeconfig in example os independent (#1393)
- * [672dc04f](https://github.com/argoproj/argo-workflows/commit/672dc04f737a3be099fe64c343587c35074b0938) Fixed: withParam parsing of JSON/YAML lists #1389 (#1397)
- * [b9aec5f9](https://github.com/argoproj/argo-workflows/commit/b9aec5f9833d5fa2055d06d1a71fdb75709eea21) Fixed: make verify-codegen is failing on the master branch (#1399) (#1400)
- * [270aabf1](https://github.com/argoproj/argo-workflows/commit/270aabf1d8cabd69b9851209ad5d9c874348e21d) Fixed:  failed to save outputs: verify serviceaccount default:default has necessary privileges (#1362)
- * [163f4a5d](https://github.com/argoproj/argo-workflows/commit/163f4a5d322352bd98f9a88ebd6089cf5e5b49ad) Fixed: Support hostAliases in WorkflowSpec #1265 (#1365)
- * [abb17478](https://github.com/argoproj/argo-workflows/commit/abb174788dce1bc6bed993a2967f7d8e112e44ca) Add Max Kelsen to USERS in README.md (#1374)
- * [dc549193](https://github.com/argoproj/argo-workflows/commit/dc5491930e09eebe700952e28359deeb8e0d2314) Update docs for the v2.3.0 release and to use the stable tag
- * [4001c964](https://github.com/argoproj/argo-workflows/commit/4001c964dbc70962e1cc1d80a4aff64cf8594ec3) Update README.md (#1372)
- * [6c18039b](https://github.com/argoproj/argo-workflows/commit/6c18039be962996d971145be8349d2ed3e396c80) Fix issue where a DAG with exhausted retries would get stuck Running (#1364)
- * [d7e74fe3](https://github.com/argoproj/argo-workflows/commit/d7e74fe3a96277ba532e4a2f40303a92d2d0ce94) Validate action for resource templates (#1346)
- * [810949d5](https://github.com/argoproj/argo-workflows/commit/810949d5106b4d1d533b647d1d61559c208b590a) Fixed :  CLI Does Not Honor metadata.namespace #1288 (#1352)
- * [e58859d7](https://github.com/argoproj/argo-workflows/commit/e58859d79516508838fead8222f0e26a6c2a2861) [Fix #1242] Failed DAG nodes are now kept and set to running on RetryWorkflow. (#1250)
- * [d5fe5f98](https://github.com/argoproj/argo-workflows/commit/d5fe5f981fb112ba01ed77521ae688f8a15f67b9) Use golangci-lint instead of deprecated gometalinter (#1335)
- * [26744d10](https://github.com/argoproj/argo-workflows/commit/26744d100e91eb757f48bfedd539e7e4a044faf3) Support an easy way to set owner reference (#1333)
- * [8bf7578e](https://github.com/argoproj/argo-workflows/commit/8bf7578e1884c61128603bbfaa677fd79cc17ea8) Add --status filter for get command (#1325)
- * [3f6ac9c9](https://github.com/argoproj/argo-workflows/commit/3f6ac9c9f1ccd92d4dabf52e964a1dd52b1622f6) Update release instructions
- * [2274130d](https://github.com/argoproj/argo-workflows/commit/2274130dc55de0b019ac9fd5232c192364f275c9) Update version to v2.3.0-rc3
- * [b024b3d8](https://github.com/argoproj/argo-workflows/commit/b024b3d83a4bfd46bd6b4a5075e9f8f968457309) Fix: # 1328 argo submit --wait and argo wait quits while workflow is running (#1347)
- * [24680b7f](https://github.com/argoproj/argo-workflows/commit/24680b7fc8a1fd573b39d61ba7bdce5b143eb686) Fixed : Validate the secret credentials name and key (#1358)
- * [f641d84e](https://github.com/argoproj/argo-workflows/commit/f641d84eb5cd489c98b39b41b69dbea9a3312e01) Fix input artifacts with multiple ssh keys (#1338)
- * [e680bd21](https://github.com/argoproj/argo-workflows/commit/e680bd219a2478835d5d8cefcbfb96bd11acc40b) add / test (#1240)
- * [ee788a8a](https://github.com/argoproj/argo-workflows/commit/ee788a8a6c70c5c64f535b6a901e837a9b4d5797) Fix #1340 parameter substitution bug (#1345)
- * [60b65190](https://github.com/argoproj/argo-workflows/commit/60b65190a22e176429e586afe58a86a14b390c66) Fix missing template local volumes, Handle volumes only used in init containers (#1342)
- * [4e37a444](https://github.com/argoproj/argo-workflows/commit/4e37a444bde2a034885d0db35f7b38684505063e) Add documentation on releasing
- * [bb1bfdd9](https://github.com/argoproj/argo-workflows/commit/bb1bfdd9106d9b64aa2dccf8d3554bdd31513cf8) Update version to v2.3.0-rc2. Update changelog
- * [49a6b6d7](https://github.com/argoproj/argo-workflows/commit/49a6b6d7ac1bb5f6b390eff1b218205d995142cb) wait will conditionally become privileged if main/sidecar privileged (resolves #1323)
- * [34af5a06](https://github.com/argoproj/argo-workflows/commit/34af5a065e42230148b48603fc81f57fb2b4c22c) Fix regression where argoexec wait would not return when podname was too long
- * [bd8d5cb4](https://github.com/argoproj/argo-workflows/commit/bd8d5cb4b7510afb7bd43bd75e5c5d26ccc85ca4) `argo list` was not displaying non-zero priorities correctly
- * [64370a2d](https://github.com/argoproj/argo-workflows/commit/64370a2d185db66a8d2188d986c52a3b73aaf92b) Support parameter substitution in the volumes attribute (#1238)
- * [6607dca9](https://github.com/argoproj/argo-workflows/commit/6607dca93db6255a2abc30ae76b5f935fce5735d) Issue1316 Pod creation with secret volumemount  (#1318)
- * [a5a2bcf2](https://github.com/argoproj/argo-workflows/commit/a5a2bcf21900019d979328250009af4137f7ff2a) Update README.md (#1321)
- * [950de1b9](https://github.com/argoproj/argo-workflows/commit/950de1b94efc18473a85e1f23c9ed5e6ff75ba93) Export the methods of `KubernetesClientInterface` (#1294)
- * [1c729a72](https://github.com/argoproj/argo-workflows/commit/1c729a72a2ae431623332b65646c97cb689eab01) Update v2.3.0 CHANGELOG.md
- * [40f9a875](https://github.com/argoproj/argo-workflows/commit/40f9a87593d312a46f7fa24aaf32e125458cc701) Reorganize manifests to kustomize 2 and update version to v2.3.0-rc1
- * [75b28a37](https://github.com/argoproj/argo-workflows/commit/75b28a37b923e278fc89fd647f78a42e7a3bf029) Implement support for PNS (Process Namespace Sharing) executor (#1214)
- * [b4edfd30](https://github.com/argoproj/argo-workflows/commit/b4edfd30b0e3034d98e938b491cf5bd054b36525) Fix SIGSEGV in watch/CheckAndDecompress. Consolidate duplicate code (resolves #1315)
- * [02550be3](https://github.com/argoproj/argo-workflows/commit/02550be31e53da79f1f4dbebda3ede7dc1052086) Archive location should conditionally be added to template only when needed
- * [c60010da](https://github.com/argoproj/argo-workflows/commit/c60010da29bd36c10c6e627802df6d6a06c1a59a) Fix nil pointer dereference with secret volumes (#1314)
- * [db89c477](https://github.com/argoproj/argo-workflows/commit/db89c477d65a29fc0a95ca55f68e1bd23d0170e0) Fix formatting issues in examples documentation (#1310)
- * [0d400f2c](https://github.com/argoproj/argo-workflows/commit/0d400f2ce6db9478b4eaa6fe24849a686c9d1d44) Refactor checkandEstimate to optimize podReconciliation (#1311)
- * [bbdf2e2c](https://github.com/argoproj/argo-workflows/commit/bbdf2e2c8f1b5a8dc83e88fedba9b1899f6bc78b) Add alibaba cloud to officially using argo list (#1313)
- * [abb77062](https://github.com/argoproj/argo-workflows/commit/abb77062fc06ae964ce7ccd1a534ec8bbdf3747c) CheckandEstimate implementation to optimize podReconciliation (#1308)
- * [1a028d54](https://github.com/argoproj/argo-workflows/commit/1a028d5458ffef240f8af31caeecda91f057c3ba) Secrets should be passed to pods using volumes instead of API calls (#1302)
- * [e34024a3](https://github.com/argoproj/argo-workflows/commit/e34024a3ca285d1af3b5ba3b3235dc7adc0472b7) Add support for init containers (#1183)
- * [4591e44f](https://github.com/argoproj/argo-workflows/commit/4591e44fe0e4de543f4c4339de0808346e0807e3) Added support for artifact path references (#1300)
- * [928e4df8](https://github.com/argoproj/argo-workflows/commit/928e4df81c4b33f0c0750f01b3aa3c4fc7ff256c) Add Karius to users in README.md (#1305)
- * [de779f36](https://github.com/argoproj/argo-workflows/commit/de779f36122205790915622f5ee91c9a9d5b9086) Add community meeting notes link (#1304)
- * [a8a55579](https://github.com/argoproj/argo-workflows/commit/a8a55579131605d4dc769cb599bc99c06350dfb7) Speed up podReconciliation using parallel goroutine (#1286)
- * [93451119](https://github.com/argoproj/argo-workflows/commit/934511192e4045b87be1675ff7e9dfa79faa9fcb) Add dns config support (#1301)
- * [850f3f15](https://github.com/argoproj/argo-workflows/commit/850f3f15dd1965e99cd636711a5e3306bc4bd0c0) Admiralty: add link to blog post, add user (#1295)
- * [d5f4b428](https://github.com/argoproj/argo-workflows/commit/d5f4b428ce02de34a37d5cb2fdba4dfa9fd16e75) Fix for Resource creation where template has same parameter templating (#1283)
- * [9b555cdb](https://github.com/argoproj/argo-workflows/commit/9b555cdb30f6092d5f53891f318fb74b8371c039) Issue#896 Workflow steps with non-existant output artifact path will succeed (#1277)
- * [adab9ed6](https://github.com/argoproj/argo-workflows/commit/adab9ed6bc4f8f337105182c56abad39bccb9676) Argo CI is current inactive (#1285)
- * [59fcc5cc](https://github.com/argoproj/argo-workflows/commit/59fcc5cc33ce67c057064dc37a463707501615e1) Add workflow labels and annotations global vars (#1280)
- * [1e111caa](https://github.com/argoproj/argo-workflows/commit/1e111caa1d2cc672b3b53c202b96a5f660a7e9b2) Fix bug with DockerExecutor's CopyFile (#1275)
- * [73a37f2b](https://github.com/argoproj/argo-workflows/commit/73a37f2b2a12d74ddf6a4b54e04b50fa1a7c68a1) Add the `mergeStrategy` option to resource patching (#1269)
- * [e6105243](https://github.com/argoproj/argo-workflows/commit/e6105243c785d9f53aef6fcfd344e855ad4f7d84) Reduce redundancy pod label action (#1271)
- * [4bfbb20b](https://github.com/argoproj/argo-workflows/commit/4bfbb20bc23f8bf4611a6314fb80f8138b17b9b9) Error running 1000s of tasks: "etcdserver: request is too large" #1186 (#1264)
- * [b2743f30](https://github.com/argoproj/argo-workflows/commit/b2743f30c411f5ad8f8c8b481a5d6b6ff83c33bd) Proxy Priority and PriorityClassName to pods (#1179)
- * [70c130ae](https://github.com/argoproj/argo-workflows/commit/70c130ae626f7c58d9e5ac0eed8977f51696fcbd) Update versions (#1218)
- * [b0384129](https://github.com/argoproj/argo-workflows/commit/b03841297e4b0dab0380b441cf41f5ed34db44bf) Git cloning via SSH was not verifying host public key (#1261)
- * [3f06385b](https://github.com/argoproj/argo-workflows/commit/3f06385b129c02e23ea283f7c66d347cb8899564) Issue#1165 fake outputs don't notify and task completes successfully (#1247)
- * [fa042aa2](https://github.com/argoproj/argo-workflows/commit/fa042aa285947c5fa365ef06a9565d0b4e20da0e) typo, executo -> executor (#1243)
- * [1cb88bae](https://github.com/argoproj/argo-workflows/commit/1cb88baee9ded1ede27a9d3f1e31f06f4369443d) Fixed Issue#1223 Kubernetes Resource action: patch is not supported (#1245)
- * [2b0b8f1c](https://github.com/argoproj/argo-workflows/commit/2b0b8f1c3f46aa41e4b4ddaf14ad1fdebccfaf8a) Fix the Prometheus address references (#1237)
- * [94cda3d5](https://github.com/argoproj/argo-workflows/commit/94cda3d53c6a72e3fc225ba08796bfd9420eccd6) Add feature to continue workflow on failed/error steps/tasks (#1205)
- * [3f1fb9d5](https://github.com/argoproj/argo-workflows/commit/3f1fb9d5e61d300c4922e48a748dc17285e07f07) Add Gardener to "Who uses Argo" (#1228)
- * [cde5cd32](https://github.com/argoproj/argo-workflows/commit/cde5cd320fa987ac6dd539a3126f29c73cd7277a) Include stderr when retrieving docker logs (#1225)
- * [2b1d56e7](https://github.com/argoproj/argo-workflows/commit/2b1d56e7d4e583e2e06b37904714b350faf03d97) Update README.md (#1224)
- * [eeac5a0e](https://github.com/argoproj/argo-workflows/commit/eeac5a0e11b4a6f4bc28757a3b0684598b8c4974) Remove extra quotes around output parameter value (#1232)
- * [8b67e1bf](https://github.com/argoproj/argo-workflows/commit/8b67e1bfdc7ed5ea153cb17f9a740afe2bd4efa8) Update README.md (#1236)
- * [baa3e622](https://github.com/argoproj/argo-workflows/commit/baa3e622121e66c9fec7c612c88027b7cacbd1b2) Update README with typo fixes (#1220)
- * [f6b0c8f2](https://github.com/argoproj/argo-workflows/commit/f6b0c8f285217fd0e6089b0cf03ca4926d1b4758) Executor can access the k8s apiserver with a out-of-cluster config file (#1134)
- * [0bda53c7](https://github.com/argoproj/argo-workflows/commit/0bda53c77c54b037e7d91b18554053362b1e4d35) fix dag retries (#1221)
- * [8aae2931](https://github.com/argoproj/argo-workflows/commit/8aae29317a8cfef2edc084a4c74a44c83d845936) Issue #1190 - Fix incorrect retry node handling (#1208)
- * [f1797f78](https://github.com/argoproj/argo-workflows/commit/f1797f78044504dbf2e1f7285cc9c18ac79f5e81) Add schedulerName to workflow and template spec (#1184)
- * [2ddae161](https://github.com/argoproj/argo-workflows/commit/2ddae161037f603d2a3c12ba6b495dc422547b58) Set executor image pull policy for resource template (#1174)
- * [edcb5629](https://github.com/argoproj/argo-workflows/commit/edcb56296255267a3c8fa639c3ad26a016caab80) Dockerfile: argoexec base image correction (fixes #1209) (#1213)
- * [f92284d7](https://github.com/argoproj/argo-workflows/commit/f92284d7108ebf92907008d8f12a0696ee467a43) Minor spelling, formatting, and style updates. (#1193)
- * [bd249a83](https://github.com/argoproj/argo-workflows/commit/bd249a83e119d6161fa1c593b09fb381db448a0d) Issue #1128 - Use polling instead of fs notify to get annotation changes (#1194)
- * [14a432e7](https://github.com/argoproj/argo-workflows/commit/14a432e75119e37d42715b7e83992789c6dac454) Update community/README (#1197)
- * [eda7e084](https://github.com/argoproj/argo-workflows/commit/eda7e08438d2314bb5eb178a1335a3c28555ab34) Updated OWNERS (#1198)
- * [73504a24](https://github.com/argoproj/argo-workflows/commit/73504a24e885c6df9d1cceb4aa123c79eca7b7cd) Fischerjulian adds ruby to rest docs (#1196)
- * [311ad86f](https://github.com/argoproj/argo-workflows/commit/311ad86f101c58a1de1cef313a1516b4c79e643f) Fix missing docker binary in argoexec image. Improve reuse of image layers
- * [831e2198](https://github.com/argoproj/argo-workflows/commit/831e2198e22503394acca1cce0dbcf8dcebb2931) Issue #988 - Submit should not print logs to stdout unless output is 'wide' (#1192)
- * [17250f3a](https://github.com/argoproj/argo-workflows/commit/17250f3a51d545c49114882d0da6ca29eda7c6f2) Add documentation how to use parameter-file's (#1191)
- * [01ce5c3b](https://github.com/argoproj/argo-workflows/commit/01ce5c3bcf0dde5536b596d48bd48a93b3f2eee0) Add Docker Hub build hooks
- * [93289b42](https://github.com/argoproj/argo-workflows/commit/93289b42f96cd49cdc048d84626cb28ef6932940) Refactor Makefile/Dockerfile to remove volume binding in favor of build stages (#1189)
- * [8eb4c666](https://github.com/argoproj/argo-workflows/commit/8eb4c66639c5fd1a607c73a4d765468a99c43da1) Issue #1123 - Fix 'kubectl get' failure if resource namespace is different from workflow namespace (#1171)
- * [eaaad7d4](https://github.com/argoproj/argo-workflows/commit/eaaad7d47257302f203bab24bce1b7d479453351) Increased S3 artifact retry time and added log (#1138)
- * [f07b5afe](https://github.com/argoproj/argo-workflows/commit/f07b5afeaf950f49f87cdffb5116e82c8b0d43a1) Issue #1113 - Wait for daemon pods completion to handle annotations (#1177)
- * [2b2651b0](https://github.com/argoproj/argo-workflows/commit/2b2651b0a7f5d6873c8470fad137d42f9b7d7240) Do not mount unnecessary docker socket (#1178)
- * [1fc03144](https://github.com/argoproj/argo-workflows/commit/1fc03144c55f987993c7777b190b1848fc3833cd) Argo users: Equinor (#1175)
- * [e381653b](https://github.com/argoproj/argo-workflows/commit/e381653b6d6d6a6babba2e8f05f6f103e81a191d) Update README. (#1173) (#1176)
- * [5a917140](https://github.com/argoproj/argo-workflows/commit/5a917140cb56a27e7b6f3b1d5068f4838863c273) Update README and preview notice in CLA.
- * [521eb25a](https://github.com/argoproj/argo-workflows/commit/521eb25aeb2b8351d72bad4a3d3aa2d1fa55eb23) Validate ArchiveLocation artifacts (#1167)
- * [528e8f80](https://github.com/argoproj/argo-workflows/commit/528e8f803683ee462ccc05fc9b00dc57858c0e93) Add missing patch in namespace kustomization.yaml (#1170)
- * [0b41ca0a](https://github.com/argoproj/argo-workflows/commit/0b41ca0a2410b01205712a2186dd12851eecb707) Add Preferred Networks to users in README.md (#1172)
- * [649d64d1](https://github.com/argoproj/argo-workflows/commit/649d64d1bd375f779cd150446bddce94582067d2) Add GitHub to users in README.md (#1151)
- * [864c7090](https://github.com/argoproj/argo-workflows/commit/864c7090a0bfcaa12237ff6e894a9d26ab463a7a) Update codegen for network config (#1168)
- * [c3cc51be](https://github.com/argoproj/argo-workflows/commit/c3cc51be2e14e931d6e212aa30842a2c514082d1) Support HDFS Artifact (#1159)
- * [8db00066](https://github.com/argoproj/argo-workflows/commit/8db0006667dec74c58cbab744b014c67fda55c65) add support for hostNetwork & dnsPolicy config (#1161)
- * [149d176f](https://github.com/argoproj/argo-workflows/commit/149d176fdf3560d74afa91fe91a0ee38bf7ec3bd) Replace exponential retry with poll (#1166)
- * [31e5f63c](https://github.com/argoproj/argo-workflows/commit/31e5f63cba89b06abc2cdce0d778c6b8d937a23e) Fix tests compilation error (#1157)
- * [6726d9a9](https://github.com/argoproj/argo-workflows/commit/6726d9a961a2c3ed5467430d3631a36cfbf361de) Fix failing TestAddGlobalArtifactToScope unit test
- * [4fd758c3](https://github.com/argoproj/argo-workflows/commit/4fd758c38fc232bf26bb5e1d4e7e23321ba91416) Add slack badge to README (#1164)
- * [3561bff7](https://github.com/argoproj/argo-workflows/commit/3561bff70ad6bfeca8967be6aa4ac24fbbc8ac27) Issue #1136 - Fix metadata for DAG with loops (#1149)
- * [c7fec9d4](https://github.com/argoproj/argo-workflows/commit/c7fec9d41c0e2d3369e111f8b1d0f1d0ca77edae) Reflect minio chart changes in documentation (#1147)
- * [f6ce7833](https://github.com/argoproj/argo-workflows/commit/f6ce78334762cbc3c6de1604c11ea4f5f618c275) add support for other archs (#1137)
- * [cb538489](https://github.com/argoproj/argo-workflows/commit/cb538489a187134577e2146afcf9367f45088ff7) Fix issue where steps with exhausted retires would not complete (#1148)
- * [e400b65c](https://github.com/argoproj/argo-workflows/commit/e400b65c5eca2de2aa891f8489dcd835ef0e161c) Fix global artifact overwriting in nested workflow (#1086)
- * [174eb20a](https://github.com/argoproj/argo-workflows/commit/174eb20a6a110c9bf647b040460df83b6ab031c4) Issue #1040 - Kill daemoned step if workflow consist of single daemoned step (#1144)
- * [e078032e](https://github.com/argoproj/argo-workflows/commit/e078032e469effdfc492c8eea97eb2701ceda0c2) Issue #1132 - Fix panic in ttl controller (#1143)
- * [e09d9ade](https://github.com/argoproj/argo-workflows/commit/e09d9ade25535ae7e78ca23636e4d158a98bba84) Issue #1104 - Remove container wait timeout from 'argo logs --follow' (#1142)
- * [0f84e514](https://github.com/argoproj/argo-workflows/commit/0f84e5148dd34c225a35eab7a1f5953afb45e724) Allow owner reference to be set in submit util (#1120)
- * [3484099c](https://github.com/argoproj/argo-workflows/commit/3484099c856716f6da5e02ad75a48b568f547695) Update generated swagger to fix verify-codegen (#1131)
- * [587ab1a0](https://github.com/argoproj/argo-workflows/commit/587ab1a02772cd9b7ae7cd94f91b815ac4774297) Fix output artifact and parameter conflict (#1125)
- * [6bb3adbc](https://github.com/argoproj/argo-workflows/commit/6bb3adbc596349100c4f19155cfe976f4ea0e6fb) Adding Quantibio in Who uses Argo (#1111)
- * [1ae3696c](https://github.com/argoproj/argo-workflows/commit/1ae3696c27f343c947d9225c5cc2294c8b7c45e5) Install mime-support in argoexec to set proper mime types for S3 artifacts (resolves #1119)
- * [515a9005](https://github.com/argoproj/argo-workflows/commit/515a9005057dfd260a8b60c4ba1ab8c3aa614f48) add support for ppc64le and s390x (#1102)
- * [78142837](https://github.com/argoproj/argo-workflows/commit/78142837836cb100f6858d246d84100b74794cc6) Remove docker_lib mount volume which is not needed anymore (#1115)
- * [e59398ad](https://github.com/argoproj/argo-workflows/commit/e59398adf39b8ef1d0ce273263e80d49e370c510) Fix examples docs of parameters. (#1110)
- * [ec20d94b](https://github.com/argoproj/argo-workflows/commit/ec20d94b6f1d0d88d579c8a27b964f6e9915ff55) Issue #1114 - Set FORCE_NAMESPACE_ISOLATION env variable in namespace install manifests (#1116)
- * [49c1fa4f](https://github.com/argoproj/argo-workflows/commit/49c1fa4f42e1c19ce3b8f4ac2c339894e1ed90d7) Update docs with examples using the K8s REST API
- * [bb8a6a58](https://github.com/argoproj/argo-workflows/commit/bb8a6a58fee8170d6db65c73a50c5fe640f3cb7d) Update ROADMAP.md
- * [46855dcd](https://github.com/argoproj/argo-workflows/commit/46855dcde1d9ba904a1c94a97e602d0510f5e0d4) adding logo to be used by the OS Site (#1099)
- * [438330c3](https://github.com/argoproj/argo-workflows/commit/438330c38da69a68d6b0b0b24f6aae0053fc35ee) #1081 added retry logic to s3 load and save function (#1082)
- * [cb8b036b](https://github.com/argoproj/argo-workflows/commit/cb8b036b8db3ebeb6ef73d9f2070a1ddaf0d2150) Initialize child node before marking phase. Fixes panic on invalid `When` (#1075)
- * [60b508dd](https://github.com/argoproj/argo-workflows/commit/60b508dd9ec36ef45013d72ec6166dd9a30d77fe) Drop reference to removed `argo install` command. (#1074)
- * [62b24368](https://github.com/argoproj/argo-workflows/commit/62b24368a93d57eb505bf226e042a8eb0bf72da4) Fix typo in demo.md (#1089)
- * [b5dfa021](https://github.com/argoproj/argo-workflows/commit/b5dfa0217470c97d8e83716a22cf3bd274c4a2d5) Use relative links on README file (#1087)
- * [95b72f38](https://github.com/argoproj/argo-workflows/commit/95b72f38c94d12735e79bb8bec1a46b10514603c) Update docs to outline bare minimum set of privileges for a workflow
- * [d4ef6e94](https://github.com/argoproj/argo-workflows/commit/d4ef6e944c302b5d2b75d4c49e1833c3a28c1f9a) Add new article and minor edits. (#1083)
- * [afdac9bb](https://github.com/argoproj/argo-workflows/commit/afdac9bb34fe8a01ad511323a00ccf6c07e41137) Issue #740 - System level workflow parallelism limits & priorities (#1065)
- * [a53a76e9](https://github.com/argoproj/argo-workflows/commit/a53a76e9401fab701eaa150307b21a28825c97ce) fix #1078 Azure AKS authentication issues (#1079)
- * [79b3e307](https://github.com/argoproj/argo-workflows/commit/79b3e30746f779e3cec3a28beaecb9c0df7024e1) Fix string format arguments in workflow utilities. (#1070)
- * [76b14f54](https://github.com/argoproj/argo-workflows/commit/76b14f54520a92b81ced78d4cae2632655f396fc) Auto-complete workflow names (#1061)
- * [f2914d63](https://github.com/argoproj/argo-workflows/commit/f2914d63e9c8b41a13b5932f7962f208b7e5a0da) Support nested steps workflow parallelism (#1046)
- * [eb48c23a](https://github.com/argoproj/argo-workflows/commit/eb48c23a2525a62bbc1b8b4c94e3d50fd91014bd) Raise not implemented error when artifact saving is unsupported (#1062)
- * [036969c0](https://github.com/argoproj/argo-workflows/commit/036969c0f4f6ce6a3c948b5d161c0367cf07176b) Add Cratejoy to list of users (#1063)
- * [a07bbe43](https://github.com/argoproj/argo-workflows/commit/a07bbe431cecbb1d50356f94111d3bd2dbc48bb6) Adding SAP Hybris in Who uses Argo (#1064)
- * [7ef1cea6](https://github.com/argoproj/argo-workflows/commit/7ef1cea68c94f7f0e1e2f8bd75bedc5a7df8af90) Update dependencies to K8s v1.12 and client-go 9.0
- * [23d733ba](https://github.com/argoproj/argo-workflows/commit/23d733bae386db44ec80639daf91b29dbf86b335) Add namespace explicitly to pod metadata (#1059)
- * [79ed7665](https://github.com/argoproj/argo-workflows/commit/79ed7665d7419e7fbfe8b120c4cbcd486bebee57) Parameter and Argument names should support snake case (#1048)
- * [6e6c59f1](https://github.com/argoproj/argo-workflows/commit/6e6c59f13ff84fd6b4f1e7f836c783941c434ce7) Submodules are dirty after checkout -- need to update (#1052)
- * [f18716b7](https://github.com/argoproj/argo-workflows/commit/f18716b74c6f52d0c8bf4d64c05eae9db75bfb1f) Support for K8s API based Executor (#1010)
- * [e297d195](https://github.com/argoproj/argo-workflows/commit/e297d19501a8116b5a18c925a3c72d7c7e106ea0) Updated examples/README.md (#1051)
- * [19d6cee8](https://github.com/argoproj/argo-workflows/commit/19d6cee8149917c994b737510d9c8dbfc6dbdd27) Updated ARTIFACT_REPO.md (#1049)
- * [0a928e93](https://github.com/argoproj/argo-workflows/commit/0a928e93dac6d8522682931a0a68c52add310cdb) Update installation manifests to use v2.2.1
- * [3b52b261](https://github.com/argoproj/argo-workflows/commit/3b52b26190163d1f72f3aef1a39f9f291378dafb) Fix linter warnings and update swagger
- * [7d0e77ba](https://github.com/argoproj/argo-workflows/commit/7d0e77ba74587d913b1f4aceb1443228a04d35de) Update changelog and bump version to 2.2.1
- * [b402e12f](https://github.com/argoproj/argo-workflows/commit/b402e12feefe5cd1380e9479b2cc9bae838357bf) Issue #1033 - Workflow executor panic: workflows.argoproj.io/template workflows.argoproj.io/template not found in annotation file (#1034)
- * [3f2e986e](https://github.com/argoproj/argo-workflows/commit/3f2e986e130ca136514767fb1593d745ca418236) fix typo in examples/README.md (#1025)
- * [9c5e056a](https://github.com/argoproj/argo-workflows/commit/9c5e056a858a9b510cdacdbc5deb5857a97662f8) Replace tabs with spaces (#1027)
- * [091f1407](https://github.com/argoproj/argo-workflows/commit/091f1407180990c745e981b24169c3bb4868dbe3) Update README.md (#1030)
- * [159fe09c](https://github.com/argoproj/argo-workflows/commit/159fe09c99c16738c0897f9d74087ec1b264954d) Fix format issues to resolve build errors (#1023)
- * [363bd97b](https://github.com/argoproj/argo-workflows/commit/363bd97b72ae5cb7fc52a560b6f7939248cdb72d) Fix error in env syntax (#1014)
- * [ae7bf0a5](https://github.com/argoproj/argo-workflows/commit/ae7bf0a5f7ddb1e5211e724bef15951198610942) Issue #1018 - Workflow controller should save information about archived logs in step outputs (#1019)
- * [15d006c5](https://github.com/argoproj/argo-workflows/commit/15d006c54ee7149b0d86e6d60453ecc8c071c953) Add example of workflow using imagePullSecrets (resolves #1013)
- * [2388294f](https://github.com/argoproj/argo-workflows/commit/2388294fa412e153d8366910e4d47ba564f29856) Fix RBAC roles to include workflow delete for GC to work properly (resolves #1004)
- * [6f611cb9](https://github.com/argoproj/argo-workflows/commit/6f611cb9383610471f941b5cab4227ce8bfea7c5) Fix issue where resubmission of a terminated workflow creates a terminated workflow (issue #1011)
- * [4a7748f4](https://github.com/argoproj/argo-workflows/commit/4a7748f433f888fdc50b592db1002244ea466bdb) Disable Persistence in the demo example (#997)
- * [55ae0cb2](https://github.com/argoproj/argo-workflows/commit/55ae0cb242a9cf6b390822ca6c0aa0868f5b06e3) Fix example pod name (#1002)
- * [c275e7ac](https://github.com/argoproj/argo-workflows/commit/c275e7acb7b5e8f9820a09d8b0cb635f710b8674) Add imagePullPolicy config for executors (#995)
- * [b1eed124](https://github.com/argoproj/argo-workflows/commit/b1eed124e6d943c453d87a9b4291ba10198d0bc6) `tar -tf` will detect compressed tars correctly. (#998)
- * [03a7137c](https://github.com/argoproj/argo-workflows/commit/03a7137c9ca9459727b57fb0a0e95584c5305844) Add new organization using argo (#994)
- * [83884528](https://github.com/argoproj/argo-workflows/commit/8388452870ed9a2d2e348a2844d3d7d1c4d61b05) Update argoproj/pkg to trim leading/trailing whitespace in S3 credentials (resolves #981)
- * [978b4938](https://github.com/argoproj/argo-workflows/commit/978b49383d30cdbc7c9708eb281b7800ee5412df) Add syntax highlighting for all YAML snippets and most shell snippets (#980)
- * [60d5dc11](https://github.com/argoproj/argo-workflows/commit/60d5dc11c73e888898160b4cc329e87747cee4d2) Give control to decide whether or not to archive logs at a template level
- * [8fab73b1](https://github.com/argoproj/argo-workflows/commit/8fab73b142b96f943592c66932ae0c5183e8c3db) Detect and indicate when container was OOMKilled
- * [47a9e556](https://github.com/argoproj/argo-workflows/commit/47a9e5560229c789b70a6624f23fb4433412fbc4) Update config map doc with instructions to enable log archiving
- * [79dbbaa1](https://github.com/argoproj/argo-workflows/commit/79dbbaa1ed30cae6279eabd9a84650107f4387b3) Add instructions to match git URL format to auth type in git example (issue #979)
- * [429f03f5](https://github.com/argoproj/argo-workflows/commit/429f03f5b26db42f1857a93b7599b545642c2f0a) Add feature list to README.md. Tweaks to getting started.
- * [36fd1948](https://github.com/argoproj/argo-workflows/commit/36fd19482c6bebfb21076cba81b924deaff14f52) Update getting started guide with v2.2.0 instructions
  * [af636ddd](https://github.com/argoproj/argo-workflows/commit/af636ddd8455660f307d835814d3112b90815dfd) Update installation manifests to use v2.2.0
  * [7864ad36](https://github.com/argoproj/argo-workflows/commit/7864ad36788dc78d035d59ddb27ecd979f7216f4) Introduce `withSequence` to iterate a range of numbers in a loop (resolves #527)
  * [99e9977e](https://github.com/argoproj/argo-workflows/commit/99e9977e4ccf61171ca1e347f6a182ba1d8dba83) Introduce `argo terminate` to terminate a workflow without deleting it (resolves #527)
@@ -6392,305 +5384,19 @@
 
 ### Contributors
 
- * 0x1D-1983
- * Aaron Curtis
- * Aayush Rangwala
- * Adam Gilat
- * Adam Thornton
- * Aditya Sundaramurthy
- * Adrien Trouillaud
- * Aisuko
- * Akshay Chitneni
- * Alessandro Marrella
- * Alex Capras
- * Alex Collins
- * Alex Stein
- * Alexander Matyushentsev
- * Alexander Mikhailian
- * Alexander Zigelski
- * Alexey Volkov
- * Amim Knabben
- * Anastasia Satonina
  * Andrei Miulescu
- * Andrew Suderman
- * Anes Benmerzoug
- * Ang Gao
- * Anna Winkler
- * Antoine Dao
- * Antonio Macías Ojeda
- * Appréderisse Benjamin
- * Arghya Sadhu
- * Avi Weit
- * Bailey Hayes
- * Basanth Jenu H B
- * Bastian Echterhölter
- * Ben Wells
- * Ben Ye
- * Bikramdeep Singh
- * Boolman
- * Brandon Steinman
- * Brian Mericle
- * Byungjin Park (BJ)
- * CWen
- * Caden
- * Caglar Gulseni
- * Carlos Montemuino
- * Chen Zhiwei
- * Chris Chambers
- * Chris Hepner
- * Christian Muehlhaeuser
- * Clemens Lange
- * Cristian Pop
- * Daisuke Taniwaki
- * Dan Norris
- * Daniel Duvall
- * Daniel Moran
- * Daniel Sutton
- * David Bernard
- * David Gibbons
- * David Seapy
  * David Van Loon
- * Deepen Mehta
- * Derek Wang
- * Dineshmohan Rajaveeran
- * Divya Vavili
- * Douglas Lehr
  * Drew Dara-Abrams
- * Dustin Specker
- * EDGsheryl
  * Ed Lee
  * Edward Lee
- * Edwin Jacques
- * Ejiah
- * Elli Ludwigson
- * Elton
- * Elvis Jakupovic
- * Erik Parmann
- * Espen Finnesand
- * Fabio Rigato
- * Feynman Liang
- * Fischer Jemison
- * Florent Clairambault
- * Florian
- * Floris Van den Abeele
- * Francesco Murdaca
- * Fred Dubois
- * Gabriele Santomaggio
- * Galen Han
- * Grant Stephens
- * Greg Roodt
- * Guillaume Hormiere
- * Hamel Husain
- * Heikki Kesa
- * Hideto Inamura
- * Howie Benefiel
- * Huan-Cheng Chang
- * Hussein Awala
- * Ian Howell
- * Ids van der Molen
- * Igor Stepura
- * Ilias K
- * Ilias Katsakioris
- * Ilya Sotkov
- * InvictusMB
- * Ismail Alidzhikov
- * Jacob O'Farrell
- * Jaime
- * James Laverack
- * Jared Welch
- * Jean-Louis Queguiner
- * Jeff Uren
  * Jesse Suen
- * Jialu Zhu
- * Jie Zhang
- * Johannes 'fish' Ziemke
- * John Wass
- * Jonathan Steele
- * Jonathon Belotti
- * Jonny
- * Joshua Carp
- * Juan C. Muller
- * Juan C. Müller
- * Julian Fahrer
- * Julian Fischer
- * Julian Mazzitelli
  * Julien Balestra
- * Justen Walker
- * Kannappan Sirchabesan
- * Kaushik B
  * Konstantin Zadorozhny
- * Lennart Kindermann
- * Leonardo Luz
- * Lucas Theisen
- * Ludovic Cléroux
- * Lénaïc Huard
- * Marcin Karkocha
- * Marco Sanvido
- * Marek Čermák
- * Markus Lippert
- * Martin Suchanek
- * Matt Brant
- * Matt Campbell
- * Matt Hillsdon
- * Matthew Coleman
  * Matthew Magaldi
- * MengZeLee
- * Michael Crenshaw
- * Michael Ruoss
- * Michael Weibel
- * Michal Cwienczek
- * Mike Chau
- * Mike Seddon
- * Mingjie Tang
- * Miyamae Yuuya
- * Mostapha Sadeghipour Roudsari
- * Mukulikak
- * Naisisor
- * Naoto Migita
- * Naresh Kumar Amrutham
- * Nasrudin Bin Salim
- * Neutron Soutmun
- * Nick Groszewski
- * Nick Stott
- * Nicwalle
- * Niklas Hansson
- * Niklas Vest
- * Nirav Patel
- * Noah Hanjun Lee
- * Noj Vek
- * Noorain Panjwani
  * Nándor István Krácser
- * Oleg Borodai
- * Omer Kahani
- * Orion Delwaterman
- * Pablo Osinaga
- * Pascal VanDerSwalmen
- * Patryk Jeziorowski
- * Paul Brabban
- * Paul Brit
- * Pavel Kravchenko
- * Pavel Čižinský
- * Peng Li
- * Pengfei Zhao
- * Per Buer
- * Peter Salanki
- * Pierre Houssin
- * Pradip Caulagi
- * Pranaye Karnati
- * Praneet Chandra
- * Pratik Raj
- * Premkumar Masilamani
- * Rafael Rodrigues
- * Rafał Bigaj
- * Remington Breeze
- * Rick Avendaño
- * Rocio Montes
- * Romain Di Giorgio
- * Romain GUICHARD
- * Roman Galeev
- * Rush Tehrani
- * Saradhi Sreegiriraju
- * Saravanan Balasubramanian
- * Sascha Grunert
- * Sean Fern
- * Sebastian Ortan
- * Semjon Kopp
- * Shannon
- * Shubham Koli (FaultyCarry)
- * Simon Behar
- * Simon Frey
- * Snyk bot
- * Song Juchao
- * Stephen Steiner
- * StoneHuang
- * Takahiro Tsuruda
- * Takashi Abe
- * Takayuki Kasai
- * Tang Lee
- * Theodore Messinezis
- * Theodore Omtzigt
- * Tim Schrodi
- * Tobias Bradtke
- * Tom Wieczorek
- * Tomas Valasek
- * Tomáš Coufal
- * Trevor Foster
- * Tristan Colgate-McFarlane
  * Val Sichkovskyi
- * Vardan Manucharyan
- * Vincent Boulineau
  * Vincent Smith
- * Vlad Losev
- * Wei Yan
- * WeiYan
- * Weston Platter
- * William
- * William Reed
- * Wouter Remijn
- * Xianlu Bird
- * Xie.CS
- * Xin Wang
- * Youngjoon Lee
- * Yuan Tang
- * Yunhai Luo
- * Zach
- * Zach Aller
- * Zach Himsel
- * Zadjad Rezai
- * Zhipeng Wang
- * Ziyang Wang
- * aletepe
- * alex weidner
- * almariah
- * boundless-thread
- * candonov
- * commodus-sebastien
- * conanoc
- * descrepes
- * dgiebert
- * dherman
- * dmayle
  * dthomson25
- * duluong
- * fsiegmund
- * gerardaus
- * gerdos82
- * haibingzhao
- * hermanhobnob
- * hidekuro
- * houz
- * ianCambrio
- * ivancili
- * jacky
- * jdfalko
- * joe
- * juliusvonkohout
- * kshamajain99
- * lueenavarro
- * maguowei
- * mark9white
- * maryoush
- * mdvorakramboll
- * nglinh
- * omerfsen
- * sang
- * saranyaeu2987
- * sh-tatsuno
- * shahin
- * shibataka000
- * tczhao
- * tianfeiyu
- * tkilpela
- * tomgoren
- * tralexa
- * tunoat
- * vatine
- * vdinesh2461990
- * xubofei1983
- * yonirab
- * zhengchenyu
- * zhujl1991
- * モハメド
 
 ## v2.1.2 (2018-10-11)
 
@@ -6700,1742 +5406,6 @@
 ### Contributors
 
  * Alexander Matyushentsev
-
-## v2.11.8 (2020-11-20)
-
- * [310e099f](https://github.com/argoproj/argo-workflows/commit/310e099f82520030246a7c9d66f3efaadac9ade2) Update manifests to v2.11.8
- * [0f82b7f6](https://github.com/argoproj/argo-workflows/commit/0f82b7f69b577603de5b43755c1ed7fb311f44b4) ci: Picked :add-env lines from master
- * [0a9e69b0](https://github.com/argoproj/argo-workflows/commit/0a9e69b089c4e4fceb6e75469c21c858d43805d9) chore: Removed unused parameter
- * [e8ba1ed8](https://github.com/argoproj/argo-workflows/commit/e8ba1ed8303f1e816628e0b3aa5c96710e046629) feat(controller): Make MAX_OPERATION_TIME configurable. Close #4239 (#4562)
- * [66f2306b](https://github.com/argoproj/argo-workflows/commit/66f2306bb4ddf0794f92360c35783c1941df30c8) feat(controller): Allow whitespace in variable substitution. Fixes #4286 (#4310)
-
-### Contributors
-
- * Alex Collins
- * Ids van der Molen
-
-## v2.11.7 (2020-11-02)
-
- * [bf3fec17](https://github.com/argoproj/argo-workflows/commit/bf3fec176cf6bdf3e23b2cb73ec7d4e3d051ca40) Update manifests to v2.11.7
- * [0f18ab1f](https://github.com/argoproj/argo-workflows/commit/0f18ab1f149a02f01e7f031da2b0770b569974ec) fix: Assume controller is in UTC when calculating NextScheduledRuntime (#4417)
- * [6026ba5f](https://github.com/argoproj/argo-workflows/commit/6026ba5fd1762d8e006d779d5907f10fd6c2463d) fix: Ensure resourceDuration variables in metrics are always in seconds (#4411)
- * [ca5adbc0](https://github.com/argoproj/argo-workflows/commit/ca5adbc05ceb518b634dfdb7857786b247b8d39f) fix: Use correct template when processing metrics (#4399)
- * [0a0255a7](https://github.com/argoproj/argo-workflows/commit/0a0255a7e594f6ae9c80f35e05bcd2804d129428) fix(ui): Reconnect to DAG. Fixes #4301 (#4378)
- * [8dd7d3ba](https://github.com/argoproj/argo-workflows/commit/8dd7d3ba820af499d1d3cf0eb82417d5c4b0b48b) fix: Use DeletionHandlingMetaNamespaceKeyFunc in cron controller (#4379)
- * [47f58008](https://github.com/argoproj/argo-workflows/commit/47f5800894767b947628cc5a8a64d3089ce9a2cb) fix(server): Download artifacts from UI. Fixes #4338 (#4350)
- * [0416aba5](https://github.com/argoproj/argo-workflows/commit/0416aba50d13baabfa0f677b744a9c47ff8d8426) fix(controller): Enqueue the front workflow if semaphore lock is available (#4380)
- * [a2073d58](https://github.com/argoproj/argo-workflows/commit/a2073d58e68cf15c75b7997afb49845db6a1423f) fix: Fix intstr nil dereference (#4376)
- * [89080cf8](https://github.com/argoproj/argo-workflows/commit/89080cf8f6f904a162100d279993f4d835a27ba2) fix(controller): Only warn if cron job missing. Fixes #4351 (#4352)
- * [a4186dfd](https://github.com/argoproj/argo-workflows/commit/a4186dfd71325ec8b0f1882e17d0d4ef7f5b0f56) fix(executor): Increase pod patch backoff. Fixes #4339 (#4340)
-
-### Contributors
-
- * Alex Collins
- * Saravanan Balasubramanian
- * Simon Behar
-
-## v2.11.6 (2020-10-19)
-
- * [5eebce9a](https://github.com/argoproj/argo-workflows/commit/5eebce9af4409da9de536f189877542dd88692e0) Update manifests to v2.11.6
- * [38a4a2e3](https://github.com/argoproj/argo-workflows/commit/38a4a2e351771e7960b347c266b7d6592efe90a2) chore(controller): Refactor the CronWorkflow schedule logic with sync.Map (#4320)
- * [79e7a12a](https://github.com/argoproj/argo-workflows/commit/79e7a12a08070235fbf944d68e694d343498a49c) fix(executor): Remove IsTransientErr check for ExponentialBackoff. Fixes #4144 (#4149)
-
-### Contributors
-
- * Alex Collins
- * Ang Gao
- * Saravanan Balasubramanian
-
-## v2.11.5 (2020-10-15)
-
- * [076bf89c](https://github.com/argoproj/argo-workflows/commit/076bf89c4658adbd3b96050599f81424d1b08d6e) Update manifests to v2.11.5
- * [7919768d](https://github.com/argoproj/argo-workflows/commit/7919768d60bfdc2fbd1bf41033830bfac431a2a7) test: Fix test
- * [b9d8c96b](https://github.com/argoproj/argo-workflows/commit/b9d8c96b7d023a1d260472883f44daf57bfa41ad) fix(controller): Patch rather than update cron workflows. (#4294)
- * [3d122426](https://github.com/argoproj/argo-workflows/commit/3d1224264f6b61d62dfd598826647689391aa804) fix: TestMutexInDAG failure in master (#4283)
- * [05519427](https://github.com/argoproj/argo-workflows/commit/05519427db492bfb092c44c562c4ac7d3324989a) fix(controller): Synchronization lock didn't release on DAG call flow Fixes #4046 (#4263)
- * [74b905f6](https://github.com/argoproj/argo-workflows/commit/74b905f69946ae0efe46a28dd9e24ab23c3e9c33) Merge branch 'release-2.11' of https://github.com/argoproj/argo into release-2.11
- * [ff2abd63](https://github.com/argoproj/argo-workflows/commit/ff2abd63207f2aa949d31f09139650240f751c6b) fix: Increase deafult number of CronWorkflow workers (#4215)
-
-### Contributors
-
- * Alex Collins
- * Saravanan Balasubramanian
- * Simon Behar
-
-## v2.11.4 (2020-10-14)
-
- * [571bff1f](https://github.com/argoproj/argo-workflows/commit/571bff1fe4ad7e6610ad04d9a048091b1e453c5a) Update manifests to v2.11.4
- * [05a6078d](https://github.com/argoproj/argo-workflows/commit/05a6078d8de135525c0094a02a72b8dc0f0faa5c) fix(controller): Fix argo retry with PVCs. Fixes #4275 (#4277)
- * [08216ec7](https://github.com/argoproj/argo-workflows/commit/08216ec7557b2e2b2d1cb160e74ff2623661214a) fix(ui): Ignore missing nodes in DAG. Fixes #4232 (#4280)
- * [476ea70f](https://github.com/argoproj/argo-workflows/commit/476ea70fea0a981a736ccd2f070a7f9de8bb9d13) fix(controller): Fix cron-workflow re-apply error. (#4278)
- * [448ae113](https://github.com/argoproj/argo-workflows/commit/448ae1137b3e9d34fb0b44cd8f6e7bdfa31f702f) fix(controller): Check the correct object for Cronworkflow reapply error log (#4243)
- * [e3dfd788](https://github.com/argoproj/argo-workflows/commit/e3dfd7884863a9368776dd51517553069ec0ab21) fix(ui): Revert bad part of commit (#4248)
- * [249e8329](https://github.com/argoproj/argo-workflows/commit/249e8329c64754cda691110a39d4c7c43a075413) fix(ui): Fix bugs with DAG view. Fixes #4232 & #4236 (#4241)
-
-### Contributors
-
- * Alex Collins
- * Juan C. Müller
- * Saravanan Balasubramanian
-
-## v2.11.3 (2020-10-07)
-
- * [a00a8f14](https://github.com/argoproj/argo-workflows/commit/a00a8f141c221f50e397aea8f86a54171441e395) Update manifests to v2.11.3
- * [e48fe222](https://github.com/argoproj/argo-workflows/commit/e48fe222d405efc84331e8f3d9dadd8072d18325) fixed merge conflict
- * [3f8ebfdd](https://github.com/argoproj/argo-workflows/commit/3f8ebfdda02c4b9186595d556d7daa9bc7a7a670) chore: Fix merge issues
- * [51068f72](https://github.com/argoproj/argo-workflows/commit/51068f72d5cc014576b4977b1a651c0d5b89f925) fix(controller): Support int64 for param value. Fixes #4169 (#4202)
-
-### Contributors
-
- * Alex Collins
- * Saravanan Balasubramanian
-
-## v2.11.2 (2020-10-05)
-
- * [0dfeb8e5](https://github.com/argoproj/argo-workflows/commit/0dfeb8e56071e7a1332370732949bc2e15073005) Update manifests to v2.11.2
- * [5b69ab42](https://github.com/argoproj/argo-workflows/commit/5b69ab429c0da3d1cf63f209c2d4f61a3ea05d16) chore: Enahnce logging around pod failures (#4220)
- * [461a36a1](https://github.com/argoproj/argo-workflows/commit/461a36a15ecb8c11dcb62694c0c5bd624b835bd4) fix(controller): Apply Workflow default on normal workflow scenario Fixes #4208 (#4213)
- * [4b9cf5d2](https://github.com/argoproj/argo-workflows/commit/4b9cf5d28ae661873847238203b0098a2722a97a) fix(controller): reduce withItem/withParams memory usage. Fixes #3907 (#4207)
- * [8fea7bf6](https://github.com/argoproj/argo-workflows/commit/8fea7bf6b5cf0c89cf9c3bb0c3f57c1397236f5e) Revert "Revert "chore: use build matrix and cache (#4111)""
- * [efb20eea](https://github.com/argoproj/argo-workflows/commit/efb20eea05afc919652ebf17c6456791a283d4d2) Revert "chore: use build matrix and cache (#4111)"
- * [de1c9e52](https://github.com/argoproj/argo-workflows/commit/de1c9e52d48d8f91545dcfd32f426c235d001469) refactor: Refactor Synchronization code (#4114)
- * [605d0895](https://github.com/argoproj/argo-workflows/commit/605d0895aa436d8543ad43eee179cc169b792863) fix: Ensure CronWorkflows are persisted once per operation (#4172)
- * [6f738db0](https://github.com/argoproj/argo-workflows/commit/6f738db0733da6aa16f851d1dbefa235e987bcf8) Revert "chore: Update Go module to argo/v2"
- * [bcebdf00](https://github.com/argoproj/argo-workflows/commit/bcebdf0043028613f8849e84520e2ea9fb92d52a) chore: Update Go module to argo/v2
-
-### Contributors
-
- * Alex Collins
- * Saravanan Balasubramanian
- * Simon Behar
-
-## v2.11.1 (2020-09-29)
-
- * [13b51d56](https://github.com/argoproj/argo-workflows/commit/13b51d569d580ab9493e977fe2944889784d2a0a) Update manifests to v2.11.1
- * [3f88216e](https://github.com/argoproj/argo-workflows/commit/3f88216e61e3b408083956ad848c1603145c8507) fix: Render full tree of onExit nodes in UI (#4109)
- * [d6c2a57b](https://github.com/argoproj/argo-workflows/commit/d6c2a57be0b0c3cc4d46bff36cdf3e426f760b82) fix: Fix unintended inf recursion (#4067)
- * [4fda60f4](https://github.com/argoproj/argo-workflows/commit/4fda60f402bbbd5d3c0cadbd886feb065f255e19) fix: Tolerate malformed workflows when retrying (#4028)
- * [995d59cc](https://github.com/argoproj/argo-workflows/commit/995d59cc52d054f92c8ac54959e8115d4117dbf2) fix: Changing DeletePropagation to background in TTL Controller and Argo CLI (#4133)
- * [aaef0a28](https://github.com/argoproj/argo-workflows/commit/aaef0a2846afc0943f9bb7688d2fba6e11b49f62) fix(ui): Ignore referenced nodes that don't exist in UI. Fixes #4079 (#4099)
- * [fedae45a](https://github.com/argoproj/argo-workflows/commit/fedae45ad6e4bfe297d1078928a6deb4269ebac0) fix(controller): Process workflows at least once every 20m (#4103)
- * [6de464e8](https://github.com/argoproj/argo-workflows/commit/6de464e809ecf39bfe9b12eaf28fb8e7b20a27a9) fix(server): argo-server-role to allow submitting cronworkflows from UI (#4112)
- * [ce3b90e2](https://github.com/argoproj/argo-workflows/commit/ce3b90e2553d4646f8f5bc95a88e48765ad1de19) fix(controller): Treat annotation and conditions changes as significant (#4104)
- * [bf98b977](https://github.com/argoproj/argo-workflows/commit/bf98b9778b556e68ef39a4290e489819d3142d6f) fix(ui): No longer redirect to `undefined` namespace. See #4084 (#4115)
- * [af60b37d](https://github.com/argoproj/argo-workflows/commit/af60b37dc5909c70730da01e9322605ad2852283) fix(cli): Reinstate --gloglevel flag. Fixes #4093 (#4100)
- * [38b63008](https://github.com/argoproj/argo-workflows/commit/38b63008abac9450b3677bbb620193efcc8d55b2) chore: use build matrix and cache (#4111)
- * [2cd6a967](https://github.com/argoproj/argo-workflows/commit/2cd6a9677f0665931230fbdb6c8203381d9c9b77) fix(server): Optional timestamp inclusion when retrieving workflow logs. Closes #4033 (#4075)
- * [2f7c4035](https://github.com/argoproj/argo-workflows/commit/2f7c4035fe7f16b75bf418a67778db97c836ecf0) fix(controller): Correct the order merging the fields in WorkflowTemplateRef scenario. Fixes #4044 (#4063)
- * [f8e750de](https://github.com/argoproj/argo-workflows/commit/f8e750de5ebab6f3c494c972889b31ef24c73c9b) Update manifests to v2.11.0
- * [c06db575](https://github.com/argoproj/argo-workflows/commit/c06db57572843b38322b301aba783685c774045b) fix(ui): Tiny modal DAG tweaks. Fixes #4039 (#4043)
-
-### Contributors
-
- * Alex Collins
- * Markus Lippert
- * Saravanan Balasubramanian
- * Simon Behar
- * Tomáš Coufal
- * ivancili
-
-## v2.11.0-rc3 (2020-09-14)
-
- * [1b4cf3f1](https://github.com/argoproj/argo-workflows/commit/1b4cf3f1f26f6abf93355a0108f5048be9677978) Update manifests to v2.11.0-rc3
- * [e2594eca](https://github.com/argoproj/argo-workflows/commit/e2594eca965ec2ea14b07f3c1acee4b288b02789) fix: Fix children is not defined error (#3950)
- * [2ed8025e](https://github.com/argoproj/argo-workflows/commit/2ed8025eb0fbf0599c20efc1bccfedfe51c88215) fix: Fix UI selection issues (#3928)
- * [8dc0e94e](https://github.com/argoproj/argo-workflows/commit/8dc0e94e68881693b504f6f2777f937e6f3c3e42) fix: Create global scope before workflow-level realtime metrics (#3979)
- * [cdeabab7](https://github.com/argoproj/argo-workflows/commit/cdeabab722fac97a326e70b956a92d4cb5d58f2c) fix(controller): Script Output didn't set if template has RetryStrategy (#4002)
- * [9c83fac8](https://github.com/argoproj/argo-workflows/commit/9c83fac80594fb0abef18b0de0ff563132ee84ae) fix(ui): Do not save undefined namespace. Fixes #4019 (#4021)
- * [7fd2ecb1](https://github.com/argoproj/argo-workflows/commit/7fd2ecb1d057cbf1e1b8139c30c20eccf86611ea) fix(ui): Correctly show pod events. Fixes #4016 (#4018)
- * [11242c8b](https://github.com/argoproj/argo-workflows/commit/11242c8be5c3bbaf2dbcff68198958504ea88e43) fix(ui): Allow you to view timeline tab. Fixes #4005 (#4006)
- * [3770f618](https://github.com/argoproj/argo-workflows/commit/3770f618ab073fbac6654c9edcc4b53a1e010fea) fix(ui): Report errors when uploading files. Fixes #3994 (#3995)
- * [0fed28ce](https://github.com/argoproj/argo-workflows/commit/0fed28ce26f12a42f3321afee9188e9f59acfea7) fix: Custom metrics are not recorded for DAG tasks Fixes #3872 (#3886)
- * [9146636e](https://github.com/argoproj/argo-workflows/commit/9146636e75e950149ce39df33e4fc6f7346c7282) feat(ui): Introduce modal DAG renderer. Fixes: #3595 (#3967)
- * [4b7a4694](https://github.com/argoproj/argo-workflows/commit/4b7a4694c436c724cb75e09564fcd8c87923d6d7) fix(controller): Revert `resubmitPendingPods` mistake. Fixes #4001 (#4004)
- * [49752fb5](https://github.com/argoproj/argo-workflows/commit/49752fb5f9aa6ab151f311bb62faa021b2ebffa5) fix(controller): Revert parameter value to `*string`. Fixes #3960 (#3963)
- * [ddf850b1](https://github.com/argoproj/argo-workflows/commit/ddf850b1bd99a8343b5e94e7d3634912031e8d44) fix: Consider WorkflowTemplate metadata during validation (#3988)
- * [a8ba447e](https://github.com/argoproj/argo-workflows/commit/a8ba447e3ed4fff3d90cd772fc551db8c225a1c0) fix(server): Remove XSS vulnerability. Fixes #3942 (#3975)
-
-### Contributors
-
- * Alex Collins
- * Saravanan Balasubramanian
- * Simon Behar
-
-## v2.11.0-rc2 (2020-09-09)
-
- * [f930c029](https://github.com/argoproj/argo-workflows/commit/f930c0296c41c8723a6f826260a098bb0647efce) Update manifests to v2.11.0-rc2
- * [21cceb0f](https://github.com/argoproj/argo-workflows/commit/21cceb0fd743777c696245ad988a78f03fd5dc08) build: Allow build with older `docker`. Fixes #3977
- * [b6890adb](https://github.com/argoproj/argo-workflows/commit/b6890adb1b5c40ddb4b1aa41c39c337f0f08df12) fix(cli): Allow `argo version` without KUBECONFIG. Fixes #3943 (#3945)
- * [354733e7](https://github.com/argoproj/argo-workflows/commit/354733e72f8b50645d4818236a5842c258d5627c) fix(swagger): Correct item type. Fixes #3926 (#3932)
- * [1e461766](https://github.com/argoproj/argo-workflows/commit/1e461766f2e7214c5723d15c724a77d14e908340) fix(server): Adds missing webhook permissions. Fixes #3927 (#3929)
- * [88486192](https://github.com/argoproj/argo-workflows/commit/8848619262850a9f1c44d08084300a445a0c0ffb) feat: Step and Task Level Global Timeout (#3686)
-
-### Contributors
-
- * Alex Collins
- * Saravanan Balasubramanian
-
-## v2.11.0-rc1 (2020-09-01)
-
-
-### Contributors
-
-
-## v2.11.0 (2020-09-17)
-
- * [f8e750de](https://github.com/argoproj/argo-workflows/commit/f8e750de5ebab6f3c494c972889b31ef24c73c9b) Update manifests to v2.11.0
- * [c06db575](https://github.com/argoproj/argo-workflows/commit/c06db57572843b38322b301aba783685c774045b) fix(ui): Tiny modal DAG tweaks. Fixes #4039 (#4043)
- * [1b4cf3f1](https://github.com/argoproj/argo-workflows/commit/1b4cf3f1f26f6abf93355a0108f5048be9677978) Update manifests to v2.11.0-rc3
- * [e2594eca](https://github.com/argoproj/argo-workflows/commit/e2594eca965ec2ea14b07f3c1acee4b288b02789) fix: Fix children is not defined error (#3950)
- * [2ed8025e](https://github.com/argoproj/argo-workflows/commit/2ed8025eb0fbf0599c20efc1bccfedfe51c88215) fix: Fix UI selection issues (#3928)
- * [8dc0e94e](https://github.com/argoproj/argo-workflows/commit/8dc0e94e68881693b504f6f2777f937e6f3c3e42) fix: Create global scope before workflow-level realtime metrics (#3979)
- * [cdeabab7](https://github.com/argoproj/argo-workflows/commit/cdeabab722fac97a326e70b956a92d4cb5d58f2c) fix(controller): Script Output didn't set if template has RetryStrategy (#4002)
- * [9c83fac8](https://github.com/argoproj/argo-workflows/commit/9c83fac80594fb0abef18b0de0ff563132ee84ae) fix(ui): Do not save undefined namespace. Fixes #4019 (#4021)
- * [7fd2ecb1](https://github.com/argoproj/argo-workflows/commit/7fd2ecb1d057cbf1e1b8139c30c20eccf86611ea) fix(ui): Correctly show pod events. Fixes #4016 (#4018)
- * [11242c8b](https://github.com/argoproj/argo-workflows/commit/11242c8be5c3bbaf2dbcff68198958504ea88e43) fix(ui): Allow you to view timeline tab. Fixes #4005 (#4006)
- * [3770f618](https://github.com/argoproj/argo-workflows/commit/3770f618ab073fbac6654c9edcc4b53a1e010fea) fix(ui): Report errors when uploading files. Fixes #3994 (#3995)
- * [0fed28ce](https://github.com/argoproj/argo-workflows/commit/0fed28ce26f12a42f3321afee9188e9f59acfea7) fix: Custom metrics are not recorded for DAG tasks Fixes #3872 (#3886)
- * [9146636e](https://github.com/argoproj/argo-workflows/commit/9146636e75e950149ce39df33e4fc6f7346c7282) feat(ui): Introduce modal DAG renderer. Fixes: #3595 (#3967)
- * [4b7a4694](https://github.com/argoproj/argo-workflows/commit/4b7a4694c436c724cb75e09564fcd8c87923d6d7) fix(controller): Revert `resubmitPendingPods` mistake. Fixes #4001 (#4004)
- * [49752fb5](https://github.com/argoproj/argo-workflows/commit/49752fb5f9aa6ab151f311bb62faa021b2ebffa5) fix(controller): Revert parameter value to `*string`. Fixes #3960 (#3963)
- * [ddf850b1](https://github.com/argoproj/argo-workflows/commit/ddf850b1bd99a8343b5e94e7d3634912031e8d44) fix: Consider WorkflowTemplate metadata during validation (#3988)
- * [a8ba447e](https://github.com/argoproj/argo-workflows/commit/a8ba447e3ed4fff3d90cd772fc551db8c225a1c0) fix(server): Remove XSS vulnerability. Fixes #3942 (#3975)
- * [f930c029](https://github.com/argoproj/argo-workflows/commit/f930c0296c41c8723a6f826260a098bb0647efce) Update manifests to v2.11.0-rc2
- * [21cceb0f](https://github.com/argoproj/argo-workflows/commit/21cceb0fd743777c696245ad988a78f03fd5dc08) build: Allow build with older `docker`. Fixes #3977
- * [b6890adb](https://github.com/argoproj/argo-workflows/commit/b6890adb1b5c40ddb4b1aa41c39c337f0f08df12) fix(cli): Allow `argo version` without KUBECONFIG. Fixes #3943 (#3945)
- * [354733e7](https://github.com/argoproj/argo-workflows/commit/354733e72f8b50645d4818236a5842c258d5627c) fix(swagger): Correct item type. Fixes #3926 (#3932)
- * [1e461766](https://github.com/argoproj/argo-workflows/commit/1e461766f2e7214c5723d15c724a77d14e908340) fix(server): Adds missing webhook permissions. Fixes #3927 (#3929)
- * [88486192](https://github.com/argoproj/argo-workflows/commit/8848619262850a9f1c44d08084300a445a0c0ffb) feat: Step and Task Level Global Timeout (#3686)
- * [f446f735](https://github.com/argoproj/argo-workflows/commit/f446f735b4c8c16c95f1306ad3453af7f8ed0108) Update manifests to v2.11.0-rc1
- * [de2185c8](https://github.com/argoproj/argo-workflows/commit/de2185c81ae54736177e0476acae42b8e2dc0af5) feat(controller): Set retry factor to 2. Closes #3911 (#3919)
- * [be91d762](https://github.com/argoproj/argo-workflows/commit/be91d7621d82c6fb23e18ab4eebc9be58a59d81f) fix: Workflow should fail on Pod failure before container starts Fixes #3879 (#3890)
- * [c4c80069](https://github.com/argoproj/argo-workflows/commit/c4c800691b20fccf894422075cf41094c39cffc0) test: Fix TestRetryOmit and TestStopBehavior (#3910)
- * [650869fd](https://github.com/argoproj/argo-workflows/commit/650869fde66158a9e03e58aae8aeabe698fe0da5) feat(server): Display events involved in the workflow. Closes #3673 (#3726)
- * [5b5d2359](https://github.com/argoproj/argo-workflows/commit/5b5d2359ef9f573121fe6429e386f03dd8652ece) fix(controller): Cron re-apply update (#3883)
- * [fd3fca80](https://github.com/argoproj/argo-workflows/commit/fd3fca804ef998c875ce0ee2914605a918d9d01a) feat(artifacts): retrieve subpath from unarchived ref artifact. Closes #3061 (#3063)
- * [6a452ccd](https://github.com/argoproj/argo-workflows/commit/6a452ccd4de538ca3b95febf395151e72195c25f) test: Fix flaky e2e tests (#3909)
- * [6e82bf38](https://github.com/argoproj/argo-workflows/commit/6e82bf382a0b41df46db2cc3a1a3925d009f42e1) feat(controller): Emit events for malformed cron workflows. See #3881 (#3889)
- * [f04bdd6a](https://github.com/argoproj/argo-workflows/commit/f04bdd6afa9f17d86833f1537f8ad6713a441bcb) Update workflow-controller-configmap.yaml (#3901)
- * [bb79e3f5](https://github.com/argoproj/argo-workflows/commit/bb79e3f5a00a62e58056e4abd07b129a0f01617d) fix(executor): Replace default retry in executor with an increased value retryer (#3891)
- * [b681c113](https://github.com/argoproj/argo-workflows/commit/b681c1130a41942291e964f29336f8dca53ec4b2) fix(ui): use absolute URL to redirect from autocomplete list. Closes #3903 (#3906)
- * [712c77f5](https://github.com/argoproj/argo-workflows/commit/712c77f5c46cdbb6f03ec2b020fbca9de08d6894) chore(users): Add Fynd Trak to the list of Users (#3900)
- * [d55402db](https://github.com/argoproj/argo-workflows/commit/d55402db1072ee0598597142807407029f4e728e) ci: Fix broken Multiplatform builds (#3908)
- * [9681a4e2](https://github.com/argoproj/argo-workflows/commit/9681a4e2d22d64bbbd4dab6f377fbd0e7a5e39e5) fix(ui): Improve error recovery. Fixes #3867 (#3869)
- * [b926f8c0](https://github.com/argoproj/argo-workflows/commit/b926f8c0c318dd0012f445abd885b918b5c7d2d7) chore: Remove unused imports (#3892)
- * [4c18a06b](https://github.com/argoproj/argo-workflows/commit/4c18a06ba0a46037d40713a91f69320869b3bdc8) feat(controller): Always retry when `IsTransientErr` to tolerate transient errors. Fixes #3217 (#3853)
- * [0cf7709f](https://github.com/argoproj/argo-workflows/commit/0cf7709ff5b9409fcbaa5322601c5a9045ecbe40) fix(controller): Failure tolerant workflow archiving and offloading. Fixes #3786 and #3837 (#3787)
- * [359ee8db](https://github.com/argoproj/argo-workflows/commit/359ee8db4e89d15effd542680aaebdddcbbb2fd0) fix: Corrects CRD and Swagger types. Fixes #3578 (#3809)
- * [58ac52b8](https://github.com/argoproj/argo-workflows/commit/58ac52b892c15c785f9209aac86d6374199400f1) chore(ui): correct a typo (#3876)
- * [dae0f2df](https://github.com/argoproj/argo-workflows/commit/dae0f2df1ffcc8a2ff4f3dce1ea7da3f34587e2f) feat(controller): Do not try to create pods we know exists to prevent `exceeded quota` errors. Fixes #3791 (#3851)
- * [9781a1de](https://github.com/argoproj/argo-workflows/commit/9781a1de7ebe8d920207329dbf3b104d7061c33e) ci: Create manifest from images again (#3871)
- * [c6b51362](https://github.com/argoproj/argo-workflows/commit/c6b51362eb91f042c63ce64e5c6996fef13c90a7) test: E2E test refactoring (#3849)
- * [04898fee](https://github.com/argoproj/argo-workflows/commit/04898fee31dd362c31f2e57e03c772c0b4b20d5d) chore: Added unittest for PVC exceed quota Closes #3561 (#3860)
- * [4e42208c](https://github.com/argoproj/argo-workflows/commit/4e42208c05cafce169c043040944125a37a64e6d) ci: Changed tagging and amend multi-arch manifest. (#3854)
- * [c352f69d](https://github.com/argoproj/argo-workflows/commit/c352f69d95ce6cb72bbd1f464655b6ba519b8b87) chore: Reduce the 2x workflow save on Semaphore scenario (#3846)
- * [a24bc944](https://github.com/argoproj/argo-workflows/commit/a24bc944822c9f5eed92c0b5b07284d7992908fa) feat(controller): Mutexes. Closes #2677 (#3631)
- * [a821c6d4](https://github.com/argoproj/argo-workflows/commit/a821c6d47c404d676672617fc6b8b60e43e94952) ci: Fix build by providing clean repo inside Docker (#3848)
- * [99fe11a7](https://github.com/argoproj/argo-workflows/commit/99fe11a7b9b2c26c25701c6aa29ee535089c979d) feat: Show next scheduled cron run in UI/CLI (#3847)
- * [6aaceeb9](https://github.com/argoproj/argo-workflows/commit/6aaceeb9541f46ee6af97e072be8d935812b7bc5) fix: Treat collapsed nodes as their siblings (#3808)
- * [7f5acd6f](https://github.com/argoproj/argo-workflows/commit/7f5acd6f2df9310fee45e6dff740ed610fefd93f) docs: Add 23mofang to USERS.md
- * [10cb447a](https://github.com/argoproj/argo-workflows/commit/10cb447a92b5f1be814e4b8a03be47aced7bd531) docs: Update example README for duration (#3844)
- * [1678e58c](https://github.com/argoproj/argo-workflows/commit/1678e58c76160f8a5d862e374ec07b35c777783b) ci: Remove external build dependency (#3831)
- * [743ec536](https://github.com/argoproj/argo-workflows/commit/743ec53652bf1989931a2c23c2db5e29043e3582) fix(ui): crash when workflow node has no memoization info (#3839)
- * [a2f54da1](https://github.com/argoproj/argo-workflows/commit/a2f54da15de54b025859f7ba48779a062d42d8f3) fix(docs): Amend link to the Workflow CRD (#3828)
- * [ca8ab468](https://github.com/argoproj/argo-workflows/commit/ca8ab468dc72eb3fc2c038b4916c3b124a7e7b99) fix: Carry over ownerReferences from resubmitted workflow. Fixes #3818 (#3820)
- * [da43086a](https://github.com/argoproj/argo-workflows/commit/da43086a19f88c0b7ac71fdb888f913fd619962b) fix(docs): Add Entrypoint Cron Backfill example  Fixes #3807 (#3814)
- * [ed749a55](https://github.com/argoproj/argo-workflows/commit/ed749a5581b3478ee3cad8931f970acdaf9df190) test: Skip TestStopBehavior and TestRetryOmit (#3822)
- * [9292ae1e](https://github.com/argoproj/argo-workflows/commit/9292ae1e84cd93ed05c53ce70fe1eac9819ecbb8) ci: static files not being built with Homebrew and dirty binary. Fixes #3769 (#3801)
- * [c840adb2](https://github.com/argoproj/argo-workflows/commit/c840adb246122c2da6609339af1a573718a8dc93) docs: memory base amount denominator documentation
- * [8e1a3db5](https://github.com/argoproj/argo-workflows/commit/8e1a3db58c2edf73c36f21a8ef87a1a1e40576d9) feat(ui): add node memoization information to node summary view (#3741)
- * [9de49e2e](https://github.com/argoproj/argo-workflows/commit/9de49e2e657f272ecd81a8fdeafed4401c7a0dcc) ci: Change workflow for pushing images. Fixes #2080
- * [d235c7d5](https://github.com/argoproj/argo-workflows/commit/d235c7d52810d701e473723ab3d1a85c0c38e9c4) fix: Consider all children of TaskGroups in DAGs (#3740)
- * [3540d152](https://github.com/argoproj/argo-workflows/commit/3540d152a62261d0af25c48756acbae710684db0) Add SYS_PTRACE to ease the setup of non-root deployments with PNS executor. (#3785)
- * [2f654971](https://github.com/argoproj/argo-workflows/commit/2f6549714e1502f2efce4a6d96e5e5f5a1d982f3) chore: add New Relic to USERS.md (#3810)
- * [ce5da590](https://github.com/argoproj/argo-workflows/commit/ce5da590abf3946c2c939109cd2feb37b98d5892) docs: Add section on CronWorkflow crash recovery (#3804)
- * [0ca83924](https://github.com/argoproj/argo-workflows/commit/0ca8392485f32c3acdef312befe348ced037b7fb) feat: Github Workflow multi arch. Fixes #2080 (#3744)
- * [bee0e040](https://github.com/argoproj/argo-workflows/commit/bee0e040d0921b9d6d5c15c5d1d1ea6c27bdc2d5) docs: Remove confusing namespace (#3772)
- * [7ad6eb84](https://github.com/argoproj/argo-workflows/commit/7ad6eb8456456f3aea1bf35f1b5bae5058ffd962) fix(ui): Remove outdated download links. Fixes #3762 (#3783)
- * [22636782](https://github.com/argoproj/argo-workflows/commit/226367827dbf62f0a3155abbdc9de0b6d57f693c) fix(ui): Correctly load and store namespace. Fixes #3773 and #3775 (#3778)
- * [a9577ab9](https://github.com/argoproj/argo-workflows/commit/a9577ab96d226dc68a62e9a38093efca8607f81b) test: Increase cron test timeout to 7m (#3799)
- * [ed90d403](https://github.com/argoproj/argo-workflows/commit/ed90d4039d73894bf3073dd39735152833b87457) fix(controller): Support exit handler on workflow templates.  Fixes #3737 (#3782)
- * [dc75ee81](https://github.com/argoproj/argo-workflows/commit/dc75ee8116ceb75e0ec9b6d9175d26ab5f08912e) test: Simplify E2E test tear-down (#3749)
- * [821e40a2](https://github.com/argoproj/argo-workflows/commit/821e40a2b210fe71f82b445c2c72621ac34e4742) build: Retry downloading Kustomize (#3792)
- * [f15a8f77](https://github.com/argoproj/argo-workflows/commit/f15a8f77834e369b291c9e6955bdcef324afc6cd) fix: workflow template ref does not work in other namespace (#3795)
- * [ef44a03d](https://github.com/argoproj/argo-workflows/commit/ef44a03d363b1e7e2a89d268260e9a834553de7b) fix: Increase the requeue duration on checkForbiddenErrorAndResubmitAllowed (#3794)
- * [0125ab53](https://github.com/argoproj/argo-workflows/commit/0125ab5307249e6713d6706975d870a78c5046a5) fix(server): Trucate creator label at 63 chars. Fixes #3756 (#3758)
- * [a38101f4](https://github.com/argoproj/argo-workflows/commit/a38101f449cd462847a3ac99ee65fa70e40acd80) feat(ui): Sign-post IDE set-up. Closes #3720 (#3723)
- * [21dc23db](https://github.com/argoproj/argo-workflows/commit/21dc23dbe3571f745bd124edd0f0e0c7cf09aced) chore: Format test code (#3777)
- * [ee910b55](https://github.com/argoproj/argo-workflows/commit/ee910b5510c9e00bd07c32d2e8ef0846663a330a) feat(server): Emit audit events for workflow event binding errors (#3704)
- * [e9b29e8c](https://github.com/argoproj/argo-workflows/commit/e9b29e8c1f2cdc99e7ccde11f939b865b51e2320) fix: TestWorkflowLevelSemaphore flakiness (#3764)
- * [fadd6d82](https://github.com/argoproj/argo-workflows/commit/fadd6d828e152f88236bcd5483bae39c619d2622) fix: Fix workflow onExit nodes not being displayed in UI (#3765)
- * [df06e901](https://github.com/argoproj/argo-workflows/commit/df06e90193f706da48946e03642b1f758f0d3f2d) docs: Correct typo in `--instanceid`
- * [82a671c0](https://github.com/argoproj/argo-workflows/commit/82a671c00da25b99470a297ed98c794745a3241a) build: Lint e2e test files (#3752)
- * [513675bc](https://github.com/argoproj/argo-workflows/commit/513675bc5b9be6eda48983cb5c8b4ad4d42c9efb) fix(executor): Add retry on pods watch to handle timeout. (#3675)
- * [e35a86ff](https://github.com/argoproj/argo-workflows/commit/e35a86ff108e247b6fd7dfbf947300f086d2e912) feat: Allow parametrizable int fields (#3610)
- * [da115f9d](https://github.com/argoproj/argo-workflows/commit/da115f9db328af9bcc9152afd58b55ba929f7764) fix(controller): Tolerate malformed resources. Fixes #3677 (#3680)
- * [407f9e63](https://github.com/argoproj/argo-workflows/commit/407f9e63c065d154ee2e6a77a7040ae863e329aa) docs: Remove misleading argument in workflow template dag examples. (#3735) (#3736)
- * [f8053ae3](https://github.com/argoproj/argo-workflows/commit/f8053ae379a8244b53a8da6787fe6d9769158cbe) feat(operator): Add scope params for step startedAt and finishedAt (#3724)
- * [54c2134f](https://github.com/argoproj/argo-workflows/commit/54c2134fcdf4a4143b99590730340b79e57e180d) fix: Couldn't Terminate/Stop the ResourceTemplate Workflow (#3679)
- * [12ddc1f6](https://github.com/argoproj/argo-workflows/commit/12ddc1f69a0495331eea83a3cd6be9c453658c9a) fix: Argo linting does not respect namespace of declared resource (#3671)
- * [acfda260](https://github.com/argoproj/argo-workflows/commit/acfda260e78e4035757bdfb7923238b7e48bf0f9) feat(controller): controller logs to be structured #2308 (#3727)
- * [cc2e42a6](https://github.com/argoproj/argo-workflows/commit/cc2e42a691e01b6c254124c7aed52c11540e8475) fix(controller): Tolerate PDB delete race. Fixes #3706 (#3717)
- * [5eda8b86](https://github.com/argoproj/argo-workflows/commit/5eda8b867d32ab09be6643ad111383014f58b0e9) fix: Ensure target task's onExit handlers are run (#3716)
- * [811a4419](https://github.com/argoproj/argo-workflows/commit/811a441938ebfe1a9f7e634e6b4b8c1a98084df4) docs(windows): Add note about artifacts on windows (#3714)
- * [5e5865fb](https://github.com/argoproj/argo-workflows/commit/5e5865fb7ad2eddfefaf6192492bccbd07cbfc35) fix: Ingress docs (#3713)
- * [eeb3c9d1](https://github.com/argoproj/argo-workflows/commit/eeb3c9d1afb6b8e19423a71ca7eb24838358be8d) fix: Fix bug with 'argo delete --older' (#3699)
- * [6134a565](https://github.com/argoproj/argo-workflows/commit/6134a56540e9bbb744fe06ce5be69eca99e95b32) chore: Introduce convenience methods for intstr. (#3702)
- * [7aa536ed](https://github.com/argoproj/argo-workflows/commit/7aa536edaeb24d271593b4633cd211039df8beb6) feat: Upgrade Minio v7 with support IRSA (#3700)
- * [4065f265](https://github.com/argoproj/argo-workflows/commit/4065f265bafd1a5e410f48a8fb0e25b505ad3b61) docs: Correct version. Fixes #3697 (#3701)
- * [71d61281](https://github.com/argoproj/argo-workflows/commit/71d6128154587f2e966d1fc2bad4195bc0b4fba8) feat(server): Trigger workflows from webhooks. Closes #2667  (#3488)
- * [a5d995dc](https://github.com/argoproj/argo-workflows/commit/a5d995dc49caa9837e0ccf86290fd485f72ec065) fix(controller): Adds ALL_POD_CHANGES_SIGNIFICANT (#3689)
- * [9f00cdc9](https://github.com/argoproj/argo-workflows/commit/9f00cdc9d73b44569a071d18535586e28c469b8e) fix: Fixed workflow queue duration if PVC creation is forbidden (#3691)
- * [2baaf914](https://github.com/argoproj/argo-workflows/commit/2baaf914dfa0de517a5e39490e44ad682404f5c3) chore: Update issue templates (#3681)
- * [41ebbe8e](https://github.com/argoproj/argo-workflows/commit/41ebbe8e38861e1ad09db6687512757fda2487d7) fix: Re-introduce 1 second sleep to reconcile informer (#3684)
- * [6e3c5bef](https://github.com/argoproj/argo-workflows/commit/6e3c5bef5c2bbfbef4a74b4c9c91e288b8e94735) feat(ui): Make UI errors recoverable. Fixes #3666 (#3674)
- * [27fea1bb](https://github.com/argoproj/argo-workflows/commit/27fea1bbd3dcb5f420beb85926a1fb2434b33b7e) chore(ui): Add label to 'from' section in Workflow Drawer (#3685)
- * [32d6f752](https://github.com/argoproj/argo-workflows/commit/32d6f75212e07004bcbf2c34973160c0ded2023a) feat(ui): Add links to wft, cwf, or cwft to workflow list and details. Closes #3621 (#3662)
- * [1c95a985](https://github.com/argoproj/argo-workflows/commit/1c95a985b486c4e23622322faf8caccbdd991c89) fix: Fix collapsible nodes rendering (#3669)
- * [87b62bbb](https://github.com/argoproj/argo-workflows/commit/87b62bbb56241c948e8c46bef4e9d01fe2c67429) build: Use http in dev server (#3670)
- * [dbb39368](https://github.com/argoproj/argo-workflows/commit/dbb39368295cbc0ef886e78236338572c37607a1) feat: Add submit options to 'argo cron create' (#3660)
- * [2b6db45b](https://github.com/argoproj/argo-workflows/commit/2b6db45b2775cf8bff22b89b0a30e4dda700ecf9) fix(controller): Fix nested maps. Fixes #3653 (#3661)
- * [3f293a4d](https://github.com/argoproj/argo-workflows/commit/3f293a4d647c6c10cf1bafc8d340453e87bd4351) fix: interface{} values should be expanded with '%v' (#3659)
- * [f08ab972](https://github.com/argoproj/argo-workflows/commit/f08ab9727d6c2f3f12f42f554ad896a21abb6b9c) docs: Fix type in default-workflow-specs.md (#3654)
- * [a8f4da00](https://github.com/argoproj/argo-workflows/commit/a8f4da00b6157a2a457eef74cfe9c46b7a39f9ff) fix(server): Report v1.Status errors. Fixes #3608 (#3652)
- * [a3a4ea0a](https://github.com/argoproj/argo-workflows/commit/a3a4ea0a43c1421d04198dacd2000a0b8ecb17ad) fix: Avoid overriding the Workflow parameter when it is merging with WorkflowTemplate parameter (#3651)
- * [9ce1d824](https://github.com/argoproj/argo-workflows/commit/9ce1d824eb0ad607035db7d3bfaa6a54fbe6dc34) fix: Enforce metric Help must be the same for each metric Name (#3613)
- * [4eca0481](https://github.com/argoproj/argo-workflows/commit/4eca048136a2ef5a5e066b0458315655ba40ea76) docs: Update link to examples so works in raw github.com view (#3623)
- * [f77780f5](https://github.com/argoproj/argo-workflows/commit/f77780f5bdeb875506b4f619b63c40295b66810a) fix(controller): Carry-over labels for re-submitted workflows. Fixes #3622 (#3638)
- * [3f3a4c91](https://github.com/argoproj/argo-workflows/commit/3f3a4c916229acde263933fb689187b8c4fcb278) docs: Add comment to config map about SSO auth-mode (#3634)
- * [d9090c99](https://github.com/argoproj/argo-workflows/commit/d9090c993907bb8e96481c64af214b4941f88418) build: Disable TLS for dev mode. Fixes #3617 (#3618)
- * [bcc6e1f7](https://github.com/argoproj/argo-workflows/commit/bcc6e1f79c42f006b2720e1e185af59a984103d5) fix: Fixed flaky unit test TestFailSuspendedAndPendingNodesAfterDeadline (#3640)
- * [8f70d224](https://github.com/argoproj/argo-workflows/commit/8f70d2243e07c04254222b1cabf8088245ca55e2) fix: Don't panic on invalid template creation (#3643)
- * [5b0210dc](https://github.com/argoproj/argo-workflows/commit/5b0210dccff725b6288799a0c215550fe6fc6247) fix: Simplify the WorkflowTemplateRef field validation to support all fields in WorkflowSpec except `Templates` (#3632)
- * [2375878a](https://github.com/argoproj/argo-workflows/commit/2375878af4ce02af81326e7a672b32c7ce8bfbb1) fix: Fix 'malformed request: field selector' error (#3636)
- * [87ea54c9](https://github.com/argoproj/argo-workflows/commit/87ea54c9dec767f617a1b8fcdd466dd00264f2ea) docs: Add documentation for configuring OSS artifact storage (#3639)
- * [861afd36](https://github.com/argoproj/argo-workflows/commit/861afd369ce63e46c085c0e95ca7bf9ed2175373) docs: Correct indentation for codeblocks within bullet-points for "workflow-templates" (#3627)
- * [0f37e81a](https://github.com/argoproj/argo-workflows/commit/0f37e81abd42fbdece9ea70b2091256dbecd1220) fix: DAG level Output Artifacts on K8S and Kubelet executor (#3624)
- * [a89261bf](https://github.com/argoproj/argo-workflows/commit/a89261bf6b6ab5b83037044c30f3a55cc1162d62) build(cli)!: Zip binaries binaries. Closes #3576 (#3614)
- * [7f844473](https://github.com/argoproj/argo-workflows/commit/7f844473167df32840720437953da478b3bdffa2) fix(controller): Panic when outputs in a cache entry are nil (#3615)
- * [86f03a3f](https://github.com/argoproj/argo-workflows/commit/86f03a3fbd871164cff95005d00b04c220ba58be) fix(controller): Treat TooManyError same as Forbidden (i.e. try again). Fixes #3606 (#3607)
- * [2e299df3](https://github.com/argoproj/argo-workflows/commit/2e299df34f86e0ad80122f84083e7b92bd542171) build: Increase timeout (#3616)
- * [e0a4f13d](https://github.com/argoproj/argo-workflows/commit/e0a4f13d1f3df93fd2c003146d7db2dd2dd924e6) fix(server): Re-establish watch on v1.Status errors. Fixes #3608 (#3609)
- * [cdbb5711](https://github.com/argoproj/argo-workflows/commit/cdbb57116fc12d28be3060ff1fff2498ebc18837) docs: Memoization Documentation (#3598)
- * [7abead2a](https://github.com/argoproj/argo-workflows/commit/7abead2a564876a695201cf7539bd20d1fc67888) docs: fix typo - replace "workfow" with "workflow" (#3612)
- * [f7be20c1](https://github.com/argoproj/argo-workflows/commit/f7be20c1cc0e7b6ab708d7d7a1f60c6898c834e4) fix: Fix panic and provide better error message on watch endpoint (#3605)
- * [491f4f74](https://github.com/argoproj/argo-workflows/commit/491f4f747619783384937348effaaa56143ea8f1) fix: Argo Workflows does not honour global timeout if step/pod is not able to schedule (#3581)
- * [5d8f85d5](https://github.com/argoproj/argo-workflows/commit/5d8f85d5072b5e580a33358cf5fea1fac372baa4) feat(ui): Enhanced workflow submission. Closes #3498 (#3580)
- * [a4a26414](https://github.com/argoproj/argo-workflows/commit/a4a26414e5eef85b61e96789264a4b96a6effc10) build: Initialize npm before installing swagger-markdown (#3602)
- * [ad3441dc](https://github.com/argoproj/argo-workflows/commit/ad3441dc84b207df57094df570f01915634c073d) feat: Add 'argo node set' command (#3277)
- * [a43bf129](https://github.com/argoproj/argo-workflows/commit/a43bf129e4c7e1f6fcea2af0acdd2f07cc5a2287) docs: Migrate to homebrew-core (#3567) (#3568)
- * [17b46bdb](https://github.com/argoproj/argo-workflows/commit/17b46bdbbe72072d87f83625b4cf1873f9c5379b) fix(controller): Fix bug in util/RecoverWorkflowNameFromSelectorString. Add error handling (#3596)
- * [c968877c](https://github.com/argoproj/argo-workflows/commit/c968877c82dc5ad4019d11c449477af6e060aec1) docs: Document ingress set-up. Closes #3080 (#3592)
- * [8b6e43f6](https://github.com/argoproj/argo-workflows/commit/8b6e43f6dafbb95168eaa8c0b2a52f9e177ba075) fix(ui): Fix multiple UI issues (#3573)
- * [cdc935ae](https://github.com/argoproj/argo-workflows/commit/cdc935ae76b3d7cc50a486695b40ff2f647b49bc) feat(cli): Support deleting resubmitted workflows (#3554)
- * [1b757ea9](https://github.com/argoproj/argo-workflows/commit/1b757ea9bc75a379262928be76a4179ea75aa658) feat(ui): Change default language for Resource Editor to YAML and store preference in localStorage. Fixes #3543 (#3560)
- * [c583bc04](https://github.com/argoproj/argo-workflows/commit/c583bc04c672d3aac6955024568a7daebe928932) fix(server): Ignore not-JWT server tokens. Fixes #3562 (#3579)
- * [5afbc131](https://github.com/argoproj/argo-workflows/commit/5afbc131f2e43a0096857534a2814a9fdd9b95f9) fix(controller): Do not panic on nil output value. Fixes #3505 (#3509)
- * [c409624b](https://github.com/argoproj/argo-workflows/commit/c409624b43cdc8823ab02b30ff9f3bc5b4d66c1a) docs: Synchronization documentation (#3537)
- * [0bca0769](https://github.com/argoproj/argo-workflows/commit/0bca07696ccf930ebdf4b3af7c6a44ddcb65e679) docs: Workflow of workflows pattern (#3536)
- * [827106de](https://github.com/argoproj/argo-workflows/commit/827106de2f8f3e03f267a3ebbb6095a1f9b4a0e6) fix: Skip TestStorageQuotaLimit (#3566)
- * [13b1d3c1](https://github.com/argoproj/argo-workflows/commit/13b1d3c19e94047ae97a071e4468b1050b8e292b) feat(controller): Step level memoization. Closes #944 (#3356)
- * [96e520eb](https://github.com/argoproj/argo-workflows/commit/96e520eb68afb36894b5d2373d55505cc3703a94) fix: Exceeding quota with volumeClaimTemplates (#3490)
- * [144c9b65](https://github.com/argoproj/argo-workflows/commit/144c9b65ecbc671c30d41a0bd65546957a34c713) fix(ui): cannot push to nil when filtering by label (#3555)
- * [7e4a7808](https://github.com/argoproj/argo-workflows/commit/7e4a780854fc5f39fcfc77e4354620c307ee21f1) feat: Collapse children in UI Workflow viewer (#3526)
- * [7536982a](https://github.com/argoproj/argo-workflows/commit/7536982ae7451a1a8bcd4b9ddfe6385b138fd782) fix: Fix flakey TestRetryOmitted (#3552)
- * [05d573d7](https://github.com/argoproj/argo-workflows/commit/05d573d789d4c95ece17e058a72c487fad0992ff) docs: Change formatting to put content into code block (#3553)
- * [dcee3484](https://github.com/argoproj/argo-workflows/commit/dcee34849ba6302a126d2eaf684a06d246080fd0) fix: Fix links in fields doc (#3539)
- * [fb67c1be](https://github.com/argoproj/argo-workflows/commit/fb67c1beb69c141604322bb19cf43596f9059cf9) Fix issue #3546 (#3547)
- * [d07a0e74](https://github.com/argoproj/argo-workflows/commit/d07a0e74888254fe78fa653e532c5f1963056598) ci: Make builds marginally faster. Fixes #3515 (#3519)
- * [4cb6aa04](https://github.com/argoproj/argo-workflows/commit/4cb6aa0488ca43158c9a7809c23126e062becd20) chore: Enable no-response bot (#3510)
- * [31afa92a](https://github.com/argoproj/argo-workflows/commit/31afa92ab0c91e8026bba29d216e6fcc2d150ee7) fix(artifacts): support optional input artifacts, Fixes #3491 (#3512)
- * [977beb46](https://github.com/argoproj/argo-workflows/commit/977beb462dcb11afd1913a4e1397136b1b14915b) fix: Fix when retrying Workflows with Omitted nodes (#3528)
- * [ab4ef5c5](https://github.com/argoproj/argo-workflows/commit/ab4ef5c5a290196878d3cf18a9a7036c8bfc9144) fix: Panic on CLI Watch command (#3532)
- * [b901b279](https://github.com/argoproj/argo-workflows/commit/b901b2790fe3c7c350b393e9a0943721ea76f3af) fix(controller): Backoff exponent is off by one. Fixes #3513 (#3514)
- * [49ef5c0f](https://github.com/argoproj/argo-workflows/commit/49ef5c0fe5b7b92ec0035e859a09cf906e4f02f2) fix: String interpreted as boolean in labels (#3518)
- * [19e700a3](https://github.com/argoproj/argo-workflows/commit/19e700a3388552d9440ae75dd259efcbeb0a3657) fix(cli): Check mutual exclusivity for argo CLI flags (#3493)
- * [7d45ff7f](https://github.com/argoproj/argo-workflows/commit/7d45ff7f014d011ef895b9c808da781000ea32a5) fix: Panic on releaseAllWorkflowLocks if Object is not Unstructured type (#3504)
- * [1b68a5a1](https://github.com/argoproj/argo-workflows/commit/1b68a5a15af12fb0866f4d5a4dcd9fb5da3f2ab4) fix: ui/package.json & ui/yarn.lock to reduce vulnerabilities (#3501)
- * [7f262fd8](https://github.com/argoproj/argo-workflows/commit/7f262fd81bae1f8b9bc7707d8bf02f10174cc87d) fix(cli)!: Enable CLI to work without kube config. Closes #3383, #2793 (#3385)
- * [2976e7ac](https://github.com/argoproj/argo-workflows/commit/2976e7ac517ec680b1077e64aa499d92c5d39a0d) build: Clear cmd docs before generating them (#3499)
- * [27528ba3](https://github.com/argoproj/argo-workflows/commit/27528ba34538b764db9254d41761a4edeba6694c) feat: Support completions for more resources (#3494)
- * [5bd2ad7a](https://github.com/argoproj/argo-workflows/commit/5bd2ad7a9d0ad5437fb7d1b7955e0b8e0c9b52ca) fix: Merge WorkflowTemplateRef with defaults workflow spec (#3480)
- * [e244337b](https://github.com/argoproj/argo-workflows/commit/e244337be239e462086a2bcad46f71ffb57a7a62) chore: Added examples for exit handler for step and dag level (#3495)
- * [bcb32547](https://github.com/argoproj/argo-workflows/commit/bcb325476ba49877df6b2dd9622bc64dfe9ad5f4) build: Use `git rev-parse` to accomodate older gits (#3497)
- * [3eb6e2f9](https://github.com/argoproj/argo-workflows/commit/3eb6e2f90c700070c4f1d2730a727aea7746c776) docs: Add link to GitHub Actions in the badge (#3492)
- * [69179e72](https://github.com/argoproj/argo-workflows/commit/69179e72c0872cde9131cc9d68192d5c472d64c9) fix: link to server auth mode docs, adds Tulip as official user (#3486)
- * [7a8e2b34](https://github.com/argoproj/argo-workflows/commit/7a8e2b34631aa8ae7037059deb5c2108a2ca2cb4) docs: Add comments to NodePhase definition. Closes #1117. (#3467)
- * [24d1e529](https://github.com/argoproj/argo-workflows/commit/24d1e52996d8af27909cf4477a5a14950a9a6da7) build: Simplify builds (#3478)
- * [acf56f9f](https://github.com/argoproj/argo-workflows/commit/acf56f9f0d2da426eab9cacc03b7ebadb4aa9ea3) feat(server): Label workflows with creator. Closes #2437 (#3440)
- * [3b8ac065](https://github.com/argoproj/argo-workflows/commit/3b8ac065a1db8ebe629d7cf02c1a8585b34ea2b7) fix: Pass resolved arguments to onExit handler (#3477)
- * [58097a9e](https://github.com/argoproj/argo-workflows/commit/58097a9ec2a9203dfebce9c75fdddc84ac48885e) docs: Add controller-level metrics (#3464)
- * [f6f1844b](https://github.com/argoproj/argo-workflows/commit/f6f1844b73d4e643614f575075401946b9aa7a7c) feat: Attempt to resolve nested tags (#3339)
- * [48e15d6f](https://github.com/argoproj/argo-workflows/commit/48e15d6fce2f980ae5dd5b5d2ff405f496b8f644) feat(cli): List only resubmitted workflows option (#3357)
- * [25e9c0cd](https://github.com/argoproj/argo-workflows/commit/25e9c0cdf73a3c9fa712fc3b544f1f8f33980515) docs, quick-start. Use http, not https for link (#3476)
- * [7a2d7642](https://github.com/argoproj/argo-workflows/commit/7a2d76427da0ae6440f91adbb2f97e62b28355e6) fix: Metric emission with retryStrategy (#3470)
- * [f5876e04](https://github.com/argoproj/argo-workflows/commit/f5876e041a2d87c8d48983751d2c3b4959fb1d93) test(controller): Ensure resubmitted workflows have correct labels (#3473)
- * [aa92ec03](https://github.com/argoproj/argo-workflows/commit/aa92ec03885b2c58c537b33161809f9966faf968) fix(controller): Correct fail workflow when pod is deleted with --force. Fixes #3097 (#3469)
- * [a1945d63](https://github.com/argoproj/argo-workflows/commit/a1945d635b24963af7f52bd73b19a7da52d647e3) fix(controller): Respect the volumes of a workflowTemplateRef. Fixes … (#3451)
- * [847ba530](https://github.com/argoproj/argo-workflows/commit/847ba5305273a16a65333c278e705dc157b9c723) test(controller): Add memoization tests. See #3214 (#3455) (#3466)
- * [f5183aed](https://github.com/argoproj/argo-workflows/commit/f5183aed8bb42b5c267b838c7b31b0f38fec28e8) docs: Fix CLI docs (#3465)
- * [1e42813a](https://github.com/argoproj/argo-workflows/commit/1e42813aaaaee55b9e4483338f7a8554ba9f9eab) test(controller): Add memoization tests. See #3214 (#3455)
- * [abe768c4](https://github.com/argoproj/argo-workflows/commit/abe768c4ba5433fe72f9e6d5a1dde09d37d4d20d) feat(cli): Allow to view previously terminated container logs (#3423)
- * [7581025f](https://github.com/argoproj/argo-workflows/commit/7581025ffac0da6a4c9b125dac3173d0c84aef4f) fix: Allow ints for sequence start/end/count. Fixes #3420 (#3425)
- * [b82f900a](https://github.com/argoproj/argo-workflows/commit/b82f900ae5e446d14a9899302c143c8e32447eab) Fixed typos (#3456)
- * [23760119](https://github.com/argoproj/argo-workflows/commit/23760119d4664f0825536d368b65cdde356e0ff3) feat: Workflow Semaphore Support (#3141)
- * [81cba832](https://github.com/argoproj/argo-workflows/commit/81cba832ed1d4f5b116dc9e43f1f3ad79c190c44) feat: Support WorkflowMetadata in WorkflowTemplate and ClusterWorkflowTemplate (#3364)
- * [568c032b](https://github.com/argoproj/argo-workflows/commit/568c032b3b86c39b39ae38d772b33bc1cbb757de) chore: update aws-sdk-go version (#3376)
- * [bd27d9f3](https://github.com/argoproj/argo-workflows/commit/bd27d9f3216bae609de2cb482a89af3783f0d132) chore: Upgrade node-sass (#3450)
- * [b1e601e5](https://github.com/argoproj/argo-workflows/commit/b1e601e586d376ef3b022acf684cf5de648dc3dc) docs: typo in argo stop --help (#3439)
- * [308c7083](https://github.com/argoproj/argo-workflows/commit/308c7083bded1b6a1fb91bcd963e1e9b8d0b4152) fix(controller): Prevent panic on nil node. Fixes #3436 (#3437)
- * [8ab06f53](https://github.com/argoproj/argo-workflows/commit/8ab06f532b24944e5e9c3ed33c4adc249203cad4) feat(controller): Add log message count as metrics. (#3362)
- * [5d0c436d](https://github.com/argoproj/argo-workflows/commit/5d0c436d3d148d70fd766fa50f97be6b2fef0d45) chore: Fix GitHub Actions Docker Image build  (#3442)
- * [e54b4ab5](https://github.com/argoproj/argo-workflows/commit/e54b4ab5cfaddec4e5f3e3cdecd6ea931501f6fb) docs: Add Sohu as official Argo user (#3430)
- * [ee6c8760](https://github.com/argoproj/argo-workflows/commit/ee6c8760e3d46dfdab0f8d3a63dbf1995322ad4b) fix: Ensure task dependencies run after onExit handler is fulfilled (#3435)
- * [6dc04b39](https://github.com/argoproj/argo-workflows/commit/6dc04b39c7986046c2be1535d2a933e4cba25e03) chore: Use GitHub Actions to build Docker Images to allow publishing Windows Images (#3291)
- * [05b3590b](https://github.com/argoproj/argo-workflows/commit/05b3590b5dc70963700b4a7a5cef4afd76b4943d) feat(controller): Add support for Docker workflow executor for Windows nodes (#3301)
- * [676868f3](https://github.com/argoproj/argo-workflows/commit/676868f31da1bce361e89bebfa1eea81471784ac) fix(docs): Update kubectl proxy URL (#3433)
- * [3507c3e6](https://github.com/argoproj/argo-workflows/commit/3507c3e6e8e9c420a6028a43b930a3ef6b221705) docs: Make https://argoproj.github.io/argo/  (#3369)
- * [733e95f7](https://github.com/argoproj/argo-workflows/commit/733e95f742ff14fb7c303d8b1dbf30403e9e8983) fix: Add struct-wide RWMutext to metrics (#3421)
- * [0463f241](https://github.com/argoproj/argo-workflows/commit/0463f24165e360344b5ff743915d16a12fef0ba0) fix: Use a unique queue to visit nodes (#3418)
- * [eddcac63](https://github.com/argoproj/argo-workflows/commit/eddcac6398e674aa24b59aea2e449492cf2c0c02) fix: Script steps fail with exceededQuota (#3407)
- * [c631a545](https://github.com/argoproj/argo-workflows/commit/c631a545e824682652569e49eb764844a7f5cb05) feat(ui): Add Swagger UI (#3358)
- * [910f636d](https://github.com/argoproj/argo-workflows/commit/910f636dcfad66c999aa859e11a31a9a772ccc79) fix: No panic on watch. Fixes #3411 (#3426)
- * [b4da1bcc](https://github.com/argoproj/argo-workflows/commit/b4da1bccc7f961200b8fe8551e4b286d1d5d5a9f) fix(sso): Remove unused `groups` claim. Fixes #3411 (#3427)
- * [330d4a0a](https://github.com/argoproj/argo-workflows/commit/330d4a0a2085b986855f9d3f4c5e27fbbe261ca9) fix: panic on wait command if event is null (#3424)
- * [7c439424](https://github.com/argoproj/argo-workflows/commit/7c4394245437d36245a4c9246a51ceb92edeaf42) docs: Include timezone name reference (#3414)
- * [03cbb8cf](https://github.com/argoproj/argo-workflows/commit/03cbb8cf2c75f5b241ae543259ea9db02e9339fd) fix(ui): Render DAG with exit node (#3408)
- * [3d50f985](https://github.com/argoproj/argo-workflows/commit/3d50f9852b481692235a3f075c4c0966e6404104) feat: Expose certain queue metrics (#3371)
- * [c7b35e05](https://github.com/argoproj/argo-workflows/commit/c7b35e054e3eee38f750c0eaf4a5431a56f80c49) fix: Ensure non-leaf DAG tasks have their onExit handler's run (#3403)
- * [70111600](https://github.com/argoproj/argo-workflows/commit/70111600d464bd7dd99014aa88b5f2cbab64a573) fix: Fix concurrency issues with metrics (#3401)
- * [d307f96f](https://github.com/argoproj/argo-workflows/commit/d307f96f2307da4897685b96ef54251b064de239) docs: Update config example to include useSDKCreds (#3398)
- * [637d50bc](https://github.com/argoproj/argo-workflows/commit/637d50bc132c346885caa4e70eee47ad5c96648e) chore: maybe -> may be (#3392)
- * [e70a8863](https://github.com/argoproj/argo-workflows/commit/e70a8863582e6fab7e2c5ea7c95a7fc0b4ab374d) chore: Added CWFT WorkflowTemplateRef example (#3386)
- * [bc4faf5f](https://github.com/argoproj/argo-workflows/commit/bc4faf5f739e9172b7968e198dc595f27d506f7b) fix: Fix bug parsing parmeters (#3372)
- * [4934ad22](https://github.com/argoproj/argo-workflows/commit/4934ad227f043a5554c9a4f717f09f70d2c18cbf) fix: Running pods are garaged in PodGC onSuccess
- * [0541cfda](https://github.com/argoproj/argo-workflows/commit/0541cfda611a656ab16dbfcd7bed858b7c8b2f3c) chore(ui): Remove unused interfaces for artifacts (#3377)
- * [20382cab](https://github.com/argoproj/argo-workflows/commit/20382cab7bbbbd5646a3dbfac6ee18586a6eada5) docs: Fix incorrect example of global parameter (#3375)
- * [1db93c06](https://github.com/argoproj/argo-workflows/commit/1db93c062c4f7e417bf74afe253e9a44e5381802) perf: Optimize time-based filtering on large number of workflows (#3340)
- * [2ab9495f](https://github.com/argoproj/argo-workflows/commit/2ab9495f0f3d944243d845411bafe7ebe496642b) fix: Don't double-count metric events (#3350)
- * [7bd3e720](https://github.com/argoproj/argo-workflows/commit/7bd3e7209018d0d7716ca0dbd0ffb1863165892d) fix(ui): Confirmation of workflow actions (#3370)
- * [488790b2](https://github.com/argoproj/argo-workflows/commit/488790b247191dd22babadd9592efae11f4fd245) Wellcome is using Argo in our Data Labs division (#3365)
- * [63e71192](https://github.com/argoproj/argo-workflows/commit/63e71192852138685d68156a0f6b1133ecfdaf74) chore: Remove unused code (#3367)
- * [a64ceb03](https://github.com/argoproj/argo-workflows/commit/a64ceb03f165513e30e5c9614d1bb64273219140) build: Enable Stale Bot (#3363)
- * [e4b08abb](https://github.com/argoproj/argo-workflows/commit/e4b08abbcfe6f3886e0cd28e8ea8c1860ef8c9e1) fix(server): Remove `context cancelled` error. Fixes #3073 (#3359)
- * [74ba5162](https://github.com/argoproj/argo-workflows/commit/74ba516220423cae5960b7dd51c4a8d5a37012b5) fix: Fix UI bug in DAGs (#3368)
- * [5e60decf](https://github.com/argoproj/argo-workflows/commit/5e60decf96e85a4077cd70d1d4e8da299d1d963d) feat(crds)!: Adds CRD generation and enhanced UI resource editor. Closes #859 (#3075)
- * [c2347f35](https://github.com/argoproj/argo-workflows/commit/c2347f3542d48467e8a0bede67db17ecce890f56) chore: Simplify deps by removing YAML (#3353)
- * [1323f9f4](https://github.com/argoproj/argo-workflows/commit/1323f9f418a407d7cbb92e7bb67e00faefe17e51) test: Add e2e tags (#3354)
- * [731a1b4a](https://github.com/argoproj/argo-workflows/commit/731a1b4a670078b8ba8e2f36bdd433afe22f2631) fix(controller): Allow events to be sent to non-argo namespace. Fixes #3342 (#3345)
- * [916e0db2](https://github.com/argoproj/argo-workflows/commit/916e0db25880cef3058e4c3c3f6d118e14312be1) Adding InVision to Users (#3352)
- * [6caf10fa](https://github.com/argoproj/argo-workflows/commit/6caf10fad7b116f9e3a6aaee4eb02243e37f2779) fix: Ensure child pods respect maxDuration (#3280)
- * [8f4945f5](https://github.com/argoproj/argo-workflows/commit/8f4945f5e6f7a6d503f400079b607715151a2a41) docs: Field fix (ParallelSteps -> WorkflowStep) (#3338)
- * [2b4b7340](https://github.com/argoproj/argo-workflows/commit/2b4b7340a6afb8317e27e3d58c46fba3c3db8ff0) fix: Remove broken SSO from quick-starts (#3327)
- * [26570fd5](https://github.com/argoproj/argo-workflows/commit/26570fd51ec2eebe86cd0f3bc05ab43272f957c5) fix(controller)!: Support nested items. Fixes #3288 (#3290)
- * [c3d85716](https://github.com/argoproj/argo-workflows/commit/c3d85716420048dd0567ccc5cda894a9717598ae) chore: Avoid variable name collision with imported package name (#3335)
- * [ca822af0](https://github.com/argoproj/argo-workflows/commit/ca822af0c4353bb30a51f0a4edfccdd4226c7043) build: Fix path to go-to-protobuf binary (#3308)
- * [769a964f](https://github.com/argoproj/argo-workflows/commit/769a964fcf51f58c76f2d4900c736f4dd945bd7f) feat(controller): Label workflows with their source workflow template (#3328)
- * [0785be24](https://github.com/argoproj/argo-workflows/commit/0785be24caaf93d62f5b77b2ee142a0691992b86) fix(ui): runtime error from null savedOptions props (#3330)
- * [200be0e1](https://github.com/argoproj/argo-workflows/commit/200be0e1e34f9cf6689e9739e3e4aea7f5bf7fde) feat: Save pagination limit and selected phases/labels to local storage (#3322)
- * [b5ed90fe](https://github.com/argoproj/argo-workflows/commit/b5ed90fe8611a10df7982e3fb2e6670400acf2d2) feat: Allow to change priority when resubmitting workflows (#3293)
- * [60c86c84](https://github.com/argoproj/argo-workflows/commit/60c86c84c60ac38c5a876d8df5362b5896700d73) fix(ui): Compiler error from workflows toolbar (#3317)
- * [3fe6ecc4](https://github.com/argoproj/argo-workflows/commit/3fe6ecc424fe1474b2ce765e47f1dc69ec9ef98e) docs: Document access token creation and usage (#3316)
- * [ab3c081e](https://github.com/argoproj/argo-workflows/commit/ab3c081e310835f7f2e7a3424042944adde39afd) docs: Rename Ant Financial to Ant Group (#3304)
- * [baad42ea](https://github.com/argoproj/argo-workflows/commit/baad42ea8fed83b2158721766e518b203664ebe1) feat(ui): Add ability to select multiple workflows from list and perform actions on them. Fixes #3185 (#3234)
- * [b6118939](https://github.com/argoproj/argo-workflows/commit/b6118939bf0948e856bb20955f6911743106af4d) fix(controller): Fix panic logging. (#3315)
- * [633ea71e](https://github.com/argoproj/argo-workflows/commit/633ea71ebf624530c75b1f9aeb713a92510cf62a) build: Pin `goimports` to working version (#3311)
- * [436c1259](https://github.com/argoproj/argo-workflows/commit/436c12590d80010e300a63be3acb3bd24ac3bf93) ci: Remove CircleCI (#3302)
- * [8e340229](https://github.com/argoproj/argo-workflows/commit/8e340229cfd3fb976b1261dbf32d038bfd2f7706) build: Remove generated Swagger files. (#3297)
- * [e021d7c5](https://github.com/argoproj/argo-workflows/commit/e021d7c512f01721e2f25d39836829752226c290) Clean up unused constants (#3298)
- * [48d86f03](https://github.com/argoproj/argo-workflows/commit/48d86f03ce9ac49f5099c46dd7995305eb59eb11) build: Upload E2E diagnostics after failure (#3294)
- * [8b12f433](https://github.com/argoproj/argo-workflows/commit/8b12f433a2e32cc69714ee456ee0d83e904ff31c) feat(cli): Add --logs to `argo [submit|resubmit|retry]. Closes #3183 (#3279)
- * [07b450e8](https://github.com/argoproj/argo-workflows/commit/07b450e8134e1afe0b58c45b21dc0c13d91ecdb5) fix: Reapply Update if CronWorkflow resource changed (#3272)
- * [8af01491](https://github.com/argoproj/argo-workflows/commit/8af014911901678ee24bea9b2ab652fb0af5bc48) docs: ArchiveLabelSelector document (#3284)
- * [38c908a2](https://github.com/argoproj/argo-workflows/commit/38c908a272e8a59b2843ad5514c6334ba1c7a693) docs: Add example for handling large output resutls (#3276)
- * [d44d264c](https://github.com/argoproj/argo-workflows/commit/d44d264c72649c540204ccb54e9a57550f48d1fc) Fixes validation of overridden ref template parameters. (#3286)
- * [62e54fb6](https://github.com/argoproj/argo-workflows/commit/62e54fb68778030245bed87f0675694ef3c58b57) fix: Fix delete --complete (#3278)
- * [a3c379bb](https://github.com/argoproj/argo-workflows/commit/a3c379bb5df171d635a200b9dec7a9ca89c3295d) docs: Updated WorkflowTemplateRef  on WFT and CWFT (#3137)
- * [824de95b](https://github.com/argoproj/argo-workflows/commit/824de95bfb2de0e325f92c0544f42267242486e4) fix(git): Fixes Git when using auth or fetch. Fixes #2343 (#3248)
- * [018fcc23](https://github.com/argoproj/argo-workflows/commit/018fcc23dc9fad051d15db2f9a83c2710d50c828) Update releasing.md (#3283)
- * [acee573b](https://github.com/argoproj/argo-workflows/commit/acee573b88bf96160b69d18bcc8031caf119c647) docs: Update CI Badges (#3282)
- * [9eb182c0](https://github.com/argoproj/argo-workflows/commit/9eb182c04957f2ca587ff1de84b79fc274f91788) build: Allow to change k8s namespace for installation (#3281)
- * [2bcfafb5](https://github.com/argoproj/argo-workflows/commit/2bcfafb56230194fd2d23adcfa5a1294066ec91e) fix: Add {{workflow.status}} to workflow-metrics (#3271)
- * [e6aab605](https://github.com/argoproj/argo-workflows/commit/e6aab605122356a10cb21df3a08e1ddeac6d2593) fix(jqFilter)!: remove extra quotes around output parameter value (#3251)
- * [f4580163](https://github.com/argoproj/argo-workflows/commit/f4580163f4187f798f93b8d778415e8bec001dda) fix(ui): Allow render of templates without entrypoint. Fixes #2891 (#3274)
- * [f30c05c7](https://github.com/argoproj/argo-workflows/commit/f30c05c74f598b6400b66bb20a752d78eca05e45) build: Add warning to ensure 'v' is present on release versions (#3273)
- * [d1cb1992](https://github.com/argoproj/argo-workflows/commit/d1cb1992cd22e9f69894532f214fa0e00312ff36) fixed archiveLabelSelector nil (#3270)
- * [c7e4c180](https://github.com/argoproj/argo-workflows/commit/c7e4c1808cf097857b8ee89d326ef9f32384fc1b) fix(ui): Update workflow drawer with new duration format (#3256)
- * [f2381a54](https://github.com/argoproj/argo-workflows/commit/f2381a5448e9d49a7b6ed0c9583ac8cf9b257938) fix(controller): More structured logging. Fixes #3260 (#3262)
- * [acba084a](https://github.com/argoproj/argo-workflows/commit/acba084abb01b967c239952d49e8e3d7775cbf2c) fix: Avoid unnecessary nil check for annotations of resubmitted workflow (#3268)
- * [55e13705](https://github.com/argoproj/argo-workflows/commit/55e13705ae57f86ca6c5846eb5de3e80370bc1d4) feat: Append previous workflow name as label to resubmitted workflow (#3261)
- * [2dae7244](https://github.com/argoproj/argo-workflows/commit/2dae724496a96ce2e0993daea0a3b6a473f784da) feat: Add mode to require Workflows to use workflowTemplateRef (#3149)
- * [56694abe](https://github.com/argoproj/argo-workflows/commit/56694abe27267c1cb855064b44bc7c32d61ca66c) Fixed onexit on workflowtempalteRef (#3263)
- * [54dd72c2](https://github.com/argoproj/argo-workflows/commit/54dd72c2439b5a6ef389eab4cb39bd412db9fd42) update mysql yaml port (#3258)
- * [fb502632](https://github.com/argoproj/argo-workflows/commit/fb502632419409e528e23f1ef70e7f610812d175) feat: Configure ArchiveLabelSelector for Workflow Archive (#3249)
- * [5467c899](https://github.com/argoproj/argo-workflows/commit/5467c8995e07e5501d685384e44585fc1b02c6b8) fix(controller): set pod finish timestamp when it is deleted (#3230)
- * [04bc5492](https://github.com/argoproj/argo-workflows/commit/04bc5492d582d45633a4a18ec691a10d913a73a3) build: Disable Circle CI and Sonar (#3253)
- * [23ca07a7](https://github.com/argoproj/argo-workflows/commit/23ca07a790714ad8c97ecab71ffa439843a7ad6c) chore: Covered steps.<STEPNAME>.outputs.parameters in variables document (#3245)
- * [4bd33c6c](https://github.com/argoproj/argo-workflows/commit/4bd33c6c6ce6dcb9f0c85dab40f162608d5f67a6) chore(cli): Add examples of @latest alias for relevant commands. Fixes #3225 (#3242)
- * [17108df1](https://github.com/argoproj/argo-workflows/commit/17108df1cea937f49f099ec26b7a25bd376b16a5) fix: Ensure subscription is closed in log viewer (#3247)
- * [495dc89b](https://github.com/argoproj/argo-workflows/commit/495dc89b5cfb2419b0438c4a53cfb3b13cb5785a) docs: Correct available fields in {{workflow.failures}} (#3238)
- * [4db1c4c8](https://github.com/argoproj/argo-workflows/commit/4db1c4c8495d0b8e13c718207175273fe98555a2) fix: Support the TTLStrategy for WorkflowTemplateRef (#3239)
- * [47f50693](https://github.com/argoproj/argo-workflows/commit/47f5069376f3c61b09ff02ff5729e5c3e6e58e45) feat(logging): Made more controller err/warn logging structured (#3240)
- * [c25e2880](https://github.com/argoproj/argo-workflows/commit/c25e28809863435d718d7e5ab303591d8039c724) build: Migrate to Github Actions (#3233)
- * [ef159f9a](https://github.com/argoproj/argo-workflows/commit/ef159f9ad6be552de1abf58c3dc4dc6911c49733) feat: Tick CLI Workflow watch even if there are no new events (#3219)
- * [ff1627b7](https://github.com/argoproj/argo-workflows/commit/ff1627b71789c42f604c0f83a9a3328d7e6b8248) fix(events): Adds config flag. Reduce number of dupe events emitted. (#3205)
- * [eae8f681](https://github.com/argoproj/argo-workflows/commit/eae8f68144acaf5c2ec0145ef0d136097cca7fcc) feat: Validate CronWorkflows before execution (#3223)
- * [4470a8a2](https://github.com/argoproj/argo-workflows/commit/4470a8a29bca9e16ac7e5d7d8c8a2310d0200efa) fix(ui/server): Fix broken label filter functionality on UI due to bug on server. Fix #3226 (#3228)
- * [e5e6456b](https://github.com/argoproj/argo-workflows/commit/e5e6456be37b52856205c4f7600a05ffef6daab1) feat(cli): Add --latest flag for argo get command as per #3128 (#3179)
- * [34608594](https://github.com/argoproj/argo-workflows/commit/34608594b98257c4ae47a280831d462bab7c53b4) fix(ui): Correctly update workflow list when workflow are modified/deleted (#3220)
- * [a7d8546c](https://github.com/argoproj/argo-workflows/commit/a7d8546cf9515ea70d686b8c669bf0a1d9b7538d) feat(controller): Improve throughput of many workflows. Fixes #2908 (#2921)
- * [a37d0a72](https://github.com/argoproj/argo-workflows/commit/a37d0a729c206040463d41e88e09814c1bf622dd) build: Change "DB=..." to "PROFILE=..." (#3216)
- * [15885d3e](https://github.com/argoproj/argo-workflows/commit/15885d3edc6d4754bc66f950251450eea8f29170) feat(sso): Allow reading SSO clientID from a secret. (#3207)
- * [723e9d5f](https://github.com/argoproj/argo-workflows/commit/723e9d5f40448ae425631fac8af2863a1f1ff1f5) fix: Ensrue image name is present in containers (#3215)
- * [0ee5e112](https://github.com/argoproj/argo-workflows/commit/0ee5e11253282eb5c36a5163086c20306cc09019) feat: Only process significant pod changes (#3181)
- * [c89a81f3](https://github.com/argoproj/argo-workflows/commit/c89a81f3ad3a76e22b98570a6045fd8eb358dbdb) feat: Add '--schedule' flag to 'argo cron create' (#3199)
- * [591f649a](https://github.com/argoproj/argo-workflows/commit/591f649a306edf826b667d0069ee04cb345dcd26) refactor: Refactor assesDAGPhase logic (#3035)
- * [285eda6b](https://github.com/argoproj/argo-workflows/commit/285eda6bbe9008ffa394edbc4b510e88119a1fd0) chore: Remove unused pod in addArchiveLocation() (#3200)
- * [8e1d56cb](https://github.com/argoproj/argo-workflows/commit/8e1d56cb78f8e039f4dbeea991bdaa1935738130) feat(controller): Add default name for artifact repository ref. (#3060)
- * [f1cdba18](https://github.com/argoproj/argo-workflows/commit/f1cdba18b3ef476e11f02e50a69fc33924158be7) feat(controller): Add `--qps` and `--burst` flags to controller (#3180)
- * [b86949f0](https://github.com/argoproj/argo-workflows/commit/b86949f0e9523e10c69e0f6b10b0f35413a20520) fix: Ensure stable desc/hash for metrics (#3196)
- * [e26d2f08](https://github.com/argoproj/argo-workflows/commit/e26d2f08c2d08dd83413b91a35e38ea6ed0d3839) docs: Update Getting Started (#3099)
- * [47bfea5d](https://github.com/argoproj/argo-workflows/commit/47bfea5d4e23d506c616fa8726c6bc751104bc94) docs: Add Graviti as official Argo user (#3187)
- * [04c77f49](https://github.com/argoproj/argo-workflows/commit/04c77f490b00ffc05f74a941f1c9ccf76a5bf789) fix(server): Allow field selection for workflow-event endpoint (fixes #3163) (#3165)
- * [0c38e66e](https://github.com/argoproj/argo-workflows/commit/0c38e66e619e243a5344f0f11a5e01194c7c5cb6) chore: Update Community Meeting link and specify Go@v1.13 (#3178)
- * [81846d41](https://github.com/argoproj/argo-workflows/commit/81846d416ecc84241ae8423d91280d6a39d9b4c2) build: Only check Dex in hosts file when SSO is enabled (#3177)
- * [a130d488](https://github.com/argoproj/argo-workflows/commit/a130d488ab69cf4d4d543c7348a45e4cd34f972e) feat(ui): Add drawer with more details for each workflow in Workflow List (#3151)
- * [fa84e203](https://github.com/argoproj/argo-workflows/commit/fa84e203239b35976210a441387d6480d951f034) fix: Do not use alphabetical order if index exists (#3174)
- * [138af597](https://github.com/argoproj/argo-workflows/commit/138af5977b81e619681eb2cfa20fd3891c752510) fix(cli): Sort expanded nodes by index. Closes #3145 (#3146)
- * [a9ec4d08](https://github.com/argoproj/argo-workflows/commit/a9ec4d08bf1e3a4b4ae55055011d5c64a1197bc0) docs: Fix api swagger file path in docs (#3167)
- * [c42e4d3a](https://github.com/argoproj/argo-workflows/commit/c42e4d3aeaf4093581d0a5d92b4d7750be205225) feat(metrics): Add node-level resources duration as Argo variable for metrics. Closes #3110 (#3161)
- * [e36fe66e](https://github.com/argoproj/argo-workflows/commit/e36fe66ee795fcde237360e593c34879873f0e36) docs: Add instructions on using Minikube as an alternative to K3D (#3162)
- * [edfa5b93](https://github.com/argoproj/argo-workflows/commit/edfa5b93fb58c0b243e1f019b92f02e846f7b83d) feat(metrics): Report controller error counters via metrics. Closes #3034 (#3144)
- * [8831e4ea](https://github.com/argoproj/argo-workflows/commit/8831e4ead39acfe3d49801271a95907a3b737d49) feat(argo-server): Add support for SSO. See #1813 (#2745)
- * [b62184c2](https://github.com/argoproj/argo-workflows/commit/b62184c2e3715fd7ddd9077e11513db25a512c93) feat(cli): More `argo list` and `argo delete` options (#3117)
- * [c6565d7c](https://github.com/argoproj/argo-workflows/commit/c6565d7c3c8c4b40c6725a1f682186e04e0a8f36) fix(controller): Maybe bug with nil woc.wfSpec. Fixes #3121 (#3160)
- * [06ca71d7](https://github.com/argoproj/argo-workflows/commit/06ca71d7a8b5f9ecc448006d3fae73baf88f9d18) build: Fix path to staticfiles and goreman binaries (#3159)
- * [cad84cab](https://github.com/argoproj/argo-workflows/commit/cad84cab7817141d259785f7565f82fd3c3dc540) chore: Remove unused nodeType in initializeNodeOrMarkError() (#3153)
- * [be425513](https://github.com/argoproj/argo-workflows/commit/be42551364ec9a792171588a662489ff32347ec1) chore: Master needs lint (#3152)
- * [70b56f25](https://github.com/argoproj/argo-workflows/commit/70b56f25baf78d67253a2f29bd4057279b0e9558) enhancement(ui): Add workflow labels column to workflow list. Fixes #2782 (#3143)
- * [3318c115](https://github.com/argoproj/argo-workflows/commit/3318c1152ac0654816e36c0b4eb8679c45b6250b) chore: Move default metrics server port/path to consts (#3135)
- * [a0062adf](https://github.com/argoproj/argo-workflows/commit/a0062adfe895ee39572db3aa6f259913279c6db3) feat(ui): Add Alibaba Cloud OSS related models in UI (#3140)
- * [1469991c](https://github.com/argoproj/argo-workflows/commit/1469991ce34333697df07ca750adb247b21cc3a9) fix: Update container delete grace period to match Kubernetes default (#3064)
- * [df725bbd](https://github.com/argoproj/argo-workflows/commit/df725bbddac2f3a216010b069363f0344a2f5a80) fix(ui): Input artifacts labelled in UI. Fixes #3098 (#3131)
- * [c0d59cc2](https://github.com/argoproj/argo-workflows/commit/c0d59cc283a62f111123728f70c24df5954d98e4) feat: Persist DAG rendering options in local storage (#3126)
- * [8715050b](https://github.com/argoproj/argo-workflows/commit/8715050b441f0fb5c84ae0a0a19695c89bf2e7b9) fix(ui): Fix label error (#3130)
- * [1814ea2e](https://github.com/argoproj/argo-workflows/commit/1814ea2e4a6702eacd567aefd1194bd6aec212ed) fix(item): Support ItemValue.Type == List. Fixes #2660 (#3129)
- * [12b72546](https://github.com/argoproj/argo-workflows/commit/12b72546eb49b8af5b4374577107f30484a6e975) fix: Panic on invalid WorkflowTemplateRef (#3127)
- * [09092147](https://github.com/argoproj/argo-workflows/commit/09092147cf26939e775848d75f687d5c8fc15aa9) fix(ui): Display error message instead of DAG when DAG cannot be rendered. Fixes #3091 (#3125)
- * [2d9a74de](https://github.com/argoproj/argo-workflows/commit/2d9a74de9b2ad28318dfb6bfdbc1db6f4db716db) docs: Document cost optimizations. Fixes #1139 (#2972)
- * [69c9e5f0](https://github.com/argoproj/argo-workflows/commit/69c9e5f053195e46871176c6a31d646144532c3a) fix: Remove unnecessary panic (#3123)
- * [2f3aca89](https://github.com/argoproj/argo-workflows/commit/2f3aca8988cee483f5fac116a8e99cdec7fd89cc) add AppDirect to the list of users (#3124)
- * [257355e4](https://github.com/argoproj/argo-workflows/commit/257355e4c54b8ca37e056e73718a112441faddb4) feat: Add 'submit --from' to CronWorkflow and WorkflowTemplate in UI. Closes #3112 (#3116)
- * [6e5dd2e1](https://github.com/argoproj/argo-workflows/commit/6e5dd2e19a3094f88e6f927f786f866eccc5f500) Add Alibaba OSS to the list of supported artifacts (#3108)
- * [1967b45b](https://github.com/argoproj/argo-workflows/commit/1967b45b1465693b71e3a0ccac9563886641694c) support sso (#3079)
- * [9229165f](https://github.com/argoproj/argo-workflows/commit/9229165f83011b3d5b867ac511793f8934bdcfab) feat(ui): Add cost optimisation nudges. (#3089)
- * [e88124db](https://github.com/argoproj/argo-workflows/commit/e88124dbf64128388cf0e6fa6d30b2f756e57d23) fix(controller): Do not panic of woc.orig in not hydrated. Fixes #3118 (#3119)
- * [132b947a](https://github.com/argoproj/argo-workflows/commit/132b947ad6ba5a5b81e281c469f08cb97748e42d) fix: Differentiate between Fulfilled and Completed (#3083)
- * [a93968ff](https://github.com/argoproj/argo-workflows/commit/a93968ff36a1472402ec9655458e6ad7b04401a8) docs: Document how to backfill a cron workflow (#3094)
- * [4de99746](https://github.com/argoproj/argo-workflows/commit/4de9974681034d7bb7223d2131eba1cd0e5d254d) feat: Added Label selector and Field selector in Argo list  (#3088)
- * [6229353b](https://github.com/argoproj/argo-workflows/commit/6229353b2355c9425f42509e3504e64ee7c7ae92) chore: goimports (#3107)
- * [8491e00f](https://github.com/argoproj/argo-workflows/commit/8491e00f31f1f744ee1af729e5598a7e8894ff5f) docs: Add link to USERS.md in PR template (#3086)
- * [bb2ce9f7](https://github.com/argoproj/argo-workflows/commit/bb2ce9f77894982f5bcae4e772795d0e679bf405) fix: Graceful error handling of malformatted log lines in watch (#3071)
- * [4fd27c31](https://github.com/argoproj/argo-workflows/commit/4fd27c314810ae43b39a5c2d36cef2dbbf5691af) build(swagger): Fix Swagger build problems (#3084)
- * [e4e0dfb6](https://github.com/argoproj/argo-workflows/commit/e4e0dfb6c66fd2c0dbbba240b1cfe8c12dcb93c2) test: fix TestContinueOnFailDag (#3101)
- * [fa69c1bb](https://github.com/argoproj/argo-workflows/commit/fa69c1bb7157e19755eea669bf44434e2bedd157) feat: Add CronWorkflowConditions to report errors (#3055)
- * [50ad3cec](https://github.com/argoproj/argo-workflows/commit/50ad3cec2b002b81e30a5d6975e7dc044a83b301) adds millisecond-level timestamps to argoexec (#2950)
- * [6464bd19](https://github.com/argoproj/argo-workflows/commit/6464bd199eff845da66d59d263f2d04479663020) fix(controller): Implement offloading for workflow updates that are re-applied. Fixes #2856 (#2941)
- * [6c369e61](https://github.com/argoproj/argo-workflows/commit/6c369e614281df0342d5cc46871551282da71ea9) chore: Rename files that include 'top-level' terminology (#3076)
- * [bd40b80b](https://github.com/argoproj/argo-workflows/commit/bd40b80bc0c6b81a824da04cbb892a5e93deeebb) docs: Document work avoidance. (#3066)
- * [6df0b2d3](https://github.com/argoproj/argo-workflows/commit/6df0b2d3538cd1525223c8d85581662ece172cf9) feat: Support Top level workflow template reference  (#2912)
- * [0709ad28](https://github.com/argoproj/argo-workflows/commit/0709ad28c3dbd4696404aa942478a7505e9e9a67) feat: Enhanced filters for argo {watch,get,submit} (#2450)
- * [784c1385](https://github.com/argoproj/argo-workflows/commit/784c1385f3bec1bacdc1ef80e223a33476696ed0) build: Use goreman for starting locally. (#3074)
- * [5b5bae9a](https://github.com/argoproj/argo-workflows/commit/5b5bae9a6e46a82f5830f68f87598ee0c7dc2ff7) docs: Add Isbank to users.md (#3068)
- * [2b038ed2](https://github.com/argoproj/argo-workflows/commit/2b038ed2e61781e5c4b8a796aba4c4afe4850305) feat: Enhanced depends logic (#2673)
- * [4c3387b2](https://github.com/argoproj/argo-workflows/commit/4c3387b273d802419a1552345dfb95dd05b8555b) fix: Linters should error if nothing was validated (#3011)
- * [51dd05b5](https://github.com/argoproj/argo-workflows/commit/51dd05b5f16e0554bdd33511f8332f3198604690) fix(artifacts): Explicit archive strategy. Fixes #2140 (#3052)
- * [ada2209e](https://github.com/argoproj/argo-workflows/commit/ada2209ef94e2380c4415cf19a8e321324650405) Revert "fix(artifacts): Allow tar check to be ignored. Fixes #2140 (#3024)" (#3047)
- * [b7ff9f09](https://github.com/argoproj/argo-workflows/commit/b7ff9f09c46c8f313378f7f6091260be4f6363e5) chore: Add ability to configure maximum DB connection lifetime (#3032)
- * [38a995b7](https://github.com/argoproj/argo-workflows/commit/38a995b749b83a76b5f1f2542df959898489210b) fix(executor): Properly handle empty resource results, like for a missing get (#3037)
- * [a1ac8bcf](https://github.com/argoproj/argo-workflows/commit/a1ac8bcf548c4f8fcff6b7df25aa61ad9e4c15ed) fix(artifacts): Allow tar check to be ignored. Fixes #2140 (#3024)
- * [f12d79ca](https://github.com/argoproj/argo-workflows/commit/f12d79cad9d4a9b2169f634183b6c7837c9e4615) fix(controller)!: Correctly format workflow.creationTimepstamp as RFC3339. Fixes #2974 (#3023)
- * [d10e949a](https://github.com/argoproj/argo-workflows/commit/d10e949a061de541f5312645dfa19c5732a302ff) fix: Consider metric nodes that were created and completed in the same operation (#3033)
- * [202d4ab3](https://github.com/argoproj/argo-workflows/commit/202d4ab31a2883d4f2448c309c30404f67761727) fix(executor): Optional input artifacts. Fixes #2990 (#3019)
- * [f17e946c](https://github.com/argoproj/argo-workflows/commit/f17e946c4d006cda4e161380fb5a0ba52dcebfd1) fix(executor): Save script results before artifacts in case of error. Fixes #1472 (#3025)
- * [3d216ae6](https://github.com/argoproj/argo-workflows/commit/3d216ae6d5ad96b996ce40c42793a2031a392bb1) fix: Consider missing optional input/output artifacts with same name (#3029)
- * [3717dd63](https://github.com/argoproj/argo-workflows/commit/3717dd636949e4a78e8a6ddee4320e6a98cc3c81) fix: Improve robustness of releases. Fixes #3004 (#3009)
- * [9f86a4e9](https://github.com/argoproj/argo-workflows/commit/9f86a4e941ecca4399267f7780fbb2e7ddcd2199) feat(ui): Enable CSP, HSTS, X-Frame-Options. Fixes #2760, #1376, #2761 (#2971)
- * [cb71d585](https://github.com/argoproj/argo-workflows/commit/cb71d585c73c72513aead057d570c279ba46e74b) refactor(metrics)!: Refactor Metric interface (#2979)
- * [c0ee1eb2](https://github.com/argoproj/argo-workflows/commit/c0ee1eb2293f268f6c56f343e77ff64480562f4a) docs: Add Ravelin as a user of Argo (#3020)
- * [052e6c51](https://github.com/argoproj/argo-workflows/commit/052e6c5197a6e8b4dfb14d18c2b923ca93fcb84c) Fix isTarball to handle the small gzipped file (#3014)
- * [cdcba3c4](https://github.com/argoproj/argo-workflows/commit/cdcba3c4d6849668238180903e59f37affdff01d) fix(ui): Displays command args correctl pre-formatted. (#3018)
- * [b5160988](https://github.com/argoproj/argo-workflows/commit/b516098804443b6741e9253cc211ddbf208898ab) build: Mockery v1.1.1 (#3015)
- * [a04d8f28](https://github.com/argoproj/argo-workflows/commit/a04d8f28b3028ebb3c9dacd525c563c448b19215) docs: Add StatefulSet and Service doc (#3008)
- * [8412526c](https://github.com/argoproj/argo-workflows/commit/8412526cb2d3675b4e9df5c0d4abb369eaf16380) docs: Fix Deprecated formatting (#3010)
- * [cc0fe433](https://github.com/argoproj/argo-workflows/commit/cc0fe433aebc0397c648ff4ddc8c1f99df042568) fix(events): Correct event API Version. Fixes #2994 (#2999)
- * [d5d6f750](https://github.com/argoproj/argo-workflows/commit/d5d6f750bf9324e8277fc0f05d8214b5dee255cd) feat(controller)!: Updates the resource duration calculation. Fixes #2934 (#2937)
- * [fa3801a5](https://github.com/argoproj/argo-workflows/commit/fa3801a5d89d58208f07977b73a8686e3aa2c3c9) feat(ui): Render 2000+ nodes DAG acceptably. (#2959)
- * [f952df51](https://github.com/argoproj/argo-workflows/commit/f952df517bae1f423063d61e7542c4f0c4c667e1) fix(executor/pns): remove sleep before sigkill (#2995)
- * [2a9ee21f](https://github.com/argoproj/argo-workflows/commit/2a9ee21f47dbd36ba1d2020d0939c73fc198b333) feat(ui): Add Suspend and Resume to CronWorkflows in UI (#2982)
- * [eefe120f](https://github.com/argoproj/argo-workflows/commit/eefe120f9f1e0fe5eb4876a24b00b1eb5147cebb) test: Upgrade to argosay:v2 (#3001)
- * [47472f73](https://github.com/argoproj/argo-workflows/commit/47472f73d9cec8ac601814a41388064185d2eae7) chore: Update Mockery (#3000)
- * [46b11e1e](https://github.com/argoproj/argo-workflows/commit/46b11e1eca9d25ab3dc936e959316ec587a86f52) docs: Use keyFormat instead of keyPrefix in docs (#2997)
- * [60d5fdc7](https://github.com/argoproj/argo-workflows/commit/60d5fdc7f91b675055ab0b1c7f450fa6feb0fac5) fix: Begin counting maxDuration from first child start (#2976)
- * [76aca493](https://github.com/argoproj/argo-workflows/commit/76aca4936290823c5fd0da0be8429e6d4d92efee) build: Fix Docker build. Fixes #2983 (#2984)
- * [d8cb66e7](https://github.com/argoproj/argo-workflows/commit/d8cb66e785c170030bd503ca4626ab4e6e4f8c6c) feat: Add Argo variable {{retries}} to track retry attempt (#2911)
- * [14b7a459](https://github.com/argoproj/argo-workflows/commit/14b7a459ec4ad58a3ae77c74c293a283cafdc33b) docs: Fix typo with WorkflowTemplates link (#2977)
- * [3c442232](https://github.com/argoproj/argo-workflows/commit/3c4422326dceea456df94a71270df80e9cbf7177) fix: Remove duplicate node event. Fixes #2961 (#2964)
- * [d8ab13f2](https://github.com/argoproj/argo-workflows/commit/d8ab13f24031eae58354b9ac1c59bad69968cbe6) fix: Consider Shutdown when assesing DAG Phase for incomplete Retry node (#2966)
- * [8a511e10](https://github.com/argoproj/argo-workflows/commit/8a511e109dc55d9f9c7b69614f110290c2536858) fix: Nodes with pods deleted out-of-band should be Errored, not Failed (#2855)
- * [ca4e08f7](https://github.com/argoproj/argo-workflows/commit/ca4e08f7ed861cf4e1d0a17617d210287ed83730) build: Build dev images from cache (#2968)
- * [5f01c4a5](https://github.com/argoproj/argo-workflows/commit/5f01c4a5945a9d89d5194efbbaaf1d4d2c40532d) Upgraded to Node 14.0.0 (#2816)
- * [849d876c](https://github.com/argoproj/argo-workflows/commit/849d876c835982bbfa814714e713b4d19b35148d) Fixes error with unknown flag: --show-all (#2960)
- * [93bf6609](https://github.com/argoproj/argo-workflows/commit/93bf6609cf407d6cd374a6dd3bc137b1c82e88df) fix: Don't update backoff message to save operations (#2951)
- * [3413a5df](https://github.com/argoproj/argo-workflows/commit/3413a5dfa7c29711d9bf0d227437a10bf0de9d3b) fix(cli): Remove info logging from watches. Fixes #2955 (#2958)
- * [fe9f9019](https://github.com/argoproj/argo-workflows/commit/fe9f90191fac2fb7909c8e0b31c5f3b5a31236c4) fix: Display Workflow finish time in UI (#2896)
- * [f281199a](https://github.com/argoproj/argo-workflows/commit/f281199a1df65a6716d29a8e29ba756aa31f36dc) docs: Update README with new features (#2807)
- * [c8bd0bb8](https://github.com/argoproj/argo-workflows/commit/c8bd0bb82e174cca8d733e7b75748273172efa37) fix(ui): Change default pagination to all and sort workflows (#2943)
- * [e3ed686e](https://github.com/argoproj/argo-workflows/commit/e3ed686e13eacf0174b3e1088fe3cf2eb7706b39) fix(cli): Re-establish watch on EOF (#2944)
- * [67355372](https://github.com/argoproj/argo-workflows/commit/673553729e12d4ad83387eba68b3cbfb0aea8fe4) fix(swagger)!: Fixes invalid K8S definitions in `swagger.json`. Fixes #2888 (#2907)
- * [023f2338](https://github.com/argoproj/argo-workflows/commit/023f233896ac90fdf1529f747c56ab19028b6a9c) fix(argo-server)!: Implement missing instanceID code. Fixes #2780 (#2786)
- * [7b0739e0](https://github.com/argoproj/argo-workflows/commit/7b0739e0b846cff7d2bc3340e88859ab655d25ff) Fix typo (#2939)
- * [20d69c75](https://github.com/argoproj/argo-workflows/commit/20d69c75662653523dc6276e7e57084ec1c7334f) Detect ctrl key when a link is clicked (#2935)
- * [f32cec31](https://github.com/argoproj/argo-workflows/commit/f32cec31027b7112a9a51069c2ad7b1cfbedd960) fix default null value for timestamp column - MySQL 5.7 (#2933)
- * [9773cfeb](https://github.com/argoproj/argo-workflows/commit/9773cfebcdcba9a6ab199c7001711c500f6f69a3) docs: Add docs/scaling.md (#2918)
- * [99858ea5](https://github.com/argoproj/argo-workflows/commit/99858ea53d79e964530f4a3840936d5da79585d9) feat(controller): Remove the excessive logging of node data (#2925)
- * [03ad694c](https://github.com/argoproj/argo-workflows/commit/03ad694c42a782dc9f45f7ff0ba94b32cbbfa2f1) feat(cli): Refactor `argo list --chunk-size` and add `argo archive list --chunk-size`. Fixes #2820 (#2854)
- * [1c45d5ea](https://github.com/argoproj/argo-workflows/commit/1c45d5eafe1c44b6dc53aba80ab3ef978db04afa) test: Use argoproj/argosay:v1 (#2917)
- * [f311a5a7](https://github.com/argoproj/argo-workflows/commit/f311a5a70a8f299f05363175e27afffc6772457b) build: Fix Darwin build (#2920)
- * [a06cb5e0](https://github.com/argoproj/argo-workflows/commit/a06cb5e0e02d7b480d20713e9c67f83d09fa2b24) fix: remove doubled entry in server cluster role deployment (#2904)
- * [c71116dd](https://github.com/argoproj/argo-workflows/commit/c71116ddedafde0f2931fbd489b9b17b8bd81e65) feat: Windows Container Support. Fixes #1507 and #1383 (#2747)
- * [3afa7b2f](https://github.com/argoproj/argo-workflows/commit/3afa7b2f1b4ecb9e64b2c9dee1e91dcf548f82c3) fix(ui): Use LogsViewer for container logs (#2825)
- * [9ecd5226](https://github.com/argoproj/argo-workflows/commit/9ecd522618b390b27c784092c3dc83e84785dcbb) docs: Document node field selector. Closes #2860 (#2882)
- * [7d8818ca](https://github.com/argoproj/argo-workflows/commit/7d8818ca2a335f5cb200d9b088305d032cacd020) fix(controller): Workflow stop and resume by node didn't properly support offloaded nodes. Fixes #2543 (#2548)
- * [e013f29d](https://github.com/argoproj/argo-workflows/commit/e013f29dd224a91023b5fc4cc9fed2879994ddb1) ci: Remove context to stop unauthozied errors on test jobs (#2910)
- * [db52e7ba](https://github.com/argoproj/argo-workflows/commit/db52e7bac649a7b101f846e7f7354d10a45c9e62) fix(controller): Add mutex to nameEntryIDMap in cron controller. Fix #2638 (#2851)
- * [9a33aa2d](https://github.com/argoproj/argo-workflows/commit/9a33aa2d3c0ffedf33625bd3339c2006937c0953) docs(users): Adding Habx to the users list (#2781)
- * [9e4ac9b3](https://github.com/argoproj/argo-workflows/commit/9e4ac9b3c8c7028c9759278931a76c5f26481e53) feat(cli): Tolerate deleted workflow when running `argo delete`. Fixes #2821 (#2877)
- * [a0035dd5](https://github.com/argoproj/argo-workflows/commit/a0035dd58609d744a6fa304e51d61474f25c817d) fix: ConfigMap syntax (#2889)
- * [c05c3859](https://github.com/argoproj/argo-workflows/commit/c05c3859cf911502597456f5ed374c8604af85f0) ci: Build less and therefore faster (#2839)
- * [56143eb1](https://github.com/argoproj/argo-workflows/commit/56143eb1e1e80275da2742135ef147e563cae737) feat(ui): Add pagination to workflow list. Fixes #1080 and #976 (#2863)
- * [e0ad7de9](https://github.com/argoproj/argo-workflows/commit/e0ad7de97a82b2e509bb4bc8bb5fcf5b9c26dea3) test: Fixes various tests (#2874)
- * [e378ca47](https://github.com/argoproj/argo-workflows/commit/e378ca470f1a97d624d3aceb3c53b55155fd02a9) fix: Cannot create WorkflowTemplate with un-supplied inputs (#2869)
- * [c3e30c50](https://github.com/argoproj/argo-workflows/commit/c3e30c5052b9544d363c4c73315be5136b593f9a) fix(swagger): Generate correct Swagger for inline objects. Fixes #2835 (#2837)
- * [c0143d34](https://github.com/argoproj/argo-workflows/commit/c0143d3478c6ff2ec5138f7c6b272fc8e36c6734) feat: Add metric retention policy (#2836)
- * [f03cda61](https://github.com/argoproj/argo-workflows/commit/f03cda61a73243eea225fe4d0a49f2ada0523d0d) Update getting-started.md (#2872)
- * [d66224e1](https://github.com/argoproj/argo-workflows/commit/d66224e12613c36f8fa91956509fad9fc450af74) fix: Don't error when deleting already-deleted WFs (#2866)
- * [e84acb50](https://github.com/argoproj/argo-workflows/commit/e84acb502cbbba88a700c511ffbf7feee609ccb8) chore: Display wf.Status.Conditions in CLI (#2858)
- * [3c7f3a07](https://github.com/argoproj/argo-workflows/commit/3c7f3a07d90ea6dcdf91673d4e5b4075216628f7) docs: Fix typo ".yam" -> ".yaml" (#2862)
- * [d7f8e0c4](https://github.com/argoproj/argo-workflows/commit/d7f8e0c4742b62d9271b6272a8f87c53a4fddea2) fix(CLI): Re-establish workflow watch on disconnect. Fixes #2796 (#2830)
- * [31358d6e](https://github.com/argoproj/argo-workflows/commit/31358d6e255e28f20803575f5ee0fdf2015ecb68) feat(CLI): Add -v and --verbose to Argo CLI (#2814)
- * [1d30f708](https://github.com/argoproj/argo-workflows/commit/1d30f70896b8b5f7ddc29e255c2dce0c6d01f4bd) ci: Don't configure Sonar on CI for release branches (#2811)
- * [d9c54075](https://github.com/argoproj/argo-workflows/commit/d9c54075b71baad2742829fe0874e4f07c67c67a) docs: Fix exit code example and docs (#2853)
- * [90743353](https://github.com/argoproj/argo-workflows/commit/90743353fcaf46dae04872935e95ce858e1792b3) feat: Expose workflow.serviceAccountName as global variable (#2838)
- * [f07f7bf6](https://github.com/argoproj/argo-workflows/commit/f07f7bf61147b3444255117c26bfd38261220e95) note that tar.gz'ing output artifacts is optional (#2797)
- * [3fd3fc6c](https://github.com/argoproj/argo-workflows/commit/3fd3fc6c3c789e7a3b357e16aacb02d0f880892b) docs: Document how to label creator (#2827)
- * [b956ec65](https://github.com/argoproj/argo-workflows/commit/b956ec65f372194e0f110e672a2ad50bd51a10d8) fix: Add Step node outputs to global scope (#2826)
- * [bac339af](https://github.com/argoproj/argo-workflows/commit/bac339afe10013a63bc1bb2fb83a883c07e19cb9) chore: Configure webpack dev server to proxy using HTTPS (#2812)
- * [cc136f9c](https://github.com/argoproj/argo-workflows/commit/cc136f9c3d76a5c50a9c03613233c62d118d3457) test: Skip TestStopBehavior. See #2833 (#2834)
- * [52ff43b5](https://github.com/argoproj/argo-workflows/commit/52ff43b54a76f934ae3b491c74e2350fbd2298f2) fix: Artifact panic on unknown artifact. Fixes #2824 (#2829)
- * [554fd06c](https://github.com/argoproj/argo-workflows/commit/554fd06c9daf7ce1147f949d397e489d508c58ba) fix: Enforce metric naming validation (#2819)
- * [dd223669](https://github.com/argoproj/argo-workflows/commit/dd223669a30acc58369a70288fee6ed6e006c189) docs: Add Microba as official Argo user (#2822)
- * [8151f0c4](https://github.com/argoproj/argo-workflows/commit/8151f0c49aea618a6dfcf92ec8388ccb7a5de985) docs: Update tls.md (#2813)
- * [0dbd78ff](https://github.com/argoproj/argo-workflows/commit/0dbd78ff223e592f8761f1334f952e97c9e6ac48) feat: Add TLS support. Closes #2764 (#2766)
- * [510e11b6](https://github.com/argoproj/argo-workflows/commit/510e11b639e0b797cc4253d84e96fb070691b7ab) fix: Allow empty strings in valueFrom.default (#2805)
- * [d7f41ac8](https://github.com/argoproj/argo-workflows/commit/d7f41ac8df15b8ed1e68b2e4f44d64418e4c4000) fix: Print correct version in logs. (#2806)
- * [e9c21120](https://github.com/argoproj/argo-workflows/commit/e9c2112064293b3a71e47b493666bdc9b311dfa6) chore: Add GCS native example for output artifact (#2789)
- * [e0f2697e](https://github.com/argoproj/argo-workflows/commit/e0f2697e252e7b62842af3b56f924f324f2c48ec) fix(controller): Include global params when using withParam (#2757)
- * [3441b11a](https://github.com/argoproj/argo-workflows/commit/3441b11aa5bde5fa5d0a6652fbb8fa05a4225686) docs: Fix typo in CronWorkflow doc (#2804)
- * [a2d2b848](https://github.com/argoproj/argo-workflows/commit/a2d2b848a9b6f3cf6fe5c0f0dd3b7b3084f83e37) docs: Add example of recursive for loop (#2801)
- * [29d39e29](https://github.com/argoproj/argo-workflows/commit/29d39e297c93355b68a9726aadeef4c67d4767b2) docs: Update the contributing docs  (#2791)
- * [1ea286eb](https://github.com/argoproj/argo-workflows/commit/1ea286eb237ed86bfde5a4c954927b335ab588f2) fix: ClusterWorkflowTemplate RBAC for  argo server (#2753)
- * [1f14f2a5](https://github.com/argoproj/argo-workflows/commit/1f14f2a5f6054a88f740c6799d443216f694f08f) feat(archive): Implement data retention. Closes #2273 (#2312)
- * [d0cc7764](https://github.com/argoproj/argo-workflows/commit/d0cc7764fe477465ac2c76de9cc406bbf2aac807) feat: Display argo-server version in `argo version` and in UI. (#2740)
- * [8de57281](https://github.com/argoproj/argo-workflows/commit/8de572813ee9f028cf8e06834f45a3592bc73f14) feat(controller): adds Kubernetes node name to workflow node detail in web UI and CLI output. Implements #2540 (#2732)
- * [52fa5fde](https://github.com/argoproj/argo-workflows/commit/52fa5fdee9f021b73eca30a199c65a3760462bd9) MySQL config fix (#2681)
- * [43d9eebb](https://github.com/argoproj/argo-workflows/commit/43d9eebb479242ef23e84135bbe4b9dd252dea46) fix: Rename Submittable API endpoint to `submit` (#2778)
- * [69333a87](https://github.com/argoproj/argo-workflows/commit/69333a87b0ae411972f7f25b196db989500bbe0c) Fix template scope tests (#2779)
- * [bb1abf7f](https://github.com/argoproj/argo-workflows/commit/bb1abf7f4c425494a0878d6cbc2d2cb677e88a97) chore: Add CODEOWNERS file (#2776)
- * [905e0b99](https://github.com/argoproj/argo-workflows/commit/905e0b99312e579dcd8aa8036c2ee57df6fa7a29) fix: Naming error in Makefile (#2774)
- * [7cb2fd17](https://github.com/argoproj/argo-workflows/commit/7cb2fd17765aad691eda25ca4c5acecb89f84394) fix: allow non path output params (#2680)
- * [af9f61ea](https://github.com/argoproj/argo-workflows/commit/af9f61ea7ce53f629a284a44f0106b9ed73f24e2) ci: Recurl (#2769)
- * [ef08e642](https://github.com/argoproj/argo-workflows/commit/ef08e642b5c92de0571998909b2b34ab3ac89fd4) build: Retry curl 3x (#2768)
- * [dedec906](https://github.com/argoproj/argo-workflows/commit/dedec906f0391b63b341c90e43a67047303c4728) test: Get tests running on release branches (#2767)
- * [1c8318eb](https://github.com/argoproj/argo-workflows/commit/1c8318eb92d17fa2263675cabce5134d3f1e37a2) fix: Add compatiblity mode to templateReference (#2765)
- * [7975952b](https://github.com/argoproj/argo-workflows/commit/7975952b0aa3ac84ea4559b302236598d1d47954) fix: Consider expanded tasks in getTaskFromNode (#2756)
- * [bc421380](https://github.com/argoproj/argo-workflows/commit/bc421380c9dfce1b8a25950d2bdc6a71b2e74a2d) fix: Fix template resolution in UI (#2754)
- * [391c0f78](https://github.com/argoproj/argo-workflows/commit/391c0f78a496dbe0334686dfcabde8c9af8a474f) Make phase and templateRef available for unsuspend and retry selectors (#2723)
- * [a6fa3f71](https://github.com/argoproj/argo-workflows/commit/a6fa3f71fa6bf742cb2fa90292180344f3744def) fix: Improve cookie security. Fixes #2759 (#2763)
- * [57f0183c](https://github.com/argoproj/argo-workflows/commit/57f0183cd194767af8f9bcb5fb84ab083c1661c3) Fix typo on the documentation. It causes error unmarshaling JSON: while (#2730)
- * [c6ef1ff1](https://github.com/argoproj/argo-workflows/commit/c6ef1ff19e1c3f74b4ef146be37e74bd0b748cd7) feat(manifests): add name on workflow-controller-metrics service port (#2744)
- * [af5cd1ae](https://github.com/argoproj/argo-workflows/commit/af5cd1ae0030b20f71ad345f21456100fec74639) docs: Update OWNERS (#2750)
- * [06c4bd60](https://github.com/argoproj/argo-workflows/commit/06c4bd60cf2dc85362b3370acd44e4bc3977dcbc) fix: Make ClusterWorkflowTemplate optional for namespaced Installation (#2670)
- * [25c62463](https://github.com/argoproj/argo-workflows/commit/25c624636d80605c08dd423528cb22b89cebf687) docs: Update README (#2752)
- * [908e1685](https://github.com/argoproj/argo-workflows/commit/908e1685d78d12c87fe955eec8ad0df964b3d98b) docs: Update README.md (#2751)
- * [4ea43e2d](https://github.com/argoproj/argo-workflows/commit/4ea43e2d63385211cc0a29c2aa1b237797a62f71) fix: Children of onExit nodes are also onExit nodes (#2722)
- * [3f1b6667](https://github.com/argoproj/argo-workflows/commit/3f1b6667282cf3d1b7944f7fdc075ef0f1b8ff36) feat: Add Kustomize as supported install option. Closes #2715 (#2724)
- * [691459ed](https://github.com/argoproj/argo-workflows/commit/691459ed3591f72251dc230982d7b03dc3d6f9db) fix: Error pending nodes w/o Pods unless resubmitPendingPods is set (#2721)
- * [874d8776](https://github.com/argoproj/argo-workflows/commit/874d8776c22f54ede8a07ef87b9d18c6ba8198ec) test: Longer timeout for deletion (#2737)
- * [3c8149fa](https://github.com/argoproj/argo-workflows/commit/3c8149fabfcb84bc57d1973c10fe6dbce96232a0) Fix typo (#2741)
- * [98f60e79](https://github.com/argoproj/argo-workflows/commit/98f60e7985ebd77d42ff99c6d6e1276048fb07f6) feat: Added Workflow SubmitFromResource API (#2544)
- * [6253997a](https://github.com/argoproj/argo-workflows/commit/6253997a7e25f3ad9fd3c322ea9ca9ad0b710c83) fix: Reset all conditions when resubmitting (#2702)
- * [e7c67de3](https://github.com/argoproj/argo-workflows/commit/e7c67de30df90ba7bbd649a2833dc6efed8a18de) fix: Maybe fix watch. Fixes #2678 (#2719)
- * [cef6dfb6](https://github.com/argoproj/argo-workflows/commit/cef6dfb6a25445624f864863da45c36380049e6d) fix: Print correct version string. (#2713)
- * [e9589d28](https://github.com/argoproj/argo-workflows/commit/e9589d28a5dbc7cb620f206bd1fee457a8b29dfe) feat: Increase pod workers and workflow workers both to 32 by default. (#2705)
- * [3a1990e0](https://github.com/argoproj/argo-workflows/commit/3a1990e09b353cd963b5dfbf50a702266d49b2fc) test: Fix Goroutine leak that was making controller unit tests slow. (#2701)
- * [9894c29f](https://github.com/argoproj/argo-workflows/commit/9894c29f4258fd40b604ee2c33bd877d03ff5b00) ci: Fix Sonar analysis on master. (#2709)
- * [54f5be36](https://github.com/argoproj/argo-workflows/commit/54f5be361f597d45c97469095a2e5cb5678436a8) style: Camelcase "clusterScope" (#2720)
- * [db6d1416](https://github.com/argoproj/argo-workflows/commit/db6d1416a11dbd9d963a2df6740908a1d8086ff6) fix: Flakey TestNestedClusterWorkflowTemplate testcase failure (#2613)
- * [b4fd4475](https://github.com/argoproj/argo-workflows/commit/b4fd4475c2661f12a92ba48a71b52067536044fe) feat(ui): Add a YAML panel to view the workflow manifest. (#2700)
- * [65d413e5](https://github.com/argoproj/argo-workflows/commit/65d413e5d68b2f1667ef09f3c5938a07c3442fe8) build(ui): Fix compression of UI package. (#2704)
- * [4129528d](https://github.com/argoproj/argo-workflows/commit/4129528d430be282099e94d7e98d61e40d9c78ba) fix: Don't use docker cache when building release images (#2707)
- * [8d0956c9](https://github.com/argoproj/argo-workflows/commit/8d0956c9eb8533d5a399246ffed68f6d343d47a1) test: Increase runCli timeout to 1m (#2703)
- * [9d93e971](https://github.com/argoproj/argo-workflows/commit/9d93e971a66d8f50ad92ff9e15175c6bbfe292c4) Update getting-started.md (#2697)
- * [ee644a35](https://github.com/argoproj/argo-workflows/commit/ee644a35ce4ec6a5565327fbf8cbae17a742603f) docs: Fix CONTRIBUTING.md and running-locally.md. Fixes #2682 (#2699)
- * [2737c0ab](https://github.com/argoproj/argo-workflows/commit/2737c0abf77f1555c9a9a59e564d0f1242d2656e) feat: Allow to pass optional flags to resource template (#1779)
- * [c1a2fc7c](https://github.com/argoproj/argo-workflows/commit/c1a2fc7ca8be7b9286ec01a12a185d8d4360b9f6) Update running-locally.md - fixing incorrect protoc install (#2689)
- * [a1226c46](https://github.com/argoproj/argo-workflows/commit/a1226c4616ad327400b37be19703e65a31919248) fix: Enhanced WorkflowTemplate and ClusterWorkflowTemplate validation to support Global Variables   (#2644)
- * [c21cc2f3](https://github.com/argoproj/argo-workflows/commit/c21cc2f31fead552cbab5f4664d20d56cf291619) fix a typo (#2669)
- * [9430a513](https://github.com/argoproj/argo-workflows/commit/9430a513fe7b5587048a5e74d3c9abc9e36e4304) fix: Namespace-related validation in UI (#2686)
- * [f3eeca6e](https://github.com/argoproj/argo-workflows/commit/f3eeca6e3b72f27f86678de840d1b6b7497e9473) feat: Add exit code as output variable (#2111)
- * [9f95e23a](https://github.com/argoproj/argo-workflows/commit/9f95e23a4dc9104da2218c66c66c4475285dfc3e) fix: Report metric emission errors via Conditions (#2676)
- * [c67f5ff5](https://github.com/argoproj/argo-workflows/commit/c67f5ff55b8e41b465e481d7a38d54d551c07ee4) fix: Leaf task with continueOn should not fail DAG (#2668)
- * [3c20d4c0](https://github.com/argoproj/argo-workflows/commit/3c20d4c072f1ec69954a3db8a9383bf312b495fd) ci: Migrate to use Sonar instead of CodeCov for analysis (#2666)
- * [9c6351fa](https://github.com/argoproj/argo-workflows/commit/9c6351fa643f76a7cf36eef3b80cff9bf5880463) feat: Allow step restart on workflow retry. Closes #2334 (#2431)
- * [cf277eb5](https://github.com/argoproj/argo-workflows/commit/cf277eb5114cd2db4f00d34e400a132d3344bf97) docs: Updates docs for CII. See #2641 (#2643)
- * [e2d0aa23](https://github.com/argoproj/argo-workflows/commit/e2d0aa23ab4ee9b91b018bb556959c60981586e2) fix: Consider offloaded and compressed node in retry and resume (#2645)
- * [a25c6a20](https://github.com/argoproj/argo-workflows/commit/a25c6a20d0ff7b7b7b211fcfe207200036ed5df8) build: Fix codegen for releases (#2662)
- * [4a3ca930](https://github.com/argoproj/argo-workflows/commit/4a3ca930ef1d944dfd8659d5886d8abc7f6ce42f) fix: Correctly emit events. Fixes #2626 (#2629)
- * [4a7d4bdb](https://github.com/argoproj/argo-workflows/commit/4a7d4bdba522870ab9883c4f6ccac7b244bc5bcb) test: Fix flakey DeleteCompleted test (#2659)
- * [41f91e18](https://github.com/argoproj/argo-workflows/commit/41f91e18a4f65d8a6626782ebc8920ca02b3cc86) fix: Add DAG as default in UI filter and reorder (#2661)
- * [f138ada6](https://github.com/argoproj/argo-workflows/commit/f138ada68ba0b3c46f546bfef574e212833759ac) fix: DAG should not fail if its tasks have continueOn (#2656)
- * [e5cbdf6a](https://github.com/argoproj/argo-workflows/commit/e5cbdf6a4be8f111f6353534079fa4a71384e401) ci: Only run CI jobs if needed (#2655)
- * [4c452d5f](https://github.com/argoproj/argo-workflows/commit/4c452d5f7287179b6a7967fc7d60fb0837bd36ca) fix: Don't attempt to resolve artifacts if task is going to be skipped (#2657)
- * [2caf570a](https://github.com/argoproj/argo-workflows/commit/2caf570a35565617ae9af04682883ab34e2692b6) chore: Add newline to fields.md (#2654)
- * [2cb596da](https://github.com/argoproj/argo-workflows/commit/2cb596da3dac3c5683ed44e7a363c014e73a38a5) Storage region should be specified (#2538)
- * [271e4551](https://github.com/argoproj/argo-workflows/commit/271e45512be56bb6187d7665e9b5b65eb2500ad6) chore: Fix-up Yarn deps (#2649)
- * [4c1b0777](https://github.com/argoproj/argo-workflows/commit/4c1b077725a22d183ecdb24f2f147fee0a6e320c) fix: Sort log entries. (#2647)
- * [268fc461](https://github.com/argoproj/argo-workflows/commit/268fc46197ac411339c78018f05d76e102447eef)  docs: Added doc generator code (#2632)
- * [d58b7fc3](https://github.com/argoproj/argo-workflows/commit/d58b7fc39620fb24e40bb4f55f69c4e0fb5fc017) fix: Add input paremeters to metric scope (#2646)
- * [cc3af0b8](https://github.com/argoproj/argo-workflows/commit/cc3af0b83381e2d4a8da1959c36fd0a466c414ff) fix: Validating Item Param in Steps Template (#2608)
- * [6c685c5b](https://github.com/argoproj/argo-workflows/commit/6c685c5baf281116340b7b0708f8a29764d72c47) fix: allow onExit to run if wf exceeds activeDeadlineSeconds. Fixes #2603 (#2605)
- * [ffc43ce9](https://github.com/argoproj/argo-workflows/commit/ffc43ce976973c7c20d6c58d7b27a28969ae206f) feat: Added Client validation on Workflow/WFT/CronWF/CWFT (#2612)
- * [24655cd9](https://github.com/argoproj/argo-workflows/commit/24655cd93246e2a25dc858238116f7acec45ea42) feat(UI): Move Workflow parameters to top of submit (#2640)
- * [0a3b159a](https://github.com/argoproj/argo-workflows/commit/0a3b159ab87bd313896174f8464ffd277b14264c) Use error equals (#2636)
- * [8c29e05c](https://github.com/argoproj/argo-workflows/commit/8c29e05cb5befe5f9f0263ff138eab66f75c54d0) ci: Fix codegen job (#2648)
- * [a78ecb7f](https://github.com/argoproj/argo-workflows/commit/a78ecb7fe040c0040fb12731997351a02e0808a0) docs(users): Add CoreWeave and ConciergeRender (#2641)
- * [14be4670](https://github.com/argoproj/argo-workflows/commit/14be46707f4051db71e9495472e842fbb1eb5ea0) fix: Fix logs part 2 (#2639)
- * [4da6f4f3](https://github.com/argoproj/argo-workflows/commit/4da6f4f3ee75b2e50206381dad1809d5a21c6cce) feat: Add 'outputs.result' to Container templates (#2584)
- * [51bc876d](https://github.com/argoproj/argo-workflows/commit/51bc876d576b6e61f508bb56ab9f2dfbf91b0e85) test: Fixes TestCreateWorkflowDryRun. Closes #2618 (#2628)
- * [212c6d75](https://github.com/argoproj/argo-workflows/commit/212c6d75fa7e5e8d568e80992d1924a2c51cd631) fix: Support minimal mysql version 5.7.8 (#2633)
- * [8facacee](https://github.com/argoproj/argo-workflows/commit/8facaceeb3515d804c3fd276b1802dbd6cf773e8) refactor: Refactor Template context interfaces (#2573)
- * [812813a2](https://github.com/argoproj/argo-workflows/commit/812813a288608e196006d4b8369702d020e61dc4) fix: fix test cases (#2631)
- * [ed028b25](https://github.com/argoproj/argo-workflows/commit/ed028b25f6c925a02596f90d722283856b003ff8) fix: Fix logging problems. See #2589 (#2595)
- * [d4e81238](https://github.com/argoproj/argo-workflows/commit/d4e8123816f3883d876ed715036c5d91d3fe0586) test: Fix teething problems (#2630)
- * [4aad6d55](https://github.com/argoproj/argo-workflows/commit/4aad6d55ed4e7a6c9eaa9a36b78e123655dd4ca4) chore: Add comments to issues (#2627)
- * [54f7a013](https://github.com/argoproj/argo-workflows/commit/54f7a0134ad9933608993bc09eda2032e7a16a80) test: Enhancements and repairs to e2e test framework (#2609)
- * [d95926fe](https://github.com/argoproj/argo-workflows/commit/d95926fe40e48932c25a0f70c671ad99f4149505) fix: Fix WorkflowTemplate icons to be more cohesive (#2607)
- * [0130e1fd](https://github.com/argoproj/argo-workflows/commit/0130e1fd85b7fa5b3b48b07b873858670e1a61a0) docs: Add fields and core concepts doc (#2610)
- * [5a1ac203](https://github.com/argoproj/argo-workflows/commit/5a1ac20352ab6042958f49a59d0f5227329f654c) fix: Fixes panic in toWorkflow method (#2604)
- * [51910292](https://github.com/argoproj/argo-workflows/commit/5191029247ac817dd6ce811e044459c45b2846ee) chore: Lint UI on CI, test diagnostics, skip bad test (#2587)
- * [232bb115](https://github.com/argoproj/argo-workflows/commit/232bb115eba8e2667653fdbdc9831bee112daa85) fix(error handling): use Errorf instead of New when throwing errors with formatted text (#2598)
- * [eeb2f97b](https://github.com/argoproj/argo-workflows/commit/eeb2f97be5c8787180af9f32f2d5e8baee63ed2f) fix(controller): dag continue on failed. Fixes #2596 (#2597)
- * [99c35129](https://github.com/argoproj/argo-workflows/commit/99c35129eae2d283c2e6d81b578d786b494aab11) docs: Fix inaccurate field name in docs (#2591)
- * [21c73779](https://github.com/argoproj/argo-workflows/commit/21c7377932825cd30f67a840d30853f4a48951fa) fix: Fixes lint errors (#2594)
- * [38aca5fa](https://github.com/argoproj/argo-workflows/commit/38aca5fa2a153393b3edb93be07ddce375ad13f4) chore: Added ClusterWorkflowTemplate RBAC on quick-start manifests (#2576)
- * [59f746e1](https://github.com/argoproj/argo-workflows/commit/59f746e1a551180d11e57676f8a2a384b3741599) feat: UI enhancement for Cluster Workflow Template (#2525)
- * [0801a428](https://github.com/argoproj/argo-workflows/commit/0801a4284a948bbeced83852af27a019e7b33535) fix(cli): Show lint errors of all files (#2552)
- * [c3535ba5](https://github.com/argoproj/argo-workflows/commit/c3535ba5ac85e1071a08ccbc930f2ff45cd2f295) docs: Fix wrong Configuring Your Artifact Repository document. (#2586)
- * [79217bc8](https://github.com/argoproj/argo-workflows/commit/79217bc89e892ee82bdd5018b2bba65425924d36) feat(archive): allow specifying a compression level (#2575)
- * [88d261d7](https://github.com/argoproj/argo-workflows/commit/88d261d7fa72faea19745de588c19de45e7fab88) fix: Use outputs of last child instead of retry node itslef (#2565)
- * [5c08292e](https://github.com/argoproj/argo-workflows/commit/5c08292e4ee388c1c5ca5291c601d50b2b3374e7) style: Correct the confused logic (#2577)
- * [3d146144](https://github.com/argoproj/argo-workflows/commit/3d14614459d50b96838fcfd83809ee29499e2917) fix: Fix bug in deleting pods. Fixes #2571 (#2572)
- * [cb739a68](https://github.com/argoproj/argo-workflows/commit/cb739a6897591969b959bd2feebd8ded97b9cb33) feat: Cluster scoped workflow template (#2451)
- * [c63e3d40](https://github.com/argoproj/argo-workflows/commit/c63e3d40be50479ca3c9a7325bfeb5fd9d31fa7c) feat: Show workflow duration in the index UI page (#2568)
- * [1520452a](https://github.com/argoproj/argo-workflows/commit/1520452a381319b414618d8429d6d7e0bb23790d) chore: Error -> Warn when Parent CronWf no longer exists (#2566)
- * [ffbb3b89](https://github.com/argoproj/argo-workflows/commit/ffbb3b899912f7af888d8216bd2ab55bc7106880) fix: Fixes empty/missing CM. Fixes #2285 (#2562)
- * [d0fba6f4](https://github.com/argoproj/argo-workflows/commit/d0fba6f443da013fd9ae8e48f658b337a0a18015) chore: fix typos in the workflow template docs (#2563)
- * [49801e32](https://github.com/argoproj/argo-workflows/commit/49801e32f1624ba20926f1b07a6ddafa2f162301) chore(docker): upgrade base image for executor image (#2561)
- * [c4efb8f8](https://github.com/argoproj/argo-workflows/commit/c4efb8f8b6e28a591794c018f5e61f55dd7d75e3) Add Riskified to the user list (#2558)
- * [8b92d33e](https://github.com/argoproj/argo-workflows/commit/8b92d33eb2f2de3b593459140576ea8eaff8fb4b) feat: Create K8S events on node completion. Closes #2274 (#2521)
- * [2902e144](https://github.com/argoproj/argo-workflows/commit/2902e144ddba2f8c5a93cdfc8e2437c04705065b) feat: Add node type and phase filter to UI (#2555)
- * [fb74ba1c](https://github.com/argoproj/argo-workflows/commit/fb74ba1ce27b96473411c2c5cfe9a86972af589e) fix: Separate global scope processing from local scope building (#2528)
- * [618b6dee](https://github.com/argoproj/argo-workflows/commit/618b6dee4de973b3f3ef1d1164a44b9cb176355e) fix: Fixes --kubeconfig flag. Fixes #2492 (#2553)
- * [79dc969f](https://github.com/argoproj/argo-workflows/commit/79dc969f73e0ec90bdc202e936afec970ff66fc6) test: Increase timeout for flaky test (#2543)
- * [15a3c990](https://github.com/argoproj/argo-workflows/commit/15a3c990359c40d791be64a34736e2a1ffa40178) feat: Report SpecWarnings in status.conditions (#2541)
- * [f142f30a](https://github.com/argoproj/argo-workflows/commit/f142f30a99aa9b12cdfbeed31129abb8d4266762) docs: Add example of template-level volume declaration. (#2542)
- * [93b6be61](https://github.com/argoproj/argo-workflows/commit/93b6be619523ec3d9d8c52c75d9fa540e0272c7f) fix(archive): Fix bug that prevents listing archive workflows. Fixes … (#2523)
- * [b4c9c54f](https://github.com/argoproj/argo-workflows/commit/b4c9c54f79d902f2372192f017192fa519800fd8) fix: Omit config key in configure artifact document. (#2539)
- * [864bf1e5](https://github.com/argoproj/argo-workflows/commit/864bf1e56812b0ea1434b3952073a3e15dd9f046) fix: Show template on its own field in CLI (#2535)
- * [555aaf06](https://github.com/argoproj/argo-workflows/commit/555aaf06306d066268c04e4dd50ec2fecadd22cc) test: fix master (#2534)
- * [94862b98](https://github.com/argoproj/argo-workflows/commit/94862b985ef97e39d01fcafc95109b1b3507b21e) chore: Remove deprecated example (#2533)
- * [5e1e7829](https://github.com/argoproj/argo-workflows/commit/5e1e78295df4df0205a47adcedde6f1d5915af95) fix: Validate CronWorkflow before creation (#2532)
- * [c9241339](https://github.com/argoproj/argo-workflows/commit/c92413393404bd4caeb00606b3ba8775eeadf231) fix: Fix wrong assertions (#2531)
- * [67fe04bb](https://github.com/argoproj/argo-workflows/commit/67fe04bb78ac7b402bb6ef5b58d5cca33ecd74db) Revert "fix: fix template scope tests (#2498)" (#2526)
- * [ddfa1ad0](https://github.com/argoproj/argo-workflows/commit/ddfa1ad03f2835b64efac96eb4fb10d14e3ed987) docs: couple of examples for REST API usage of argo-server (#2519)
- * [30542be7](https://github.com/argoproj/argo-workflows/commit/30542be7a121cf8774352bf987ee658b5d8b96c8) chore(docs): Update docs for useSDKCreds (#2518)
- * [e2cc6988](https://github.com/argoproj/argo-workflows/commit/e2cc6988018e50956c05ed20c665ead01766278d) feat: More control over resuming suspended nodes Fixes #1893 (#1904)
- * [b2771249](https://github.com/argoproj/argo-workflows/commit/b2771249b0be9c782ee2ae190dd76ec3bba2a562) chore: minor fix and refactory (#2517)
- * [b1ad163a](https://github.com/argoproj/argo-workflows/commit/b1ad163ac17312d103c03bf6a88069f1b055ea7d) fix: fix template scope tests (#2498)
- * [661d1b67](https://github.com/argoproj/argo-workflows/commit/661d1b6748b25488b288811dc5c0089b49b75a52) Increase client gRPC max size to match server (#2514)
- * [d8aa477f](https://github.com/argoproj/argo-workflows/commit/d8aa477f7f5089505df5fd26560f53f508f5b29f) fix: Fix potential panic (#2516)
- * [1afb692e](https://github.com/argoproj/argo-workflows/commit/1afb692eeb6a63cb0539cbc6762d8219b2b2dd00) fix: Allow runtime resolution for workflow parameter names (#2501)
- * [243ea338](https://github.com/argoproj/argo-workflows/commit/243ea338de767a39947f5fb4450321083a6f9c67) fix(controller): Ensure we copy any executor securityContext when creating wait containers; fixes #2512 (#2510)
- * [6e8c7bad](https://github.com/argoproj/argo-workflows/commit/6e8c7badcfa3f2eb7d5cb76f229e0570f3325f61) feat: Extend workflowDefaults to full Workflow and clean up docs and code (#2508)
- * [06cfc129](https://github.com/argoproj/argo-workflows/commit/06cfc1294a5a913a8b23bc4337ffa019717c4af2) feat: Native Google Cloud Storage support for artifact. Closes #1911 (#2484)
- * [999b1e1d](https://github.com/argoproj/argo-workflows/commit/999b1e1d9a6c9d69def35fd43d01b03c75748e62)  fix: Read ConfigMap before starting servers  (#2507)
- * [3d6e9b61](https://github.com/argoproj/argo-workflows/commit/3d6e9b61b3c7214ab5c62438e7d0ea750c3ae3f7) docs: Add separate ConfigMap doc for 2.7+ (#2505)
- * [e5bd6a7e](https://github.com/argoproj/argo-workflows/commit/e5bd6a7ed35a4d5ed75023719814541423affc48) fix(controller): Updates GetTaskAncestry to skip visited nod. Fixes #1907 (#1908)
- * [183a29e4](https://github.com/argoproj/argo-workflows/commit/183a29e40314ac97dfa6d7ff2e61f59ee6484279) docs: add official user (#2499)
- * [e636000b](https://github.com/argoproj/argo-workflows/commit/e636000bc457d654d487e065c1bcacd15ed75a74) feat: Updated arm64 support patch (#2491)
- * [559cb005](https://github.com/argoproj/argo-workflows/commit/559cb00596acbcc9a6a9cce001ca25fdcc561b2b) feat(ui): Report resources duration in UI. Closes #2460 (#2489)
- * [09291d9d](https://github.com/argoproj/argo-workflows/commit/09291d9d59e1fe51b1622b90ac18c6a5985b6a85) feat: Add default field in parameters.valueFrom (#2500)
- * [33cd4f2b](https://github.com/argoproj/argo-workflows/commit/33cd4f2b86e8b0993563d70c6b0d6f0f91b14535) feat(config): Make configuration mangement easier. Closes #2463 (#2464)
- * [f3df9660](https://github.com/argoproj/argo-workflows/commit/f3df9660be9f4d52975720e79bd01a6efe6fa18d) test: Fix test (#2490)
- * [bfaf1c21](https://github.com/argoproj/argo-workflows/commit/bfaf1c215f5491526edd020055ed8a15eb804a04) chore: Move quickstart Prometheus port to 9090 (#2487)
- * [487ed425](https://github.com/argoproj/argo-workflows/commit/487ed425840dc5698a4ef3a3c8f214b6c08949cc) feat: Logging the Pod Spec in controller log (#2476)
- * [96c80e3e](https://github.com/argoproj/argo-workflows/commit/96c80e3e2c6eb6867e360dde3dea97047b963c2f) fix(cli): Rearrange the order of chunk size argument in list command. Closes #2420 (#2485)
- * [47bd70a0](https://github.com/argoproj/argo-workflows/commit/47bd70a092debe980075195efd802e7bfb59c82f) chore: Fix Swagger for PDB to support Java client (#2483)
- * [53a10564](https://github.com/argoproj/argo-workflows/commit/53a10564aebc6ee17eb8e3e121b4c36b2a334b87) feat(usage): Report resource duration. Closes #1066 (#2219)
- * [063d9bc6](https://github.com/argoproj/argo-workflows/commit/063d9bc657b00e23ce7722d5d08ca69347fe7205) Revert "feat: Add support for arm64 platform (#2364)" (#2482)
- * [735d25e9](https://github.com/argoproj/argo-workflows/commit/735d25e9d719b409a7517685bcb4148278bef5a1) fix: Build image with SHA tag when a git tag is not available (#2479)
- * [c55bb3b2](https://github.com/argoproj/argo-workflows/commit/c55bb3b211be8ccc9680f8282f98f8a8bf647ca7) ci: Run lint on CI and fix GolangCI (#2470)
- * [e1c9f7af](https://github.com/argoproj/argo-workflows/commit/e1c9f7afcb4f685f615235ae1d0b6000add93635) fix ParallelSteps child type so replacements happen correctly; fixes argoproj-labs/argo-client-gen#5 (#2478)
- * [55c315db](https://github.com/argoproj/argo-workflows/commit/55c315db2e87fe28dcc26f49f4ee969bae9c7ea1) feat: Add support for IRSA and aws default provider chain. (#2468)
- * [c724c7c1](https://github.com/argoproj/argo-workflows/commit/c724c7c1afca646e09c0cb82acf8b59f8c413780) feat: Add support for arm64 platform (#2364)
- * [315dc164](https://github.com/argoproj/argo-workflows/commit/315dc164dcd24d0443b49ac95d49eb06b2c2a64f) feat: search archived wf by startat. Closes #2436 (#2473)
- * [23d230bd](https://github.com/argoproj/argo-workflows/commit/23d230bd54e04af264a0977545db365a2c0d6a6d) feat(ui): add Env to Node Container Info pane. Closes #2471 (#2472)
- * [10a0789b](https://github.com/argoproj/argo-workflows/commit/10a0789b9477b1b6c1b7adda71101925989d02de) fix: ParallelSteps swagger.json (#2459)
- * [a59428e7](https://github.com/argoproj/argo-workflows/commit/a59428e72c092e12b17c2bd8f22ee2e86eec043f) fix: Duration must be a string. Make it a string. (#2467)
- * [47bc6f3b](https://github.com/argoproj/argo-workflows/commit/47bc6f3b7450895aa35f9275b326077bb08453b5) feat: Add `argo stop` command (#2352)
- * [14478bc0](https://github.com/argoproj/argo-workflows/commit/14478bc07f42ae9ee362cc1531b1cf00d923211d) feat(ui): Add the ability to have links to logging facility in UI. Closes #2438 (#2443)
- * [2864c745](https://github.com/argoproj/argo-workflows/commit/2864c745877c9e44a5b14140f4317f8e2d45975a) chore: make codegen + make start (#2465)
- * [a85f62c5](https://github.com/argoproj/argo-workflows/commit/a85f62c5e8ee1a51f5fa8fd715ebdf4140d2483d) feat: Custom, step-level, and usage metrics (#2254)
- * [64ac0298](https://github.com/argoproj/argo-workflows/commit/64ac02980ea641d92f22328442e5a12893600d67) fix: Deprecate template.{template,templateRef,arguments} (#2447)
- * [6cb79e4e](https://github.com/argoproj/argo-workflows/commit/6cb79e4e5414277932e5cf755761cec4cda7e1b7) fix: Postgres persistence SSL Mode (#1866) (#1867)
- * [2205c0e1](https://github.com/argoproj/argo-workflows/commit/2205c0e162c93645a5ae1d883aec6ae33fec3c8f) fix(controller): Updates to add condition to workflow status. Fixes #2421 (#2453)
- * [9d96ab2f](https://github.com/argoproj/argo-workflows/commit/9d96ab2ffd6cec9fc65f0182234e103664ab9cd5) fix: make dir if needed (#2455)
- * [5346609e](https://github.com/argoproj/argo-workflows/commit/5346609e79de4fc4f6fc9d833f0f2a85790821aa) test: Maybe fix TestPendingRetryWorkflowWithRetryStrategy. Fixes #2446 (#2456)
- * [3448ccf9](https://github.com/argoproj/argo-workflows/commit/3448ccf91cbff2e3901a99e23e57a0e1ad97044c) fix: Delete PVCs unless WF Failed/Errored (#2449)
- * [782bc8e7](https://github.com/argoproj/argo-workflows/commit/782bc8e7c5d1fd102f1a16d07f209aed3bfdc689) fix: Don't error when optional artifacts are not found (#2445)
- * [fc18f3cf](https://github.com/argoproj/argo-workflows/commit/fc18f3cf27c525ff94a6b190a0aff0a9a3d45426) chore: Master needs codegen (#2448)
- * [32fc2f78](https://github.com/argoproj/argo-workflows/commit/32fc2f78212d031f99f1dfc5ad3a3642617ce7e7) feat: Support workflow templates submission. Closes #2007 (#2222)
- * [050a143d](https://github.com/argoproj/argo-workflows/commit/050a143d7639ad38dc01a685edce536917409a37) fix(archive): Fix edge-cast error for archiving. Fixes #2427 (#2434)
- * [9455c1b8](https://github.com/argoproj/argo-workflows/commit/9455c1b88d85f80091aa4fd2c8d4dc53b6cc73f8) doc: update CHANGELOG.md (#2425)
- * [1baa7ee4](https://github.com/argoproj/argo-workflows/commit/1baa7ee4ec7149afe789d73ed6e64abfe13387a7) feat(ui): cache namespace selection. Closes #2439 (#2441)
- * [91d29881](https://github.com/argoproj/argo-workflows/commit/91d29881f41642273fe0494bef70f2b9c41350e2) feat: Retry pending nodes (#2385)
- * [7094433e](https://github.com/argoproj/argo-workflows/commit/7094433e12b668236a87c034445daf88d659231f) test: Skip flakey tests in operator_template_scope_test.go. See #2432 (#2433)
- * [30332b14](https://github.com/argoproj/argo-workflows/commit/30332b14fb1043e22a66db594f1af252c5932853) fix: Allow numbers in steps.args.params.value (#2414)
- * [e9a06dde](https://github.com/argoproj/argo-workflows/commit/e9a06dde297e9f907d10ec88da93fbb90df5ebaf) feat: instanceID support for argo server. Closes #2004 (#2365)
- * [3f8be0cd](https://github.com/argoproj/argo-workflows/commit/3f8be0cd48963958c493e7669a1d03bb719b375a) fix "Unable to retry workflow" on argo-server (#2409)
- * [dd3029ab](https://github.com/argoproj/argo-workflows/commit/dd3029abdd13a6b4053934660ca1078e23780809) docs: Example showing how to use default settings for workflow spec. Related to ##2388 (#2411)
- * [13508828](https://github.com/argoproj/argo-workflows/commit/135088284acd1ced004374d20928c017fbf9cac7) fix: Check child node status before backoff in retry (#2407)
- * [b59419c9](https://github.com/argoproj/argo-workflows/commit/b59419c9f58422f60c7d5185c89b4d55ac278660) fix: Build with the correct version if you check out a specific version (#2423)
- * [6d834d54](https://github.com/argoproj/argo-workflows/commit/6d834d545bc816cde9b74b224116d9746db5b799) chore: document BASE_HREF (#2418)
- * [184c3653](https://github.com/argoproj/argo-workflows/commit/184c3653085bc8821bdcd65f5476fbe24f24b00e) fix: Remove lazy workflow template (#2417)
- * [918d0d17](https://github.com/argoproj/argo-workflows/commit/918d0d17c0455b6a0644c6d851dbea3f945db21c) docs: Added Survey Results (#2416)
- * [20d6e27b](https://github.com/argoproj/argo-workflows/commit/20d6e27bdf11389f23b2efe1be4ef737f333221d) Update CONTRIBUTING.md (#2410)
- * [f2ca045e](https://github.com/argoproj/argo-workflows/commit/f2ca045e1cad03d5ec7566ff7200fd8ca575ec5d) feat: Allow WF metadata spec on Cron WF (#2400)
- * [068a4336](https://github.com/argoproj/argo-workflows/commit/068a43362b2088f53d408623bc7ab078e0e7a9d0) fix: Correctly report version. Fixes #2374 (#2402)
- * [e19a398c](https://github.com/argoproj/argo-workflows/commit/e19a398c810fada879facd624a7663501306e1ef) Update pull_request_template.md (#2401)
- * [7c99c109](https://github.com/argoproj/argo-workflows/commit/7c99c109e3dd726f6453c94a594d69bca709ccf6) chore: Fix typo (#2405)
- * [175b164c](https://github.com/argoproj/argo-workflows/commit/175b164c33aee7fe2873df60915a881502ec9163) Change font family for class yaml (#2394)
- * [d1194755](https://github.com/argoproj/argo-workflows/commit/d11947558bc758e5102238162036650890731ec6) fix: Don't display Retry Nodes in UI if len(children) == 1 (#2390)
- * [b8623ec7](https://github.com/argoproj/argo-workflows/commit/b8623ec7b4a19713f5965cc0d628f26b81af39a2) docs: Create USERS.md (#2389)
- * [1d21d3f5](https://github.com/argoproj/argo-workflows/commit/1d21d3f5600feca4b63e3dc4b1d94d2830fa6e24) fix(doc strings): Fix bug related documentation/clean up of default configurations #2331 (#2388)
- * [77e11fc4](https://github.com/argoproj/argo-workflows/commit/77e11fc4838ff92de9d9cae91159fb88755dff0b) chore: add noindex meta tag to solve #2381; add kustomize to build docs (#2383)
- * [42200fad](https://github.com/argoproj/argo-workflows/commit/42200fad45b4925b8f4aac48a580e6e369de2ad4) fix(controller): Mount volumes defined in script templates. Closes #1722 (#2377)
- * [96af36d8](https://github.com/argoproj/argo-workflows/commit/96af36d85d70d4721b1ac3e6e0ef14db65e7aec3) fix: duration must be a string (#2380)
- * [7bf08192](https://github.com/argoproj/argo-workflows/commit/7bf0819267543808d80acaa5f39f40c1fdba511e) fix: Say no logs were outputted when pod is done (#2373)
- * [847c3507](https://github.com/argoproj/argo-workflows/commit/847c3507dafdd3ff2cd1acca4669c1a54a680ee2) fix(ui): Removed tailLines from EventSource (#2330)
- * [3890a124](https://github.com/argoproj/argo-workflows/commit/3890a12431bfacc83cc75d862f956ddfbc1d2a37) feat: Allow for setting default configurations for workflows, Fixes #1923, #2044 (#2331)
- * [81ab5385](https://github.com/argoproj/argo-workflows/commit/81ab538594ad0428a97e99f34b18041f31a1c753) Update readme (#2379)
- * [91810273](https://github.com/argoproj/argo-workflows/commit/91810273318ab3ea84ecf73b9d0a6f1ba7f43c2a) feat: Log version (structured) on component start-up (#2375)
- * [d0572a74](https://github.com/argoproj/argo-workflows/commit/d0572a74069a1a6c38fa860e1964fa0564fd28cd) docs: Make Getting Started agnostic to version (#2371)
- * [d3a3f6b1](https://github.com/argoproj/argo-workflows/commit/d3a3f6b195b984a97eb214e99f29498c0bd39c85) docs: Add Prudential to the users list (#2353)
- * [4714c880](https://github.com/argoproj/argo-workflows/commit/4714c88099f25a3ffe2db14574016b069f85335d) chore: Master needs codegen (#2369)
- * [5b6b8257](https://github.com/argoproj/argo-workflows/commit/5b6b8257890d3c7aa93d8e98b10090add08a22e1) fix(docker): fix streaming of combined stdout/stderr (#2368)
- * [97438313](https://github.com/argoproj/argo-workflows/commit/9743831306714cc85b762487ac070f77e25f85d6) fix: Restart server ConfigMap watch when closed (#2360)
- * [64d0cec0](https://github.com/argoproj/argo-workflows/commit/64d0cec080bb27e147632fb8993f75e16c92e4a7) chore: Master needs make lint (#2361)
- * [12386fc6](https://github.com/argoproj/argo-workflows/commit/12386fc6029f5533921c75797455efc62e4cc9ce) fix: rerun codegen after merging OSS artifact support (#2357)
- * [40586ed5](https://github.com/argoproj/argo-workflows/commit/40586ed5c3a539d2e13f8a34509a40367563874a) fix: Always validate templates (#2342)
- * [897db894](https://github.com/argoproj/argo-workflows/commit/897db89434079fa3b3b902253d1c624c39af1422) feat: Add support for Alibaba Cloud OSS artifact (#1919)
- * [7e2dba03](https://github.com/argoproj/argo-workflows/commit/7e2dba03674219ec35e88b2ce785fdf120f855fd) feat(ui): Circles for nodes (#2349)
- * [e85f6169](https://github.com/argoproj/argo-workflows/commit/e85f6169fadf503c220ecc2385334fc0f2073ca4) chore: update getting started guide to use 2.6.0 (#2350)
- * [7ae4ec78](https://github.com/argoproj/argo-workflows/commit/7ae4ec78f627b620197a323b190fa33c31ffcbcc) docker: remove NopCloser from the executor. (#2345)
- * [5895b364](https://github.com/argoproj/argo-workflows/commit/5895b3642a691629b6c8aa145cf17627a227665f) feat: Expose workflow.paramteres with JSON string of all params (#2341)
- * [a9850b43](https://github.com/argoproj/argo-workflows/commit/a9850b43b16e05d9f74f52c789a8475d493f4c92) Fix the default (#2346)
- * [c3763d34](https://github.com/argoproj/argo-workflows/commit/c3763d34ed02bc63d166e8ef4f2f724786a2cf7c) fix: Simplify completion detection logic in DAGs (#2344)
- * [d8a9ea09](https://github.com/argoproj/argo-workflows/commit/d8a9ea09be395241664d929e8dbca7d02aecb049) fix(auth): Fixed returning  expired  Auth token for GKE (#2327)
- * [6fef0454](https://github.com/argoproj/argo-workflows/commit/6fef0454073fb60b4dd6216accef07f5195ec7e9) fix: Add timezone support to startingDeadlineSeconds (#2335)
- * [c28731b9](https://github.com/argoproj/argo-workflows/commit/c28731b9f602b3ed79c76dd4e3383f39419e463f) chore: Add go mod tidy to codegen (#2332)
- * [a66c8802](https://github.com/argoproj/argo-workflows/commit/a66c8802c7d0dbec9b13d408b91655e41531a97a) feat: Allow Worfklows to be submitted as files from UI (#2340)
- * [a9c1d547](https://github.com/argoproj/argo-workflows/commit/a9c1d547e5b044d9d375ebf527c132b0545455b0) docs: Update Argo Rollouts description (#2336)
- * [8672b97f](https://github.com/argoproj/argo-workflows/commit/8672b97f134dacb553592c367399229891aaf5c8) fix(Dockerfile): Using `--no-install-recommends` (Optimization) (#2329)
- * [c3fe1ae1](https://github.com/argoproj/argo-workflows/commit/c3fe1ae1b3ad662bc94a4b46e72f20c957dd4475) fix(ui): fixed worflow UI refresh. Fixes ##2337 (#2338)
- * [d7690e32](https://github.com/argoproj/argo-workflows/commit/d7690e32faf2ac5842468831daf1443283703c25) feat(ui): Adds ability zoom and hide successful steps. POC (#2319)
- * [e9e13d4c](https://github.com/argoproj/argo-workflows/commit/e9e13d4cbbc0f456c2d1dafbb1a95739127f6ab4) feat: Allow retry strategy on non-leaf nodes, eg for step groups. Fixes #1891 (#1892)
- * [62e6db82](https://github.com/argoproj/argo-workflows/commit/62e6db826ea4e0a02ac839bc59ec5f70ce3b9b29) feat: Ability to include or exclude fields in the response (#2326)
- * [52ba89ad](https://github.com/argoproj/argo-workflows/commit/52ba89ad4911fd4c7b13fd6dbc7f019971354ea0) fix(swagger): Fix the broken swagger. (#2317)
- * [efb8a1ac](https://github.com/argoproj/argo-workflows/commit/efb8a1ac8fc9961f0caa00ec6df7cf006d25e87a) docs: Update CODE_OF_CONDUCT.md (#2323)
- * [1c77e864](https://github.com/argoproj/argo-workflows/commit/1c77e864ac004f9cc6aff0e204ea9fd4b056c84b) fix(swagger): Fix the broken swagger. (#2317)
- * [aa052346](https://github.com/argoproj/argo-workflows/commit/aa05234694bc79e649e02adcc9790778cef0154d) feat: Support workflow level poddisruptionbudge for workflow pods #1728 (#2286)
- * [8da88d7e](https://github.com/argoproj/argo-workflows/commit/8da88d7ed20d8e533252e610337c15737445a225) chore: update getting-started guide for 2.5.2 and apply other tweaks (#2311)
- * [2f97c261](https://github.com/argoproj/argo-workflows/commit/2f97c261a9eafa022b464e0aea5b5d34d6f99100) build: Improve reliability of release. (#2309)
- * [5dcb84bb](https://github.com/argoproj/argo-workflows/commit/5dcb84bb549429ba5f46a21873e873a2c1c5bf67) chore(cli): Clean-up code. Closes #2117 (#2303)
- * [e49dd8c4](https://github.com/argoproj/argo-workflows/commit/e49dd8c4f9f69551be7e31c2044fef043d2992b2) chore(cli): Migrate `argo logs` to use API client. See #2116 (#2177)
- * [5c3d9cf9](https://github.com/argoproj/argo-workflows/commit/5c3d9cf93079ecbbfb024ea273d6e57e56c2506d) chore(cli): Migrate `argo wait` to use API client. See #2116 (#2282)
- * [baf03f67](https://github.com/argoproj/argo-workflows/commit/baf03f672728a6ed8b2aeb986d84ce35e9d7717a) fix(ui): Provide a link to archived logs. Fixes #2300 (#2301)
- * [b5947165](https://github.com/argoproj/argo-workflows/commit/b5947165564246a3c55375500f3fc1aea4dc6966) feat: Create API clients (#2218)
- * [214c4515](https://github.com/argoproj/argo-workflows/commit/214c451535ebeb6e68f1599c2c0a4a4d174ade25) fix(controller): Get correct Step or DAG name. Fixes #2244 (#2304)
- * [c4d26466](https://github.com/argoproj/argo-workflows/commit/c4d2646612d190ec73f38ec840259110a9ce89e0) fix: Remove active wf from Cron when deleted (#2299)
- * [0eff938d](https://github.com/argoproj/argo-workflows/commit/0eff938d62764abffcfdc741dfaca5fd6c8ae53f) fix: Skip empty withParam steps (#2284)
- * [636ea443](https://github.com/argoproj/argo-workflows/commit/636ea443c38869beaccfff19f4b72dd23755b2ff) chore(cli): Migrate `argo terminate` to use API client. See #2116 (#2280)
- * [d0a9b528](https://github.com/argoproj/argo-workflows/commit/d0a9b528e383a1b9ea737e0f919c93969d3d393b) chore(cli): Migrate `argo template` to use API client. Closes #2115 (#2296)
- * [f69a6c5f](https://github.com/argoproj/argo-workflows/commit/f69a6c5fa487d3b6c2d5383aa588695d6dcdb6de) chore(cli): Migrate `argo cron` to use API client. Closes #2114 (#2295)
- * [80b9b590](https://github.com/argoproj/argo-workflows/commit/80b9b590ebca1dbe69c5c7df0dd1c2f1feae5eea) chore(cli): Migrate `argo retry` to use API client. See #2116 (#2277)
- * [cdbc6194](https://github.com/argoproj/argo-workflows/commit/cdbc61945e09ae4dab8a56a085d050a0c358b896) fix(sequence): broken in 2.5. Fixes #2248 (#2263)
- * [0d3955a7](https://github.com/argoproj/argo-workflows/commit/0d3955a7f617c58f74c2892894036dfbdebaa5aa) refactor(cli): 2x simplify migration to API client. See #2116 (#2290)
- * [df8493a1](https://github.com/argoproj/argo-workflows/commit/df8493a1c05d3bac19a8f95f608d5543ba96ac82) fix: Start Argo server with out Configmap #2285 (#2293)
- * [51cdf95b](https://github.com/argoproj/argo-workflows/commit/51cdf95b18c8532f0bdb72c7ca20d56bdafc3a60) doc: More detail for namespaced installation (#2292)
- * [a7302697](https://github.com/argoproj/argo-workflows/commit/a730269767bdd10c4a9c5901c7e73f6bb25429c2) build(swagger): Fix argo-server swagger so version does not change. (#2291)
- * [47b4fc28](https://github.com/argoproj/argo-workflows/commit/47b4fc284df3cff9dfb4ea6622a0236bf1613096) fix(cli): Reinstate `argo wait`. Fixes #2281 (#2283)
- * [1793887b](https://github.com/argoproj/argo-workflows/commit/1793887b95446d341102b81523931403e30ef0f7) chore(cli): Migrate `argo suspend` and `argo resume` to use API client. See #2116 (#2275)
- * [1f3d2f5a](https://github.com/argoproj/argo-workflows/commit/1f3d2f5a0c9d772d7b204b13529f56bc33703a45) chore(cli): Update `argo resubmit` to support client API. See #2116 (#2276)
- * [c33f6cda](https://github.com/argoproj/argo-workflows/commit/c33f6cda39a3be40cc2e829c4c8d0b4c54704896) fix(archive): Fix bug in migrating cluster name. Fixes #2272 (#2279)
- * [fb0acbbf](https://github.com/argoproj/argo-workflows/commit/fb0acbbffb0a7c754223e516f55a40b957277fe4) fix: Fixes double logging in UI. Fixes #2270 (#2271)
- * [acf37c2d](https://github.com/argoproj/argo-workflows/commit/acf37c2db0d69def2045a6fc0f37a2b9db0c41fe) fix: Correctly report version. Fixes #2264 (#2268)
- * [b30f1af6](https://github.com/argoproj/argo-workflows/commit/b30f1af6528046a3af29c82ac1e29d9d300eec22) fix: Removes Template.Arguments as this is never used. Fixes #2046 (#2267)
- * [79b09ed4](https://github.com/argoproj/argo-workflows/commit/79b09ed43550bbf958c631386f8514b2d474062c) fix: Removed duplicate Watch Command (#2262)
- * [b5c47266](https://github.com/argoproj/argo-workflows/commit/b5c47266c4e33ba8739277ea43fe4b8023542367) feat(ui): Add filters for archived workflows (#2257)
- * [d30aa335](https://github.com/argoproj/argo-workflows/commit/d30aa3357738a272e1864d9f352f3c160c1608fc) fix(archive): Return correct next page info. Fixes #2255 (#2256)
- * [8c97689e](https://github.com/argoproj/argo-workflows/commit/8c97689e5d9d956a0dd9493c4c53088a6e8a87fa) fix: Ignore bookmark events for restart. Fixes #2249 (#2253)
- * [63858eaa](https://github.com/argoproj/argo-workflows/commit/63858eaa919c430bf0683dc33d81c94d4237b45b) fix(offloading): Change offloaded nodes datatype to JSON to support 1GB. Fixes #2246 (#2250)
- * [4d88374b](https://github.com/argoproj/argo-workflows/commit/4d88374b70e272eb454395f066c371ad2977abef) Add Cartrack into officially using Argo (#2251)
- * [d309d5c1](https://github.com/argoproj/argo-workflows/commit/d309d5c1a134502a11040757ff85230f7199510f) feat(archive): Add support to filter list by labels. Closes #2171 (#2205)
- * [79f13373](https://github.com/argoproj/argo-workflows/commit/79f13373fd8c4d0e9c9ff56f2133fa6009d1ed07) feat: Add a new symbol for suspended nodes. Closes #1896 (#2240)
- * [82b48821](https://github.com/argoproj/argo-workflows/commit/82b48821a83e012ac7ea5740d45addb046e3c8ee) Fix presumed typo (#2243)
- * [af94352f](https://github.com/argoproj/argo-workflows/commit/af94352f6c93e4bdbb69a1fc92b5d596c647d1a0) feat: Reduce API calls when changing filters. Closes #2231 (#2232)
- * [a58cbc7d](https://github.com/argoproj/argo-workflows/commit/a58cbc7dd12fe919614768ca0fa4714853091b7f) BasisAI uses Argo (#2241)
- * [68e3c9fd](https://github.com/argoproj/argo-workflows/commit/68e3c9fd9f597b6b4599dc7e9dbc5d71252ac5cf) feat: Add Pod Name to UI (#2227)
- * [eef85072](https://github.com/argoproj/argo-workflows/commit/eef85072691a9302e4168a072cfdffed6908a5d6) fix(offload): Fix bug which deleted completed workflows. Fixes #2233 (#2234)
- * [4e4565cd](https://github.com/argoproj/argo-workflows/commit/4e4565cdbb5d2e5c215af1b8b2f03695b45c2bba) feat: Label workflow-created pvc with workflow name (#1890)
- * [8bd5ecbc](https://github.com/argoproj/argo-workflows/commit/8bd5ecbc16f1063ef332ca3445ed9a9b953efa4f) fix: display error message when deleting archived workflow fails. (#2235)
- * [ae381ae5](https://github.com/argoproj/argo-workflows/commit/ae381ae57e5d2d3226114c773264595b3d672c39) feat: This add support to enable debug logging for all CLI commands (#2212)
- * [1b1927fc](https://github.com/argoproj/argo-workflows/commit/1b1927fc6fa519b7bf277e4273f4c7cede16ed64) feat(swagger): Adds a make api/argo-server/swagger.json (#2216)
- * [5d7b4c8c](https://github.com/argoproj/argo-workflows/commit/5d7b4c8c2d5819116b060f1ee656571b77b873bd) Update README.md (#2226)
- * [170abfa5](https://github.com/argoproj/argo-workflows/commit/170abfa5875227a74381764de93aa345aa5cca19) chore: Run `go mod tidy` (#2225)
- * [2981e6ff](https://github.com/argoproj/argo-workflows/commit/2981e6ff4c053b898a425d366fa696c8530ffeb0) fix: Enforce UnknownField requirement in WorkflowStep (#2210)
- * [affc235c](https://github.com/argoproj/argo-workflows/commit/affc235cd07bb01ee0ef8bb226b7a4c6470dc1e7) feat: Add failed node info to exit handler (#2166)
- * [af1f6d60](https://github.com/argoproj/argo-workflows/commit/af1f6d60078c5562b2c9d538d2b104c277c82593) fix: UI Responsive design on filter box (#2221)
- * [a445049c](https://github.com/argoproj/argo-workflows/commit/a445049ca3f67b499b9bef95c9e43075c8e10250) fix: Fixed race condition in kill container method. Fixes #1884 (#2208)
- * [2672857f](https://github.com/argoproj/argo-workflows/commit/2672857f2fbaabf727e354b040b1af2431ea70e5) feat: upgrade to Go 1.13. Closes #1375 (#2097)
- * [7466efa9](https://github.com/argoproj/argo-workflows/commit/7466efa99adfeeb3833b02c5afa7a33cdf8f87bc) feat: ArtifactRepositoryRef ConfigMap is now taken from the workflow namespace (#1821)
- * [50f331d0](https://github.com/argoproj/argo-workflows/commit/50f331d0e686f603440500c026ffe9d1f5133c1c) build: Fix ARGO_TOKEN (#2215)
- * [7f090351](https://github.com/argoproj/argo-workflows/commit/7f09035156e5dce68af203df21e688476d05ce12) test: Correctly report diagnostics (#2214)
- * [f2bd74bc](https://github.com/argoproj/argo-workflows/commit/f2bd74bca116f1b1ad9990aef9dbad98e0068900) fix: Remove quotes from UI (#2213)
- * [62f46680](https://github.com/argoproj/argo-workflows/commit/62f4668064e71046532505a11c67a675aa29afcf) fix(offloading): Correctly deleted offloaded data. Fixes #2206 (#2207)
- * [e30b77fc](https://github.com/argoproj/argo-workflows/commit/e30b77fcd5b140074065491988985779b800c4d7) feat(ui): Add label filter to workflow list page. Fixes #802 (#2196)
- * [930ced39](https://github.com/argoproj/argo-workflows/commit/930ced39241b427a521b609c403e7a39f6cc8c48) fix(ui): fixed workflow filtering and ordering. Fixes #2201 (#2202)
- * [88112312](https://github.com/argoproj/argo-workflows/commit/8811231299434e89ee9279e400db3445d83fec39) fix: Correct login instructions. (#2198)
- * [d6f5953d](https://github.com/argoproj/argo-workflows/commit/d6f5953d73d3940e0151011b7c32446c4c1c0ec4) Update ReadMe for EBSCO (#2195)
- * [b024c46c](https://github.com/argoproj/argo-workflows/commit/b024c46c8fec8a682802c1d6667a79fede959ae4) feat: Add ability to submit CronWorkflow from CLI (#2003)
- * [c97527ce](https://github.com/argoproj/argo-workflows/commit/c97527cee961b00472ce566226e1c6824b6e9793) test: Invoke tests using s.T() (#2194)
- * [72a54fe1](https://github.com/argoproj/argo-workflows/commit/72a54fe1628ff7a1daeb69875356607829d595ed) chore: Move info.proto et al to correct package (#2193)
- * [f6600fa4](https://github.com/argoproj/argo-workflows/commit/f6600fa499470ea7bd9fe68303759257c329d7ae) fix: Namespace and phase selection in UI (#2191)
- * [c4a24dca](https://github.com/argoproj/argo-workflows/commit/c4a24dcab016e82a4f1dc764dc67e0d8d324ded3) fix(k8sapi-executor): Fix KillContainer impl (#2160)
- * [d22a5fe6](https://github.com/argoproj/argo-workflows/commit/d22a5fe69c2d5a1fd4c268822cf5e2cd76893a18) Update cli_with_server_test.go (#2189)
- * [ff18180f](https://github.com/argoproj/argo-workflows/commit/ff18180f838b8f0d56bae95a2cab57d939e2a353) test: Remove podGC (#2187)
- * [78245305](https://github.com/argoproj/argo-workflows/commit/78245305d369fe9e4ba4c15e4acff7fcee07d62a) chore: Improved error handling and refactor (#2184)
- * [b9c828ad](https://github.com/argoproj/argo-workflows/commit/b9c828ad3a8fe6e92263aafd5eb14f21a284f3fc) fix(archive): Only delete offloaded data we do not need. Fixes #2170 and #2156 (#2172)
- * [73cb5418](https://github.com/argoproj/argo-workflows/commit/73cb5418f13e359612bb6844ef1747c9e7e6522c) feat: Allow CronWorkflows to have instanceId (#2081)
- * [9efea660](https://github.com/argoproj/argo-workflows/commit/9efea660b611f02a1eeaa5dc5be857686ed82de2) Sort list and add Greenhouse (#2182)
- * [cae399ba](https://github.com/argoproj/argo-workflows/commit/cae399bae466266bef0351efae77162615f9790f) fix: Fixed the Exec Provider token bug (#2181)
- * [fc476b2a](https://github.com/argoproj/argo-workflows/commit/fc476b2a4f09c12c0eb4a669b5cc1a18adca206e) fix(ui): Retry workflow event stream on connection loss. Fixes #2179 (#2180)
- * [65058a27](https://github.com/argoproj/argo-workflows/commit/65058a2798fd31ebd4fb99afc41da6a9171ca5be) fix: Correctly create code from changed protos. (#2178)
- * [585d1eef](https://github.com/argoproj/argo-workflows/commit/585d1eefd71062f42f8d80c85722fc7c262a08cf) chore: Update lint command to use apiclient. See #2116 (#2131)
- * [299d467c](https://github.com/argoproj/argo-workflows/commit/299d467c17cd89e9f33e48e464eb26ec8a3e413a) build: Update release process and docs (#2128)
- * [fcfe1d43](https://github.com/argoproj/argo-workflows/commit/fcfe1d43693c98f0e6c5fe3e2b02ac6a4a9836e6) feat: Implemented open default browser in local mode (#2122)
- * [f6cee552](https://github.com/argoproj/argo-workflows/commit/f6cee552532702089e62e5fece4dae77e4c99336) fix: Specify download .tgz extension (#2164)
- * [8a1e611a](https://github.com/argoproj/argo-workflows/commit/8a1e611a03da8374567c9654f8baf29b66c83c6e) feat: Update archived workdflow column to be JSON. Closes #2133 (#2152)
- * [f591c471](https://github.com/argoproj/argo-workflows/commit/f591c471c336e99c206094d21567fe01c978bf3c) fix!: Change `argo token` to `argo auth token`. Closes #2149 (#2150)
- * [519c9434](https://github.com/argoproj/argo-workflows/commit/519c94344a91c86d60ce27b383fa50846432cc9f) chore: Add Mock gen to make codegen (#2148)
- * [409a5154](https://github.com/argoproj/argo-workflows/commit/409a5154726dd16475b3aaf97f05f191cdb65808) fix: Add certs to argocli image. Fixes #2129 (#2143)
- * [b094802a](https://github.com/argoproj/argo-workflows/commit/b094802a03406328699bffad6deeceb5bdb61777) fix: Allow download of artifacs in server auth-mode. Fixes #2129 (#2147)
- * [520fa540](https://github.com/argoproj/argo-workflows/commit/520fa54073ab20a9bcd2f115f65f50d9761dc230) fix: Correct SQL syntax. (#2141)
- * [059cb9b1](https://github.com/argoproj/argo-workflows/commit/059cb9b1879361b77a293b3156bc9dfab2cefe71) fix: logs UI should fall back to archive (#2139)
- * [4cda9a05](https://github.com/argoproj/argo-workflows/commit/4cda9a05bf8cee20027132e4b3428ca9654bed5a) fix: route all unknown web content requests to index.html (#2134)
- * [14d8b5d3](https://github.com/argoproj/argo-workflows/commit/14d8b5d3913c2a6b320c564d6fc11c1d90769a97) fix: archiveLogs needs to copy stderr (#2136)
- * [91319ee4](https://github.com/argoproj/argo-workflows/commit/91319ee49f1fefec13233cb843b46f42cf5a9830) fixed ui navigation issues with basehref (#2130)
- * [7881b980](https://github.com/argoproj/argo-workflows/commit/7881b980bfdc6319d229956866e9131f95be412f) docs: Add CronWorkflow usage docs (#2124)
- * [badfd183](https://github.com/argoproj/argo-workflows/commit/badfd18335ec1b26d395ece0ad65d12aeb11beec) feat: Add support to delete by using labels. Depended on by #2116 (#2123)
- * [706d0f23](https://github.com/argoproj/argo-workflows/commit/706d0f231542e80156f93e39d28cd8e28f5d7042) test: Try and make e2e more robust. Fixes #2125 (#2127)
- * [a75ac1b4](https://github.com/argoproj/argo-workflows/commit/a75ac1b487a50bad19b3c58262fb3b170640ab4a) fix: mark CLI common.go vars and funcs as DEPRECATED (#2119)
- * [be21a0f1](https://github.com/argoproj/argo-workflows/commit/be21a0f17ed851032a16cfa90934a04662da6d2d) feat(server): Restart server when config changes. Fixes #2090 (#2092)
- * [b5cd72b0](https://github.com/argoproj/argo-workflows/commit/b5cd72b083fd173fe2552be9ea83e342cf395ceb) test: Parallelize Cron tests (#2118)
- * [b2bd25bc](https://github.com/argoproj/argo-workflows/commit/b2bd25bc2ba15f1ffa39bade75b09af5e3bb81a4) fix: Disable webpack dot rule (#2112)
- * [865b4f3a](https://github.com/argoproj/argo-workflows/commit/865b4f3a2b51cc08cf4a80423933a97f876af4a2) addcompany (#2109)
- * [213e3a9d](https://github.com/argoproj/argo-workflows/commit/213e3a9d9ec43b9f05fe7c5cf11d3f704a8649dd) fix: Fix Resource Deletion Bug (#2084)
- * [ab1de233](https://github.com/argoproj/argo-workflows/commit/ab1de233b47ec7c284fd20705b9efa00626877f7) refactor(cli): Introduce v1.Interface for CLI. Closes #2107 (#2048)
- * [7a19f85c](https://github.com/argoproj/argo-workflows/commit/7a19f85caa8760f28ffae6227a529823a0867218) feat: Implemented Basic Auth scheme (#2093)
- * [7611b9f6](https://github.com/argoproj/argo-workflows/commit/7611b9f6c6359680a4d450116ee893e4dc174811) fix(ui): Add support for bash href. Fixes ##2100 (#2105)
- * [516d05f8](https://github.com/argoproj/argo-workflows/commit/516d05f81a86c586bc19aad7836f35bb85130025)  fix: Namespace redirects no longer error and are snappier (#2106)
- * [16aed5c8](https://github.com/argoproj/argo-workflows/commit/16aed5c8ec0256fc78d95149435c37dac1db087a) fix: Skip running --token testing if it is not on CI (#2104)
- * [aece7e6e](https://github.com/argoproj/argo-workflows/commit/aece7e6ebdf2478dd7efa5706490c5c7abe858e6) Parse container ID in correct way on CRI-O. Fixes #2095 (#2096)
- * [b6a2be89](https://github.com/argoproj/argo-workflows/commit/b6a2be89689222470288339570aa0a719e775002) feat: support arg --token when talking to argo-server (#2027) (#2089)
- * [01d8cae1](https://github.com/argoproj/argo-workflows/commit/01d8cae1f49da35c135463ff45dc1a4d13ab1af7) build: adds `make env` to make testing easier (#2087)
- * [492842aa](https://github.com/argoproj/argo-workflows/commit/492842aa17cc447d68f1181c02990bfa7a78913a) docs(README): Add Capital One to user list (#2094)
- * [d56a0e12](https://github.com/argoproj/argo-workflows/commit/d56a0e12a283aaa5398e03fe423fed83d60ca370) fix(controller): Fix template resolution for step groups. Fixes #1868  (#1920)
- * [b97044d2](https://github.com/argoproj/argo-workflows/commit/b97044d2a47a79fab26fb0e3142c82e88a582f64) fix(security): Fixes an issue that allowed you to list archived workf… (#2079)
- * [c4f49cf0](https://github.com/argoproj/argo-workflows/commit/c4f49cf074ad874996145674d635165f6256ca15) refactor: Move server code (cmd/server/ -> server/) (#2071)
- * [2542454c](https://github.com/argoproj/argo-workflows/commit/2542454c1daf61bc3826fa370c21799059904093) fix(controller): Do not crash if cm is empty. Fixes #2069 (#2070)
- * [85fa9aaf](https://github.com/argoproj/argo-workflows/commit/85fa9aafa70a98ce999157bb900971f24bd81101) fix: Do not expect workflowChange to always be defined (#2068)
- * [6f65bc2b](https://github.com/argoproj/argo-workflows/commit/6f65bc2b77ddcf4616c78d6db4955bf839a0c21a) fix: "base64 -d" not always available, using "base64 --decode" (#2067)
- * [6f2c8802](https://github.com/argoproj/argo-workflows/commit/6f2c880280d490ba746a86d828ade61d8b58c7a5) feat(ui): Use cookies in the UI. Closes #1949 (#2058)
- * [4592aec6](https://github.com/argoproj/argo-workflows/commit/4592aec6805ce1110edcb7dc4e3e7454a2042441) fix(api): Change `CronWorkflowName` to `Name`. Fixes #1982 (#2033)
- * [e26c11af](https://github.com/argoproj/argo-workflows/commit/e26c11af747651c6642cf0abd3cbc4ccac7b95de) fix: only run archived wf testing when persistence is enabled (#2059)
- * [b3cab5df](https://github.com/argoproj/argo-workflows/commit/b3cab5dfbb5e5973b1dc448946d16ee0cd690d6a) fix: Fix permission test cases (#2035)
- * [b408e7cd](https://github.com/argoproj/argo-workflows/commit/b408e7cd28b95a08498f6e30fcbef385d0ff89f5) fix: nil pointer in GC (#2055)
- * [4ac11560](https://github.com/argoproj/argo-workflows/commit/4ac115606bf6f0b3c5c837020efd41bf90789a00) fix: offload Node Status in Get and List api call (#2051)
- * [dfdde1d0](https://github.com/argoproj/argo-workflows/commit/dfdde1d08b2a39d074729f1d64053a6e37453b32) ci: Run using our own cowsay image (#2047)
- * [71ba8238](https://github.com/argoproj/argo-workflows/commit/71ba823822c190bfdb71073604bb987bb938cff4) Update README.md (#2045)
- * [c7953052](https://github.com/argoproj/argo-workflows/commit/c795305268d5793e6672252ae6ff7fb6a54f23fd) fix(persistence): Allow `argo server` to run without persistence (#2050)
- * [1db74e1a](https://github.com/argoproj/argo-workflows/commit/1db74e1a2658fa7de925cd4c81fbfd98f648cd99) fix(archive): upsert archive + ci: Pin images on CI, add readiness probes, clean-up logging and other tweaks (#2038)
- * [c46c6836](https://github.com/argoproj/argo-workflows/commit/c46c6836706dce54aea4a13deee864bd3c6cb906) feat: Allow workflow-level parameters to be modified in the UI when submitting a workflow (#2030)
- * [faa9dbb5](https://github.com/argoproj/argo-workflows/commit/faa9dbb59753a068c64a1aa5923e3e359c0866d8) fix(Makefile): Rename staticfiles make target. Fixes #2010 (#2040)
- * [79a42d48](https://github.com/argoproj/argo-workflows/commit/79a42d48cec9c41269fbe736a61f3975fe2a9aea) docs: Update link to configure-artifact-repository.md (#2041)
- * [1a96007f](https://github.com/argoproj/argo-workflows/commit/1a96007fed6a57d14a0e364000b54a364293438b) fix: Redirect to correct page when using managed namespace. Fixes #2015 (#2029)
- * [78726314](https://github.com/argoproj/argo-workflows/commit/787263142162b62085572660f5e6497279f82ab1) fix(api): Updates proto message naming (#2034)
- * [4a1307c8](https://github.com/argoproj/argo-workflows/commit/4a1307c89e58f554af8e0cdc44e5e66e4623dfb4) feat: Adds support for MySQL. Fixes #1945 (#2013)
- * [d843e608](https://github.com/argoproj/argo-workflows/commit/d843e6085d51f409d32aefe6b6cf18bf6fd6bbd1) chore: Smoke tests are timing out, give them more time (#2032)
- * [5c98a14e](https://github.com/argoproj/argo-workflows/commit/5c98a14ecdc78a5be48f34c455d90782157c4cbe) feat(controller): Add audit logs to workflows. Fixes #1769 (#1930)
- * [2982c1a8](https://github.com/argoproj/argo-workflows/commit/2982c1a82cd6f1e7fb755a948d7a165aa0aeebc0) fix(validate): Allow placeholder in values taken from inputs. Fixes #1984 (#2028)
- * [3293c83f](https://github.com/argoproj/argo-workflows/commit/3293c83f6170ad4dc022067bb37f12d07d2834c1) feat: Add version to offload nodes. Fixes #1944 and #1946 (#1974)
- * [283bbf8d](https://github.com/argoproj/argo-workflows/commit/283bbf8df50d615dee867becc21569be760fc59e) build: `make clean` now only deletes dist directories (#2019)
- * [72fa88c9](https://github.com/argoproj/argo-workflows/commit/72fa88c9daf9ae42a8a1feb297a0b118505b32b0) build: Enable linting for tests. Closes #1971 (#2025)
- * [f8569ae9](https://github.com/argoproj/argo-workflows/commit/f8569ae913053c8ba4cd9ca72c9c237dd83200c0) feat: Auth refactoring to support single version token (#1998)
- * [eb360d60](https://github.com/argoproj/argo-workflows/commit/eb360d60ea81e8deefbaf41bcb76921acd08b16f) Fix README (#2023)
- * [ef1bd3a3](https://github.com/argoproj/argo-workflows/commit/ef1bd3a32c434c565defc7b325463e8d831262f2) fix typo (#2021)
- * [f25a45de](https://github.com/argoproj/argo-workflows/commit/f25a45deb4a7179044034da890884432e750d98a) feat(controller): Exposes container runtime executor as CLI option. (#2014)
- * [3b26af7d](https://github.com/argoproj/argo-workflows/commit/3b26af7dd4cc3d08ee50f3bc2f389efd516b9248) Enable s3 trace support. Bump version to v2.5.0. Tweak proto id to match Workflow (#2009)
- * [5eb15bb5](https://github.com/argoproj/argo-workflows/commit/5eb15bb5409f54f1a4759dde2479b7569e5f81e4) fix: Fix workflow level timeouts (#1369)
- * [5868982b](https://github.com/argoproj/argo-workflows/commit/5868982bcddf3b9c9ddb98151bf458f6868dce81) fix: Fixes the `test` job on master (#2008)
- * [29c85072](https://github.com/argoproj/argo-workflows/commit/29c850728fa701d62078910e1641588c959c28c5) fix: Fixed grammar on TTLStrategy (#2006)
- * [2f58d202](https://github.com/argoproj/argo-workflows/commit/2f58d202c21910500ecc4abdb9e23270c9791d0a) fix: v2 token bug (#1991)
- * [ed36d92f](https://github.com/argoproj/argo-workflows/commit/ed36d92f99ea65e06dc78b82923d74c57130dfc3) feat: Add quick start manifests to Git. Change auth-mode to default to server. Fixes #1990 (#1993)
- * [d1965c93](https://github.com/argoproj/argo-workflows/commit/d1965c9352c43d486b2d7cf99b0141fdb17eac2b) docs: Encourage users to upvote issues relevant to them (#1996)
- * [91331a89](https://github.com/argoproj/argo-workflows/commit/91331a894d713f085207e30406e72b8f65ad0227) fix: No longer delete the argo ns as this is dangerous (#1995)
- * [1a777cc6](https://github.com/argoproj/argo-workflows/commit/1a777cc6662b0c95ccf3de12c1a328c4cb12bc78) feat(cron): Added timezone support to cron workflows. Closes #1931 (#1986)
- * [48b85e57](https://github.com/argoproj/argo-workflows/commit/48b85e5705a235257b5926d0714eeb173b4347cb) fix: WorkflowTempalteTest fix (#1992)
- * [51dab8a4](https://github.com/argoproj/argo-workflows/commit/51dab8a4a79e5180d795ef10586e31ecf4075214) feat: Adds `argo server` command. Fixes #1966 (#1972)
- * [732e03bb](https://github.com/argoproj/argo-workflows/commit/732e03bb6cdc94ecd264fa76ecf71c29114b7769) chore: Added WorkflowTemplate test (#1989)
- * [27387d4b](https://github.com/argoproj/argo-workflows/commit/27387d4b52e99f83fe1c6ac9a0e65add669463d9) chore: Fix UI TODOs (#1987)
- * [dd704dd6](https://github.com/argoproj/argo-workflows/commit/dd704dd6557e972c8dc3c9816996305a23c80f37) feat: Renders namespace in UI. Fixes #1952 and #1959 (#1965)
- * [14d58036](https://github.com/argoproj/argo-workflows/commit/14d58036faa444ee49a4905a632db7e0a5ab60ba) feat(server): Argo Server. Closes #1331 (#1882)
- * [f69655a0](https://github.com/argoproj/argo-workflows/commit/f69655a09c82236d91703fbce2ee1a07fc3641be) fix: Added decompress in retry, resubmit and resume. (#1934)
- * [1e7ccb53](https://github.com/argoproj/argo-workflows/commit/1e7ccb53e8604654c073f6578ae024fd341f048a) updated jq version to 1.6 (#1937)
- * [c51c1302](https://github.com/argoproj/argo-workflows/commit/c51c1302f48cec5b9c6009b9b7e50962d338c679) feat: Enhancement for namespace installation mode configuration (#1939)
- * [6af100d5](https://github.com/argoproj/argo-workflows/commit/6af100d5470137cc17c019546f3cad2acf5e4a31) feat: Add suspend and resume to CronWorkflows CLI (#1925)
- * [232a465d](https://github.com/argoproj/argo-workflows/commit/232a465d00b6104fe4801b773b0b3ceffdafb116) feat: Added onExit handlers to Step and DAG (#1716)
- * [071eb112](https://github.com/argoproj/argo-workflows/commit/071eb1126cae351c5059246d2c375dc47175a3d6) docs: Update PR template to demand tests. (#1929)
- * [ae58527e](https://github.com/argoproj/argo-workflows/commit/ae58527eed40947078a7cb71da1dc3ab9c052a56) docs: Add CyberAgent to the list of Argo users (#1926)
- * [02022e4b](https://github.com/argoproj/argo-workflows/commit/02022e4bb36977253ff2e362f844b9596e768102) docs: Minor formatting fix (#1922)
- * [e4107bb8](https://github.com/argoproj/argo-workflows/commit/e4107bb831af9eb4b99753f7e324ec33042cdc55) Updated Readme.md for companies using Argo: (#1916)
- * [7e9b2b58](https://github.com/argoproj/argo-workflows/commit/7e9b2b58915c5cb51276e21c81344e010472cbae) feat: Support for scheduled Workflows with CronWorkflow CRD (#1758)
- * [5d7e9185](https://github.com/argoproj/argo-workflows/commit/5d7e91852b09ca2f3f912a8f1efaa6c28e07b524) feat: Provide values of withItems maps as JSON in {{item}}. Fixes #1905 (#1906)
- * [de3ffd78](https://github.com/argoproj/argo-workflows/commit/de3ffd78b9c16ed09065aeb16e966904e964a572)  feat: Enhanced Different TTLSecondsAfterFinished depending on if job is in Succeeded, Failed or Error, Fixes (#1883)
- * [94449876](https://github.com/argoproj/argo-workflows/commit/94449876f4a571ab279802d5ca4d5e938ca3d44d) docs: Add question option to issue templates (#1910)
- * [83ae2df4](https://github.com/argoproj/argo-workflows/commit/83ae2df4130468a95b720ce33c9b9e27e7005b17) fix: Decrease docker build time by ignoring node_modules (#1909)
- * [59a19069](https://github.com/argoproj/argo-workflows/commit/59a190697286bf19ee4a5c398c1af590a2419003) feat: support iam roles for service accounts in artifact storage (#1899)
- * [6526b6cc](https://github.com/argoproj/argo-workflows/commit/6526b6cc5e4671317fa0bc8c62440364c37a9700) fix: Revert node creation logic (#1818)
- * [160a7940](https://github.com/argoproj/argo-workflows/commit/160a794046299c9d0420ae1710641814f30a9b7f) fix: Update Gopkg.lock with dep ensure -update (#1898)
- * [ce78227a](https://github.com/argoproj/argo-workflows/commit/ce78227abe5a3c901e5b7a7dd823fb2551dff584) fix: quick fail after pod termination (#1865)
- * [cd3bd235](https://github.com/argoproj/argo-workflows/commit/cd3bd235f550fbc24c31d1763fde045c9c321fbe) refactor: Format Argo UI using prettier (#1878)
- * [b48446e0](https://github.com/argoproj/argo-workflows/commit/b48446e09e29d4f18f6a0cf0e6ff1166770286b1) fix: Fix support for continueOn failed for DAG. Fixes #1817 (#1855)
- * [48256961](https://github.com/argoproj/argo-workflows/commit/482569615734d7cb5e24c90d399f3ec98fb2ed96) fix: Fix template scope (#1836)
- * [eb585ef7](https://github.com/argoproj/argo-workflows/commit/eb585ef7381c4c9547eb9c2e922e175c0556da03) fix: Use dynamically generated placeholders (#1844)
- * [c821cfcc](https://github.com/argoproj/argo-workflows/commit/c821cfcce488222bcd5a4514cd94c66582885f33) test: Adds 'test' and 'ui' jobs to CI (#1869)
- * [54f44909](https://github.com/argoproj/argo-workflows/commit/54f44909a0e68bc24209e9e83999421b814e80c9) feat: Always archive logs if in config. Closes #1790 (#1860)
- * [1e25d6cf](https://github.com/argoproj/argo-workflows/commit/1e25d6cfa9c4c2f805717f94bd67ec612746a862) docs: Fix e2e testing link (#1873)
- * [f5f40728](https://github.com/argoproj/argo-workflows/commit/f5f40728c4be2d852e8199a5754aee39ed72399f) fix: Minor comment fix (#1872)
- * [72fad7ec](https://github.com/argoproj/argo-workflows/commit/72fad7ec0cf3aa463bd9c2c8c8f961738408cf93) Update docs (#1870)
- * [90352865](https://github.com/argoproj/argo-workflows/commit/9035286554768119b83e00294ea7c0b400b5de83) docs: Update doc based on helm 3.x changes (#1843)
- * [78889895](https://github.com/argoproj/argo-workflows/commit/788898954f7eff5b096f7597e74fc68104d8bf78) Move Workflows UI from https://github.com/argoproj/argo-ui (#1859)
- * [4b96172f](https://github.com/argoproj/argo-workflows/commit/4b96172f71f3fb36a691499b11e52a0d5650448a) docs: Refactored and cleaned up docs (#1856)
- * [6ba4598f](https://github.com/argoproj/argo-workflows/commit/6ba4598fd19c4add40b66d32df18592194c4cf4c) test: Adds core e2e test infra. Fixes #678 (#1854)
- * [87f26c8d](https://github.com/argoproj/argo-workflows/commit/87f26c8de2adc9563a3811aacc1eb31475a84f0b) fix: Move ISSUE_TEMPLATE/ under .github/ (#1858)
- * [bd78d159](https://github.com/argoproj/argo-workflows/commit/bd78d1597e82bf2bf0193e4bf49b6386c68e8222) fix: Ensure timer channel is empty after stop (#1829)
- * [afc63024](https://github.com/argoproj/argo-workflows/commit/afc63024de79c2e211a1ed0e0ede87b99825c63f) Code duplication (#1482)
- * [5b136713](https://github.com/argoproj/argo-workflows/commit/5b1367137d2b511b0310ac322596ff5395ed148d) docs: biobox analytics (#1830)
- * [68b72a8f](https://github.com/argoproj/argo-workflows/commit/68b72a8fd1773ba5f1afb4ec6ba9bf8a4d2b7ad4) add CCRi to list of users in README (#1845)
- * [941f30aa](https://github.com/argoproj/argo-workflows/commit/941f30aaf4e51e1eec13e842a0b8d46767929cec) Add Sidecar Technologies to list of who uses Argo (#1850)
- * [a08048b6](https://github.com/argoproj/argo-workflows/commit/a08048b6de84ff7355728b85851aa84b08be0851) Adding Wavefront to the users list (#1852)
- * [1cb68c98](https://github.com/argoproj/argo-workflows/commit/1cb68c9829099eb5218995159fb11fb58a147032) docs: Updates issue and PR templates. (#1848)
- * [cb0598ea](https://github.com/argoproj/argo-workflows/commit/cb0598ea82bd676fefd98e2040752cfa06516a98) Fixed Panic if DB context has issue (#1851)
- * [e5fb8848](https://github.com/argoproj/argo-workflows/commit/e5fb884853d2ad0d1f32022723e211b902841945) fix: Fix a couple of nil derefs (#1847)
- * [b3d45850](https://github.com/argoproj/argo-workflows/commit/b3d458504b319b3b02b82a872a5e13c59cb3128f) Add HOVER to the list of who uses Argo (#1825)
- * [99db30d6](https://github.com/argoproj/argo-workflows/commit/99db30d67b42cbd9c7fa35bbdd35a57040c2f222) InsideBoard uses Argo (#1835)
- * [ac8efcf4](https://github.com/argoproj/argo-workflows/commit/ac8efcf40e45750ae3c78f696f160049ea85dc8e) Red Hat uses Argo (#1828)
- * [41ed3acf](https://github.com/argoproj/argo-workflows/commit/41ed3acfb68c1200ea5f03643120cac81f7d3df6) Adding Fairwinds to the list of companies that use Argo (#1820)
- * [5274afb9](https://github.com/argoproj/argo-workflows/commit/5274afb97686a4d2a58c50c3b23dd2b680b881e6) Add exponential back-off to retryStrategy (#1782)
- * [e522e30a](https://github.com/argoproj/argo-workflows/commit/e522e30acebc17793540ac4270d14747b2617b26) Handle operation level errors PVC in Retry (#1762)
- * [f2e6054e](https://github.com/argoproj/argo-workflows/commit/f2e6054e9376f2d2be1d928ee79746b8b49937df) Do not resolve remote templates in lint (#1787)
- * [3852bc3f](https://github.com/argoproj/argo-workflows/commit/3852bc3f3311e9ac174976e9a3e8f625b87888eb) SSL enabled database connection for workflow repository (#1712) (#1756)
- * [f2676c87](https://github.com/argoproj/argo-workflows/commit/f2676c875e0af8e43b8967c669a33871bc02995c) Fix retry node name issue on error (#1732)
- * [d38a107c](https://github.com/argoproj/argo-workflows/commit/d38a107c84b91ad476f4760d984450efda296fdc) Refactoring Template Resolution Logic (#1744)
- * [23e94604](https://github.com/argoproj/argo-workflows/commit/23e9460451566e04b14acd336fccf54b0623efc4) Error occurred on pod watch should result in an error on the wait container (#1776)
- * [57d051b5](https://github.com/argoproj/argo-workflows/commit/57d051b52de7c9b78d926f0be7b158adb08803c8) Added hint when using certain tokens in when expressions (#1810)
- * [0e79edff](https://github.com/argoproj/argo-workflows/commit/0e79edff4b879558a19132035446fca2fbe3f2ca) Make kubectl print status and start/finished time (#1766)
- * [723b3c15](https://github.com/argoproj/argo-workflows/commit/723b3c15e55d2f8dceb86f1ac0a6dc7d1a58f10b) Fix code-gen docs (#1811)
- * [711bb114](https://github.com/argoproj/argo-workflows/commit/711bb11483a0ccb46600795c636c98d9c3a7f16c) Fix withParam node naming issue (#1800)
- * [4351a336](https://github.com/argoproj/argo-workflows/commit/4351a3360f6b20298a28a06be545bc349b22b9e4) Minor doc fix (#1808)
- * [efb748fe](https://github.com/argoproj/argo-workflows/commit/efb748fe35c6f24c736db8e002078abd02b57141) Fix some issues in examples (#1804)
- * [a3e31289](https://github.com/argoproj/argo-workflows/commit/a3e31289915e4d129a743b9284442775ef41a15c) Add documentation for executors (#1778)
- * [1ac75b39](https://github.com/argoproj/argo-workflows/commit/1ac75b39040e6f292ee322122a157e05f55f1f73) Add  to linter (#1777)
- * [3bead0db](https://github.com/argoproj/argo-workflows/commit/3bead0db3d2777638992ba5e11a2de1c65be162c) Add ability to retry nodes after errors (#1696)
- * [b50845e2](https://github.com/argoproj/argo-workflows/commit/b50845e22e8910d27291bab30f0c3dbef1fe5dad) Support no-headers flag (#1760)
- * [7ea2b2f8](https://github.com/argoproj/argo-workflows/commit/7ea2b2f8c10c3004c3c13a49d200df704895f93c) Minor rework of suspened node (#1752)
- * [9ab1bc88](https://github.com/argoproj/argo-workflows/commit/9ab1bc88f58c551208ce5e76eea0c6fb83359710) Update README.md (#1768)
- * [e66fa328](https://github.com/argoproj/argo-workflows/commit/e66fa328e396fe35dfad8ab1e3088ab088aea8be) Fixed lint issues (#1739)
- * [63e12d09](https://github.com/argoproj/argo-workflows/commit/63e12d0986cb4b138715b8f2b9c483de5547f64e) binary up version (#1748)
- * [1b7f9bec](https://github.com/argoproj/argo-workflows/commit/1b7f9becdfc47688018e6d71ac417fb7278637ab) Minor typo fix (#1754)
- * [4c002677](https://github.com/argoproj/argo-workflows/commit/4c002677e360beb9d6e4398618bafdce025cda42) fix blank lines (#1753)
- * [fae73826](https://github.com/argoproj/argo-workflows/commit/fae7382686d917d78e3909d1f6db79c272a1aa11) Fail suspended steps after deadline (#1704)
- * [b2d7ee62](https://github.com/argoproj/argo-workflows/commit/b2d7ee62e903c062b62da35dc390e38c05ba1591) Fix typo in docs (#1745)
- * [f2592448](https://github.com/argoproj/argo-workflows/commit/f2592448636bc35b7f9ec0fdc48b92135ba9852f) Removed uneccessary debug Println (#1741)
- * [846d01ed](https://github.com/argoproj/argo-workflows/commit/846d01eddc271f330e00414d1ea2277ac390651b) Filter workflows in list  based on name prefix (#1721)
- * [8ae688c6](https://github.com/argoproj/argo-workflows/commit/8ae688c6cbcc9494195431be7754fe69eb33a9f4) Added ability to auto-resume from suspended state (#1715)
- * [fb617b63](https://github.com/argoproj/argo-workflows/commit/fb617b63a09679bb74427cd5d13192b1fd8f48cf) unquote strings from parameter-file (#1733)
- * [34120341](https://github.com/argoproj/argo-workflows/commit/34120341747e0261425b49a5600c42efbb1812a3) example for pod spec from output of previous step (#1724)
- * [12b983f4](https://github.com/argoproj/argo-workflows/commit/12b983f4c00bda3f9bedd14a316b0beade6158ed) Add gonum.org/v1/gonum/graph to Gopkg.toml (#1726)
- * [327fcb24](https://github.com/argoproj/argo-workflows/commit/327fcb242b20107c859142b3dd68745b3440e5eb) Added  Protobuf extension  (#1601)
- * [602e5ad8](https://github.com/argoproj/argo-workflows/commit/602e5ad8e4002f7df0bd02014505cbc7de3fd37c) Fix invitation link. (#1710)
- * [eb29ae4c](https://github.com/argoproj/argo-workflows/commit/eb29ae4c89b89d4d4192a5f8c08d44ad31fa4cd2) Fixes bugs in demo (#1700)
- * [ebb25b86](https://github.com/argoproj/argo-workflows/commit/ebb25b861b1b452207582b6dea0060bf418037ff) `restartPolicy` -> `retryStrategy` in examples (#1702)
- * [167d65b1](https://github.com/argoproj/argo-workflows/commit/167d65b15ac0d3483071e0506f3e98a92a034183) Fixed incorrect `pod.name` in retry pods (#1699)
- * [e0818029](https://github.com/argoproj/argo-workflows/commit/e0818029d190cfd616527cccf208b5a9866224e1) fixed broke metrics endpoint per #1634 (#1695)
- * [36fd09a1](https://github.com/argoproj/argo-workflows/commit/36fd09a1321fd145b36b4f9067b61fabad363926) Apply Strategic merge patch against the pod spec (#1687)
- * [d3546467](https://github.com/argoproj/argo-workflows/commit/d35464670439b660c7c9ab0bcd9d3686ffe08687) Fix retry node processing (#1694)
- * [dd517e4c](https://github.com/argoproj/argo-workflows/commit/dd517e4c2db59b4c704ed7aeaed8505a757a60f7) Print multiple workflows in one command (#1650)
- * [09a6cb4e](https://github.com/argoproj/argo-workflows/commit/09a6cb4e81c1d9f5c8c082c9e96ce783fa20796f) Added status of previous steps as variables (#1681)
- * [ad3dd4d4](https://github.com/argoproj/argo-workflows/commit/ad3dd4d4a41b58e30983e8a93f06c1526c8aa9a0) Fix issue that workflow.priority substitution didn't pass validation (#1690)
- * [095d67f8](https://github.com/argoproj/argo-workflows/commit/095d67f8d0f1d309529c8a400cb16d0a0e2765b9) Store locally referenced template properly (#1670)
- * [30a91ef0](https://github.com/argoproj/argo-workflows/commit/30a91ef002e7c8850f45e6fe7ac01a7966ff31b8) Handle retried node properly (#1669)
- * [263cb703](https://github.com/argoproj/argo-workflows/commit/263cb7038b927fabe0f67b4455e17534b51c2989) Update README.md  Argo Ansible role: Provisioning Argo Workflows on Kubernetes/OpenShift (#1673)
- * [867f5ff7](https://github.com/argoproj/argo-workflows/commit/867f5ff7e72bc8b5d9b6be5a5f8849ccd2a1108c) Handle sidecar killing properly (#1675)
- * [f0ab9df9](https://github.com/argoproj/argo-workflows/commit/f0ab9df9ef8090fc388c32adbe9180dbaee683f5) Fix typo (#1679)
- * [502db42d](https://github.com/argoproj/argo-workflows/commit/502db42db84f317af8660d862ddd48c28cbd3b8e) Don't provision VM for empty artifacts (#1660)
- * [b5dcac81](https://github.com/argoproj/argo-workflows/commit/b5dcac8114d6f4b5fe32bae049d2c70b4dea4d15) Resolve WorkflowTemplate lazily (#1655)
- * [d15994bb](https://github.com/argoproj/argo-workflows/commit/d15994bbbb0a1ca8fc60b452ae532b10510c4762) [User] Update Argo users list (#1661)
- * [4a654ca6](https://github.com/argoproj/argo-workflows/commit/4a654ca6914923656bd1dc21ca5b8c4aa75b9e25) Stop failing if artifact file exists, but empty (#1653)
- * [c6cddafe](https://github.com/argoproj/argo-workflows/commit/c6cddafe19854d91bff41f093f48ac444a781c0d) Bug fixes in getting started (#1656)
- * [ec788373](https://github.com/argoproj/argo-workflows/commit/ec7883735e20f87fe483b26c947bd891a695a2bd) Update workflow_level_host_aliases.yaml (#1657)
- * [7e5af474](https://github.com/argoproj/argo-workflows/commit/7e5af4748d406f244378da86fda339a0c9e74476) Fix child node template handling (#1654)
- * [7f385a6b](https://github.com/argoproj/argo-workflows/commit/7f385a6bbf67ab780ab86c941cbd426f9b003834) Use stored templates to raggregate step outputs (#1651)
- * [cd6f3627](https://github.com/argoproj/argo-workflows/commit/cd6f3627992b6947dd47c98420d0a0fec4de9112) Fix dag output aggregation correctly (#1649)
- * [706075a5](https://github.com/argoproj/argo-workflows/commit/706075a55f694f94cfe729efca8eacb31d14f7f0) Fix DAG output aggregation (#1648)
- * [fa32dabd](https://github.com/argoproj/argo-workflows/commit/fa32dabdc0a5a74469a0e86e04b9868508503a73) Fix missing merged changes in validate.go (#1647)
- * [45716027](https://github.com/argoproj/argo-workflows/commit/457160275cc42be4c5fa6c1050c6e61a614b9544) fixed example wrong comment (#1643)
- * [69fd8a58](https://github.com/argoproj/argo-workflows/commit/69fd8a58d4877d616f3b576a2e8c8cbd224e029a) Delay killing sidecars until artifacts are saved (#1645)
- * [ec5f9860](https://github.com/argoproj/argo-workflows/commit/ec5f98605429f8d757f3b92fe6b2a2e8a4cb235f) pin colinmarc/hdfs to the next commit, which no longer has vendored deps (#1622)
- * [4b84f975](https://github.com/argoproj/argo-workflows/commit/4b84f975f14714cedad2dc9697c9a181075b04ea) Fix global lint issue (#1641)
- * [bb579138](https://github.com/argoproj/argo-workflows/commit/bb579138c6104baab70f859e8ed05954718c5ee8) Fix regression where global outputs were unresolveable in DAGs (#1640)
- * [cbf99682](https://github.com/argoproj/argo-workflows/commit/cbf99682c7a84306066b059834a625892b86d28c) Fix regression where parallelism could cause workflow to fail (#1639)
- * [76461f92](https://github.com/argoproj/argo-workflows/commit/76461f925e4e53cdf65b362115d09aa5325dea6b) Update CHANGELOG for v2.4.0 (#1636)
- * [c75a0861](https://github.com/argoproj/argo-workflows/commit/c75a08616e8e6bd1aeb37fc9fc824197491aec9c) Regenerate installation manifests (#1638)
- * [e20cb28c](https://github.com/argoproj/argo-workflows/commit/e20cb28cf8a4f331316535dcfd793ea91c281feb) Grant get secret role to controller to support persistence (#1615)
- * [644946e4](https://github.com/argoproj/argo-workflows/commit/644946e4e07672051f9be0f71ca0d2ca7641648e) Save stored template ID in nodes (#1631)
- * [5d530bec](https://github.com/argoproj/argo-workflows/commit/5d530becae49e1e235d72dd5ac29cc40282bc401) Fix retry workflow state (#1632)
- * [2f0af522](https://github.com/argoproj/argo-workflows/commit/2f0af5221030858e6a5306545ca3577aad17ac1a) Update operator.go (#1630)
- * [6acea0c1](https://github.com/argoproj/argo-workflows/commit/6acea0c1c21a17e14dc95632e80655f7fff09e2e) Store resolved templates (#1552)
- * [df8260d6](https://github.com/argoproj/argo-workflows/commit/df8260d6f64fcacc24c13cf5cc4a3fc3f0a6db18) Increase timeout of golangci-lint (#1623)
- * [138f89f6](https://github.com/argoproj/argo-workflows/commit/138f89f684cec5a8b237584e46199815922f98c3) updated invite link (#1621)
- * [d027188d](https://github.com/argoproj/argo-workflows/commit/d027188d0fce8e44bb0cefb2d46c1e55b9f112a2) Updated the API Rule Violations list (#1618)
- * [a317fbf1](https://github.com/argoproj/argo-workflows/commit/a317fbf1412c4636066def42cd6b7adc732319f3) Prevent controller from crashing due to glog writing to /tmp (#1613)
- * [20e91ea5](https://github.com/argoproj/argo-workflows/commit/20e91ea580e532b9c62f3bd16c5f6f8ed0838fdd) Added WorkflowStatus and NodeStatus types to the Open API Spec. (#1614)
- * [ffb281a5](https://github.com/argoproj/argo-workflows/commit/ffb281a5567666db68a5acab03ba7a0188954bf8) Small code cleanup and add tests (#1562)
- * [1cb8345d](https://github.com/argoproj/argo-workflows/commit/1cb8345de0694cffc30882eac59a05cb8eb06bc4) Add merge keys to Workflow objects to allow for StrategicMergePatches (#1611)
- * [c855a66a](https://github.com/argoproj/argo-workflows/commit/c855a66a6a9e3239fe5d585f5b5f36a07d48c5ed) Increased Lint timeout (#1612)
- * [4bf83fc3](https://github.com/argoproj/argo-workflows/commit/4bf83fc3d0d6b1e1d2c85f7b9b10a051134f7b0a) Fix DAG enable failFast will hang in some case (#1595)
- * [e9f3d9cb](https://github.com/argoproj/argo-workflows/commit/e9f3d9cbc029a9d55cf35ea51c2486078110bb2d) Do not relocate the mounted docker.sock (#1607)
- * [1bd50fa2](https://github.com/argoproj/argo-workflows/commit/1bd50fa2dfd828a04ff012868c98ba33bac41136) Added retry around RuntimeExecutor.Wait call when waiting for main container completion (#1597)
- * [0393427b](https://github.com/argoproj/argo-workflows/commit/0393427b54f397237152f5b74f6d09d0c20c1618) Issue1571  Support ability to assume IAM roles in S3 Artifacts  (#1587)
- * [ffc0c84f](https://github.com/argoproj/argo-workflows/commit/ffc0c84f509226f02d47cb2d5280faa7e2b92841) Update Gopkg.toml and Gopkg.lock (#1596)
- * [aa3a8f1c](https://github.com/argoproj/argo-workflows/commit/aa3a8f1c99fcb70bb199750644f74b17812cc586) Update from github.com/ghodss/yaml to sigs.k8s.io/yaml (#1572)
- * [07a26f16](https://github.com/argoproj/argo-workflows/commit/07a26f16747e3c71e76ba83b43336fd7a49622fb) Regard resource templates as leaf nodes (#1593)
- * [89e959e7](https://github.com/argoproj/argo-workflows/commit/89e959e7aaf396bc09cc012014e425ece2b5d644) Fix workflow template in namespaced controller (#1580)
- * [cd04ab8b](https://github.com/argoproj/argo-workflows/commit/cd04ab8bb923012182f2dc2b35dbf14726f7b1a4) remove redundant codes (#1582)
- * [5bba8449](https://github.com/argoproj/argo-workflows/commit/5bba8449ac7f3c563282eec1cb1f0dfc28d0d7c8) Add entrypoint label to workflow default labels (#1550)
- * [9685d7b6](https://github.com/argoproj/argo-workflows/commit/9685d7b67be91bf81059c1c96120a4fe6288399e) Fix inputs and arguments during template resolution (#1545)
- * [19210ba6](https://github.com/argoproj/argo-workflows/commit/19210ba635a4288f51eb2dd827f03715aea72750) added DataStax as an organization that uses Argo (#1576)
- * [b5f2fdef](https://github.com/argoproj/argo-workflows/commit/b5f2fdef097fe0fd69c60c6ada893547fd944d22) Support AutomountServiceAccountToken and executor specific service account(#1480)
- * [8808726c](https://github.com/argoproj/argo-workflows/commit/8808726cf3d0bc3aa71e3f1653262685dbfa0acf) Fix issue saving outputs which overlap paths with inputs (#1567)
- * [ba7a1ed6](https://github.com/argoproj/argo-workflows/commit/ba7a1ed650e7251dfadf5e9ae1fc2cdda7e9eaa2) Add coverage make target (#1557)
- * [ced0ee96](https://github.com/argoproj/argo-workflows/commit/ced0ee96ced59d9b070a1e81a9c148f78a69bfb9) Document workflow controller dockerSockPath config (#1555)
- * [3e95f2da](https://github.com/argoproj/argo-workflows/commit/3e95f2da6af78cc482009692b65cdc565a0ff412) Optimize argo binary install documentation (#1563)
- * [e2ebb166](https://github.com/argoproj/argo-workflows/commit/e2ebb166683d8a6c96502ce6e72f1a3ae48f0b4b) docs(readme): fix workflow types link (#1560)
- * [6d150a15](https://github.com/argoproj/argo-workflows/commit/6d150a15eb96183fb21faf6a49b0997e6150880b) Initialize the wfClientset before using it (#1548)
- * [5331fc02](https://github.com/argoproj/argo-workflows/commit/5331fc02e257266a4a5887dfe6277e5a0b42e7fc) Remove GLog config from argo executor (#1537)
- * [ed4ac6d0](https://github.com/argoproj/argo-workflows/commit/ed4ac6d0697401da6dec3989ecd63dd7567f0750) Update main.go (#1536)
- * [9fca1441](https://github.com/argoproj/argo-workflows/commit/9fca144128c97499d11f07a0ee008a9921e1f5f8) Update argo dependencies to kubernetes v1.14 (#1530)
- * [0246d184](https://github.com/argoproj/argo-workflows/commit/0246d184add04e44f77ffbe00e796b3adaf535d2) Use cache to retrieve WorkflowTemplates (#1534)
- * [4864c32f](https://github.com/argoproj/argo-workflows/commit/4864c32ffa40861c5ca066f67615da6d52eaa8b5) Update README.md (#1533)
- * [4df114fa](https://github.com/argoproj/argo-workflows/commit/4df114fae66e87727cfcb871731ec002af1515c7) Update CHANGELOG for v2.4 (#1531)
- * [c7e5cba1](https://github.com/argoproj/argo-workflows/commit/c7e5cba14a835fbfd0aba88b99197675ce1f0c66) Introduce podGC strategy for deleting completed/successful pods (#1234)
- * [bb0d14af](https://github.com/argoproj/argo-workflows/commit/bb0d14af9d320a141cb307b6a883c1eaafa498c3) Update ISSUE_TEMPLATE.md (#1528)
- * [b5702d8a](https://github.com/argoproj/argo-workflows/commit/b5702d8ae725c5caa4058d39f77e6d1e7e549da4) Format sources and order imports with the help of goimports (#1504)
- * [d3ff77bf](https://github.com/argoproj/argo-workflows/commit/d3ff77bf475095c73f034fb3b23c279c62f4269e) Added Architecture doc (#1515)
- * [fc1ec1a5](https://github.com/argoproj/argo-workflows/commit/fc1ec1a51462c9a114417db801e3a9715d3dc6b4) WorkflowTemplate CRD (#1312)
- * [f99d3266](https://github.com/argoproj/argo-workflows/commit/f99d3266d1879579338f124c56f1fc14867308a3) Expose all input parameters to template as JSON (#1488)
- * [bea60526](https://github.com/argoproj/argo-workflows/commit/bea605261be82d8bb91bf703ad68875f1093ebb8) Fix argo logs empty content when workflow run in virtual kubelet env (#1201)
- * [d82de881](https://github.com/argoproj/argo-workflows/commit/d82de8813910afaf9b3fb77d029faa7953bfee3a) Implemented support for WorkflowSpec.ArtifactRepositoryRef (#1350)
- * [0fa20c7b](https://github.com/argoproj/argo-workflows/commit/0fa20c7ba317d8c9a837bcc37d92f3fe79808499) Fix validation (#1508)
- * [87e2cb60](https://github.com/argoproj/argo-workflows/commit/87e2cb6043a305839ca37cc77c7611aaa7bdbd44) Add --dry-run option to `argo submit` (#1506)
- * [e7e50af6](https://github.com/argoproj/argo-workflows/commit/e7e50af6e56b1eeddccc82a2dbc8b421d1a63942) Support git shallow clones and additional ref fetches (#1521)
- * [605489cd](https://github.com/argoproj/argo-workflows/commit/605489cd5dd688527e60efee0aff239e3439c2dc) Allow overriding workflow labels in 'argo submit' (#1475)
- * [47eba519](https://github.com/argoproj/argo-workflows/commit/47eba519107c229edf61dbe024a6a5e0f1618a8d) Fix issue [Documentation] kubectl get service argo-artifacts -o wide (#1516)
- * [02f38262](https://github.com/argoproj/argo-workflows/commit/02f38262c40901346ddd622685bc6bfd344a2717) Fixed #1287 Executor kubectl version is obsolete (#1513)
- * [f62105e6](https://github.com/argoproj/argo-workflows/commit/f62105e659a22ccc0875151698eab540090885f6) Allow Makefile variables to be set from the command line (#1501)
- * [e62be65b](https://github.com/argoproj/argo-workflows/commit/e62be65ba25ae68a1bed10bddf33b4dae4991249) Fix a compiler error in a unit test (#1514)
- * [5c5c29af](https://github.com/argoproj/argo-workflows/commit/5c5c29af729b39f5f9b8a7fe6b8c1dede53eae3a) Fix the lint target (#1505)
- * [e03287bf](https://github.com/argoproj/argo-workflows/commit/e03287bfb7f97f639c8d81617808f709ca547eaa) Allow output parameters with .value, not only .valueFrom (#1336)
- * [781d3b8a](https://github.com/argoproj/argo-workflows/commit/781d3b8ae243b2c32ea3c4abd5b4a99fe9fc9cad) Implemented Conditionally annotate outputs of script template only when consumed #1359 (#1462)
- * [b028e61d](https://github.com/argoproj/argo-workflows/commit/b028e61db71e74b5730469a5f23a734937ddb8d9) change 'continue-on-fail' example to better reflect its description (#1494)
- * [97e824c9](https://github.com/argoproj/argo-workflows/commit/97e824c9a5b71baea658e8de6130bee089fb764d) Readme update to add argo and airflow comparison (#1502)
- * [414d6ce7](https://github.com/argoproj/argo-workflows/commit/414d6ce7b8aebcbd3b8822f407ec71ed465c103d) Fix a compiler error (#1500)
- * [ca1d5e67](https://github.com/argoproj/argo-workflows/commit/ca1d5e671519aaa9f38f5f2564eb70c138fadda7) Fix: Support the List within List type in withParam #1471 (#1473)
- * [75cb8b9c](https://github.com/argoproj/argo-workflows/commit/75cb8b9cd92cd7fcce4b921b88232bb05f2672b2) Fix #1366 unpredictable global artifact behavior (#1461)
- * [082e5c4f](https://github.com/argoproj/argo-workflows/commit/082e5c4f617c4120584ad601a8d85e0a3ce36a26) Exposed workflow priority as a variable (#1476)
- * [38c4def7](https://github.com/argoproj/argo-workflows/commit/38c4def7fb100e954757649553db8c04ea64f318) Fix: Argo CLI should show warning if there is no workflow definition in file #1486
- * [af7e496d](https://github.com/argoproj/argo-workflows/commit/af7e496db6ee8c10c9a2b6b51a27265bc6b0ee6d) Add Commodus Tech as official user (#1484)
- * [8c559642](https://github.com/argoproj/argo-workflows/commit/8c559642f2ec8abaea3204279fa3d6ff5ad40add) Update OWNERS (#1485)
- * [007d1f88](https://github.com/argoproj/argo-workflows/commit/007d1f8816736a758fa3720f0081e01dbc4200e3) Fix: 1008 `argo wait` and `argo submit --wait` should exit 1 if workflow fails  (#1467)
- * [3ab7bc94](https://github.com/argoproj/argo-workflows/commit/3ab7bc94c01d7a470bd05198b99c33e1a0221847) Document the insecureIgnoreHostKey git flag (#1483)
- * [7d9bb51a](https://github.com/argoproj/argo-workflows/commit/7d9bb51ae328f1a8cc7daf7d8ef108cf190df0ce) Fix failFast bug:   When a node in the middle fails, the entire workflow will hang (#1468)
- * [42adbf32](https://github.com/argoproj/argo-workflows/commit/42adbf32e8d4c626c544795c2fc1adb70676e968) Add --no-color flag to logs (#1479)
- * [67fc29c5](https://github.com/argoproj/argo-workflows/commit/67fc29c57db795a7020f355ab32cd883cfaf701e) fix typo: symboloic > symbolic (#1478)
- * [7c3e1901](https://github.com/argoproj/argo-workflows/commit/7c3e1901f49fe34cbe9d084274f6e64c48270635) Added Codec to the Argo community list (#1477)
- * [0a9cf9d3](https://github.com/argoproj/argo-workflows/commit/0a9cf9d3b06a3b304c0c690a298d8dc3d51c015b) Add doc about failFast feature (#1453)
- * [6a590300](https://github.com/argoproj/argo-workflows/commit/6a5903000fe8a7b3610c32435b2363cbf6334d1b) Support PodSecurityContext (#1463)
- * [e392d854](https://github.com/argoproj/argo-workflows/commit/e392d854bf78db89413782a23e62b0e38cf9c780) issue-1445: changing temp directory for output artifacts from root to tmp (#1458)
- * [7a21adfe](https://github.com/argoproj/argo-workflows/commit/7a21adfeb0af18c2452648a8bb3698a687f99b5e) New Feature:  provide failFast flag, allow a DAG to run all branches of the DAG (either success or failure) (#1443)
- * [b9b87b7f](https://github.com/argoproj/argo-workflows/commit/b9b87b7fa0cd3177c2b89cacff189f4893c5af95) Centralized Longterm workflow persistence storage  (#1344)
- * [cb09609b](https://github.com/argoproj/argo-workflows/commit/cb09609bd646a394c3a6f739dd447022a2bdb327) mention sidecar in failure message for sidecar containers (#1430)
- * [373bbe6e](https://github.com/argoproj/argo-workflows/commit/373bbe6ec9e819c39152292f79752792ce40b94d) Fix demo's doc issue of install minio chart (#1450)
- * [83552334](https://github.com/argoproj/argo-workflows/commit/835523341bcc96b6e9358be71e7432d0ac4058c5) Add threekit to user list (#1444)
- * [83f82ad1](https://github.com/argoproj/argo-workflows/commit/83f82ad172de0472643495d3ef3e0ce6d959900a) Improve bash completion (#1437)
- * [ee0ec78a](https://github.com/argoproj/argo-workflows/commit/ee0ec78ac98eaa112d343906a6e9b6490c39817f) Update documentation for workflow.outputs.artifacts (#1439)
- * [9e30c06e](https://github.com/argoproj/argo-workflows/commit/9e30c06e32b072b87e0d17095448d114175c713f) Revert "Update demo.md (#1396)" (#1433)
- * [c08de630](https://github.com/argoproj/argo-workflows/commit/c08de6300c3b394c34a5b3596455dcb50c29af48) Add paging function for list command (#1420)
- * [bba2f9cb](https://github.com/argoproj/argo-workflows/commit/bba2f9cbe9aa0eb053c19b03bc8fa7c002f579b0) Fixed:  Implemented Template level service account (#1354)
- * [d635c1de](https://github.com/argoproj/argo-workflows/commit/d635c1def74936869edbd8b9037ac81ea0af1772) Ability to configure hostPath mount for `/var/run/docker.sock` (#1419)
- * [d2f7162a](https://github.com/argoproj/argo-workflows/commit/d2f7162ac26550642ebe1792c65fb5e6ca9c0e7a) Terminate all containers within pod after main container completes (#1423)
- * [1607d74a](https://github.com/argoproj/argo-workflows/commit/1607d74a8de0704b82627364645a99b699d40cc0) PNS executor intermitently failed to capture entire log of script templates (#1406)
- * [5e47256c](https://github.com/argoproj/argo-workflows/commit/5e47256c7f86b56cfbf2ce53f73ed093eef2e3b6) Fix typo (#1431)
- * [5635c33a](https://github.com/argoproj/argo-workflows/commit/5635c33aa263080fe84e29a11a52f86fee583ca2) Update demo.md (#1396)
- * [83425455](https://github.com/argoproj/argo-workflows/commit/83425455bff34527e65ca1371347eed5203ae99a) Add OVH as official user (#1417)
- * [82e5f63d](https://github.com/argoproj/argo-workflows/commit/82e5f63d3680e7e4a22747803b0753b5ec31d2ad) Typo fix in ARTIFACT_REPO.md (#1425)
- * [15fa6f52](https://github.com/argoproj/argo-workflows/commit/15fa6f52d926ee5e839321900f613f6e546e6b6e) Update OWNERS (#1429)
- * [96b9a40e](https://github.com/argoproj/argo-workflows/commit/96b9a40e9aafe9c0132ce1b9f1eb01f05c3894ca) Orders uses alphabetically (#1411)
- * [6550e2cb](https://github.com/argoproj/argo-workflows/commit/6550e2cb10112ddf6435755958387ffa6ada0ef5) chore: add IBM to official users section in README.md (#1409)
- * [bc81fe28](https://github.com/argoproj/argo-workflows/commit/bc81fe288ebf9811774b36dd6eba9a851ac7717e) Fiixed: persistentvolumeclaims already exists #1130 (#1363)
- * [6a042d1f](https://github.com/argoproj/argo-workflows/commit/6a042d1f7eb01f1f369c2325aecebf71a3bea3a4) Update README.md (#1404)
- * [aa811fbd](https://github.com/argoproj/argo-workflows/commit/aa811fbdb914fe386cfbf3fa84a51bfd5104b5d0) Update README.md (#1402)
- * [abe3c99f](https://github.com/argoproj/argo-workflows/commit/abe3c99f19a1ec28775a276b50ad588a2dd660ca) Add Mirantis as an official user (#1401)
- * [18ab750a](https://github.com/argoproj/argo-workflows/commit/18ab750aea4de8f7dc67433f4e73505c80e13222) Added Argo Rollouts to README (#1388)
- * [67714f99](https://github.com/argoproj/argo-workflows/commit/67714f99b4bf664eb5e853b25ebf4b12bb98f733) Make locating kubeconfig in example os independent (#1393)
- * [672dc04f](https://github.com/argoproj/argo-workflows/commit/672dc04f737a3be099fe64c343587c35074b0938) Fixed: withParam parsing of JSON/YAML lists #1389 (#1397)
- * [b9aec5f9](https://github.com/argoproj/argo-workflows/commit/b9aec5f9833d5fa2055d06d1a71fdb75709eea21) Fixed: make verify-codegen is failing on the master branch (#1399) (#1400)
- * [270aabf1](https://github.com/argoproj/argo-workflows/commit/270aabf1d8cabd69b9851209ad5d9c874348e21d) Fixed:  failed to save outputs: verify serviceaccount default:default has necessary privileges (#1362)
- * [163f4a5d](https://github.com/argoproj/argo-workflows/commit/163f4a5d322352bd98f9a88ebd6089cf5e5b49ad) Fixed: Support hostAliases in WorkflowSpec #1265 (#1365)
- * [abb17478](https://github.com/argoproj/argo-workflows/commit/abb174788dce1bc6bed993a2967f7d8e112e44ca) Add Max Kelsen to USERS in README.md (#1374)
- * [dc549193](https://github.com/argoproj/argo-workflows/commit/dc5491930e09eebe700952e28359deeb8e0d2314) Update docs for the v2.3.0 release and to use the stable tag
- * [4001c964](https://github.com/argoproj/argo-workflows/commit/4001c964dbc70962e1cc1d80a4aff64cf8594ec3) Update README.md (#1372)
- * [6c18039b](https://github.com/argoproj/argo-workflows/commit/6c18039be962996d971145be8349d2ed3e396c80) Fix issue where a DAG with exhausted retries would get stuck Running (#1364)
- * [d7e74fe3](https://github.com/argoproj/argo-workflows/commit/d7e74fe3a96277ba532e4a2f40303a92d2d0ce94) Validate action for resource templates (#1346)
- * [810949d5](https://github.com/argoproj/argo-workflows/commit/810949d5106b4d1d533b647d1d61559c208b590a) Fixed :  CLI Does Not Honor metadata.namespace #1288 (#1352)
- * [e58859d7](https://github.com/argoproj/argo-workflows/commit/e58859d79516508838fead8222f0e26a6c2a2861) [Fix #1242] Failed DAG nodes are now kept and set to running on RetryWorkflow. (#1250)
- * [d5fe5f98](https://github.com/argoproj/argo-workflows/commit/d5fe5f981fb112ba01ed77521ae688f8a15f67b9) Use golangci-lint instead of deprecated gometalinter (#1335)
- * [26744d10](https://github.com/argoproj/argo-workflows/commit/26744d100e91eb757f48bfedd539e7e4a044faf3) Support an easy way to set owner reference (#1333)
- * [8bf7578e](https://github.com/argoproj/argo-workflows/commit/8bf7578e1884c61128603bbfaa677fd79cc17ea8) Add --status filter for get command (#1325)
- * [3f6ac9c9](https://github.com/argoproj/argo-workflows/commit/3f6ac9c9f1ccd92d4dabf52e964a1dd52b1622f6) Update release instructions
- * [2274130d](https://github.com/argoproj/argo-workflows/commit/2274130dc55de0b019ac9fd5232c192364f275c9) Update version to v2.3.0-rc3
- * [b024b3d8](https://github.com/argoproj/argo-workflows/commit/b024b3d83a4bfd46bd6b4a5075e9f8f968457309) Fix: # 1328 argo submit --wait and argo wait quits while workflow is running (#1347)
- * [24680b7f](https://github.com/argoproj/argo-workflows/commit/24680b7fc8a1fd573b39d61ba7bdce5b143eb686) Fixed : Validate the secret credentials name and key (#1358)
- * [f641d84e](https://github.com/argoproj/argo-workflows/commit/f641d84eb5cd489c98b39b41b69dbea9a3312e01) Fix input artifacts with multiple ssh keys (#1338)
- * [e680bd21](https://github.com/argoproj/argo-workflows/commit/e680bd219a2478835d5d8cefcbfb96bd11acc40b) add / test (#1240)
- * [ee788a8a](https://github.com/argoproj/argo-workflows/commit/ee788a8a6c70c5c64f535b6a901e837a9b4d5797) Fix #1340 parameter substitution bug (#1345)
- * [60b65190](https://github.com/argoproj/argo-workflows/commit/60b65190a22e176429e586afe58a86a14b390c66) Fix missing template local volumes, Handle volumes only used in init containers (#1342)
- * [4e37a444](https://github.com/argoproj/argo-workflows/commit/4e37a444bde2a034885d0db35f7b38684505063e) Add documentation on releasing
- * [bb1bfdd9](https://github.com/argoproj/argo-workflows/commit/bb1bfdd9106d9b64aa2dccf8d3554bdd31513cf8) Update version to v2.3.0-rc2. Update changelog
- * [49a6b6d7](https://github.com/argoproj/argo-workflows/commit/49a6b6d7ac1bb5f6b390eff1b218205d995142cb) wait will conditionally become privileged if main/sidecar privileged (resolves #1323)
- * [34af5a06](https://github.com/argoproj/argo-workflows/commit/34af5a065e42230148b48603fc81f57fb2b4c22c) Fix regression where argoexec wait would not return when podname was too long
- * [bd8d5cb4](https://github.com/argoproj/argo-workflows/commit/bd8d5cb4b7510afb7bd43bd75e5c5d26ccc85ca4) `argo list` was not displaying non-zero priorities correctly
- * [64370a2d](https://github.com/argoproj/argo-workflows/commit/64370a2d185db66a8d2188d986c52a3b73aaf92b) Support parameter substitution in the volumes attribute (#1238)
- * [6607dca9](https://github.com/argoproj/argo-workflows/commit/6607dca93db6255a2abc30ae76b5f935fce5735d) Issue1316 Pod creation with secret volumemount  (#1318)
- * [a5a2bcf2](https://github.com/argoproj/argo-workflows/commit/a5a2bcf21900019d979328250009af4137f7ff2a) Update README.md (#1321)
- * [950de1b9](https://github.com/argoproj/argo-workflows/commit/950de1b94efc18473a85e1f23c9ed5e6ff75ba93) Export the methods of `KubernetesClientInterface` (#1294)
- * [1c729a72](https://github.com/argoproj/argo-workflows/commit/1c729a72a2ae431623332b65646c97cb689eab01) Update v2.3.0 CHANGELOG.md
- * [40f9a875](https://github.com/argoproj/argo-workflows/commit/40f9a87593d312a46f7fa24aaf32e125458cc701) Reorganize manifests to kustomize 2 and update version to v2.3.0-rc1
- * [75b28a37](https://github.com/argoproj/argo-workflows/commit/75b28a37b923e278fc89fd647f78a42e7a3bf029) Implement support for PNS (Process Namespace Sharing) executor (#1214)
- * [b4edfd30](https://github.com/argoproj/argo-workflows/commit/b4edfd30b0e3034d98e938b491cf5bd054b36525) Fix SIGSEGV in watch/CheckAndDecompress. Consolidate duplicate code (resolves #1315)
- * [02550be3](https://github.com/argoproj/argo-workflows/commit/02550be31e53da79f1f4dbebda3ede7dc1052086) Archive location should conditionally be added to template only when needed
- * [c60010da](https://github.com/argoproj/argo-workflows/commit/c60010da29bd36c10c6e627802df6d6a06c1a59a) Fix nil pointer dereference with secret volumes (#1314)
- * [db89c477](https://github.com/argoproj/argo-workflows/commit/db89c477d65a29fc0a95ca55f68e1bd23d0170e0) Fix formatting issues in examples documentation (#1310)
- * [0d400f2c](https://github.com/argoproj/argo-workflows/commit/0d400f2ce6db9478b4eaa6fe24849a686c9d1d44) Refactor checkandEstimate to optimize podReconciliation (#1311)
- * [bbdf2e2c](https://github.com/argoproj/argo-workflows/commit/bbdf2e2c8f1b5a8dc83e88fedba9b1899f6bc78b) Add alibaba cloud to officially using argo list (#1313)
- * [abb77062](https://github.com/argoproj/argo-workflows/commit/abb77062fc06ae964ce7ccd1a534ec8bbdf3747c) CheckandEstimate implementation to optimize podReconciliation (#1308)
- * [1a028d54](https://github.com/argoproj/argo-workflows/commit/1a028d5458ffef240f8af31caeecda91f057c3ba) Secrets should be passed to pods using volumes instead of API calls (#1302)
- * [e34024a3](https://github.com/argoproj/argo-workflows/commit/e34024a3ca285d1af3b5ba3b3235dc7adc0472b7) Add support for init containers (#1183)
- * [4591e44f](https://github.com/argoproj/argo-workflows/commit/4591e44fe0e4de543f4c4339de0808346e0807e3) Added support for artifact path references (#1300)
- * [928e4df8](https://github.com/argoproj/argo-workflows/commit/928e4df81c4b33f0c0750f01b3aa3c4fc7ff256c) Add Karius to users in README.md (#1305)
- * [de779f36](https://github.com/argoproj/argo-workflows/commit/de779f36122205790915622f5ee91c9a9d5b9086) Add community meeting notes link (#1304)
- * [a8a55579](https://github.com/argoproj/argo-workflows/commit/a8a55579131605d4dc769cb599bc99c06350dfb7) Speed up podReconciliation using parallel goroutine (#1286)
- * [93451119](https://github.com/argoproj/argo-workflows/commit/934511192e4045b87be1675ff7e9dfa79faa9fcb) Add dns config support (#1301)
- * [850f3f15](https://github.com/argoproj/argo-workflows/commit/850f3f15dd1965e99cd636711a5e3306bc4bd0c0) Admiralty: add link to blog post, add user (#1295)
- * [d5f4b428](https://github.com/argoproj/argo-workflows/commit/d5f4b428ce02de34a37d5cb2fdba4dfa9fd16e75) Fix for Resource creation where template has same parameter templating (#1283)
- * [9b555cdb](https://github.com/argoproj/argo-workflows/commit/9b555cdb30f6092d5f53891f318fb74b8371c039) Issue#896 Workflow steps with non-existant output artifact path will succeed (#1277)
- * [adab9ed6](https://github.com/argoproj/argo-workflows/commit/adab9ed6bc4f8f337105182c56abad39bccb9676) Argo CI is current inactive (#1285)
- * [59fcc5cc](https://github.com/argoproj/argo-workflows/commit/59fcc5cc33ce67c057064dc37a463707501615e1) Add workflow labels and annotations global vars (#1280)
- * [1e111caa](https://github.com/argoproj/argo-workflows/commit/1e111caa1d2cc672b3b53c202b96a5f660a7e9b2) Fix bug with DockerExecutor's CopyFile (#1275)
- * [73a37f2b](https://github.com/argoproj/argo-workflows/commit/73a37f2b2a12d74ddf6a4b54e04b50fa1a7c68a1) Add the `mergeStrategy` option to resource patching (#1269)
- * [e6105243](https://github.com/argoproj/argo-workflows/commit/e6105243c785d9f53aef6fcfd344e855ad4f7d84) Reduce redundancy pod label action (#1271)
- * [4bfbb20b](https://github.com/argoproj/argo-workflows/commit/4bfbb20bc23f8bf4611a6314fb80f8138b17b9b9) Error running 1000s of tasks: "etcdserver: request is too large" #1186 (#1264)
- * [b2743f30](https://github.com/argoproj/argo-workflows/commit/b2743f30c411f5ad8f8c8b481a5d6b6ff83c33bd) Proxy Priority and PriorityClassName to pods (#1179)
- * [70c130ae](https://github.com/argoproj/argo-workflows/commit/70c130ae626f7c58d9e5ac0eed8977f51696fcbd) Update versions (#1218)
- * [b0384129](https://github.com/argoproj/argo-workflows/commit/b03841297e4b0dab0380b441cf41f5ed34db44bf) Git cloning via SSH was not verifying host public key (#1261)
- * [3f06385b](https://github.com/argoproj/argo-workflows/commit/3f06385b129c02e23ea283f7c66d347cb8899564) Issue#1165 fake outputs don't notify and task completes successfully (#1247)
- * [fa042aa2](https://github.com/argoproj/argo-workflows/commit/fa042aa285947c5fa365ef06a9565d0b4e20da0e) typo, executo -> executor (#1243)
- * [1cb88bae](https://github.com/argoproj/argo-workflows/commit/1cb88baee9ded1ede27a9d3f1e31f06f4369443d) Fixed Issue#1223 Kubernetes Resource action: patch is not supported (#1245)
- * [2b0b8f1c](https://github.com/argoproj/argo-workflows/commit/2b0b8f1c3f46aa41e4b4ddaf14ad1fdebccfaf8a) Fix the Prometheus address references (#1237)
- * [94cda3d5](https://github.com/argoproj/argo-workflows/commit/94cda3d53c6a72e3fc225ba08796bfd9420eccd6) Add feature to continue workflow on failed/error steps/tasks (#1205)
- * [3f1fb9d5](https://github.com/argoproj/argo-workflows/commit/3f1fb9d5e61d300c4922e48a748dc17285e07f07) Add Gardener to "Who uses Argo" (#1228)
- * [cde5cd32](https://github.com/argoproj/argo-workflows/commit/cde5cd320fa987ac6dd539a3126f29c73cd7277a) Include stderr when retrieving docker logs (#1225)
- * [2b1d56e7](https://github.com/argoproj/argo-workflows/commit/2b1d56e7d4e583e2e06b37904714b350faf03d97) Update README.md (#1224)
- * [eeac5a0e](https://github.com/argoproj/argo-workflows/commit/eeac5a0e11b4a6f4bc28757a3b0684598b8c4974) Remove extra quotes around output parameter value (#1232)
- * [8b67e1bf](https://github.com/argoproj/argo-workflows/commit/8b67e1bfdc7ed5ea153cb17f9a740afe2bd4efa8) Update README.md (#1236)
- * [baa3e622](https://github.com/argoproj/argo-workflows/commit/baa3e622121e66c9fec7c612c88027b7cacbd1b2) Update README with typo fixes (#1220)
- * [f6b0c8f2](https://github.com/argoproj/argo-workflows/commit/f6b0c8f285217fd0e6089b0cf03ca4926d1b4758) Executor can access the k8s apiserver with a out-of-cluster config file (#1134)
- * [0bda53c7](https://github.com/argoproj/argo-workflows/commit/0bda53c77c54b037e7d91b18554053362b1e4d35) fix dag retries (#1221)
- * [8aae2931](https://github.com/argoproj/argo-workflows/commit/8aae29317a8cfef2edc084a4c74a44c83d845936) Issue #1190 - Fix incorrect retry node handling (#1208)
- * [f1797f78](https://github.com/argoproj/argo-workflows/commit/f1797f78044504dbf2e1f7285cc9c18ac79f5e81) Add schedulerName to workflow and template spec (#1184)
- * [2ddae161](https://github.com/argoproj/argo-workflows/commit/2ddae161037f603d2a3c12ba6b495dc422547b58) Set executor image pull policy for resource template (#1174)
- * [edcb5629](https://github.com/argoproj/argo-workflows/commit/edcb56296255267a3c8fa639c3ad26a016caab80) Dockerfile: argoexec base image correction (fixes #1209) (#1213)
- * [f92284d7](https://github.com/argoproj/argo-workflows/commit/f92284d7108ebf92907008d8f12a0696ee467a43) Minor spelling, formatting, and style updates. (#1193)
- * [bd249a83](https://github.com/argoproj/argo-workflows/commit/bd249a83e119d6161fa1c593b09fb381db448a0d) Issue #1128 - Use polling instead of fs notify to get annotation changes (#1194)
- * [14a432e7](https://github.com/argoproj/argo-workflows/commit/14a432e75119e37d42715b7e83992789c6dac454) Update community/README (#1197)
- * [eda7e084](https://github.com/argoproj/argo-workflows/commit/eda7e08438d2314bb5eb178a1335a3c28555ab34) Updated OWNERS (#1198)
- * [73504a24](https://github.com/argoproj/argo-workflows/commit/73504a24e885c6df9d1cceb4aa123c79eca7b7cd) Fischerjulian adds ruby to rest docs (#1196)
- * [311ad86f](https://github.com/argoproj/argo-workflows/commit/311ad86f101c58a1de1cef313a1516b4c79e643f) Fix missing docker binary in argoexec image. Improve reuse of image layers
- * [831e2198](https://github.com/argoproj/argo-workflows/commit/831e2198e22503394acca1cce0dbcf8dcebb2931) Issue #988 - Submit should not print logs to stdout unless output is 'wide' (#1192)
- * [17250f3a](https://github.com/argoproj/argo-workflows/commit/17250f3a51d545c49114882d0da6ca29eda7c6f2) Add documentation how to use parameter-file's (#1191)
- * [01ce5c3b](https://github.com/argoproj/argo-workflows/commit/01ce5c3bcf0dde5536b596d48bd48a93b3f2eee0) Add Docker Hub build hooks
- * [93289b42](https://github.com/argoproj/argo-workflows/commit/93289b42f96cd49cdc048d84626cb28ef6932940) Refactor Makefile/Dockerfile to remove volume binding in favor of build stages (#1189)
- * [8eb4c666](https://github.com/argoproj/argo-workflows/commit/8eb4c66639c5fd1a607c73a4d765468a99c43da1) Issue #1123 - Fix 'kubectl get' failure if resource namespace is different from workflow namespace (#1171)
- * [eaaad7d4](https://github.com/argoproj/argo-workflows/commit/eaaad7d47257302f203bab24bce1b7d479453351) Increased S3 artifact retry time and added log (#1138)
- * [f07b5afe](https://github.com/argoproj/argo-workflows/commit/f07b5afeaf950f49f87cdffb5116e82c8b0d43a1) Issue #1113 - Wait for daemon pods completion to handle annotations (#1177)
- * [2b2651b0](https://github.com/argoproj/argo-workflows/commit/2b2651b0a7f5d6873c8470fad137d42f9b7d7240) Do not mount unnecessary docker socket (#1178)
- * [1fc03144](https://github.com/argoproj/argo-workflows/commit/1fc03144c55f987993c7777b190b1848fc3833cd) Argo users: Equinor (#1175)
- * [e381653b](https://github.com/argoproj/argo-workflows/commit/e381653b6d6d6a6babba2e8f05f6f103e81a191d) Update README. (#1173) (#1176)
- * [5a917140](https://github.com/argoproj/argo-workflows/commit/5a917140cb56a27e7b6f3b1d5068f4838863c273) Update README and preview notice in CLA.
- * [521eb25a](https://github.com/argoproj/argo-workflows/commit/521eb25aeb2b8351d72bad4a3d3aa2d1fa55eb23) Validate ArchiveLocation artifacts (#1167)
- * [528e8f80](https://github.com/argoproj/argo-workflows/commit/528e8f803683ee462ccc05fc9b00dc57858c0e93) Add missing patch in namespace kustomization.yaml (#1170)
- * [0b41ca0a](https://github.com/argoproj/argo-workflows/commit/0b41ca0a2410b01205712a2186dd12851eecb707) Add Preferred Networks to users in README.md (#1172)
- * [649d64d1](https://github.com/argoproj/argo-workflows/commit/649d64d1bd375f779cd150446bddce94582067d2) Add GitHub to users in README.md (#1151)
- * [864c7090](https://github.com/argoproj/argo-workflows/commit/864c7090a0bfcaa12237ff6e894a9d26ab463a7a) Update codegen for network config (#1168)
- * [c3cc51be](https://github.com/argoproj/argo-workflows/commit/c3cc51be2e14e931d6e212aa30842a2c514082d1) Support HDFS Artifact (#1159)
- * [8db00066](https://github.com/argoproj/argo-workflows/commit/8db0006667dec74c58cbab744b014c67fda55c65) add support for hostNetwork & dnsPolicy config (#1161)
- * [149d176f](https://github.com/argoproj/argo-workflows/commit/149d176fdf3560d74afa91fe91a0ee38bf7ec3bd) Replace exponential retry with poll (#1166)
- * [31e5f63c](https://github.com/argoproj/argo-workflows/commit/31e5f63cba89b06abc2cdce0d778c6b8d937a23e) Fix tests compilation error (#1157)
- * [6726d9a9](https://github.com/argoproj/argo-workflows/commit/6726d9a961a2c3ed5467430d3631a36cfbf361de) Fix failing TestAddGlobalArtifactToScope unit test
- * [4fd758c3](https://github.com/argoproj/argo-workflows/commit/4fd758c38fc232bf26bb5e1d4e7e23321ba91416) Add slack badge to README (#1164)
- * [3561bff7](https://github.com/argoproj/argo-workflows/commit/3561bff70ad6bfeca8967be6aa4ac24fbbc8ac27) Issue #1136 - Fix metadata for DAG with loops (#1149)
- * [c7fec9d4](https://github.com/argoproj/argo-workflows/commit/c7fec9d41c0e2d3369e111f8b1d0f1d0ca77edae) Reflect minio chart changes in documentation (#1147)
- * [f6ce7833](https://github.com/argoproj/argo-workflows/commit/f6ce78334762cbc3c6de1604c11ea4f5f618c275) add support for other archs (#1137)
- * [cb538489](https://github.com/argoproj/argo-workflows/commit/cb538489a187134577e2146afcf9367f45088ff7) Fix issue where steps with exhausted retires would not complete (#1148)
- * [e400b65c](https://github.com/argoproj/argo-workflows/commit/e400b65c5eca2de2aa891f8489dcd835ef0e161c) Fix global artifact overwriting in nested workflow (#1086)
- * [174eb20a](https://github.com/argoproj/argo-workflows/commit/174eb20a6a110c9bf647b040460df83b6ab031c4) Issue #1040 - Kill daemoned step if workflow consist of single daemoned step (#1144)
- * [e078032e](https://github.com/argoproj/argo-workflows/commit/e078032e469effdfc492c8eea97eb2701ceda0c2) Issue #1132 - Fix panic in ttl controller (#1143)
- * [e09d9ade](https://github.com/argoproj/argo-workflows/commit/e09d9ade25535ae7e78ca23636e4d158a98bba84) Issue #1104 - Remove container wait timeout from 'argo logs --follow' (#1142)
- * [0f84e514](https://github.com/argoproj/argo-workflows/commit/0f84e5148dd34c225a35eab7a1f5953afb45e724) Allow owner reference to be set in submit util (#1120)
- * [3484099c](https://github.com/argoproj/argo-workflows/commit/3484099c856716f6da5e02ad75a48b568f547695) Update generated swagger to fix verify-codegen (#1131)
- * [587ab1a0](https://github.com/argoproj/argo-workflows/commit/587ab1a02772cd9b7ae7cd94f91b815ac4774297) Fix output artifact and parameter conflict (#1125)
- * [6bb3adbc](https://github.com/argoproj/argo-workflows/commit/6bb3adbc596349100c4f19155cfe976f4ea0e6fb) Adding Quantibio in Who uses Argo (#1111)
- * [1ae3696c](https://github.com/argoproj/argo-workflows/commit/1ae3696c27f343c947d9225c5cc2294c8b7c45e5) Install mime-support in argoexec to set proper mime types for S3 artifacts (resolves #1119)
- * [515a9005](https://github.com/argoproj/argo-workflows/commit/515a9005057dfd260a8b60c4ba1ab8c3aa614f48) add support for ppc64le and s390x (#1102)
- * [78142837](https://github.com/argoproj/argo-workflows/commit/78142837836cb100f6858d246d84100b74794cc6) Remove docker_lib mount volume which is not needed anymore (#1115)
- * [e59398ad](https://github.com/argoproj/argo-workflows/commit/e59398adf39b8ef1d0ce273263e80d49e370c510) Fix examples docs of parameters. (#1110)
- * [ec20d94b](https://github.com/argoproj/argo-workflows/commit/ec20d94b6f1d0d88d579c8a27b964f6e9915ff55) Issue #1114 - Set FORCE_NAMESPACE_ISOLATION env variable in namespace install manifests (#1116)
- * [49c1fa4f](https://github.com/argoproj/argo-workflows/commit/49c1fa4f42e1c19ce3b8f4ac2c339894e1ed90d7) Update docs with examples using the K8s REST API
- * [bb8a6a58](https://github.com/argoproj/argo-workflows/commit/bb8a6a58fee8170d6db65c73a50c5fe640f3cb7d) Update ROADMAP.md
- * [46855dcd](https://github.com/argoproj/argo-workflows/commit/46855dcde1d9ba904a1c94a97e602d0510f5e0d4) adding logo to be used by the OS Site (#1099)
- * [438330c3](https://github.com/argoproj/argo-workflows/commit/438330c38da69a68d6b0b0b24f6aae0053fc35ee) #1081 added retry logic to s3 load and save function (#1082)
- * [cb8b036b](https://github.com/argoproj/argo-workflows/commit/cb8b036b8db3ebeb6ef73d9f2070a1ddaf0d2150) Initialize child node before marking phase. Fixes panic on invalid `When` (#1075)
- * [60b508dd](https://github.com/argoproj/argo-workflows/commit/60b508dd9ec36ef45013d72ec6166dd9a30d77fe) Drop reference to removed `argo install` command. (#1074)
- * [62b24368](https://github.com/argoproj/argo-workflows/commit/62b24368a93d57eb505bf226e042a8eb0bf72da4) Fix typo in demo.md (#1089)
- * [b5dfa021](https://github.com/argoproj/argo-workflows/commit/b5dfa0217470c97d8e83716a22cf3bd274c4a2d5) Use relative links on README file (#1087)
- * [95b72f38](https://github.com/argoproj/argo-workflows/commit/95b72f38c94d12735e79bb8bec1a46b10514603c) Update docs to outline bare minimum set of privileges for a workflow
- * [d4ef6e94](https://github.com/argoproj/argo-workflows/commit/d4ef6e944c302b5d2b75d4c49e1833c3a28c1f9a) Add new article and minor edits. (#1083)
- * [afdac9bb](https://github.com/argoproj/argo-workflows/commit/afdac9bb34fe8a01ad511323a00ccf6c07e41137) Issue #740 - System level workflow parallelism limits & priorities (#1065)
- * [a53a76e9](https://github.com/argoproj/argo-workflows/commit/a53a76e9401fab701eaa150307b21a28825c97ce) fix #1078 Azure AKS authentication issues (#1079)
- * [79b3e307](https://github.com/argoproj/argo-workflows/commit/79b3e30746f779e3cec3a28beaecb9c0df7024e1) Fix string format arguments in workflow utilities. (#1070)
- * [76b14f54](https://github.com/argoproj/argo-workflows/commit/76b14f54520a92b81ced78d4cae2632655f396fc) Auto-complete workflow names (#1061)
- * [f2914d63](https://github.com/argoproj/argo-workflows/commit/f2914d63e9c8b41a13b5932f7962f208b7e5a0da) Support nested steps workflow parallelism (#1046)
- * [eb48c23a](https://github.com/argoproj/argo-workflows/commit/eb48c23a2525a62bbc1b8b4c94e3d50fd91014bd) Raise not implemented error when artifact saving is unsupported (#1062)
- * [036969c0](https://github.com/argoproj/argo-workflows/commit/036969c0f4f6ce6a3c948b5d161c0367cf07176b) Add Cratejoy to list of users (#1063)
- * [a07bbe43](https://github.com/argoproj/argo-workflows/commit/a07bbe431cecbb1d50356f94111d3bd2dbc48bb6) Adding SAP Hybris in Who uses Argo (#1064)
- * [7ef1cea6](https://github.com/argoproj/argo-workflows/commit/7ef1cea68c94f7f0e1e2f8bd75bedc5a7df8af90) Update dependencies to K8s v1.12 and client-go 9.0
- * [23d733ba](https://github.com/argoproj/argo-workflows/commit/23d733bae386db44ec80639daf91b29dbf86b335) Add namespace explicitly to pod metadata (#1059)
- * [79ed7665](https://github.com/argoproj/argo-workflows/commit/79ed7665d7419e7fbfe8b120c4cbcd486bebee57) Parameter and Argument names should support snake case (#1048)
- * [6e6c59f1](https://github.com/argoproj/argo-workflows/commit/6e6c59f13ff84fd6b4f1e7f836c783941c434ce7) Submodules are dirty after checkout -- need to update (#1052)
- * [f18716b7](https://github.com/argoproj/argo-workflows/commit/f18716b74c6f52d0c8bf4d64c05eae9db75bfb1f) Support for K8s API based Executor (#1010)
- * [e297d195](https://github.com/argoproj/argo-workflows/commit/e297d19501a8116b5a18c925a3c72d7c7e106ea0) Updated examples/README.md (#1051)
- * [19d6cee8](https://github.com/argoproj/argo-workflows/commit/19d6cee8149917c994b737510d9c8dbfc6dbdd27) Updated ARTIFACT_REPO.md (#1049)
- * [0a928e93](https://github.com/argoproj/argo-workflows/commit/0a928e93dac6d8522682931a0a68c52add310cdb) Update installation manifests to use v2.2.1
- * [3b52b261](https://github.com/argoproj/argo-workflows/commit/3b52b26190163d1f72f3aef1a39f9f291378dafb) Fix linter warnings and update swagger
- * [7d0e77ba](https://github.com/argoproj/argo-workflows/commit/7d0e77ba74587d913b1f4aceb1443228a04d35de) Update changelog and bump version to 2.2.1
- * [b402e12f](https://github.com/argoproj/argo-workflows/commit/b402e12feefe5cd1380e9479b2cc9bae838357bf) Issue #1033 - Workflow executor panic: workflows.argoproj.io/template workflows.argoproj.io/template not found in annotation file (#1034)
- * [3f2e986e](https://github.com/argoproj/argo-workflows/commit/3f2e986e130ca136514767fb1593d745ca418236) fix typo in examples/README.md (#1025)
- * [9c5e056a](https://github.com/argoproj/argo-workflows/commit/9c5e056a858a9b510cdacdbc5deb5857a97662f8) Replace tabs with spaces (#1027)
- * [091f1407](https://github.com/argoproj/argo-workflows/commit/091f1407180990c745e981b24169c3bb4868dbe3) Update README.md (#1030)
- * [159fe09c](https://github.com/argoproj/argo-workflows/commit/159fe09c99c16738c0897f9d74087ec1b264954d) Fix format issues to resolve build errors (#1023)
- * [363bd97b](https://github.com/argoproj/argo-workflows/commit/363bd97b72ae5cb7fc52a560b6f7939248cdb72d) Fix error in env syntax (#1014)
- * [ae7bf0a5](https://github.com/argoproj/argo-workflows/commit/ae7bf0a5f7ddb1e5211e724bef15951198610942) Issue #1018 - Workflow controller should save information about archived logs in step outputs (#1019)
- * [15d006c5](https://github.com/argoproj/argo-workflows/commit/15d006c54ee7149b0d86e6d60453ecc8c071c953) Add example of workflow using imagePullSecrets (resolves #1013)
- * [2388294f](https://github.com/argoproj/argo-workflows/commit/2388294fa412e153d8366910e4d47ba564f29856) Fix RBAC roles to include workflow delete for GC to work properly (resolves #1004)
- * [6f611cb9](https://github.com/argoproj/argo-workflows/commit/6f611cb9383610471f941b5cab4227ce8bfea7c5) Fix issue where resubmission of a terminated workflow creates a terminated workflow (issue #1011)
- * [4a7748f4](https://github.com/argoproj/argo-workflows/commit/4a7748f433f888fdc50b592db1002244ea466bdb) Disable Persistence in the demo example (#997)
- * [55ae0cb2](https://github.com/argoproj/argo-workflows/commit/55ae0cb242a9cf6b390822ca6c0aa0868f5b06e3) Fix example pod name (#1002)
- * [c275e7ac](https://github.com/argoproj/argo-workflows/commit/c275e7acb7b5e8f9820a09d8b0cb635f710b8674) Add imagePullPolicy config for executors (#995)
- * [b1eed124](https://github.com/argoproj/argo-workflows/commit/b1eed124e6d943c453d87a9b4291ba10198d0bc6) `tar -tf` will detect compressed tars correctly. (#998)
- * [03a7137c](https://github.com/argoproj/argo-workflows/commit/03a7137c9ca9459727b57fb0a0e95584c5305844) Add new organization using argo (#994)
- * [83884528](https://github.com/argoproj/argo-workflows/commit/8388452870ed9a2d2e348a2844d3d7d1c4d61b05) Update argoproj/pkg to trim leading/trailing whitespace in S3 credentials (resolves #981)
- * [978b4938](https://github.com/argoproj/argo-workflows/commit/978b49383d30cdbc7c9708eb281b7800ee5412df) Add syntax highlighting for all YAML snippets and most shell snippets (#980)
- * [60d5dc11](https://github.com/argoproj/argo-workflows/commit/60d5dc11c73e888898160b4cc329e87747cee4d2) Give control to decide whether or not to archive logs at a template level
- * [8fab73b1](https://github.com/argoproj/argo-workflows/commit/8fab73b142b96f943592c66932ae0c5183e8c3db) Detect and indicate when container was OOMKilled
- * [47a9e556](https://github.com/argoproj/argo-workflows/commit/47a9e5560229c789b70a6624f23fb4433412fbc4) Update config map doc with instructions to enable log archiving
- * [79dbbaa1](https://github.com/argoproj/argo-workflows/commit/79dbbaa1ed30cae6279eabd9a84650107f4387b3) Add instructions to match git URL format to auth type in git example (issue #979)
- * [429f03f5](https://github.com/argoproj/argo-workflows/commit/429f03f5b26db42f1857a93b7599b545642c2f0a) Add feature list to README.md. Tweaks to getting started.
- * [36fd1948](https://github.com/argoproj/argo-workflows/commit/36fd19482c6bebfb21076cba81b924deaff14f52) Update getting started guide with v2.2.0 instructions
- * [af636ddd](https://github.com/argoproj/argo-workflows/commit/af636ddd8455660f307d835814d3112b90815dfd) Update installation manifests to use v2.2.0
- * [7864ad36](https://github.com/argoproj/argo-workflows/commit/7864ad36788dc78d035d59ddb27ecd979f7216f4) Introduce `withSequence` to iterate a range of numbers in a loop (resolves #527)
- * [99e9977e](https://github.com/argoproj/argo-workflows/commit/99e9977e4ccf61171ca1e347f6a182ba1d8dba83) Introduce `argo terminate` to terminate a workflow without deleting it (resolves #527)
- * [f52c0450](https://github.com/argoproj/argo-workflows/commit/f52c045087abff478603db4817de1933bddce5e7) Reorganize codebase to make CLI functionality available as a library
- * [311169f7](https://github.com/argoproj/argo-workflows/commit/311169f7e71c58fe9bf879a94681ee274ddf623c) Fix issue where sidecars and daemons were not reliably killed (resolves #879)
- * [67ffb6eb](https://github.com/argoproj/argo-workflows/commit/67ffb6eb7519936e1149f36e11dc9fda0f70a242) Add a reason/message for Unschedulable Pending pods
- * [69c390f2](https://github.com/argoproj/argo-workflows/commit/69c390f288ccaaeefba1d5a7961acebfe2e7771a) Support for workflow level timeouts (resolves #848)
- * [f88732ec](https://github.com/argoproj/argo-workflows/commit/f88732ec09413716bf14927bef10355b21b88516) Update docs to use keyFormat field
- * [0df022e7](https://github.com/argoproj/argo-workflows/commit/0df022e777f35bf0ea39ebbacfe4e5f92f099a62) Rename keyPattern to keyFormat. Remove pending pod query during pod reconciliation
- * [75a9983b](https://github.com/argoproj/argo-workflows/commit/75a9983b17869b76a93621f108ee85c70b8d8533) Fix potential panic in `argo watch`
- * [9cb46449](https://github.com/argoproj/argo-workflows/commit/9cb4644975d16dbebc3607ffb91364c93bc14e30) Add TTLSecondsAfterFinished field and controller to garbage collect completed workflows (resolves #911)
- * [7540714a](https://github.com/argoproj/argo-workflows/commit/7540714a47f04f664362c7083c886058c62408f8) Add ability to archive container logs to the artifact repository (resolves #454)
- * [11e57f4d](https://github.com/argoproj/argo-workflows/commit/11e57f4dea93fde60b204a5e7675fec999c66f56) Introduce archive strategies with ability to disable tar.gz archiving (resolves #784)
- * [e180b547](https://github.com/argoproj/argo-workflows/commit/e180b547133aa461bd5cc282a59f8954485d5b8f) Update CHANGELOG.md
- * [5670bf5a](https://github.com/argoproj/argo-workflows/commit/5670bf5a65cbac898b298edd682e603666ed5cb6) Introduce `argo watch` command to watch live workflows from terminal (resolves #969)
- * [57394361](https://github.com/argoproj/argo-workflows/commit/5739436199980ec765b070f8e78669bc37115ad6) Support additional container runtimes through kubelet executor (#952)
- * [a9c84c97](https://github.com/argoproj/argo-workflows/commit/a9c84c97de8f088cd4ee91cd72cf75012fc70438) Error workflows which hit k8s/etcd 1M resource size limit (resolves #913)
- * [67792eb8](https://github.com/argoproj/argo-workflows/commit/67792eb89e5aa678ffc52540dbc232d8598ce43f) Add parameter-file support (#966)
- * [841832a3](https://github.com/argoproj/argo-workflows/commit/841832a3507be3b92e3b2a05fef1052b1cd6e20d) Aggregate workflow RBAC roles to built-in admin/edit/view clusterroles (resolves #960)
- * [35bb7093](https://github.com/argoproj/argo-workflows/commit/35bb70936cf1b76e53f7f6f0e6acaccb9c6d06bf) Allow scaling of workflow and pod workers via controller CLI flags (resolves #962)
- * [b479fa10](https://github.com/argoproj/argo-workflows/commit/b479fa10647bd1c1b86410b7837668c375b327be) Improve workflow configmap documentation for keyPattern
- * [f1802f91](https://github.com/argoproj/argo-workflows/commit/f1802f91d8934b2e4b9d1f64230230bc2a0b5baf) Introduce `keyPattern` workflow config to enable flexibility in archive location path (issue #953)
- * [a5648a96](https://github.com/argoproj/argo-workflows/commit/a5648a9644fcea5f498c24a573a038290b92016f) Fix kubectl proxy link for argo-ui Service (#963)
- * [09f05912](https://github.com/argoproj/argo-workflows/commit/09f0591205ec81b4ec03f0f5c534a13648346f41) Introduce Pending node state to highlight failures when start workflow pods
- * [a3ff464f](https://github.com/argoproj/argo-workflows/commit/a3ff464f67a862d4110848d94a46be39876ce57e) Speed up CI job
- * [88627e84](https://github.com/argoproj/argo-workflows/commit/88627e842c082ddc4d75d15a3e2dc6c7ab4f1db8) Update base images to debian:9.5-slim. Use stable metalinter
- * [753c5945](https://github.com/argoproj/argo-workflows/commit/753c5945b62be209f05025c2e415a0753f5e0b01) Update argo-ci-builder image with new dependencies
- * [674b61bb](https://github.com/argoproj/argo-workflows/commit/674b61bb473787a157e543c10dcf158fa35bb39a) Remove unnecessary dependency on argo-cd and obsolete RBAC constants
- * [60658de0](https://github.com/argoproj/argo-workflows/commit/60658de0cf7403c4be014e92b7a3bb4772f4ad5f) Refactor linting/validation into standalone package. Support linting of .json files
- * [f55d579a](https://github.com/argoproj/argo-workflows/commit/f55d579a9478ed33755874f24656faec04611777) Detect and fail upon unknown fields during argo submit & lint (resolves #892)
- * [edf6a574](https://github.com/argoproj/argo-workflows/commit/edf6a5741de8bdf3a20852a55581883f1ec80d9a) Migrate to using argoproj.io/pkg packages
- * [5ee1e0c7](https://github.com/argoproj/argo-workflows/commit/5ee1e0c7daed4e2c8dca5643a800292ece067fca) Update artifact config docs (#957)
- * [faca49c0](https://github.com/argoproj/argo-workflows/commit/faca49c009bead218ee974bfad2ccc36f84de1fb) Updated README
- * [936c6df7](https://github.com/argoproj/argo-workflows/commit/936c6df7eaae08082c1cc7ad750f664ff8a4c54c) Add table of content to examples (#956)
- * [d2c03f67](https://github.com/argoproj/argo-workflows/commit/d2c03f67c2fd45ff54c04db706c9ebf252fca6f2) Correct image used in install manifests
- * [ec3b7be0](https://github.com/argoproj/argo-workflows/commit/ec3b7be065aa65aae207bd34930001b593009b80) Remove CLI installer/uninstaller. Executor image configured via CLI argument (issue #928) Remove redundant/unused downward API metadata
- * [3a85e242](https://github.com/argoproj/argo-workflows/commit/3a85e2429154a4d97c8fc7c92f9e8f482de6639f) Rely on `git checkout` instead of go-git checkout for more reliable revision resolution
- * [ecef0e3d](https://github.com/argoproj/argo-workflows/commit/ecef0e3dd506eefc222c1ebed58ab81265ac9638) Rename Prometheus metrics (#948)
- * [b9cffe9c](https://github.com/argoproj/argo-workflows/commit/b9cffe9cd7b347905a42cf3e217cc3b039bdfb3f) Issue #896 - Prometheus metrics and telemetry (#935)
- * [290dee52](https://github.com/argoproj/argo-workflows/commit/290dee52bfb94679870cee94ca9560bbe8bd7813) Support parameter aggregation of map results in scripts
- * [fc20f5d7](https://github.com/argoproj/argo-workflows/commit/fc20f5d787ed11f03a24439c042b9ef45349eb95) Fix errors when submodules are from different URL (#939)
- * [b4f1a00a](https://github.com/argoproj/argo-workflows/commit/b4f1a00ad2862e6545dd4ad16279a49cd4585676) Add documentation about workflow variables
- * [4a242518](https://github.com/argoproj/argo-workflows/commit/4a242518c6ea81cd0d1e5aaab2822231d9b36d46) Update readme.md (#943)
- * [a5baca60](https://github.com/argoproj/argo-workflows/commit/a5baca60d1dfb8fb8c82a936ab383d49e075cff3) Support referencing of global workflow artifacts (issue #900)
- * [9b5c8563](https://github.com/argoproj/argo-workflows/commit/9b5c85631765285b4593b7707ede014178f77679) Support for sophisticated expressions in `when` conditionals (issue #860)
- * [ecc0f027](https://github.com/argoproj/argo-workflows/commit/ecc0f0272f2257600abab8f4779c478957644d7c) Resolve revision added ability to specify shorthand revision and other things like HEAD~2 etc (#936)
- * [11024318](https://github.com/argoproj/argo-workflows/commit/11024318c0e2a9106f8a8b4a719daba12adf9f36) Support conditions with DAG tasks. Support aggregated outputs from scripts (issue #921)
- * [d07c1d2f](https://github.com/argoproj/argo-workflows/commit/d07c1d2f3b7c916887185eea749db2278bf9d043) Support withItems/withParam and parameter aggregation with DAG templates (issue #801)
- * [94c195cb](https://github.com/argoproj/argo-workflows/commit/94c195cb014ba2e5c5943d96dc0a3cc3243edb6a) Bump VERSION to v2.2.0
- * [9168c59d](https://github.com/argoproj/argo-workflows/commit/9168c59dc486f840dc2b9713d92c14bdccebbaf8) Fix outbound node metadata with retry nodes causing disconnected nodes to be rendered in UI (issue #880)
- * [c6ce48d0](https://github.com/argoproj/argo-workflows/commit/c6ce48d086638168b9bd8b998d65a2e3a4801540) Fix outbound node metadata issue with steps template causing incorrect edges to be rendered in UI
- * [520b33d5](https://github.com/argoproj/argo-workflows/commit/520b33d5fc6e7e670c33015fd74c5a2f3bd74a21) Add ability to aggregate and reference output parameters expanded by loops (issue #861)
- * [ece1eef8](https://github.com/argoproj/argo-workflows/commit/ece1eef85ac1f92d2fad8a2fef8c657f04b4599a) Support submission of workflows as json, and from stdin (resolves #926)
- * [4c31d61d](https://github.com/argoproj/argo-workflows/commit/4c31d61da2891e92a3ae0d09b6924655a07fc59f) Add `argo delete --older` to delete completed workflows older than specified duration (resolves #930)
- * [c87cd33c](https://github.com/argoproj/argo-workflows/commit/c87cd33c1bc46c06314129c882fec80269af8133) Update golang version to v1.10.3
- * [618b7eb8](https://github.com/argoproj/argo-workflows/commit/618b7eb84678e177a38e5aa81fa59ed891459aa5) Proper fix for assessing overall DAG phase. Add some DAG unit tests (resolves #885)
- * [f223e5ad](https://github.com/argoproj/argo-workflows/commit/f223e5ad62115399cf1394db4e9e65f05ae6da8b) Fix issue where a DAG would fail even if retry was successful (resolves #885)
- * [143477f3](https://github.com/argoproj/argo-workflows/commit/143477f3d5e0ab0d65dd97774aabdcd736ae4fbe) Start use of argoproj/pkg shared libraries
- * [1220d080](https://github.com/argoproj/argo-workflows/commit/1220d0801b8aa78c5364a4586cd119553d96bca5) Update argo-cluster-role to work with OpenShift (resolves #922)
- * [4744f45a](https://github.com/argoproj/argo-workflows/commit/4744f45a9c110b11fa73070a52e4166406fa5da4) Added SSH clone and proper git clone using go-git (#919)
- * [d657abf4](https://github.com/argoproj/argo-workflows/commit/d657abf4a37c9f2987b5cc2ee337743c981c3e48) Regenerate code and address OpenAPI rule validation errors (resolves #923)
- * [c5ec4cf6](https://github.com/argoproj/argo-workflows/commit/c5ec4cf6194ab5f741eb2e1d4e387dcf32ba3ce7) Upgrade k8s dependencies to v1.10 (resolves #908)
- * [ba8061ab](https://github.com/argoproj/argo-workflows/commit/ba8061abd296895555ea3d1d6ca7418fcd07d633) Redundant verifyResolvedVariables check in controller precluded the ability to use {{ }} in other circumstances
- * [05a61449](https://github.com/argoproj/argo-workflows/commit/05a614496bb921b5fa081605227de1a8832260cd) Added link to community meetings (#912)
- * [f33624d6](https://github.com/argoproj/argo-workflows/commit/f33624d67d0cf348dcdece46832081346c26bf80) Add an example on how to submit and wait on a workflow
- * [aeed7f9d](https://github.com/argoproj/argo-workflows/commit/aeed7f9da490d8dc4ad40c00ac2272a19da4ff17) Added new members
- * [288e4fc8](https://github.com/argoproj/argo-workflows/commit/288e4fc8577890e7fa6cc546f92aef4c954ce18c) Added Argo Events link.
- * [3322506e](https://github.com/argoproj/argo-workflows/commit/3322506e5a1d07e198f69cadd210b0b6cc6cfbc9) Updated README
- * [3ce640a2](https://github.com/argoproj/argo-workflows/commit/3ce640a24509454302a5126c972fd5424673c00e) Issue #889 - Support retryStrategy for scripts (#890)
- * [91c6afb2](https://github.com/argoproj/argo-workflows/commit/91c6afb2cc07c113e4999f114279638aa6809fd6) adding BlackRock as corporate contributor/user (#886)
- * [c8667b5c](https://github.com/argoproj/argo-workflows/commit/c8667b5c81068326638a5e35c20336223b3894db) Fix issue where `argo lint` required spec level arguments to be supplied
- * [ed7dedde](https://github.com/argoproj/argo-workflows/commit/ed7dedde1f8be2a5f7be828a31ac9bb4025919e1) Update influx-ci example to choose a stable InfluxDB branch
- * [135813e1](https://github.com/argoproj/argo-workflows/commit/135813e10e932a2187d007284766a816d9aa4442) Add datadog to the argo users (#882)
- * [f1038948](https://github.com/argoproj/argo-workflows/commit/f103894843e9ed8cbaf4212e765c10311bec5989) Fix `make verify-codegen` build target when run in CI
- * [785f2cbd](https://github.com/argoproj/argo-workflows/commit/785f2cbd114e6d0097e21240d5cacece0b6d071e) Update references to v2.1.1. Add better checks in release Makefile target
- * [d65e1cd3](https://github.com/argoproj/argo-workflows/commit/d65e1cd3e77efbe6fc877ac689fd4cd19bc35093) readme: add Interline Technologies to user list (#867)
- * [c903168e](https://github.com/argoproj/argo-workflows/commit/c903168ee12f296f71f4953cda2163b8fa8cd409) Add documentation on global parameters (#871)
-
-### Contributors
-
- * 0x1D-1983
- * Aaron Curtis
- * Adam Gilat
- * Adam Thornton
- * Aditya Sundaramurthy
- * Adrien Trouillaud
- * Aisuko
- * Akshay Chitneni
- * Alessandro Marrella
- * Alex Capras
- * Alex Collins
- * Alex Stein
- * Alexander Matyushentsev
- * Alexander Zigelski
- * Alexey Volkov
- * Anastasia Satonina
- * Andrei Miulescu
- * Andrew Suderman
- * Anes Benmerzoug
- * Ang Gao
- * Anna Winkler
- * Antoine Dao
- * Antonio Macías Ojeda
- * Appréderisse Benjamin
- * Avi Weit
- * Bastian Echterhölter
- * Ben Wells
- * Ben Ye
- * Brandon Steinman
- * Brian Mericle
- * CWen
- * Caden
- * Caglar Gulseni
- * Carlos Montemuino
- * Chen Zhiwei
- * Chris Chambers
- * Chris Hepner
- * Christian Muehlhaeuser
- * Clemens Lange
- * Cristian Pop
- * Daisuke Taniwaki
- * Dan Norris
- * Daniel Duvall
- * Daniel Moran
- * Daniel Sutton
- * David Bernard
- * David Seapy
- * David Van Loon
- * Deepen Mehta
- * Derek Wang
- * Dineshmohan Rajaveeran
- * Divya Vavili
- * Drew Dara-Abrams
- * Dustin Specker
- * EDGsheryl
- * Ed Lee
- * Edward Lee
- * Edwin Jacques
- * Ejiah
- * Elton
- * Erik Parmann
- * Fabio Rigato
- * Feynman Liang
- * Florent Clairambault
- * Fred Dubois
- * Gabriele Santomaggio
- * Galen Han
- * Grant Stephens
- * Greg Roodt
- * Guillaume Hormiere
- * Hamel Husain
- * Heikki Kesa
- * Hideto Inamura
- * Howie Benefiel
- * Huan-Cheng Chang
- * Ian Howell
- * Ilias K
- * Ilias Katsakioris
- * Ilya Sotkov
- * Ismail Alidzhikov
- * Jacob O'Farrell
- * Jaime
- * Jared Welch
- * Jean-Louis Queguiner
- * Jeff Uren
- * Jesse Suen
- * Jialu Zhu
- * Jie Zhang
- * Johannes 'fish' Ziemke
- * John Wass
- * Jonathan Steele
- * Jonathon Belotti
- * Jonny
- * Joshua Carp
- * Juan C. Muller
- * Julian Fahrer
- * Julian Fischer
- * Julian Mazzitelli
- * Julien Balestra
- * Kannappan Sirchabesan
- * Kaushik B
- * Konstantin Zadorozhny
- * Leonardo Luz
- * Lucas Theisen
- * Marcin Karkocha
- * Marco Sanvido
- * Marek Čermák
- * Markus Lippert
- * Matt Brant
- * Matt Hillsdon
- * Matthew Coleman
- * Matthew Magaldi
- * MengZeLee
- * Michael Crenshaw
- * Michael Weibel
- * Mike Seddon
- * Mingjie Tang
- * Miyamae Yuuya
- * Mostapha Sadeghipour Roudsari
- * Mukulikak
- * Naoto Migita
- * Naresh Kumar Amrutham
- * Nasrudin Bin Salim
- * Neutron Soutmun
- * Nick Groszewski
- * Nick Stott
- * Niklas Hansson
- * Niklas Vest
- * Nirav Patel
- * Noorain Panjwani
- * Nándor István Krácser
- * Omer Kahani
- * Orion Delwaterman
- * Pablo Osinaga
- * Pascal VanDerSwalmen
- * Patryk Jeziorowski
- * Paul Brit
- * Pavel Kravchenko
- * Peng Li
- * Pengfei Zhao
- * Per Buer
- * Peter Salanki
- * Pierre Houssin
- * Pradip Caulagi
- * Praneet Chandra
- * Pratik Raj
- * Premkumar Masilamani
- * Rafael Rodrigues
- * Rafał Bigaj
- * Remington Breeze
- * Rick Avendaño
- * Rocio Montes
- * Romain Di Giorgio
- * Romain GUICHARD
- * Roman Galeev
- * Saradhi Sreegiriraju
- * Saravanan Balasubramanian
- * Sascha Grunert
- * Sean Fern
- * Sebastian Ortan
- * Semjon Kopp
- * Shannon
- * Shubham Koli (FaultyCarry)
- * Simon Behar
- * Simon Frey
- * Snyk bot
- * Song Juchao
- * Stephen Steiner
- * StoneHuang
- * Takashi Abe
- * Takayuki Kasai
- * Tang Lee
- * Theodore Messinezis
- * Tim Schrodi
- * Tobias Bradtke
- * Tom Wieczorek
- * Tomas Valasek
- * Trevor Foster
- * Tristan Colgate-McFarlane
- * Val Sichkovskyi
- * Vardan Manucharyan
- * Vincent Boulineau
- * Vincent Smith
- * Vlad Losev
- * Wei Yan
- * WeiYan
- * Weston Platter
- * William
- * William Reed
- * Xianlu Bird
- * Xie.CS
- * Xin Wang
- * Youngjoon Lee
- * Yuan Tang
- * Yunhai Luo
- * Zach Aller
- * Zach Himsel
- * Zadjad Rezai
- * Zhipeng Wang
- * Ziyang Wang
- * alex weidner
- * almariah
- * candonov
- * commodus-sebastien
- * descrepes
- * dgiebert
- * dherman
- * dmayle
- * dthomson25
- * fsiegmund
- * gerardaus
- * gerdos82
- * haibingzhao
- * hidekuro
- * houz
- * ianCambrio
- * jacky
- * jdfalko
- * joe
- * juliusvonkohout
- * kshamajain99
- * lueenavarro
- * maguowei
- * mark9white
- * maryoush
- * mdvorakramboll
- * nglinh
- * sang
- * sh-tatsuno
- * shahin
- * shibataka000
- * tkilpela
- * tralexa
- * tunoat
- * vatine
- * vdinesh2461990
- * xubofei1983
- * yonirab
- * zhujl1991
- * モハメド
 
 ## v2.1.1 (2018-05-29)
 
@@ -8562,1613 +5532,6 @@
 
 ### Contributors
 
-
-## v2.10.2 (2020-09-14)
-
- * [ed79a540](https://github.com/argoproj/argo-workflows/commit/ed79a5401162db7a3060111aff1b0fae5e8c2117) Update manifests to v2.10.2
- * [d27bf2d2](https://github.com/argoproj/argo-workflows/commit/d27bf2d29afaaad608943f238c821d94952a8b85) fix: Fix UI selection issues (#3928)
- * [51220389](https://github.com/argoproj/argo-workflows/commit/51220389ac2a0f109b5411851f29f9ee2ff3d968) fix: Create global scope before workflow-level realtime metrics (#3979)
- * [857ef750](https://github.com/argoproj/argo-workflows/commit/857ef750f595f292775bace1129d9c01b08a8ddd) fix: Custom metrics are not recorded for DAG tasks Fixes #3872 (#3886)
- * [b9a0bb00](https://github.com/argoproj/argo-workflows/commit/b9a0bb00b03344c720485c8103f21b90beffc78e) fix: Consider WorkflowTemplate metadata during validation (#3988)
- * [089e1862](https://github.com/argoproj/argo-workflows/commit/089e1862ab1e6c34ff33b7f453ca2f7bad021eb4) fix(server): Remove XSS vulnerability. Fixes #3942 (#3975)
- * [1215d9e1](https://github.com/argoproj/argo-workflows/commit/1215d9e1e3250ec482363430d50c6ea4e5ca05ab) fix(cli): Allow `argo version` without KUBECONFIG. Fixes #3943 (#3945)
-
-### Contributors
-
- * Alex Collins
- * Saravanan Balasubramanian
- * Simon Behar
-
-## v2.10.1 (2020-09-02)
-
- * [854444e4](https://github.com/argoproj/argo-workflows/commit/854444e47ac00d146cb83d174049bfbb2066bfb2) Update manifests to v2.10.1
- * [69861fc9](https://github.com/argoproj/argo-workflows/commit/69861fc919495b4215fe24f549ce1a55bf0674db) fix: Workflow should fail on Pod failure before container starts Fixes #3879 (#3890)
- * [670fc618](https://github.com/argoproj/argo-workflows/commit/670fc618c52f8672a99d1159f4c922a7f1b1f1f5) fix(controller): Cron re-apply update (#3883)
- * [4b30fa4e](https://github.com/argoproj/argo-workflows/commit/4b30fa4ef82acba373b9e0d33809f63aa3c2632b) fix(executor): Replace default retry in executor with an increased value retryer (#3891)
- * [ae537cd7](https://github.com/argoproj/argo-workflows/commit/ae537cd769ca57842fe92a463e78a0f9f3b74d32) fix(ui): use absolute URL to redirect from autocomplete list. Closes #3903 (#3906)
- * [0e4b3902](https://github.com/argoproj/argo-workflows/commit/0e4b39027f9fefe4ea0c000b5514c055a61e1b4c) chore: Added unittest for PVC exceed quota Closes #3561 (#3860)
- * [56dc9f7a](https://github.com/argoproj/argo-workflows/commit/56dc9f7a77ce68880a8c95c43b380d6167d5f4c9) fix: Consider all children of TaskGroups in DAGs (#3740)
- * [8ac7369b](https://github.com/argoproj/argo-workflows/commit/8ac7369bf66af992a23d23eb6713000b95101e52) fix(controller): Support exit handler on workflow templates.  Fixes #3737 (#3782)
- * [ee848921](https://github.com/argoproj/argo-workflows/commit/ee848921348676718a8ab4cef8e8c2f52b86d124) fix(controller): Failure tolerant workflow archiving and offloading. Fixes #3786 and #3837 (#3787)
- * [c367d93e](https://github.com/argoproj/argo-workflows/commit/c367d93e9b12263d53792d419ff0148afb755057) build: Copy Dockerfile lines from master
- * [f491bbc6](https://github.com/argoproj/argo-workflows/commit/f491bbc676a18e2d930440056ba16c5c7c253ef7) chore: Merge .gitignore from master to prevent dirty
- * [195c6d83](https://github.com/argoproj/argo-workflows/commit/195c6d8310a70b07043b9df5c988d5a62dafe00d) Update manifests to v2.10.0
- * [08117f0c](https://github.com/argoproj/argo-workflows/commit/08117f0cd1206647644f1f14580046268d1c8639) fix: Increase the requeue duration on checkForbiddenErrorAndResubmitAllowed (#3794)
- * [5ea2ed0d](https://github.com/argoproj/argo-workflows/commit/5ea2ed0dbdb4003fc457b7cd76cf5cec9edc6799) fix(server): Trucate creator label at 63 chars. Fixes #3756 (#3758)
-
-### Contributors
-
- * Alex Collins
- * Ang Gao
- * Nirav Patel
- * Saravanan Balasubramanian
- * Simon Behar
-
-## v2.10.0-rc7 (2020-08-13)
-
- * [267da535](https://github.com/argoproj/argo-workflows/commit/267da535b66ed1dab8bcc90410260b7cf4b80e2c) Update manifests to v2.10.0-rc7
- * [baeb0fed](https://github.com/argoproj/argo-workflows/commit/baeb0fed2b3ab53f35297a764f983059600d4b44) fix: Revert merge error
- * [66bae22f](https://github.com/argoproj/argo-workflows/commit/66bae22f147cd248f1a88f913eaeac13ec873bcd) fix(executor): Add retry on pods watch to handle timeout. (#3675)
- * [971f1153](https://github.com/argoproj/argo-workflows/commit/971f115373c8f01f0e21991b14fc3b27876f3cbf) removed unused test-report files
- * [8c0b9f0a](https://github.com/argoproj/argo-workflows/commit/8c0b9f0a52922485a1bdf6a8954cdc09060dbc29) fix: Couldn't Terminate/Stop the ResourceTemplate Workflow (#3679)
- * [a04d72f9](https://github.com/argoproj/argo-workflows/commit/a04d72f95a433eaa37202418809e1877eb167a1a) fix(controller): Tolerate PDB delete race. Fixes #3706 (#3717)
- * [a7635763](https://github.com/argoproj/argo-workflows/commit/a76357638598174812bb749ea539ca4061284d89) fix: Fix bug with 'argo delete --older' (#3699)
- * [fe8129cf](https://github.com/argoproj/argo-workflows/commit/fe8129cfc766f875985f0f09d37dc351a1e5f933) fix(controller): Carry-over labels for re-submitted workflows. Fixes #3622 (#3638)
- * [e12d26e5](https://github.com/argoproj/argo-workflows/commit/e12d26e52a42d91ec4d2dbc3d188cf3b1a623a26) fix(controller): Treat TooManyError same as Forbidden (i.e. try again). Fixes #3606 (#3607)
- * [9a5febec](https://github.com/argoproj/argo-workflows/commit/9a5febec11d231ed1cd5e085a841069b9106dafe) fix: Ensure target task's onExit handlers are run (#3716)
- * [c3a58e36](https://github.com/argoproj/argo-workflows/commit/c3a58e36d18e3c3cbb7bffcd3a6ae4c5c08a66ea) fix: Enforce metric Help must be the same for each metric Name (#3613)
-
-### Contributors
-
- * Alex Collins
- * Guillaume Hormiere
- * Saravanan Balasubramanian
- * Simon Behar
-
-## v2.10.0-rc6 (2020-08-06)
-
- * [cb3536f9](https://github.com/argoproj/argo-workflows/commit/cb3536f9d1dd64258c1c3d737bb115bdab923e58) Update manifests to v2.10.0-rc6
- * [6e004ace](https://github.com/argoproj/argo-workflows/commit/6e004ace2710e17ed2a282c6570a97b567946e58) lint
- * [b31fc1f8](https://github.com/argoproj/argo-workflows/commit/b31fc1f8612a93c907b375de2e9a3c9326dca34b) fix(controller): Adds ALL_POD_CHANGES_SIGNIFICANT (#3689)
- * [0b7cd5b3](https://github.com/argoproj/argo-workflows/commit/0b7cd5b3181eece7636b99d4761e96c61c17c453) fix: Fixed workflow queue duration if PVC creation is forbidden (#3691)
- * [03b84162](https://github.com/argoproj/argo-workflows/commit/03b8416271002bfc88c11dd27d86fa08f95b33e9) fix: Re-introduce 1 second sleep to reconcile informer (#3684)
-
-### Contributors
-
- * Alex Collins
- * Saravanan Balasubramanian
- * Simon Behar
-
-## v2.10.0-rc5 (2020-08-03)
-
- * [e9ca55ec](https://github.com/argoproj/argo-workflows/commit/e9ca55ec1cdbf37a43ee68da756ac91abb4edf73) Update manifests to v2.10.0-rc5
- * [85ddda05](https://github.com/argoproj/argo-workflows/commit/85ddda0533d7b60614bee5a93d60bbfe0209ea83) lint
- * [fb367f5e](https://github.com/argoproj/argo-workflows/commit/fb367f5e8f2faff6eeba751dc13c73336c112236) fix(controller): Fix nested maps. Fixes #3653 (#3661)
- * [2385cca5](https://github.com/argoproj/argo-workflows/commit/2385cca59396eb53c03eac5bd87611b57f2a47a2) fix: interface{} values should be expanded with '%v' (#3659)
- * [263e4bad](https://github.com/argoproj/argo-workflows/commit/263e4bad78092310ad405919b607e2ef696c8bf9) fix(server): Report v1.Status errors. Fixes #3608 (#3652)
- * [718f802b](https://github.com/argoproj/argo-workflows/commit/718f802b8ed1533da2d2a0b666d2a80b51f476b2) fix: Avoid overriding the Workflow parameter when it is merging with WorkflowTemplate parameter (#3651)
- * [9735df32](https://github.com/argoproj/argo-workflows/commit/9735df3275d456a868028b51a2386241f0d207ef) fix: Fixed flaky unit test TestFailSuspendedAndPendingNodesAfterDeadline (#3640)
- * [662d22e4](https://github.com/argoproj/argo-workflows/commit/662d22e4f10566a4ce34c3080ba38788d58fd681) fix: Don't panic on invalid template creation (#3643)
- * [854aaefa](https://github.com/argoproj/argo-workflows/commit/854aaefaa9713155a62deaaf041a36527d7f1718) fix: Fix 'malformed request: field selector' error (#3636)
- * [9d56eb29](https://github.com/argoproj/argo-workflows/commit/9d56eb29c268c7a1f73068e17edf10b6affc51a8) fix: DAG level Output Artifacts on K8S and Kubelet executor (#3624)
- * [c7512b6c](https://github.com/argoproj/argo-workflows/commit/c7512b6ce53e9b3fc5f7792a6c7c6d016aa66734) fix: Simplify the WorkflowTemplateRef field validation to support all fields in WorkflowSpec except `Templates` (#3632)
-
-### Contributors
-
- * Alex Collins
- * Saravanan Balasubramanian
- * Simon Behar
-
-## v2.10.0-rc4 (2020-07-28)
-
- * [8d6dae61](https://github.com/argoproj/argo-workflows/commit/8d6dae6128074445d9bd0222c449643053568db8) Update manifests to v2.10.0-rc4
- * [a4b1dde5](https://github.com/argoproj/argo-workflows/commit/a4b1dde573754556db1e635491189960721920a8) build(cli)!: Zip binaries binaries. Closes #3576 (#3614)
- * [dea03a9c](https://github.com/argoproj/argo-workflows/commit/dea03a9c7f1016cfb0b47e1b5152cb07c111b436) fix(server): Re-establish watch on v1.Status errors. Fixes #3608 (#3609)
- * [c063f9f1](https://github.com/argoproj/argo-workflows/commit/c063f9f1c3a5d1ce0fd5fb9dd5ce3938de18edce) fix: Fix panic and provide better error message on watch endpoint (#3605)
- * [35a00498](https://github.com/argoproj/argo-workflows/commit/35a00498dcc62ebecb9dd476c90fddb2800fdeb7) fix: Argo Workflows does not honour global timeout if step/pod is not able to schedule (#3581)
- * [3879827c](https://github.com/argoproj/argo-workflows/commit/3879827cb6bfa3f9e29e81dbd3bdbf0ffeeec233) fix(controller): Fix bug in util/RecoverWorkflowNameFromSelectorString. Add error handling (#3596)
- * [5f4dec75](https://github.com/argoproj/argo-workflows/commit/5f4dec750a3be0d1ed8808d90535e90ee532f111) fix(ui): Fix multiple UI issues (#3573)
- * [e94cf8a2](https://github.com/argoproj/argo-workflows/commit/e94cf8a21cd1c97f1a415d015038145a241a7b23) fix(ui): cannot push to nil when filtering by label (#3555)
- * [61b5bd93](https://github.com/argoproj/argo-workflows/commit/61b5bd931045a2e423f1126300ab332f606cff9c) fix: Fix flakey TestRetryOmitted (#3552)
- * [d53c883b](https://github.com/argoproj/argo-workflows/commit/d53c883b713ad281b33603567a92d4dbe61a5b47) fix: Fix links in fields doc (#3539)
- * [d2bd5879](https://github.com/argoproj/argo-workflows/commit/d2bd5879f47badbd9dddef8308e20c3434caa95e) fix(artifacts): support optional input artifacts, Fixes #3491 (#3512)
- * [652956e0](https://github.com/argoproj/argo-workflows/commit/652956e04c88c347d018367c8f11398ae2ced9dc) fix: Fix when retrying Workflows with Omitted nodes (#3528)
- * [32c36d78](https://github.com/argoproj/argo-workflows/commit/32c36d785be4394b96615fbb4c716ae74177ed20) fix(controller): Backoff exponent is off by one. Fixes #3513 (#3514)
- * [75d29574](https://github.com/argoproj/argo-workflows/commit/75d2957473c4783a6db18fda08907f62375c002e) fix: String interpreted as boolean in labels (#3518)
-
-### Contributors
-
- * Alex Collins
- * Jie Zhang
- * Jonny
- * Remington Breeze
- * Saravanan Balasubramanian
- * Simon Behar
- * haibingzhao
-
-## v2.10.0-rc3 (2020-07-23)
-
- * [37f4f9da](https://github.com/argoproj/argo-workflows/commit/37f4f9da2b921c96f4d8919a17d4303e588e86c9) Update manifests to v2.10.0-rc3
- * [37297af7](https://github.com/argoproj/argo-workflows/commit/37297af7ddf7d9fcebfed0dff5f76d9c4cc3199f) Update manifests to v2.10.0-rc2
- * [cbf27edf](https://github.com/argoproj/argo-workflows/commit/cbf27edf17e84c86b9c969ed19f67774c27c50bd) fix: Panic on CLI Watch command (#3532)
- * [a3666482](https://github.com/argoproj/argo-workflows/commit/a366648233e5fb7e992188034e0bc0e250279feb) fix: Skip TestStorageQuotaLimit (#3566)
- * [802c18ed](https://github.com/argoproj/argo-workflows/commit/802c18ed6ea8b1e481ef2feb6d0552eac7dab67d) fix: Exceeding quota with volumeClaimTemplates (#3490)
- * [94b20124](https://github.com/argoproj/argo-workflows/commit/94b201241a88aac9a4ffa28a4fc8e4e0032e79be) ci: Make builds marginally faster. Fixes #3515 (#3519)
- * [38caab7c](https://github.com/argoproj/argo-workflows/commit/38caab7cbb5b6e474d6e1df887741019667aa1de) chore: `make lint`
- * [bbee82a0](https://github.com/argoproj/argo-workflows/commit/bbee82a086d32e721e60880139a91064c0b3abb6) fix(server): Ignore not-JWT server tokens. Fixes #3562 (#3579)
- * [f72ae881](https://github.com/argoproj/argo-workflows/commit/f72ae8813aa570eb13769de606b07dd72d991db8) fix(controller): Do not panic on nil output value. Fixes #3505 (#3509)
- * [18c7440f](https://github.com/argoproj/argo-workflows/commit/18c7440f5693410678f5f1e407d5e86dff12a4a8) build: Fix version and do not push images. Fixes #3515
- * [66d6f964](https://github.com/argoproj/argo-workflows/commit/66d6f964553e6d5f908a2fe67f694cc806cfce7f) build: Fix version and do not push images. Fixes #3515
-
-### Contributors
-
- * Alex Collins
- * Saravanan Balasubramanian
-
-## v2.10.0-rc2 (2020-07-18)
-
- * [4bba17f3](https://github.com/argoproj/argo-workflows/commit/4bba17f3956708c4e50b54d932b516201f368b8b) Update manifests to v2.10.0-rc2
- * [953f50e4](https://github.com/argoproj/argo-workflows/commit/953f50e498a09692d37864650d4ced4af8a6693e) build: Fix version and do not push images. Fixes #3515
- * [616c79df](https://github.com/argoproj/argo-workflows/commit/616c79df09c435fa7659bf7e5194529d948ee93b) Update manifests to v2.10.0-rc1
-
-### Contributors
-
- * Alex Collins
-
-## v2.10.0-rc1 (2020-07-17)
-
-
-### Contributors
-
-
-## v2.10.0 (2020-08-18)
-
- * [195c6d83](https://github.com/argoproj/argo-workflows/commit/195c6d8310a70b07043b9df5c988d5a62dafe00d) Update manifests to v2.10.0
- * [08117f0c](https://github.com/argoproj/argo-workflows/commit/08117f0cd1206647644f1f14580046268d1c8639) fix: Increase the requeue duration on checkForbiddenErrorAndResubmitAllowed (#3794)
- * [5ea2ed0d](https://github.com/argoproj/argo-workflows/commit/5ea2ed0dbdb4003fc457b7cd76cf5cec9edc6799) fix(server): Trucate creator label at 63 chars. Fixes #3756 (#3758)
- * [267da535](https://github.com/argoproj/argo-workflows/commit/267da535b66ed1dab8bcc90410260b7cf4b80e2c) Update manifests to v2.10.0-rc7
- * [baeb0fed](https://github.com/argoproj/argo-workflows/commit/baeb0fed2b3ab53f35297a764f983059600d4b44) fix: Revert merge error
- * [66bae22f](https://github.com/argoproj/argo-workflows/commit/66bae22f147cd248f1a88f913eaeac13ec873bcd) fix(executor): Add retry on pods watch to handle timeout. (#3675)
- * [971f1153](https://github.com/argoproj/argo-workflows/commit/971f115373c8f01f0e21991b14fc3b27876f3cbf) removed unused test-report files
- * [8c0b9f0a](https://github.com/argoproj/argo-workflows/commit/8c0b9f0a52922485a1bdf6a8954cdc09060dbc29) fix: Couldn't Terminate/Stop the ResourceTemplate Workflow (#3679)
- * [a04d72f9](https://github.com/argoproj/argo-workflows/commit/a04d72f95a433eaa37202418809e1877eb167a1a) fix(controller): Tolerate PDB delete race. Fixes #3706 (#3717)
- * [a7635763](https://github.com/argoproj/argo-workflows/commit/a76357638598174812bb749ea539ca4061284d89) fix: Fix bug with 'argo delete --older' (#3699)
- * [fe8129cf](https://github.com/argoproj/argo-workflows/commit/fe8129cfc766f875985f0f09d37dc351a1e5f933) fix(controller): Carry-over labels for re-submitted workflows. Fixes #3622 (#3638)
- * [e12d26e5](https://github.com/argoproj/argo-workflows/commit/e12d26e52a42d91ec4d2dbc3d188cf3b1a623a26) fix(controller): Treat TooManyError same as Forbidden (i.e. try again). Fixes #3606 (#3607)
- * [9a5febec](https://github.com/argoproj/argo-workflows/commit/9a5febec11d231ed1cd5e085a841069b9106dafe) fix: Ensure target task's onExit handlers are run (#3716)
- * [c3a58e36](https://github.com/argoproj/argo-workflows/commit/c3a58e36d18e3c3cbb7bffcd3a6ae4c5c08a66ea) fix: Enforce metric Help must be the same for each metric Name (#3613)
- * [cb3536f9](https://github.com/argoproj/argo-workflows/commit/cb3536f9d1dd64258c1c3d737bb115bdab923e58) Update manifests to v2.10.0-rc6
- * [6e004ace](https://github.com/argoproj/argo-workflows/commit/6e004ace2710e17ed2a282c6570a97b567946e58) lint
- * [b31fc1f8](https://github.com/argoproj/argo-workflows/commit/b31fc1f8612a93c907b375de2e9a3c9326dca34b) fix(controller): Adds ALL_POD_CHANGES_SIGNIFICANT (#3689)
- * [0b7cd5b3](https://github.com/argoproj/argo-workflows/commit/0b7cd5b3181eece7636b99d4761e96c61c17c453) fix: Fixed workflow queue duration if PVC creation is forbidden (#3691)
- * [03b84162](https://github.com/argoproj/argo-workflows/commit/03b8416271002bfc88c11dd27d86fa08f95b33e9) fix: Re-introduce 1 second sleep to reconcile informer (#3684)
- * [e9ca55ec](https://github.com/argoproj/argo-workflows/commit/e9ca55ec1cdbf37a43ee68da756ac91abb4edf73) Update manifests to v2.10.0-rc5
- * [85ddda05](https://github.com/argoproj/argo-workflows/commit/85ddda0533d7b60614bee5a93d60bbfe0209ea83) lint
- * [fb367f5e](https://github.com/argoproj/argo-workflows/commit/fb367f5e8f2faff6eeba751dc13c73336c112236) fix(controller): Fix nested maps. Fixes #3653 (#3661)
- * [2385cca5](https://github.com/argoproj/argo-workflows/commit/2385cca59396eb53c03eac5bd87611b57f2a47a2) fix: interface{} values should be expanded with '%v' (#3659)
- * [263e4bad](https://github.com/argoproj/argo-workflows/commit/263e4bad78092310ad405919b607e2ef696c8bf9) fix(server): Report v1.Status errors. Fixes #3608 (#3652)
- * [718f802b](https://github.com/argoproj/argo-workflows/commit/718f802b8ed1533da2d2a0b666d2a80b51f476b2) fix: Avoid overriding the Workflow parameter when it is merging with WorkflowTemplate parameter (#3651)
- * [9735df32](https://github.com/argoproj/argo-workflows/commit/9735df3275d456a868028b51a2386241f0d207ef) fix: Fixed flaky unit test TestFailSuspendedAndPendingNodesAfterDeadline (#3640)
- * [662d22e4](https://github.com/argoproj/argo-workflows/commit/662d22e4f10566a4ce34c3080ba38788d58fd681) fix: Don't panic on invalid template creation (#3643)
- * [854aaefa](https://github.com/argoproj/argo-workflows/commit/854aaefaa9713155a62deaaf041a36527d7f1718) fix: Fix 'malformed request: field selector' error (#3636)
- * [9d56eb29](https://github.com/argoproj/argo-workflows/commit/9d56eb29c268c7a1f73068e17edf10b6affc51a8) fix: DAG level Output Artifacts on K8S and Kubelet executor (#3624)
- * [c7512b6c](https://github.com/argoproj/argo-workflows/commit/c7512b6ce53e9b3fc5f7792a6c7c6d016aa66734) fix: Simplify the WorkflowTemplateRef field validation to support all fields in WorkflowSpec except `Templates` (#3632)
- * [8d6dae61](https://github.com/argoproj/argo-workflows/commit/8d6dae6128074445d9bd0222c449643053568db8) Update manifests to v2.10.0-rc4
- * [a4b1dde5](https://github.com/argoproj/argo-workflows/commit/a4b1dde573754556db1e635491189960721920a8) build(cli)!: Zip binaries binaries. Closes #3576 (#3614)
- * [dea03a9c](https://github.com/argoproj/argo-workflows/commit/dea03a9c7f1016cfb0b47e1b5152cb07c111b436) fix(server): Re-establish watch on v1.Status errors. Fixes #3608 (#3609)
- * [c063f9f1](https://github.com/argoproj/argo-workflows/commit/c063f9f1c3a5d1ce0fd5fb9dd5ce3938de18edce) fix: Fix panic and provide better error message on watch endpoint (#3605)
- * [35a00498](https://github.com/argoproj/argo-workflows/commit/35a00498dcc62ebecb9dd476c90fddb2800fdeb7) fix: Argo Workflows does not honour global timeout if step/pod is not able to schedule (#3581)
- * [3879827c](https://github.com/argoproj/argo-workflows/commit/3879827cb6bfa3f9e29e81dbd3bdbf0ffeeec233) fix(controller): Fix bug in util/RecoverWorkflowNameFromSelectorString. Add error handling (#3596)
- * [5f4dec75](https://github.com/argoproj/argo-workflows/commit/5f4dec750a3be0d1ed8808d90535e90ee532f111) fix(ui): Fix multiple UI issues (#3573)
- * [e94cf8a2](https://github.com/argoproj/argo-workflows/commit/e94cf8a21cd1c97f1a415d015038145a241a7b23) fix(ui): cannot push to nil when filtering by label (#3555)
- * [61b5bd93](https://github.com/argoproj/argo-workflows/commit/61b5bd931045a2e423f1126300ab332f606cff9c) fix: Fix flakey TestRetryOmitted (#3552)
- * [d53c883b](https://github.com/argoproj/argo-workflows/commit/d53c883b713ad281b33603567a92d4dbe61a5b47) fix: Fix links in fields doc (#3539)
- * [d2bd5879](https://github.com/argoproj/argo-workflows/commit/d2bd5879f47badbd9dddef8308e20c3434caa95e) fix(artifacts): support optional input artifacts, Fixes #3491 (#3512)
- * [652956e0](https://github.com/argoproj/argo-workflows/commit/652956e04c88c347d018367c8f11398ae2ced9dc) fix: Fix when retrying Workflows with Omitted nodes (#3528)
- * [32c36d78](https://github.com/argoproj/argo-workflows/commit/32c36d785be4394b96615fbb4c716ae74177ed20) fix(controller): Backoff exponent is off by one. Fixes #3513 (#3514)
- * [75d29574](https://github.com/argoproj/argo-workflows/commit/75d2957473c4783a6db18fda08907f62375c002e) fix: String interpreted as boolean in labels (#3518)
- * [37f4f9da](https://github.com/argoproj/argo-workflows/commit/37f4f9da2b921c96f4d8919a17d4303e588e86c9) Update manifests to v2.10.0-rc3
- * [37297af7](https://github.com/argoproj/argo-workflows/commit/37297af7ddf7d9fcebfed0dff5f76d9c4cc3199f) Update manifests to v2.10.0-rc2
- * [cbf27edf](https://github.com/argoproj/argo-workflows/commit/cbf27edf17e84c86b9c969ed19f67774c27c50bd) fix: Panic on CLI Watch command (#3532)
- * [a3666482](https://github.com/argoproj/argo-workflows/commit/a366648233e5fb7e992188034e0bc0e250279feb) fix: Skip TestStorageQuotaLimit (#3566)
- * [802c18ed](https://github.com/argoproj/argo-workflows/commit/802c18ed6ea8b1e481ef2feb6d0552eac7dab67d) fix: Exceeding quota with volumeClaimTemplates (#3490)
- * [94b20124](https://github.com/argoproj/argo-workflows/commit/94b201241a88aac9a4ffa28a4fc8e4e0032e79be) ci: Make builds marginally faster. Fixes #3515 (#3519)
- * [38caab7c](https://github.com/argoproj/argo-workflows/commit/38caab7cbb5b6e474d6e1df887741019667aa1de) chore: `make lint`
- * [bbee82a0](https://github.com/argoproj/argo-workflows/commit/bbee82a086d32e721e60880139a91064c0b3abb6) fix(server): Ignore not-JWT server tokens. Fixes #3562 (#3579)
- * [f72ae881](https://github.com/argoproj/argo-workflows/commit/f72ae8813aa570eb13769de606b07dd72d991db8) fix(controller): Do not panic on nil output value. Fixes #3505 (#3509)
- * [18c7440f](https://github.com/argoproj/argo-workflows/commit/18c7440f5693410678f5f1e407d5e86dff12a4a8) build: Fix version and do not push images. Fixes #3515
- * [66d6f964](https://github.com/argoproj/argo-workflows/commit/66d6f964553e6d5f908a2fe67f694cc806cfce7f) build: Fix version and do not push images. Fixes #3515
- * [4bba17f3](https://github.com/argoproj/argo-workflows/commit/4bba17f3956708c4e50b54d932b516201f368b8b) Update manifests to v2.10.0-rc2
- * [953f50e4](https://github.com/argoproj/argo-workflows/commit/953f50e498a09692d37864650d4ced4af8a6693e) build: Fix version and do not push images. Fixes #3515
- * [616c79df](https://github.com/argoproj/argo-workflows/commit/616c79df09c435fa7659bf7e5194529d948ee93b) Update manifests to v2.10.0-rc1
- * [19e700a3](https://github.com/argoproj/argo-workflows/commit/19e700a3388552d9440ae75dd259efcbeb0a3657) fix(cli): Check mutual exclusivity for argo CLI flags (#3493)
- * [7d45ff7f](https://github.com/argoproj/argo-workflows/commit/7d45ff7f014d011ef895b9c808da781000ea32a5) fix: Panic on releaseAllWorkflowLocks if Object is not Unstructured type (#3504)
- * [1b68a5a1](https://github.com/argoproj/argo-workflows/commit/1b68a5a15af12fb0866f4d5a4dcd9fb5da3f2ab4) fix: ui/package.json & ui/yarn.lock to reduce vulnerabilities (#3501)
- * [7f262fd8](https://github.com/argoproj/argo-workflows/commit/7f262fd81bae1f8b9bc7707d8bf02f10174cc87d) fix(cli)!: Enable CLI to work without kube config. Closes #3383, #2793 (#3385)
- * [2976e7ac](https://github.com/argoproj/argo-workflows/commit/2976e7ac517ec680b1077e64aa499d92c5d39a0d) build: Clear cmd docs before generating them (#3499)
- * [27528ba3](https://github.com/argoproj/argo-workflows/commit/27528ba34538b764db9254d41761a4edeba6694c) feat: Support completions for more resources (#3494)
- * [5bd2ad7a](https://github.com/argoproj/argo-workflows/commit/5bd2ad7a9d0ad5437fb7d1b7955e0b8e0c9b52ca) fix: Merge WorkflowTemplateRef with defaults workflow spec (#3480)
- * [e244337b](https://github.com/argoproj/argo-workflows/commit/e244337be239e462086a2bcad46f71ffb57a7a62) chore: Added examples for exit handler for step and dag level (#3495)
- * [bcb32547](https://github.com/argoproj/argo-workflows/commit/bcb325476ba49877df6b2dd9622bc64dfe9ad5f4) build: Use `git rev-parse` to accomodate older gits (#3497)
- * [3eb6e2f9](https://github.com/argoproj/argo-workflows/commit/3eb6e2f90c700070c4f1d2730a727aea7746c776) docs: Add link to GitHub Actions in the badge (#3492)
- * [69179e72](https://github.com/argoproj/argo-workflows/commit/69179e72c0872cde9131cc9d68192d5c472d64c9) fix: link to server auth mode docs, adds Tulip as official user (#3486)
- * [7a8e2b34](https://github.com/argoproj/argo-workflows/commit/7a8e2b34631aa8ae7037059deb5c2108a2ca2cb4) docs: Add comments to NodePhase definition. Closes #1117. (#3467)
- * [24d1e529](https://github.com/argoproj/argo-workflows/commit/24d1e52996d8af27909cf4477a5a14950a9a6da7) build: Simplify builds (#3478)
- * [acf56f9f](https://github.com/argoproj/argo-workflows/commit/acf56f9f0d2da426eab9cacc03b7ebadb4aa9ea3) feat(server): Label workflows with creator. Closes #2437 (#3440)
- * [3b8ac065](https://github.com/argoproj/argo-workflows/commit/3b8ac065a1db8ebe629d7cf02c1a8585b34ea2b7) fix: Pass resolved arguments to onExit handler (#3477)
- * [58097a9e](https://github.com/argoproj/argo-workflows/commit/58097a9ec2a9203dfebce9c75fdddc84ac48885e) docs: Add controller-level metrics (#3464)
- * [f6f1844b](https://github.com/argoproj/argo-workflows/commit/f6f1844b73d4e643614f575075401946b9aa7a7c) feat: Attempt to resolve nested tags (#3339)
- * [48e15d6f](https://github.com/argoproj/argo-workflows/commit/48e15d6fce2f980ae5dd5b5d2ff405f496b8f644) feat(cli): List only resubmitted workflows option (#3357)
- * [25e9c0cd](https://github.com/argoproj/argo-workflows/commit/25e9c0cdf73a3c9fa712fc3b544f1f8f33980515) docs, quick-start. Use http, not https for link (#3476)
- * [7a2d7642](https://github.com/argoproj/argo-workflows/commit/7a2d76427da0ae6440f91adbb2f97e62b28355e6) fix: Metric emission with retryStrategy (#3470)
- * [f5876e04](https://github.com/argoproj/argo-workflows/commit/f5876e041a2d87c8d48983751d2c3b4959fb1d93) test(controller): Ensure resubmitted workflows have correct labels (#3473)
- * [aa92ec03](https://github.com/argoproj/argo-workflows/commit/aa92ec03885b2c58c537b33161809f9966faf968) fix(controller): Correct fail workflow when pod is deleted with --force. Fixes #3097 (#3469)
- * [a1945d63](https://github.com/argoproj/argo-workflows/commit/a1945d635b24963af7f52bd73b19a7da52d647e3) fix(controller): Respect the volumes of a workflowTemplateRef. Fixes … (#3451)
- * [847ba530](https://github.com/argoproj/argo-workflows/commit/847ba5305273a16a65333c278e705dc157b9c723) test(controller): Add memoization tests. See #3214 (#3455) (#3466)
- * [f5183aed](https://github.com/argoproj/argo-workflows/commit/f5183aed8bb42b5c267b838c7b31b0f38fec28e8) docs: Fix CLI docs (#3465)
- * [1e42813a](https://github.com/argoproj/argo-workflows/commit/1e42813aaaaee55b9e4483338f7a8554ba9f9eab) test(controller): Add memoization tests. See #3214 (#3455)
- * [abe768c4](https://github.com/argoproj/argo-workflows/commit/abe768c4ba5433fe72f9e6d5a1dde09d37d4d20d) feat(cli): Allow to view previously terminated container logs (#3423)
- * [7581025f](https://github.com/argoproj/argo-workflows/commit/7581025ffac0da6a4c9b125dac3173d0c84aef4f) fix: Allow ints for sequence start/end/count. Fixes #3420 (#3425)
- * [b82f900a](https://github.com/argoproj/argo-workflows/commit/b82f900ae5e446d14a9899302c143c8e32447eab) Fixed typos (#3456)
- * [23760119](https://github.com/argoproj/argo-workflows/commit/23760119d4664f0825536d368b65cdde356e0ff3) feat: Workflow Semaphore Support (#3141)
- * [81cba832](https://github.com/argoproj/argo-workflows/commit/81cba832ed1d4f5b116dc9e43f1f3ad79c190c44) feat: Support WorkflowMetadata in WorkflowTemplate and ClusterWorkflowTemplate (#3364)
- * [568c032b](https://github.com/argoproj/argo-workflows/commit/568c032b3b86c39b39ae38d772b33bc1cbb757de) chore: update aws-sdk-go version (#3376)
- * [bd27d9f3](https://github.com/argoproj/argo-workflows/commit/bd27d9f3216bae609de2cb482a89af3783f0d132) chore: Upgrade node-sass (#3450)
- * [b1e601e5](https://github.com/argoproj/argo-workflows/commit/b1e601e586d376ef3b022acf684cf5de648dc3dc) docs: typo in argo stop --help (#3439)
- * [308c7083](https://github.com/argoproj/argo-workflows/commit/308c7083bded1b6a1fb91bcd963e1e9b8d0b4152) fix(controller): Prevent panic on nil node. Fixes #3436 (#3437)
- * [8ab06f53](https://github.com/argoproj/argo-workflows/commit/8ab06f532b24944e5e9c3ed33c4adc249203cad4) feat(controller): Add log message count as metrics. (#3362)
- * [5d0c436d](https://github.com/argoproj/argo-workflows/commit/5d0c436d3d148d70fd766fa50f97be6b2fef0d45) chore: Fix GitHub Actions Docker Image build  (#3442)
- * [e54b4ab5](https://github.com/argoproj/argo-workflows/commit/e54b4ab5cfaddec4e5f3e3cdecd6ea931501f6fb) docs: Add Sohu as official Argo user (#3430)
- * [ee6c8760](https://github.com/argoproj/argo-workflows/commit/ee6c8760e3d46dfdab0f8d3a63dbf1995322ad4b) fix: Ensure task dependencies run after onExit handler is fulfilled (#3435)
- * [6dc04b39](https://github.com/argoproj/argo-workflows/commit/6dc04b39c7986046c2be1535d2a933e4cba25e03) chore: Use GitHub Actions to build Docker Images to allow publishing Windows Images (#3291)
- * [05b3590b](https://github.com/argoproj/argo-workflows/commit/05b3590b5dc70963700b4a7a5cef4afd76b4943d) feat(controller): Add support for Docker workflow executor for Windows nodes (#3301)
- * [676868f3](https://github.com/argoproj/argo-workflows/commit/676868f31da1bce361e89bebfa1eea81471784ac) fix(docs): Update kubectl proxy URL (#3433)
- * [3507c3e6](https://github.com/argoproj/argo-workflows/commit/3507c3e6e8e9c420a6028a43b930a3ef6b221705) docs: Make https://argoproj.github.io/argo/  (#3369)
- * [733e95f7](https://github.com/argoproj/argo-workflows/commit/733e95f742ff14fb7c303d8b1dbf30403e9e8983) fix: Add struct-wide RWMutext to metrics (#3421)
- * [0463f241](https://github.com/argoproj/argo-workflows/commit/0463f24165e360344b5ff743915d16a12fef0ba0) fix: Use a unique queue to visit nodes (#3418)
- * [eddcac63](https://github.com/argoproj/argo-workflows/commit/eddcac6398e674aa24b59aea2e449492cf2c0c02) fix: Script steps fail with exceededQuota (#3407)
- * [c631a545](https://github.com/argoproj/argo-workflows/commit/c631a545e824682652569e49eb764844a7f5cb05) feat(ui): Add Swagger UI (#3358)
- * [910f636d](https://github.com/argoproj/argo-workflows/commit/910f636dcfad66c999aa859e11a31a9a772ccc79) fix: No panic on watch. Fixes #3411 (#3426)
- * [b4da1bcc](https://github.com/argoproj/argo-workflows/commit/b4da1bccc7f961200b8fe8551e4b286d1d5d5a9f) fix(sso): Remove unused `groups` claim. Fixes #3411 (#3427)
- * [330d4a0a](https://github.com/argoproj/argo-workflows/commit/330d4a0a2085b986855f9d3f4c5e27fbbe261ca9) fix: panic on wait command if event is null (#3424)
- * [7c439424](https://github.com/argoproj/argo-workflows/commit/7c4394245437d36245a4c9246a51ceb92edeaf42) docs: Include timezone name reference (#3414)
- * [03cbb8cf](https://github.com/argoproj/argo-workflows/commit/03cbb8cf2c75f5b241ae543259ea9db02e9339fd) fix(ui): Render DAG with exit node (#3408)
- * [3d50f985](https://github.com/argoproj/argo-workflows/commit/3d50f9852b481692235a3f075c4c0966e6404104) feat: Expose certain queue metrics (#3371)
- * [c7b35e05](https://github.com/argoproj/argo-workflows/commit/c7b35e054e3eee38f750c0eaf4a5431a56f80c49) fix: Ensure non-leaf DAG tasks have their onExit handler's run (#3403)
- * [70111600](https://github.com/argoproj/argo-workflows/commit/70111600d464bd7dd99014aa88b5f2cbab64a573) fix: Fix concurrency issues with metrics (#3401)
- * [d307f96f](https://github.com/argoproj/argo-workflows/commit/d307f96f2307da4897685b96ef54251b064de239) docs: Update config example to include useSDKCreds (#3398)
- * [637d50bc](https://github.com/argoproj/argo-workflows/commit/637d50bc132c346885caa4e70eee47ad5c96648e) chore: maybe -> may be (#3392)
- * [e70a8863](https://github.com/argoproj/argo-workflows/commit/e70a8863582e6fab7e2c5ea7c95a7fc0b4ab374d) chore: Added CWFT WorkflowTemplateRef example (#3386)
- * [bc4faf5f](https://github.com/argoproj/argo-workflows/commit/bc4faf5f739e9172b7968e198dc595f27d506f7b) fix: Fix bug parsing parmeters (#3372)
- * [4934ad22](https://github.com/argoproj/argo-workflows/commit/4934ad227f043a5554c9a4f717f09f70d2c18cbf) fix: Running pods are garaged in PodGC onSuccess
- * [0541cfda](https://github.com/argoproj/argo-workflows/commit/0541cfda611a656ab16dbfcd7bed858b7c8b2f3c) chore(ui): Remove unused interfaces for artifacts (#3377)
- * [20382cab](https://github.com/argoproj/argo-workflows/commit/20382cab7bbbbd5646a3dbfac6ee18586a6eada5) docs: Fix incorrect example of global parameter (#3375)
- * [1db93c06](https://github.com/argoproj/argo-workflows/commit/1db93c062c4f7e417bf74afe253e9a44e5381802) perf: Optimize time-based filtering on large number of workflows (#3340)
- * [2ab9495f](https://github.com/argoproj/argo-workflows/commit/2ab9495f0f3d944243d845411bafe7ebe496642b) fix: Don't double-count metric events (#3350)
- * [7bd3e720](https://github.com/argoproj/argo-workflows/commit/7bd3e7209018d0d7716ca0dbd0ffb1863165892d) fix(ui): Confirmation of workflow actions (#3370)
- * [488790b2](https://github.com/argoproj/argo-workflows/commit/488790b247191dd22babadd9592efae11f4fd245) Wellcome is using Argo in our Data Labs division (#3365)
- * [63e71192](https://github.com/argoproj/argo-workflows/commit/63e71192852138685d68156a0f6b1133ecfdaf74) chore: Remove unused code (#3367)
- * [a64ceb03](https://github.com/argoproj/argo-workflows/commit/a64ceb03f165513e30e5c9614d1bb64273219140) build: Enable Stale Bot (#3363)
- * [e4b08abb](https://github.com/argoproj/argo-workflows/commit/e4b08abbcfe6f3886e0cd28e8ea8c1860ef8c9e1) fix(server): Remove `context cancelled` error. Fixes #3073 (#3359)
- * [74ba5162](https://github.com/argoproj/argo-workflows/commit/74ba516220423cae5960b7dd51c4a8d5a37012b5) fix: Fix UI bug in DAGs (#3368)
- * [5e60decf](https://github.com/argoproj/argo-workflows/commit/5e60decf96e85a4077cd70d1d4e8da299d1d963d) feat(crds)!: Adds CRD generation and enhanced UI resource editor. Closes #859 (#3075)
- * [c2347f35](https://github.com/argoproj/argo-workflows/commit/c2347f3542d48467e8a0bede67db17ecce890f56) chore: Simplify deps by removing YAML (#3353)
- * [1323f9f4](https://github.com/argoproj/argo-workflows/commit/1323f9f418a407d7cbb92e7bb67e00faefe17e51) test: Add e2e tags (#3354)
- * [731a1b4a](https://github.com/argoproj/argo-workflows/commit/731a1b4a670078b8ba8e2f36bdd433afe22f2631) fix(controller): Allow events to be sent to non-argo namespace. Fixes #3342 (#3345)
- * [916e0db2](https://github.com/argoproj/argo-workflows/commit/916e0db25880cef3058e4c3c3f6d118e14312be1) Adding InVision to Users (#3352)
- * [6caf10fa](https://github.com/argoproj/argo-workflows/commit/6caf10fad7b116f9e3a6aaee4eb02243e37f2779) fix: Ensure child pods respect maxDuration (#3280)
- * [8f4945f5](https://github.com/argoproj/argo-workflows/commit/8f4945f5e6f7a6d503f400079b607715151a2a41) docs: Field fix (ParallelSteps -> WorkflowStep) (#3338)
- * [2b4b7340](https://github.com/argoproj/argo-workflows/commit/2b4b7340a6afb8317e27e3d58c46fba3c3db8ff0) fix: Remove broken SSO from quick-starts (#3327)
- * [26570fd5](https://github.com/argoproj/argo-workflows/commit/26570fd51ec2eebe86cd0f3bc05ab43272f957c5) fix(controller)!: Support nested items. Fixes #3288 (#3290)
- * [c3d85716](https://github.com/argoproj/argo-workflows/commit/c3d85716420048dd0567ccc5cda894a9717598ae) chore: Avoid variable name collision with imported package name (#3335)
- * [ca822af0](https://github.com/argoproj/argo-workflows/commit/ca822af0c4353bb30a51f0a4edfccdd4226c7043) build: Fix path to go-to-protobuf binary (#3308)
- * [769a964f](https://github.com/argoproj/argo-workflows/commit/769a964fcf51f58c76f2d4900c736f4dd945bd7f) feat(controller): Label workflows with their source workflow template (#3328)
- * [0785be24](https://github.com/argoproj/argo-workflows/commit/0785be24caaf93d62f5b77b2ee142a0691992b86) fix(ui): runtime error from null savedOptions props (#3330)
- * [200be0e1](https://github.com/argoproj/argo-workflows/commit/200be0e1e34f9cf6689e9739e3e4aea7f5bf7fde) feat: Save pagination limit and selected phases/labels to local storage (#3322)
- * [b5ed90fe](https://github.com/argoproj/argo-workflows/commit/b5ed90fe8611a10df7982e3fb2e6670400acf2d2) feat: Allow to change priority when resubmitting workflows (#3293)
- * [60c86c84](https://github.com/argoproj/argo-workflows/commit/60c86c84c60ac38c5a876d8df5362b5896700d73) fix(ui): Compiler error from workflows toolbar (#3317)
- * [3fe6ecc4](https://github.com/argoproj/argo-workflows/commit/3fe6ecc424fe1474b2ce765e47f1dc69ec9ef98e) docs: Document access token creation and usage (#3316)
- * [ab3c081e](https://github.com/argoproj/argo-workflows/commit/ab3c081e310835f7f2e7a3424042944adde39afd) docs: Rename Ant Financial to Ant Group (#3304)
- * [baad42ea](https://github.com/argoproj/argo-workflows/commit/baad42ea8fed83b2158721766e518b203664ebe1) feat(ui): Add ability to select multiple workflows from list and perform actions on them. Fixes #3185 (#3234)
- * [b6118939](https://github.com/argoproj/argo-workflows/commit/b6118939bf0948e856bb20955f6911743106af4d) fix(controller): Fix panic logging. (#3315)
- * [633ea71e](https://github.com/argoproj/argo-workflows/commit/633ea71ebf624530c75b1f9aeb713a92510cf62a) build: Pin `goimports` to working version (#3311)
- * [436c1259](https://github.com/argoproj/argo-workflows/commit/436c12590d80010e300a63be3acb3bd24ac3bf93) ci: Remove CircleCI (#3302)
- * [8e340229](https://github.com/argoproj/argo-workflows/commit/8e340229cfd3fb976b1261dbf32d038bfd2f7706) build: Remove generated Swagger files. (#3297)
- * [e021d7c5](https://github.com/argoproj/argo-workflows/commit/e021d7c512f01721e2f25d39836829752226c290) Clean up unused constants (#3298)
- * [48d86f03](https://github.com/argoproj/argo-workflows/commit/48d86f03ce9ac49f5099c46dd7995305eb59eb11) build: Upload E2E diagnostics after failure (#3294)
- * [8b12f433](https://github.com/argoproj/argo-workflows/commit/8b12f433a2e32cc69714ee456ee0d83e904ff31c) feat(cli): Add --logs to `argo [submit|resubmit|retry]. Closes #3183 (#3279)
- * [07b450e8](https://github.com/argoproj/argo-workflows/commit/07b450e8134e1afe0b58c45b21dc0c13d91ecdb5) fix: Reapply Update if CronWorkflow resource changed (#3272)
- * [8af01491](https://github.com/argoproj/argo-workflows/commit/8af014911901678ee24bea9b2ab652fb0af5bc48) docs: ArchiveLabelSelector document (#3284)
- * [38c908a2](https://github.com/argoproj/argo-workflows/commit/38c908a272e8a59b2843ad5514c6334ba1c7a693) docs: Add example for handling large output resutls (#3276)
- * [d44d264c](https://github.com/argoproj/argo-workflows/commit/d44d264c72649c540204ccb54e9a57550f48d1fc) Fixes validation of overridden ref template parameters. (#3286)
- * [62e54fb6](https://github.com/argoproj/argo-workflows/commit/62e54fb68778030245bed87f0675694ef3c58b57) fix: Fix delete --complete (#3278)
- * [a3c379bb](https://github.com/argoproj/argo-workflows/commit/a3c379bb5df171d635a200b9dec7a9ca89c3295d) docs: Updated WorkflowTemplateRef  on WFT and CWFT (#3137)
- * [824de95b](https://github.com/argoproj/argo-workflows/commit/824de95bfb2de0e325f92c0544f42267242486e4) fix(git): Fixes Git when using auth or fetch. Fixes #2343 (#3248)
- * [018fcc23](https://github.com/argoproj/argo-workflows/commit/018fcc23dc9fad051d15db2f9a83c2710d50c828) Update releasing.md (#3283)
- * [acee573b](https://github.com/argoproj/argo-workflows/commit/acee573b88bf96160b69d18bcc8031caf119c647) docs: Update CI Badges (#3282)
- * [9eb182c0](https://github.com/argoproj/argo-workflows/commit/9eb182c04957f2ca587ff1de84b79fc274f91788) build: Allow to change k8s namespace for installation (#3281)
- * [2bcfafb5](https://github.com/argoproj/argo-workflows/commit/2bcfafb56230194fd2d23adcfa5a1294066ec91e) fix: Add {{workflow.status}} to workflow-metrics (#3271)
- * [e6aab605](https://github.com/argoproj/argo-workflows/commit/e6aab605122356a10cb21df3a08e1ddeac6d2593) fix(jqFilter)!: remove extra quotes around output parameter value (#3251)
- * [f4580163](https://github.com/argoproj/argo-workflows/commit/f4580163f4187f798f93b8d778415e8bec001dda) fix(ui): Allow render of templates without entrypoint. Fixes #2891 (#3274)
- * [f30c05c7](https://github.com/argoproj/argo-workflows/commit/f30c05c74f598b6400b66bb20a752d78eca05e45) build: Add warning to ensure 'v' is present on release versions (#3273)
- * [d1cb1992](https://github.com/argoproj/argo-workflows/commit/d1cb1992cd22e9f69894532f214fa0e00312ff36) fixed archiveLabelSelector nil (#3270)
- * [c7e4c180](https://github.com/argoproj/argo-workflows/commit/c7e4c1808cf097857b8ee89d326ef9f32384fc1b) fix(ui): Update workflow drawer with new duration format (#3256)
- * [f2381a54](https://github.com/argoproj/argo-workflows/commit/f2381a5448e9d49a7b6ed0c9583ac8cf9b257938) fix(controller): More structured logging. Fixes #3260 (#3262)
- * [acba084a](https://github.com/argoproj/argo-workflows/commit/acba084abb01b967c239952d49e8e3d7775cbf2c) fix: Avoid unnecessary nil check for annotations of resubmitted workflow (#3268)
- * [55e13705](https://github.com/argoproj/argo-workflows/commit/55e13705ae57f86ca6c5846eb5de3e80370bc1d4) feat: Append previous workflow name as label to resubmitted workflow (#3261)
- * [2dae7244](https://github.com/argoproj/argo-workflows/commit/2dae724496a96ce2e0993daea0a3b6a473f784da) feat: Add mode to require Workflows to use workflowTemplateRef (#3149)
- * [56694abe](https://github.com/argoproj/argo-workflows/commit/56694abe27267c1cb855064b44bc7c32d61ca66c) Fixed onexit on workflowtempalteRef (#3263)
- * [54dd72c2](https://github.com/argoproj/argo-workflows/commit/54dd72c2439b5a6ef389eab4cb39bd412db9fd42) update mysql yaml port (#3258)
- * [fb502632](https://github.com/argoproj/argo-workflows/commit/fb502632419409e528e23f1ef70e7f610812d175) feat: Configure ArchiveLabelSelector for Workflow Archive (#3249)
- * [5467c899](https://github.com/argoproj/argo-workflows/commit/5467c8995e07e5501d685384e44585fc1b02c6b8) fix(controller): set pod finish timestamp when it is deleted (#3230)
- * [04bc5492](https://github.com/argoproj/argo-workflows/commit/04bc5492d582d45633a4a18ec691a10d913a73a3) build: Disable Circle CI and Sonar (#3253)
- * [23ca07a7](https://github.com/argoproj/argo-workflows/commit/23ca07a790714ad8c97ecab71ffa439843a7ad6c) chore: Covered steps.<STEPNAME>.outputs.parameters in variables document (#3245)
- * [4bd33c6c](https://github.com/argoproj/argo-workflows/commit/4bd33c6c6ce6dcb9f0c85dab40f162608d5f67a6) chore(cli): Add examples of @latest alias for relevant commands. Fixes #3225 (#3242)
- * [17108df1](https://github.com/argoproj/argo-workflows/commit/17108df1cea937f49f099ec26b7a25bd376b16a5) fix: Ensure subscription is closed in log viewer (#3247)
- * [495dc89b](https://github.com/argoproj/argo-workflows/commit/495dc89b5cfb2419b0438c4a53cfb3b13cb5785a) docs: Correct available fields in {{workflow.failures}} (#3238)
- * [4db1c4c8](https://github.com/argoproj/argo-workflows/commit/4db1c4c8495d0b8e13c718207175273fe98555a2) fix: Support the TTLStrategy for WorkflowTemplateRef (#3239)
- * [47f50693](https://github.com/argoproj/argo-workflows/commit/47f5069376f3c61b09ff02ff5729e5c3e6e58e45) feat(logging): Made more controller err/warn logging structured (#3240)
- * [c25e2880](https://github.com/argoproj/argo-workflows/commit/c25e28809863435d718d7e5ab303591d8039c724) build: Migrate to Github Actions (#3233)
- * [ef159f9a](https://github.com/argoproj/argo-workflows/commit/ef159f9ad6be552de1abf58c3dc4dc6911c49733) feat: Tick CLI Workflow watch even if there are no new events (#3219)
- * [ff1627b7](https://github.com/argoproj/argo-workflows/commit/ff1627b71789c42f604c0f83a9a3328d7e6b8248) fix(events): Adds config flag. Reduce number of dupe events emitted. (#3205)
- * [eae8f681](https://github.com/argoproj/argo-workflows/commit/eae8f68144acaf5c2ec0145ef0d136097cca7fcc) feat: Validate CronWorkflows before execution (#3223)
- * [4470a8a2](https://github.com/argoproj/argo-workflows/commit/4470a8a29bca9e16ac7e5d7d8c8a2310d0200efa) fix(ui/server): Fix broken label filter functionality on UI due to bug on server. Fix #3226 (#3228)
- * [e5e6456b](https://github.com/argoproj/argo-workflows/commit/e5e6456be37b52856205c4f7600a05ffef6daab1) feat(cli): Add --latest flag for argo get command as per #3128 (#3179)
- * [34608594](https://github.com/argoproj/argo-workflows/commit/34608594b98257c4ae47a280831d462bab7c53b4) fix(ui): Correctly update workflow list when workflow are modified/deleted (#3220)
- * [a7d8546c](https://github.com/argoproj/argo-workflows/commit/a7d8546cf9515ea70d686b8c669bf0a1d9b7538d) feat(controller): Improve throughput of many workflows. Fixes #2908 (#2921)
- * [a37d0a72](https://github.com/argoproj/argo-workflows/commit/a37d0a729c206040463d41e88e09814c1bf622dd) build: Change "DB=..." to "PROFILE=..." (#3216)
- * [15885d3e](https://github.com/argoproj/argo-workflows/commit/15885d3edc6d4754bc66f950251450eea8f29170) feat(sso): Allow reading SSO clientID from a secret. (#3207)
- * [723e9d5f](https://github.com/argoproj/argo-workflows/commit/723e9d5f40448ae425631fac8af2863a1f1ff1f5) fix: Ensrue image name is present in containers (#3215)
- * [0ee5e112](https://github.com/argoproj/argo-workflows/commit/0ee5e11253282eb5c36a5163086c20306cc09019) feat: Only process significant pod changes (#3181)
- * [c89a81f3](https://github.com/argoproj/argo-workflows/commit/c89a81f3ad3a76e22b98570a6045fd8eb358dbdb) feat: Add '--schedule' flag to 'argo cron create' (#3199)
- * [591f649a](https://github.com/argoproj/argo-workflows/commit/591f649a306edf826b667d0069ee04cb345dcd26) refactor: Refactor assesDAGPhase logic (#3035)
- * [285eda6b](https://github.com/argoproj/argo-workflows/commit/285eda6bbe9008ffa394edbc4b510e88119a1fd0) chore: Remove unused pod in addArchiveLocation() (#3200)
- * [8e1d56cb](https://github.com/argoproj/argo-workflows/commit/8e1d56cb78f8e039f4dbeea991bdaa1935738130) feat(controller): Add default name for artifact repository ref. (#3060)
- * [f1cdba18](https://github.com/argoproj/argo-workflows/commit/f1cdba18b3ef476e11f02e50a69fc33924158be7) feat(controller): Add `--qps` and `--burst` flags to controller (#3180)
- * [b86949f0](https://github.com/argoproj/argo-workflows/commit/b86949f0e9523e10c69e0f6b10b0f35413a20520) fix: Ensure stable desc/hash for metrics (#3196)
- * [e26d2f08](https://github.com/argoproj/argo-workflows/commit/e26d2f08c2d08dd83413b91a35e38ea6ed0d3839) docs: Update Getting Started (#3099)
- * [47bfea5d](https://github.com/argoproj/argo-workflows/commit/47bfea5d4e23d506c616fa8726c6bc751104bc94) docs: Add Graviti as official Argo user (#3187)
- * [04c77f49](https://github.com/argoproj/argo-workflows/commit/04c77f490b00ffc05f74a941f1c9ccf76a5bf789) fix(server): Allow field selection for workflow-event endpoint (fixes #3163) (#3165)
- * [0c38e66e](https://github.com/argoproj/argo-workflows/commit/0c38e66e619e243a5344f0f11a5e01194c7c5cb6) chore: Update Community Meeting link and specify Go@v1.13 (#3178)
- * [81846d41](https://github.com/argoproj/argo-workflows/commit/81846d416ecc84241ae8423d91280d6a39d9b4c2) build: Only check Dex in hosts file when SSO is enabled (#3177)
- * [a130d488](https://github.com/argoproj/argo-workflows/commit/a130d488ab69cf4d4d543c7348a45e4cd34f972e) feat(ui): Add drawer with more details for each workflow in Workflow List (#3151)
- * [fa84e203](https://github.com/argoproj/argo-workflows/commit/fa84e203239b35976210a441387d6480d951f034) fix: Do not use alphabetical order if index exists (#3174)
- * [138af597](https://github.com/argoproj/argo-workflows/commit/138af5977b81e619681eb2cfa20fd3891c752510) fix(cli): Sort expanded nodes by index. Closes #3145 (#3146)
- * [a9ec4d08](https://github.com/argoproj/argo-workflows/commit/a9ec4d08bf1e3a4b4ae55055011d5c64a1197bc0) docs: Fix api swagger file path in docs (#3167)
- * [c42e4d3a](https://github.com/argoproj/argo-workflows/commit/c42e4d3aeaf4093581d0a5d92b4d7750be205225) feat(metrics): Add node-level resources duration as Argo variable for metrics. Closes #3110 (#3161)
- * [e36fe66e](https://github.com/argoproj/argo-workflows/commit/e36fe66ee795fcde237360e593c34879873f0e36) docs: Add instructions on using Minikube as an alternative to K3D (#3162)
- * [edfa5b93](https://github.com/argoproj/argo-workflows/commit/edfa5b93fb58c0b243e1f019b92f02e846f7b83d) feat(metrics): Report controller error counters via metrics. Closes #3034 (#3144)
- * [8831e4ea](https://github.com/argoproj/argo-workflows/commit/8831e4ead39acfe3d49801271a95907a3b737d49) feat(argo-server): Add support for SSO. See #1813 (#2745)
- * [b62184c2](https://github.com/argoproj/argo-workflows/commit/b62184c2e3715fd7ddd9077e11513db25a512c93) feat(cli): More `argo list` and `argo delete` options (#3117)
- * [c6565d7c](https://github.com/argoproj/argo-workflows/commit/c6565d7c3c8c4b40c6725a1f682186e04e0a8f36) fix(controller): Maybe bug with nil woc.wfSpec. Fixes #3121 (#3160)
- * [06ca71d7](https://github.com/argoproj/argo-workflows/commit/06ca71d7a8b5f9ecc448006d3fae73baf88f9d18) build: Fix path to staticfiles and goreman binaries (#3159)
- * [cad84cab](https://github.com/argoproj/argo-workflows/commit/cad84cab7817141d259785f7565f82fd3c3dc540) chore: Remove unused nodeType in initializeNodeOrMarkError() (#3153)
- * [be425513](https://github.com/argoproj/argo-workflows/commit/be42551364ec9a792171588a662489ff32347ec1) chore: Master needs lint (#3152)
- * [70b56f25](https://github.com/argoproj/argo-workflows/commit/70b56f25baf78d67253a2f29bd4057279b0e9558) enhancement(ui): Add workflow labels column to workflow list. Fixes #2782 (#3143)
- * [3318c115](https://github.com/argoproj/argo-workflows/commit/3318c1152ac0654816e36c0b4eb8679c45b6250b) chore: Move default metrics server port/path to consts (#3135)
- * [a0062adf](https://github.com/argoproj/argo-workflows/commit/a0062adfe895ee39572db3aa6f259913279c6db3) feat(ui): Add Alibaba Cloud OSS related models in UI (#3140)
- * [1469991c](https://github.com/argoproj/argo-workflows/commit/1469991ce34333697df07ca750adb247b21cc3a9) fix: Update container delete grace period to match Kubernetes default (#3064)
- * [df725bbd](https://github.com/argoproj/argo-workflows/commit/df725bbddac2f3a216010b069363f0344a2f5a80) fix(ui): Input artifacts labelled in UI. Fixes #3098 (#3131)
- * [c0d59cc2](https://github.com/argoproj/argo-workflows/commit/c0d59cc283a62f111123728f70c24df5954d98e4) feat: Persist DAG rendering options in local storage (#3126)
- * [8715050b](https://github.com/argoproj/argo-workflows/commit/8715050b441f0fb5c84ae0a0a19695c89bf2e7b9) fix(ui): Fix label error (#3130)
- * [1814ea2e](https://github.com/argoproj/argo-workflows/commit/1814ea2e4a6702eacd567aefd1194bd6aec212ed) fix(item): Support ItemValue.Type == List. Fixes #2660 (#3129)
- * [12b72546](https://github.com/argoproj/argo-workflows/commit/12b72546eb49b8af5b4374577107f30484a6e975) fix: Panic on invalid WorkflowTemplateRef (#3127)
- * [09092147](https://github.com/argoproj/argo-workflows/commit/09092147cf26939e775848d75f687d5c8fc15aa9) fix(ui): Display error message instead of DAG when DAG cannot be rendered. Fixes #3091 (#3125)
- * [2d9a74de](https://github.com/argoproj/argo-workflows/commit/2d9a74de9b2ad28318dfb6bfdbc1db6f4db716db) docs: Document cost optimizations. Fixes #1139 (#2972)
- * [69c9e5f0](https://github.com/argoproj/argo-workflows/commit/69c9e5f053195e46871176c6a31d646144532c3a) fix: Remove unnecessary panic (#3123)
- * [2f3aca89](https://github.com/argoproj/argo-workflows/commit/2f3aca8988cee483f5fac116a8e99cdec7fd89cc) add AppDirect to the list of users (#3124)
- * [257355e4](https://github.com/argoproj/argo-workflows/commit/257355e4c54b8ca37e056e73718a112441faddb4) feat: Add 'submit --from' to CronWorkflow and WorkflowTemplate in UI. Closes #3112 (#3116)
- * [6e5dd2e1](https://github.com/argoproj/argo-workflows/commit/6e5dd2e19a3094f88e6f927f786f866eccc5f500) Add Alibaba OSS to the list of supported artifacts (#3108)
- * [1967b45b](https://github.com/argoproj/argo-workflows/commit/1967b45b1465693b71e3a0ccac9563886641694c) support sso (#3079)
- * [9229165f](https://github.com/argoproj/argo-workflows/commit/9229165f83011b3d5b867ac511793f8934bdcfab) feat(ui): Add cost optimisation nudges. (#3089)
- * [e88124db](https://github.com/argoproj/argo-workflows/commit/e88124dbf64128388cf0e6fa6d30b2f756e57d23) fix(controller): Do not panic of woc.orig in not hydrated. Fixes #3118 (#3119)
- * [132b947a](https://github.com/argoproj/argo-workflows/commit/132b947ad6ba5a5b81e281c469f08cb97748e42d) fix: Differentiate between Fulfilled and Completed (#3083)
- * [a93968ff](https://github.com/argoproj/argo-workflows/commit/a93968ff36a1472402ec9655458e6ad7b04401a8) docs: Document how to backfill a cron workflow (#3094)
- * [4de99746](https://github.com/argoproj/argo-workflows/commit/4de9974681034d7bb7223d2131eba1cd0e5d254d) feat: Added Label selector and Field selector in Argo list  (#3088)
- * [6229353b](https://github.com/argoproj/argo-workflows/commit/6229353b2355c9425f42509e3504e64ee7c7ae92) chore: goimports (#3107)
- * [8491e00f](https://github.com/argoproj/argo-workflows/commit/8491e00f31f1f744ee1af729e5598a7e8894ff5f) docs: Add link to USERS.md in PR template (#3086)
- * [bb2ce9f7](https://github.com/argoproj/argo-workflows/commit/bb2ce9f77894982f5bcae4e772795d0e679bf405) fix: Graceful error handling of malformatted log lines in watch (#3071)
- * [4fd27c31](https://github.com/argoproj/argo-workflows/commit/4fd27c314810ae43b39a5c2d36cef2dbbf5691af) build(swagger): Fix Swagger build problems (#3084)
- * [e4e0dfb6](https://github.com/argoproj/argo-workflows/commit/e4e0dfb6c66fd2c0dbbba240b1cfe8c12dcb93c2) test: fix TestContinueOnFailDag (#3101)
- * [fa69c1bb](https://github.com/argoproj/argo-workflows/commit/fa69c1bb7157e19755eea669bf44434e2bedd157) feat: Add CronWorkflowConditions to report errors (#3055)
- * [50ad3cec](https://github.com/argoproj/argo-workflows/commit/50ad3cec2b002b81e30a5d6975e7dc044a83b301) adds millisecond-level timestamps to argoexec (#2950)
- * [6464bd19](https://github.com/argoproj/argo-workflows/commit/6464bd199eff845da66d59d263f2d04479663020) fix(controller): Implement offloading for workflow updates that are re-applied. Fixes #2856 (#2941)
- * [6c369e61](https://github.com/argoproj/argo-workflows/commit/6c369e614281df0342d5cc46871551282da71ea9) chore: Rename files that include 'top-level' terminology (#3076)
- * [bd40b80b](https://github.com/argoproj/argo-workflows/commit/bd40b80bc0c6b81a824da04cbb892a5e93deeebb) docs: Document work avoidance. (#3066)
- * [6df0b2d3](https://github.com/argoproj/argo-workflows/commit/6df0b2d3538cd1525223c8d85581662ece172cf9) feat: Support Top level workflow template reference  (#2912)
- * [0709ad28](https://github.com/argoproj/argo-workflows/commit/0709ad28c3dbd4696404aa942478a7505e9e9a67) feat: Enhanced filters for argo {watch,get,submit} (#2450)
- * [784c1385](https://github.com/argoproj/argo-workflows/commit/784c1385f3bec1bacdc1ef80e223a33476696ed0) build: Use goreman for starting locally. (#3074)
- * [5b5bae9a](https://github.com/argoproj/argo-workflows/commit/5b5bae9a6e46a82f5830f68f87598ee0c7dc2ff7) docs: Add Isbank to users.md (#3068)
- * [2b038ed2](https://github.com/argoproj/argo-workflows/commit/2b038ed2e61781e5c4b8a796aba4c4afe4850305) feat: Enhanced depends logic (#2673)
- * [4c3387b2](https://github.com/argoproj/argo-workflows/commit/4c3387b273d802419a1552345dfb95dd05b8555b) fix: Linters should error if nothing was validated (#3011)
- * [51dd05b5](https://github.com/argoproj/argo-workflows/commit/51dd05b5f16e0554bdd33511f8332f3198604690) fix(artifacts): Explicit archive strategy. Fixes #2140 (#3052)
- * [ada2209e](https://github.com/argoproj/argo-workflows/commit/ada2209ef94e2380c4415cf19a8e321324650405) Revert "fix(artifacts): Allow tar check to be ignored. Fixes #2140 (#3024)" (#3047)
- * [b7ff9f09](https://github.com/argoproj/argo-workflows/commit/b7ff9f09c46c8f313378f7f6091260be4f6363e5) chore: Add ability to configure maximum DB connection lifetime (#3032)
- * [38a995b7](https://github.com/argoproj/argo-workflows/commit/38a995b749b83a76b5f1f2542df959898489210b) fix(executor): Properly handle empty resource results, like for a missing get (#3037)
- * [a1ac8bcf](https://github.com/argoproj/argo-workflows/commit/a1ac8bcf548c4f8fcff6b7df25aa61ad9e4c15ed) fix(artifacts): Allow tar check to be ignored. Fixes #2140 (#3024)
- * [f12d79ca](https://github.com/argoproj/argo-workflows/commit/f12d79cad9d4a9b2169f634183b6c7837c9e4615) fix(controller)!: Correctly format workflow.creationTimepstamp as RFC3339. Fixes #2974 (#3023)
- * [d10e949a](https://github.com/argoproj/argo-workflows/commit/d10e949a061de541f5312645dfa19c5732a302ff) fix: Consider metric nodes that were created and completed in the same operation (#3033)
- * [202d4ab3](https://github.com/argoproj/argo-workflows/commit/202d4ab31a2883d4f2448c309c30404f67761727) fix(executor): Optional input artifacts. Fixes #2990 (#3019)
- * [f17e946c](https://github.com/argoproj/argo-workflows/commit/f17e946c4d006cda4e161380fb5a0ba52dcebfd1) fix(executor): Save script results before artifacts in case of error. Fixes #1472 (#3025)
- * [3d216ae6](https://github.com/argoproj/argo-workflows/commit/3d216ae6d5ad96b996ce40c42793a2031a392bb1) fix: Consider missing optional input/output artifacts with same name (#3029)
- * [3717dd63](https://github.com/argoproj/argo-workflows/commit/3717dd636949e4a78e8a6ddee4320e6a98cc3c81) fix: Improve robustness of releases. Fixes #3004 (#3009)
- * [9f86a4e9](https://github.com/argoproj/argo-workflows/commit/9f86a4e941ecca4399267f7780fbb2e7ddcd2199) feat(ui): Enable CSP, HSTS, X-Frame-Options. Fixes #2760, #1376, #2761 (#2971)
- * [cb71d585](https://github.com/argoproj/argo-workflows/commit/cb71d585c73c72513aead057d570c279ba46e74b) refactor(metrics)!: Refactor Metric interface (#2979)
- * [c0ee1eb2](https://github.com/argoproj/argo-workflows/commit/c0ee1eb2293f268f6c56f343e77ff64480562f4a) docs: Add Ravelin as a user of Argo (#3020)
- * [052e6c51](https://github.com/argoproj/argo-workflows/commit/052e6c5197a6e8b4dfb14d18c2b923ca93fcb84c) Fix isTarball to handle the small gzipped file (#3014)
- * [cdcba3c4](https://github.com/argoproj/argo-workflows/commit/cdcba3c4d6849668238180903e59f37affdff01d) fix(ui): Displays command args correctl pre-formatted. (#3018)
- * [b5160988](https://github.com/argoproj/argo-workflows/commit/b516098804443b6741e9253cc211ddbf208898ab) build: Mockery v1.1.1 (#3015)
- * [a04d8f28](https://github.com/argoproj/argo-workflows/commit/a04d8f28b3028ebb3c9dacd525c563c448b19215) docs: Add StatefulSet and Service doc (#3008)
- * [8412526c](https://github.com/argoproj/argo-workflows/commit/8412526cb2d3675b4e9df5c0d4abb369eaf16380) docs: Fix Deprecated formatting (#3010)
- * [cc0fe433](https://github.com/argoproj/argo-workflows/commit/cc0fe433aebc0397c648ff4ddc8c1f99df042568) fix(events): Correct event API Version. Fixes #2994 (#2999)
- * [d5d6f750](https://github.com/argoproj/argo-workflows/commit/d5d6f750bf9324e8277fc0f05d8214b5dee255cd) feat(controller)!: Updates the resource duration calculation. Fixes #2934 (#2937)
- * [fa3801a5](https://github.com/argoproj/argo-workflows/commit/fa3801a5d89d58208f07977b73a8686e3aa2c3c9) feat(ui): Render 2000+ nodes DAG acceptably. (#2959)
- * [f952df51](https://github.com/argoproj/argo-workflows/commit/f952df517bae1f423063d61e7542c4f0c4c667e1) fix(executor/pns): remove sleep before sigkill (#2995)
- * [2a9ee21f](https://github.com/argoproj/argo-workflows/commit/2a9ee21f47dbd36ba1d2020d0939c73fc198b333) feat(ui): Add Suspend and Resume to CronWorkflows in UI (#2982)
- * [eefe120f](https://github.com/argoproj/argo-workflows/commit/eefe120f9f1e0fe5eb4876a24b00b1eb5147cebb) test: Upgrade to argosay:v2 (#3001)
- * [47472f73](https://github.com/argoproj/argo-workflows/commit/47472f73d9cec8ac601814a41388064185d2eae7) chore: Update Mockery (#3000)
- * [46b11e1e](https://github.com/argoproj/argo-workflows/commit/46b11e1eca9d25ab3dc936e959316ec587a86f52) docs: Use keyFormat instead of keyPrefix in docs (#2997)
- * [60d5fdc7](https://github.com/argoproj/argo-workflows/commit/60d5fdc7f91b675055ab0b1c7f450fa6feb0fac5) fix: Begin counting maxDuration from first child start (#2976)
- * [76aca493](https://github.com/argoproj/argo-workflows/commit/76aca4936290823c5fd0da0be8429e6d4d92efee) build: Fix Docker build. Fixes #2983 (#2984)
- * [d8cb66e7](https://github.com/argoproj/argo-workflows/commit/d8cb66e785c170030bd503ca4626ab4e6e4f8c6c) feat: Add Argo variable {{retries}} to track retry attempt (#2911)
- * [14b7a459](https://github.com/argoproj/argo-workflows/commit/14b7a459ec4ad58a3ae77c74c293a283cafdc33b) docs: Fix typo with WorkflowTemplates link (#2977)
- * [3c442232](https://github.com/argoproj/argo-workflows/commit/3c4422326dceea456df94a71270df80e9cbf7177) fix: Remove duplicate node event. Fixes #2961 (#2964)
- * [d8ab13f2](https://github.com/argoproj/argo-workflows/commit/d8ab13f24031eae58354b9ac1c59bad69968cbe6) fix: Consider Shutdown when assesing DAG Phase for incomplete Retry node (#2966)
- * [8a511e10](https://github.com/argoproj/argo-workflows/commit/8a511e109dc55d9f9c7b69614f110290c2536858) fix: Nodes with pods deleted out-of-band should be Errored, not Failed (#2855)
- * [ca4e08f7](https://github.com/argoproj/argo-workflows/commit/ca4e08f7ed861cf4e1d0a17617d210287ed83730) build: Build dev images from cache (#2968)
- * [5f01c4a5](https://github.com/argoproj/argo-workflows/commit/5f01c4a5945a9d89d5194efbbaaf1d4d2c40532d) Upgraded to Node 14.0.0 (#2816)
- * [849d876c](https://github.com/argoproj/argo-workflows/commit/849d876c835982bbfa814714e713b4d19b35148d) Fixes error with unknown flag: --show-all (#2960)
- * [93bf6609](https://github.com/argoproj/argo-workflows/commit/93bf6609cf407d6cd374a6dd3bc137b1c82e88df) fix: Don't update backoff message to save operations (#2951)
- * [3413a5df](https://github.com/argoproj/argo-workflows/commit/3413a5dfa7c29711d9bf0d227437a10bf0de9d3b) fix(cli): Remove info logging from watches. Fixes #2955 (#2958)
- * [fe9f9019](https://github.com/argoproj/argo-workflows/commit/fe9f90191fac2fb7909c8e0b31c5f3b5a31236c4) fix: Display Workflow finish time in UI (#2896)
- * [f281199a](https://github.com/argoproj/argo-workflows/commit/f281199a1df65a6716d29a8e29ba756aa31f36dc) docs: Update README with new features (#2807)
- * [c8bd0bb8](https://github.com/argoproj/argo-workflows/commit/c8bd0bb82e174cca8d733e7b75748273172efa37) fix(ui): Change default pagination to all and sort workflows (#2943)
- * [e3ed686e](https://github.com/argoproj/argo-workflows/commit/e3ed686e13eacf0174b3e1088fe3cf2eb7706b39) fix(cli): Re-establish watch on EOF (#2944)
- * [67355372](https://github.com/argoproj/argo-workflows/commit/673553729e12d4ad83387eba68b3cbfb0aea8fe4) fix(swagger)!: Fixes invalid K8S definitions in `swagger.json`. Fixes #2888 (#2907)
- * [023f2338](https://github.com/argoproj/argo-workflows/commit/023f233896ac90fdf1529f747c56ab19028b6a9c) fix(argo-server)!: Implement missing instanceID code. Fixes #2780 (#2786)
- * [7b0739e0](https://github.com/argoproj/argo-workflows/commit/7b0739e0b846cff7d2bc3340e88859ab655d25ff) Fix typo (#2939)
- * [20d69c75](https://github.com/argoproj/argo-workflows/commit/20d69c75662653523dc6276e7e57084ec1c7334f) Detect ctrl key when a link is clicked (#2935)
- * [f32cec31](https://github.com/argoproj/argo-workflows/commit/f32cec31027b7112a9a51069c2ad7b1cfbedd960) fix default null value for timestamp column - MySQL 5.7 (#2933)
- * [9773cfeb](https://github.com/argoproj/argo-workflows/commit/9773cfebcdcba9a6ab199c7001711c500f6f69a3) docs: Add docs/scaling.md (#2918)
- * [99858ea5](https://github.com/argoproj/argo-workflows/commit/99858ea53d79e964530f4a3840936d5da79585d9) feat(controller): Remove the excessive logging of node data (#2925)
- * [03ad694c](https://github.com/argoproj/argo-workflows/commit/03ad694c42a782dc9f45f7ff0ba94b32cbbfa2f1) feat(cli): Refactor `argo list --chunk-size` and add `argo archive list --chunk-size`. Fixes #2820 (#2854)
- * [1c45d5ea](https://github.com/argoproj/argo-workflows/commit/1c45d5eafe1c44b6dc53aba80ab3ef978db04afa) test: Use argoproj/argosay:v1 (#2917)
- * [f311a5a7](https://github.com/argoproj/argo-workflows/commit/f311a5a70a8f299f05363175e27afffc6772457b) build: Fix Darwin build (#2920)
- * [a06cb5e0](https://github.com/argoproj/argo-workflows/commit/a06cb5e0e02d7b480d20713e9c67f83d09fa2b24) fix: remove doubled entry in server cluster role deployment (#2904)
- * [c71116dd](https://github.com/argoproj/argo-workflows/commit/c71116ddedafde0f2931fbd489b9b17b8bd81e65) feat: Windows Container Support. Fixes #1507 and #1383 (#2747)
- * [3afa7b2f](https://github.com/argoproj/argo-workflows/commit/3afa7b2f1b4ecb9e64b2c9dee1e91dcf548f82c3) fix(ui): Use LogsViewer for container logs (#2825)
- * [9ecd5226](https://github.com/argoproj/argo-workflows/commit/9ecd522618b390b27c784092c3dc83e84785dcbb) docs: Document node field selector. Closes #2860 (#2882)
- * [7d8818ca](https://github.com/argoproj/argo-workflows/commit/7d8818ca2a335f5cb200d9b088305d032cacd020) fix(controller): Workflow stop and resume by node didn't properly support offloaded nodes. Fixes #2543 (#2548)
- * [e013f29d](https://github.com/argoproj/argo-workflows/commit/e013f29dd224a91023b5fc4cc9fed2879994ddb1) ci: Remove context to stop unauthozied errors on test jobs (#2910)
- * [db52e7ba](https://github.com/argoproj/argo-workflows/commit/db52e7bac649a7b101f846e7f7354d10a45c9e62) fix(controller): Add mutex to nameEntryIDMap in cron controller. Fix #2638 (#2851)
- * [9a33aa2d](https://github.com/argoproj/argo-workflows/commit/9a33aa2d3c0ffedf33625bd3339c2006937c0953) docs(users): Adding Habx to the users list (#2781)
- * [9e4ac9b3](https://github.com/argoproj/argo-workflows/commit/9e4ac9b3c8c7028c9759278931a76c5f26481e53) feat(cli): Tolerate deleted workflow when running `argo delete`. Fixes #2821 (#2877)
- * [a0035dd5](https://github.com/argoproj/argo-workflows/commit/a0035dd58609d744a6fa304e51d61474f25c817d) fix: ConfigMap syntax (#2889)
- * [c05c3859](https://github.com/argoproj/argo-workflows/commit/c05c3859cf911502597456f5ed374c8604af85f0) ci: Build less and therefore faster (#2839)
- * [56143eb1](https://github.com/argoproj/argo-workflows/commit/56143eb1e1e80275da2742135ef147e563cae737) feat(ui): Add pagination to workflow list. Fixes #1080 and #976 (#2863)
- * [e0ad7de9](https://github.com/argoproj/argo-workflows/commit/e0ad7de97a82b2e509bb4bc8bb5fcf5b9c26dea3) test: Fixes various tests (#2874)
- * [e378ca47](https://github.com/argoproj/argo-workflows/commit/e378ca470f1a97d624d3aceb3c53b55155fd02a9) fix: Cannot create WorkflowTemplate with un-supplied inputs (#2869)
- * [c3e30c50](https://github.com/argoproj/argo-workflows/commit/c3e30c5052b9544d363c4c73315be5136b593f9a) fix(swagger): Generate correct Swagger for inline objects. Fixes #2835 (#2837)
- * [c0143d34](https://github.com/argoproj/argo-workflows/commit/c0143d3478c6ff2ec5138f7c6b272fc8e36c6734) feat: Add metric retention policy (#2836)
- * [f03cda61](https://github.com/argoproj/argo-workflows/commit/f03cda61a73243eea225fe4d0a49f2ada0523d0d) Update getting-started.md (#2872)
- * [d66224e1](https://github.com/argoproj/argo-workflows/commit/d66224e12613c36f8fa91956509fad9fc450af74) fix: Don't error when deleting already-deleted WFs (#2866)
- * [e84acb50](https://github.com/argoproj/argo-workflows/commit/e84acb502cbbba88a700c511ffbf7feee609ccb8) chore: Display wf.Status.Conditions in CLI (#2858)
- * [3c7f3a07](https://github.com/argoproj/argo-workflows/commit/3c7f3a07d90ea6dcdf91673d4e5b4075216628f7) docs: Fix typo ".yam" -> ".yaml" (#2862)
- * [d7f8e0c4](https://github.com/argoproj/argo-workflows/commit/d7f8e0c4742b62d9271b6272a8f87c53a4fddea2) fix(CLI): Re-establish workflow watch on disconnect. Fixes #2796 (#2830)
- * [31358d6e](https://github.com/argoproj/argo-workflows/commit/31358d6e255e28f20803575f5ee0fdf2015ecb68) feat(CLI): Add -v and --verbose to Argo CLI (#2814)
- * [1d30f708](https://github.com/argoproj/argo-workflows/commit/1d30f70896b8b5f7ddc29e255c2dce0c6d01f4bd) ci: Don't configure Sonar on CI for release branches (#2811)
- * [d9c54075](https://github.com/argoproj/argo-workflows/commit/d9c54075b71baad2742829fe0874e4f07c67c67a) docs: Fix exit code example and docs (#2853)
- * [90743353](https://github.com/argoproj/argo-workflows/commit/90743353fcaf46dae04872935e95ce858e1792b3) feat: Expose workflow.serviceAccountName as global variable (#2838)
- * [f07f7bf6](https://github.com/argoproj/argo-workflows/commit/f07f7bf61147b3444255117c26bfd38261220e95) note that tar.gz'ing output artifacts is optional (#2797)
- * [3fd3fc6c](https://github.com/argoproj/argo-workflows/commit/3fd3fc6c3c789e7a3b357e16aacb02d0f880892b) docs: Document how to label creator (#2827)
- * [b956ec65](https://github.com/argoproj/argo-workflows/commit/b956ec65f372194e0f110e672a2ad50bd51a10d8) fix: Add Step node outputs to global scope (#2826)
- * [bac339af](https://github.com/argoproj/argo-workflows/commit/bac339afe10013a63bc1bb2fb83a883c07e19cb9) chore: Configure webpack dev server to proxy using HTTPS (#2812)
- * [cc136f9c](https://github.com/argoproj/argo-workflows/commit/cc136f9c3d76a5c50a9c03613233c62d118d3457) test: Skip TestStopBehavior. See #2833 (#2834)
- * [52ff43b5](https://github.com/argoproj/argo-workflows/commit/52ff43b54a76f934ae3b491c74e2350fbd2298f2) fix: Artifact panic on unknown artifact. Fixes #2824 (#2829)
- * [554fd06c](https://github.com/argoproj/argo-workflows/commit/554fd06c9daf7ce1147f949d397e489d508c58ba) fix: Enforce metric naming validation (#2819)
- * [dd223669](https://github.com/argoproj/argo-workflows/commit/dd223669a30acc58369a70288fee6ed6e006c189) docs: Add Microba as official Argo user (#2822)
- * [8151f0c4](https://github.com/argoproj/argo-workflows/commit/8151f0c49aea618a6dfcf92ec8388ccb7a5de985) docs: Update tls.md (#2813)
- * [0dbd78ff](https://github.com/argoproj/argo-workflows/commit/0dbd78ff223e592f8761f1334f952e97c9e6ac48) feat: Add TLS support. Closes #2764 (#2766)
- * [510e11b6](https://github.com/argoproj/argo-workflows/commit/510e11b639e0b797cc4253d84e96fb070691b7ab) fix: Allow empty strings in valueFrom.default (#2805)
- * [d7f41ac8](https://github.com/argoproj/argo-workflows/commit/d7f41ac8df15b8ed1e68b2e4f44d64418e4c4000) fix: Print correct version in logs. (#2806)
- * [e9c21120](https://github.com/argoproj/argo-workflows/commit/e9c2112064293b3a71e47b493666bdc9b311dfa6) chore: Add GCS native example for output artifact (#2789)
- * [e0f2697e](https://github.com/argoproj/argo-workflows/commit/e0f2697e252e7b62842af3b56f924f324f2c48ec) fix(controller): Include global params when using withParam (#2757)
- * [3441b11a](https://github.com/argoproj/argo-workflows/commit/3441b11aa5bde5fa5d0a6652fbb8fa05a4225686) docs: Fix typo in CronWorkflow doc (#2804)
- * [a2d2b848](https://github.com/argoproj/argo-workflows/commit/a2d2b848a9b6f3cf6fe5c0f0dd3b7b3084f83e37) docs: Add example of recursive for loop (#2801)
- * [29d39e29](https://github.com/argoproj/argo-workflows/commit/29d39e297c93355b68a9726aadeef4c67d4767b2) docs: Update the contributing docs  (#2791)
- * [1ea286eb](https://github.com/argoproj/argo-workflows/commit/1ea286eb237ed86bfde5a4c954927b335ab588f2) fix: ClusterWorkflowTemplate RBAC for  argo server (#2753)
- * [1f14f2a5](https://github.com/argoproj/argo-workflows/commit/1f14f2a5f6054a88f740c6799d443216f694f08f) feat(archive): Implement data retention. Closes #2273 (#2312)
- * [d0cc7764](https://github.com/argoproj/argo-workflows/commit/d0cc7764fe477465ac2c76de9cc406bbf2aac807) feat: Display argo-server version in `argo version` and in UI. (#2740)
- * [8de57281](https://github.com/argoproj/argo-workflows/commit/8de572813ee9f028cf8e06834f45a3592bc73f14) feat(controller): adds Kubernetes node name to workflow node detail in web UI and CLI output. Implements #2540 (#2732)
- * [52fa5fde](https://github.com/argoproj/argo-workflows/commit/52fa5fdee9f021b73eca30a199c65a3760462bd9) MySQL config fix (#2681)
- * [43d9eebb](https://github.com/argoproj/argo-workflows/commit/43d9eebb479242ef23e84135bbe4b9dd252dea46) fix: Rename Submittable API endpoint to `submit` (#2778)
- * [69333a87](https://github.com/argoproj/argo-workflows/commit/69333a87b0ae411972f7f25b196db989500bbe0c) Fix template scope tests (#2779)
- * [bb1abf7f](https://github.com/argoproj/argo-workflows/commit/bb1abf7f4c425494a0878d6cbc2d2cb677e88a97) chore: Add CODEOWNERS file (#2776)
- * [905e0b99](https://github.com/argoproj/argo-workflows/commit/905e0b99312e579dcd8aa8036c2ee57df6fa7a29) fix: Naming error in Makefile (#2774)
- * [7cb2fd17](https://github.com/argoproj/argo-workflows/commit/7cb2fd17765aad691eda25ca4c5acecb89f84394) fix: allow non path output params (#2680)
- * [af9f61ea](https://github.com/argoproj/argo-workflows/commit/af9f61ea7ce53f629a284a44f0106b9ed73f24e2) ci: Recurl (#2769)
- * [ef08e642](https://github.com/argoproj/argo-workflows/commit/ef08e642b5c92de0571998909b2b34ab3ac89fd4) build: Retry curl 3x (#2768)
- * [dedec906](https://github.com/argoproj/argo-workflows/commit/dedec906f0391b63b341c90e43a67047303c4728) test: Get tests running on release branches (#2767)
- * [1c8318eb](https://github.com/argoproj/argo-workflows/commit/1c8318eb92d17fa2263675cabce5134d3f1e37a2) fix: Add compatiblity mode to templateReference (#2765)
- * [7975952b](https://github.com/argoproj/argo-workflows/commit/7975952b0aa3ac84ea4559b302236598d1d47954) fix: Consider expanded tasks in getTaskFromNode (#2756)
- * [bc421380](https://github.com/argoproj/argo-workflows/commit/bc421380c9dfce1b8a25950d2bdc6a71b2e74a2d) fix: Fix template resolution in UI (#2754)
- * [391c0f78](https://github.com/argoproj/argo-workflows/commit/391c0f78a496dbe0334686dfcabde8c9af8a474f) Make phase and templateRef available for unsuspend and retry selectors (#2723)
- * [a6fa3f71](https://github.com/argoproj/argo-workflows/commit/a6fa3f71fa6bf742cb2fa90292180344f3744def) fix: Improve cookie security. Fixes #2759 (#2763)
- * [57f0183c](https://github.com/argoproj/argo-workflows/commit/57f0183cd194767af8f9bcb5fb84ab083c1661c3) Fix typo on the documentation. It causes error unmarshaling JSON: while (#2730)
- * [c6ef1ff1](https://github.com/argoproj/argo-workflows/commit/c6ef1ff19e1c3f74b4ef146be37e74bd0b748cd7) feat(manifests): add name on workflow-controller-metrics service port (#2744)
- * [af5cd1ae](https://github.com/argoproj/argo-workflows/commit/af5cd1ae0030b20f71ad345f21456100fec74639) docs: Update OWNERS (#2750)
- * [06c4bd60](https://github.com/argoproj/argo-workflows/commit/06c4bd60cf2dc85362b3370acd44e4bc3977dcbc) fix: Make ClusterWorkflowTemplate optional for namespaced Installation (#2670)
- * [25c62463](https://github.com/argoproj/argo-workflows/commit/25c624636d80605c08dd423528cb22b89cebf687) docs: Update README (#2752)
- * [908e1685](https://github.com/argoproj/argo-workflows/commit/908e1685d78d12c87fe955eec8ad0df964b3d98b) docs: Update README.md (#2751)
- * [4ea43e2d](https://github.com/argoproj/argo-workflows/commit/4ea43e2d63385211cc0a29c2aa1b237797a62f71) fix: Children of onExit nodes are also onExit nodes (#2722)
- * [3f1b6667](https://github.com/argoproj/argo-workflows/commit/3f1b6667282cf3d1b7944f7fdc075ef0f1b8ff36) feat: Add Kustomize as supported install option. Closes #2715 (#2724)
- * [691459ed](https://github.com/argoproj/argo-workflows/commit/691459ed3591f72251dc230982d7b03dc3d6f9db) fix: Error pending nodes w/o Pods unless resubmitPendingPods is set (#2721)
- * [874d8776](https://github.com/argoproj/argo-workflows/commit/874d8776c22f54ede8a07ef87b9d18c6ba8198ec) test: Longer timeout for deletion (#2737)
- * [3c8149fa](https://github.com/argoproj/argo-workflows/commit/3c8149fabfcb84bc57d1973c10fe6dbce96232a0) Fix typo (#2741)
- * [98f60e79](https://github.com/argoproj/argo-workflows/commit/98f60e7985ebd77d42ff99c6d6e1276048fb07f6) feat: Added Workflow SubmitFromResource API (#2544)
- * [6253997a](https://github.com/argoproj/argo-workflows/commit/6253997a7e25f3ad9fd3c322ea9ca9ad0b710c83) fix: Reset all conditions when resubmitting (#2702)
- * [e7c67de3](https://github.com/argoproj/argo-workflows/commit/e7c67de30df90ba7bbd649a2833dc6efed8a18de) fix: Maybe fix watch. Fixes #2678 (#2719)
- * [cef6dfb6](https://github.com/argoproj/argo-workflows/commit/cef6dfb6a25445624f864863da45c36380049e6d) fix: Print correct version string. (#2713)
- * [e9589d28](https://github.com/argoproj/argo-workflows/commit/e9589d28a5dbc7cb620f206bd1fee457a8b29dfe) feat: Increase pod workers and workflow workers both to 32 by default. (#2705)
- * [3a1990e0](https://github.com/argoproj/argo-workflows/commit/3a1990e09b353cd963b5dfbf50a702266d49b2fc) test: Fix Goroutine leak that was making controller unit tests slow. (#2701)
- * [9894c29f](https://github.com/argoproj/argo-workflows/commit/9894c29f4258fd40b604ee2c33bd877d03ff5b00) ci: Fix Sonar analysis on master. (#2709)
- * [54f5be36](https://github.com/argoproj/argo-workflows/commit/54f5be361f597d45c97469095a2e5cb5678436a8) style: Camelcase "clusterScope" (#2720)
- * [db6d1416](https://github.com/argoproj/argo-workflows/commit/db6d1416a11dbd9d963a2df6740908a1d8086ff6) fix: Flakey TestNestedClusterWorkflowTemplate testcase failure (#2613)
- * [b4fd4475](https://github.com/argoproj/argo-workflows/commit/b4fd4475c2661f12a92ba48a71b52067536044fe) feat(ui): Add a YAML panel to view the workflow manifest. (#2700)
- * [65d413e5](https://github.com/argoproj/argo-workflows/commit/65d413e5d68b2f1667ef09f3c5938a07c3442fe8) build(ui): Fix compression of UI package. (#2704)
- * [4129528d](https://github.com/argoproj/argo-workflows/commit/4129528d430be282099e94d7e98d61e40d9c78ba) fix: Don't use docker cache when building release images (#2707)
- * [8d0956c9](https://github.com/argoproj/argo-workflows/commit/8d0956c9eb8533d5a399246ffed68f6d343d47a1) test: Increase runCli timeout to 1m (#2703)
- * [9d93e971](https://github.com/argoproj/argo-workflows/commit/9d93e971a66d8f50ad92ff9e15175c6bbfe292c4) Update getting-started.md (#2697)
- * [ee644a35](https://github.com/argoproj/argo-workflows/commit/ee644a35ce4ec6a5565327fbf8cbae17a742603f) docs: Fix CONTRIBUTING.md and running-locally.md. Fixes #2682 (#2699)
- * [2737c0ab](https://github.com/argoproj/argo-workflows/commit/2737c0abf77f1555c9a9a59e564d0f1242d2656e) feat: Allow to pass optional flags to resource template (#1779)
- * [c1a2fc7c](https://github.com/argoproj/argo-workflows/commit/c1a2fc7ca8be7b9286ec01a12a185d8d4360b9f6) Update running-locally.md - fixing incorrect protoc install (#2689)
- * [a1226c46](https://github.com/argoproj/argo-workflows/commit/a1226c4616ad327400b37be19703e65a31919248) fix: Enhanced WorkflowTemplate and ClusterWorkflowTemplate validation to support Global Variables   (#2644)
- * [c21cc2f3](https://github.com/argoproj/argo-workflows/commit/c21cc2f31fead552cbab5f4664d20d56cf291619) fix a typo (#2669)
- * [9430a513](https://github.com/argoproj/argo-workflows/commit/9430a513fe7b5587048a5e74d3c9abc9e36e4304) fix: Namespace-related validation in UI (#2686)
- * [f3eeca6e](https://github.com/argoproj/argo-workflows/commit/f3eeca6e3b72f27f86678de840d1b6b7497e9473) feat: Add exit code as output variable (#2111)
- * [9f95e23a](https://github.com/argoproj/argo-workflows/commit/9f95e23a4dc9104da2218c66c66c4475285dfc3e) fix: Report metric emission errors via Conditions (#2676)
- * [c67f5ff5](https://github.com/argoproj/argo-workflows/commit/c67f5ff55b8e41b465e481d7a38d54d551c07ee4) fix: Leaf task with continueOn should not fail DAG (#2668)
- * [3c20d4c0](https://github.com/argoproj/argo-workflows/commit/3c20d4c072f1ec69954a3db8a9383bf312b495fd) ci: Migrate to use Sonar instead of CodeCov for analysis (#2666)
- * [9c6351fa](https://github.com/argoproj/argo-workflows/commit/9c6351fa643f76a7cf36eef3b80cff9bf5880463) feat: Allow step restart on workflow retry. Closes #2334 (#2431)
- * [cf277eb5](https://github.com/argoproj/argo-workflows/commit/cf277eb5114cd2db4f00d34e400a132d3344bf97) docs: Updates docs for CII. See #2641 (#2643)
- * [e2d0aa23](https://github.com/argoproj/argo-workflows/commit/e2d0aa23ab4ee9b91b018bb556959c60981586e2) fix: Consider offloaded and compressed node in retry and resume (#2645)
- * [a25c6a20](https://github.com/argoproj/argo-workflows/commit/a25c6a20d0ff7b7b7b211fcfe207200036ed5df8) build: Fix codegen for releases (#2662)
- * [4a3ca930](https://github.com/argoproj/argo-workflows/commit/4a3ca930ef1d944dfd8659d5886d8abc7f6ce42f) fix: Correctly emit events. Fixes #2626 (#2629)
- * [4a7d4bdb](https://github.com/argoproj/argo-workflows/commit/4a7d4bdba522870ab9883c4f6ccac7b244bc5bcb) test: Fix flakey DeleteCompleted test (#2659)
- * [41f91e18](https://github.com/argoproj/argo-workflows/commit/41f91e18a4f65d8a6626782ebc8920ca02b3cc86) fix: Add DAG as default in UI filter and reorder (#2661)
- * [f138ada6](https://github.com/argoproj/argo-workflows/commit/f138ada68ba0b3c46f546bfef574e212833759ac) fix: DAG should not fail if its tasks have continueOn (#2656)
- * [e5cbdf6a](https://github.com/argoproj/argo-workflows/commit/e5cbdf6a4be8f111f6353534079fa4a71384e401) ci: Only run CI jobs if needed (#2655)
- * [4c452d5f](https://github.com/argoproj/argo-workflows/commit/4c452d5f7287179b6a7967fc7d60fb0837bd36ca) fix: Don't attempt to resolve artifacts if task is going to be skipped (#2657)
- * [2caf570a](https://github.com/argoproj/argo-workflows/commit/2caf570a35565617ae9af04682883ab34e2692b6) chore: Add newline to fields.md (#2654)
- * [2cb596da](https://github.com/argoproj/argo-workflows/commit/2cb596da3dac3c5683ed44e7a363c014e73a38a5) Storage region should be specified (#2538)
- * [271e4551](https://github.com/argoproj/argo-workflows/commit/271e45512be56bb6187d7665e9b5b65eb2500ad6) chore: Fix-up Yarn deps (#2649)
- * [4c1b0777](https://github.com/argoproj/argo-workflows/commit/4c1b077725a22d183ecdb24f2f147fee0a6e320c) fix: Sort log entries. (#2647)
- * [268fc461](https://github.com/argoproj/argo-workflows/commit/268fc46197ac411339c78018f05d76e102447eef)  docs: Added doc generator code (#2632)
- * [d58b7fc3](https://github.com/argoproj/argo-workflows/commit/d58b7fc39620fb24e40bb4f55f69c4e0fb5fc017) fix: Add input paremeters to metric scope (#2646)
- * [cc3af0b8](https://github.com/argoproj/argo-workflows/commit/cc3af0b83381e2d4a8da1959c36fd0a466c414ff) fix: Validating Item Param in Steps Template (#2608)
- * [6c685c5b](https://github.com/argoproj/argo-workflows/commit/6c685c5baf281116340b7b0708f8a29764d72c47) fix: allow onExit to run if wf exceeds activeDeadlineSeconds. Fixes #2603 (#2605)
- * [ffc43ce9](https://github.com/argoproj/argo-workflows/commit/ffc43ce976973c7c20d6c58d7b27a28969ae206f) feat: Added Client validation on Workflow/WFT/CronWF/CWFT (#2612)
- * [24655cd9](https://github.com/argoproj/argo-workflows/commit/24655cd93246e2a25dc858238116f7acec45ea42) feat(UI): Move Workflow parameters to top of submit (#2640)
- * [0a3b159a](https://github.com/argoproj/argo-workflows/commit/0a3b159ab87bd313896174f8464ffd277b14264c) Use error equals (#2636)
- * [8c29e05c](https://github.com/argoproj/argo-workflows/commit/8c29e05cb5befe5f9f0263ff138eab66f75c54d0) ci: Fix codegen job (#2648)
- * [a78ecb7f](https://github.com/argoproj/argo-workflows/commit/a78ecb7fe040c0040fb12731997351a02e0808a0) docs(users): Add CoreWeave and ConciergeRender (#2641)
- * [14be4670](https://github.com/argoproj/argo-workflows/commit/14be46707f4051db71e9495472e842fbb1eb5ea0) fix: Fix logs part 2 (#2639)
- * [4da6f4f3](https://github.com/argoproj/argo-workflows/commit/4da6f4f3ee75b2e50206381dad1809d5a21c6cce) feat: Add 'outputs.result' to Container templates (#2584)
- * [51bc876d](https://github.com/argoproj/argo-workflows/commit/51bc876d576b6e61f508bb56ab9f2dfbf91b0e85) test: Fixes TestCreateWorkflowDryRun. Closes #2618 (#2628)
- * [212c6d75](https://github.com/argoproj/argo-workflows/commit/212c6d75fa7e5e8d568e80992d1924a2c51cd631) fix: Support minimal mysql version 5.7.8 (#2633)
- * [8facacee](https://github.com/argoproj/argo-workflows/commit/8facaceeb3515d804c3fd276b1802dbd6cf773e8) refactor: Refactor Template context interfaces (#2573)
- * [812813a2](https://github.com/argoproj/argo-workflows/commit/812813a288608e196006d4b8369702d020e61dc4) fix: fix test cases (#2631)
- * [ed028b25](https://github.com/argoproj/argo-workflows/commit/ed028b25f6c925a02596f90d722283856b003ff8) fix: Fix logging problems. See #2589 (#2595)
- * [d4e81238](https://github.com/argoproj/argo-workflows/commit/d4e8123816f3883d876ed715036c5d91d3fe0586) test: Fix teething problems (#2630)
- * [4aad6d55](https://github.com/argoproj/argo-workflows/commit/4aad6d55ed4e7a6c9eaa9a36b78e123655dd4ca4) chore: Add comments to issues (#2627)
- * [54f7a013](https://github.com/argoproj/argo-workflows/commit/54f7a0134ad9933608993bc09eda2032e7a16a80) test: Enhancements and repairs to e2e test framework (#2609)
- * [d95926fe](https://github.com/argoproj/argo-workflows/commit/d95926fe40e48932c25a0f70c671ad99f4149505) fix: Fix WorkflowTemplate icons to be more cohesive (#2607)
- * [0130e1fd](https://github.com/argoproj/argo-workflows/commit/0130e1fd85b7fa5b3b48b07b873858670e1a61a0) docs: Add fields and core concepts doc (#2610)
- * [5a1ac203](https://github.com/argoproj/argo-workflows/commit/5a1ac20352ab6042958f49a59d0f5227329f654c) fix: Fixes panic in toWorkflow method (#2604)
- * [51910292](https://github.com/argoproj/argo-workflows/commit/5191029247ac817dd6ce811e044459c45b2846ee) chore: Lint UI on CI, test diagnostics, skip bad test (#2587)
- * [232bb115](https://github.com/argoproj/argo-workflows/commit/232bb115eba8e2667653fdbdc9831bee112daa85) fix(error handling): use Errorf instead of New when throwing errors with formatted text (#2598)
- * [eeb2f97b](https://github.com/argoproj/argo-workflows/commit/eeb2f97be5c8787180af9f32f2d5e8baee63ed2f) fix(controller): dag continue on failed. Fixes #2596 (#2597)
- * [99c35129](https://github.com/argoproj/argo-workflows/commit/99c35129eae2d283c2e6d81b578d786b494aab11) docs: Fix inaccurate field name in docs (#2591)
- * [21c73779](https://github.com/argoproj/argo-workflows/commit/21c7377932825cd30f67a840d30853f4a48951fa) fix: Fixes lint errors (#2594)
- * [38aca5fa](https://github.com/argoproj/argo-workflows/commit/38aca5fa2a153393b3edb93be07ddce375ad13f4) chore: Added ClusterWorkflowTemplate RBAC on quick-start manifests (#2576)
- * [59f746e1](https://github.com/argoproj/argo-workflows/commit/59f746e1a551180d11e57676f8a2a384b3741599) feat: UI enhancement for Cluster Workflow Template (#2525)
- * [0801a428](https://github.com/argoproj/argo-workflows/commit/0801a4284a948bbeced83852af27a019e7b33535) fix(cli): Show lint errors of all files (#2552)
- * [c3535ba5](https://github.com/argoproj/argo-workflows/commit/c3535ba5ac85e1071a08ccbc930f2ff45cd2f295) docs: Fix wrong Configuring Your Artifact Repository document. (#2586)
- * [79217bc8](https://github.com/argoproj/argo-workflows/commit/79217bc89e892ee82bdd5018b2bba65425924d36) feat(archive): allow specifying a compression level (#2575)
- * [88d261d7](https://github.com/argoproj/argo-workflows/commit/88d261d7fa72faea19745de588c19de45e7fab88) fix: Use outputs of last child instead of retry node itslef (#2565)
- * [5c08292e](https://github.com/argoproj/argo-workflows/commit/5c08292e4ee388c1c5ca5291c601d50b2b3374e7) style: Correct the confused logic (#2577)
- * [3d146144](https://github.com/argoproj/argo-workflows/commit/3d14614459d50b96838fcfd83809ee29499e2917) fix: Fix bug in deleting pods. Fixes #2571 (#2572)
- * [cb739a68](https://github.com/argoproj/argo-workflows/commit/cb739a6897591969b959bd2feebd8ded97b9cb33) feat: Cluster scoped workflow template (#2451)
- * [c63e3d40](https://github.com/argoproj/argo-workflows/commit/c63e3d40be50479ca3c9a7325bfeb5fd9d31fa7c) feat: Show workflow duration in the index UI page (#2568)
- * [1520452a](https://github.com/argoproj/argo-workflows/commit/1520452a381319b414618d8429d6d7e0bb23790d) chore: Error -> Warn when Parent CronWf no longer exists (#2566)
- * [ffbb3b89](https://github.com/argoproj/argo-workflows/commit/ffbb3b899912f7af888d8216bd2ab55bc7106880) fix: Fixes empty/missing CM. Fixes #2285 (#2562)
- * [d0fba6f4](https://github.com/argoproj/argo-workflows/commit/d0fba6f443da013fd9ae8e48f658b337a0a18015) chore: fix typos in the workflow template docs (#2563)
- * [49801e32](https://github.com/argoproj/argo-workflows/commit/49801e32f1624ba20926f1b07a6ddafa2f162301) chore(docker): upgrade base image for executor image (#2561)
- * [c4efb8f8](https://github.com/argoproj/argo-workflows/commit/c4efb8f8b6e28a591794c018f5e61f55dd7d75e3) Add Riskified to the user list (#2558)
- * [8b92d33e](https://github.com/argoproj/argo-workflows/commit/8b92d33eb2f2de3b593459140576ea8eaff8fb4b) feat: Create K8S events on node completion. Closes #2274 (#2521)
- * [2902e144](https://github.com/argoproj/argo-workflows/commit/2902e144ddba2f8c5a93cdfc8e2437c04705065b) feat: Add node type and phase filter to UI (#2555)
- * [fb74ba1c](https://github.com/argoproj/argo-workflows/commit/fb74ba1ce27b96473411c2c5cfe9a86972af589e) fix: Separate global scope processing from local scope building (#2528)
- * [618b6dee](https://github.com/argoproj/argo-workflows/commit/618b6dee4de973b3f3ef1d1164a44b9cb176355e) fix: Fixes --kubeconfig flag. Fixes #2492 (#2553)
- * [79dc969f](https://github.com/argoproj/argo-workflows/commit/79dc969f73e0ec90bdc202e936afec970ff66fc6) test: Increase timeout for flaky test (#2543)
- * [15a3c990](https://github.com/argoproj/argo-workflows/commit/15a3c990359c40d791be64a34736e2a1ffa40178) feat: Report SpecWarnings in status.conditions (#2541)
- * [f142f30a](https://github.com/argoproj/argo-workflows/commit/f142f30a99aa9b12cdfbeed31129abb8d4266762) docs: Add example of template-level volume declaration. (#2542)
- * [93b6be61](https://github.com/argoproj/argo-workflows/commit/93b6be619523ec3d9d8c52c75d9fa540e0272c7f) fix(archive): Fix bug that prevents listing archive workflows. Fixes … (#2523)
- * [b4c9c54f](https://github.com/argoproj/argo-workflows/commit/b4c9c54f79d902f2372192f017192fa519800fd8) fix: Omit config key in configure artifact document. (#2539)
- * [864bf1e5](https://github.com/argoproj/argo-workflows/commit/864bf1e56812b0ea1434b3952073a3e15dd9f046) fix: Show template on its own field in CLI (#2535)
- * [555aaf06](https://github.com/argoproj/argo-workflows/commit/555aaf06306d066268c04e4dd50ec2fecadd22cc) test: fix master (#2534)
- * [94862b98](https://github.com/argoproj/argo-workflows/commit/94862b985ef97e39d01fcafc95109b1b3507b21e) chore: Remove deprecated example (#2533)
- * [5e1e7829](https://github.com/argoproj/argo-workflows/commit/5e1e78295df4df0205a47adcedde6f1d5915af95) fix: Validate CronWorkflow before creation (#2532)
- * [c9241339](https://github.com/argoproj/argo-workflows/commit/c92413393404bd4caeb00606b3ba8775eeadf231) fix: Fix wrong assertions (#2531)
- * [67fe04bb](https://github.com/argoproj/argo-workflows/commit/67fe04bb78ac7b402bb6ef5b58d5cca33ecd74db) Revert "fix: fix template scope tests (#2498)" (#2526)
- * [ddfa1ad0](https://github.com/argoproj/argo-workflows/commit/ddfa1ad03f2835b64efac96eb4fb10d14e3ed987) docs: couple of examples for REST API usage of argo-server (#2519)
- * [30542be7](https://github.com/argoproj/argo-workflows/commit/30542be7a121cf8774352bf987ee658b5d8b96c8) chore(docs): Update docs for useSDKCreds (#2518)
- * [e2cc6988](https://github.com/argoproj/argo-workflows/commit/e2cc6988018e50956c05ed20c665ead01766278d) feat: More control over resuming suspended nodes Fixes #1893 (#1904)
- * [b2771249](https://github.com/argoproj/argo-workflows/commit/b2771249b0be9c782ee2ae190dd76ec3bba2a562) chore: minor fix and refactory (#2517)
- * [b1ad163a](https://github.com/argoproj/argo-workflows/commit/b1ad163ac17312d103c03bf6a88069f1b055ea7d) fix: fix template scope tests (#2498)
- * [661d1b67](https://github.com/argoproj/argo-workflows/commit/661d1b6748b25488b288811dc5c0089b49b75a52) Increase client gRPC max size to match server (#2514)
- * [d8aa477f](https://github.com/argoproj/argo-workflows/commit/d8aa477f7f5089505df5fd26560f53f508f5b29f) fix: Fix potential panic (#2516)
- * [1afb692e](https://github.com/argoproj/argo-workflows/commit/1afb692eeb6a63cb0539cbc6762d8219b2b2dd00) fix: Allow runtime resolution for workflow parameter names (#2501)
- * [243ea338](https://github.com/argoproj/argo-workflows/commit/243ea338de767a39947f5fb4450321083a6f9c67) fix(controller): Ensure we copy any executor securityContext when creating wait containers; fixes #2512 (#2510)
- * [6e8c7bad](https://github.com/argoproj/argo-workflows/commit/6e8c7badcfa3f2eb7d5cb76f229e0570f3325f61) feat: Extend workflowDefaults to full Workflow and clean up docs and code (#2508)
- * [06cfc129](https://github.com/argoproj/argo-workflows/commit/06cfc1294a5a913a8b23bc4337ffa019717c4af2) feat: Native Google Cloud Storage support for artifact. Closes #1911 (#2484)
- * [999b1e1d](https://github.com/argoproj/argo-workflows/commit/999b1e1d9a6c9d69def35fd43d01b03c75748e62)  fix: Read ConfigMap before starting servers  (#2507)
- * [3d6e9b61](https://github.com/argoproj/argo-workflows/commit/3d6e9b61b3c7214ab5c62438e7d0ea750c3ae3f7) docs: Add separate ConfigMap doc for 2.7+ (#2505)
- * [e5bd6a7e](https://github.com/argoproj/argo-workflows/commit/e5bd6a7ed35a4d5ed75023719814541423affc48) fix(controller): Updates GetTaskAncestry to skip visited nod. Fixes #1907 (#1908)
- * [183a29e4](https://github.com/argoproj/argo-workflows/commit/183a29e40314ac97dfa6d7ff2e61f59ee6484279) docs: add official user (#2499)
- * [e636000b](https://github.com/argoproj/argo-workflows/commit/e636000bc457d654d487e065c1bcacd15ed75a74) feat: Updated arm64 support patch (#2491)
- * [559cb005](https://github.com/argoproj/argo-workflows/commit/559cb00596acbcc9a6a9cce001ca25fdcc561b2b) feat(ui): Report resources duration in UI. Closes #2460 (#2489)
- * [09291d9d](https://github.com/argoproj/argo-workflows/commit/09291d9d59e1fe51b1622b90ac18c6a5985b6a85) feat: Add default field in parameters.valueFrom (#2500)
- * [33cd4f2b](https://github.com/argoproj/argo-workflows/commit/33cd4f2b86e8b0993563d70c6b0d6f0f91b14535) feat(config): Make configuration mangement easier. Closes #2463 (#2464)
- * [f3df9660](https://github.com/argoproj/argo-workflows/commit/f3df9660be9f4d52975720e79bd01a6efe6fa18d) test: Fix test (#2490)
- * [bfaf1c21](https://github.com/argoproj/argo-workflows/commit/bfaf1c215f5491526edd020055ed8a15eb804a04) chore: Move quickstart Prometheus port to 9090 (#2487)
- * [487ed425](https://github.com/argoproj/argo-workflows/commit/487ed425840dc5698a4ef3a3c8f214b6c08949cc) feat: Logging the Pod Spec in controller log (#2476)
- * [96c80e3e](https://github.com/argoproj/argo-workflows/commit/96c80e3e2c6eb6867e360dde3dea97047b963c2f) fix(cli): Rearrange the order of chunk size argument in list command. Closes #2420 (#2485)
- * [47bd70a0](https://github.com/argoproj/argo-workflows/commit/47bd70a092debe980075195efd802e7bfb59c82f) chore: Fix Swagger for PDB to support Java client (#2483)
- * [53a10564](https://github.com/argoproj/argo-workflows/commit/53a10564aebc6ee17eb8e3e121b4c36b2a334b87) feat(usage): Report resource duration. Closes #1066 (#2219)
- * [063d9bc6](https://github.com/argoproj/argo-workflows/commit/063d9bc657b00e23ce7722d5d08ca69347fe7205) Revert "feat: Add support for arm64 platform (#2364)" (#2482)
- * [735d25e9](https://github.com/argoproj/argo-workflows/commit/735d25e9d719b409a7517685bcb4148278bef5a1) fix: Build image with SHA tag when a git tag is not available (#2479)
- * [c55bb3b2](https://github.com/argoproj/argo-workflows/commit/c55bb3b211be8ccc9680f8282f98f8a8bf647ca7) ci: Run lint on CI and fix GolangCI (#2470)
- * [e1c9f7af](https://github.com/argoproj/argo-workflows/commit/e1c9f7afcb4f685f615235ae1d0b6000add93635) fix ParallelSteps child type so replacements happen correctly; fixes argoproj-labs/argo-client-gen#5 (#2478)
- * [55c315db](https://github.com/argoproj/argo-workflows/commit/55c315db2e87fe28dcc26f49f4ee969bae9c7ea1) feat: Add support for IRSA and aws default provider chain. (#2468)
- * [c724c7c1](https://github.com/argoproj/argo-workflows/commit/c724c7c1afca646e09c0cb82acf8b59f8c413780) feat: Add support for arm64 platform (#2364)
- * [315dc164](https://github.com/argoproj/argo-workflows/commit/315dc164dcd24d0443b49ac95d49eb06b2c2a64f) feat: search archived wf by startat. Closes #2436 (#2473)
- * [23d230bd](https://github.com/argoproj/argo-workflows/commit/23d230bd54e04af264a0977545db365a2c0d6a6d) feat(ui): add Env to Node Container Info pane. Closes #2471 (#2472)
- * [10a0789b](https://github.com/argoproj/argo-workflows/commit/10a0789b9477b1b6c1b7adda71101925989d02de) fix: ParallelSteps swagger.json (#2459)
- * [a59428e7](https://github.com/argoproj/argo-workflows/commit/a59428e72c092e12b17c2bd8f22ee2e86eec043f) fix: Duration must be a string. Make it a string. (#2467)
- * [47bc6f3b](https://github.com/argoproj/argo-workflows/commit/47bc6f3b7450895aa35f9275b326077bb08453b5) feat: Add `argo stop` command (#2352)
- * [14478bc0](https://github.com/argoproj/argo-workflows/commit/14478bc07f42ae9ee362cc1531b1cf00d923211d) feat(ui): Add the ability to have links to logging facility in UI. Closes #2438 (#2443)
- * [2864c745](https://github.com/argoproj/argo-workflows/commit/2864c745877c9e44a5b14140f4317f8e2d45975a) chore: make codegen + make start (#2465)
- * [a85f62c5](https://github.com/argoproj/argo-workflows/commit/a85f62c5e8ee1a51f5fa8fd715ebdf4140d2483d) feat: Custom, step-level, and usage metrics (#2254)
- * [64ac0298](https://github.com/argoproj/argo-workflows/commit/64ac02980ea641d92f22328442e5a12893600d67) fix: Deprecate template.{template,templateRef,arguments} (#2447)
- * [6cb79e4e](https://github.com/argoproj/argo-workflows/commit/6cb79e4e5414277932e5cf755761cec4cda7e1b7) fix: Postgres persistence SSL Mode (#1866) (#1867)
- * [2205c0e1](https://github.com/argoproj/argo-workflows/commit/2205c0e162c93645a5ae1d883aec6ae33fec3c8f) fix(controller): Updates to add condition to workflow status. Fixes #2421 (#2453)
- * [9d96ab2f](https://github.com/argoproj/argo-workflows/commit/9d96ab2ffd6cec9fc65f0182234e103664ab9cd5) fix: make dir if needed (#2455)
- * [5346609e](https://github.com/argoproj/argo-workflows/commit/5346609e79de4fc4f6fc9d833f0f2a85790821aa) test: Maybe fix TestPendingRetryWorkflowWithRetryStrategy. Fixes #2446 (#2456)
- * [3448ccf9](https://github.com/argoproj/argo-workflows/commit/3448ccf91cbff2e3901a99e23e57a0e1ad97044c) fix: Delete PVCs unless WF Failed/Errored (#2449)
- * [782bc8e7](https://github.com/argoproj/argo-workflows/commit/782bc8e7c5d1fd102f1a16d07f209aed3bfdc689) fix: Don't error when optional artifacts are not found (#2445)
- * [fc18f3cf](https://github.com/argoproj/argo-workflows/commit/fc18f3cf27c525ff94a6b190a0aff0a9a3d45426) chore: Master needs codegen (#2448)
- * [32fc2f78](https://github.com/argoproj/argo-workflows/commit/32fc2f78212d031f99f1dfc5ad3a3642617ce7e7) feat: Support workflow templates submission. Closes #2007 (#2222)
- * [050a143d](https://github.com/argoproj/argo-workflows/commit/050a143d7639ad38dc01a685edce536917409a37) fix(archive): Fix edge-cast error for archiving. Fixes #2427 (#2434)
- * [9455c1b8](https://github.com/argoproj/argo-workflows/commit/9455c1b88d85f80091aa4fd2c8d4dc53b6cc73f8) doc: update CHANGELOG.md (#2425)
- * [1baa7ee4](https://github.com/argoproj/argo-workflows/commit/1baa7ee4ec7149afe789d73ed6e64abfe13387a7) feat(ui): cache namespace selection. Closes #2439 (#2441)
- * [91d29881](https://github.com/argoproj/argo-workflows/commit/91d29881f41642273fe0494bef70f2b9c41350e2) feat: Retry pending nodes (#2385)
- * [7094433e](https://github.com/argoproj/argo-workflows/commit/7094433e12b668236a87c034445daf88d659231f) test: Skip flakey tests in operator_template_scope_test.go. See #2432 (#2433)
- * [30332b14](https://github.com/argoproj/argo-workflows/commit/30332b14fb1043e22a66db594f1af252c5932853) fix: Allow numbers in steps.args.params.value (#2414)
- * [e9a06dde](https://github.com/argoproj/argo-workflows/commit/e9a06dde297e9f907d10ec88da93fbb90df5ebaf) feat: instanceID support for argo server. Closes #2004 (#2365)
- * [3f8be0cd](https://github.com/argoproj/argo-workflows/commit/3f8be0cd48963958c493e7669a1d03bb719b375a) fix "Unable to retry workflow" on argo-server (#2409)
- * [dd3029ab](https://github.com/argoproj/argo-workflows/commit/dd3029abdd13a6b4053934660ca1078e23780809) docs: Example showing how to use default settings for workflow spec. Related to ##2388 (#2411)
- * [13508828](https://github.com/argoproj/argo-workflows/commit/135088284acd1ced004374d20928c017fbf9cac7) fix: Check child node status before backoff in retry (#2407)
- * [b59419c9](https://github.com/argoproj/argo-workflows/commit/b59419c9f58422f60c7d5185c89b4d55ac278660) fix: Build with the correct version if you check out a specific version (#2423)
- * [6d834d54](https://github.com/argoproj/argo-workflows/commit/6d834d545bc816cde9b74b224116d9746db5b799) chore: document BASE_HREF (#2418)
- * [184c3653](https://github.com/argoproj/argo-workflows/commit/184c3653085bc8821bdcd65f5476fbe24f24b00e) fix: Remove lazy workflow template (#2417)
- * [918d0d17](https://github.com/argoproj/argo-workflows/commit/918d0d17c0455b6a0644c6d851dbea3f945db21c) docs: Added Survey Results (#2416)
- * [20d6e27b](https://github.com/argoproj/argo-workflows/commit/20d6e27bdf11389f23b2efe1be4ef737f333221d) Update CONTRIBUTING.md (#2410)
- * [f2ca045e](https://github.com/argoproj/argo-workflows/commit/f2ca045e1cad03d5ec7566ff7200fd8ca575ec5d) feat: Allow WF metadata spec on Cron WF (#2400)
- * [068a4336](https://github.com/argoproj/argo-workflows/commit/068a43362b2088f53d408623bc7ab078e0e7a9d0) fix: Correctly report version. Fixes #2374 (#2402)
- * [e19a398c](https://github.com/argoproj/argo-workflows/commit/e19a398c810fada879facd624a7663501306e1ef) Update pull_request_template.md (#2401)
- * [7c99c109](https://github.com/argoproj/argo-workflows/commit/7c99c109e3dd726f6453c94a594d69bca709ccf6) chore: Fix typo (#2405)
- * [175b164c](https://github.com/argoproj/argo-workflows/commit/175b164c33aee7fe2873df60915a881502ec9163) Change font family for class yaml (#2394)
- * [d1194755](https://github.com/argoproj/argo-workflows/commit/d11947558bc758e5102238162036650890731ec6) fix: Don't display Retry Nodes in UI if len(children) == 1 (#2390)
- * [b8623ec7](https://github.com/argoproj/argo-workflows/commit/b8623ec7b4a19713f5965cc0d628f26b81af39a2) docs: Create USERS.md (#2389)
- * [1d21d3f5](https://github.com/argoproj/argo-workflows/commit/1d21d3f5600feca4b63e3dc4b1d94d2830fa6e24) fix(doc strings): Fix bug related documentation/clean up of default configurations #2331 (#2388)
- * [77e11fc4](https://github.com/argoproj/argo-workflows/commit/77e11fc4838ff92de9d9cae91159fb88755dff0b) chore: add noindex meta tag to solve #2381; add kustomize to build docs (#2383)
- * [42200fad](https://github.com/argoproj/argo-workflows/commit/42200fad45b4925b8f4aac48a580e6e369de2ad4) fix(controller): Mount volumes defined in script templates. Closes #1722 (#2377)
- * [96af36d8](https://github.com/argoproj/argo-workflows/commit/96af36d85d70d4721b1ac3e6e0ef14db65e7aec3) fix: duration must be a string (#2380)
- * [7bf08192](https://github.com/argoproj/argo-workflows/commit/7bf0819267543808d80acaa5f39f40c1fdba511e) fix: Say no logs were outputted when pod is done (#2373)
- * [847c3507](https://github.com/argoproj/argo-workflows/commit/847c3507dafdd3ff2cd1acca4669c1a54a680ee2) fix(ui): Removed tailLines from EventSource (#2330)
- * [3890a124](https://github.com/argoproj/argo-workflows/commit/3890a12431bfacc83cc75d862f956ddfbc1d2a37) feat: Allow for setting default configurations for workflows, Fixes #1923, #2044 (#2331)
- * [81ab5385](https://github.com/argoproj/argo-workflows/commit/81ab538594ad0428a97e99f34b18041f31a1c753) Update readme (#2379)
- * [91810273](https://github.com/argoproj/argo-workflows/commit/91810273318ab3ea84ecf73b9d0a6f1ba7f43c2a) feat: Log version (structured) on component start-up (#2375)
- * [d0572a74](https://github.com/argoproj/argo-workflows/commit/d0572a74069a1a6c38fa860e1964fa0564fd28cd) docs: Make Getting Started agnostic to version (#2371)
- * [d3a3f6b1](https://github.com/argoproj/argo-workflows/commit/d3a3f6b195b984a97eb214e99f29498c0bd39c85) docs: Add Prudential to the users list (#2353)
- * [4714c880](https://github.com/argoproj/argo-workflows/commit/4714c88099f25a3ffe2db14574016b069f85335d) chore: Master needs codegen (#2369)
- * [5b6b8257](https://github.com/argoproj/argo-workflows/commit/5b6b8257890d3c7aa93d8e98b10090add08a22e1) fix(docker): fix streaming of combined stdout/stderr (#2368)
- * [97438313](https://github.com/argoproj/argo-workflows/commit/9743831306714cc85b762487ac070f77e25f85d6) fix: Restart server ConfigMap watch when closed (#2360)
- * [64d0cec0](https://github.com/argoproj/argo-workflows/commit/64d0cec080bb27e147632fb8993f75e16c92e4a7) chore: Master needs make lint (#2361)
- * [12386fc6](https://github.com/argoproj/argo-workflows/commit/12386fc6029f5533921c75797455efc62e4cc9ce) fix: rerun codegen after merging OSS artifact support (#2357)
- * [40586ed5](https://github.com/argoproj/argo-workflows/commit/40586ed5c3a539d2e13f8a34509a40367563874a) fix: Always validate templates (#2342)
- * [897db894](https://github.com/argoproj/argo-workflows/commit/897db89434079fa3b3b902253d1c624c39af1422) feat: Add support for Alibaba Cloud OSS artifact (#1919)
- * [7e2dba03](https://github.com/argoproj/argo-workflows/commit/7e2dba03674219ec35e88b2ce785fdf120f855fd) feat(ui): Circles for nodes (#2349)
- * [e85f6169](https://github.com/argoproj/argo-workflows/commit/e85f6169fadf503c220ecc2385334fc0f2073ca4) chore: update getting started guide to use 2.6.0 (#2350)
- * [7ae4ec78](https://github.com/argoproj/argo-workflows/commit/7ae4ec78f627b620197a323b190fa33c31ffcbcc) docker: remove NopCloser from the executor. (#2345)
- * [5895b364](https://github.com/argoproj/argo-workflows/commit/5895b3642a691629b6c8aa145cf17627a227665f) feat: Expose workflow.paramteres with JSON string of all params (#2341)
- * [a9850b43](https://github.com/argoproj/argo-workflows/commit/a9850b43b16e05d9f74f52c789a8475d493f4c92) Fix the default (#2346)
- * [c3763d34](https://github.com/argoproj/argo-workflows/commit/c3763d34ed02bc63d166e8ef4f2f724786a2cf7c) fix: Simplify completion detection logic in DAGs (#2344)
- * [d8a9ea09](https://github.com/argoproj/argo-workflows/commit/d8a9ea09be395241664d929e8dbca7d02aecb049) fix(auth): Fixed returning  expired  Auth token for GKE (#2327)
- * [6fef0454](https://github.com/argoproj/argo-workflows/commit/6fef0454073fb60b4dd6216accef07f5195ec7e9) fix: Add timezone support to startingDeadlineSeconds (#2335)
- * [c28731b9](https://github.com/argoproj/argo-workflows/commit/c28731b9f602b3ed79c76dd4e3383f39419e463f) chore: Add go mod tidy to codegen (#2332)
- * [a66c8802](https://github.com/argoproj/argo-workflows/commit/a66c8802c7d0dbec9b13d408b91655e41531a97a) feat: Allow Worfklows to be submitted as files from UI (#2340)
- * [a9c1d547](https://github.com/argoproj/argo-workflows/commit/a9c1d547e5b044d9d375ebf527c132b0545455b0) docs: Update Argo Rollouts description (#2336)
- * [8672b97f](https://github.com/argoproj/argo-workflows/commit/8672b97f134dacb553592c367399229891aaf5c8) fix(Dockerfile): Using `--no-install-recommends` (Optimization) (#2329)
- * [c3fe1ae1](https://github.com/argoproj/argo-workflows/commit/c3fe1ae1b3ad662bc94a4b46e72f20c957dd4475) fix(ui): fixed worflow UI refresh. Fixes ##2337 (#2338)
- * [d7690e32](https://github.com/argoproj/argo-workflows/commit/d7690e32faf2ac5842468831daf1443283703c25) feat(ui): Adds ability zoom and hide successful steps. POC (#2319)
- * [e9e13d4c](https://github.com/argoproj/argo-workflows/commit/e9e13d4cbbc0f456c2d1dafbb1a95739127f6ab4) feat: Allow retry strategy on non-leaf nodes, eg for step groups. Fixes #1891 (#1892)
- * [62e6db82](https://github.com/argoproj/argo-workflows/commit/62e6db826ea4e0a02ac839bc59ec5f70ce3b9b29) feat: Ability to include or exclude fields in the response (#2326)
- * [52ba89ad](https://github.com/argoproj/argo-workflows/commit/52ba89ad4911fd4c7b13fd6dbc7f019971354ea0) fix(swagger): Fix the broken swagger. (#2317)
- * [efb8a1ac](https://github.com/argoproj/argo-workflows/commit/efb8a1ac8fc9961f0caa00ec6df7cf006d25e87a) docs: Update CODE_OF_CONDUCT.md (#2323)
- * [1c77e864](https://github.com/argoproj/argo-workflows/commit/1c77e864ac004f9cc6aff0e204ea9fd4b056c84b) fix(swagger): Fix the broken swagger. (#2317)
- * [aa052346](https://github.com/argoproj/argo-workflows/commit/aa05234694bc79e649e02adcc9790778cef0154d) feat: Support workflow level poddisruptionbudge for workflow pods #1728 (#2286)
- * [8da88d7e](https://github.com/argoproj/argo-workflows/commit/8da88d7ed20d8e533252e610337c15737445a225) chore: update getting-started guide for 2.5.2 and apply other tweaks (#2311)
- * [2f97c261](https://github.com/argoproj/argo-workflows/commit/2f97c261a9eafa022b464e0aea5b5d34d6f99100) build: Improve reliability of release. (#2309)
- * [5dcb84bb](https://github.com/argoproj/argo-workflows/commit/5dcb84bb549429ba5f46a21873e873a2c1c5bf67) chore(cli): Clean-up code. Closes #2117 (#2303)
- * [e49dd8c4](https://github.com/argoproj/argo-workflows/commit/e49dd8c4f9f69551be7e31c2044fef043d2992b2) chore(cli): Migrate `argo logs` to use API client. See #2116 (#2177)
- * [5c3d9cf9](https://github.com/argoproj/argo-workflows/commit/5c3d9cf93079ecbbfb024ea273d6e57e56c2506d) chore(cli): Migrate `argo wait` to use API client. See #2116 (#2282)
- * [baf03f67](https://github.com/argoproj/argo-workflows/commit/baf03f672728a6ed8b2aeb986d84ce35e9d7717a) fix(ui): Provide a link to archived logs. Fixes #2300 (#2301)
- * [b5947165](https://github.com/argoproj/argo-workflows/commit/b5947165564246a3c55375500f3fc1aea4dc6966) feat: Create API clients (#2218)
- * [214c4515](https://github.com/argoproj/argo-workflows/commit/214c451535ebeb6e68f1599c2c0a4a4d174ade25) fix(controller): Get correct Step or DAG name. Fixes #2244 (#2304)
- * [c4d26466](https://github.com/argoproj/argo-workflows/commit/c4d2646612d190ec73f38ec840259110a9ce89e0) fix: Remove active wf from Cron when deleted (#2299)
- * [0eff938d](https://github.com/argoproj/argo-workflows/commit/0eff938d62764abffcfdc741dfaca5fd6c8ae53f) fix: Skip empty withParam steps (#2284)
- * [636ea443](https://github.com/argoproj/argo-workflows/commit/636ea443c38869beaccfff19f4b72dd23755b2ff) chore(cli): Migrate `argo terminate` to use API client. See #2116 (#2280)
- * [d0a9b528](https://github.com/argoproj/argo-workflows/commit/d0a9b528e383a1b9ea737e0f919c93969d3d393b) chore(cli): Migrate `argo template` to use API client. Closes #2115 (#2296)
- * [f69a6c5f](https://github.com/argoproj/argo-workflows/commit/f69a6c5fa487d3b6c2d5383aa588695d6dcdb6de) chore(cli): Migrate `argo cron` to use API client. Closes #2114 (#2295)
- * [80b9b590](https://github.com/argoproj/argo-workflows/commit/80b9b590ebca1dbe69c5c7df0dd1c2f1feae5eea) chore(cli): Migrate `argo retry` to use API client. See #2116 (#2277)
- * [cdbc6194](https://github.com/argoproj/argo-workflows/commit/cdbc61945e09ae4dab8a56a085d050a0c358b896) fix(sequence): broken in 2.5. Fixes #2248 (#2263)
- * [0d3955a7](https://github.com/argoproj/argo-workflows/commit/0d3955a7f617c58f74c2892894036dfbdebaa5aa) refactor(cli): 2x simplify migration to API client. See #2116 (#2290)
- * [df8493a1](https://github.com/argoproj/argo-workflows/commit/df8493a1c05d3bac19a8f95f608d5543ba96ac82) fix: Start Argo server with out Configmap #2285 (#2293)
- * [51cdf95b](https://github.com/argoproj/argo-workflows/commit/51cdf95b18c8532f0bdb72c7ca20d56bdafc3a60) doc: More detail for namespaced installation (#2292)
- * [a7302697](https://github.com/argoproj/argo-workflows/commit/a730269767bdd10c4a9c5901c7e73f6bb25429c2) build(swagger): Fix argo-server swagger so version does not change. (#2291)
- * [47b4fc28](https://github.com/argoproj/argo-workflows/commit/47b4fc284df3cff9dfb4ea6622a0236bf1613096) fix(cli): Reinstate `argo wait`. Fixes #2281 (#2283)
- * [1793887b](https://github.com/argoproj/argo-workflows/commit/1793887b95446d341102b81523931403e30ef0f7) chore(cli): Migrate `argo suspend` and `argo resume` to use API client. See #2116 (#2275)
- * [1f3d2f5a](https://github.com/argoproj/argo-workflows/commit/1f3d2f5a0c9d772d7b204b13529f56bc33703a45) chore(cli): Update `argo resubmit` to support client API. See #2116 (#2276)
- * [c33f6cda](https://github.com/argoproj/argo-workflows/commit/c33f6cda39a3be40cc2e829c4c8d0b4c54704896) fix(archive): Fix bug in migrating cluster name. Fixes #2272 (#2279)
- * [fb0acbbf](https://github.com/argoproj/argo-workflows/commit/fb0acbbffb0a7c754223e516f55a40b957277fe4) fix: Fixes double logging in UI. Fixes #2270 (#2271)
- * [acf37c2d](https://github.com/argoproj/argo-workflows/commit/acf37c2db0d69def2045a6fc0f37a2b9db0c41fe) fix: Correctly report version. Fixes #2264 (#2268)
- * [b30f1af6](https://github.com/argoproj/argo-workflows/commit/b30f1af6528046a3af29c82ac1e29d9d300eec22) fix: Removes Template.Arguments as this is never used. Fixes #2046 (#2267)
- * [79b09ed4](https://github.com/argoproj/argo-workflows/commit/79b09ed43550bbf958c631386f8514b2d474062c) fix: Removed duplicate Watch Command (#2262)
- * [b5c47266](https://github.com/argoproj/argo-workflows/commit/b5c47266c4e33ba8739277ea43fe4b8023542367) feat(ui): Add filters for archived workflows (#2257)
- * [d30aa335](https://github.com/argoproj/argo-workflows/commit/d30aa3357738a272e1864d9f352f3c160c1608fc) fix(archive): Return correct next page info. Fixes #2255 (#2256)
- * [8c97689e](https://github.com/argoproj/argo-workflows/commit/8c97689e5d9d956a0dd9493c4c53088a6e8a87fa) fix: Ignore bookmark events for restart. Fixes #2249 (#2253)
- * [63858eaa](https://github.com/argoproj/argo-workflows/commit/63858eaa919c430bf0683dc33d81c94d4237b45b) fix(offloading): Change offloaded nodes datatype to JSON to support 1GB. Fixes #2246 (#2250)
- * [4d88374b](https://github.com/argoproj/argo-workflows/commit/4d88374b70e272eb454395f066c371ad2977abef) Add Cartrack into officially using Argo (#2251)
- * [d309d5c1](https://github.com/argoproj/argo-workflows/commit/d309d5c1a134502a11040757ff85230f7199510f) feat(archive): Add support to filter list by labels. Closes #2171 (#2205)
- * [79f13373](https://github.com/argoproj/argo-workflows/commit/79f13373fd8c4d0e9c9ff56f2133fa6009d1ed07) feat: Add a new symbol for suspended nodes. Closes #1896 (#2240)
- * [82b48821](https://github.com/argoproj/argo-workflows/commit/82b48821a83e012ac7ea5740d45addb046e3c8ee) Fix presumed typo (#2243)
- * [af94352f](https://github.com/argoproj/argo-workflows/commit/af94352f6c93e4bdbb69a1fc92b5d596c647d1a0) feat: Reduce API calls when changing filters. Closes #2231 (#2232)
- * [a58cbc7d](https://github.com/argoproj/argo-workflows/commit/a58cbc7dd12fe919614768ca0fa4714853091b7f) BasisAI uses Argo (#2241)
- * [68e3c9fd](https://github.com/argoproj/argo-workflows/commit/68e3c9fd9f597b6b4599dc7e9dbc5d71252ac5cf) feat: Add Pod Name to UI (#2227)
- * [eef85072](https://github.com/argoproj/argo-workflows/commit/eef85072691a9302e4168a072cfdffed6908a5d6) fix(offload): Fix bug which deleted completed workflows. Fixes #2233 (#2234)
- * [4e4565cd](https://github.com/argoproj/argo-workflows/commit/4e4565cdbb5d2e5c215af1b8b2f03695b45c2bba) feat: Label workflow-created pvc with workflow name (#1890)
- * [8bd5ecbc](https://github.com/argoproj/argo-workflows/commit/8bd5ecbc16f1063ef332ca3445ed9a9b953efa4f) fix: display error message when deleting archived workflow fails. (#2235)
- * [ae381ae5](https://github.com/argoproj/argo-workflows/commit/ae381ae57e5d2d3226114c773264595b3d672c39) feat: This add support to enable debug logging for all CLI commands (#2212)
- * [1b1927fc](https://github.com/argoproj/argo-workflows/commit/1b1927fc6fa519b7bf277e4273f4c7cede16ed64) feat(swagger): Adds a make api/argo-server/swagger.json (#2216)
- * [5d7b4c8c](https://github.com/argoproj/argo-workflows/commit/5d7b4c8c2d5819116b060f1ee656571b77b873bd) Update README.md (#2226)
- * [170abfa5](https://github.com/argoproj/argo-workflows/commit/170abfa5875227a74381764de93aa345aa5cca19) chore: Run `go mod tidy` (#2225)
- * [2981e6ff](https://github.com/argoproj/argo-workflows/commit/2981e6ff4c053b898a425d366fa696c8530ffeb0) fix: Enforce UnknownField requirement in WorkflowStep (#2210)
- * [affc235c](https://github.com/argoproj/argo-workflows/commit/affc235cd07bb01ee0ef8bb226b7a4c6470dc1e7) feat: Add failed node info to exit handler (#2166)
- * [af1f6d60](https://github.com/argoproj/argo-workflows/commit/af1f6d60078c5562b2c9d538d2b104c277c82593) fix: UI Responsive design on filter box (#2221)
- * [a445049c](https://github.com/argoproj/argo-workflows/commit/a445049ca3f67b499b9bef95c9e43075c8e10250) fix: Fixed race condition in kill container method. Fixes #1884 (#2208)
- * [2672857f](https://github.com/argoproj/argo-workflows/commit/2672857f2fbaabf727e354b040b1af2431ea70e5) feat: upgrade to Go 1.13. Closes #1375 (#2097)
- * [7466efa9](https://github.com/argoproj/argo-workflows/commit/7466efa99adfeeb3833b02c5afa7a33cdf8f87bc) feat: ArtifactRepositoryRef ConfigMap is now taken from the workflow namespace (#1821)
- * [50f331d0](https://github.com/argoproj/argo-workflows/commit/50f331d0e686f603440500c026ffe9d1f5133c1c) build: Fix ARGO_TOKEN (#2215)
- * [7f090351](https://github.com/argoproj/argo-workflows/commit/7f09035156e5dce68af203df21e688476d05ce12) test: Correctly report diagnostics (#2214)
- * [f2bd74bc](https://github.com/argoproj/argo-workflows/commit/f2bd74bca116f1b1ad9990aef9dbad98e0068900) fix: Remove quotes from UI (#2213)
- * [62f46680](https://github.com/argoproj/argo-workflows/commit/62f4668064e71046532505a11c67a675aa29afcf) fix(offloading): Correctly deleted offloaded data. Fixes #2206 (#2207)
- * [e30b77fc](https://github.com/argoproj/argo-workflows/commit/e30b77fcd5b140074065491988985779b800c4d7) feat(ui): Add label filter to workflow list page. Fixes #802 (#2196)
- * [930ced39](https://github.com/argoproj/argo-workflows/commit/930ced39241b427a521b609c403e7a39f6cc8c48) fix(ui): fixed workflow filtering and ordering. Fixes #2201 (#2202)
- * [88112312](https://github.com/argoproj/argo-workflows/commit/8811231299434e89ee9279e400db3445d83fec39) fix: Correct login instructions. (#2198)
- * [d6f5953d](https://github.com/argoproj/argo-workflows/commit/d6f5953d73d3940e0151011b7c32446c4c1c0ec4) Update ReadMe for EBSCO (#2195)
- * [b024c46c](https://github.com/argoproj/argo-workflows/commit/b024c46c8fec8a682802c1d6667a79fede959ae4) feat: Add ability to submit CronWorkflow from CLI (#2003)
- * [c97527ce](https://github.com/argoproj/argo-workflows/commit/c97527cee961b00472ce566226e1c6824b6e9793) test: Invoke tests using s.T() (#2194)
- * [72a54fe1](https://github.com/argoproj/argo-workflows/commit/72a54fe1628ff7a1daeb69875356607829d595ed) chore: Move info.proto et al to correct package (#2193)
- * [f6600fa4](https://github.com/argoproj/argo-workflows/commit/f6600fa499470ea7bd9fe68303759257c329d7ae) fix: Namespace and phase selection in UI (#2191)
- * [c4a24dca](https://github.com/argoproj/argo-workflows/commit/c4a24dcab016e82a4f1dc764dc67e0d8d324ded3) fix(k8sapi-executor): Fix KillContainer impl (#2160)
- * [d22a5fe6](https://github.com/argoproj/argo-workflows/commit/d22a5fe69c2d5a1fd4c268822cf5e2cd76893a18) Update cli_with_server_test.go (#2189)
- * [ff18180f](https://github.com/argoproj/argo-workflows/commit/ff18180f838b8f0d56bae95a2cab57d939e2a353) test: Remove podGC (#2187)
- * [78245305](https://github.com/argoproj/argo-workflows/commit/78245305d369fe9e4ba4c15e4acff7fcee07d62a) chore: Improved error handling and refactor (#2184)
- * [b9c828ad](https://github.com/argoproj/argo-workflows/commit/b9c828ad3a8fe6e92263aafd5eb14f21a284f3fc) fix(archive): Only delete offloaded data we do not need. Fixes #2170 and #2156 (#2172)
- * [73cb5418](https://github.com/argoproj/argo-workflows/commit/73cb5418f13e359612bb6844ef1747c9e7e6522c) feat: Allow CronWorkflows to have instanceId (#2081)
- * [9efea660](https://github.com/argoproj/argo-workflows/commit/9efea660b611f02a1eeaa5dc5be857686ed82de2) Sort list and add Greenhouse (#2182)
- * [cae399ba](https://github.com/argoproj/argo-workflows/commit/cae399bae466266bef0351efae77162615f9790f) fix: Fixed the Exec Provider token bug (#2181)
- * [fc476b2a](https://github.com/argoproj/argo-workflows/commit/fc476b2a4f09c12c0eb4a669b5cc1a18adca206e) fix(ui): Retry workflow event stream on connection loss. Fixes #2179 (#2180)
- * [65058a27](https://github.com/argoproj/argo-workflows/commit/65058a2798fd31ebd4fb99afc41da6a9171ca5be) fix: Correctly create code from changed protos. (#2178)
- * [585d1eef](https://github.com/argoproj/argo-workflows/commit/585d1eefd71062f42f8d80c85722fc7c262a08cf) chore: Update lint command to use apiclient. See #2116 (#2131)
- * [299d467c](https://github.com/argoproj/argo-workflows/commit/299d467c17cd89e9f33e48e464eb26ec8a3e413a) build: Update release process and docs (#2128)
- * [fcfe1d43](https://github.com/argoproj/argo-workflows/commit/fcfe1d43693c98f0e6c5fe3e2b02ac6a4a9836e6) feat: Implemented open default browser in local mode (#2122)
- * [f6cee552](https://github.com/argoproj/argo-workflows/commit/f6cee552532702089e62e5fece4dae77e4c99336) fix: Specify download .tgz extension (#2164)
- * [8a1e611a](https://github.com/argoproj/argo-workflows/commit/8a1e611a03da8374567c9654f8baf29b66c83c6e) feat: Update archived workdflow column to be JSON. Closes #2133 (#2152)
- * [f591c471](https://github.com/argoproj/argo-workflows/commit/f591c471c336e99c206094d21567fe01c978bf3c) fix!: Change `argo token` to `argo auth token`. Closes #2149 (#2150)
- * [519c9434](https://github.com/argoproj/argo-workflows/commit/519c94344a91c86d60ce27b383fa50846432cc9f) chore: Add Mock gen to make codegen (#2148)
- * [409a5154](https://github.com/argoproj/argo-workflows/commit/409a5154726dd16475b3aaf97f05f191cdb65808) fix: Add certs to argocli image. Fixes #2129 (#2143)
- * [b094802a](https://github.com/argoproj/argo-workflows/commit/b094802a03406328699bffad6deeceb5bdb61777) fix: Allow download of artifacs in server auth-mode. Fixes #2129 (#2147)
- * [520fa540](https://github.com/argoproj/argo-workflows/commit/520fa54073ab20a9bcd2f115f65f50d9761dc230) fix: Correct SQL syntax. (#2141)
- * [059cb9b1](https://github.com/argoproj/argo-workflows/commit/059cb9b1879361b77a293b3156bc9dfab2cefe71) fix: logs UI should fall back to archive (#2139)
- * [4cda9a05](https://github.com/argoproj/argo-workflows/commit/4cda9a05bf8cee20027132e4b3428ca9654bed5a) fix: route all unknown web content requests to index.html (#2134)
- * [14d8b5d3](https://github.com/argoproj/argo-workflows/commit/14d8b5d3913c2a6b320c564d6fc11c1d90769a97) fix: archiveLogs needs to copy stderr (#2136)
- * [91319ee4](https://github.com/argoproj/argo-workflows/commit/91319ee49f1fefec13233cb843b46f42cf5a9830) fixed ui navigation issues with basehref (#2130)
- * [7881b980](https://github.com/argoproj/argo-workflows/commit/7881b980bfdc6319d229956866e9131f95be412f) docs: Add CronWorkflow usage docs (#2124)
- * [badfd183](https://github.com/argoproj/argo-workflows/commit/badfd18335ec1b26d395ece0ad65d12aeb11beec) feat: Add support to delete by using labels. Depended on by #2116 (#2123)
- * [706d0f23](https://github.com/argoproj/argo-workflows/commit/706d0f231542e80156f93e39d28cd8e28f5d7042) test: Try and make e2e more robust. Fixes #2125 (#2127)
- * [a75ac1b4](https://github.com/argoproj/argo-workflows/commit/a75ac1b487a50bad19b3c58262fb3b170640ab4a) fix: mark CLI common.go vars and funcs as DEPRECATED (#2119)
- * [be21a0f1](https://github.com/argoproj/argo-workflows/commit/be21a0f17ed851032a16cfa90934a04662da6d2d) feat(server): Restart server when config changes. Fixes #2090 (#2092)
- * [b5cd72b0](https://github.com/argoproj/argo-workflows/commit/b5cd72b083fd173fe2552be9ea83e342cf395ceb) test: Parallelize Cron tests (#2118)
- * [b2bd25bc](https://github.com/argoproj/argo-workflows/commit/b2bd25bc2ba15f1ffa39bade75b09af5e3bb81a4) fix: Disable webpack dot rule (#2112)
- * [865b4f3a](https://github.com/argoproj/argo-workflows/commit/865b4f3a2b51cc08cf4a80423933a97f876af4a2) addcompany (#2109)
- * [213e3a9d](https://github.com/argoproj/argo-workflows/commit/213e3a9d9ec43b9f05fe7c5cf11d3f704a8649dd) fix: Fix Resource Deletion Bug (#2084)
- * [ab1de233](https://github.com/argoproj/argo-workflows/commit/ab1de233b47ec7c284fd20705b9efa00626877f7) refactor(cli): Introduce v1.Interface for CLI. Closes #2107 (#2048)
- * [7a19f85c](https://github.com/argoproj/argo-workflows/commit/7a19f85caa8760f28ffae6227a529823a0867218) feat: Implemented Basic Auth scheme (#2093)
- * [7611b9f6](https://github.com/argoproj/argo-workflows/commit/7611b9f6c6359680a4d450116ee893e4dc174811) fix(ui): Add support for bash href. Fixes ##2100 (#2105)
- * [516d05f8](https://github.com/argoproj/argo-workflows/commit/516d05f81a86c586bc19aad7836f35bb85130025)  fix: Namespace redirects no longer error and are snappier (#2106)
- * [16aed5c8](https://github.com/argoproj/argo-workflows/commit/16aed5c8ec0256fc78d95149435c37dac1db087a) fix: Skip running --token testing if it is not on CI (#2104)
- * [aece7e6e](https://github.com/argoproj/argo-workflows/commit/aece7e6ebdf2478dd7efa5706490c5c7abe858e6) Parse container ID in correct way on CRI-O. Fixes #2095 (#2096)
- * [b6a2be89](https://github.com/argoproj/argo-workflows/commit/b6a2be89689222470288339570aa0a719e775002) feat: support arg --token when talking to argo-server (#2027) (#2089)
- * [01d8cae1](https://github.com/argoproj/argo-workflows/commit/01d8cae1f49da35c135463ff45dc1a4d13ab1af7) build: adds `make env` to make testing easier (#2087)
- * [492842aa](https://github.com/argoproj/argo-workflows/commit/492842aa17cc447d68f1181c02990bfa7a78913a) docs(README): Add Capital One to user list (#2094)
- * [d56a0e12](https://github.com/argoproj/argo-workflows/commit/d56a0e12a283aaa5398e03fe423fed83d60ca370) fix(controller): Fix template resolution for step groups. Fixes #1868  (#1920)
- * [b97044d2](https://github.com/argoproj/argo-workflows/commit/b97044d2a47a79fab26fb0e3142c82e88a582f64) fix(security): Fixes an issue that allowed you to list archived workf… (#2079)
- * [c4f49cf0](https://github.com/argoproj/argo-workflows/commit/c4f49cf074ad874996145674d635165f6256ca15) refactor: Move server code (cmd/server/ -> server/) (#2071)
- * [2542454c](https://github.com/argoproj/argo-workflows/commit/2542454c1daf61bc3826fa370c21799059904093) fix(controller): Do not crash if cm is empty. Fixes #2069 (#2070)
- * [85fa9aaf](https://github.com/argoproj/argo-workflows/commit/85fa9aafa70a98ce999157bb900971f24bd81101) fix: Do not expect workflowChange to always be defined (#2068)
- * [6f65bc2b](https://github.com/argoproj/argo-workflows/commit/6f65bc2b77ddcf4616c78d6db4955bf839a0c21a) fix: "base64 -d" not always available, using "base64 --decode" (#2067)
- * [6f2c8802](https://github.com/argoproj/argo-workflows/commit/6f2c880280d490ba746a86d828ade61d8b58c7a5) feat(ui): Use cookies in the UI. Closes #1949 (#2058)
- * [4592aec6](https://github.com/argoproj/argo-workflows/commit/4592aec6805ce1110edcb7dc4e3e7454a2042441) fix(api): Change `CronWorkflowName` to `Name`. Fixes #1982 (#2033)
- * [e26c11af](https://github.com/argoproj/argo-workflows/commit/e26c11af747651c6642cf0abd3cbc4ccac7b95de) fix: only run archived wf testing when persistence is enabled (#2059)
- * [b3cab5df](https://github.com/argoproj/argo-workflows/commit/b3cab5dfbb5e5973b1dc448946d16ee0cd690d6a) fix: Fix permission test cases (#2035)
- * [b408e7cd](https://github.com/argoproj/argo-workflows/commit/b408e7cd28b95a08498f6e30fcbef385d0ff89f5) fix: nil pointer in GC (#2055)
- * [4ac11560](https://github.com/argoproj/argo-workflows/commit/4ac115606bf6f0b3c5c837020efd41bf90789a00) fix: offload Node Status in Get and List api call (#2051)
- * [dfdde1d0](https://github.com/argoproj/argo-workflows/commit/dfdde1d08b2a39d074729f1d64053a6e37453b32) ci: Run using our own cowsay image (#2047)
- * [71ba8238](https://github.com/argoproj/argo-workflows/commit/71ba823822c190bfdb71073604bb987bb938cff4) Update README.md (#2045)
- * [c7953052](https://github.com/argoproj/argo-workflows/commit/c795305268d5793e6672252ae6ff7fb6a54f23fd) fix(persistence): Allow `argo server` to run without persistence (#2050)
- * [1db74e1a](https://github.com/argoproj/argo-workflows/commit/1db74e1a2658fa7de925cd4c81fbfd98f648cd99) fix(archive): upsert archive + ci: Pin images on CI, add readiness probes, clean-up logging and other tweaks (#2038)
- * [c46c6836](https://github.com/argoproj/argo-workflows/commit/c46c6836706dce54aea4a13deee864bd3c6cb906) feat: Allow workflow-level parameters to be modified in the UI when submitting a workflow (#2030)
- * [faa9dbb5](https://github.com/argoproj/argo-workflows/commit/faa9dbb59753a068c64a1aa5923e3e359c0866d8) fix(Makefile): Rename staticfiles make target. Fixes #2010 (#2040)
- * [79a42d48](https://github.com/argoproj/argo-workflows/commit/79a42d48cec9c41269fbe736a61f3975fe2a9aea) docs: Update link to configure-artifact-repository.md (#2041)
- * [1a96007f](https://github.com/argoproj/argo-workflows/commit/1a96007fed6a57d14a0e364000b54a364293438b) fix: Redirect to correct page when using managed namespace. Fixes #2015 (#2029)
- * [78726314](https://github.com/argoproj/argo-workflows/commit/787263142162b62085572660f5e6497279f82ab1) fix(api): Updates proto message naming (#2034)
- * [4a1307c8](https://github.com/argoproj/argo-workflows/commit/4a1307c89e58f554af8e0cdc44e5e66e4623dfb4) feat: Adds support for MySQL. Fixes #1945 (#2013)
- * [d843e608](https://github.com/argoproj/argo-workflows/commit/d843e6085d51f409d32aefe6b6cf18bf6fd6bbd1) chore: Smoke tests are timing out, give them more time (#2032)
- * [5c98a14e](https://github.com/argoproj/argo-workflows/commit/5c98a14ecdc78a5be48f34c455d90782157c4cbe) feat(controller): Add audit logs to workflows. Fixes #1769 (#1930)
- * [2982c1a8](https://github.com/argoproj/argo-workflows/commit/2982c1a82cd6f1e7fb755a948d7a165aa0aeebc0) fix(validate): Allow placeholder in values taken from inputs. Fixes #1984 (#2028)
- * [3293c83f](https://github.com/argoproj/argo-workflows/commit/3293c83f6170ad4dc022067bb37f12d07d2834c1) feat: Add version to offload nodes. Fixes #1944 and #1946 (#1974)
- * [283bbf8d](https://github.com/argoproj/argo-workflows/commit/283bbf8df50d615dee867becc21569be760fc59e) build: `make clean` now only deletes dist directories (#2019)
- * [72fa88c9](https://github.com/argoproj/argo-workflows/commit/72fa88c9daf9ae42a8a1feb297a0b118505b32b0) build: Enable linting for tests. Closes #1971 (#2025)
- * [f8569ae9](https://github.com/argoproj/argo-workflows/commit/f8569ae913053c8ba4cd9ca72c9c237dd83200c0) feat: Auth refactoring to support single version token (#1998)
- * [eb360d60](https://github.com/argoproj/argo-workflows/commit/eb360d60ea81e8deefbaf41bcb76921acd08b16f) Fix README (#2023)
- * [ef1bd3a3](https://github.com/argoproj/argo-workflows/commit/ef1bd3a32c434c565defc7b325463e8d831262f2) fix typo (#2021)
- * [f25a45de](https://github.com/argoproj/argo-workflows/commit/f25a45deb4a7179044034da890884432e750d98a) feat(controller): Exposes container runtime executor as CLI option. (#2014)
- * [3b26af7d](https://github.com/argoproj/argo-workflows/commit/3b26af7dd4cc3d08ee50f3bc2f389efd516b9248) Enable s3 trace support. Bump version to v2.5.0. Tweak proto id to match Workflow (#2009)
- * [5eb15bb5](https://github.com/argoproj/argo-workflows/commit/5eb15bb5409f54f1a4759dde2479b7569e5f81e4) fix: Fix workflow level timeouts (#1369)
- * [5868982b](https://github.com/argoproj/argo-workflows/commit/5868982bcddf3b9c9ddb98151bf458f6868dce81) fix: Fixes the `test` job on master (#2008)
- * [29c85072](https://github.com/argoproj/argo-workflows/commit/29c850728fa701d62078910e1641588c959c28c5) fix: Fixed grammar on TTLStrategy (#2006)
- * [2f58d202](https://github.com/argoproj/argo-workflows/commit/2f58d202c21910500ecc4abdb9e23270c9791d0a) fix: v2 token bug (#1991)
- * [ed36d92f](https://github.com/argoproj/argo-workflows/commit/ed36d92f99ea65e06dc78b82923d74c57130dfc3) feat: Add quick start manifests to Git. Change auth-mode to default to server. Fixes #1990 (#1993)
- * [d1965c93](https://github.com/argoproj/argo-workflows/commit/d1965c9352c43d486b2d7cf99b0141fdb17eac2b) docs: Encourage users to upvote issues relevant to them (#1996)
- * [91331a89](https://github.com/argoproj/argo-workflows/commit/91331a894d713f085207e30406e72b8f65ad0227) fix: No longer delete the argo ns as this is dangerous (#1995)
- * [1a777cc6](https://github.com/argoproj/argo-workflows/commit/1a777cc6662b0c95ccf3de12c1a328c4cb12bc78) feat(cron): Added timezone support to cron workflows. Closes #1931 (#1986)
- * [48b85e57](https://github.com/argoproj/argo-workflows/commit/48b85e5705a235257b5926d0714eeb173b4347cb) fix: WorkflowTempalteTest fix (#1992)
- * [51dab8a4](https://github.com/argoproj/argo-workflows/commit/51dab8a4a79e5180d795ef10586e31ecf4075214) feat: Adds `argo server` command. Fixes #1966 (#1972)
- * [732e03bb](https://github.com/argoproj/argo-workflows/commit/732e03bb6cdc94ecd264fa76ecf71c29114b7769) chore: Added WorkflowTemplate test (#1989)
- * [27387d4b](https://github.com/argoproj/argo-workflows/commit/27387d4b52e99f83fe1c6ac9a0e65add669463d9) chore: Fix UI TODOs (#1987)
- * [dd704dd6](https://github.com/argoproj/argo-workflows/commit/dd704dd6557e972c8dc3c9816996305a23c80f37) feat: Renders namespace in UI. Fixes #1952 and #1959 (#1965)
- * [14d58036](https://github.com/argoproj/argo-workflows/commit/14d58036faa444ee49a4905a632db7e0a5ab60ba) feat(server): Argo Server. Closes #1331 (#1882)
- * [f69655a0](https://github.com/argoproj/argo-workflows/commit/f69655a09c82236d91703fbce2ee1a07fc3641be) fix: Added decompress in retry, resubmit and resume. (#1934)
- * [1e7ccb53](https://github.com/argoproj/argo-workflows/commit/1e7ccb53e8604654c073f6578ae024fd341f048a) updated jq version to 1.6 (#1937)
- * [c51c1302](https://github.com/argoproj/argo-workflows/commit/c51c1302f48cec5b9c6009b9b7e50962d338c679) feat: Enhancement for namespace installation mode configuration (#1939)
- * [6af100d5](https://github.com/argoproj/argo-workflows/commit/6af100d5470137cc17c019546f3cad2acf5e4a31) feat: Add suspend and resume to CronWorkflows CLI (#1925)
- * [232a465d](https://github.com/argoproj/argo-workflows/commit/232a465d00b6104fe4801b773b0b3ceffdafb116) feat: Added onExit handlers to Step and DAG (#1716)
- * [071eb112](https://github.com/argoproj/argo-workflows/commit/071eb1126cae351c5059246d2c375dc47175a3d6) docs: Update PR template to demand tests. (#1929)
- * [ae58527e](https://github.com/argoproj/argo-workflows/commit/ae58527eed40947078a7cb71da1dc3ab9c052a56) docs: Add CyberAgent to the list of Argo users (#1926)
- * [02022e4b](https://github.com/argoproj/argo-workflows/commit/02022e4bb36977253ff2e362f844b9596e768102) docs: Minor formatting fix (#1922)
- * [e4107bb8](https://github.com/argoproj/argo-workflows/commit/e4107bb831af9eb4b99753f7e324ec33042cdc55) Updated Readme.md for companies using Argo: (#1916)
- * [7e9b2b58](https://github.com/argoproj/argo-workflows/commit/7e9b2b58915c5cb51276e21c81344e010472cbae) feat: Support for scheduled Workflows with CronWorkflow CRD (#1758)
- * [5d7e9185](https://github.com/argoproj/argo-workflows/commit/5d7e91852b09ca2f3f912a8f1efaa6c28e07b524) feat: Provide values of withItems maps as JSON in {{item}}. Fixes #1905 (#1906)
- * [de3ffd78](https://github.com/argoproj/argo-workflows/commit/de3ffd78b9c16ed09065aeb16e966904e964a572)  feat: Enhanced Different TTLSecondsAfterFinished depending on if job is in Succeeded, Failed or Error, Fixes (#1883)
- * [94449876](https://github.com/argoproj/argo-workflows/commit/94449876f4a571ab279802d5ca4d5e938ca3d44d) docs: Add question option to issue templates (#1910)
- * [83ae2df4](https://github.com/argoproj/argo-workflows/commit/83ae2df4130468a95b720ce33c9b9e27e7005b17) fix: Decrease docker build time by ignoring node_modules (#1909)
- * [59a19069](https://github.com/argoproj/argo-workflows/commit/59a190697286bf19ee4a5c398c1af590a2419003) feat: support iam roles for service accounts in artifact storage (#1899)
- * [6526b6cc](https://github.com/argoproj/argo-workflows/commit/6526b6cc5e4671317fa0bc8c62440364c37a9700) fix: Revert node creation logic (#1818)
- * [160a7940](https://github.com/argoproj/argo-workflows/commit/160a794046299c9d0420ae1710641814f30a9b7f) fix: Update Gopkg.lock with dep ensure -update (#1898)
- * [ce78227a](https://github.com/argoproj/argo-workflows/commit/ce78227abe5a3c901e5b7a7dd823fb2551dff584) fix: quick fail after pod termination (#1865)
- * [cd3bd235](https://github.com/argoproj/argo-workflows/commit/cd3bd235f550fbc24c31d1763fde045c9c321fbe) refactor: Format Argo UI using prettier (#1878)
- * [b48446e0](https://github.com/argoproj/argo-workflows/commit/b48446e09e29d4f18f6a0cf0e6ff1166770286b1) fix: Fix support for continueOn failed for DAG. Fixes #1817 (#1855)
- * [48256961](https://github.com/argoproj/argo-workflows/commit/482569615734d7cb5e24c90d399f3ec98fb2ed96) fix: Fix template scope (#1836)
- * [eb585ef7](https://github.com/argoproj/argo-workflows/commit/eb585ef7381c4c9547eb9c2e922e175c0556da03) fix: Use dynamically generated placeholders (#1844)
- * [c821cfcc](https://github.com/argoproj/argo-workflows/commit/c821cfcce488222bcd5a4514cd94c66582885f33) test: Adds 'test' and 'ui' jobs to CI (#1869)
- * [54f44909](https://github.com/argoproj/argo-workflows/commit/54f44909a0e68bc24209e9e83999421b814e80c9) feat: Always archive logs if in config. Closes #1790 (#1860)
- * [1e25d6cf](https://github.com/argoproj/argo-workflows/commit/1e25d6cfa9c4c2f805717f94bd67ec612746a862) docs: Fix e2e testing link (#1873)
- * [f5f40728](https://github.com/argoproj/argo-workflows/commit/f5f40728c4be2d852e8199a5754aee39ed72399f) fix: Minor comment fix (#1872)
- * [72fad7ec](https://github.com/argoproj/argo-workflows/commit/72fad7ec0cf3aa463bd9c2c8c8f961738408cf93) Update docs (#1870)
- * [90352865](https://github.com/argoproj/argo-workflows/commit/9035286554768119b83e00294ea7c0b400b5de83) docs: Update doc based on helm 3.x changes (#1843)
- * [78889895](https://github.com/argoproj/argo-workflows/commit/788898954f7eff5b096f7597e74fc68104d8bf78) Move Workflows UI from https://github.com/argoproj/argo-ui (#1859)
- * [4b96172f](https://github.com/argoproj/argo-workflows/commit/4b96172f71f3fb36a691499b11e52a0d5650448a) docs: Refactored and cleaned up docs (#1856)
- * [6ba4598f](https://github.com/argoproj/argo-workflows/commit/6ba4598fd19c4add40b66d32df18592194c4cf4c) test: Adds core e2e test infra. Fixes #678 (#1854)
- * [87f26c8d](https://github.com/argoproj/argo-workflows/commit/87f26c8de2adc9563a3811aacc1eb31475a84f0b) fix: Move ISSUE_TEMPLATE/ under .github/ (#1858)
- * [bd78d159](https://github.com/argoproj/argo-workflows/commit/bd78d1597e82bf2bf0193e4bf49b6386c68e8222) fix: Ensure timer channel is empty after stop (#1829)
- * [afc63024](https://github.com/argoproj/argo-workflows/commit/afc63024de79c2e211a1ed0e0ede87b99825c63f) Code duplication (#1482)
- * [5b136713](https://github.com/argoproj/argo-workflows/commit/5b1367137d2b511b0310ac322596ff5395ed148d) docs: biobox analytics (#1830)
- * [68b72a8f](https://github.com/argoproj/argo-workflows/commit/68b72a8fd1773ba5f1afb4ec6ba9bf8a4d2b7ad4) add CCRi to list of users in README (#1845)
- * [941f30aa](https://github.com/argoproj/argo-workflows/commit/941f30aaf4e51e1eec13e842a0b8d46767929cec) Add Sidecar Technologies to list of who uses Argo (#1850)
- * [a08048b6](https://github.com/argoproj/argo-workflows/commit/a08048b6de84ff7355728b85851aa84b08be0851) Adding Wavefront to the users list (#1852)
- * [1cb68c98](https://github.com/argoproj/argo-workflows/commit/1cb68c9829099eb5218995159fb11fb58a147032) docs: Updates issue and PR templates. (#1848)
- * [cb0598ea](https://github.com/argoproj/argo-workflows/commit/cb0598ea82bd676fefd98e2040752cfa06516a98) Fixed Panic if DB context has issue (#1851)
- * [e5fb8848](https://github.com/argoproj/argo-workflows/commit/e5fb884853d2ad0d1f32022723e211b902841945) fix: Fix a couple of nil derefs (#1847)
- * [b3d45850](https://github.com/argoproj/argo-workflows/commit/b3d458504b319b3b02b82a872a5e13c59cb3128f) Add HOVER to the list of who uses Argo (#1825)
- * [99db30d6](https://github.com/argoproj/argo-workflows/commit/99db30d67b42cbd9c7fa35bbdd35a57040c2f222) InsideBoard uses Argo (#1835)
- * [ac8efcf4](https://github.com/argoproj/argo-workflows/commit/ac8efcf40e45750ae3c78f696f160049ea85dc8e) Red Hat uses Argo (#1828)
- * [41ed3acf](https://github.com/argoproj/argo-workflows/commit/41ed3acfb68c1200ea5f03643120cac81f7d3df6) Adding Fairwinds to the list of companies that use Argo (#1820)
- * [5274afb9](https://github.com/argoproj/argo-workflows/commit/5274afb97686a4d2a58c50c3b23dd2b680b881e6) Add exponential back-off to retryStrategy (#1782)
- * [e522e30a](https://github.com/argoproj/argo-workflows/commit/e522e30acebc17793540ac4270d14747b2617b26) Handle operation level errors PVC in Retry (#1762)
- * [f2e6054e](https://github.com/argoproj/argo-workflows/commit/f2e6054e9376f2d2be1d928ee79746b8b49937df) Do not resolve remote templates in lint (#1787)
- * [3852bc3f](https://github.com/argoproj/argo-workflows/commit/3852bc3f3311e9ac174976e9a3e8f625b87888eb) SSL enabled database connection for workflow repository (#1712) (#1756)
- * [f2676c87](https://github.com/argoproj/argo-workflows/commit/f2676c875e0af8e43b8967c669a33871bc02995c) Fix retry node name issue on error (#1732)
- * [d38a107c](https://github.com/argoproj/argo-workflows/commit/d38a107c84b91ad476f4760d984450efda296fdc) Refactoring Template Resolution Logic (#1744)
- * [23e94604](https://github.com/argoproj/argo-workflows/commit/23e9460451566e04b14acd336fccf54b0623efc4) Error occurred on pod watch should result in an error on the wait container (#1776)
- * [57d051b5](https://github.com/argoproj/argo-workflows/commit/57d051b52de7c9b78d926f0be7b158adb08803c8) Added hint when using certain tokens in when expressions (#1810)
- * [0e79edff](https://github.com/argoproj/argo-workflows/commit/0e79edff4b879558a19132035446fca2fbe3f2ca) Make kubectl print status and start/finished time (#1766)
- * [723b3c15](https://github.com/argoproj/argo-workflows/commit/723b3c15e55d2f8dceb86f1ac0a6dc7d1a58f10b) Fix code-gen docs (#1811)
- * [711bb114](https://github.com/argoproj/argo-workflows/commit/711bb11483a0ccb46600795c636c98d9c3a7f16c) Fix withParam node naming issue (#1800)
- * [4351a336](https://github.com/argoproj/argo-workflows/commit/4351a3360f6b20298a28a06be545bc349b22b9e4) Minor doc fix (#1808)
- * [efb748fe](https://github.com/argoproj/argo-workflows/commit/efb748fe35c6f24c736db8e002078abd02b57141) Fix some issues in examples (#1804)
- * [a3e31289](https://github.com/argoproj/argo-workflows/commit/a3e31289915e4d129a743b9284442775ef41a15c) Add documentation for executors (#1778)
- * [1ac75b39](https://github.com/argoproj/argo-workflows/commit/1ac75b39040e6f292ee322122a157e05f55f1f73) Add  to linter (#1777)
- * [3bead0db](https://github.com/argoproj/argo-workflows/commit/3bead0db3d2777638992ba5e11a2de1c65be162c) Add ability to retry nodes after errors (#1696)
- * [b50845e2](https://github.com/argoproj/argo-workflows/commit/b50845e22e8910d27291bab30f0c3dbef1fe5dad) Support no-headers flag (#1760)
- * [7ea2b2f8](https://github.com/argoproj/argo-workflows/commit/7ea2b2f8c10c3004c3c13a49d200df704895f93c) Minor rework of suspened node (#1752)
- * [9ab1bc88](https://github.com/argoproj/argo-workflows/commit/9ab1bc88f58c551208ce5e76eea0c6fb83359710) Update README.md (#1768)
- * [e66fa328](https://github.com/argoproj/argo-workflows/commit/e66fa328e396fe35dfad8ab1e3088ab088aea8be) Fixed lint issues (#1739)
- * [63e12d09](https://github.com/argoproj/argo-workflows/commit/63e12d0986cb4b138715b8f2b9c483de5547f64e) binary up version (#1748)
- * [1b7f9bec](https://github.com/argoproj/argo-workflows/commit/1b7f9becdfc47688018e6d71ac417fb7278637ab) Minor typo fix (#1754)
- * [4c002677](https://github.com/argoproj/argo-workflows/commit/4c002677e360beb9d6e4398618bafdce025cda42) fix blank lines (#1753)
- * [fae73826](https://github.com/argoproj/argo-workflows/commit/fae7382686d917d78e3909d1f6db79c272a1aa11) Fail suspended steps after deadline (#1704)
- * [b2d7ee62](https://github.com/argoproj/argo-workflows/commit/b2d7ee62e903c062b62da35dc390e38c05ba1591) Fix typo in docs (#1745)
- * [f2592448](https://github.com/argoproj/argo-workflows/commit/f2592448636bc35b7f9ec0fdc48b92135ba9852f) Removed uneccessary debug Println (#1741)
- * [846d01ed](https://github.com/argoproj/argo-workflows/commit/846d01eddc271f330e00414d1ea2277ac390651b) Filter workflows in list  based on name prefix (#1721)
- * [8ae688c6](https://github.com/argoproj/argo-workflows/commit/8ae688c6cbcc9494195431be7754fe69eb33a9f4) Added ability to auto-resume from suspended state (#1715)
- * [fb617b63](https://github.com/argoproj/argo-workflows/commit/fb617b63a09679bb74427cd5d13192b1fd8f48cf) unquote strings from parameter-file (#1733)
- * [34120341](https://github.com/argoproj/argo-workflows/commit/34120341747e0261425b49a5600c42efbb1812a3) example for pod spec from output of previous step (#1724)
- * [12b983f4](https://github.com/argoproj/argo-workflows/commit/12b983f4c00bda3f9bedd14a316b0beade6158ed) Add gonum.org/v1/gonum/graph to Gopkg.toml (#1726)
- * [327fcb24](https://github.com/argoproj/argo-workflows/commit/327fcb242b20107c859142b3dd68745b3440e5eb) Added  Protobuf extension  (#1601)
- * [602e5ad8](https://github.com/argoproj/argo-workflows/commit/602e5ad8e4002f7df0bd02014505cbc7de3fd37c) Fix invitation link. (#1710)
- * [eb29ae4c](https://github.com/argoproj/argo-workflows/commit/eb29ae4c89b89d4d4192a5f8c08d44ad31fa4cd2) Fixes bugs in demo (#1700)
- * [ebb25b86](https://github.com/argoproj/argo-workflows/commit/ebb25b861b1b452207582b6dea0060bf418037ff) `restartPolicy` -> `retryStrategy` in examples (#1702)
- * [167d65b1](https://github.com/argoproj/argo-workflows/commit/167d65b15ac0d3483071e0506f3e98a92a034183) Fixed incorrect `pod.name` in retry pods (#1699)
- * [e0818029](https://github.com/argoproj/argo-workflows/commit/e0818029d190cfd616527cccf208b5a9866224e1) fixed broke metrics endpoint per #1634 (#1695)
- * [36fd09a1](https://github.com/argoproj/argo-workflows/commit/36fd09a1321fd145b36b4f9067b61fabad363926) Apply Strategic merge patch against the pod spec (#1687)
- * [d3546467](https://github.com/argoproj/argo-workflows/commit/d35464670439b660c7c9ab0bcd9d3686ffe08687) Fix retry node processing (#1694)
- * [dd517e4c](https://github.com/argoproj/argo-workflows/commit/dd517e4c2db59b4c704ed7aeaed8505a757a60f7) Print multiple workflows in one command (#1650)
- * [09a6cb4e](https://github.com/argoproj/argo-workflows/commit/09a6cb4e81c1d9f5c8c082c9e96ce783fa20796f) Added status of previous steps as variables (#1681)
- * [ad3dd4d4](https://github.com/argoproj/argo-workflows/commit/ad3dd4d4a41b58e30983e8a93f06c1526c8aa9a0) Fix issue that workflow.priority substitution didn't pass validation (#1690)
- * [095d67f8](https://github.com/argoproj/argo-workflows/commit/095d67f8d0f1d309529c8a400cb16d0a0e2765b9) Store locally referenced template properly (#1670)
- * [30a91ef0](https://github.com/argoproj/argo-workflows/commit/30a91ef002e7c8850f45e6fe7ac01a7966ff31b8) Handle retried node properly (#1669)
- * [263cb703](https://github.com/argoproj/argo-workflows/commit/263cb7038b927fabe0f67b4455e17534b51c2989) Update README.md  Argo Ansible role: Provisioning Argo Workflows on Kubernetes/OpenShift (#1673)
- * [867f5ff7](https://github.com/argoproj/argo-workflows/commit/867f5ff7e72bc8b5d9b6be5a5f8849ccd2a1108c) Handle sidecar killing properly (#1675)
- * [f0ab9df9](https://github.com/argoproj/argo-workflows/commit/f0ab9df9ef8090fc388c32adbe9180dbaee683f5) Fix typo (#1679)
- * [502db42d](https://github.com/argoproj/argo-workflows/commit/502db42db84f317af8660d862ddd48c28cbd3b8e) Don't provision VM for empty artifacts (#1660)
- * [b5dcac81](https://github.com/argoproj/argo-workflows/commit/b5dcac8114d6f4b5fe32bae049d2c70b4dea4d15) Resolve WorkflowTemplate lazily (#1655)
- * [d15994bb](https://github.com/argoproj/argo-workflows/commit/d15994bbbb0a1ca8fc60b452ae532b10510c4762) [User] Update Argo users list (#1661)
- * [4a654ca6](https://github.com/argoproj/argo-workflows/commit/4a654ca6914923656bd1dc21ca5b8c4aa75b9e25) Stop failing if artifact file exists, but empty (#1653)
- * [c6cddafe](https://github.com/argoproj/argo-workflows/commit/c6cddafe19854d91bff41f093f48ac444a781c0d) Bug fixes in getting started (#1656)
- * [ec788373](https://github.com/argoproj/argo-workflows/commit/ec7883735e20f87fe483b26c947bd891a695a2bd) Update workflow_level_host_aliases.yaml (#1657)
- * [7e5af474](https://github.com/argoproj/argo-workflows/commit/7e5af4748d406f244378da86fda339a0c9e74476) Fix child node template handling (#1654)
- * [7f385a6b](https://github.com/argoproj/argo-workflows/commit/7f385a6bbf67ab780ab86c941cbd426f9b003834) Use stored templates to raggregate step outputs (#1651)
- * [cd6f3627](https://github.com/argoproj/argo-workflows/commit/cd6f3627992b6947dd47c98420d0a0fec4de9112) Fix dag output aggregation correctly (#1649)
- * [706075a5](https://github.com/argoproj/argo-workflows/commit/706075a55f694f94cfe729efca8eacb31d14f7f0) Fix DAG output aggregation (#1648)
- * [fa32dabd](https://github.com/argoproj/argo-workflows/commit/fa32dabdc0a5a74469a0e86e04b9868508503a73) Fix missing merged changes in validate.go (#1647)
- * [45716027](https://github.com/argoproj/argo-workflows/commit/457160275cc42be4c5fa6c1050c6e61a614b9544) fixed example wrong comment (#1643)
- * [69fd8a58](https://github.com/argoproj/argo-workflows/commit/69fd8a58d4877d616f3b576a2e8c8cbd224e029a) Delay killing sidecars until artifacts are saved (#1645)
- * [ec5f9860](https://github.com/argoproj/argo-workflows/commit/ec5f98605429f8d757f3b92fe6b2a2e8a4cb235f) pin colinmarc/hdfs to the next commit, which no longer has vendored deps (#1622)
- * [4b84f975](https://github.com/argoproj/argo-workflows/commit/4b84f975f14714cedad2dc9697c9a181075b04ea) Fix global lint issue (#1641)
- * [bb579138](https://github.com/argoproj/argo-workflows/commit/bb579138c6104baab70f859e8ed05954718c5ee8) Fix regression where global outputs were unresolveable in DAGs (#1640)
- * [cbf99682](https://github.com/argoproj/argo-workflows/commit/cbf99682c7a84306066b059834a625892b86d28c) Fix regression where parallelism could cause workflow to fail (#1639)
- * [76461f92](https://github.com/argoproj/argo-workflows/commit/76461f925e4e53cdf65b362115d09aa5325dea6b) Update CHANGELOG for v2.4.0 (#1636)
- * [c75a0861](https://github.com/argoproj/argo-workflows/commit/c75a08616e8e6bd1aeb37fc9fc824197491aec9c) Regenerate installation manifests (#1638)
- * [e20cb28c](https://github.com/argoproj/argo-workflows/commit/e20cb28cf8a4f331316535dcfd793ea91c281feb) Grant get secret role to controller to support persistence (#1615)
- * [644946e4](https://github.com/argoproj/argo-workflows/commit/644946e4e07672051f9be0f71ca0d2ca7641648e) Save stored template ID in nodes (#1631)
- * [5d530bec](https://github.com/argoproj/argo-workflows/commit/5d530becae49e1e235d72dd5ac29cc40282bc401) Fix retry workflow state (#1632)
- * [2f0af522](https://github.com/argoproj/argo-workflows/commit/2f0af5221030858e6a5306545ca3577aad17ac1a) Update operator.go (#1630)
- * [6acea0c1](https://github.com/argoproj/argo-workflows/commit/6acea0c1c21a17e14dc95632e80655f7fff09e2e) Store resolved templates (#1552)
- * [df8260d6](https://github.com/argoproj/argo-workflows/commit/df8260d6f64fcacc24c13cf5cc4a3fc3f0a6db18) Increase timeout of golangci-lint (#1623)
- * [138f89f6](https://github.com/argoproj/argo-workflows/commit/138f89f684cec5a8b237584e46199815922f98c3) updated invite link (#1621)
- * [d027188d](https://github.com/argoproj/argo-workflows/commit/d027188d0fce8e44bb0cefb2d46c1e55b9f112a2) Updated the API Rule Violations list (#1618)
- * [a317fbf1](https://github.com/argoproj/argo-workflows/commit/a317fbf1412c4636066def42cd6b7adc732319f3) Prevent controller from crashing due to glog writing to /tmp (#1613)
- * [20e91ea5](https://github.com/argoproj/argo-workflows/commit/20e91ea580e532b9c62f3bd16c5f6f8ed0838fdd) Added WorkflowStatus and NodeStatus types to the Open API Spec. (#1614)
- * [ffb281a5](https://github.com/argoproj/argo-workflows/commit/ffb281a5567666db68a5acab03ba7a0188954bf8) Small code cleanup and add tests (#1562)
- * [1cb8345d](https://github.com/argoproj/argo-workflows/commit/1cb8345de0694cffc30882eac59a05cb8eb06bc4) Add merge keys to Workflow objects to allow for StrategicMergePatches (#1611)
- * [c855a66a](https://github.com/argoproj/argo-workflows/commit/c855a66a6a9e3239fe5d585f5b5f36a07d48c5ed) Increased Lint timeout (#1612)
- * [4bf83fc3](https://github.com/argoproj/argo-workflows/commit/4bf83fc3d0d6b1e1d2c85f7b9b10a051134f7b0a) Fix DAG enable failFast will hang in some case (#1595)
- * [e9f3d9cb](https://github.com/argoproj/argo-workflows/commit/e9f3d9cbc029a9d55cf35ea51c2486078110bb2d) Do not relocate the mounted docker.sock (#1607)
- * [1bd50fa2](https://github.com/argoproj/argo-workflows/commit/1bd50fa2dfd828a04ff012868c98ba33bac41136) Added retry around RuntimeExecutor.Wait call when waiting for main container completion (#1597)
- * [0393427b](https://github.com/argoproj/argo-workflows/commit/0393427b54f397237152f5b74f6d09d0c20c1618) Issue1571  Support ability to assume IAM roles in S3 Artifacts  (#1587)
- * [ffc0c84f](https://github.com/argoproj/argo-workflows/commit/ffc0c84f509226f02d47cb2d5280faa7e2b92841) Update Gopkg.toml and Gopkg.lock (#1596)
- * [aa3a8f1c](https://github.com/argoproj/argo-workflows/commit/aa3a8f1c99fcb70bb199750644f74b17812cc586) Update from github.com/ghodss/yaml to sigs.k8s.io/yaml (#1572)
- * [07a26f16](https://github.com/argoproj/argo-workflows/commit/07a26f16747e3c71e76ba83b43336fd7a49622fb) Regard resource templates as leaf nodes (#1593)
- * [89e959e7](https://github.com/argoproj/argo-workflows/commit/89e959e7aaf396bc09cc012014e425ece2b5d644) Fix workflow template in namespaced controller (#1580)
- * [cd04ab8b](https://github.com/argoproj/argo-workflows/commit/cd04ab8bb923012182f2dc2b35dbf14726f7b1a4) remove redundant codes (#1582)
- * [5bba8449](https://github.com/argoproj/argo-workflows/commit/5bba8449ac7f3c563282eec1cb1f0dfc28d0d7c8) Add entrypoint label to workflow default labels (#1550)
- * [9685d7b6](https://github.com/argoproj/argo-workflows/commit/9685d7b67be91bf81059c1c96120a4fe6288399e) Fix inputs and arguments during template resolution (#1545)
- * [19210ba6](https://github.com/argoproj/argo-workflows/commit/19210ba635a4288f51eb2dd827f03715aea72750) added DataStax as an organization that uses Argo (#1576)
- * [b5f2fdef](https://github.com/argoproj/argo-workflows/commit/b5f2fdef097fe0fd69c60c6ada893547fd944d22) Support AutomountServiceAccountToken and executor specific service account(#1480)
- * [8808726c](https://github.com/argoproj/argo-workflows/commit/8808726cf3d0bc3aa71e3f1653262685dbfa0acf) Fix issue saving outputs which overlap paths with inputs (#1567)
- * [ba7a1ed6](https://github.com/argoproj/argo-workflows/commit/ba7a1ed650e7251dfadf5e9ae1fc2cdda7e9eaa2) Add coverage make target (#1557)
- * [ced0ee96](https://github.com/argoproj/argo-workflows/commit/ced0ee96ced59d9b070a1e81a9c148f78a69bfb9) Document workflow controller dockerSockPath config (#1555)
- * [3e95f2da](https://github.com/argoproj/argo-workflows/commit/3e95f2da6af78cc482009692b65cdc565a0ff412) Optimize argo binary install documentation (#1563)
- * [e2ebb166](https://github.com/argoproj/argo-workflows/commit/e2ebb166683d8a6c96502ce6e72f1a3ae48f0b4b) docs(readme): fix workflow types link (#1560)
- * [6d150a15](https://github.com/argoproj/argo-workflows/commit/6d150a15eb96183fb21faf6a49b0997e6150880b) Initialize the wfClientset before using it (#1548)
- * [5331fc02](https://github.com/argoproj/argo-workflows/commit/5331fc02e257266a4a5887dfe6277e5a0b42e7fc) Remove GLog config from argo executor (#1537)
- * [ed4ac6d0](https://github.com/argoproj/argo-workflows/commit/ed4ac6d0697401da6dec3989ecd63dd7567f0750) Update main.go (#1536)
- * [9fca1441](https://github.com/argoproj/argo-workflows/commit/9fca144128c97499d11f07a0ee008a9921e1f5f8) Update argo dependencies to kubernetes v1.14 (#1530)
- * [0246d184](https://github.com/argoproj/argo-workflows/commit/0246d184add04e44f77ffbe00e796b3adaf535d2) Use cache to retrieve WorkflowTemplates (#1534)
- * [4864c32f](https://github.com/argoproj/argo-workflows/commit/4864c32ffa40861c5ca066f67615da6d52eaa8b5) Update README.md (#1533)
- * [4df114fa](https://github.com/argoproj/argo-workflows/commit/4df114fae66e87727cfcb871731ec002af1515c7) Update CHANGELOG for v2.4 (#1531)
- * [c7e5cba1](https://github.com/argoproj/argo-workflows/commit/c7e5cba14a835fbfd0aba88b99197675ce1f0c66) Introduce podGC strategy for deleting completed/successful pods (#1234)
- * [bb0d14af](https://github.com/argoproj/argo-workflows/commit/bb0d14af9d320a141cb307b6a883c1eaafa498c3) Update ISSUE_TEMPLATE.md (#1528)
- * [b5702d8a](https://github.com/argoproj/argo-workflows/commit/b5702d8ae725c5caa4058d39f77e6d1e7e549da4) Format sources and order imports with the help of goimports (#1504)
- * [d3ff77bf](https://github.com/argoproj/argo-workflows/commit/d3ff77bf475095c73f034fb3b23c279c62f4269e) Added Architecture doc (#1515)
- * [fc1ec1a5](https://github.com/argoproj/argo-workflows/commit/fc1ec1a51462c9a114417db801e3a9715d3dc6b4) WorkflowTemplate CRD (#1312)
- * [f99d3266](https://github.com/argoproj/argo-workflows/commit/f99d3266d1879579338f124c56f1fc14867308a3) Expose all input parameters to template as JSON (#1488)
- * [bea60526](https://github.com/argoproj/argo-workflows/commit/bea605261be82d8bb91bf703ad68875f1093ebb8) Fix argo logs empty content when workflow run in virtual kubelet env (#1201)
- * [d82de881](https://github.com/argoproj/argo-workflows/commit/d82de8813910afaf9b3fb77d029faa7953bfee3a) Implemented support for WorkflowSpec.ArtifactRepositoryRef (#1350)
- * [0fa20c7b](https://github.com/argoproj/argo-workflows/commit/0fa20c7ba317d8c9a837bcc37d92f3fe79808499) Fix validation (#1508)
- * [87e2cb60](https://github.com/argoproj/argo-workflows/commit/87e2cb6043a305839ca37cc77c7611aaa7bdbd44) Add --dry-run option to `argo submit` (#1506)
- * [e7e50af6](https://github.com/argoproj/argo-workflows/commit/e7e50af6e56b1eeddccc82a2dbc8b421d1a63942) Support git shallow clones and additional ref fetches (#1521)
- * [605489cd](https://github.com/argoproj/argo-workflows/commit/605489cd5dd688527e60efee0aff239e3439c2dc) Allow overriding workflow labels in 'argo submit' (#1475)
- * [47eba519](https://github.com/argoproj/argo-workflows/commit/47eba519107c229edf61dbe024a6a5e0f1618a8d) Fix issue [Documentation] kubectl get service argo-artifacts -o wide (#1516)
- * [02f38262](https://github.com/argoproj/argo-workflows/commit/02f38262c40901346ddd622685bc6bfd344a2717) Fixed #1287 Executor kubectl version is obsolete (#1513)
- * [f62105e6](https://github.com/argoproj/argo-workflows/commit/f62105e659a22ccc0875151698eab540090885f6) Allow Makefile variables to be set from the command line (#1501)
- * [e62be65b](https://github.com/argoproj/argo-workflows/commit/e62be65ba25ae68a1bed10bddf33b4dae4991249) Fix a compiler error in a unit test (#1514)
- * [5c5c29af](https://github.com/argoproj/argo-workflows/commit/5c5c29af729b39f5f9b8a7fe6b8c1dede53eae3a) Fix the lint target (#1505)
- * [e03287bf](https://github.com/argoproj/argo-workflows/commit/e03287bfb7f97f639c8d81617808f709ca547eaa) Allow output parameters with .value, not only .valueFrom (#1336)
- * [781d3b8a](https://github.com/argoproj/argo-workflows/commit/781d3b8ae243b2c32ea3c4abd5b4a99fe9fc9cad) Implemented Conditionally annotate outputs of script template only when consumed #1359 (#1462)
- * [b028e61d](https://github.com/argoproj/argo-workflows/commit/b028e61db71e74b5730469a5f23a734937ddb8d9) change 'continue-on-fail' example to better reflect its description (#1494)
- * [97e824c9](https://github.com/argoproj/argo-workflows/commit/97e824c9a5b71baea658e8de6130bee089fb764d) Readme update to add argo and airflow comparison (#1502)
- * [414d6ce7](https://github.com/argoproj/argo-workflows/commit/414d6ce7b8aebcbd3b8822f407ec71ed465c103d) Fix a compiler error (#1500)
- * [ca1d5e67](https://github.com/argoproj/argo-workflows/commit/ca1d5e671519aaa9f38f5f2564eb70c138fadda7) Fix: Support the List within List type in withParam #1471 (#1473)
- * [75cb8b9c](https://github.com/argoproj/argo-workflows/commit/75cb8b9cd92cd7fcce4b921b88232bb05f2672b2) Fix #1366 unpredictable global artifact behavior (#1461)
- * [082e5c4f](https://github.com/argoproj/argo-workflows/commit/082e5c4f617c4120584ad601a8d85e0a3ce36a26) Exposed workflow priority as a variable (#1476)
- * [38c4def7](https://github.com/argoproj/argo-workflows/commit/38c4def7fb100e954757649553db8c04ea64f318) Fix: Argo CLI should show warning if there is no workflow definition in file #1486
- * [af7e496d](https://github.com/argoproj/argo-workflows/commit/af7e496db6ee8c10c9a2b6b51a27265bc6b0ee6d) Add Commodus Tech as official user (#1484)
- * [8c559642](https://github.com/argoproj/argo-workflows/commit/8c559642f2ec8abaea3204279fa3d6ff5ad40add) Update OWNERS (#1485)
- * [007d1f88](https://github.com/argoproj/argo-workflows/commit/007d1f8816736a758fa3720f0081e01dbc4200e3) Fix: 1008 `argo wait` and `argo submit --wait` should exit 1 if workflow fails  (#1467)
- * [3ab7bc94](https://github.com/argoproj/argo-workflows/commit/3ab7bc94c01d7a470bd05198b99c33e1a0221847) Document the insecureIgnoreHostKey git flag (#1483)
- * [7d9bb51a](https://github.com/argoproj/argo-workflows/commit/7d9bb51ae328f1a8cc7daf7d8ef108cf190df0ce) Fix failFast bug:   When a node in the middle fails, the entire workflow will hang (#1468)
- * [42adbf32](https://github.com/argoproj/argo-workflows/commit/42adbf32e8d4c626c544795c2fc1adb70676e968) Add --no-color flag to logs (#1479)
- * [67fc29c5](https://github.com/argoproj/argo-workflows/commit/67fc29c57db795a7020f355ab32cd883cfaf701e) fix typo: symboloic > symbolic (#1478)
- * [7c3e1901](https://github.com/argoproj/argo-workflows/commit/7c3e1901f49fe34cbe9d084274f6e64c48270635) Added Codec to the Argo community list (#1477)
- * [0a9cf9d3](https://github.com/argoproj/argo-workflows/commit/0a9cf9d3b06a3b304c0c690a298d8dc3d51c015b) Add doc about failFast feature (#1453)
- * [6a590300](https://github.com/argoproj/argo-workflows/commit/6a5903000fe8a7b3610c32435b2363cbf6334d1b) Support PodSecurityContext (#1463)
- * [e392d854](https://github.com/argoproj/argo-workflows/commit/e392d854bf78db89413782a23e62b0e38cf9c780) issue-1445: changing temp directory for output artifacts from root to tmp (#1458)
- * [7a21adfe](https://github.com/argoproj/argo-workflows/commit/7a21adfeb0af18c2452648a8bb3698a687f99b5e) New Feature:  provide failFast flag, allow a DAG to run all branches of the DAG (either success or failure) (#1443)
- * [b9b87b7f](https://github.com/argoproj/argo-workflows/commit/b9b87b7fa0cd3177c2b89cacff189f4893c5af95) Centralized Longterm workflow persistence storage  (#1344)
- * [cb09609b](https://github.com/argoproj/argo-workflows/commit/cb09609bd646a394c3a6f739dd447022a2bdb327) mention sidecar in failure message for sidecar containers (#1430)
- * [373bbe6e](https://github.com/argoproj/argo-workflows/commit/373bbe6ec9e819c39152292f79752792ce40b94d) Fix demo's doc issue of install minio chart (#1450)
- * [83552334](https://github.com/argoproj/argo-workflows/commit/835523341bcc96b6e9358be71e7432d0ac4058c5) Add threekit to user list (#1444)
- * [83f82ad1](https://github.com/argoproj/argo-workflows/commit/83f82ad172de0472643495d3ef3e0ce6d959900a) Improve bash completion (#1437)
- * [ee0ec78a](https://github.com/argoproj/argo-workflows/commit/ee0ec78ac98eaa112d343906a6e9b6490c39817f) Update documentation for workflow.outputs.artifacts (#1439)
- * [9e30c06e](https://github.com/argoproj/argo-workflows/commit/9e30c06e32b072b87e0d17095448d114175c713f) Revert "Update demo.md (#1396)" (#1433)
- * [c08de630](https://github.com/argoproj/argo-workflows/commit/c08de6300c3b394c34a5b3596455dcb50c29af48) Add paging function for list command (#1420)
- * [bba2f9cb](https://github.com/argoproj/argo-workflows/commit/bba2f9cbe9aa0eb053c19b03bc8fa7c002f579b0) Fixed:  Implemented Template level service account (#1354)
- * [d635c1de](https://github.com/argoproj/argo-workflows/commit/d635c1def74936869edbd8b9037ac81ea0af1772) Ability to configure hostPath mount for `/var/run/docker.sock` (#1419)
- * [d2f7162a](https://github.com/argoproj/argo-workflows/commit/d2f7162ac26550642ebe1792c65fb5e6ca9c0e7a) Terminate all containers within pod after main container completes (#1423)
- * [1607d74a](https://github.com/argoproj/argo-workflows/commit/1607d74a8de0704b82627364645a99b699d40cc0) PNS executor intermitently failed to capture entire log of script templates (#1406)
- * [5e47256c](https://github.com/argoproj/argo-workflows/commit/5e47256c7f86b56cfbf2ce53f73ed093eef2e3b6) Fix typo (#1431)
- * [5635c33a](https://github.com/argoproj/argo-workflows/commit/5635c33aa263080fe84e29a11a52f86fee583ca2) Update demo.md (#1396)
- * [83425455](https://github.com/argoproj/argo-workflows/commit/83425455bff34527e65ca1371347eed5203ae99a) Add OVH as official user (#1417)
- * [82e5f63d](https://github.com/argoproj/argo-workflows/commit/82e5f63d3680e7e4a22747803b0753b5ec31d2ad) Typo fix in ARTIFACT_REPO.md (#1425)
- * [15fa6f52](https://github.com/argoproj/argo-workflows/commit/15fa6f52d926ee5e839321900f613f6e546e6b6e) Update OWNERS (#1429)
- * [96b9a40e](https://github.com/argoproj/argo-workflows/commit/96b9a40e9aafe9c0132ce1b9f1eb01f05c3894ca) Orders uses alphabetically (#1411)
- * [6550e2cb](https://github.com/argoproj/argo-workflows/commit/6550e2cb10112ddf6435755958387ffa6ada0ef5) chore: add IBM to official users section in README.md (#1409)
- * [bc81fe28](https://github.com/argoproj/argo-workflows/commit/bc81fe288ebf9811774b36dd6eba9a851ac7717e) Fiixed: persistentvolumeclaims already exists #1130 (#1363)
- * [6a042d1f](https://github.com/argoproj/argo-workflows/commit/6a042d1f7eb01f1f369c2325aecebf71a3bea3a4) Update README.md (#1404)
- * [aa811fbd](https://github.com/argoproj/argo-workflows/commit/aa811fbdb914fe386cfbf3fa84a51bfd5104b5d0) Update README.md (#1402)
- * [abe3c99f](https://github.com/argoproj/argo-workflows/commit/abe3c99f19a1ec28775a276b50ad588a2dd660ca) Add Mirantis as an official user (#1401)
- * [18ab750a](https://github.com/argoproj/argo-workflows/commit/18ab750aea4de8f7dc67433f4e73505c80e13222) Added Argo Rollouts to README (#1388)
- * [67714f99](https://github.com/argoproj/argo-workflows/commit/67714f99b4bf664eb5e853b25ebf4b12bb98f733) Make locating kubeconfig in example os independent (#1393)
- * [672dc04f](https://github.com/argoproj/argo-workflows/commit/672dc04f737a3be099fe64c343587c35074b0938) Fixed: withParam parsing of JSON/YAML lists #1389 (#1397)
- * [b9aec5f9](https://github.com/argoproj/argo-workflows/commit/b9aec5f9833d5fa2055d06d1a71fdb75709eea21) Fixed: make verify-codegen is failing on the master branch (#1399) (#1400)
- * [270aabf1](https://github.com/argoproj/argo-workflows/commit/270aabf1d8cabd69b9851209ad5d9c874348e21d) Fixed:  failed to save outputs: verify serviceaccount default:default has necessary privileges (#1362)
- * [163f4a5d](https://github.com/argoproj/argo-workflows/commit/163f4a5d322352bd98f9a88ebd6089cf5e5b49ad) Fixed: Support hostAliases in WorkflowSpec #1265 (#1365)
- * [abb17478](https://github.com/argoproj/argo-workflows/commit/abb174788dce1bc6bed993a2967f7d8e112e44ca) Add Max Kelsen to USERS in README.md (#1374)
- * [dc549193](https://github.com/argoproj/argo-workflows/commit/dc5491930e09eebe700952e28359deeb8e0d2314) Update docs for the v2.3.0 release and to use the stable tag
- * [4001c964](https://github.com/argoproj/argo-workflows/commit/4001c964dbc70962e1cc1d80a4aff64cf8594ec3) Update README.md (#1372)
- * [6c18039b](https://github.com/argoproj/argo-workflows/commit/6c18039be962996d971145be8349d2ed3e396c80) Fix issue where a DAG with exhausted retries would get stuck Running (#1364)
- * [d7e74fe3](https://github.com/argoproj/argo-workflows/commit/d7e74fe3a96277ba532e4a2f40303a92d2d0ce94) Validate action for resource templates (#1346)
- * [810949d5](https://github.com/argoproj/argo-workflows/commit/810949d5106b4d1d533b647d1d61559c208b590a) Fixed :  CLI Does Not Honor metadata.namespace #1288 (#1352)
- * [e58859d7](https://github.com/argoproj/argo-workflows/commit/e58859d79516508838fead8222f0e26a6c2a2861) [Fix #1242] Failed DAG nodes are now kept and set to running on RetryWorkflow. (#1250)
- * [d5fe5f98](https://github.com/argoproj/argo-workflows/commit/d5fe5f981fb112ba01ed77521ae688f8a15f67b9) Use golangci-lint instead of deprecated gometalinter (#1335)
- * [26744d10](https://github.com/argoproj/argo-workflows/commit/26744d100e91eb757f48bfedd539e7e4a044faf3) Support an easy way to set owner reference (#1333)
- * [8bf7578e](https://github.com/argoproj/argo-workflows/commit/8bf7578e1884c61128603bbfaa677fd79cc17ea8) Add --status filter for get command (#1325)
- * [3f6ac9c9](https://github.com/argoproj/argo-workflows/commit/3f6ac9c9f1ccd92d4dabf52e964a1dd52b1622f6) Update release instructions
- * [2274130d](https://github.com/argoproj/argo-workflows/commit/2274130dc55de0b019ac9fd5232c192364f275c9) Update version to v2.3.0-rc3
- * [b024b3d8](https://github.com/argoproj/argo-workflows/commit/b024b3d83a4bfd46bd6b4a5075e9f8f968457309) Fix: # 1328 argo submit --wait and argo wait quits while workflow is running (#1347)
- * [24680b7f](https://github.com/argoproj/argo-workflows/commit/24680b7fc8a1fd573b39d61ba7bdce5b143eb686) Fixed : Validate the secret credentials name and key (#1358)
- * [f641d84e](https://github.com/argoproj/argo-workflows/commit/f641d84eb5cd489c98b39b41b69dbea9a3312e01) Fix input artifacts with multiple ssh keys (#1338)
- * [e680bd21](https://github.com/argoproj/argo-workflows/commit/e680bd219a2478835d5d8cefcbfb96bd11acc40b) add / test (#1240)
- * [ee788a8a](https://github.com/argoproj/argo-workflows/commit/ee788a8a6c70c5c64f535b6a901e837a9b4d5797) Fix #1340 parameter substitution bug (#1345)
- * [60b65190](https://github.com/argoproj/argo-workflows/commit/60b65190a22e176429e586afe58a86a14b390c66) Fix missing template local volumes, Handle volumes only used in init containers (#1342)
- * [4e37a444](https://github.com/argoproj/argo-workflows/commit/4e37a444bde2a034885d0db35f7b38684505063e) Add documentation on releasing
- * [bb1bfdd9](https://github.com/argoproj/argo-workflows/commit/bb1bfdd9106d9b64aa2dccf8d3554bdd31513cf8) Update version to v2.3.0-rc2. Update changelog
- * [49a6b6d7](https://github.com/argoproj/argo-workflows/commit/49a6b6d7ac1bb5f6b390eff1b218205d995142cb) wait will conditionally become privileged if main/sidecar privileged (resolves #1323)
- * [34af5a06](https://github.com/argoproj/argo-workflows/commit/34af5a065e42230148b48603fc81f57fb2b4c22c) Fix regression where argoexec wait would not return when podname was too long
- * [bd8d5cb4](https://github.com/argoproj/argo-workflows/commit/bd8d5cb4b7510afb7bd43bd75e5c5d26ccc85ca4) `argo list` was not displaying non-zero priorities correctly
- * [64370a2d](https://github.com/argoproj/argo-workflows/commit/64370a2d185db66a8d2188d986c52a3b73aaf92b) Support parameter substitution in the volumes attribute (#1238)
- * [6607dca9](https://github.com/argoproj/argo-workflows/commit/6607dca93db6255a2abc30ae76b5f935fce5735d) Issue1316 Pod creation with secret volumemount  (#1318)
- * [a5a2bcf2](https://github.com/argoproj/argo-workflows/commit/a5a2bcf21900019d979328250009af4137f7ff2a) Update README.md (#1321)
- * [950de1b9](https://github.com/argoproj/argo-workflows/commit/950de1b94efc18473a85e1f23c9ed5e6ff75ba93) Export the methods of `KubernetesClientInterface` (#1294)
- * [1c729a72](https://github.com/argoproj/argo-workflows/commit/1c729a72a2ae431623332b65646c97cb689eab01) Update v2.3.0 CHANGELOG.md
- * [40f9a875](https://github.com/argoproj/argo-workflows/commit/40f9a87593d312a46f7fa24aaf32e125458cc701) Reorganize manifests to kustomize 2 and update version to v2.3.0-rc1
- * [75b28a37](https://github.com/argoproj/argo-workflows/commit/75b28a37b923e278fc89fd647f78a42e7a3bf029) Implement support for PNS (Process Namespace Sharing) executor (#1214)
- * [b4edfd30](https://github.com/argoproj/argo-workflows/commit/b4edfd30b0e3034d98e938b491cf5bd054b36525) Fix SIGSEGV in watch/CheckAndDecompress. Consolidate duplicate code (resolves #1315)
- * [02550be3](https://github.com/argoproj/argo-workflows/commit/02550be31e53da79f1f4dbebda3ede7dc1052086) Archive location should conditionally be added to template only when needed
- * [c60010da](https://github.com/argoproj/argo-workflows/commit/c60010da29bd36c10c6e627802df6d6a06c1a59a) Fix nil pointer dereference with secret volumes (#1314)
- * [db89c477](https://github.com/argoproj/argo-workflows/commit/db89c477d65a29fc0a95ca55f68e1bd23d0170e0) Fix formatting issues in examples documentation (#1310)
- * [0d400f2c](https://github.com/argoproj/argo-workflows/commit/0d400f2ce6db9478b4eaa6fe24849a686c9d1d44) Refactor checkandEstimate to optimize podReconciliation (#1311)
- * [bbdf2e2c](https://github.com/argoproj/argo-workflows/commit/bbdf2e2c8f1b5a8dc83e88fedba9b1899f6bc78b) Add alibaba cloud to officially using argo list (#1313)
- * [abb77062](https://github.com/argoproj/argo-workflows/commit/abb77062fc06ae964ce7ccd1a534ec8bbdf3747c) CheckandEstimate implementation to optimize podReconciliation (#1308)
- * [1a028d54](https://github.com/argoproj/argo-workflows/commit/1a028d5458ffef240f8af31caeecda91f057c3ba) Secrets should be passed to pods using volumes instead of API calls (#1302)
- * [e34024a3](https://github.com/argoproj/argo-workflows/commit/e34024a3ca285d1af3b5ba3b3235dc7adc0472b7) Add support for init containers (#1183)
- * [4591e44f](https://github.com/argoproj/argo-workflows/commit/4591e44fe0e4de543f4c4339de0808346e0807e3) Added support for artifact path references (#1300)
- * [928e4df8](https://github.com/argoproj/argo-workflows/commit/928e4df81c4b33f0c0750f01b3aa3c4fc7ff256c) Add Karius to users in README.md (#1305)
- * [de779f36](https://github.com/argoproj/argo-workflows/commit/de779f36122205790915622f5ee91c9a9d5b9086) Add community meeting notes link (#1304)
- * [a8a55579](https://github.com/argoproj/argo-workflows/commit/a8a55579131605d4dc769cb599bc99c06350dfb7) Speed up podReconciliation using parallel goroutine (#1286)
- * [93451119](https://github.com/argoproj/argo-workflows/commit/934511192e4045b87be1675ff7e9dfa79faa9fcb) Add dns config support (#1301)
- * [850f3f15](https://github.com/argoproj/argo-workflows/commit/850f3f15dd1965e99cd636711a5e3306bc4bd0c0) Admiralty: add link to blog post, add user (#1295)
- * [d5f4b428](https://github.com/argoproj/argo-workflows/commit/d5f4b428ce02de34a37d5cb2fdba4dfa9fd16e75) Fix for Resource creation where template has same parameter templating (#1283)
- * [9b555cdb](https://github.com/argoproj/argo-workflows/commit/9b555cdb30f6092d5f53891f318fb74b8371c039) Issue#896 Workflow steps with non-existant output artifact path will succeed (#1277)
- * [adab9ed6](https://github.com/argoproj/argo-workflows/commit/adab9ed6bc4f8f337105182c56abad39bccb9676) Argo CI is current inactive (#1285)
- * [59fcc5cc](https://github.com/argoproj/argo-workflows/commit/59fcc5cc33ce67c057064dc37a463707501615e1) Add workflow labels and annotations global vars (#1280)
- * [1e111caa](https://github.com/argoproj/argo-workflows/commit/1e111caa1d2cc672b3b53c202b96a5f660a7e9b2) Fix bug with DockerExecutor's CopyFile (#1275)
- * [73a37f2b](https://github.com/argoproj/argo-workflows/commit/73a37f2b2a12d74ddf6a4b54e04b50fa1a7c68a1) Add the `mergeStrategy` option to resource patching (#1269)
- * [e6105243](https://github.com/argoproj/argo-workflows/commit/e6105243c785d9f53aef6fcfd344e855ad4f7d84) Reduce redundancy pod label action (#1271)
- * [4bfbb20b](https://github.com/argoproj/argo-workflows/commit/4bfbb20bc23f8bf4611a6314fb80f8138b17b9b9) Error running 1000s of tasks: "etcdserver: request is too large" #1186 (#1264)
- * [b2743f30](https://github.com/argoproj/argo-workflows/commit/b2743f30c411f5ad8f8c8b481a5d6b6ff83c33bd) Proxy Priority and PriorityClassName to pods (#1179)
- * [70c130ae](https://github.com/argoproj/argo-workflows/commit/70c130ae626f7c58d9e5ac0eed8977f51696fcbd) Update versions (#1218)
- * [b0384129](https://github.com/argoproj/argo-workflows/commit/b03841297e4b0dab0380b441cf41f5ed34db44bf) Git cloning via SSH was not verifying host public key (#1261)
- * [3f06385b](https://github.com/argoproj/argo-workflows/commit/3f06385b129c02e23ea283f7c66d347cb8899564) Issue#1165 fake outputs don't notify and task completes successfully (#1247)
- * [fa042aa2](https://github.com/argoproj/argo-workflows/commit/fa042aa285947c5fa365ef06a9565d0b4e20da0e) typo, executo -> executor (#1243)
- * [1cb88bae](https://github.com/argoproj/argo-workflows/commit/1cb88baee9ded1ede27a9d3f1e31f06f4369443d) Fixed Issue#1223 Kubernetes Resource action: patch is not supported (#1245)
- * [2b0b8f1c](https://github.com/argoproj/argo-workflows/commit/2b0b8f1c3f46aa41e4b4ddaf14ad1fdebccfaf8a) Fix the Prometheus address references (#1237)
- * [94cda3d5](https://github.com/argoproj/argo-workflows/commit/94cda3d53c6a72e3fc225ba08796bfd9420eccd6) Add feature to continue workflow on failed/error steps/tasks (#1205)
- * [3f1fb9d5](https://github.com/argoproj/argo-workflows/commit/3f1fb9d5e61d300c4922e48a748dc17285e07f07) Add Gardener to "Who uses Argo" (#1228)
- * [cde5cd32](https://github.com/argoproj/argo-workflows/commit/cde5cd320fa987ac6dd539a3126f29c73cd7277a) Include stderr when retrieving docker logs (#1225)
- * [2b1d56e7](https://github.com/argoproj/argo-workflows/commit/2b1d56e7d4e583e2e06b37904714b350faf03d97) Update README.md (#1224)
- * [eeac5a0e](https://github.com/argoproj/argo-workflows/commit/eeac5a0e11b4a6f4bc28757a3b0684598b8c4974) Remove extra quotes around output parameter value (#1232)
- * [8b67e1bf](https://github.com/argoproj/argo-workflows/commit/8b67e1bfdc7ed5ea153cb17f9a740afe2bd4efa8) Update README.md (#1236)
- * [baa3e622](https://github.com/argoproj/argo-workflows/commit/baa3e622121e66c9fec7c612c88027b7cacbd1b2) Update README with typo fixes (#1220)
- * [f6b0c8f2](https://github.com/argoproj/argo-workflows/commit/f6b0c8f285217fd0e6089b0cf03ca4926d1b4758) Executor can access the k8s apiserver with a out-of-cluster config file (#1134)
- * [0bda53c7](https://github.com/argoproj/argo-workflows/commit/0bda53c77c54b037e7d91b18554053362b1e4d35) fix dag retries (#1221)
- * [8aae2931](https://github.com/argoproj/argo-workflows/commit/8aae29317a8cfef2edc084a4c74a44c83d845936) Issue #1190 - Fix incorrect retry node handling (#1208)
- * [f1797f78](https://github.com/argoproj/argo-workflows/commit/f1797f78044504dbf2e1f7285cc9c18ac79f5e81) Add schedulerName to workflow and template spec (#1184)
- * [2ddae161](https://github.com/argoproj/argo-workflows/commit/2ddae161037f603d2a3c12ba6b495dc422547b58) Set executor image pull policy for resource template (#1174)
- * [edcb5629](https://github.com/argoproj/argo-workflows/commit/edcb56296255267a3c8fa639c3ad26a016caab80) Dockerfile: argoexec base image correction (fixes #1209) (#1213)
- * [f92284d7](https://github.com/argoproj/argo-workflows/commit/f92284d7108ebf92907008d8f12a0696ee467a43) Minor spelling, formatting, and style updates. (#1193)
- * [bd249a83](https://github.com/argoproj/argo-workflows/commit/bd249a83e119d6161fa1c593b09fb381db448a0d) Issue #1128 - Use polling instead of fs notify to get annotation changes (#1194)
- * [14a432e7](https://github.com/argoproj/argo-workflows/commit/14a432e75119e37d42715b7e83992789c6dac454) Update community/README (#1197)
- * [eda7e084](https://github.com/argoproj/argo-workflows/commit/eda7e08438d2314bb5eb178a1335a3c28555ab34) Updated OWNERS (#1198)
- * [73504a24](https://github.com/argoproj/argo-workflows/commit/73504a24e885c6df9d1cceb4aa123c79eca7b7cd) Fischerjulian adds ruby to rest docs (#1196)
- * [311ad86f](https://github.com/argoproj/argo-workflows/commit/311ad86f101c58a1de1cef313a1516b4c79e643f) Fix missing docker binary in argoexec image. Improve reuse of image layers
- * [831e2198](https://github.com/argoproj/argo-workflows/commit/831e2198e22503394acca1cce0dbcf8dcebb2931) Issue #988 - Submit should not print logs to stdout unless output is 'wide' (#1192)
- * [17250f3a](https://github.com/argoproj/argo-workflows/commit/17250f3a51d545c49114882d0da6ca29eda7c6f2) Add documentation how to use parameter-file's (#1191)
- * [01ce5c3b](https://github.com/argoproj/argo-workflows/commit/01ce5c3bcf0dde5536b596d48bd48a93b3f2eee0) Add Docker Hub build hooks
- * [93289b42](https://github.com/argoproj/argo-workflows/commit/93289b42f96cd49cdc048d84626cb28ef6932940) Refactor Makefile/Dockerfile to remove volume binding in favor of build stages (#1189)
- * [8eb4c666](https://github.com/argoproj/argo-workflows/commit/8eb4c66639c5fd1a607c73a4d765468a99c43da1) Issue #1123 - Fix 'kubectl get' failure if resource namespace is different from workflow namespace (#1171)
- * [eaaad7d4](https://github.com/argoproj/argo-workflows/commit/eaaad7d47257302f203bab24bce1b7d479453351) Increased S3 artifact retry time and added log (#1138)
- * [f07b5afe](https://github.com/argoproj/argo-workflows/commit/f07b5afeaf950f49f87cdffb5116e82c8b0d43a1) Issue #1113 - Wait for daemon pods completion to handle annotations (#1177)
- * [2b2651b0](https://github.com/argoproj/argo-workflows/commit/2b2651b0a7f5d6873c8470fad137d42f9b7d7240) Do not mount unnecessary docker socket (#1178)
- * [1fc03144](https://github.com/argoproj/argo-workflows/commit/1fc03144c55f987993c7777b190b1848fc3833cd) Argo users: Equinor (#1175)
- * [e381653b](https://github.com/argoproj/argo-workflows/commit/e381653b6d6d6a6babba2e8f05f6f103e81a191d) Update README. (#1173) (#1176)
- * [5a917140](https://github.com/argoproj/argo-workflows/commit/5a917140cb56a27e7b6f3b1d5068f4838863c273) Update README and preview notice in CLA.
- * [521eb25a](https://github.com/argoproj/argo-workflows/commit/521eb25aeb2b8351d72bad4a3d3aa2d1fa55eb23) Validate ArchiveLocation artifacts (#1167)
- * [528e8f80](https://github.com/argoproj/argo-workflows/commit/528e8f803683ee462ccc05fc9b00dc57858c0e93) Add missing patch in namespace kustomization.yaml (#1170)
- * [0b41ca0a](https://github.com/argoproj/argo-workflows/commit/0b41ca0a2410b01205712a2186dd12851eecb707) Add Preferred Networks to users in README.md (#1172)
- * [649d64d1](https://github.com/argoproj/argo-workflows/commit/649d64d1bd375f779cd150446bddce94582067d2) Add GitHub to users in README.md (#1151)
- * [864c7090](https://github.com/argoproj/argo-workflows/commit/864c7090a0bfcaa12237ff6e894a9d26ab463a7a) Update codegen for network config (#1168)
- * [c3cc51be](https://github.com/argoproj/argo-workflows/commit/c3cc51be2e14e931d6e212aa30842a2c514082d1) Support HDFS Artifact (#1159)
- * [8db00066](https://github.com/argoproj/argo-workflows/commit/8db0006667dec74c58cbab744b014c67fda55c65) add support for hostNetwork & dnsPolicy config (#1161)
- * [149d176f](https://github.com/argoproj/argo-workflows/commit/149d176fdf3560d74afa91fe91a0ee38bf7ec3bd) Replace exponential retry with poll (#1166)
- * [31e5f63c](https://github.com/argoproj/argo-workflows/commit/31e5f63cba89b06abc2cdce0d778c6b8d937a23e) Fix tests compilation error (#1157)
- * [6726d9a9](https://github.com/argoproj/argo-workflows/commit/6726d9a961a2c3ed5467430d3631a36cfbf361de) Fix failing TestAddGlobalArtifactToScope unit test
- * [4fd758c3](https://github.com/argoproj/argo-workflows/commit/4fd758c38fc232bf26bb5e1d4e7e23321ba91416) Add slack badge to README (#1164)
- * [3561bff7](https://github.com/argoproj/argo-workflows/commit/3561bff70ad6bfeca8967be6aa4ac24fbbc8ac27) Issue #1136 - Fix metadata for DAG with loops (#1149)
- * [c7fec9d4](https://github.com/argoproj/argo-workflows/commit/c7fec9d41c0e2d3369e111f8b1d0f1d0ca77edae) Reflect minio chart changes in documentation (#1147)
- * [f6ce7833](https://github.com/argoproj/argo-workflows/commit/f6ce78334762cbc3c6de1604c11ea4f5f618c275) add support for other archs (#1137)
- * [cb538489](https://github.com/argoproj/argo-workflows/commit/cb538489a187134577e2146afcf9367f45088ff7) Fix issue where steps with exhausted retires would not complete (#1148)
- * [e400b65c](https://github.com/argoproj/argo-workflows/commit/e400b65c5eca2de2aa891f8489dcd835ef0e161c) Fix global artifact overwriting in nested workflow (#1086)
- * [174eb20a](https://github.com/argoproj/argo-workflows/commit/174eb20a6a110c9bf647b040460df83b6ab031c4) Issue #1040 - Kill daemoned step if workflow consist of single daemoned step (#1144)
- * [e078032e](https://github.com/argoproj/argo-workflows/commit/e078032e469effdfc492c8eea97eb2701ceda0c2) Issue #1132 - Fix panic in ttl controller (#1143)
- * [e09d9ade](https://github.com/argoproj/argo-workflows/commit/e09d9ade25535ae7e78ca23636e4d158a98bba84) Issue #1104 - Remove container wait timeout from 'argo logs --follow' (#1142)
- * [0f84e514](https://github.com/argoproj/argo-workflows/commit/0f84e5148dd34c225a35eab7a1f5953afb45e724) Allow owner reference to be set in submit util (#1120)
- * [3484099c](https://github.com/argoproj/argo-workflows/commit/3484099c856716f6da5e02ad75a48b568f547695) Update generated swagger to fix verify-codegen (#1131)
- * [587ab1a0](https://github.com/argoproj/argo-workflows/commit/587ab1a02772cd9b7ae7cd94f91b815ac4774297) Fix output artifact and parameter conflict (#1125)
- * [6bb3adbc](https://github.com/argoproj/argo-workflows/commit/6bb3adbc596349100c4f19155cfe976f4ea0e6fb) Adding Quantibio in Who uses Argo (#1111)
- * [1ae3696c](https://github.com/argoproj/argo-workflows/commit/1ae3696c27f343c947d9225c5cc2294c8b7c45e5) Install mime-support in argoexec to set proper mime types for S3 artifacts (resolves #1119)
- * [515a9005](https://github.com/argoproj/argo-workflows/commit/515a9005057dfd260a8b60c4ba1ab8c3aa614f48) add support for ppc64le and s390x (#1102)
- * [78142837](https://github.com/argoproj/argo-workflows/commit/78142837836cb100f6858d246d84100b74794cc6) Remove docker_lib mount volume which is not needed anymore (#1115)
- * [e59398ad](https://github.com/argoproj/argo-workflows/commit/e59398adf39b8ef1d0ce273263e80d49e370c510) Fix examples docs of parameters. (#1110)
- * [ec20d94b](https://github.com/argoproj/argo-workflows/commit/ec20d94b6f1d0d88d579c8a27b964f6e9915ff55) Issue #1114 - Set FORCE_NAMESPACE_ISOLATION env variable in namespace install manifests (#1116)
- * [49c1fa4f](https://github.com/argoproj/argo-workflows/commit/49c1fa4f42e1c19ce3b8f4ac2c339894e1ed90d7) Update docs with examples using the K8s REST API
- * [bb8a6a58](https://github.com/argoproj/argo-workflows/commit/bb8a6a58fee8170d6db65c73a50c5fe640f3cb7d) Update ROADMAP.md
- * [46855dcd](https://github.com/argoproj/argo-workflows/commit/46855dcde1d9ba904a1c94a97e602d0510f5e0d4) adding logo to be used by the OS Site (#1099)
- * [438330c3](https://github.com/argoproj/argo-workflows/commit/438330c38da69a68d6b0b0b24f6aae0053fc35ee) #1081 added retry logic to s3 load and save function (#1082)
- * [cb8b036b](https://github.com/argoproj/argo-workflows/commit/cb8b036b8db3ebeb6ef73d9f2070a1ddaf0d2150) Initialize child node before marking phase. Fixes panic on invalid `When` (#1075)
- * [60b508dd](https://github.com/argoproj/argo-workflows/commit/60b508dd9ec36ef45013d72ec6166dd9a30d77fe) Drop reference to removed `argo install` command. (#1074)
- * [62b24368](https://github.com/argoproj/argo-workflows/commit/62b24368a93d57eb505bf226e042a8eb0bf72da4) Fix typo in demo.md (#1089)
- * [b5dfa021](https://github.com/argoproj/argo-workflows/commit/b5dfa0217470c97d8e83716a22cf3bd274c4a2d5) Use relative links on README file (#1087)
- * [95b72f38](https://github.com/argoproj/argo-workflows/commit/95b72f38c94d12735e79bb8bec1a46b10514603c) Update docs to outline bare minimum set of privileges for a workflow
- * [d4ef6e94](https://github.com/argoproj/argo-workflows/commit/d4ef6e944c302b5d2b75d4c49e1833c3a28c1f9a) Add new article and minor edits. (#1083)
- * [afdac9bb](https://github.com/argoproj/argo-workflows/commit/afdac9bb34fe8a01ad511323a00ccf6c07e41137) Issue #740 - System level workflow parallelism limits & priorities (#1065)
- * [a53a76e9](https://github.com/argoproj/argo-workflows/commit/a53a76e9401fab701eaa150307b21a28825c97ce) fix #1078 Azure AKS authentication issues (#1079)
- * [79b3e307](https://github.com/argoproj/argo-workflows/commit/79b3e30746f779e3cec3a28beaecb9c0df7024e1) Fix string format arguments in workflow utilities. (#1070)
- * [76b14f54](https://github.com/argoproj/argo-workflows/commit/76b14f54520a92b81ced78d4cae2632655f396fc) Auto-complete workflow names (#1061)
- * [f2914d63](https://github.com/argoproj/argo-workflows/commit/f2914d63e9c8b41a13b5932f7962f208b7e5a0da) Support nested steps workflow parallelism (#1046)
- * [eb48c23a](https://github.com/argoproj/argo-workflows/commit/eb48c23a2525a62bbc1b8b4c94e3d50fd91014bd) Raise not implemented error when artifact saving is unsupported (#1062)
- * [036969c0](https://github.com/argoproj/argo-workflows/commit/036969c0f4f6ce6a3c948b5d161c0367cf07176b) Add Cratejoy to list of users (#1063)
- * [a07bbe43](https://github.com/argoproj/argo-workflows/commit/a07bbe431cecbb1d50356f94111d3bd2dbc48bb6) Adding SAP Hybris in Who uses Argo (#1064)
- * [7ef1cea6](https://github.com/argoproj/argo-workflows/commit/7ef1cea68c94f7f0e1e2f8bd75bedc5a7df8af90) Update dependencies to K8s v1.12 and client-go 9.0
- * [23d733ba](https://github.com/argoproj/argo-workflows/commit/23d733bae386db44ec80639daf91b29dbf86b335) Add namespace explicitly to pod metadata (#1059)
- * [79ed7665](https://github.com/argoproj/argo-workflows/commit/79ed7665d7419e7fbfe8b120c4cbcd486bebee57) Parameter and Argument names should support snake case (#1048)
- * [6e6c59f1](https://github.com/argoproj/argo-workflows/commit/6e6c59f13ff84fd6b4f1e7f836c783941c434ce7) Submodules are dirty after checkout -- need to update (#1052)
- * [f18716b7](https://github.com/argoproj/argo-workflows/commit/f18716b74c6f52d0c8bf4d64c05eae9db75bfb1f) Support for K8s API based Executor (#1010)
- * [e297d195](https://github.com/argoproj/argo-workflows/commit/e297d19501a8116b5a18c925a3c72d7c7e106ea0) Updated examples/README.md (#1051)
- * [19d6cee8](https://github.com/argoproj/argo-workflows/commit/19d6cee8149917c994b737510d9c8dbfc6dbdd27) Updated ARTIFACT_REPO.md (#1049)
- * [0a928e93](https://github.com/argoproj/argo-workflows/commit/0a928e93dac6d8522682931a0a68c52add310cdb) Update installation manifests to use v2.2.1
- * [3b52b261](https://github.com/argoproj/argo-workflows/commit/3b52b26190163d1f72f3aef1a39f9f291378dafb) Fix linter warnings and update swagger
- * [7d0e77ba](https://github.com/argoproj/argo-workflows/commit/7d0e77ba74587d913b1f4aceb1443228a04d35de) Update changelog and bump version to 2.2.1
- * [b402e12f](https://github.com/argoproj/argo-workflows/commit/b402e12feefe5cd1380e9479b2cc9bae838357bf) Issue #1033 - Workflow executor panic: workflows.argoproj.io/template workflows.argoproj.io/template not found in annotation file (#1034)
- * [3f2e986e](https://github.com/argoproj/argo-workflows/commit/3f2e986e130ca136514767fb1593d745ca418236) fix typo in examples/README.md (#1025)
- * [9c5e056a](https://github.com/argoproj/argo-workflows/commit/9c5e056a858a9b510cdacdbc5deb5857a97662f8) Replace tabs with spaces (#1027)
- * [091f1407](https://github.com/argoproj/argo-workflows/commit/091f1407180990c745e981b24169c3bb4868dbe3) Update README.md (#1030)
- * [159fe09c](https://github.com/argoproj/argo-workflows/commit/159fe09c99c16738c0897f9d74087ec1b264954d) Fix format issues to resolve build errors (#1023)
- * [363bd97b](https://github.com/argoproj/argo-workflows/commit/363bd97b72ae5cb7fc52a560b6f7939248cdb72d) Fix error in env syntax (#1014)
- * [ae7bf0a5](https://github.com/argoproj/argo-workflows/commit/ae7bf0a5f7ddb1e5211e724bef15951198610942) Issue #1018 - Workflow controller should save information about archived logs in step outputs (#1019)
- * [15d006c5](https://github.com/argoproj/argo-workflows/commit/15d006c54ee7149b0d86e6d60453ecc8c071c953) Add example of workflow using imagePullSecrets (resolves #1013)
- * [2388294f](https://github.com/argoproj/argo-workflows/commit/2388294fa412e153d8366910e4d47ba564f29856) Fix RBAC roles to include workflow delete for GC to work properly (resolves #1004)
- * [6f611cb9](https://github.com/argoproj/argo-workflows/commit/6f611cb9383610471f941b5cab4227ce8bfea7c5) Fix issue where resubmission of a terminated workflow creates a terminated workflow (issue #1011)
- * [4a7748f4](https://github.com/argoproj/argo-workflows/commit/4a7748f433f888fdc50b592db1002244ea466bdb) Disable Persistence in the demo example (#997)
- * [55ae0cb2](https://github.com/argoproj/argo-workflows/commit/55ae0cb242a9cf6b390822ca6c0aa0868f5b06e3) Fix example pod name (#1002)
- * [c275e7ac](https://github.com/argoproj/argo-workflows/commit/c275e7acb7b5e8f9820a09d8b0cb635f710b8674) Add imagePullPolicy config for executors (#995)
- * [b1eed124](https://github.com/argoproj/argo-workflows/commit/b1eed124e6d943c453d87a9b4291ba10198d0bc6) `tar -tf` will detect compressed tars correctly. (#998)
- * [03a7137c](https://github.com/argoproj/argo-workflows/commit/03a7137c9ca9459727b57fb0a0e95584c5305844) Add new organization using argo (#994)
- * [83884528](https://github.com/argoproj/argo-workflows/commit/8388452870ed9a2d2e348a2844d3d7d1c4d61b05) Update argoproj/pkg to trim leading/trailing whitespace in S3 credentials (resolves #981)
- * [978b4938](https://github.com/argoproj/argo-workflows/commit/978b49383d30cdbc7c9708eb281b7800ee5412df) Add syntax highlighting for all YAML snippets and most shell snippets (#980)
- * [60d5dc11](https://github.com/argoproj/argo-workflows/commit/60d5dc11c73e888898160b4cc329e87747cee4d2) Give control to decide whether or not to archive logs at a template level
- * [8fab73b1](https://github.com/argoproj/argo-workflows/commit/8fab73b142b96f943592c66932ae0c5183e8c3db) Detect and indicate when container was OOMKilled
- * [47a9e556](https://github.com/argoproj/argo-workflows/commit/47a9e5560229c789b70a6624f23fb4433412fbc4) Update config map doc with instructions to enable log archiving
- * [79dbbaa1](https://github.com/argoproj/argo-workflows/commit/79dbbaa1ed30cae6279eabd9a84650107f4387b3) Add instructions to match git URL format to auth type in git example (issue #979)
- * [429f03f5](https://github.com/argoproj/argo-workflows/commit/429f03f5b26db42f1857a93b7599b545642c2f0a) Add feature list to README.md. Tweaks to getting started.
- * [36fd1948](https://github.com/argoproj/argo-workflows/commit/36fd19482c6bebfb21076cba81b924deaff14f52) Update getting started guide with v2.2.0 instructions
- * [af636ddd](https://github.com/argoproj/argo-workflows/commit/af636ddd8455660f307d835814d3112b90815dfd) Update installation manifests to use v2.2.0
- * [7864ad36](https://github.com/argoproj/argo-workflows/commit/7864ad36788dc78d035d59ddb27ecd979f7216f4) Introduce `withSequence` to iterate a range of numbers in a loop (resolves #527)
- * [99e9977e](https://github.com/argoproj/argo-workflows/commit/99e9977e4ccf61171ca1e347f6a182ba1d8dba83) Introduce `argo terminate` to terminate a workflow without deleting it (resolves #527)
- * [f52c0450](https://github.com/argoproj/argo-workflows/commit/f52c045087abff478603db4817de1933bddce5e7) Reorganize codebase to make CLI functionality available as a library
- * [311169f7](https://github.com/argoproj/argo-workflows/commit/311169f7e71c58fe9bf879a94681ee274ddf623c) Fix issue where sidecars and daemons were not reliably killed (resolves #879)
- * [67ffb6eb](https://github.com/argoproj/argo-workflows/commit/67ffb6eb7519936e1149f36e11dc9fda0f70a242) Add a reason/message for Unschedulable Pending pods
- * [69c390f2](https://github.com/argoproj/argo-workflows/commit/69c390f288ccaaeefba1d5a7961acebfe2e7771a) Support for workflow level timeouts (resolves #848)
- * [f88732ec](https://github.com/argoproj/argo-workflows/commit/f88732ec09413716bf14927bef10355b21b88516) Update docs to use keyFormat field
- * [0df022e7](https://github.com/argoproj/argo-workflows/commit/0df022e777f35bf0ea39ebbacfe4e5f92f099a62) Rename keyPattern to keyFormat. Remove pending pod query during pod reconciliation
- * [75a9983b](https://github.com/argoproj/argo-workflows/commit/75a9983b17869b76a93621f108ee85c70b8d8533) Fix potential panic in `argo watch`
- * [9cb46449](https://github.com/argoproj/argo-workflows/commit/9cb4644975d16dbebc3607ffb91364c93bc14e30) Add TTLSecondsAfterFinished field and controller to garbage collect completed workflows (resolves #911)
- * [7540714a](https://github.com/argoproj/argo-workflows/commit/7540714a47f04f664362c7083c886058c62408f8) Add ability to archive container logs to the artifact repository (resolves #454)
- * [11e57f4d](https://github.com/argoproj/argo-workflows/commit/11e57f4dea93fde60b204a5e7675fec999c66f56) Introduce archive strategies with ability to disable tar.gz archiving (resolves #784)
- * [e180b547](https://github.com/argoproj/argo-workflows/commit/e180b547133aa461bd5cc282a59f8954485d5b8f) Update CHANGELOG.md
- * [5670bf5a](https://github.com/argoproj/argo-workflows/commit/5670bf5a65cbac898b298edd682e603666ed5cb6) Introduce `argo watch` command to watch live workflows from terminal (resolves #969)
- * [57394361](https://github.com/argoproj/argo-workflows/commit/5739436199980ec765b070f8e78669bc37115ad6) Support additional container runtimes through kubelet executor (#952)
- * [a9c84c97](https://github.com/argoproj/argo-workflows/commit/a9c84c97de8f088cd4ee91cd72cf75012fc70438) Error workflows which hit k8s/etcd 1M resource size limit (resolves #913)
- * [67792eb8](https://github.com/argoproj/argo-workflows/commit/67792eb89e5aa678ffc52540dbc232d8598ce43f) Add parameter-file support (#966)
- * [841832a3](https://github.com/argoproj/argo-workflows/commit/841832a3507be3b92e3b2a05fef1052b1cd6e20d) Aggregate workflow RBAC roles to built-in admin/edit/view clusterroles (resolves #960)
- * [35bb7093](https://github.com/argoproj/argo-workflows/commit/35bb70936cf1b76e53f7f6f0e6acaccb9c6d06bf) Allow scaling of workflow and pod workers via controller CLI flags (resolves #962)
- * [b479fa10](https://github.com/argoproj/argo-workflows/commit/b479fa10647bd1c1b86410b7837668c375b327be) Improve workflow configmap documentation for keyPattern
- * [f1802f91](https://github.com/argoproj/argo-workflows/commit/f1802f91d8934b2e4b9d1f64230230bc2a0b5baf) Introduce `keyPattern` workflow config to enable flexibility in archive location path (issue #953)
- * [a5648a96](https://github.com/argoproj/argo-workflows/commit/a5648a9644fcea5f498c24a573a038290b92016f) Fix kubectl proxy link for argo-ui Service (#963)
- * [09f05912](https://github.com/argoproj/argo-workflows/commit/09f0591205ec81b4ec03f0f5c534a13648346f41) Introduce Pending node state to highlight failures when start workflow pods
- * [a3ff464f](https://github.com/argoproj/argo-workflows/commit/a3ff464f67a862d4110848d94a46be39876ce57e) Speed up CI job
- * [88627e84](https://github.com/argoproj/argo-workflows/commit/88627e842c082ddc4d75d15a3e2dc6c7ab4f1db8) Update base images to debian:9.5-slim. Use stable metalinter
- * [753c5945](https://github.com/argoproj/argo-workflows/commit/753c5945b62be209f05025c2e415a0753f5e0b01) Update argo-ci-builder image with new dependencies
- * [674b61bb](https://github.com/argoproj/argo-workflows/commit/674b61bb473787a157e543c10dcf158fa35bb39a) Remove unnecessary dependency on argo-cd and obsolete RBAC constants
- * [60658de0](https://github.com/argoproj/argo-workflows/commit/60658de0cf7403c4be014e92b7a3bb4772f4ad5f) Refactor linting/validation into standalone package. Support linting of .json files
- * [f55d579a](https://github.com/argoproj/argo-workflows/commit/f55d579a9478ed33755874f24656faec04611777) Detect and fail upon unknown fields during argo submit & lint (resolves #892)
- * [edf6a574](https://github.com/argoproj/argo-workflows/commit/edf6a5741de8bdf3a20852a55581883f1ec80d9a) Migrate to using argoproj.io/pkg packages
- * [5ee1e0c7](https://github.com/argoproj/argo-workflows/commit/5ee1e0c7daed4e2c8dca5643a800292ece067fca) Update artifact config docs (#957)
- * [faca49c0](https://github.com/argoproj/argo-workflows/commit/faca49c009bead218ee974bfad2ccc36f84de1fb) Updated README
- * [936c6df7](https://github.com/argoproj/argo-workflows/commit/936c6df7eaae08082c1cc7ad750f664ff8a4c54c) Add table of content to examples (#956)
- * [d2c03f67](https://github.com/argoproj/argo-workflows/commit/d2c03f67c2fd45ff54c04db706c9ebf252fca6f2) Correct image used in install manifests
- * [ec3b7be0](https://github.com/argoproj/argo-workflows/commit/ec3b7be065aa65aae207bd34930001b593009b80) Remove CLI installer/uninstaller. Executor image configured via CLI argument (issue #928) Remove redundant/unused downward API metadata
- * [3a85e242](https://github.com/argoproj/argo-workflows/commit/3a85e2429154a4d97c8fc7c92f9e8f482de6639f) Rely on `git checkout` instead of go-git checkout for more reliable revision resolution
- * [ecef0e3d](https://github.com/argoproj/argo-workflows/commit/ecef0e3dd506eefc222c1ebed58ab81265ac9638) Rename Prometheus metrics (#948)
- * [b9cffe9c](https://github.com/argoproj/argo-workflows/commit/b9cffe9cd7b347905a42cf3e217cc3b039bdfb3f) Issue #896 - Prometheus metrics and telemetry (#935)
- * [290dee52](https://github.com/argoproj/argo-workflows/commit/290dee52bfb94679870cee94ca9560bbe8bd7813) Support parameter aggregation of map results in scripts
- * [fc20f5d7](https://github.com/argoproj/argo-workflows/commit/fc20f5d787ed11f03a24439c042b9ef45349eb95) Fix errors when submodules are from different URL (#939)
- * [b4f1a00a](https://github.com/argoproj/argo-workflows/commit/b4f1a00ad2862e6545dd4ad16279a49cd4585676) Add documentation about workflow variables
- * [4a242518](https://github.com/argoproj/argo-workflows/commit/4a242518c6ea81cd0d1e5aaab2822231d9b36d46) Update readme.md (#943)
- * [a5baca60](https://github.com/argoproj/argo-workflows/commit/a5baca60d1dfb8fb8c82a936ab383d49e075cff3) Support referencing of global workflow artifacts (issue #900)
- * [9b5c8563](https://github.com/argoproj/argo-workflows/commit/9b5c85631765285b4593b7707ede014178f77679) Support for sophisticated expressions in `when` conditionals (issue #860)
- * [ecc0f027](https://github.com/argoproj/argo-workflows/commit/ecc0f0272f2257600abab8f4779c478957644d7c) Resolve revision added ability to specify shorthand revision and other things like HEAD~2 etc (#936)
- * [11024318](https://github.com/argoproj/argo-workflows/commit/11024318c0e2a9106f8a8b4a719daba12adf9f36) Support conditions with DAG tasks. Support aggregated outputs from scripts (issue #921)
- * [d07c1d2f](https://github.com/argoproj/argo-workflows/commit/d07c1d2f3b7c916887185eea749db2278bf9d043) Support withItems/withParam and parameter aggregation with DAG templates (issue #801)
- * [94c195cb](https://github.com/argoproj/argo-workflows/commit/94c195cb014ba2e5c5943d96dc0a3cc3243edb6a) Bump VERSION to v2.2.0
- * [9168c59d](https://github.com/argoproj/argo-workflows/commit/9168c59dc486f840dc2b9713d92c14bdccebbaf8) Fix outbound node metadata with retry nodes causing disconnected nodes to be rendered in UI (issue #880)
- * [c6ce48d0](https://github.com/argoproj/argo-workflows/commit/c6ce48d086638168b9bd8b998d65a2e3a4801540) Fix outbound node metadata issue with steps template causing incorrect edges to be rendered in UI
- * [520b33d5](https://github.com/argoproj/argo-workflows/commit/520b33d5fc6e7e670c33015fd74c5a2f3bd74a21) Add ability to aggregate and reference output parameters expanded by loops (issue #861)
- * [ece1eef8](https://github.com/argoproj/argo-workflows/commit/ece1eef85ac1f92d2fad8a2fef8c657f04b4599a) Support submission of workflows as json, and from stdin (resolves #926)
- * [4c31d61d](https://github.com/argoproj/argo-workflows/commit/4c31d61da2891e92a3ae0d09b6924655a07fc59f) Add `argo delete --older` to delete completed workflows older than specified duration (resolves #930)
- * [c87cd33c](https://github.com/argoproj/argo-workflows/commit/c87cd33c1bc46c06314129c882fec80269af8133) Update golang version to v1.10.3
- * [618b7eb8](https://github.com/argoproj/argo-workflows/commit/618b7eb84678e177a38e5aa81fa59ed891459aa5) Proper fix for assessing overall DAG phase. Add some DAG unit tests (resolves #885)
- * [f223e5ad](https://github.com/argoproj/argo-workflows/commit/f223e5ad62115399cf1394db4e9e65f05ae6da8b) Fix issue where a DAG would fail even if retry was successful (resolves #885)
- * [143477f3](https://github.com/argoproj/argo-workflows/commit/143477f3d5e0ab0d65dd97774aabdcd736ae4fbe) Start use of argoproj/pkg shared libraries
- * [1220d080](https://github.com/argoproj/argo-workflows/commit/1220d0801b8aa78c5364a4586cd119553d96bca5) Update argo-cluster-role to work with OpenShift (resolves #922)
- * [4744f45a](https://github.com/argoproj/argo-workflows/commit/4744f45a9c110b11fa73070a52e4166406fa5da4) Added SSH clone and proper git clone using go-git (#919)
- * [d657abf4](https://github.com/argoproj/argo-workflows/commit/d657abf4a37c9f2987b5cc2ee337743c981c3e48) Regenerate code and address OpenAPI rule validation errors (resolves #923)
- * [c5ec4cf6](https://github.com/argoproj/argo-workflows/commit/c5ec4cf6194ab5f741eb2e1d4e387dcf32ba3ce7) Upgrade k8s dependencies to v1.10 (resolves #908)
- * [ba8061ab](https://github.com/argoproj/argo-workflows/commit/ba8061abd296895555ea3d1d6ca7418fcd07d633) Redundant verifyResolvedVariables check in controller precluded the ability to use {{ }} in other circumstances
- * [05a61449](https://github.com/argoproj/argo-workflows/commit/05a614496bb921b5fa081605227de1a8832260cd) Added link to community meetings (#912)
- * [f33624d6](https://github.com/argoproj/argo-workflows/commit/f33624d67d0cf348dcdece46832081346c26bf80) Add an example on how to submit and wait on a workflow
- * [aeed7f9d](https://github.com/argoproj/argo-workflows/commit/aeed7f9da490d8dc4ad40c00ac2272a19da4ff17) Added new members
- * [288e4fc8](https://github.com/argoproj/argo-workflows/commit/288e4fc8577890e7fa6cc546f92aef4c954ce18c) Added Argo Events link.
- * [3322506e](https://github.com/argoproj/argo-workflows/commit/3322506e5a1d07e198f69cadd210b0b6cc6cfbc9) Updated README
- * [3ce640a2](https://github.com/argoproj/argo-workflows/commit/3ce640a24509454302a5126c972fd5424673c00e) Issue #889 - Support retryStrategy for scripts (#890)
- * [91c6afb2](https://github.com/argoproj/argo-workflows/commit/91c6afb2cc07c113e4999f114279638aa6809fd6) adding BlackRock as corporate contributor/user (#886)
- * [c8667b5c](https://github.com/argoproj/argo-workflows/commit/c8667b5c81068326638a5e35c20336223b3894db) Fix issue where `argo lint` required spec level arguments to be supplied
- * [ed7dedde](https://github.com/argoproj/argo-workflows/commit/ed7dedde1f8be2a5f7be828a31ac9bb4025919e1) Update influx-ci example to choose a stable InfluxDB branch
- * [135813e1](https://github.com/argoproj/argo-workflows/commit/135813e10e932a2187d007284766a816d9aa4442) Add datadog to the argo users (#882)
- * [f1038948](https://github.com/argoproj/argo-workflows/commit/f103894843e9ed8cbaf4212e765c10311bec5989) Fix `make verify-codegen` build target when run in CI
- * [785f2cbd](https://github.com/argoproj/argo-workflows/commit/785f2cbd114e6d0097e21240d5cacece0b6d071e) Update references to v2.1.1. Add better checks in release Makefile target
- * [d65e1cd3](https://github.com/argoproj/argo-workflows/commit/d65e1cd3e77efbe6fc877ac689fd4cd19bc35093) readme: add Interline Technologies to user list (#867)
- * [c903168e](https://github.com/argoproj/argo-workflows/commit/c903168ee12f296f71f4953cda2163b8fa8cd409) Add documentation on global parameters (#871)
- * [ac241c95](https://github.com/argoproj/argo-workflows/commit/ac241c95c13f08e868cd6f5ee32c9ce273e239ff) Update CHANGELOG for v2.1.1
- * [468e0760](https://github.com/argoproj/argo-workflows/commit/468e07600c5e124c8d2e0737f8c67a3265979952) Retrying failed steps templates could potentially result in disconnected children
- * [8d96ea7b](https://github.com/argoproj/argo-workflows/commit/8d96ea7b1b1ba843eb19a0632bc503d816ab9ef3) Switch to an UnstructuredInformer to guard against malformed workflow manifests (resolves #632)
- * [5bef6cae](https://github.com/argoproj/argo-workflows/commit/5bef6cae26dece96cadad855c9d54c5148f5e917) Suspend templates were not properly being connected to their children (resolves #869)
- * [543e9392](https://github.com/argoproj/argo-workflows/commit/543e9392f44873d1deb0a95fad3e00d67e8a7c70) Fix issue where a failed step in a template with parallelism would not complete (resolves #868)
- * [289000ca](https://github.com/argoproj/argo-workflows/commit/289000cac81b199c2fc9e50d04831e3ccfcc0659) Update argocli Dockerfile and make cli-image part of release
- * [d35a1e69](https://github.com/argoproj/argo-workflows/commit/d35a1e6949beca7cd032e5de5687e4e66869a916) Bump version to v2.1.1
- * [bbcff0c9](https://github.com/argoproj/argo-workflows/commit/bbcff0c94edf2b3270d7afc03b2538f47cb28492) Fix issue where `argo list` age column maxed out at 1d (resolves #857)
- * [d68cfb7e](https://github.com/argoproj/argo-workflows/commit/d68cfb7e585121e38e36c9d9dbd3e9cf8a1d9aac) Fix issue where volumes were not supported in script templates (resolves #852)
- * [fa72b6db](https://github.com/argoproj/argo-workflows/commit/fa72b6dbe4533ed9e2cc2c9f6bb574bcd85c6d16) Fix implementation of DAG task targets (resolves #865)
- * [dc003f43](https://github.com/argoproj/argo-workflows/commit/dc003f43baeba5509bfadfc825ced533715b93c6) Children of nested DAG templates were not correctly being connected to its parent
- * [b8065797](https://github.com/argoproj/argo-workflows/commit/b8065797712a29b0adefa5769cc6ffd2c6c7edd7) Simplify some examples for readability and clarity
- * [7b02c050](https://github.com/argoproj/argo-workflows/commit/7b02c050e86138983b20a38ee9efab52180141d5) Add CoreFiling to "Who uses Argo?" section. (#864)
- * [4f2fde50](https://github.com/argoproj/argo-workflows/commit/4f2fde505d221783bec889f3c9339361f5e8be73) Add windows support for argo-cli (#856)
- * [703241e6](https://github.com/argoproj/argo-workflows/commit/703241e60c7203550ac9f7947284e5d6fde3dc74) Updated ROADMAP.md for v2.2
- * [54f2138e](https://github.com/argoproj/argo-workflows/commit/54f2138ef83f92d2038ebf7b925bd102bc5a7b8d) Spell check the examples README (#855)
- * [f23feff5](https://github.com/argoproj/argo-workflows/commit/f23feff5e9353b4796ad4f0afa33efcb1b9f0d95) Mkbranch (#851)
- * [628b5408](https://github.com/argoproj/argo-workflows/commit/628b540891d1999c708accf064356d4dad22c7e0) DAG docs. (#850)
- * [22f62439](https://github.com/argoproj/argo-workflows/commit/22f624396c3c8cacd288040935feb7da4e4a869d) Small edit to README
- * [edc09afc](https://github.com/argoproj/argo-workflows/commit/edc09afc332c6e2707688a050060548940eca852) Added OWNERS file
- * [530e7244](https://github.com/argoproj/argo-workflows/commit/530e72444e2ced0c3c050e3238431dc32c1645c5) Update release notes and documentation for v2.1.0
-
-### Contributors
-
- * 0x1D-1983
- * Aaron Curtis
- * Adam Gilat
- * Adam Thornton
- * Aditya Sundaramurthy
- * Adrien Trouillaud
- * Aisuko
- * Akshay Chitneni
- * Alessandro Marrella
- * Alex Capras
- * Alex Collins
- * Alex Stein
- * Alexander Matyushentsev
- * Alexey Volkov
- * Anastasia Satonina
- * Andrei Miulescu
- * Andrew Suderman
- * Anes Benmerzoug
- * Anna Winkler
- * Antoine Dao
- * Antonio Macías Ojeda
- * Appréderisse Benjamin
- * Avi Weit
- * Bastian Echterhölter
- * Ben Wells
- * Ben Ye
- * Brandon Steinman
- * Brian Mericle
- * CWen
- * Caden
- * Caglar Gulseni
- * Chen Zhiwei
- * Chris Chambers
- * Christian Muehlhaeuser
- * Clemens Lange
- * Cristian Pop
- * Daisuke Taniwaki
- * Dan Norris
- * Daniel Duvall
- * Daniel Moran
- * Daniel Sutton
- * David Bernard
- * David Seapy
- * David Van Loon
- * Deepen Mehta
- * Derek Wang
- * Dineshmohan Rajaveeran
- * Divya Vavili
- * Drew Dara-Abrams
- * Dustin Specker
- * EDGsheryl
- * Ed Lee
- * Edward Lee
- * Edwin Jacques
- * Ejiah
- * Elton
- * Eric
- * Erik Parmann
- * Fabio Rigato
- * Feynman Liang
- * Florent Clairambault
- * Fred Dubois
- * Gabriele Santomaggio
- * Galen Han
- * Grant Stephens
- * Greg Roodt
- * Guillaume Hormiere
- * Hamel Husain
- * Heikki Kesa
- * Hideto Inamura
- * Howie Benefiel
- * Huan-Cheng Chang
- * Ian Howell
- * Ilias K
- * Ilias Katsakioris
- * Ilya Sotkov
- * Ismail Alidzhikov
- * Jacob O'Farrell
- * Jaime
- * Jean-Louis Queguiner
- * Jeff Uren
- * Jesse Suen
- * Jialu Zhu
- * Jie Zhang
- * Johannes 'fish' Ziemke
- * John Wass
- * Jonas Fonseca
- * Jonathan Steele
- * Jonathon Belotti
- * Jonny
- * Joshua Carp
- * Juan C. Muller
- * Julian Fahrer
- * Julian Fischer
- * Julian Mazzitelli
- * Julien Balestra
- * Kannappan Sirchabesan
- * Konstantin Zadorozhny
- * Leonardo Luz
- * Marcin Karkocha
- * Marco Sanvido
- * Marek Čermák
- * Markus Lippert
- * Matt Brant
- * Matt Hillsdon
- * Matthew Coleman
- * Matthew Magaldi
- * MengZeLee
- * Michael Crenshaw
- * Mike Seddon
- * Mingjie Tang
- * Miyamae Yuuya
- * Mostapha Sadeghipour Roudsari
- * Mukulikak
- * Naoto Migita
- * Naresh Kumar Amrutham
- * Nasrudin Bin Salim
- * Neutron Soutmun
- * Nick Groszewski
- * Nick Stott
- * Niklas Hansson
- * Niklas Vest
- * Nándor István Krácser
- * Omer Kahani
- * Orion Delwaterman
- * Pablo Osinaga
- * Pascal VanDerSwalmen
- * Patryk Jeziorowski
- * Paul Brit
- * Pavel Kravchenko
- * Peng Li
- * Pengfei Zhao
- * Per Buer
- * Peter Salanki
- * Pierre Houssin
- * Pradip Caulagi
- * Praneet Chandra
- * Pratik Raj
- * Premkumar Masilamani
- * Rafael Rodrigues
- * Rafał Bigaj
- * Remington Breeze
- * Rick Avendaño
- * Rocio Montes
- * Romain Di Giorgio
- * Romain GUICHARD
- * Roman Galeev
- * Saradhi Sreegiriraju
- * Saravanan Balasubramanian
- * Sascha Grunert
- * Sean Fern
- * Semjon Kopp
- * Shubham Koli (FaultyCarry)
- * Simon Behar
- * Snyk bot
- * Song Juchao
- * Stephen Steiner
- * StoneHuang
- * Takashi Abe
- * Takayuki Kasai
- * Tang Lee
- * Theodore Messinezis
- * Tim Schrodi
- * Tobias Bradtke
- * Tom Wieczorek
- * Tomas Valasek
- * Trevor Foster
- * Tristan Colgate-McFarlane
- * Val Sichkovskyi
- * Vardan Manucharyan
- * Vincent Boulineau
- * Vincent Smith
- * Vlad Losev
- * Wei Yan
- * WeiYan
- * Weston Platter
- * William
- * William Reed
- * Xianlu Bird
- * Xie.CS
- * Xin Wang
- * Youngjoon Lee
- * Yuan Tang
- * Yunhai Luo
- * Zach Aller
- * Zach Himsel
- * Zhipeng Wang
- * Ziyang Wang
- * alex weidner
- * almariah
- * candonov
- * commodus-sebastien
- * descrepes
- * dherman
- * dmayle
- * dthomson25
- * fsiegmund
- * gerardaus
- * gerdos82
- * haibingzhao
- * hidekuro
- * houz
- * ianCambrio
- * jacky
- * jdfalko
- * kshamajain99
- * lueenavarro
- * maguowei
- * mark9white
- * maryoush
- * mdvorakramboll
- * nglinh
- * sang
- * shahin
- * shibataka000
- * tkilpela
- * tralexa
- * tunoat
- * vatine
- * vdinesh2461990
- * xubofei1983
- * zhujl1991
- * モハメド
 
 ## v2.1.0 (2018-04-30)
 
