@@ -9,7 +9,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
@@ -33,7 +32,7 @@ var scheduledWf = `
     schedule: '* * * * *'
     startingDeadlineSeconds: 30
     workflowSpec:
-      arguments: {}
+      
       entrypoint: whalesay
       templates:
       - container:
@@ -65,10 +64,7 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 	time.Sleep(toWait)
 
 	var cronWf v1alpha1.CronWorkflow
-	err := yaml.Unmarshal([]byte(scheduledWf), &cronWf)
-	if err != nil {
-		panic(err)
-	}
+	v1alpha1.MustUnmarshal([]byte(scheduledWf), &cronWf)
 
 	// Second value at runtime should be 30-31
 
@@ -148,7 +144,7 @@ var invalidWf = `
     schedule: '* * * * *'
     startingDeadlineSeconds: 30
     workflowSpec:
-      arguments: {}
+      
       entrypoint: whalesay
       templates:
       - container:
@@ -167,8 +163,7 @@ var invalidWf = `
 
 func TestCronWorkflowConditionSubmissionError(t *testing.T) {
 	var cronWf v1alpha1.CronWorkflow
-	err := yaml.Unmarshal([]byte(invalidWf), &cronWf)
-	assert.NoError(t, err)
+	v1alpha1.MustUnmarshal([]byte(invalidWf), &cronWf)
 
 	cs := fake.NewSimpleClientset()
 	testMetrics := metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{})
@@ -203,10 +198,9 @@ spec:
   successfulJobsHistoryLimit: 4
   timezone: America/Los_Angeles
   workflowSpec:
-    arguments: {}
     entrypoint: whalesay
     templates:
-    - arguments: {}
+    - 
       container:
         args:
         - "\U0001F553 hello world"
@@ -223,8 +217,7 @@ spec:
 
 func TestSpecError(t *testing.T) {
 	var cronWf v1alpha1.CronWorkflow
-	err := yaml.Unmarshal([]byte(specError), &cronWf)
-	assert.NoError(t, err)
+	v1alpha1.MustUnmarshal([]byte(specError), &cronWf)
 
 	cs := fake.NewSimpleClientset()
 	testMetrics := metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{})
@@ -237,7 +230,7 @@ func TestSpecError(t *testing.T) {
 		metrics:     testMetrics,
 	}
 
-	err = woc.validateCronWorkflow()
+	err := woc.validateCronWorkflow()
 	assert.Error(t, err)
 	assert.Len(t, woc.cronWf.Status.Conditions, 1)
 	submissionErrorCond := woc.cronWf.Status.Conditions[0]
@@ -248,8 +241,7 @@ func TestSpecError(t *testing.T) {
 
 func TestScheduleTimeParam(t *testing.T) {
 	var cronWf v1alpha1.CronWorkflow
-	err := yaml.Unmarshal([]byte(scheduledWf), &cronWf)
-	assert.NoError(t, err)
+	v1alpha1.MustUnmarshal([]byte(scheduledWf), &cronWf)
 
 	cs := fake.NewSimpleClientset()
 	testMetrics := metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{})

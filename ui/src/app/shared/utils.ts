@@ -102,8 +102,13 @@ export const Utils = {
         return this.managedNamespace || localStorage.getItem(currentNamespaceKey);
     },
 
-    // return a namespace, never return null/undefined, defaults to "default"
+    // return a namespace, favoring managed namespace when set
     getNamespace(namespace: string) {
+        return this.managedNamespace || namespace;
+    },
+
+    // return a namespace, never return null/undefined, defaults to "default"
+    getNamespaceWithDefault(namespace: string) {
         return this.managedNamespace || namespace || this.currentNamespace || 'default';
     }
 };

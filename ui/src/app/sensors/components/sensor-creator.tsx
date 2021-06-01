@@ -10,7 +10,7 @@ import {Utils} from '../../shared/utils';
 import {SensorEditor} from './sensor-editor';
 
 export const SensorCreator = ({namespace, onCreate}: {namespace: string; onCreate: (sensor: Sensor) => void}) => {
-    const [sensor, setSensor] = useState<Sensor>(exampleSensor(Utils.getNamespace(namespace)));
+    const [sensor, setSensor] = useState<Sensor>(exampleSensor(Utils.getNamespaceWithDefault(namespace)));
     const [error, setError] = useState<Error>();
     return (
         <>
@@ -20,7 +20,7 @@ export const SensorCreator = ({namespace, onCreate}: {namespace: string; onCreat
                     icon='plus'
                     onClick={() => {
                         services.sensor
-                            .create(sensor, Utils.getNamespace(sensor.metadata.namespace))
+                            .create(sensor, Utils.getNamespaceWithDefault(sensor.metadata.namespace))
                             .then(onCreate)
                             .catch(setError);
                     }}>

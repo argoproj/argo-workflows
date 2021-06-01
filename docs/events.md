@@ -148,12 +148,12 @@ Metadata is data about the event, this includes **headers**:
 
 HTTP header names are lowercase and only include those that have `x-` as their prefix. Their values are lists, not single values.    
 
-* Wrong: `metadata["X-Github-Event"] = "push"`
-* Wrong: `metadata["x-github-event"] = "push"`
-* Wrong: `metadata["X-Github-Event"] = ["push"]`
-* Wrong: `metadata["github-event"] = ["push"]`
-* Wrong: `metadata["authorization"] = ["push"]`
-* Right: `metadata["x-github-event"] = ["push"]`
+* Wrong: `metadata["X-Github-Event"] == "push"`
+* Wrong: `metadata["x-github-event"] == "push"`
+* Wrong: `metadata["X-Github-Event"] == ["push"]`
+* Wrong: `metadata["github-event"] == ["push"]`
+* Wrong: `metadata["authorization"] == ["push"]`
+* Right: `metadata["x-github-event"] == ["push"]`
 
 Example:
 

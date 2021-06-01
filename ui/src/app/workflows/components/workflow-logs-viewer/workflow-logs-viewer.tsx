@@ -111,7 +111,7 @@ export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: Work
             <p>
                 {execSpec(workflow).podGC && (
                     <>
-                        <WarningIcon /> You pod GC settings will delete pods and their logs immediately on completion.
+                        <WarningIcon /> Your pod GC settings will delete pods and their logs immediately on completion.
                     </>
                 )}{' '}
                 Logs do not appear for pods that are deleted.{' '}
@@ -122,6 +122,7 @@ export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: Work
                                 namespace: workflow.metadata.namespace,
                                 name: podName
                             },
+                            workflow,
                             status: {
                                 startedAt: workflow.status.startedAt,
                                 finishedAt: workflow.status.finishedAt

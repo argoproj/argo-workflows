@@ -62,14 +62,15 @@ const (
 
 // WorkflowExecutor is program which runs as the init/wait container
 type WorkflowExecutor struct {
-	PodName            string
-	Template           wfv1.Template
-	ClientSet          kubernetes.Interface
-	RESTClient         rest.Interface
-	Namespace          string
-	PodAnnotationsPath string
-	ExecutionControl   *common.ExecutionControl
-	RuntimeExecutor    ContainerRuntimeExecutor
+	PodName             string
+	Template            wfv1.Template
+	IncludeScriptOutput bool
+	ClientSet           kubernetes.Interface
+	RESTClient          rest.Interface
+	Namespace           string
+	PodAnnotationsPath  string
+	ExecutionControl    *common.ExecutionControl
+	RuntimeExecutor     ContainerRuntimeExecutor
 
 	// memoized configmaps
 	memoizedConfigMaps map[string]string
@@ -110,18 +111,19 @@ type ContainerRuntimeExecutor interface {
 }
 
 // NewExecutor instantiates a new workflow executor
-func NewExecutor(clientset kubernetes.Interface, restClient rest.Interface, podName, namespace, podAnnotationsPath string, cre ContainerRuntimeExecutor, template wfv1.Template) WorkflowExecutor {
+func NewExecutor(clientset kubernetes.Interface, restClient rest.Interface, podName, namespace, podAnnotationsPath string, cre ContainerRuntimeExecutor, template wfv1.Template, includeScriptOutput bool) WorkflowExecutor {
 	return WorkflowExecutor{
-		PodName:            podName,
-		ClientSet:          clientset,
-		RESTClient:         restClient,
-		Namespace:          namespace,
-		PodAnnotationsPath: podAnnotationsPath,
-		RuntimeExecutor:    cre,
-		Template:           template,
-		memoizedConfigMaps: map[string]string{},
-		memoizedSecrets:    map[string][]byte{},
-		errors:             []error{},
+		PodName:             podName,
+		ClientSet:           clientset,
+		RESTClient:          restClient,
+		Namespace:           namespace,
+		PodAnnotationsPath:  podAnnotationsPath,
+		RuntimeExecutor:     cre,
+		Template:            template,
+		IncludeScriptOutput: includeScriptOutput,
+		memoizedConfigMaps:  map[string]string{},
+		memoizedSecrets:     map[string][]byte{},
+		errors:              []error{},
 	}
 }
 
@@ -675,7 +677,7 @@ func (we *WorkflowExecutor) GetTerminationGracePeriodDuration(ctx context.Contex
 
 // CaptureScriptResult will add the stdout of a script template as output result
 func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
-	if we.ExecutionControl == nil || !we.ExecutionControl.IncludeScriptOutput {
+	if !we.IncludeScriptOutput {
 		log.Infof("No Script output reference in workflow. Capturing script output ignored")
 		return nil
 	}
@@ -729,10 +731,18 @@ func (we *WorkflowExecutor) AnnotateOutputs(ctx context.Context, logArt *wfv1.Ar
 	return we.AddAnnotation(ctx, common.AnnotationKeyOutputs, string(outputBytes))
 }
 
-// AddError adds an error to the list of encountered errors durign execution
+// AddError adds an error to the list of encountered errors during execution
 func (we *WorkflowExecutor) AddError(err error) {
 	log.Errorf("executor error: %+v", err)
 	we.errors = append(we.errors, err)
+}
+
+// HasError return the first error if exist
+func (we *WorkflowExecutor) HasError() error {
+	if len(we.errors) > 0 {
+		return we.errors[0]
+	}
+	return nil
 }
 
 // AddAnnotation adds an annotation to the workflow pod
@@ -935,14 +945,17 @@ func watchFileChanges(ctx context.Context, pollInterval time.Duration, filePath 
 			}
 
 			file, err := os.Stat(filePath)
-			if err != nil {
+			if os.IsNotExist(err) {
+				// noop
+			} else if err != nil {
 				log.Fatal(err)
+			} else {
+				newModTime := file.ModTime()
+				if modTime != nil && !modTime.Equal(file.ModTime()) {
+					res <- struct{}{}
+				}
+				modTime = &newModTime
 			}
-			newModTime := file.ModTime()
-			if modTime != nil && !modTime.Equal(file.ModTime()) {
-				res <- struct{}{}
-			}
-			modTime = &newModTime
 			time.Sleep(pollInterval)
 		}
 	}()
@@ -1074,10 +1087,10 @@ func (we *WorkflowExecutor) KillSidecars(ctx context.Context) error {
 			sidecarNames = append(sidecarNames, n)
 		}
 	}
+	log.Infof("Killing sidecars %q", sidecarNames)
 	if len(sidecarNames) == 0 {
 		return nil // exit early as GetTerminationGracePeriodDuration performs `get pod`
 	}
-	log.Infof("Killing sidecars %s", strings.Join(sidecarNames, ","))
 	terminationGracePeriodDuration, _ := we.GetTerminationGracePeriodDuration(ctx)
 	return we.RuntimeExecutor.Kill(ctx, sidecarNames, terminationGracePeriodDuration)
 }

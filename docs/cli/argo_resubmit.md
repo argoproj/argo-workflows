@@ -17,6 +17,18 @@ argo resubmit [WORKFLOW...] [flags]
 
   argo resubmit my-wf
 
+# Resubmit multiple workflows:
+
+  argo resubmit my-wf my-other-wf my-third-wf
+
+# Resubmit multiple workflows by label selector:
+
+  argo resubmit -l workflows.argoproj.io/test=true
+
+# Resubmit multiple workflows by field selector:
+
+  argo resubmit --field-selector metadata.namespace=argo
+
 # Resubmit and wait for completion:
 
   argo resubmit --wait my-wf.yaml
@@ -38,13 +50,15 @@ argo resubmit [WORKFLOW...] [flags]
 ### Options
 
 ```
-  -h, --help             help for resubmit
-      --log              log the workflow until it completes
-      --memoized         re-use successful steps & outputs from the previous run (experimental)
-  -o, --output string    Output format. One of: name|json|yaml|wide
-      --priority int32   workflow priority
-  -w, --wait             wait for the workflow to complete
-      --watch            watch the workflow until it completes
+      --field-selector string   Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selector key1=value1,key2=value2). The server only supports a limited number of field queries per type.
+  -h, --help                    help for resubmit
+      --log                     log the workflow until it completes
+      --memoized                re-use successful steps & outputs from the previous run (experimental)
+  -o, --output string           Output format. One of: name|json|yaml|wide
+      --priority int32          workflow priority
+  -l, --selector string         Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)
+  -w, --wait                    wait for the workflow to complete, only works when a single workflow is resubmitted
+      --watch                   watch the workflow until it completes, only works when a single workflow is resubmitted
 ```
 
 ### Options inherited from parent commands
@@ -69,7 +83,7 @@ argo resubmit [WORKFLOW...] [flags]
   -n, --namespace string               If present, the namespace scope for this CLI request
       --password string                Password for basic authentication to the API server
       --request-timeout string         The length of time to wait before giving up on a single server request. Non-zero values should contain a corresponding time unit (e.g. 1s, 2m, 3h). A value of zero means don't timeout requests. (default "0")
-  -e, --secure                         Whether or not the server is using TLS with the Argo Server. Defaults to the ARGO_SECURE environment variable.
+  -e, --secure                         Whether or not the server is using TLS with the Argo Server. Defaults to the ARGO_SECURE environment variable. (default true)
       --server string                  The address and port of the Kubernetes API server
       --tls-server-name string         If provided, this name will be used to validate server certificate. If this is not provided, hostname used to contact the server is used.
       --token string                   Bearer token for authentication to the API server

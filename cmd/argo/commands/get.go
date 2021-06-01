@@ -162,7 +162,9 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) string {
 		if len(wf.Status.Outputs.Parameters) > 0 {
 			out += fmt.Sprintf(fmtStr, "Output Parameters:", "")
 			for _, param := range wf.Status.Outputs.Parameters {
-				out += fmt.Sprintf(fmtStr, "  "+param.Name+":", *param.Value)
+				if param.HasValue() {
+					out += fmt.Sprintf(fmtStr, "  "+param.Name+":", param.GetValue())
+				}
 			}
 		}
 		if len(wf.Status.Outputs.Artifacts) > 0 {

@@ -11,7 +11,7 @@ This document describes the second option in more detail.
 
 ## The pattern
 
-The pattern involves two steps - the first step is a short-running step that triggers a long-running job outside Argo (eg an HTTP submission), and the second step is a `Suspend` step that suspends workflow exection and is ultimately either resumed or stopped (ie failed) via a call to the Argo API when the job outside Argo succeeds or fails.
+The pattern involves two steps - the first step is a short-running step that triggers a long-running job outside Argo (eg an HTTP submission), and the second step is a `Suspend` step that suspends workflow execution and is ultimately either resumed or stopped (ie failed) via a call to the Argo API when the job outside Argo succeeds or fails.
 
 When implemented as a `WorkflowTemplate` it can look something like this:
 
@@ -64,7 +64,7 @@ You may need  an [access token](access-token.md).
 
 ```
 curl --request PUT \
-  --url http://localhost:2746/api/v1/workflows/<NAMESPACE>/<WORKFLOWNAME>/resume
+  --url https://localhost:2746/api/v1/workflows/<NAMESPACE>/<WORKFLOWNAME>/resume
   --header 'content-type: application/json' \
   --header "Authorization: Bearer $ARGO_TOKEN" \
   --data '{
@@ -78,7 +78,7 @@ or stop if unsuccessful:
 
 ```
 curl --request PUT \
-  --url http://localhost:2746/api/v1/workflows/<NAMESPACE>/<WORKFLOWNAME>/stop
+  --url https://localhost:2746/api/v1/workflows/<NAMESPACE>/<WORKFLOWNAME>/stop
   --header 'content-type: application/json' \
   --header "Authorization: Bearer $ARGO_TOKEN" \
   --data '{

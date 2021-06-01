@@ -28,6 +28,7 @@ type ArtifactDriver struct {
 	Password              string
 	SSHPrivateKey         string
 	InsecureIgnoreHostKey bool
+	DisableSubmodules     bool
 }
 
 var _ common.ArtifactDriver = &ArtifactDriver{}
@@ -78,11 +79,8 @@ func (g *ArtifactDriver) auth(sshUser string) (func(), transport.AuthMethod, []s
 			nil
 	}
 	if g.Username != "" || g.Password != "" {
-		filename, err := filepath.Abs("git-ask-pass.sh")
-		if err != nil {
-			return nil, nil, nil, err
-		}
-		_, err = os.Stat(filename)
+		filename := filepath.Join(os.TempDir(), "git-ask-pass.sh")
+		_, err := os.Stat(filename)
 		if os.IsNotExist(err) {
 			err := ioutil.WriteFile(filename, []byte(`#!/bin/sh
 case "$1" in
@@ -118,9 +116,15 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 		return err
 	}
 	defer closer()
+
+	var recurseSubmodules = git.DefaultSubmoduleRecursionDepth
+	if inputArtifact.Git.DisableSubmodules {
+		log.Info("Recursive cloning of submodules is disabled")
+		recurseSubmodules = git.NoRecurseSubmodules
+	}
 	repo, err := git.PlainClone(path, false, &git.CloneOptions{
 		URL:               inputArtifact.Git.Repo,
-		RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
+		RecurseSubmodules: recurseSubmodules,
 		Auth:              auth,
 		Depth:             inputArtifact.Git.GetDepth(),
 	})
@@ -149,8 +153,9 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	if inputArtifact.Git.Revision != "" {
 		// We still rely on forking git for checkout, since go-git does not have a reliable
 		// way of resolving revisions (e.g. mybranch, HEAD^, v1.2.3)
-		log.Infof("Checking out revision %s", inputArtifact.Git.Revision)
-		cmd := exec.Command("git", "checkout", inputArtifact.Git.Revision)
+		rev := getRevisionForCheckout(inputArtifact.Git.Revision)
+		log.Info("Checking out revision ", rev)
+		cmd := exec.Command("git", "checkout", rev)
 		cmd.Dir = path
 		cmd.Env = env
 		output, err := cmd.Output()
@@ -158,16 +163,24 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 			return g.error(err, cmd)
 		}
 		log.Infof("`%s` stdout:\n%s", cmd.Args, string(output))
-		submodulesCmd := exec.Command("git", "submodule", "update", "--init", "--recursive", "--force")
-		submodulesCmd.Dir = path
-		submodulesCmd.Env = env
-		submoduleOutput, err := submodulesCmd.Output()
-		if err != nil {
-			return g.error(err, cmd)
+		if !inputArtifact.Git.DisableSubmodules {
+			submodulesCmd := exec.Command("git", "submodule", "update", "--init", "--recursive", "--force")
+			submodulesCmd.Dir = path
+			submodulesCmd.Env = env
+			submoduleOutput, err := submodulesCmd.Output()
+			if err != nil {
+				return g.error(err, cmd)
+			}
+			log.Infof("`%s` stdout:\n%s", cmd.Args, string(submoduleOutput))
 		}
-		log.Infof("`%s` stdout:\n%s", cmd.Args, string(submoduleOutput))
 	}
 	return nil
+}
+
+// getRevisionForCheckout trims "refs/heads/" from the revision name (if present)
+// so that `git checkout` will succeed.
+func getRevisionForCheckout(revision string) string {
+	return strings.TrimPrefix(revision, "refs/heads/")
 }
 
 func isAlreadyUpToDateErr(err error) bool {

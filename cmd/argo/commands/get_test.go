@@ -12,7 +12,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	testutil "github.com/argoproj/argo-workflows/v3/test/util"
 )
 
 func testPrintNodeImpl(t *testing.T, expected string, node wfv1.NodeStatus, getArgs getFlags) {
@@ -114,7 +113,7 @@ func TestStatusToNodeFieldSelector(t *testing.T) {
 func Test_printWorkflowHelper(t *testing.T) {
 	t.Run("Progress", func(t *testing.T) {
 		var wf wfv1.Workflow
-		testutil.MustUnmarshallYAML(`
+		wfv1.MustUnmarshal(`
 status:
   phase: Running
   progress: 1/2
@@ -124,7 +123,7 @@ status:
 	})
 	t.Run("EstimatedDuration", func(t *testing.T) {
 		var wf wfv1.Workflow
-		testutil.MustUnmarshallYAML(`
+		wfv1.MustUnmarshal(`
 status:
   estimatedDuration: 1
   phase: Running
@@ -134,7 +133,7 @@ status:
 	})
 	t.Run("IndexOrdering", func(t *testing.T) {
 		var wf wfv1.Workflow
-		testutil.MustUnmarshallYAML(`apiVersion: argoproj.io/v1alpha1
+		wfv1.MustUnmarshal(`apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   creationTimestamp: "2020-06-02T16:04:21Z"
@@ -149,17 +148,11 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/workflows/many-items-z26lj
   uid: d21f092a-f659-4300-bd69-983a9912a379
 spec:
-  arguments: {}
   entrypoint: parallel-sleep
   templates:
-  - arguments: {}
-    inputs: {}
-    metadata: {}
-    name: parallel-sleep
-    outputs: {}
+  - name: parallel-sleep
     steps:
-    - - arguments: {}
-        name: sleep
+    - - name: sleep
         template: sleep
         withItems:
         - zero
@@ -175,19 +168,13 @@ spec:
         - ten
         - eleven
         - twelve
-  - arguments: {}
-    container:
+  - container:
       command:
       - sh
       - -c
       - sleep 10
       image: alpine:latest
-      name: ""
-      resources: {}
-    inputs: {}
-    metadata: {}
     name: sleep
-    outputs: {}
 status:
   conditions:
   - status: "True"

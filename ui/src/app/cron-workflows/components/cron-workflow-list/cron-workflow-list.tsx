@@ -46,7 +46,7 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
 
     constructor(props: any) {
         super(props);
-        this.state = {namespace: this.props.match.params.namespace || ''};
+        this.state = {namespace: Utils.getNamespace(this.props.match.params.namespace) || ''};
     }
 
     public componentDidMount(): void {
@@ -89,7 +89,8 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
     }
 
     private saveHistory() {
-        this.url = uiUrl('cron-workflows/' + this.state.namespace || '');
+        const newNamespace = Utils.managedNamespace ? '' : this.state.namespace;
+        this.url = uiUrl('cron-workflows' + (newNamespace ? '/' + newNamespace : ''));
         Utils.currentNamespace = this.state.namespace;
     }
 

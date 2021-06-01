@@ -3,13 +3,13 @@
 # Initial stage which pulls prepares build dependencies and CLI tooling we need for our final image
 # Also used as the image in CI jobs so needs all dependencies
 ####################################################################################################
+
+ARG IMAGE_OS_VERSION=1809
+
 # had issues with official golange image for windows so I'm using plain servercore
-FROM mcr.microsoft.com/windows/servercore:ltsc2019 as builder
+FROM mcr.microsoft.com/windows/servercore:${IMAGE_OS_VERSION} as builder
 ENV GOLANG_VERSION=1.15.7
 SHELL ["powershell", "-Command"]
-
-ARG IMAGE_OS=windows
-ARG IMAGE_ARCH=amd64
 
 # install chocolatey package manager
 ENV chocolateyUseWindowsCompression=false
@@ -25,11 +25,8 @@ RUN choco install golang --version=$env:GOLANG_VERSION ; \
 # argoexec-base
 # Used as the base for both the release and development version of argoexec
 ####################################################################################################
-FROM mcr.microsoft.com/windows/nanoserver:1809 as argoexec-base
+FROM mcr.microsoft.com/windows/nanoserver:${IMAGE_OS_VERSION} as argoexec-base
 COPY --from=builder /windows/system32/netapi32.dll /windows/system32/netapi32.dll
-
-ARG IMAGE_OS=windows
-ARG IMAGE_ARCH=amd64
 
 # NOTE: kubectl version should be one minor version less than https://storage.googleapis.com/kubernetes-release/release/stable.txt
 ENV KUBECTL_VERSION=1.19.6

@@ -11,7 +11,7 @@ import {Utils} from '../../shared/utils';
 import {WorkflowTemplateEditor} from './workflow-template-editor';
 
 export const WorkflowTemplateCreator = ({namespace, onCreate}: {namespace: string; onCreate: (workflow: WorkflowTemplate) => void}) => {
-    const [template, setTemplate] = useState<WorkflowTemplate>(exampleWorkflowTemplate(Utils.getNamespace(namespace)));
+    const [template, setTemplate] = useState<WorkflowTemplate>(exampleWorkflowTemplate(Utils.getNamespaceWithDefault(namespace)));
     const [error, setError] = useState<Error>();
     return (
         <>
@@ -21,7 +21,7 @@ export const WorkflowTemplateCreator = ({namespace, onCreate}: {namespace: strin
                     icon='plus'
                     onClick={() => {
                         services.workflowTemplate
-                            .create(template, Utils.getNamespace(template.metadata.namespace))
+                            .create(template, Utils.getNamespaceWithDefault(template.metadata.namespace))
                             .then(onCreate)
                             .catch(setError);
                     }}>

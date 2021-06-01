@@ -39,6 +39,7 @@ data:
     enabled: true
     path: /metrics
     port: 9090
+  namespaceParallelism: "10"
   links: |
     - name: Workflow Link
       scope: workflow

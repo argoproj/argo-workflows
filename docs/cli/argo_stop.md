@@ -18,16 +18,28 @@ argo stop WORKFLOW WORKFLOW2... [flags]
   argo stop my-wf
 
 # Stop the latest workflow:
+
   argo stop @latest
+
+# Stop multiple workflows by label selector
+
+  argo stop -l workflows.argoproj.io/test=true
+
+# Stop multiple workflows by field selector
+
+  argo stop --field-selector metadata.namespace=argo
 
 ```
 
 ### Options
 
 ```
+      --dry-run                      If true, only stop the workflows that would be stopped, without stopping them.
+      --field-selector string        Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selector key1=value1,key2=value2). The server only supports a limited number of field queries per type.
   -h, --help                         help for stop
       --message string               Message to add to previously running nodes
       --node-field-selector string   selector of node to stop, eg: --node-field-selector inputs.paramaters.myparam.value=abc
+  -l, --selector string              Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)
 ```
 
 ### Options inherited from parent commands
@@ -52,7 +64,7 @@ argo stop WORKFLOW WORKFLOW2... [flags]
   -n, --namespace string               If present, the namespace scope for this CLI request
       --password string                Password for basic authentication to the API server
       --request-timeout string         The length of time to wait before giving up on a single server request. Non-zero values should contain a corresponding time unit (e.g. 1s, 2m, 3h). A value of zero means don't timeout requests. (default "0")
-  -e, --secure                         Whether or not the server is using TLS with the Argo Server. Defaults to the ARGO_SECURE environment variable.
+  -e, --secure                         Whether or not the server is using TLS with the Argo Server. Defaults to the ARGO_SECURE environment variable. (default true)
       --server string                  The address and port of the Kubernetes API server
       --tls-server-name string         If provided, this name will be used to validate server certificate. If this is not provided, hostname used to contact the server is used.
       --token string                   Bearer token for authentication to the API server

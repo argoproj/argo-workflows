@@ -1,97 +1,75 @@
 package fields
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 var sampleWorkflow = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
 metadata:
   name: hello-world-qgpxz
 spec:
-  arguments: {}
   entrypoint: whalesay
-  templates:
-  - arguments: {}
-    container:
-      args:
-      - hello world
-      command:
-      - cowsay
-      image: docker/whalesay:latest
-      name: ""
-      resources: {}
-    inputs: {}
-    metadata: {}
-    name: whalesay
-    outputs: {}
 status:
-  artifactRepositoryRef:
-    configMap: artifact-repositories
-    key: default-v1
-    namespace: argo
-  conditions:
-  - status: "True"
-    type: Completed
-  finishedAt: "2020-12-01T17:30:51Z"
   nodes:
     hello-world-qgpxz:
       displayName: hello-world-qgpxz
   phase: Succeeded
-  progress: 1/1
-  resourcesDuration:
-    cpu: 3
-    memory: 1
-  startedAt: "2020-12-01T17:30:46Z"
 `
 
+func TestCleaner_WillExclude(t *testing.T) {
+	t.Run("Noop", func(t *testing.T) {
+		assert.False(t, NewCleaner("").WillExclude("foo"), "special case - keep everything")
+	})
+	t.Run("Default", func(t *testing.T) {
+		assert.False(t, NewCleaner("foo").WillExclude("foo"))
+		assert.False(t, NewCleaner("foo").WillExclude("foo.bar"))
+		assert.True(t, NewCleaner("foo").WillExclude("bar"))
+	})
+	t.Run("Exclude", func(t *testing.T) {
+		assert.True(t, NewCleaner("-foo").WillExclude("foo"))
+		assert.True(t, NewCleaner("-foo").WillExclude("foo.bar"))
+		assert.False(t, NewCleaner("-foo").WillExclude("bar"))
+		assert.False(t, NewCleaner("-foo").WillExclude("bar.baz"))
+	})
+}
+
+func TestCleaner_WithPrefix(t *testing.T) {
+	cleaner := NewCleaner("result.object.status").WithoutPrefix("result.object.")
+	assert.False(t, cleaner.fields["result.object.status"])
+	assert.True(t, cleaner.fields["status"])
+}
+
+func TestCleanNoop(t *testing.T) {
+	var wf, cleanWf wfv1.Workflow
+	ok, err := NewCleaner("").Clean(wf, cleanWf)
+	assert.NoError(t, err)
+	assert.False(t, ok)
+}
+
 func TestCleanFields(t *testing.T) {
-	var wf v1alpha1.Workflow
-	err := yaml.Unmarshal([]byte(sampleWorkflow), &wf)
+	var wf, cleanWf wfv1.Workflow
+	wfv1.MustUnmarshal([]byte(sampleWorkflow), &wf)
+	ok, err := NewCleaner("status.phase,metadata.name,spec.entrypoint").Clean(wf, &cleanWf)
 	assert.NoError(t, err)
-
-	jsonWf, err := json.Marshal(wf)
-	assert.NoError(t, err)
-
-	cleanJsonWf, err := CleanFields("status.phase,metadata.name,spec.entrypoint", jsonWf)
-	assert.NoError(t, err)
-
-	var cleanWf v1alpha1.Workflow
-	err = json.Unmarshal(cleanJsonWf, &cleanWf)
-	assert.NoError(t, err)
-
-	assert.Equal(t, v1alpha1.WorkflowSucceeded, cleanWf.Status.Phase)
+	assert.True(t, ok)
+	assert.Equal(t, wfv1.WorkflowSucceeded, cleanWf.Status.Phase)
 	assert.Equal(t, "whalesay", cleanWf.Spec.Entrypoint)
 	assert.Equal(t, "hello-world-qgpxz", cleanWf.Name)
-
 	assert.Nil(t, cleanWf.Status.Nodes)
 }
 
 func TestCleanFieldsExclude(t *testing.T) {
-	var wf v1alpha1.Workflow
-	err := yaml.Unmarshal([]byte(sampleWorkflow), &wf)
+	var wf, cleanWf wfv1.Workflow
+	wfv1.MustUnmarshal([]byte(sampleWorkflow), &wf)
+	ok, err := NewCleaner("-status.phase,metadata.name,spec.entrypoint").Clean(wf, &cleanWf)
 	assert.NoError(t, err)
-
-	jsonWf, err := json.Marshal(wf)
-	assert.NoError(t, err)
-
-	cleanJsonWf, err := CleanFields("-status.phase,metadata.name,spec.entrypoint", jsonWf)
-	assert.NoError(t, err)
-
-	var cleanWf v1alpha1.Workflow
-	err = json.Unmarshal(cleanJsonWf, &cleanWf)
-	assert.NoError(t, err)
-
+	assert.True(t, ok)
 	assert.Empty(t, cleanWf.Status.Phase)
 	assert.Empty(t, cleanWf.Spec.Entrypoint)
 	assert.Empty(t, cleanWf.Name)
-
 	assert.NotNil(t, cleanWf.Status.Nodes)
 }

@@ -95,12 +95,6 @@ const (
 	VolumeClaimGCOnSuccess    VolumeClaimGCStrategy = "OnWorkflowSuccess"
 )
 
-type NodeReason string
-
-const (
-	WaitingForSyncLock NodeReason = "PendingForSyncLock"
-)
-
 // Workflow is the definition of a workflow resource
 // +genclient
 // +genclient:noStatus
@@ -785,6 +779,20 @@ type ValueFrom struct {
 	Expression string `json:"expression,omitempty" protobuf:"bytes,8,rep,name=expression"`
 }
 
+func (p *Parameter) HasValue() bool {
+	return p.Value != nil || p.Default != nil || p.ValueFrom != nil
+}
+
+func (p *Parameter) GetValue() string {
+	if p.Value != nil {
+		return p.Value.String()
+	}
+	if p.Default != nil {
+		return p.Default.String()
+	}
+	return ""
+}
+
 // SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
 type SuppliedValueFrom struct{}
 
@@ -897,8 +905,6 @@ type ArtifactLocationType interface {
 	SetKey(key string) error
 }
 
-var keyUnsupportedErr = fmt.Errorf("key unsupported")
-
 // ArtifactLocation describes a location for a single or multiple artifacts.
 // It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).
 // It is also used to describe the location of multiple artifacts such as the archive location
@@ -993,7 +999,7 @@ func (a *ArtifactLocation) HasKey() bool {
 func (a *ArtifactLocation) SetKey(key string) error {
 	v := a.Get()
 	if v == nil {
-		return keyUnsupportedErr
+		return fmt.Errorf("key unsupported: cannot set key for artifact location because it is invalid")
 	}
 	return v.SetKey(key)
 }
@@ -1037,7 +1043,7 @@ func (a *ArtifactLocation) IsArchiveLogs() bool {
 func (a *ArtifactLocation) GetKey() (string, error) {
 	v := a.Get()
 	if v == nil {
-		return "", keyUnsupportedErr
+		return "", fmt.Errorf("key unsupported: cannot get key for artifact location, because it is invalid")
 	}
 	return v.GetKey()
 }
@@ -1145,10 +1151,58 @@ type WorkflowStep struct {
 	// OnExit is a template reference which is invoked at the end of the
 	// template, irrespective of the success, failure, or error of the
 	// primary template.
+	// DEPRECATED: Use Hooks[exit].Template instead.
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
+
+	// Hooks holds the lifecycle hook which is invoked at lifecycle of
+	// step, irrespective of the success, failure, or error status of the primary step
+	Hooks LifecycleHooks `json:"hooks,omitempty" protobuf:"bytes,12,opt,name=hooks"`
+}
+
+type LifecycleEvent string
+
+const (
+	ExitLifecycleEvent = "exit"
+)
+
+type LifecycleHooks map[LifecycleEvent]LifecycleHook
+
+func (lchs LifecycleHooks) GetExitHook() *LifecycleHook {
+	hook, ok := lchs[ExitLifecycleEvent]
+	if ok {
+		return &hook
+	}
+	return nil
+}
+
+type LifecycleHook struct {
+	Template  string    `json:"template," protobuf:"bytes,1,opt,name=template"`
+	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,2,opt,name=arguments"`
+}
+
+func (lch *LifecycleHook) WithArgs(args Arguments) *LifecycleHook {
+	lch1 := lch.DeepCopy()
+	if lch1.Arguments.IsEmpty() {
+		lch1.Arguments = args
+	}
+	return lch1
 }
 
 var _ TemplateReferenceHolder = &WorkflowStep{}
+
+func (step *WorkflowStep) HasExitHook() bool {
+	return (step.Hooks != nil && step.Hooks.GetExitHook() != nil) || step.OnExit != ""
+}
+
+func (step *WorkflowStep) GetExitHook(args Arguments) *LifecycleHook {
+	if !step.HasExitHook() {
+		return nil
+	}
+	if step.OnExit != "" {
+		return &LifecycleHook{Template: step.OnExit, Arguments: args}
+	}
+	return step.Hooks.GetExitHook().WithArgs(args)
+}
 
 func (step *WorkflowStep) GetTemplateName() string {
 	return step.Template
@@ -1288,14 +1342,6 @@ func (n Nodes) Find(f func(NodeStatus) bool) *NodeStatus {
 		}
 	}
 	return nil
-}
-
-func (ns NodeStatus) GetReason() NodeReason {
-	// If node is waiting for synchronize lock, Pod will not be created in this scenario
-	if ns.SynchronizationStatus != nil && ns.SynchronizationStatus.Waiting != "" {
-		return WaitingForSyncLock
-	}
-	return ""
 }
 
 func NodeWithDisplayName(name string) func(n NodeStatus) bool {
@@ -1917,6 +1963,9 @@ type GitArtifact struct {
 
 	// InsecureIgnoreHostKey disables SSH strict host key checking during git clone
 	InsecureIgnoreHostKey bool `json:"insecureIgnoreHostKey,omitempty" protobuf:"varint,8,opt,name=insecureIgnoreHostKey"`
+
+	// DisableSubmodules disables submodules during git clone
+	DisableSubmodules bool `json:"disableSubmodules,omitempty" protobuf:"varint,9,opt,name=disableSubmodules"`
 }
 
 func (g *GitArtifact) HasLocation() bool {
@@ -1924,11 +1973,11 @@ func (g *GitArtifact) HasLocation() bool {
 }
 
 func (g *GitArtifact) GetKey() (string, error) {
-	return "", keyUnsupportedErr
+	return "", fmt.Errorf("key unsupported: git artifact does not have a key")
 }
 
 func (g *GitArtifact) SetKey(string) error {
-	return keyUnsupportedErr
+	return fmt.Errorf("key unsupported: cannot set key on git artifact")
 }
 
 func (g *GitArtifact) GetDepth() int {
@@ -1976,7 +2025,7 @@ func (a *ArtifactoryArtifact) SetKey(key string) error {
 }
 
 func (a *ArtifactoryArtifact) HasLocation() bool {
-	return a != nil && a.URL != ""
+	return a != nil && a.URL != "" && a.UsernameSecret != nil
 }
 
 // HDFSArtifact is the location of an HDFS artifact
@@ -2049,11 +2098,11 @@ type RawArtifact struct {
 }
 
 func (r *RawArtifact) GetKey() (string, error) {
-	return "", keyUnsupportedErr
+	return "", fmt.Errorf("key unsupported: raw artifat does not have key")
 }
 
 func (r *RawArtifact) SetKey(string) error {
-	return keyUnsupportedErr
+	return fmt.Errorf("key unsupported: cannot set key for raw artifact")
 }
 
 func (r *RawArtifact) HasLocation() bool {
@@ -2149,6 +2198,9 @@ type OSSBucket struct {
 
 	// SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm
 	SecurityToken string `json:"securityToken,omitempty" protobuf:"bytes,6,opt,name=securityToken"`
+
+	// LifecycleRule specifies how to manage bucket's lifecycle
+	LifecycleRule *OSSLifecycleRule `json:"lifecycleRule,omitempty" protobuf:"bytes,7,opt,name=lifecycleRule"`
 }
 
 // OSSArtifact is the location of an Alibaba Cloud OSS artifact
@@ -2157,6 +2209,15 @@ type OSSArtifact struct {
 
 	// Key is the path in the bucket where the artifact resides
 	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
+}
+
+// OSSLifecycleRule specifies how to manage bucket's lifecycle
+type OSSLifecycleRule struct {
+	// MarkInfrequentAccessAfterDays is the number of days before we convert the objects in the bucket to Infrequent Access (IA) storage type
+	MarkInfrequentAccessAfterDays int32 `json:"markInfrequentAccessAfterDays,omitempty" protobuf:"varint,1,opt,name=markInfrequentAccessAfterDays"`
+
+	// MarkDeletionAfterDays is the number of days before we delete objects in the bucket
+	MarkDeletionAfterDays int32 `json:"markDeletionAfterDays,omitempty" protobuf:"varint,2,opt,name=markDeletionAfterDays"`
 }
 
 func (o *OSSArtifact) GetKey() (string, error) {
@@ -2370,13 +2431,32 @@ type DAGTask struct {
 	// OnExit is a template reference which is invoked at the end of the
 	// template, irrespective of the success, failure, or error of the
 	// primary template.
+	// DEPRECATED: Use Hooks[exit].Template instead.
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
 
 	// Depends are name of other targets which this depends on
 	Depends string `json:"depends,omitempty" protobuf:"bytes,12,opt,name=depends"`
+
+	// Hooks hold the lifecycle hook which is invoked at lifecycle of
+	// task, irrespective of the success, failure, or error status of the primary task
+	Hooks LifecycleHooks `json:"hooks,omitempty" protobuf:"bytes,13,opt,name=hooks"`
 }
 
 var _ TemplateReferenceHolder = &DAGTask{}
+
+func (t *DAGTask) GetExitHook(args Arguments) *LifecycleHook {
+	if !t.HasExitHook() {
+		return nil
+	}
+	if t.OnExit != "" {
+		return &LifecycleHook{Template: t.OnExit, Arguments: args}
+	}
+	return t.Hooks.GetExitHook().WithArgs(args)
+}
+
+func (t *DAGTask) HasExitHook() bool {
+	return (t.Hooks != nil && t.Hooks.GetExitHook() != nil) || t.OnExit != ""
+}
 
 func (t *DAGTask) GetTemplateName() string {
 	return t.Template

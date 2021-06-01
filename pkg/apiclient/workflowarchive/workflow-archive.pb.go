@@ -687,10 +687,7 @@ func (m *ListArchivedWorkflowsRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthWorkflowArchive
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthWorkflowArchive
 			}
 			if (iNdEx + skippy) > l {
@@ -773,10 +770,7 @@ func (m *GetArchivedWorkflowRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthWorkflowArchive
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthWorkflowArchive
 			}
 			if (iNdEx + skippy) > l {
@@ -859,10 +853,7 @@ func (m *DeleteArchivedWorkflowRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthWorkflowArchive
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthWorkflowArchive
 			}
 			if (iNdEx + skippy) > l {
@@ -913,10 +904,7 @@ func (m *ArchivedWorkflowDeletedResponse) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthWorkflowArchive
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthWorkflowArchive
 			}
 			if (iNdEx + skippy) > l {

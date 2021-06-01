@@ -77,7 +77,7 @@ func NewRootCommand() *cobra.Command {
 func initExecutor() *executor.WorkflowExecutor {
 	version := argo.GetVersion()
 	executorType := os.Getenv(common.EnvVarContainerRuntimeExecutor)
-	log.WithFields(log.Fields{"version": version, "executorType": executorType}).Info("Starting Workflow Executor")
+	log.WithFields(log.Fields{"version": version.Version, "executorType": executorType}).Info("Starting Workflow Executor")
 	config, err := clientConfig.ClientConfig()
 	checkErr(err)
 	config = restclient.AddUserAgent(config, fmt.Sprintf("argo-workflows/%s argo-executor/%s", version.Version, executorType))
@@ -91,7 +91,6 @@ func initExecutor() *executor.WorkflowExecutor {
 	checkErr(err)
 
 	restClient := clientset.RESTClient()
-	checkErr(err)
 
 	podName, ok := os.LookupEnv(common.EnvVarPodName)
 	if !ok {
@@ -100,6 +99,8 @@ func initExecutor() *executor.WorkflowExecutor {
 
 	tmpl, err := executor.LoadTemplate(podAnnotationsPath)
 	checkErr(err)
+
+	includeScriptOutput := os.Getenv(common.EnvVarIncludeScriptOutput) == "true"
 
 	var cre executor.ContainerRuntimeExecutor
 	switch executorType {
@@ -116,9 +117,15 @@ func initExecutor() *executor.WorkflowExecutor {
 	}
 	checkErr(err)
 
-	wfExecutor := executor.NewExecutor(clientset, restClient, podName, namespace, podAnnotationsPath, cre, *tmpl)
+	wfExecutor := executor.NewExecutor(clientset, restClient, podName, namespace, podAnnotationsPath, cre, *tmpl, includeScriptOutput)
 	yamlBytes, _ := json.Marshal(&wfExecutor.Template)
-	log.Infof("Executor (version: %s, build_date: %s) initialized (pod: %s/%s) with template:\n%s", version.Version, version.BuildDate, namespace, podName, string(yamlBytes))
+	log.
+		WithField("version", version.String()).
+		WithField("namespace", namespace).
+		WithField("podName", podName).
+		WithField("template", string(yamlBytes)).
+		WithField("includeScriptOutput", includeScriptOutput).
+		Info("Executor initialized")
 	return &wfExecutor
 }
 

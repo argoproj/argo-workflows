@@ -12,6 +12,7 @@ import (
 	"github.com/argoproj/pkg/errors"
 	syncpkg "github.com/argoproj/pkg/sync"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/time/rate"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -84,6 +85,7 @@ type WorkflowController struct {
 	// restConfig is used by controller to send a SIGUSR1 to the wait sidecar using remotecommand.NewSPDYExecutor().
 	restConfig       *rest.Config
 	kubeclientset    kubernetes.Interface
+	rateLimiter      *rate.Limiter
 	dynamicInterface dynamic.Interface
 	wfclientset      wfclientset.Interface
 
@@ -157,7 +159,11 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 }
 
 func (wfc *WorkflowController) newThrottler() sync.Throttler {
-	return sync.NewThrottler(wfc.Config.Parallelism, func(key string) { wfc.wfQueue.AddRateLimited(key) })
+	f := func(key string) { wfc.wfQueue.AddRateLimited(key) }
+	return sync.ChainThrottler{
+		sync.NewThrottler(wfc.Config.Parallelism, sync.SingleBucket, f),
+		sync.NewThrottler(wfc.Config.NamespaceParallelism, sync.NamespaceBucket, f),
+	}
 }
 
 // RunTTLController runs the workflow TTL controller
@@ -174,7 +180,7 @@ func (wfc *WorkflowController) runTTLController(ctx context.Context, workflowTTL
 func (wfc *WorkflowController) runCronController(ctx context.Context) {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 
-	cronController := cron.NewCronController(wfc.wfclientset, wfc.dynamicInterface, wfc.wfInformer, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics, wfc.eventRecorderManager)
+	cronController := cron.NewCronController(wfc.wfclientset, wfc.dynamicInterface, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics, wfc.eventRecorderManager)
 	cronController.Run(ctx)
 }
 
@@ -231,66 +237,75 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	// Start the metrics server
 	go wfc.metrics.RunServer(ctx)
 
-	nodeID, ok := os.LookupEnv("LEADER_ELECTION_IDENTITY")
-	if !ok {
-		log.Fatal("LEADER_ELECTION_IDENTITY must be set so that the workflow controllers can elect a leader")
+	leaderElectionOff := os.Getenv("LEADER_ELECTION_DISABLE")
+	if leaderElectionOff == "true" {
+		log.Info("Leader election is turned off. Running in single-instance mode")
+		logCtx := log.WithField("id", "single-instance")
+		go wfc.startLeading(ctx, logCtx, podCleanupWorkers, workflowTTLWorkers, wfWorkers, podWorkers)
+	} else {
+		nodeID, ok := os.LookupEnv("LEADER_ELECTION_IDENTITY")
+		if !ok {
+			log.Fatal("LEADER_ELECTION_IDENTITY must be set so that the workflow controllers can elect a leader")
+		}
+		logCtx := log.WithField("id", nodeID)
+
+		var cancel context.CancelFunc
+		leaderName := "workflow-controller"
+		if wfc.Config.InstanceID != "" {
+			leaderName = fmt.Sprintf("%s-%s", leaderName, wfc.Config.InstanceID)
+		}
+
+		go leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
+			Lock: &resourcelock.LeaseLock{
+				LeaseMeta: metav1.ObjectMeta{Name: leaderName, Namespace: wfc.namespace}, Client: wfc.kubeclientset.CoordinationV1(),
+				LockConfig: resourcelock.ResourceLockConfig{Identity: nodeID, EventRecorder: wfc.eventRecorderManager.Get(wfc.namespace)},
+			},
+			ReleaseOnCancel: true,
+			LeaseDuration:   env.LookupEnvDurationOr("LEADER_ELECTION_LEASE_DURATION", 15*time.Second),
+			RenewDeadline:   env.LookupEnvDurationOr("LEADER_ELECTION_RENEW_DEADLINE", 10*time.Second),
+			RetryPeriod:     env.LookupEnvDurationOr("LEADER_ELECTION_RETRY_PERIOD", 5*time.Second),
+			Callbacks: leaderelection.LeaderCallbacks{
+				OnStartedLeading: func(ctx context.Context) {
+					wfc.startLeading(ctx, logCtx, podCleanupWorkers, workflowTTLWorkers, wfWorkers, podWorkers)
+				},
+				OnStoppedLeading: func() {
+					logCtx.Info("stopped leading")
+					cancel()
+				},
+				OnNewLeader: func(identity string) {
+					logCtx.WithField("leader", identity).Info("new leader")
+				},
+			},
+		})
 	}
-	logCtx := log.WithField("id", nodeID)
-
-	leaderName := "workflow-controller"
-	if wfc.Config.InstanceID != "" {
-		leaderName = fmt.Sprintf("%s-%s", leaderName, wfc.Config.InstanceID)
-	}
-
-	var cancel context.CancelFunc
-	go leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
-		Lock: &resourcelock.LeaseLock{
-			LeaseMeta: metav1.ObjectMeta{Name: leaderName, Namespace: wfc.namespace}, Client: wfc.kubeclientset.CoordinationV1(),
-			LockConfig: resourcelock.ResourceLockConfig{Identity: nodeID, EventRecorder: wfc.eventRecorderManager.Get(wfc.namespace)},
-		},
-		ReleaseOnCancel: true,
-		LeaseDuration:   env.LookupEnvDurationOr("LEADER_ELECTION_LEASE_DURATION", 15*time.Second),
-		RenewDeadline:   env.LookupEnvDurationOr("LEADER_ELECTION_RENEW_DEADLINE", 10*time.Second),
-		RetryPeriod:     env.LookupEnvDurationOr("LEADER_ELECTION_RETRY_PERIOD", 5*time.Second),
-		Callbacks: leaderelection.LeaderCallbacks{
-			OnStartedLeading: func(ctx context.Context) {
-				defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
-
-				logCtx.Info("started leading")
-				ctx, cancel = context.WithCancel(ctx)
-
-				for i := 0; i < podCleanupWorkers; i++ {
-					go wait.UntilWithContext(ctx, wfc.runPodCleanup, time.Second)
-				}
-				go wfc.workflowGarbageCollector(ctx.Done())
-				go wfc.archivedWorkflowGarbageCollector(ctx.Done())
-
-				go wfc.taskSetManager.Run(ctx)
-
-				go wfc.runTTLController(ctx, workflowTTLWorkers)
-				go wfc.runCronController(ctx)
-				go wait.Until(wfc.syncWorkflowPhaseMetrics, 15*time.Second, ctx.Done())
-				go wait.Until(wfc.syncPodPhaseMetrics, 15*time.Second, ctx.Done())
-
-				go wait.Until(wfc.syncManager.CheckWorkflowExistence, workflowExistenceCheckPeriod, ctx.Done())
-
-				for i := 0; i < wfWorkers; i++ {
-					go wait.Until(wfc.runWorker, time.Second, ctx.Done())
-				}
-				for i := 0; i < podWorkers; i++ {
-					go wait.Until(wfc.podWorker, time.Second, ctx.Done())
-				}
-			},
-			OnStoppedLeading: func() {
-				logCtx.Info("stopped leading")
-				cancel()
-			},
-			OnNewLeader: func(identity string) {
-				logCtx.WithField("leader", identity).Info("new leader")
-			},
-		},
-	})
 	<-ctx.Done()
+}
+
+func (wfc *WorkflowController) startLeading(ctx context.Context, logCtx *log.Entry, podCleanupWorkers int, workflowTTLWorkers int, wfWorkers int, podWorkers int) {
+	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+
+	logCtx.Info("started leading")
+
+	for i := 0; i < podCleanupWorkers; i++ {
+		go wait.UntilWithContext(ctx, wfc.runPodCleanup, time.Second)
+	}
+	go wfc.workflowGarbageCollector(ctx.Done())
+	go wfc.archivedWorkflowGarbageCollector(ctx.Done())
+
+	go wfc.taskSetManager.Run(ctx)
+	go wfc.runTTLController(ctx, workflowTTLWorkers)
+	go wfc.runCronController(ctx)
+	go wait.Until(wfc.syncWorkflowPhaseMetrics, 15*time.Second, ctx.Done())
+	go wait.Until(wfc.syncPodPhaseMetrics, 15*time.Second, ctx.Done())
+
+	go wait.Until(wfc.syncManager.CheckWorkflowExistence, workflowExistenceCheckPeriod, ctx.Done())
+
+	for i := 0; i < wfWorkers; i++ {
+		go wait.Until(wfc.runWorker, time.Second, ctx.Done())
+	}
+	for i := 0; i < podWorkers; i++ {
+		go wait.Until(wfc.podWorker, time.Second, ctx.Done())
+	}
 }
 
 func (wfc *WorkflowController) waitForCacheSync(ctx context.Context) {
@@ -648,11 +663,6 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		return true
 	}
 
-	if !wfc.throttler.Admit(key.(string)) {
-		log.WithFields(log.Fields{"key": key}).Info("Workflow processing has been postponed due to max parallelism limit")
-		return true
-	}
-
 	wf, err := util.FromUnstructured(un)
 	if err != nil {
 		log.WithFields(log.Fields{"key": key, "error": err}).Warn("Failed to unmarshal key to workflow object")
@@ -671,6 +681,15 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	wfc.wfQueue.AddAfter(key, workflowResyncPeriod)
 
 	woc := newWorkflowOperationCtx(wf, wfc)
+
+	if !wfc.throttler.Admit(key.(string)) {
+		log.WithField("key", key).Info("Workflow processing has been postponed due to max parallelism limit")
+		if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
+			woc.markWorkflowPhase(ctx, wfv1.WorkflowPending, "Workflow processing has been postponed because too many workflows are already running")
+			woc.persistUpdates(ctx)
+		}
+		return true
+	}
 
 	// make sure this is removed from the throttler is complete
 	defer func() {

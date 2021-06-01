@@ -1,4 +1,4 @@
-name: Docker Image CI
+name: Release
 
 on:
   push:
@@ -18,8 +18,8 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        platform: [linux/amd64]
-        target: [workflow-controller, argocli, argoexec]
+        platform: [ linux/amd64 ]
+        target: [ workflow-controller, argocli, argoexec ]
     steps:
       - uses: actions/checkout@v2
 
@@ -83,8 +83,8 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        platform: [linux/arm64]
-        target: [workflow-controller, argocli, argoexec]
+        platform: [ linux/arm64 ]
+        target: [ workflow-controller, argocli, argoexec ]
     steps:
       - uses: actions/checkout@v2
 
@@ -190,7 +190,7 @@ jobs:
   push-linux-amd64-images:
     name: Push manifest with linux/amd64
     runs-on: ubuntu-20.04
-    needs: [build-linux-amd64]
+    needs: [ build-linux-amd64 ]
     steps:
       - uses: actions/checkout@v2
       - name: Docker Login
@@ -233,7 +233,7 @@ jobs:
   push-images:
     name: Push manifest with all images
     runs-on: ubuntu-20.04
-    needs: [build-linux-arm64, build-windows, push-linux-amd64-images]
+    needs: [ build-linux-arm64, build-windows, push-linux-amd64-images ]
     steps:
       - uses: actions/checkout@v2
       - name: Docker Login
@@ -280,11 +280,11 @@ jobs:
   test-images-linux-amd64:
     name: Try pulling linux/amd64
     runs-on: ubuntu-20.04
-    needs: [push-images]
+    needs: [ push-images ]
     strategy:
       matrix:
-        platform: [linux/amd64]
-        target: [workflow-controller, argocli, argoexec]
+        platform: [ linux/amd64 ]
+        target: [ workflow-controller, argocli, argoexec ]
     steps:
       - name: Docker Login
         uses: Azure/docker-login@v1
@@ -317,7 +317,7 @@ jobs:
   test-images-windows:
     name: Try pulling windows
     runs-on: windows-2019
-    needs: [push-images]
+    needs: [ push-images ]
     steps:
       - name: Docker Login
         uses: Azure/docker-login@v1
@@ -347,3 +347,57 @@ jobs:
             docker pull $image_name
             docker pull quay.io/$image_name
           done
+
+  publish-release:
+    runs-on: ubuntu-20.04
+    needs: [ push-images, test-images-linux-amd64, test-images-windows ]
+    env:
+      NODE_OPTIONS: --max-old-space-size=4096
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: "14"
+      - uses: actions/cache@v2
+        with:
+          path: ui/node_modules
+          key: ${{ runner.os }}-node-dep-v1-${{ hashFiles('**/yarn.lock') }}
+      - uses: actions/setup-go@v2
+        with:
+          go-version: "1.15.7"
+      - uses: actions/cache@v2
+        with:
+          path: /home/runner/.cache/go-build
+          key: GOCACHE-v2-${{ hashFiles('**/go.mod') }}
+      - uses: actions/cache@v2
+        with:
+          path: /home/runner/go/pkg/mod
+          key: GOMODCACHE-v2-${{ hashFiles('**/go.mod') }}
+      # https://stackoverflow.com/questions/58033366/how-to-get-current-branch-within-github-actions
+      - run: make release-notes VERSION=${GITHUB_REF##*/}
+      - run: cat release-notes
+      - run: make manifests VERSION=${GITHUB_REF##*/}
+      - name: Print image tag (please check it is not `:latest`)
+        run: |
+          grep image: dist/manifests/install.yaml
+      - run: go mod download
+      - run: make clis STATIC_FILES=true VERSION=${GITHUB_REF##*/}
+      - name: Print version (please check it is not dirty)
+        run: dist/argo-linux-amd64 version
+      - run: make checksums
+      # https://github.com/softprops/action-gh-release
+      # This will publish the release and upload assets.
+      # If a conflict occurs (because you are not on a tag), the release will not be updated. This is a short coming
+      # of this action.
+      # Instead, delete the release so it is re-created.
+      - uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          prerelease: ${{ startsWith(github.ref, 'refs/tags/v0') || contains(github.ref, 'rc') }}
+          body_path: release-notes
+          files: |
+            dist/argo-*.gz
+            dist/argo-*.gz.sha256
+            dist/manifests/*.yaml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
