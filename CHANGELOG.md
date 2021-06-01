@@ -1,5 +1,23 @@
 # Changelog
 
+## v3.1.0-rc11 (2021-06-01)
+
+ * [dbb7cdb1](https://github.com/argoproj/argo-workflows/commit/dbb7cdb124ff0d975d1f63377f5646f20596c5ef) Merge branch 'master' into release-3.1
+ * [ee283ee6](https://github.com/argoproj/argo-workflows/commit/ee283ee6d360650622fc778f38d94994b20796ab) fix(ui): Add editor nav and make taller (#6047)
+ * [d8ab07a2](https://github.com/argoproj/argo-workflows/commit/d8ab07a27ef784f2ec00530026f5a8282c4a8021) docs: Must use k8sapi to run on GKE Autopilot (#6046)
+ * [50dc542b](https://github.com/argoproj/argo-workflows/commit/50dc542bea48a791fdb152ef2c21709ef3380265) docs: Add VMware to USERS.md (#6048)
+ * [529c30dd](https://github.com/argoproj/argo-workflows/commit/529c30dd53ba617a4fbea649fa3f901dd8066af6) fix(ui): Changed placing of chat/get help button. Fixes #5817 (#6016)
+ * [c8b7ef1a](https://github.com/argoproj/argo-workflows/commit/c8b7ef1a572380431adea59f5c13bdd746dc0f64) docs: updated CHANGELOG.md (#6040)
+ * [e262b3af](https://github.com/argoproj/argo-workflows/commit/e262b3afd7c8ab77ef14fb858a5795b73630485c) feat(controller): Add per-namespace parallelism limits. Closes #6037 (#6039)
+
+### Contributors
+
+ * Aayush Rangwala
+ * Alex Collins
+ * Kasper Aaquist Johansen
+ * Simon Behar
+ * github-actions[bot]
+
 ## v3.1.0-rc10 (2021-05-27)
 
  * [a83ec048](https://github.com/argoproj/argo-workflows/commit/a83ec048fd9c19fba3bcc0062aa720c19d4968a3) Merge branch 'master' into release-3.1
