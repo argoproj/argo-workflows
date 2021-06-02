@@ -23,7 +23,7 @@ function identity<T>(value: T) {
 }
 
 export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: WorkflowLogsViewerProps) => {
-    const [podName, setPodName] = useState(nodeId);
+    const [podName, setPodName] = useState(nodeId || '');
     const [selectedContainer, setContainer] = useState(container);
     const [grep, setGrep] = useState('');
     const [error, setError] = useState<Error>();
@@ -37,7 +37,7 @@ export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: Work
             .getContainerLogs(workflow, podName, selectedContainer, grep, archived)
             .map(e => (!podName ? e.podName + ': ' : '') + e.content + '\n')
             // this next line highlights the search term in bold with a yellow background, white text
-            .map(x => x.replace(grep, y => '\u001b[1m\u001b[43;1m\u001b[37m' + y + '\u001b[0m'))
+            .map(x => x.replace(new RegExp(grep, 'g'), y => '\u001b[1m\u001b[43;1m\u001b[37m' + y + '\u001b[0m'))
             .publishReplay()
             .refCount();
         const subscription = source.subscribe(
@@ -52,11 +52,11 @@ export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: Work
     // filter allows us to introduce a short delay, before we actually change grep
     const [filter, setFilter] = useState('');
     useEffect(() => {
-        const x = setTimeout(() => setGrep(filter), 500);
+        const x = setTimeout(() => setGrep(filter), 1000);
         return () => clearTimeout(x);
     }, [filter]);
 
-    const podNameOptions = [{value: null, label: 'All'}].concat(
+    const podNameOptions = [{value: '', label: 'All'}].concat(
         Object.values(workflow.status.nodes || {})
             .filter(x => x.type === 'Pod')
             .map(x => ({value: x.id, label: (x.displayName || x.name) + ' (' + x.id + ')'}))
@@ -82,8 +82,8 @@ export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: Work
             )}
             <div>
                 <i className='fa fa-box' />{' '}
-                <Autocomplete items={podNameOptions} value={(podNameOptions.find(x => x.value === podName) || {}).label} onSelect={(_, item) => setPodName(item.value)} /> /{' '}
-                <Autocomplete items={containers} value={selectedContainer} onSelect={setContainer} />
+                <Autocomplete items={podNameOptions} value={(podNameOptions.find(x => x.value === podName) || {label: ''}).label} onSelect={(_, item) => setPodName(item.value)} />{' '}
+                / <Autocomplete items={containers} value={selectedContainer} onSelect={setContainer} />
                 <span className='fa-pull-right'>
                     <i className='fa fa-filter' /> <input type='search' defaultValue={filter} onChange={v => setFilter(v.target.value)} placeholder='Filter (regexp)...' />
                 </span>
