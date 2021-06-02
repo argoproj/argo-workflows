@@ -25,6 +25,7 @@ function identity<T>(value: T) {
 export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: WorkflowLogsViewerProps) => {
     const [podName, setPodName] = useState(nodeId);
     const [selectedContainer, setContainer] = useState(container);
+    const [grep, setGrep] = useState('');
     const [error, setError] = useState<Error>();
     const [loaded, setLoaded] = useState(false);
     const [logsObservable, setLogsObservable] = useState<Observable<string>>();
@@ -33,8 +34,9 @@ export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: Work
         setError(null);
         setLoaded(false);
         const source = services.workflows
-            .getContainerLogs(workflow, podName, selectedContainer, archived)
+            .getContainerLogs(workflow, podName, selectedContainer, grep, archived)
             .map(e => (!podName ? e.podName + ': ' : '') + e.content + '\n')
+            .map(x => x.replace(grep, y => '\u001b[1m\u001b[43;1m\u001b[37m' + y + '\u001b[0m'))
             .publishReplay()
             .refCount();
         const subscription = source.subscribe(
@@ -44,7 +46,14 @@ export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: Work
         );
         setLogsObservable(source);
         return () => subscription.unsubscribe();
-    }, [workflow.metadata.namespace, workflow.metadata.name, podName, selectedContainer, archived]);
+    }, [workflow.metadata.namespace, workflow.metadata.name, podName, selectedContainer, grep, archived]);
+
+    // filter allows us to introduce a short delay, before we actually change grep
+    const [filter, setFilter] = useState('');
+    useEffect(() => {
+        const x = setTimeout(() => setGrep(filter), 500);
+        return () => clearTimeout(x);
+    }, [filter]);
 
     const podNameOptions = [{value: null, label: 'All'}].concat(
         Object.values(workflow.status.nodes || {})
@@ -74,6 +83,9 @@ export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: Work
                 <i className='fa fa-box' />{' '}
                 <Autocomplete items={podNameOptions} value={(podNameOptions.find(x => x.value === podName) || {}).label} onSelect={(_, item) => setPodName(item.value)} /> /{' '}
                 <Autocomplete items={containers} value={selectedContainer} onSelect={setContainer} />
+                <span className='fa-pull-right'>
+                    <i className='fa fa-filter' /> <input type='search' defaultValue={filter} onChange={v => setFilter(v.target.value)} placeholder='Filter (regexp)...' />
+                </span>
             </div>
             <ErrorNotice error={error} />
             {selectedContainer === 'init' && (
