@@ -49,7 +49,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 
 	rx, err := regexp.Compile(req.GetGrep())
 	if err != nil {
-		return fmt.Errorf("failed to compile %q: %w", err)
+		return fmt.Errorf("failed to compile %q: %w", req.GetGrep(), err)
 	}
 
 	podInterface := kubeClient.CoreV1().Pods(req.GetNamespace())
