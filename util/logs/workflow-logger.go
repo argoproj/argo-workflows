@@ -3,6 +3,8 @@ package logs
 import (
 	"bufio"
 	"context"
+	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -31,6 +33,7 @@ type request interface {
 	GetName() string
 	GetPodName() string
 	GetLogOptions() *corev1.PodLogOptions
+	GetGrep() string
 }
 
 type sender interface {
@@ -42,6 +45,11 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 	_, err := wfInterface.Get(ctx, req.GetName(), metav1.GetOptions{})
 	if err != nil {
 		return err
+	}
+
+	rx, err := regexp.Compile(req.GetGrep())
+	if err != nil {
+		return fmt.Errorf("failed to compile %q: %w", req.GetGrep(), err)
 	}
 
 	podInterface := kubeClient.CoreV1().Pods(req.GetNamespace())
@@ -114,8 +122,10 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 						if req.GetLogOptions().Timestamps {
 							content = line
 						}
-						logCtx.WithFields(log.Fields{"timestamp": timestamp, "content": content}).Debug("Log line")
-						unsortedEntries <- logEntry{podName: podName, content: content, timestamp: timestamp}
+						if rx.MatchString(content) { // this means we filter the lines in the server, but will still incur the cost of retrieving them from Kubernetes
+							logCtx.WithFields(log.Fields{"timestamp": timestamp, "content": content}).Debug("Log line")
+							unsortedEntries <- logEntry{podName: podName, content: content, timestamp: timestamp}
+						}
 					}
 				}
 				logCtx.Debug("No more log lines to stream")
