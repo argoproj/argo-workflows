@@ -6155,7 +6155,8 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTaskSet(ref common.ReferenceCallb
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTaskSetStatus"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTaskSetStatus"),
 						},
 					},
 				},

@@ -3018,11 +3018,7 @@ func (in *WorkflowTaskSet) DeepCopyInto(out *WorkflowTaskSet) {
 	out.TypeMeta = in.TypeMeta
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
 	in.Spec.DeepCopyInto(&out.Spec)
-	if in.Status != nil {
-		in, out := &in.Status, &out.Status
-		*out = new(WorkflowTaskSetStatus)
-		(*in).DeepCopyInto(*out)
-	}
+	in.Status.DeepCopyInto(&out.Status)
 	return
 }
 

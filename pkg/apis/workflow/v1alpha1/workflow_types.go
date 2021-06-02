@@ -73,7 +73,7 @@ const (
 	NodeTypeRetry     NodeType = "Retry"
 	NodeTypeSkipped   NodeType = "Skipped"
 	NodeTypeSuspend   NodeType = "Suspend"
-	NodeTypeAgent     NodeType = "Agent"
+	NodeTypeHTTP      NodeType = "HTTP"
 )
 
 // PodGCStrategy is the strategy when to delete completed pods for GC.

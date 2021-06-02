@@ -8,8 +8,8 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 type WorkflowTaskSet struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
-	Spec              WorkflowTaskSetSpec    `json:"spec" protobuf:"bytes,2,opt,name=spec"`
-	Status            *WorkflowTaskSetStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
+	Spec              WorkflowTaskSetSpec   `json:"spec" protobuf:"bytes,2,opt,name=spec"`
+	Status            WorkflowTaskSetStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
 }
 
 type WorkflowTaskSetSpec struct {
