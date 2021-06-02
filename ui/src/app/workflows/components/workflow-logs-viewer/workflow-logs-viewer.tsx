@@ -56,7 +56,7 @@ export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: Work
         return () => clearTimeout(x);
     }, [filter]);
 
-    const podNameOptions = [{value: '', label: 'All'}].concat(
+    const podNames = [{value: '', label: 'All'}].concat(
         Object.values(workflow.status.nodes || {})
             .filter(x => x.type === 'Pod')
             .map(x => ({value: x.id, label: (x.displayName || x.name) + ' (' + x.id + ')'}))
@@ -82,8 +82,8 @@ export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: Work
             )}
             <div>
                 <i className='fa fa-box' />{' '}
-                <Autocomplete items={podNameOptions} value={(podNameOptions.find(x => x.value === podName) || {label: ''}).label} onSelect={(_, item) => setPodName(item.value)} />{' '}
-                / <Autocomplete items={containers} value={selectedContainer} onSelect={setContainer} />
+                <Autocomplete items={podNames} value={(podNames.find(x => x.value === podName) || {label: ''}).label} onSelect={(_, item) => setPodName(item.value)} /> /{' '}
+                <Autocomplete items={containers} value={selectedContainer} onSelect={setContainer} />
                 <span className='fa-pull-right'>
                     <i className='fa fa-filter' /> <input type='search' defaultValue={filter} onChange={v => setFilter(v.target.value)} placeholder='Filter (regexp)...' />
                 </span>
