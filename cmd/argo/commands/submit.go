@@ -258,7 +258,7 @@ func unmarshalWorkflows(wfBytes []byte, strict bool) []wfv1.Workflow {
 func waitWatchOrLog(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace string, workflowNames []string, cliSubmitOpts cliSubmitOpts) {
 	if cliSubmitOpts.log {
 		for _, workflow := range workflowNames {
-			logWorkflow(ctx, serviceClient, namespace, workflow, "", &corev1.PodLogOptions{
+			logWorkflow(ctx, serviceClient, namespace, workflow, "", "", &corev1.PodLogOptions{
 				Container: common.MainContainerName,
 				Follow:    true,
 				Previous:  false,
