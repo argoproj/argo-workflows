@@ -298,6 +298,14 @@ func (s *CLISuite) TestLogs() {
 				}
 			})
 	})
+	s.Run("Grep", func() {
+		s.Given().
+			RunCli([]string{"logs", name, "--grep=no"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.NotContains(t, output, ":) Hello Argo!")
+				}
+			})
+	})
 	s.Run("CompletedWorkflow", func() {
 		s.Given().
 			When().
