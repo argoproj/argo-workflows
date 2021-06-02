@@ -3835,6 +3835,9 @@ spec:
                             type: array
                           method:
                             type: string
+                          timeoutSeconds:
+                            format: int64
+                            type: integer
                           url:
                             type: string
                         required:
@@ -9983,6 +9986,9 @@ spec:
                               type: array
                             method:
                               type: string
+                            timeoutSeconds:
+                              format: int64
+                              type: integer
                             url:
                               type: string
                           required:

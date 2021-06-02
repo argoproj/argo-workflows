@@ -511,7 +511,9 @@ message HTTP {
 
   repeated HTTPHeader headers = 3;
 
-  optional bytes body = 4;
+  optional int64 timeoutSeconds = 4;
+
+  optional bytes body = 5;
 }
 
 // HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container
