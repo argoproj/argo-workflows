@@ -1200,7 +1200,7 @@ message Template {
   // Data is a data template
   optional Data data = 39;
 
-  // HTTP is http template
+  // HTTP makes a HTTP request
   optional HTTP http = 42;
 
   // Volumes is a list of volumes that can be mounted by containers in a template.

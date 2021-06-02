@@ -539,7 +539,8 @@ type Template struct {
 
 	// Data is a data template
 	Data *Data `json:"data,omitempty" protobuf:"bytes,39,opt,name=data"`
-	// HTTP is http template
+
+	// HTTP makes a HTTP request
 	HTTP *HTTP `json:"http,omitempty" protobuf:"bytes,42,opt,name=http"`
 
 	// Volumes is a list of volumes that can be mounted by containers in a template.
