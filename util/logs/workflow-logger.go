@@ -122,7 +122,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 						if req.GetLogOptions().Timestamps {
 							content = line
 						}
-						if rx.MatchString(content) {
+						if rx.MatchString(content) { // this means we filter the lines in the server, but will still incur the cost of retrieving them from Kubernetes
 							logCtx.WithFields(log.Fields{"timestamp": timestamp, "content": content}).Debug("Log line")
 							unsortedEntries <- logEntry{podName: podName, content: content, timestamp: timestamp}
 						}
