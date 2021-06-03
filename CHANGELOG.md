@@ -1,5 +1,16 @@
 # Changelog
 
+## v3.1.0-rc12 (2021-06-02)
+
+ * [803855bc](https://github.com/argoproj/argo-workflows/commit/803855bc9754b301603903ec7cb4cd9a2979a12b) fix(executor): Fix compatibility issue when selfLink is no longer populated for k8s>=1.21. Fixes #6045 (#6014)
+ * [1f3493ab](https://github.com/argoproj/argo-workflows/commit/1f3493abaf18d27e701b9f14083dae35447d289e) feat(ui): Add text filter to logs. Fixes #6059 (#6061)
+ * [eaeaec71](https://github.com/argoproj/argo-workflows/commit/eaeaec71fd1fb2b0f2f217aada7f47036ace71dd) fix(controller): Only clean-up pod when both main and wait containers have terminated. Fixes #5981 (#6033)
+
+### Contributors
+
+ * Alex Collins
+ * Yuan Tang
+
 ## v3.1.0-rc11 (2021-06-01)
 
  * [ee283ee6](https://github.com/argoproj/argo-workflows/commit/ee283ee6d360650622fc778f38d94994b20796ab) fix(ui): Add editor nav and make taller (#6047)
