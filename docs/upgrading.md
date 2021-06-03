@@ -47,3 +47,4 @@ kubectl get wf --all-namespaces -o yaml | grep ttlSecondsAfterFinished
 
 ### [c8215f972](https://github.com/argoproj/argo-workflows/commit/c8215f972502435e6bc5b232823ecb6df919f952) feat(controller)!: Key-only artifacts. Fixes #3184 (#4618)
 
+This change is not breaking per-se, but many users do not appear to aware of [artifact repository ref](artifact-repository-ref.md).
