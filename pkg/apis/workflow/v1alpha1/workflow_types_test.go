@@ -941,7 +941,7 @@ func TestTemplateIsLeaf(t *testing.T) {
 
 }
 
-func TestTemplateGetType(t *testing.T){
+func TestTemplateGetType(t *testing.T) {
 	tmpl := Template{HTTP: &HTTP{}}
 	assert.Equal(t, TemplateTypeHTTP, tmpl.GetType())
 }
