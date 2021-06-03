@@ -3717,6 +3717,38 @@
       ],
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.HTTP": {
+      "properties": {
+        "body": {
+          "description": "Body is content of the HTTP Request",
+          "format": "byte",
+          "type": "string"
+        },
+        "headers": {
+          "description": "Headers are an optional list of headers to send with HTTP requests",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPHeader"
+          },
+          "type": "array"
+        },
+        "method": {
+          "description": "Method is HTTP methods for HTTP Request",
+          "type": "string"
+        },
+        "timeoutSeconds": {
+          "description": "TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds",
+          "type": "integer"
+        },
+        "url": {
+          "description": "URL of the HTTP Request",
+          "type": "string"
+        }
+      },
+      "required": [
+        "url"
+      ],
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.HTTPArtifact": {
       "description": "HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container",
       "properties": {
@@ -3735,6 +3767,31 @@
       "required": [
         "url"
       ],
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.HTTPHeader": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "valueFrom": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPHeaderSource"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.HTTPHeaderSource": {
+      "properties": {
+        "secretKeyRef": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      },
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.Header": {
@@ -4016,6 +4073,20 @@
           },
           "type": "array",
           "x-kubernetes-list-type": "atomic"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.NodeResult": {
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "outputs": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Outputs"
+        },
+        "phase": {
+          "type": "string"
         }
       },
       "type": "object"
@@ -4816,6 +4887,21 @@
       },
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.Task": {
+      "properties": {
+        "nodeId": {
+          "type": "string"
+        },
+        "template": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
+        }
+      },
+      "required": [
+        "nodeId",
+        "template"
+      ],
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.Template": {
       "description": "Template is a reusable and composable unit of execution in a workflow",
       "properties": {
@@ -4871,6 +4957,10 @@
           "type": "array",
           "x-kubernetes-patch-merge-key": "ip",
           "x-kubernetes-patch-strategy": "merge"
+        },
+        "http": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTP",
+          "description": "HTTP makes a HTTP request"
         },
         "initContainers": {
           "description": "InitContainers is a list of containers which run before the main container.",
@@ -5873,6 +5963,54 @@
         },
         "namespace": {
           "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowTaskSet": {
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTaskSetSpec"
+        },
+        "status": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTaskSetStatus"
+        }
+      },
+      "required": [
+        "metadata",
+        "spec"
+      ],
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowTaskSetSpec": {
+      "properties": {
+        "tasks": {
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Task"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowTaskSetStatus": {
+      "properties": {
+        "nodes": {
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NodeResult"
+          },
+          "type": "object"
         }
       },
       "type": "object"
