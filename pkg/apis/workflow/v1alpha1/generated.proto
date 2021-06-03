@@ -505,14 +505,19 @@ message HDFSKrbConfig {
 }
 
 message HTTP {
+  // Method is HTTP methods for HTTP Request
   optional string method = 1;
 
+  // URL of the HTTP Request
   optional string url = 2;
 
+  // Headers are an optional list of headers to send with HTTP requests
   repeated HTTPHeader headers = 3;
 
+  // TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds
   optional int64 timeoutSeconds = 4;
 
+  // Body is content of the HTTP Request
   optional bytes body = 5;
 }
 

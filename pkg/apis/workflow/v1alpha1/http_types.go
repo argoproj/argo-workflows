@@ -15,9 +15,14 @@ type HTTPHeader struct {
 }
 
 type HTTP struct {
-	Method         string       `json:"method,omitempty" protobuf:"bytes,1,opt,name=method"`
-	URL            string       `json:"url" protobuf:"bytes,2,opt,name=url"`
-	Headers        []HTTPHeader `json:"headers,omitempty" protobuf:"bytes,3,rep,name=headers"`
-	TimeoutSeconds *int64       `json:"timeoutSeconds,omitempty" protobuf:"bytes,4,opt,name=timeoutSeconds"`
-	Body           []byte       `json:"body,omitempty" protobuf:"bytes,5,opt,name=body"`
+	// Method is HTTP methods for HTTP Request
+	Method string `json:"method,omitempty" protobuf:"bytes,1,opt,name=method"`
+	// URL of the HTTP Request
+	URL string `json:"url" protobuf:"bytes,2,opt,name=url"`
+	// Headers are an optional list of headers to send with HTTP requests
+	Headers []HTTPHeader `json:"headers,omitempty" protobuf:"bytes,3,rep,name=headers"`
+	// TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds
+	TimeoutSeconds *int64 `json:"timeoutSeconds,omitempty" protobuf:"bytes,4,opt,name=timeoutSeconds"`
+	// Body is content of the HTTP Request
+	Body []byte `json:"body,omitempty" protobuf:"bytes,5,opt,name=body"`
 }
