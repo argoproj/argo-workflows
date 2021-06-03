@@ -207,55 +207,78 @@ func (d *DockerExecutor) Wait(ctx context.Context, containerNames []string) erro
 	return err
 }
 
+type ctrInfo struct {
+	containerID string
+	status      string
+	createdAt   time.Time
+}
+
+func (d *DockerExecutor) listContainers() (map[string]ctrInfo, error) {
+
+	output, err := common.RunCommand(
+		"docker",
+		"ps",
+		"--all",      // container could have already exited, but there could also have been two containers for the same pod (old container not yet cleaned-up)
+		"--no-trunc", // display long container IDs
+		"--format={{.Status}}|{{.Label \"io.kubernetes.container.name\"}}|{{.ID}}|{{.CreatedAt}}", // similar to `Up 3 hours,main,035a98c4e72e,2021-03-08 17:25:15 -0800 PST`
+		// https://github.com/kubernetes/kubernetes/blob/ca6bdba014f0a98efe0e0dd4e15f57d1c121d6c9/pkg/kubelet/dockertools/labels.go#L37
+		"--filter=label=io.kubernetes.pod.namespace="+d.namespace,
+		"--filter=label=io.kubernetes.pod.name="+d.podName,
+	)
+	if err != nil {
+		return nil, err
+	}
+	containers := make(map[string]ctrInfo)
+	for _, l := range strings.Split(string(output), "\n") {
+		parts := strings.Split(strings.TrimSpace(l), "|")
+		if len(parts) != 4 {
+			continue
+		}
+		status := strings.SplitN(parts[0], " ", 2)[0] // Created,Exited,Up,
+		containerName := parts[1]
+		if containerName == "POD" {
+			continue
+		}
+		containerID := parts[2]
+		if containerID == "" {
+			continue
+		}
+		createdAt, err := time.Parse("2006-01-02 15:04:05 -0700 MST", parts[3])
+		if err != nil {
+			return nil, err
+		}
+		containers[containerName] = ctrInfo{containerID: containerID, status: status, createdAt: createdAt}
+
+	}
+	return containers, nil
+}
+
 func (d *DockerExecutor) pollContainerIDs(ctx context.Context, containerNames []string) error {
+	containerStatus := make(map[string]string)
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			output, err := common.RunCommand(
-				"docker",
-				"ps",
-				"--all",      // container could have already exited, but there could also have been two containers for the same pod (old container not yet cleaned-up)
-				"--no-trunc", // display long container IDs
-				"--format={{.Status}}|{{.Label \"io.kubernetes.container.name\"}}|{{.ID}}|{{.CreatedAt}}", // similar to `Up 3 hours,main,035a98c4e72e,2021-03-08 17:25:15 -0800 PST`
-				// https://github.com/kubernetes/kubernetes/blob/ca6bdba014f0a98efe0e0dd4e15f57d1c121d6c9/pkg/kubelet/dockertools/labels.go#L37
-				"--filter=label=io.kubernetes.pod.namespace="+d.namespace,
-				"--filter=label=io.kubernetes.pod.name="+d.podName,
-			)
+			containers, err := d.listContainers()
 			if err != nil {
 				return err
 			}
-			containerStatus := make(map[string]string)
-			for _, l := range strings.Split(string(output), "\n") {
-				parts := strings.Split(strings.TrimSpace(l), "|")
-				if len(parts) != 4 {
+			for containerName, info := range containers {
+				if d.containers[containerName] == info.containerID { // already found
 					continue
 				}
-				status := strings.SplitN(parts[0], " ", 2)[0] // Created,Exited,Up,
-				containerName := parts[1]
-				if containerName == "POD" {
+				if info.createdAt.Before(started.Add(-15 * time.Second)) {
+					log.Infof("ignoring container %q created at %v, too long before process started", containerName, info.createdAt)
 					continue
 				}
-				containerID := parts[2]
-				createdAt, err := time.Parse("2006-01-02 15:04:05 -0700 MST", parts[3])
-				if err != nil {
-					return err
-				}
-				if containerID == "" || d.containers[containerName] == containerID {
+				if info.status == "Created" && containerStatus[containerName] != "" {
+					log.Infof("ignoring created container %q that would %s -> %s", containerName, containerStatus[containerName], info.status)
 					continue
 				}
-				if createdAt.Before(started.Add(-15 * time.Second)) {
-					log.Infof("ignoring container %q created at %v, too long before process started", containerName, createdAt)
-					continue
-				}
-				if status == "Created" && containerStatus[containerName] != "" {
-					log.Infof("ignoring created container %q that would %s -> %s", containerName, containerStatus[containerName], status)
-					continue
-				}
-				d.containers[containerName] = containerID
-				containerStatus[containerName] = status
-				log.Infof("mapped container name %q to container ID %q (created at %v, status %s)", containerName, containerID, createdAt, status)
+				d.containers[containerName] = info.containerID
+				containerStatus[containerName] = info.status
+				log.Infof("mapped container name %q to container ID %q (created at %v, status %s)", containerName, info.containerID, info.createdAt, info.status)
 			}
 		}
 		// sidecars start after the main containers, so we can't just exit once we know about all the main containers,
@@ -338,8 +361,12 @@ func (d *DockerExecutor) Kill(ctx context.Context, containerNames []string, term
 }
 
 func (d *DockerExecutor) ListContainerNames(ctx context.Context) ([]string, error) {
+	containers, err := d.listContainers()
+	if err != nil {
+		return nil, err
+	}
 	var containerNames []string
-	for n := range d.containers {
+	for n := range containers {
 		containerNames = append(containerNames, n)
 	}
 	return containerNames, nil
