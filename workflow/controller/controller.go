@@ -192,6 +192,10 @@ var indexers = cache.Indexers{
 // Run starts an Workflow resource controller
 func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podWorkers, podCleanupWorkers int) {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	defer wfc.wfQueue.ShutDown()
 	defer wfc.podQueue.ShutDown()
 	defer wfc.podCleanupQueue.ShutDown()
@@ -240,7 +244,6 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		}
 		logCtx := log.WithField("id", nodeID)
 
-		var cancel context.CancelFunc
 		leaderName := "workflow-controller"
 		if wfc.Config.InstanceID != "" {
 			leaderName = fmt.Sprintf("%s-%s", leaderName, wfc.Config.InstanceID)
