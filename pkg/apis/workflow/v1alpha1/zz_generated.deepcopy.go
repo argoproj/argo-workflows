@@ -1014,6 +1014,11 @@ func (in *HTTP) DeepCopyInto(out *HTTP) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.TimeoutSeconds != nil {
+		in, out := &in.TimeoutSeconds, &out.TimeoutSeconds
+		*out = new(int64)
+		**out = **in
+	}
 	if in.Body != nil {
 		in, out := &in.Body, &out.Body
 		*out = make([]byte, len(*in))

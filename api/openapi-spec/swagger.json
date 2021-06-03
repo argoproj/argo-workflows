@@ -7143,19 +7143,27 @@
       ],
       "properties": {
         "body": {
+          "description": "Body is content of the HTTP Request",
           "type": "string",
           "format": "byte"
         },
         "headers": {
+          "description": "Headers are an optional list of headers to send with HTTP requests",
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPHeader"
           }
         },
         "method": {
+          "description": "Method is HTTP methods for HTTP Request",
           "type": "string"
         },
+        "timeoutSeconds": {
+          "description": "TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds",
+          "type": "integer"
+        },
         "url": {
+          "description": "URL of the HTTP Request",
           "type": "string"
         }
       }
@@ -8371,7 +8379,7 @@
           "x-kubernetes-patch-strategy": "merge"
         },
         "http": {
-          "description": "HTTP is http template",
+          "description": "HTTP makes a HTTP request",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTP"
         },
         "initContainers": {

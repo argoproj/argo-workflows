@@ -2166,20 +2166,23 @@ func schema_pkg_apis_workflow_v1alpha1_HTTP(ref common.ReferenceCallback) common
 				Properties: map[string]spec.Schema{
 					"method": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Description: "Method is HTTP methods for HTTP Request",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"url": {
 						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
+							Description: "URL of the HTTP Request",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"headers": {
 						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
+							Description: "Headers are an optional list of headers to send with HTTP requests",
+							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
@@ -2190,10 +2193,18 @@ func schema_pkg_apis_workflow_v1alpha1_HTTP(ref common.ReferenceCallback) common
 							},
 						},
 					},
+					"timeoutSeconds": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds",
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
 					"body": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "byte",
+							Description: "Body is content of the HTTP Request",
+							Type:        []string{"string"},
+							Format:      "byte",
 						},
 					},
 				},
@@ -4590,7 +4601,7 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					},
 					"http": {
 						SchemaProps: spec.SchemaProps{
-							Description: "HTTP is http template",
+							Description: "HTTP makes a HTTP request",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTP"),
 						},
 					},
