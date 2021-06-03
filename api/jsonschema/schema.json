@@ -3720,19 +3720,27 @@
     "io.argoproj.workflow.v1alpha1.HTTP": {
       "properties": {
         "body": {
+          "description": "Body is content of the HTTP Request",
           "format": "byte",
           "type": "string"
         },
         "headers": {
+          "description": "Headers are an optional list of headers to send with HTTP requests",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPHeader"
           },
           "type": "array"
         },
         "method": {
+          "description": "Method is HTTP methods for HTTP Request",
           "type": "string"
         },
+        "timeoutSeconds": {
+          "description": "TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds",
+          "type": "integer"
+        },
         "url": {
+          "description": "URL of the HTTP Request",
           "type": "string"
         }
       },
@@ -4952,7 +4960,7 @@
         },
         "http": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTP",
-          "description": "HTTP is a HTTP template"
+          "description": "HTTP makes a HTTP request"
         },
         "initContainers": {
           "description": "InitContainers is a list of containers which run before the main container.",

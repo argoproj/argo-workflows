@@ -505,13 +505,20 @@ message HDFSKrbConfig {
 }
 
 message HTTP {
+  // Method is HTTP methods for HTTP Request
   optional string method = 1;
 
+  // URL of the HTTP Request
   optional string url = 2;
 
+  // Headers are an optional list of headers to send with HTTP requests
   repeated HTTPHeader headers = 3;
 
-  optional bytes body = 4;
+  // TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds
+  optional int64 timeoutSeconds = 4;
+
+  // Body is content of the HTTP Request
+  optional bytes body = 5;
 }
 
 // HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container
@@ -1200,7 +1207,7 @@ message Template {
   // Data is a data template
   optional Data data = 39;
 
-  // HTTP is a HTTP template
+  // HTTP makes a HTTP request
   optional HTTP http = 42;
 
   // Volumes is a list of volumes that can be mounted by containers in a template.
