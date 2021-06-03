@@ -4,6 +4,10 @@
 
 Find out on [our blog](https://blog.argoproj.io).
 
+## Breaking Changes and Known Issues
+
+See [upgrading](https://github.com/argoproj/argo-workflows/blob/master/docs/upgrading.md).
+
 ## Argo CLI
 
 ### Mac

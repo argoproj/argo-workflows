@@ -124,6 +124,7 @@ nav:
           - argo watch: cli/argo_watch.md
   - Operator Manual:
       - installation.md
+      - upgrading.md
       - releases.md
       - Configuration:
           - managed-namespace.md

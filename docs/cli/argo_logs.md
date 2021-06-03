@@ -43,6 +43,7 @@ argo logs WORKFLOW [POD] [flags]
 ```
   -c, --container string    Print the logs of this container (default "main")
   -f, --follow              Specify if the logs should be streamed.
+      --grep string         grep for lines
   -h, --help                help for logs
       --no-color            Disable colorized output
   -p, --previous            Specify if the previously terminated container logs should be returned.

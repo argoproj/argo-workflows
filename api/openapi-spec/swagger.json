@@ -3175,6 +3175,11 @@
             "description": "Fields to be included or excluded in the response. e.g. \"items.spec,items.status.phase\", \"-items.status.nodes\".",
             "name": "fields",
             "in": "query"
+          },
+          {
+            "type": "string",
+            "name": "grep",
+            "in": "query"
           }
         ],
         "responses": {
@@ -3515,6 +3520,11 @@
             "type": "boolean",
             "description": "insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the\nserving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver\nand the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real\nkubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the\nconnection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept\nthe actual log data coming from the real kubelet).\n+optional.",
             "name": "logOptions.insecureSkipTLSVerifyBackend",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "name": "grep",
             "in": "query"
           }
         ],
@@ -8252,6 +8262,38 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.HTTP": {
+      "type": "object",
+      "required": [
+        "url"
+      ],
+      "properties": {
+        "body": {
+          "description": "Body is content of the HTTP Request",
+          "type": "string",
+          "format": "byte"
+        },
+        "headers": {
+          "description": "Headers are an optional list of headers to send with HTTP requests",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPHeader"
+          }
+        },
+        "method": {
+          "description": "Method is HTTP methods for HTTP Request",
+          "type": "string"
+        },
+        "timeoutSeconds": {
+          "description": "TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds",
+          "type": "integer"
+        },
+        "url": {
+          "description": "URL of the HTTP Request",
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.HTTPArtifact": {
       "description": "HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container",
       "type": "object",
@@ -8269,6 +8311,31 @@
         "url": {
           "description": "URL of the artifact",
           "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.HTTPHeader": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "valueFrom": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPHeaderSource"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.HTTPHeaderSource": {
+      "type": "object",
+      "properties": {
+        "secretKeyRef": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         }
       }
     },
@@ -8552,6 +8619,20 @@
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.MutexHolding"
           },
           "x-kubernetes-list-type": "atomic"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.NodeResult": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "outputs": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Outputs"
+        },
+        "phase": {
+          "type": "string"
         }
       }
     },
@@ -9351,6 +9432,21 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.Task": {
+      "type": "object",
+      "required": [
+        "nodeId",
+        "template"
+      ],
+      "properties": {
+        "nodeId": {
+          "type": "string"
+        },
+        "template": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Template": {
       "description": "Template is a reusable and composable unit of execution in a workflow",
       "type": "object",
@@ -9407,6 +9503,10 @@
           },
           "x-kubernetes-patch-merge-key": "ip",
           "x-kubernetes-patch-strategy": "merge"
+        },
+        "http": {
+          "description": "HTTP makes a HTTP request",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTP"
         },
         "initContainers": {
           "description": "InitContainers is a list of containers which run before the main container.",
@@ -10405,6 +10505,54 @@
         },
         "namespace": {
           "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowTaskSet": {
+      "type": "object",
+      "required": [
+        "metadata",
+        "spec"
+      ],
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTaskSetSpec"
+        },
+        "status": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTaskSetStatus"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowTaskSetSpec": {
+      "type": "object",
+      "properties": {
+        "tasks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Task"
+          }
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowTaskSetStatus": {
+      "type": "object",
+      "properties": {
+        "nodes": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NodeResult"
+          }
         }
       }
     },
