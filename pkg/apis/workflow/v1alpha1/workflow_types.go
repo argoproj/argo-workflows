@@ -34,6 +34,7 @@ const (
 	TemplateTypeDAG          TemplateType = "DAG"
 	TemplateTypeSuspend      TemplateType = "Suspend"
 	TemplateTypeData         TemplateType = "Data"
+	TemplateTypeHTTP         TemplateType = "HTTP"
 	TemplateTypeUnknown      TemplateType = "Unknown"
 )
 
@@ -72,6 +73,7 @@ const (
 	NodeTypeRetry     NodeType = "Retry"
 	NodeTypeSkipped   NodeType = "Skipped"
 	NodeTypeSuspend   NodeType = "Suspend"
+	NodeTypeHTTP      NodeType = "HTTP"
 )
 
 // PodGCStrategy is the strategy when to delete completed pods for GC.
@@ -537,6 +539,9 @@ type Template struct {
 
 	// Data is a data template
 	Data *Data `json:"data,omitempty" protobuf:"bytes,39,opt,name=data"`
+
+	// HTTP makes a HTTP request
+	HTTP *HTTP `json:"http,omitempty" protobuf:"bytes,42,opt,name=http"`
 
 	// Volumes is a list of volumes that can be mounted by containers in a template.
 	// +patchStrategy=merge
@@ -2300,6 +2305,9 @@ func (tmpl *Template) GetType() TemplateType {
 	if tmpl.Suspend != nil {
 		return TemplateTypeSuspend
 	}
+	if tmpl.HTTP != nil {
+		return TemplateTypeHTTP
+	}
 	return TemplateTypeUnknown
 }
 
@@ -2315,7 +2323,7 @@ func (tmpl *Template) IsPodType() bool {
 // IsLeaf returns whether or not the template is a leaf
 func (tmpl *Template) IsLeaf() bool {
 	switch tmpl.GetType() {
-	case TemplateTypeContainer, TemplateTypeContainerSet, TemplateTypeScript, TemplateTypeResource, TemplateTypeData:
+	case TemplateTypeContainer, TemplateTypeContainerSet, TemplateTypeScript, TemplateTypeResource, TemplateTypeData, TemplateTypeHTTP:
 		return true
 	}
 	return false
