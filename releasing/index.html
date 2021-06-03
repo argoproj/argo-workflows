@@ -1553,6 +1553,18 @@
 
 
   <li class="md-nav__item">
+    <a href="../upgrading/" title="Upgrading" class="md-nav__link">
+      Upgrading
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
     <a href="../releases/" title="Releases" class="md-nav__link">
       Releases
     </a>
@@ -1566,13 +1578,13 @@
 
   <li class="md-nav__item md-nav__item--nested">
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-6-3" type="checkbox" id="nav-6-3">
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-6-4" type="checkbox" id="nav-6-4">
     
-    <label class="md-nav__link" for="nav-6-3">
+    <label class="md-nav__link" for="nav-6-4">
       Configuration
     </label>
     <nav class="md-nav" data-md-component="collapsible" data-md-level="2">
-      <label class="md-nav__title" for="nav-6-3">
+      <label class="md-nav__title" for="nav-6-4">
         Configuration
       </label>
       <ul class="md-nav__list" data-md-scrollfix>
@@ -1722,13 +1734,13 @@
 
   <li class="md-nav__item md-nav__item--nested">
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-6-4" type="checkbox" id="nav-6-4">
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-6-5" type="checkbox" id="nav-6-5">
     
-    <label class="md-nav__link" for="nav-6-4">
+    <label class="md-nav__link" for="nav-6-5">
       Argo Server
     </label>
     <nav class="md-nav" data-md-component="collapsible" data-md-level="2">
-      <label class="md-nav__title" for="nav-6-4">
+      <label class="md-nav__title" for="nav-6-5">
         Argo Server
       </label>
       <ul class="md-nav__list" data-md-scrollfix>
@@ -2044,13 +2056,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#note-releasing-for-v2" title="NOTE: Releasing for v2" class="md-nav__link">
-    NOTE: Releasing for v2
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#preparing-the-release" title="Preparing the release" class="md-nav__link">
     Preparing the release
   </a>
@@ -2255,13 +2260,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#note-releasing-for-v2" title="NOTE: Releasing for v2" class="md-nav__link">
-    NOTE: Releasing for v2
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#preparing-the-release" title="Preparing the release" class="md-nav__link">
     Preparing the release
   </a>
@@ -2383,7 +2381,9 @@ revisit the list of commits to make sure the prior commits are cherry-picked as 
 </li>
 </ol>
 <h3 id="3-prepare-the-release">3. Prepare the Release<a class="headerlink" href="#3-prepare-the-release" title="Permanent link">&para;</a></h3>
-<h4 id="note-releasing-for-v2">NOTE: Releasing for <code>v2</code><a class="headerlink" href="#note-releasing-for-v2" title="Permanent link">&para;</a></h4>
+<blockquote>
+<p>v2</p>
+</blockquote>
 <p><code>v2</code> releases still depend on the previous repository name (<code>github.com/argoproj/argo</code>). To release for <code>v2</code>,
 make a local clone of the repository under the name <code>argo</code>:</p>
 <div class="highlight"><pre><span></span><code>$ <span class="nb">pwd</span>
@@ -2394,6 +2394,9 @@ $ <span class="nb">cd</span> argo
 </code></pre></div>
 <p>Then follow all the normal steps. You should delete the <code>argo</code> folder once the release is done to avoid confusion and conflicts.</p>
 <h4 id="preparing-the-release">Preparing the release<a class="headerlink" href="#preparing-the-release" title="Permanent link">&para;</a></h4>
+<blockquote>
+<p>Before v3.1</p>
+</blockquote>
 <ol>
 <li>Releasing requires a clean tree state, so back-up any untracked files in your Git directory.</li>
 </ol>
@@ -2420,7 +2423,18 @@ $ <span class="nb">cd</span> argo
 <p>Wait 1h to 2h.</p>
 </li>
 </ol>
+<blockquote>
+<p>v3.1 and after</p>
+</blockquote>
+<p>Create and push a release tag:</p>
+<div class="highlight"><pre><span></span><code>git tag v3.1.0
+git push origin v3.1.0
+</code></pre></div>
+<p>The release will then be done automatically by a Github action.</p>
 <h3 id="4-ensure-the-release-succeeded">4. Ensure the Release Succeeded<a class="headerlink" href="#4-ensure-the-release-succeeded" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p>Before v3.1</p>
+</blockquote>
 <ol>
 <li>
 <p>Check the images were pushed successfully. Ensure the <code>GitTreeState</code> is <code>Clean</code>.
@@ -2435,7 +2449,6 @@ $ docker run argoproj/argocli:v3.0.3 version
 </ol>
 <div class="highlight"><pre><span></span><code>$ ./dist/argo-darwin-amd64 version
 </code></pre></div>
-<p><strong>Only in v3.0 and before</strong>:</p>
 <ol>
 <li>
 <p>Check the manifests contain the correct tags (search for <code>v3.0.3</code>): <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/v3.0.3/manifests/install.yaml">https://raw.githubusercontent.com/argoproj/argo-workflows/v3.0.3/manifests/install.yaml</a> </p>
@@ -2444,14 +2457,26 @@ $ docker run argoproj/argocli:v3.0.3 version
 <p>Check the manifests apply: <code>kubectl -n argo apply -f https://raw.githubusercontent.com/argoproj/argo-workflows/v3.0.3/manifests/install.yaml</code></p>
 </li>
 </ol>
+<blockquote>
+<p>v3.1 and after</p>
+</blockquote>
+<p>No action needed.</p>
 <h3 id="5-release-notes">5. Release Notes<a class="headerlink" href="#5-release-notes" title="Permanent link">&para;</a></h3>
-<p>The change log is automatically generated.</p>
-<p>The release title should be the version number (e.g. <code>v3.0.3</code>) and nothing else.</p>
-<p>Release notes checklist:</p>
+<p>In <a href="../upgrading/">upgrading</a>, detail:</p>
 <ul>
 <li>All breaking changes are listed with migration steps</li>
 <li>The release notes identify every publicly known vulnerability with a CVE assignment</li>
 </ul>
+<p>The change log is automatically generated by a Github action.</p>
+<blockquote>
+<p>Before v3.1</p>
+</blockquote>
+<p>The release title should be the version number (e.g. <code>v3.0.3</code>) and nothing else.</p>
+<p>Use hack/release-notes.md as the template for your new release notes.</p>
+<blockquote>
+<p>v3.1 and after</p>
+</blockquote>
+<p>This is done automatically by a Github action.</p>
 <h3 id="6-upload-binaries-and-sha256-sums-to-github">6. Upload Binaries and SHA256 Sums To GitHub<a class="headerlink" href="#6-upload-binaries-and-sha256-sums-to-github" title="Permanent link">&para;</a></h3>
 <blockquote>
 <p>Before v3.1</p>
@@ -2461,13 +2486,27 @@ $ docker run argoproj/argocli:v3.0.3 version
 <div class="highlight"><pre><span></span><code>$ open dist
 </code></pre></div>
 <p>Upload only the zipped binaries (<code>.gz</code> suffix) and SHA256 sums (<code>.sha256</code> suffix) to GitHub. There should be 12 uploaded files in total.</p>
+<blockquote>
+<p>v3.1 and after</p>
+</blockquote>
+<p>This is done automatically by a Github action.</p>
 <h3 id="7-update-stable-tag">7. Update Stable Tag<a class="headerlink" href="#7-update-stable-tag" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p>Before v3.1</p>
+</blockquote>
 <p>If this is GA:</p>
 <p>Update the <code>stable</code> tag</p>
 <div class="highlight"><pre><span></span><code>git tag -f stable
 git push -f origin stable
 </code></pre></div>
 <p>Check the manifests contain the correct tags: <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/stable/manifests/install.yaml">https://raw.githubusercontent.com/argoproj/argo-workflows/stable/manifests/install.yaml</a></p>
+<blockquote>
+<p>v3.1 and after</p>
+</blockquote>
+<p>Delete the <code>stable</code> tag.</p>
+<div class="highlight"><pre><span></span><code>git tag -D stable
+git push origin :stable
+</code></pre></div>
 <h3 id="8-update-homebrew">8. Update Homebrew<a class="headerlink" href="#8-update-homebrew" title="Permanent link">&para;</a></h3>
 <p>If this is GA:</p>
 <p>Update the Homebrew formula.</p>
@@ -2487,7 +2526,14 @@ make publish VERSION=v3.0.3
 </code></pre></div>
 <p>Check package published: <a href="https://github.com/argoproj-labs/argo-client-java/packages">https://github.com/argoproj-labs/argo-client-java/packages</a></p>
 <h3 id="10-publish-release">10. Publish Release<a class="headerlink" href="#10-publish-release" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p>Before v3.1</p>
+</blockquote>
 <p>Finally, press publish on the GitHub release. Congrats, you're done!</p>
+<blockquote>
+<p>v3.1 and after</p>
+</blockquote>
+<p>This is done automatically by a Github action. </p>
                 
                   
                 
