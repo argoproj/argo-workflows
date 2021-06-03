@@ -36,6 +36,8 @@ func cleanCRD(filename string) {
 		properties.(obj)["script"].(obj)["required"] = []string{"image", "source"}
 	case "workfloweventbindings.argoproj.io":
 		// noop
+	case "workflowtasksets.argoproj.io":
+		// noop
 	default:
 		panic(name)
 	}
