@@ -2279,20 +2279,20 @@
 the <a href="https://www.conventionalcommits.org/en/v1.0.0/#summary">conventional commits</a>.</p>
 <h2 id="upgrading-to-v31">Upgrading to v3.1<a class="headerlink" href="#upgrading-to-v31" title="Permanent link">&para;</a></h2>
 <h3 id="3fff791e4-build-automatically-add-manifests-to-v-tags-5880"><a href="https://github.com/argoproj/argo-workflows/commit/3fff791e4ef5b7e1de82ccb36cae327e8eb726f6">3fff791e4</a> build!: Automatically add manifests to <code>v*</code> tags (#5880)<a class="headerlink" href="#3fff791e4-build-automatically-add-manifests-to-v-tags-5880" title="Permanent link">&para;</a></h3>
-<p>The manifests in the repository on the tag will longer contain the image tag, instead they contain <code>:latest</code>.</p>
+<p>The manifests in the repository on the tag will no longer contain the image tag, instead they will contain <code>:latest</code>.</p>
 <ul>
 <li>You must not get your manifests from the Git repository, you must get them from the release notes.</li>
 <li>You must not use the <code>stable</code> tag. This is defunct, and will be removed in v3.1.</li>
 </ul>
 <h2 id="upgrading-to-v30">Upgrading to v3.0<a class="headerlink" href="#upgrading-to-v30" title="Permanent link">&para;</a></h2>
 <h3 id="defbd600e-fix-default-argo_securetrue-fixes-5607-5626"><a href="https://github.com/argoproj/argo-workflows/commit/defbd600e37258c8cdf30f64d4da9f4563eb7901">defbd600e</a> fix: Default ARGO_SECURE=true. Fixes #5607 (#5626)<a class="headerlink" href="#defbd600e-fix-default-argo_securetrue-fixes-5607-5626" title="Permanent link">&para;</a></h3>
-<p>The server now starts with TLS enabled by default if a key is available. This can be disabled using <code>--secure=false</code>.</p>
+<p>The server now starts with TLS enabled by default if a key is available. The original behaviour can be configured with <code>--secure=false</code>.</p>
 <p>If you have an ingress, you may need to add the appropriate annotations:(varies by ingress):</p>
 <div class="highlight"><pre><span></span><code><span class="nt">alb.ingress.kubernetes.io/backend-protocol</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">HTTPS</span>
 <span class="nt">nginx.ingress.kubernetes.io/backend-protocol</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">HTTPS</span>
 </code></pre></div>
 <h3 id="01d310235-choreserver-required-authentication-by-default-resolves-5206-5211"><a href="https://github.com/argoproj/argo-workflows/commit/01d310235a9349e6d552c758964cc2250a9e9616">01d310235</a> chore(server)!: Required authentication by default. Resolves #5206 (#5211)<a class="headerlink" href="#01d310235-choreserver-required-authentication-by-default-resolves-5206-5211" title="Permanent link">&para;</a></h3>
-<p>To login to the user interface, you must provide a login token. This can be disabled with <code>--auth-mode=server</code>.</p>
+<p>To login to the user interface, you must provide a login token. The original behaviour can be configured with <code>--auth-mode=server</code>.</p>
 <h3 id="f31e0c6f9-chore-remove-deprecated-fields-5035"><a href="https://github.com/argoproj/argo-workflows/commit/f31e0c6f92ec5e383d2f32f57a822a518cbbef86">f31e0c6f9</a> chore!: Remove deprecated fields (#5035)<a class="headerlink" href="#f31e0c6f9-chore-remove-deprecated-fields-5035" title="Permanent link">&para;</a></h3>
 <p>Some fields that were deprecated in early 2020 have been removed.  </p>
 <table>
@@ -2318,7 +2318,7 @@ the <a href="https://www.conventionalcommits.org/en/v1.0.0/#summary">conventiona
 kubectl get wf --all-namespaces -o yaml <span class="p">|</span> grep ttlSecondsAfterFinished
 </code></pre></div>
 <h3 id="c8215f972-featcontroller-key-only-artifacts-fixes-3184-4618"><a href="https://github.com/argoproj/argo-workflows/commit/c8215f972502435e6bc5b232823ecb6df919f952">c8215f972</a> feat(controller)!: Key-only artifacts. Fixes #3184 (#4618)<a class="headerlink" href="#c8215f972-featcontroller-key-only-artifacts-fixes-3184-4618" title="Permanent link">&para;</a></h3>
-<p>This change is not breaking per-se, but many users do not appear to aware of <a href="../artifact-repository-ref/">artifact repository ref</a>.</p>
+<p>This change is not breaking per-se, but many users do not appear to aware of <a href="../artifact-repository-ref/">artifact repository ref</a>, so check your usage of that feature if you have problems.</p>
                 
                   
                 
