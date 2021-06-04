@@ -2190,6 +2190,7 @@ Note that these environment variables may be removed at any time.</p>
 <tr>
 <th>Name</th>
 <th>Type</th>
+<th>Default</th>
 <th>Description</th>
 </tr>
 </thead>
@@ -2197,132 +2198,158 @@ Note that these environment variables may be removed at any time.</p>
 <tr>
 <td><code>ALL_POD_CHANGES_SIGNIFICANT</code></td>
 <td><code>bool</code></td>
+<td><code>false</code></td>
 <td>Whether to consider all pod changes as significant during pod reconciliation.</td>
 </tr>
 <tr>
 <td><code>ALWAYS_OFFLOAD_NODE_STATUS</code></td>
 <td><code>bool</code></td>
+<td><code>false</code></td>
 <td>Whether to always offload the node status.</td>
 </tr>
 <tr>
 <td><code>ARCHIVED_WORKFLOW_GC_PERIOD</code></td>
 <td><code>time.Duration</code></td>
+<td><code>24h</code></td>
 <td>The periodicity for GC of archived workflows.</td>
 </tr>
 <tr>
 <td><code>ARGO_TRACE</code></td>
-<td><code>bool</code></td>
+<td><code>string</code></td>
+<td><code>"1"</code></td>
 <td>Whether to enable tracing statements in Argo components.</td>
 </tr>
 <tr>
 <td><code>CRON_SYNC_PERIOD</code></td>
 <td><code>time.Duration</code></td>
-<td>How ofen to sync cron workflows. Default <code>10s</code></td>
+<td><code>10s</code></td>
+<td>How often to sync cron workflows.</td>
 </tr>
 <tr>
 <td><code>DEFAULT_REQUEUE_TIME</code></td>
 <td><code>time.Duration</code></td>
+<td><code>10s</code></td>
 <td>The requeue time for the rate limiter of the workflow queue.</td>
 </tr>
 <tr>
 <td><code>EXPRESSION_TEMPLATES</code></td>
 <td><code>bool</code></td>
-<td>Escape hatch to disable expression templates. Default <code>true</code>.</td>
+<td><code>true</code></td>
+<td>Escape hatch to disable expression templates.</td>
 </tr>
 <tr>
 <td><code>GZIP_IMPLEMENTATION</code></td>
 <td><code>string</code></td>
-<td>The implementation of compression/decompression. Currently only "PGZip" and "GZip" are supported. Defaults to "PGZip".</td>
+<td><code>"PGZip"</code></td>
+<td>The implementation of compression/decompression. Currently only "PGZip" and "GZip" are supported.</td>
 </tr>
 <tr>
 <td><code>HEALTHZ_AGE</code></td>
 <td><code>time.Duration</code></td>
-<td>How old a un-reconciled workflow is to report unhealthy. Defaults to <code>5m</code>.</td>
+<td><code>5m</code></td>
+<td>How old a un-reconciled workflow is to report unhealthy.</td>
 </tr>
 <tr>
 <td><code>INDEX_WORKFLOW_SEMAPHORE_KEYS</code></td>
 <td><code>bool</code></td>
-<td>Whether or not to index semaphores. Defaults to <code>true</code>.</td>
+<td><code>true</code></td>
+<td>Whether or not to index semaphores.</td>
 </tr>
 <tr>
 <td><code>LEADER_ELECTION_IDENTITY</code></td>
 <td><code>string</code></td>
+<td>Controller's <code>metadata.name</code></td>
 <td>The ID used for workflow controllers to elect a leader.</td>
 </tr>
 <tr>
 <td><code>LEADER_ELECTION_DISABLE</code></td>
 <td><code>bool</code></td>
+<td><code>false</code></td>
 <td>Whether leader election should be disabled.</td>
 </tr>
 <tr>
 <td><code>LEADER_ELECTION_LEASE_DURATION</code></td>
 <td><code>time.Duration</code></td>
+<td><code>15s</code></td>
 <td>The duration that non-leader candidates will wait to force acquire leadership.</td>
 </tr>
 <tr>
 <td><code>LEADER_ELECTION_RENEW_DEADLINE</code></td>
 <td><code>time.Duration</code></td>
+<td><code>10s</code></td>
 <td>The duration that the acting master will retry refreshing leadership before giving up.</td>
 </tr>
 <tr>
 <td><code>LEADER_ELECTION_RETRY_PERIOD</code></td>
 <td><code>time.Duration</code></td>
+<td><code>5s</code></td>
 <td>The duration that the leader election clients should wait between tries of actions.</td>
 </tr>
 <tr>
 <td><code>MAX_OPERATION_TIME</code></td>
 <td><code>time.Duration</code></td>
+<td><code>30s</code></td>
 <td>The maximum time a workflow operation is allowed to run for before requeuing the workflow onto the work queue.</td>
 </tr>
 <tr>
 <td><code>OFFLOAD_NODE_STATUS_TTL</code></td>
 <td><code>time.Duration</code></td>
+<td><code>5m</code></td>
 <td>The TTL to delete the offloaded node status. Currently only used for testing.</td>
 </tr>
 <tr>
 <td><code>RECENTLY_STARTED_POD_DURATION</code></td>
 <td><code>time.Duration</code></td>
+<td><code>10s</code></td>
 <td>The duration of a pod before the pod is considered to be recently started.</td>
 </tr>
 <tr>
 <td><code>RETRY_BACKOFF_DURATION</code></td>
 <td><code>time.Duration</code></td>
+<td><code>10ms</code></td>
 <td>The retry backoff duration when retrying API calls.</td>
 </tr>
 <tr>
 <td><code>RETRY_BACKOFF_FACTOR</code></td>
 <td><code>float</code></td>
+<td><code>2.0</code></td>
 <td>The retry backoff factor when retrying API calls.</td>
 </tr>
 <tr>
 <td><code>RETRY_BACKOFF_STEPS</code></td>
 <td><code>int</code></td>
+<td><code>5</code></td>
 <td>The retry backoff steps when retrying API calls.</td>
 </tr>
 <tr>
 <td><code>TRANSIENT_ERROR_PATTERN</code></td>
 <td><code>string</code></td>
+<td><code>""</code></td>
 <td>The regular expression that represents additional patterns for transient errors.</td>
 </tr>
 <tr>
 <td><code>WF_DEL_PROPAGATION_POLICY</code></td>
 <td><code>string</code></td>
-<td>The deletion propogation policy for workflows.</td>
+<td><code>""</code></td>
+<td>The deletion propagation policy for workflows.</td>
 </tr>
 <tr>
 <td><code>WORKFLOW_GC_PERIOD</code></td>
 <td><code>time.Duration</code></td>
+<td><code>5m</code></td>
 <td>The periodicity for GC of workflows.</td>
 </tr>
 <tr>
 <td><code>BUBBLE_ENTRY_TEMPLATE_ERR</code></td>
 <td><code>bool</code></td>
-<td>Whether to bubble up template errors to workflow. Default true</td>
+<td><code>true</code></td>
+<td>Whether to bubble up template errors to workflow.</td>
 </tr>
 <tr>
 <td><code>INFORMER_WRITE_BACK</code></td>
 <td><code>bool</code></td>
-<td>Whether to write back to informer instead of catching up. Deafult true</td>
+<td><code>true</code></td>
+<td>Whether to write back to informer instead of catching up.</td>
 </tr>
 </tbody>
 </table>
@@ -2351,6 +2378,7 @@ Note that these environment variables may be removed at any time.</p>
 <tr>
 <th>Name</th>
 <th>Type</th>
+<th>Default</th>
 <th>Description</th>
 </tr>
 </thead>
@@ -2358,51 +2386,61 @@ Note that these environment variables may be removed at any time.</p>
 <tr>
 <td><code>ARGO_CONTAINER_RUNTIME_EXECUTOR</code></td>
 <td><code>string</code></td>
+<td><code>"docker"</code></td>
 <td>The name of the container runtime executor.</td>
 </tr>
 <tr>
 <td><code>ARGO_KUBELET_PORT</code></td>
 <td><code>int</code></td>
+<td><code>10250</code></td>
 <td>The port to the Kubelet API.</td>
 </tr>
 <tr>
 <td><code>ARGO_KUBELET_INSECURE</code></td>
 <td><code>bool</code></td>
+<td><code>false</code></td>
 <td>Whether to disable the TLS verification.</td>
 </tr>
 <tr>
 <td><code>EXECUTOR_RETRY_BACKOFF_DURATION</code></td>
 <td><code>time.Duration</code></td>
+<td><code>1s</code></td>
 <td>The retry backoff duration when the workflow executor performs retries.</td>
 </tr>
 <tr>
 <td><code>EXECUTOR_RETRY_BACKOFF_FACTOR</code></td>
 <td><code>float</code></td>
+<td><code>1.6</code></td>
 <td>The retry backoff factor when the workflow executor performs retries.</td>
 </tr>
 <tr>
 <td><code>EXECUTOR_RETRY_BACKOFF_JITTER</code></td>
 <td><code>float</code></td>
+<td><code>0.5</code></td>
 <td>The retry backoff jitter when the workflow executor performs retries.</td>
 </tr>
 <tr>
 <td><code>EXECUTOR_RETRY_BACKOFF_STEPS</code></td>
 <td><code>int</code></td>
+<td><code>5</code></td>
 <td>The retry backoff steps when the workflow executor performs retries.</td>
 </tr>
 <tr>
 <td><code>PNS_PRIVILEGED</code></td>
 <td><code>bool</code></td>
+<td><code>false</code></td>
 <td>Whether to always set privileged on for PNS when PNS executor is used.</td>
 </tr>
 <tr>
 <td><code>REMOVE_LOCAL_ART_PATH</code></td>
 <td><code>bool</code></td>
+<td><code>false</code></td>
 <td>Whether to remove local artifacts.</td>
 </tr>
 <tr>
 <td><code>RESOURCE_STATE_CHECK_INTERVAL</code></td>
 <td><code>time.Duration</code></td>
+<td><code>5s</code></td>
 <td>The time interval between resource status checks against the specified success and failure conditions.</td>
 </tr>
 </tbody>
