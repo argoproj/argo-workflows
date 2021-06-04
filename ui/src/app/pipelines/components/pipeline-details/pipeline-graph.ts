@@ -70,7 +70,10 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
         const classNames = status.phase === 'Running' ? 'flow' : '';
         (spec.sources || []).forEach((x, i) => {
             const ss = (status.sourceStatuses || {})[x.name || ''] || {};
-            const rate = Object.values(ss.metrics || {})
+            const rate = Object.entries(ss.metrics || {})
+                // the rate will remain after scale-down, so we must filter out, as it'll be wrong
+                .filter(([replica, m]) => parseInt(replica, 10) < step.status.replicas)
+                .map(([, m]) => m)
                 .map(m => parseResourceQuantity(m.rate))
                 .reduce((a, b) => a + b, 0)
                 .toPrecision(3);
