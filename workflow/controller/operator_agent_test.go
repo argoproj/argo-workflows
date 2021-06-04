@@ -11,7 +11,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
-var http = `apiVersion: argoproj.io/v1alpha1
+var httpwf = `apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: hello-world
@@ -63,7 +63,7 @@ status:
 func TestHTTPTemplate(t *testing.T) {
 	var ts v1alpha1.WorkflowTaskSet
 	err := yaml.UnmarshalStrict([]byte(taskSet), &ts)
-	wf := unmarshalWF(http)
+	wf := v1alpha1.MustUnmarshalWorkflow(httpwf)
 	cancel, controller := newController(wf, ts)
 	defer cancel()
 

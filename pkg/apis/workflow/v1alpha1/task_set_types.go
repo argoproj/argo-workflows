@@ -12,13 +12,24 @@ type WorkflowTaskSet struct {
 	Status            WorkflowTaskSetStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
 }
 
+type Tasks []Task
+
 type WorkflowTaskSetSpec struct {
-	Tasks []Task `json:"tasks,omitempty" protobuf:"bytes,1,rep,name=tasks"`
+	Tasks Tasks `json:"tasks,omitempty" protobuf:"bytes,1,rep,name=tasks"`
 }
 
 type Task struct {
 	NodeID   string   `json:"nodeId" protobuf:"bytes,1,opt,name=nodeId"`
 	Template Template `json:"template" protobuf:"bytes,2,opt,name=template"`
+}
+
+func (t Tasks) GetTask(nodeId string) *Task {
+	for _, task := range t {
+		if task.NodeID == nodeId {
+			return &task
+		}
+	}
+	return nil
 }
 
 type WorkflowTaskSetStatus struct {
