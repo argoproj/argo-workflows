@@ -887,7 +887,7 @@ func isAgentPod(pod *apiv1.Pod) bool {
 
 func (woc *wfOperationCtx) reconcileAgentNode(pod *apiv1.Pod) {
 	for _, node := range woc.wf.Status.Nodes {
-		if node.Type == wfv1.NodeTypeAgent {
+		if node.Type == wfv1.NodeTypeHTTP {
 			if newState := woc.assessNodeStatus(pod, &node); newState != nil {
 				if !node.Fulfilled() {
 					woc.wf.Status.Nodes[node.ID] = *newState
@@ -2780,7 +2780,7 @@ func (woc *wfOperationCtx) executeResource(ctx context.Context, nodeName string,
 func (woc *wfOperationCtx) executeTaskSet(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node := woc.wf.GetNodeByName(nodeName)
 	if node == nil {
-		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeAgent, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
+		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeHTTP, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
 	}
 	if node.Phase == wfv1.NodePending {
 		err := woc.controller.taskSetManager.CreateTaskSet(ctx, woc.wf, node.ID, *tmpl)
