@@ -72,7 +72,10 @@ export const StepSidePanel = ({
                                             const total = Object.values(x.metrics || {})
                                                 .filter(m => m.total)
                                                 .reduce((a, b) => a + b.total, 0);
-                                            const rate = Object.values(x.metrics || {})
+                                            const rate = Object.entries(x.metrics || {})
+                                                // the rate will remain after scale-down, so we must filter out, as it'll be wrong
+                                                .filter(([replica, m]) => parseInt(replica, 10) < step.status.replicas)
+                                                .map(([, m]) => m)
                                                 .map(m => parseResourceQuantity(m.rate))
                                                 .reduce((a, b) => a + b, 0);
                                             const errors = Object.values(x.metrics || {})
