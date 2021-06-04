@@ -372,7 +372,7 @@ manifests/quick-start-mysql.yaml: /dev/null
 manifests/quick-start-postgres.yaml: /dev/null
 	dist/kustomize build --load_restrictor=none manifests/quick-start/postgres | ./hack/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
 
-dist/manifests/%: manifests/$*
+dist/manifests/%: manifests/%
 	@mkdir -p dist/manifests
 	sed 's/:latest/:$(VERSION)/' manifests/$* > $@
 
