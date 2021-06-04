@@ -2150,6 +2150,12 @@
           },
           {
             "type": "string",
+            "description": "optional - only return entries which match this expresssion.",
+            "name": "grep",
+            "in": "query"
+          },
+          {
+            "type": "string",
             "description": "The container for which to stream logs. Defaults to only container if there is one container in the pod.\n+optional.",
             "name": "podLogOptions.container",
             "in": "query"
@@ -3175,11 +3181,6 @@
             "description": "Fields to be included or excluded in the response. e.g. \"items.spec,items.status.phase\", \"-items.status.nodes\".",
             "name": "fields",
             "in": "query"
-          },
-          {
-            "type": "string",
-            "name": "grep",
-            "in": "query"
           }
         ],
         "responses": {
@@ -3950,6 +3951,11 @@
             "type": "boolean",
             "description": "insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the\nserving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver\nand the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real\nkubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the\nconnection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept\nthe actual log data coming from the real kubelet).\n+optional.",
             "name": "logOptions.insecureSkipTLSVerifyBackend",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "name": "grep",
             "in": "query"
           }
         ],

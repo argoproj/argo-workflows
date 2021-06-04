@@ -12,22 +12,31 @@ function identity<T>(value: T) {
 export const PipelineLogsViewer = ({namespace, pipelineName, stepName}: {namespace: string; pipelineName: string; stepName: string}) => {
     const [container, setContainer] = useState<string>('main');
     const [error, setError] = useState<Error>();
+    const [grep, setGrep] = useState('');
     const [logsObservable, setLogsObservable] = useState<Observable<string>>();
     const [logLoaded, setLogLoaded] = useState(false);
+    // filter allows us to introduce a short delay, before we actually change grep
+    const [filter, setFilter] = useState('');
+    useEffect(() => {
+        const x = setTimeout(() => setGrep(filter), 1000);
+        return () => clearTimeout(x);
+    }, [filter]);
 
     useEffect(() => {
         setError(null);
         setLogLoaded(false);
         const source = services.pipeline
-            .pipelineLogs(namespace, pipelineName, stepName, container, 50)
+            .pipelineLogs(namespace, pipelineName, stepName, container, grep, 50)
             .filter(e => !!e)
             .map(e => e.msg + '\n')
+            // this next line highlights the search term in bold with a yellow background, white text
+            .map(x => x.replace(new RegExp(grep, 'g'), y => '\u001b[1m\u001b[43;1m\u001b[37m' + y + '\u001b[0m'))
             .publishReplay()
             .refCount();
         const subscription = source.subscribe(() => setLogLoaded(true), setError);
         setLogsObservable(source);
         return () => subscription.unsubscribe();
-    }, [namespace, pipelineName, stepName, container]);
+    }, [namespace, pipelineName, stepName, container, grep]);
 
     return (
         <div>
@@ -46,6 +55,11 @@ export const PipelineLogsViewer = ({namespace, pipelineName, stepName}: {namespa
                     <ErrorNotice error={error} />
                 </div>
                 <div className='columns small-9 medium-10'>
+                    <p>
+                        <span className='fa-pull-right'>
+                            <i className='fa fa-filter' /> <input type='search' defaultValue={filter} onChange={v => setFilter(v.target.value)} placeholder='Filter (regexp)...' />
+                        </span>
+                    </p>
                     {!logLoaded ? (
                         <p>
                             <i className='fa fa-circle-notch fa-spin' /> Waiting for data...

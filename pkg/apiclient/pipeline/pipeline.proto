@@ -57,6 +57,8 @@ message PipelineLogsRequest {
     string name = 2;
     // optional - only return entries for this step
     string stepName = 3;
+    // optional - only return entries which match this expresssion
+    string grep = 4;
     k8s.io.api.core.v1.PodLogOptions podLogOptions = 5;
 }
 

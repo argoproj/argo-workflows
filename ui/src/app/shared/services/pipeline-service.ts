@@ -12,7 +12,7 @@ export class PipelineService {
         return requests.loadEventSource(`api/v1/stream/pipelines/${namespace}`).map(line => line && (JSON.parse(line).result as PipelineWatchEvent));
     }
 
-    public pipelineLogs(namespace: string, name = '', stepName = '', container = 'main', tailLines = -1) {
+    public pipelineLogs(namespace: string, name = '', stepName = '', container = 'main', grep = '', tailLines = -1) {
         const params = ['podLogOptions.follow=true'];
         if (name) {
             params.push('name=' + name);
@@ -22,6 +22,9 @@ export class PipelineService {
         }
         if (container) {
             params.push('podLogOptions.container=' + container);
+        }
+        if (grep) {
+            params.push('grep=' + grep);
         }
         if (tailLines >= 0) {
             params.push('podLogOptions.tailLines=' + tailLines);

@@ -124,17 +124,17 @@ func (s *server) PipelineLogs(in *pipelinepkg.PipelineLogsRequest, svr pipelinep
 		svr.Context(),
 		in.Namespace,
 		labelSelector,
+		in.Grep,
 		in.PodLogOptions,
 		func(pod *corev1.Pod, data []byte) error {
 			now := metav1.Now()
-			e := &pipelinepkg.LogEntry{
+			return svr.Send(&pipelinepkg.LogEntry{
 				Namespace:    pod.Namespace,
 				PipelineName: pod.Labels[dfv1.KeyPipelineName],
 				StepName:     pod.Labels[dfv1.KeyStepName],
 				Time:         &now,
 				Msg:          string(data),
-			}
-			return svr.Send(e)
+			})
 		},
 	)
 }
