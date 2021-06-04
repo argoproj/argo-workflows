@@ -71,6 +71,7 @@ spec:
 | `PNS_PRIVILEGED` | `bool` | `false` | Whether to always set privileged on for PNS when PNS executor is used. |
 | `REMOVE_LOCAL_ART_PATH` | `bool` | `false` | Whether to remove local artifacts. |
 | `RESOURCE_STATE_CHECK_INTERVAL` | `time.Duration` | `5s` | The time interval between resource status checks against the specified success and failure conditions. |
+| `WAIT_CONTAINER_STATUS_CHECK_INTERVAL` | `time.Duration` | `5s` | The time interval for wait container to check whether the containers have completed. |
 
 You can set the environment variables for executor by customizing executor container's environment variables in your
 controller's configmap like the following:
