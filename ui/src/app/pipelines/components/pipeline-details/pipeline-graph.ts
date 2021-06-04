@@ -72,7 +72,8 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
             const ss = (status.sourceStatuses || {})[x.name || ''] || {};
             const rate = Object.values(ss.metrics || {})
                 .map(m => parseResourceQuantity(m.rate))
-                .reduce((a, b) => a + b, 0);
+                .reduce((a, b) => a + b, 0)
+                .toPrecision(3);
 
             const label =
                 (recent(ss.lastError && new Date(ss.lastError.time)) ? errorSymbol : '') + (ss.pending ? ' ' + pendingSymbol + ss.pending + ' ' : '') + (tachometerSymbol + rate);

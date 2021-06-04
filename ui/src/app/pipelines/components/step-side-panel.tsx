@@ -92,8 +92,8 @@ export const StepSidePanel = ({
                                                             </div>
                                                         </div>
                                                         <div className='row white-box__details-row'>
-                                                            <div className='columns small-2'>Message</div>
-                                                            <div className='columns small-2' title='Total'>
+                                                            <div className='columns small-2'>Total</div>
+                                                            <div className='columns small-2'>
                                                                 <TickMeter value={total} />
                                                             </div>
                                                             <div className='columns small-2' title='Rate'>
@@ -134,8 +134,8 @@ export const StepSidePanel = ({
                                                     <p>{name}</p>
                                                     <div className='white-box__details'>
                                                         <div className='row white-box__details-row'>
-                                                            <div className='columns small-2'>Message</div>
-                                                            <div className='columns small-2' title='Total'>
+                                                            <div className='columns small-2'>Total</div>
+                                                            <div className='columns small-2'>
                                                                 <TickMeter value={total} />
                                                             </div>
                                                             <div className='columns small-2' />
