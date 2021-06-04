@@ -2443,6 +2443,12 @@ Note that these environment variables may be removed at any time.</p>
 <td><code>5s</code></td>
 <td>The time interval between resource status checks against the specified success and failure conditions.</td>
 </tr>
+<tr>
+<td><code>WAIT_CONTAINER_STATUS_CHECK_INTERVAL</code></td>
+<td><code>time.Duration</code></td>
+<td><code>5s</code></td>
+<td>The time interval for wait container to check whether the containers have completed.</td>
+</tr>
 </tbody>
 </table>
 <p>You can set the environment variables for executor by customizing executor container's environment variables in your
