@@ -236,7 +236,7 @@ scan-%:
 # generation
 
 .PHONY: codegen
-codegen: types swagger docs
+codegen: types swagger docs manifests
 
 .PHONY: types
 types: pkg/apis/workflow/v1alpha1/generated.proto pkg/apis/workflow/v1alpha1/openapi_generated.go pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go
