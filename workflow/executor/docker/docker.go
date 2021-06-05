@@ -30,12 +30,18 @@ var started = time.Now()
 type DockerExecutor struct {
 	namespace  string
 	podName    string
-	containers map[string]string // containerName -> containerID
+	containers map[string]ctr // containerName -> ctr
+}
+
+type ctr struct {
+	containerID string
+	status      string
+	createdAt   time.Time
 }
 
 func NewDockerExecutor(namespace, podName string) (*DockerExecutor, error) {
 	log.Infof("Creating a docker executor")
-	return &DockerExecutor{namespace, podName, make(map[string]string)}, nil
+	return &DockerExecutor{namespace, podName, make(map[string]ctr)}, nil
 }
 
 func (d *DockerExecutor) GetFileContents(containerName string, sourcePath string) (string, error) {
@@ -207,14 +213,7 @@ func (d *DockerExecutor) Wait(ctx context.Context, containerNames []string) erro
 	return err
 }
 
-type ctrInfo struct {
-	containerID string
-	status      string
-	createdAt   time.Time
-}
-
-func (d *DockerExecutor) listContainers() (map[string]ctrInfo, error) {
-
+func (d *DockerExecutor) listContainers() (map[string]ctr, error) {
 	output, err := common.RunCommand(
 		"docker",
 		"ps",
@@ -228,7 +227,7 @@ func (d *DockerExecutor) listContainers() (map[string]ctrInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	containers := make(map[string]ctrInfo)
+	containers := make(map[string]ctr)
 	for _, l := range strings.Split(string(output), "\n") {
 		parts := strings.Split(strings.TrimSpace(l), "|")
 		if len(parts) != 4 {
@@ -247,14 +246,13 @@ func (d *DockerExecutor) listContainers() (map[string]ctrInfo, error) {
 		if err != nil {
 			return nil, err
 		}
-		containers[containerName] = ctrInfo{containerID: containerID, status: status, createdAt: createdAt}
-
+		containers[containerName] = ctr{containerID: containerID, status: status, createdAt: createdAt}
 	}
+	log.WithField("containers", containers).Info("listed containers")
 	return containers, nil
 }
 
 func (d *DockerExecutor) pollContainerIDs(ctx context.Context, containerNames []string) error {
-	containerStatus := make(map[string]string)
 	for {
 		select {
 		case <-ctx.Done():
@@ -264,21 +262,20 @@ func (d *DockerExecutor) pollContainerIDs(ctx context.Context, containerNames []
 			if err != nil {
 				return err
 			}
-			for containerName, info := range containers {
-				if d.containers[containerName] == info.containerID { // already found
+			for containerName, c := range containers {
+				if d.containers[containerName].containerID == c.containerID { // already found
 					continue
 				}
-				if info.createdAt.Before(started.Add(-15 * time.Second)) {
-					log.Infof("ignoring container %q created at %v, too long before process started", containerName, info.createdAt)
+				if c.createdAt.Before(started.Add(-15 * time.Second)) {
+					log.Infof("ignoring container %q created at %v, too long before process started", containerName, c.createdAt)
 					continue
 				}
-				if info.status == "Created" && containerStatus[containerName] != "" {
-					log.Infof("ignoring created container %q that would %s -> %s", containerName, containerStatus[containerName], info.status)
+				if c.status == "Created" && d.containers[containerName].status != "" {
+					log.Infof("ignoring created container %q that would %s -> %s", containerName, d.containers[containerName].status, c.status)
 					continue
 				}
-				d.containers[containerName] = info.containerID
-				containerStatus[containerName] = info.status
-				log.Infof("mapped container name %q to container ID %q (created at %v, status %s)", containerName, info.containerID, info.createdAt, info.status)
+				d.containers[containerName] = c
+				log.Infof("mapped container name %q to container ID %q (created at %v, status %s)", containerName, c.containerID, c.createdAt, c.status)
 			}
 		}
 		// sidecars start after the main containers, so we can't just exit once we know about all the main containers,
@@ -293,7 +290,7 @@ func (d *DockerExecutor) pollContainerIDs(ctx context.Context, containerNames []
 
 func (d *DockerExecutor) haveContainers(containerNames []string) bool {
 	for _, n := range containerNames {
-		if d.containers[n] == "" {
+		if _, ok := d.containers[n]; !ok {
 			return false
 		}
 	}
@@ -301,8 +298,8 @@ func (d *DockerExecutor) haveContainers(containerNames []string) bool {
 }
 
 func (d *DockerExecutor) getContainerID(containerName string) (string, error) {
-	if containerID, ok := d.containers[containerName]; ok {
-		return containerID, nil
+	if ctr, ok := d.containers[containerName]; ok {
+		return ctr.containerID, nil
 	}
 	return "", errContainerNotExist
 }
