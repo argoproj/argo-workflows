@@ -10,7 +10,8 @@ function identity<T>(value: T) {
 }
 
 export const PipelineLogsViewer = ({namespace, pipelineName, stepName}: {namespace: string; pipelineName: string; stepName: string}) => {
-    const [container, setContainer] = useState<string>('main');
+    const [container, setContainer] = useState('main');
+    const [tailLines, setTailLines] = useState(50);
     const [error, setError] = useState<Error>();
     const [grep, setGrep] = useState('');
     const [logsObservable, setLogsObservable] = useState<Observable<string>>();
@@ -26,7 +27,7 @@ export const PipelineLogsViewer = ({namespace, pipelineName, stepName}: {namespa
         setError(null);
         setLogLoaded(false);
         const source = services.pipeline
-            .pipelineLogs(namespace, pipelineName, stepName, container, grep, 50)
+            .pipelineLogs(namespace, pipelineName, stepName, container, grep, tailLines)
             .filter(e => !!e)
             .map(e => e.msg + '\n')
             // this next line highlights the search term in bold with a yellow background, white text
@@ -36,44 +37,43 @@ export const PipelineLogsViewer = ({namespace, pipelineName, stepName}: {namespa
         const subscription = source.subscribe(() => setLogLoaded(true), setError);
         setLogsObservable(source);
         return () => subscription.unsubscribe();
-    }, [namespace, pipelineName, stepName, container, grep]);
+    }, [namespace, pipelineName, stepName, container, grep, tailLines]);
 
     return (
         <div>
-            <div className='row'>
-                <div className='columns small-3 medium-2'>
-                    <p>Container</p>
-                    <div style={{marginBottom: '1em'}}>
-                        {['init', 'main', 'sidecar'].map(x => (
-                            <div key={x}>
-                                <a onClick={() => setContainer(x)}>
-                                    {x === container ? <i className='fa fa-angle-right' /> : <span>&nbsp;&nbsp;</span>} {x}
-                                </a>
-                            </div>
-                        ))}
-                    </div>
-                    <ErrorNotice error={error} />
+            <div>
+                {['init', 'main', 'sidecar'].map(x => (
+                    <a onClick={() => setContainer(x)} key={x} style={{margin: 10}}>
+                        {x === container ? (
+                            <b>
+                                {' '}
+                                <i className='fa fa-angle-right' />
+                                {x}
+                            </b>
+                        ) : (
+                            <span>&nbsp;&nbsp;{x}</span>
+                        )}
+                    </a>
+                ))}
+                <span className='fa-pull-right'>
+                    <i className='fa fa-filter' /> <input type='search' defaultValue={filter} onChange={v => setFilter(v.target.value)} placeholder='Filter (regexp)...' />
+                </span>
+            </div>
+            <ErrorNotice error={error} />
+            {!logLoaded ? (
+                <div className='log-box'>
+                    <i className='fa fa-circle-notch fa-spin' /> Waiting for data...
                 </div>
-                <div className='columns small-9 medium-10'>
-                    <p>
-                        <span className='fa-pull-right'>
-                            <i className='fa fa-filter' /> <input type='search' defaultValue={filter} onChange={v => setFilter(v.target.value)} placeholder='Filter (regexp)...' />
-                        </span>
-                    </p>
-                    {!logLoaded ? (
-                        <p>
-                            <i className='fa fa-circle-notch fa-spin' /> Waiting for data...
-                        </p>
-                    ) : (
-                        <FullHeightLogsViewer
-                            source={{
-                                key: 'logs',
-                                loadLogs: identity(logsObservable),
-                                shouldRepeat: () => false
-                            }}
-                        />
-                    )}
-                </div>
+            ) : (
+                <FullHeightLogsViewer source={{key: 'logs', loadLogs: identity(logsObservable), shouldRepeat: () => false}} />
+            )}
+            <div style={{textAlign: 'right'}}>
+                <select style={{width: 'auto'}} value={tailLines} onChange={e => setTailLines(parseInt(e.currentTarget.value, 10))}>
+                    <option>5</option>
+                    <option>50</option>
+                    <option>500</option>
+                    <option>5000</option>
+                </select>
             </div>
         </div>
     );
