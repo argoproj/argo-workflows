@@ -9,4 +9,4 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: argo
-  namespace: default
+  namespace: argo
