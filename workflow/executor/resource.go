@@ -39,9 +39,12 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, fla
 
 	out, err := cmd.Output()
 	if err != nil {
-		exErr := err.(*exec.ExitError)
-		errMsg := strings.TrimSpace(string(exErr.Stderr))
-		return "", "", "", errors.New(errors.CodeBadRequest, errMsg)
+		if exErr, ok := err.(*exec.ExitError); ok {
+			errMsg := strings.TrimSpace(string(exErr.Stderr))
+			return "", "", "", errors.New(errors.CodeBadRequest, errMsg)
+		} else {
+			return "", "", "", errors.New(errors.CodeBadRequest, err.Error())
+		}
 	}
 	if action == "delete" {
 		return "", "", "", nil
