@@ -248,7 +248,7 @@ func (we *WorkflowExecutor) checkResourceState(ctx context.Context, selfLink str
 		return false, err
 	}
 	jsonString := string(jsonBytes)
-	log.Info(jsonString)
+	log.Debug(jsonString)
 	if !gjson.Valid(jsonString) {
 		return false, errors.Errorf(errors.CodeNotFound, "Encountered invalid JSON response when checking resource status. Will not be retried: %q", jsonString)
 	}
