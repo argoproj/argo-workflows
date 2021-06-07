@@ -15,6 +15,18 @@ If a release contains breaking changes, or CVE fixes, this will documented in th
 
 Both the `argo-server` and `argocli` should be the same version as the controller.
 
+## Supported Kubernetes Version
+
+The compatible Argo workflow and Kubernetes versions are as below.
+
+See [Kubernete version skew policy](https://kubernetes.io/releases/version-skew-policy/) for more deail.
+
+|Argo workflow version|Kubernetes version|
+|-|-|-|
+|3.1|1.18-1.20|
+|3.0|1.18-1.20|
+|2.12|1.17-1.19|
+
 # Release Cycle
 
 For **unstable**, we build and tag `latest` images for every commit to master.

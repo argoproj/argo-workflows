@@ -8,6 +8,8 @@ You can choose one of three common installations:
 
 Choose [a manifests from the list](https://github.com/argoproj/argo-workflows/tree/stable/manifests).
 
+Use the [correct Argo workflow version for your Kubernetes](https://argoproj.github.io/argo-workflows/releases/#supported-kubernetes-version).
+
 E.g.
 
 ```sh
