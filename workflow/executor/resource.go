@@ -1,6 +1,8 @@
 package executor
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -13,7 +15,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
-	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -22,7 +23,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util"
-	envutil "github.com/argoproj/argo-workflows/v3/util/env"
 	argoerr "github.com/argoproj/argo-workflows/v3/util/errors"
 	os_specific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
 )
@@ -196,19 +196,24 @@ func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace,
 		log.Infof("Failing for conditions: %s", failSelector)
 		failReqs, _ = failSelector.Requirements()
 	}
-	err := wait.PollImmediateInfinite(envutil.LookupEnvDurationOr("RESOURCE_STATE_CHECK_INTERVAL", time.Second*5),
+
+	// Start the condition result reader using PollImmediateInfinite
+	// Poll intervall of 5 seconds serves as a backoff intervall in case of immediate result reader failure
+	err := wait.PollImmediateInfinite(time.Second*5,
 		func() (bool, error) {
-			isErrRetryable, err := we.checkResourceState(ctx, selfLink, successReqs, failReqs)
+			isErrRetry, err := checkResourceState(resourceNamespace, resourceName, successReqs, failReqs)
+
 			if err == nil {
-				log.Infof("Returning from successful wait for resource %s in namespace %s", resourceName, resourceNamespace)
+				log.Infof("Returning from successful wait for resource %s", resourceName)
 				return true, nil
 			}
-			if isErrRetryable {
-				log.Infof("Waiting for resource %s in namespace %s resulted in retryable error: %v", resourceName, resourceNamespace, err)
+
+			if isErrRetry {
+				log.Infof("Waiting for resource %s resulted in retryable error %v", resourceName, err)
 				return false, nil
 			}
 
-			log.Warnf("Waiting for resource %s in namespace %s resulted in non-retryable error: %v", resourceName, resourceNamespace, err)
+			log.Warnf("Waiting for resource %s resulted in non-retryable error %v", resourceName, err)
 			return false, err
 		})
 	if err != nil {
@@ -222,62 +227,134 @@ func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace,
 	return nil
 }
 
-// checkResourceState performs resource status checking and then waiting on json reading.
-// The returning boolean indicates whether we should retry.
-func (we *WorkflowExecutor) checkResourceState(ctx context.Context, selfLink string, successReqs labels.Requirements, failReqs labels.Requirements) (bool, error) {
-	request := we.RESTClient.Get().RequestURI(selfLink)
-	stream, err := request.Stream(ctx)
-
-	if argoerr.IsTransientErr(err) {
-		return true, errors.Errorf(errors.CodeNotFound, "The error is detected to be transient: %v. Retrying...", err)
+func checkIfResourceDeleted(resourceName string, resourceNamespace string) bool {
+	args := []string{"get", resourceName}
+	if resourceNamespace != "" {
+		args = append(args, "-n", resourceNamespace)
 	}
+	cmd := exec.Command("kubectl", args...)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	err := cmd.Run()
 	if err != nil {
-		err = errors.Cause(err)
-		if apierr.IsNotFound(err) {
-			return false, errors.Errorf(errors.CodeNotFound, "The resource has been deleted while its status was still being checked. Will not be retried: %v", err)
+		if strings.Contains(stderr.String(), "NotFound") {
+			return true
 		}
-		return false, err
+		log.Warnf("Got error %v when checking if the resource %s in namespace %s is deleted", err, resourceName, resourceNamespace)
+		return false
 	}
-
-	defer func() { _ = stream.Close() }()
-	jsonBytes, err := ioutil.ReadAll(stream)
-	if err != nil {
-		return false, err
-	}
-	jsonString := string(jsonBytes)
-	log.Info(jsonString)
-	if !gjson.Valid(jsonString) {
-		return false, errors.Errorf(errors.CodeNotFound, "Encountered invalid JSON response when checking resource status. Will not be retried: %q", jsonString)
-	}
-	return matchConditions(jsonBytes, successReqs, failReqs)
+	return false
 }
 
-// matchConditions checks whether the returned JSON bytes match success or failure conditions.
-func matchConditions(jsonBytes []byte, successReqs labels.Requirements, failReqs labels.Requirements) (bool, error) {
-	ls := gjsonLabels{json: jsonBytes}
-	for _, req := range failReqs {
-		failed := req.Matches(ls)
-		msg := fmt.Sprintf("failure condition '%s' evaluated %v", req, failed)
-		log.Infof(msg)
-		if failed {
-			// We return false here to not retry when failure conditions met.
-			return false, errors.Errorf(errors.CodeBadRequest, msg)
+// Function to do the kubectl get -w command and then waiting on json reading.
+func checkResourceState(resourceNamespace string, resourceName string, successReqs labels.Requirements, failReqs labels.Requirements) (bool, error) {
+	cmd, reader, err := startKubectlWaitCmd(resourceNamespace, resourceName)
+	if argoerr.IsTransientErr(err) {
+		return true, err
+	}
+	if err != nil {
+		return false, err
+	}
+	defer func() {
+		_ = cmd.Process.Kill()
+	}()
+
+	for {
+		if checkIfResourceDeleted(resourceName, resourceNamespace) {
+			return false, errors.Errorf(errors.CodeNotFound, "Resource %s in namespace %s has been deleted somehow.", resourceName, resourceNamespace)
+		}
+
+		jsonBytes, err := readJSON(reader)
+		if err != nil {
+			resultErr := err
+			log.Warnf("Json reader returned error %v. Calling kill (usually superfluous)", err)
+			// We don't want to write OS specific code so we don't want to call syscall package code. But that means
+			// there is no way to figure out if a process is running or not in an asynchronous manner. exec.Wait will
+			// always block and we need to call that to get the exit code of the process. So we will unconditionally
+			// call exec.Process.Kill and then assume that wait will not block after that. Two things may happen:
+			// 1. Process already exited and kill does nothing (returns error which we ignore) and then we call
+			//    Wait and get the proper return value
+			// 2. Process is running gets, killed with exec.Process.Kill call and Wait returns an error code and we give up
+			//    and don't retry
+			_ = cmd.Process.Kill()
+
+			log.Warnf("Command for kubectl get -w for %s exited. Getting return value using Wait", resourceName)
+			err = cmd.Wait()
+			if err != nil {
+				log.Warnf("cmd.Wait for kubectl get -w command for resource %s returned error %v",
+					resourceName, err)
+				resultErr = err
+			} else {
+				log.Infof("readJSon failed for resource %s but cmd.Wait for kubectl get -w command did not error", resourceName)
+			}
+			return true, resultErr
+		}
+
+		log.Info(string(jsonBytes))
+		ls := gjsonLabels{json: jsonBytes}
+		for _, req := range failReqs {
+			failed := req.Matches(ls)
+			msg := fmt.Sprintf("failure condition '%s' evaluated %v", req, failed)
+			log.Infof(msg)
+			if failed {
+				// TODO: need a better error code instead of BadRequest
+				return false, errors.Errorf(errors.CodeBadRequest, msg)
+			}
+		}
+		numMatched := 0
+		for _, req := range successReqs {
+			matched := req.Matches(ls)
+			log.Infof("success condition '%s' evaluated %v", req, matched)
+			if matched {
+				numMatched++
+			}
+		}
+		log.Infof("%d/%d success conditions matched", numMatched, len(successReqs))
+		if numMatched >= len(successReqs) {
+			return false, nil
 		}
 	}
-	numMatched := 0
-	for _, req := range successReqs {
-		matched := req.Matches(ls)
-		log.Infof("success condition '%s' evaluated %v", req, matched)
-		if matched {
-			numMatched++
-		}
+}
+
+// Start Kubectl command Get with -w return error if unable to start command
+func startKubectlWaitCmd(resourceNamespace string, resourceName string) (*exec.Cmd, *bufio.Reader, error) {
+	args := []string{"get", resourceName, "-w", "-o", "json"}
+	if resourceNamespace != "" {
+		args = append(args, "-n", resourceNamespace)
 	}
-	log.Infof("%d/%d success conditions matched", numMatched, len(successReqs))
-	if numMatched >= len(successReqs) {
-		return false, nil
+	cmd := exec.Command("kubectl", args...)
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, nil, errors.InternalWrapError(err)
+	}
+	reader := bufio.NewReader(stdout)
+	log.Info(strings.Join(cmd.Args, " "))
+	if err := cmd.Start(); err != nil {
+		return nil, nil, errors.InternalWrapError(err)
 	}
 
-	return true, errors.Errorf(errors.CodeNotFound, "Neither success condition nor the failure condition has been matched. Retrying...")
+	return cmd, reader, nil
+}
+
+// readJSON reads from a reader line-by-line until it reaches "}\n" indicating end of json
+func readJSON(reader *bufio.Reader) ([]byte, error) {
+	var buffer bytes.Buffer
+	for {
+		line, err := reader.ReadBytes('\n')
+		if err != nil {
+			return nil, err
+		}
+		isDelimiter := len(line) == 2 && line[0] == byte('}')
+		line = bytes.TrimSpace(line)
+		_, err = buffer.Write(line)
+		if err != nil {
+			return nil, err
+		}
+		if isDelimiter {
+			break
+		}
+	}
+	return buffer.Bytes(), nil
 }
 
 // SaveResourceParameters will save any resource output parameters
