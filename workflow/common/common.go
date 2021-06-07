@@ -193,6 +193,8 @@ type ExecutionControl struct {
 	// It is used to signal the executor to terminate a daemoned container. In the future it will be
 	// used to support workflow or steps/dag level timeouts.
 	Deadline *time.Time `json:"deadline,omitempty"`
+	// IncludeScriptOutput is containing flag to include script output
+	IncludeScriptOutput bool `json:"includeScriptOutput,omitempty"`
 }
 
 func UnstructuredHasCompletedLabel(obj interface{}) bool {
