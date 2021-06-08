@@ -12,6 +12,29 @@ The manifests in the repository on the tag will no longer contain the image tag,
 * You must not get your manifests from the Git repository, you must get them from the release notes.
 * You must not use the `stable` tag. This is defunct, and will be removed in v3.1.
 
+### [ab361667a](https://github.com/argoproj/argo-workflows/commit/ab361667a) feat(controller) Emissary executor.  (#4925)
+
+The Emissary executor is not a breaking change per-se, but it is brand new so we would not recommend you use it by default yet. Instead, we recommend you test it out on some workflows using [config map configuration](https://github.com/argoproj/argo-workflows/blob/master/docs/workflow-controller-configmap.yaml#L125).
+
+```yaml
+# Specifies the executor to use.
+#
+# You can use this to:
+# * Tailor your executor based on your preference for security or performance.
+# * Test out an executor without committing yourself to use it for every workflow.
+#
+# To find out which executor was actually use, see the `wait` container logs.
+#
+# The list is in order of precedence; the first matching executor is used.
+# This has precedence over `containerRuntimeExecutor`.
+containerRuntimeExecutors: |
+  - name: emissary
+    selector:
+      matchLabels:
+        workflows.argoproj.io/container-runtime-executor: emissary
+```
+
+
 ## Upgrading to v3.0
 
 ### [defbd600e](https://github.com/argoproj/argo-workflows/commit/defbd600e37258c8cdf30f64d4da9f4563eb7901) fix: Default ARGO_SECURE=true. Fixes #5607 (#5626)
