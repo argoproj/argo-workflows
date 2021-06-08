@@ -3,6 +3,12 @@
 Breaking changes  typically (sometimes we don't realise they are breaking) have "!" in the commit message, as per
 the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary).
 
+## Upgrading to v3.2
+
+### [be63efe89](https://github.com/argoproj/argo-workflows/commit/be63efe89) feat(executor)!: Change `argoexec` base image to alpine. Closes #5720 (#6006)
+
+Changing from Debian to Alpine reduces the size of the `argoexec` image, resulting is faster starting workflow pods, and it also reduce the risk of security issues. There is not such thing as a free lunch. There maybe other behaviour changes we don't know of yet. 
+
 ## Upgrading to v3.1
 
 ### [3fff791e4](https://github.com/argoproj/argo-workflows/commit/3fff791e4ef5b7e1de82ccb36cae327e8eb726f6) build!: Automatically add manifests to `v*` tags (#5880)
