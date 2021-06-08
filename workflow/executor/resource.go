@@ -39,9 +39,12 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, fla
 
 	out, err := cmd.Output()
 	if err != nil {
-		exErr := err.(*exec.ExitError)
-		errMsg := strings.TrimSpace(string(exErr.Stderr))
-		return "", "", "", errors.New(errors.CodeBadRequest, errMsg)
+		if exErr, ok := err.(*exec.ExitError); ok {
+			errMsg := strings.TrimSpace(string(exErr.Stderr))
+			return "", "", "", errors.New(errors.CodeBadRequest, errMsg)
+		} else {
+			return "", "", "", errors.New(errors.CodeBadRequest, err.Error())
+		}
 	}
 	if action == "delete" {
 		return "", "", "", nil
@@ -245,7 +248,7 @@ func (we *WorkflowExecutor) checkResourceState(ctx context.Context, selfLink str
 		return false, err
 	}
 	jsonString := string(jsonBytes)
-	log.Info(jsonString)
+	log.Debug(jsonString)
 	if !gjson.Valid(jsonString) {
 		return false, errors.Errorf(errors.CodeNotFound, "Encountered invalid JSON response when checking resource status. Will not be retried: %q", jsonString)
 	}
