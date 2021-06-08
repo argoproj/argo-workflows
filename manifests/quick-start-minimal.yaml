@@ -738,6 +738,8 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  labels:
+    app: workflow-controller
   name: workflow-controller-metrics
 spec:
   ports:
