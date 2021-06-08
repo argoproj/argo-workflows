@@ -425,23 +425,6 @@
       },
       "type": "object"
     },
-    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.SinkStatus": {
-      "properties": {
-        "lastError": {
-          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Error"
-        },
-        "lastMessage": {
-          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Message"
-        },
-        "metrics": {
-          "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Metrics"
-          },
-          "type": "object"
-        }
-      },
-      "type": "object"
-    },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Source": {
       "properties": {
         "cron": {
@@ -545,6 +528,7 @@
           "type": "object"
         },
         "replicas": {
+          "title": "+kubebuilder:default=1",
           "type": "integer"
         },
         "restartPolicy": {
@@ -613,7 +597,7 @@
         },
         "sinkStatuses": {
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.SinkStatus"
+            "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.SourceStatus"
           },
           "type": "object"
         },
