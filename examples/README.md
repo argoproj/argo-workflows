@@ -1433,7 +1433,7 @@ spec:
 
 Resources created in this way are independent of the workflow. If you want the resource to be deleted when the workflow is deleted then you can use [Kubernetes garbage collection](https://kubernetes.io/docs/concepts/workloads/controllers/garbage-collection/) with the workflow resource as an owner reference ([example](./k8s-owner-reference.yaml)).
 
-You can also collect data about the resource in output parameters (see more at [k8s-jobs.yaml](./k8s-jobs.yaml#L42-L56)):
+You can also collect data about the resource in output parameters (see more at [k8s-jobs.yaml](./k8s-jobs.yaml)):
 
 ```
     # Resource templates can have output parameters extracted from fields of the
