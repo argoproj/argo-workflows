@@ -1694,6 +1694,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#kill-command-configuration" title="Kill Command Configuration" class="md-nav__link">
+    Kill Command Configuration
+  </a>
+  
+</li>
+      
       
       
       
@@ -2175,6 +2182,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#kill-command-configuration" title="Kill Command Configuration" class="md-nav__link">
+    Kill Command Configuration
+  </a>
+  
+</li>
+      
       
       
       
@@ -2240,7 +2254,7 @@ and logs of that pod.</p>
 <tr>
 <td><code>emissary</code></td>
 <td>Any</td>
-<td>None</td>
+<td>Shell/Configuration</td>
 </tr>
 <tr>
 <td><code>k8sapi</code></td>
@@ -2259,6 +2273,17 @@ and logs of that pod.</p>
 </tr>
 </tbody>
 </table>
+<h2 id="kill-command-configuration">Kill Command Configuration<a class="headerlink" href="#kill-command-configuration" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p>v3.1 and after</p>
+</blockquote>
+<p>You can override the kill command by using a pod annotation, for example:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">podMetadata</span><span class="p">:</span>
+    <span class="nt">annotations</span><span class="p">:</span>
+      <span class="nt">workflows.argoproj.io/kill-cmd-vault-agent</span><span class="p">:</span> <span class="s">&#39;[&quot;sh&quot;,</span><span class="nv"> </span><span class="s">&quot;-c&quot;,</span><span class="nv"> </span><span class="s">&quot;kill</span><span class="nv"> </span><span class="s">-%d</span><span class="nv"> </span><span class="s">1&quot;]&#39;</span>
+      <span class="nt">workflows.argoproj.io/kill-cmd-sidecar</span><span class="p">:</span> <span class="s">&#39;[&quot;sh&quot;,</span><span class="nv"> </span><span class="s">&quot;-c&quot;,</span><span class="nv"> </span><span class="s">&quot;kill</span><span class="nv"> </span><span class="s">-%d</span><span class="nv"> </span><span class="s">$(pidof</span><span class="nv"> </span><span class="s">entrypoint.sh)&quot;]&#39;</span>
+</code></pre></div>
                 
                   
                 
