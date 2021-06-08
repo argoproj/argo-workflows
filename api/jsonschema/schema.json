@@ -3429,6 +3429,10 @@
           "description": "Hooks hold the lifecycle hook which is invoked at lifecycle of task, irrespective of the success, failure, or error status of the primary task",
           "type": "object"
         },
+        "inline": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template",
+          "description": "Inline is the template. Template must be empty if this is declared (and vice-versa)."
+        },
         "name": {
           "description": "Name is the name of the target",
           "type": "string"
@@ -5883,6 +5887,10 @@
           },
           "description": "Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step",
           "type": "object"
+        },
+        "inline": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template",
+          "description": "Inline is the template. Template must be empty if this is declared (and vice-versa)."
         },
         "name": {
           "description": "Name of the step",

@@ -40,7 +40,9 @@ nav:
           - cluster-workflow-templates.md
           - cron-workflows.md
           - cron-backfill.md
+          - templates.md
           - container-set-template.md
+          - template-defaults.md
           - work-avoidance.md
           - enhanced-depends-logic.md
           - data-sourcing-and-transformation.md
