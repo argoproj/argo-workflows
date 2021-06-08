@@ -38,7 +38,21 @@ Key:
 | Executor | Sidecar | Injected Sidecar | 
 |---|---|---| 
 | `docker` | Any | Any | 
-| `emissary` | Any | None | 
+| `emissary` | Any | Shell/Configuration | 
 | `k8sapi` | Shell | Shell | 
 | `kubelet` | Shell | Shell | 
 | `pns` | Any | Any | 
+
+## Kill Command Configuration
+
+> v3.1 and after
+
+You can override the kill command by using a pod annotation, for example:
+
+```yaml
+spec:
+  podMetadata:
+    annotations:
+      workflows.argoproj.io/kill-cmd-vault-agent: '["sh", "-c", "kill -%d 1"]'
+      workflows.argoproj.io/kill-cmd-sidecar: '["sh", "-c", "kill -%d $(pidof entrypoint.sh)"]'
+```

@@ -18,6 +18,10 @@ type K8sAPIExecutor struct {
 	client *k8sAPIClient
 }
 
+func (k *K8sAPIExecutor) GetExitCode(ctx context.Context, containerName string) (string, error) {
+	return "", nil
+}
+
 func NewK8sAPIExecutor(clientset kubernetes.Interface, config *restclient.Config, podName, namespace string) *K8sAPIExecutor {
 	log.Infof("Creating a K8sAPI executor")
 	client := newK8sAPIClient(clientset, config, podName, namespace)

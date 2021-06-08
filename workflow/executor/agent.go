@@ -37,7 +37,7 @@ func (we *WorkflowExecutor) Agent(ctx context.Context) error {
 
 			for _, task := range obj.Spec.Tasks {
 
-				if obj.Status != nil && obj.Status.Nodes != nil && obj.Status.Nodes[task.NodeID].Fulfilled() {
+				if obj.Status.Nodes != nil && len(obj.Status.Nodes) > 0 && obj.Status.Nodes[task.NodeID].Fulfilled() {
 					continue
 				}
 
@@ -51,9 +51,7 @@ func (we *WorkflowExecutor) Agent(ctx context.Context) error {
 						result.Phase = wfv1.NodeSucceeded
 						result.Outputs = outputs
 					}
-					if obj.Status == nil {
-						obj.Status = &wfv1.WorkflowTaskSetStatus{}
-					}
+
 					if obj.Status.Nodes == nil {
 						obj.Status.Nodes = map[string]wfv1.NodeResult{}
 					}

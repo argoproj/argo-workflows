@@ -14,6 +14,10 @@ type KubeletExecutor struct {
 	cli *kubeletClient
 }
 
+func (k *KubeletExecutor) GetExitCode(ctx context.Context, containerName string) (string, error) {
+	return "", nil
+}
+
 func NewKubeletExecutor(namespace, podName string) (*KubeletExecutor, error) {
 	log.Infof("Creating a kubelet executor")
 	cli, err := newKubeletClient(namespace, podName)

@@ -26,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -63,15 +64,18 @@ const (
 
 // WorkflowExecutor is program which runs as the init/wait container
 type WorkflowExecutor struct {
-	PodName            string
-	workflowName       string
-	Template           wfv1.Template
-	ClientSet          kubernetes.Interface
-	workflowInterface  workflow.Interface
-	Namespace          string
-	PodAnnotationsPath string
-	ExecutionControl   *common.ExecutionControl
-	RuntimeExecutor    ContainerRuntimeExecutor
+
+	PodName             string
+	workflowName        string
+	Template            wfv1.Template
+	IncludeScriptOutput bool
+	ClientSet           kubernetes.Interface
+	workflowInterface   workflow.Interface
+	RESTClient          rest.Interface
+	Namespace           string
+	PodAnnotationsPath  string
+	ExecutionControl    *common.ExecutionControl
+	RuntimeExecutor     ContainerRuntimeExecutor
 
 	// memoized configmaps
 	memoizedConfigMaps map[string]string
@@ -114,19 +118,22 @@ type ContainerRuntimeExecutor interface {
 }
 
 // NewExecutor instantiates a new workflow executor
-func NewExecutor(clientset kubernetes.Interface, workflowInterface workflow.Interface, podName, workflowName, namespace, podAnnotationsPath string, cre ContainerRuntimeExecutor, template wfv1.Template) WorkflowExecutor {
+
+func NewExecutor(clientset kubernetes.Interface, restClient rest.Interface, workflowInterface workflow.Interface, podName, workflowName, namespace, podAnnotationsPath string, cre ContainerRuntimeExecutor, template wfv1.Template, includeScriptOutput bool) WorkflowExecutor {
 	return WorkflowExecutor{
-		PodName:            podName,
-		workflowName:       workflowName,
-		ClientSet:          clientset,
-		workflowInterface:  workflowInterface,
-		Namespace:          namespace,
-		PodAnnotationsPath: podAnnotationsPath,
-		RuntimeExecutor:    cre,
-		Template:           template,
-		memoizedConfigMaps: map[string]string{},
-		memoizedSecrets:    map[string][]byte{},
-		errors:             []error{},
+		PodName:             podName,
+		workflowName:        workflowName,
+		ClientSet:           clientset,
+		RESTClient:          restClient,
+		workflowInterface:   workflowInterface,
+		Namespace:           namespace,
+		PodAnnotationsPath:  podAnnotationsPath,
+		RuntimeExecutor:     cre,
+		Template:            template,
+		IncludeScriptOutput: includeScriptOutput,
+		memoizedConfigMaps:  map[string]string{},
+		memoizedSecrets:     map[string][]byte{},
+		errors:              []error{},
 	}
 }
 
@@ -154,12 +161,12 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 				log.Warnf("Ignoring optional artifact '%s' which was not supplied", art.Name)
 				continue
 			} else {
-				return errors.Errorf("required artifact %s not supplied", art.Name)
+				return errors.Errorf(errors.CodeNotFound, "required artifact '%s' not supplied", art.Name)
 			}
 		}
 		driverArt, err := we.newDriverArt(&art)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to load artifact '%s': %w", art.Name, err)
 		}
 		artDriver, err := we.InitDriver(ctx, driverArt)
 		if err != nil {
@@ -193,7 +200,7 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 				log.Infof("Skipping optional input artifact that was not found: %s", art.Name)
 				continue
 			}
-			return err
+			return fmt.Errorf("artifact %s failed to load: %w", art.Name, err)
 		}
 
 		isTar := false
@@ -792,6 +799,14 @@ func (we *WorkflowExecutor) AddError(err error) {
 	we.errors = append(we.errors, err)
 }
 
+// HasError return the first error if exist
+func (we *WorkflowExecutor) HasError() error {
+	if len(we.errors) > 0 {
+		return we.errors[0]
+	}
+	return nil
+}
+
 // AddAnnotation adds an annotation to the workflow pod
 func (we *WorkflowExecutor) AddAnnotation(ctx context.Context, key, value string) error {
 	return common.AddPodAnnotation(ctx, we.ClientSet, we.PodName, we.Namespace, key, value, ExecutorRetry)
@@ -992,14 +1007,17 @@ func watchFileChanges(ctx context.Context, pollInterval time.Duration, filePath 
 			}
 
 			file, err := os.Stat(filePath)
-			if err != nil {
+			if os.IsNotExist(err) {
+				// noop
+			} else if err != nil {
 				log.Fatal(err)
+			} else {
+				newModTime := file.ModTime()
+				if modTime != nil && !modTime.Equal(file.ModTime()) {
+					res <- struct{}{}
+				}
+				modTime = &newModTime
 			}
-			newModTime := file.ModTime()
-			if modTime != nil && !modTime.Equal(file.ModTime()) {
-				res <- struct{}{}
-			}
-			modTime = &newModTime
 			time.Sleep(pollInterval)
 		}
 	}()
@@ -1131,10 +1149,10 @@ func (we *WorkflowExecutor) KillSidecars(ctx context.Context) error {
 			sidecarNames = append(sidecarNames, n)
 		}
 	}
+	log.Infof("Killing sidecars %q", sidecarNames)
 	if len(sidecarNames) == 0 {
 		return nil // exit early as GetTerminationGracePeriodDuration performs `get pod`
 	}
-	log.Infof("Killing sidecars %s", strings.Join(sidecarNames, ","))
 	terminationGracePeriodDuration, _ := we.GetTerminationGracePeriodDuration(ctx)
 	return we.RuntimeExecutor.Kill(ctx, sidecarNames, terminationGracePeriodDuration)
 }

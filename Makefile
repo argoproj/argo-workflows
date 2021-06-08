@@ -236,7 +236,7 @@ scan-%:
 # generation
 
 .PHONY: codegen
-codegen: types swagger docs
+codegen: types swagger docs manifests
 
 .PHONY: types
 types: pkg/apis/workflow/v1alpha1/generated.proto pkg/apis/workflow/v1alpha1/openapi_generated.go pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go
@@ -355,24 +355,30 @@ dist/kustomize:
 	cd dist && ./install_kustomize.sh 3.8.8
 	dist/kustomize version
 
-manifests: dist/manifests/install.yaml \
+manifests: \
+	manifests/install.yaml \
+	manifests/namespace-install.yaml \
+	manifests/quick-start-minimal.yaml \
+	manifests/quick-start-mysql.yaml \
+	manifests/quick-start-postgres.yaml \
+	dist/manifests/install.yaml \
 	dist/manifests/namespace-install.yaml \
 	dist/manifests/quick-start-minimal.yaml \
 	dist/manifests/quick-start-mysql.yaml \
 	dist/manifests/quick-start-postgres.yaml
 
-manifests/install.yaml: /dev/null
+manifests/install.yaml: dist/kustomize /dev/null
 	dist/kustomize build --load_restrictor=none manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
-manifests/namespace-install.yaml: /dev/null
+manifests/namespace-install.yaml: dist/kustomize /dev/null
 	dist/kustomize build --load_restrictor=none manifests/namespace-install | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
-manifests/quick-start-minimal.yaml: /dev/null
+manifests/quick-start-minimal.yaml: dist/kustomize /dev/null
 	dist/kustomize build --load_restrictor=none manifests/quick-start/minimal | ./hack/auto-gen-msg.sh > manifests/quick-start-minimal.yaml
-manifests/quick-start-mysql.yaml: /dev/null
+manifests/quick-start-mysql.yaml: dist/kustomize /dev/null
 	dist/kustomize build --load_restrictor=none manifests/quick-start/mysql | ./hack/auto-gen-msg.sh > manifests/quick-start-mysql.yaml
-manifests/quick-start-postgres.yaml: /dev/null
+manifests/quick-start-postgres.yaml: dist/kustomize /dev/null
 	dist/kustomize build --load_restrictor=none manifests/quick-start/postgres | ./hack/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
 
-dist/manifests/%: manifests/$*
+dist/manifests/%: manifests/%
 	@mkdir -p dist/manifests
 	sed 's/:latest/:$(VERSION)/' manifests/$* > $@
 
