@@ -1596,6 +1596,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#ab361667a-featcontroller-emissary-executor-4925" title="ab361667a feat(controller) Emissary executor.  (#4925)" class="md-nav__link">
+    ab361667a feat(controller) Emissary executor.  (#4925)
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2209,6 +2216,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#ab361667a-featcontroller-emissary-executor-4925" title="ab361667a feat(controller) Emissary executor.  (#4925)" class="md-nav__link">
+    ab361667a feat(controller) Emissary executor.  (#4925)
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2284,6 +2298,24 @@ the <a href="https://www.conventionalcommits.org/en/v1.0.0/#summary">conventiona
 <li>You must not get your manifests from the Git repository, you must get them from the release notes.</li>
 <li>You must not use the <code>stable</code> tag. This is defunct, and will be removed in v3.1.</li>
 </ul>
+<h3 id="ab361667a-featcontroller-emissary-executor-4925"><a href="https://github.com/argoproj/argo-workflows/commit/ab361667a">ab361667a</a> feat(controller) Emissary executor.  (#4925)<a class="headerlink" href="#ab361667a-featcontroller-emissary-executor-4925" title="Permanent link">&para;</a></h3>
+<p>The Emissary executor is not a breaking change per-se, but it is brand new so we would not recommend you use it by default yet. Instead, we recommend you test it out on some workflows using <a href="https://github.com/argoproj/argo-workflows/blob/master/docs/workflow-controller-configmap.yaml#L125">config map configuration</a>.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Specifies the executor to use.</span>
+<span class="c1">#</span>
+<span class="c1"># You can use this to:</span>
+<span class="c1"># * Tailor your executor based on your preference for security or performance.</span>
+<span class="c1"># * Test out an executor without committing yourself to use it for every workflow.</span>
+<span class="c1">#</span>
+<span class="c1"># To find out which executor was actually use, see the `wait` container logs.</span>
+<span class="c1">#</span>
+<span class="c1"># The list is in order of precedence; the first matching executor is used.</span>
+<span class="c1"># This has precedence over `containerRuntimeExecutor`.</span>
+<span class="nt">containerRuntimeExecutors</span><span class="p">:</span> <span class="p p-Indicator">|</span>
+  <span class="no">- name: emissary</span>
+    <span class="no">selector:</span>
+      <span class="no">matchLabels:</span>
+        <span class="no">workflows.argoproj.io/container-runtime-executor: emissary</span>
+</code></pre></div>
 <h2 id="upgrading-to-v30">Upgrading to v3.0<a class="headerlink" href="#upgrading-to-v30" title="Permanent link">&para;</a></h2>
 <h3 id="defbd600e-fix-default-argo_securetrue-fixes-5607-5626"><a href="https://github.com/argoproj/argo-workflows/commit/defbd600e37258c8cdf30f64d4da9f4563eb7901">defbd600e</a> fix: Default ARGO_SECURE=true. Fixes #5607 (#5626)<a class="headerlink" href="#defbd600e-fix-default-argo_securetrue-fixes-5607-5626" title="Permanent link">&para;</a></h3>
 <p>The server now starts with TLS enabled by default if a key is available. The original behaviour can be configured with <code>--secure=false</code>.</p>
