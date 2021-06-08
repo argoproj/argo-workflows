@@ -108,7 +108,6 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	wfConditions := &wfv1.Conditions{}
 	ctx := newTemplateValidationCtx(wf, opts)
 	tmplCtx := templateresolution.NewContext(wftmplGetter, cwftmplGetter, wf, wf)
-
 	var wfSpecHolder wfv1.WorkflowSpecHolder
 	var wfTmplRef *wfv1.TemplateRef
 	var err error
@@ -762,6 +761,9 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 			if err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
 			}
+			if step.HasExitHook() {
+				ctx.addOutputsToScope(resolvedTmpl, fmt.Sprintf("steps.%s", step.Name), scope, false, false)
+			}
 			resolvedTemplates[step.Name] = resolvedTmpl
 		}
 
@@ -1155,7 +1157,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 	// Verify dependencies for all tasks can be resolved as well as template names
 	for _, task := range tmpl.DAG.Tasks {
 
-		if '0' <= task.Name[0] && task.Name[0] <= '9' {
+		if (usingDepends || len(task.Dependencies) > 0) && '0' <= task.Name[0] && task.Name[0] <= '9' {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s name cannot begin with a digit when using either 'depends' or 'dependencies'", tmpl.Name, task.Name)
 		}
 
@@ -1213,6 +1215,9 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		// add all tasks outputs to scope so that a nested DAGs can have outputs
 		prefix := fmt.Sprintf("tasks.%s", task.Name)
 		ctx.addOutputsToScope(resolvedTmpl, prefix, scope, false, false)
+		if task.HasExitHook() {
+			ctx.addOutputsToScope(resolvedTmpl, prefix, scope, false, false)
+		}
 		taskBytes, err := json.Marshal(task)
 		if err != nil {
 			return errors.InternalWrapError(err)

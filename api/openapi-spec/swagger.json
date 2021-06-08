@@ -13,7 +13,7 @@
   "info": {
     "description": "You can get examples of requests and responses by using the CLI with `--gloglevel=9`, e.g. `argo list --gloglevel=9`",
     "title": "Argo Server API",
-    "version": "latest"
+    "version": "VERSION"
   },
   "paths": {
     "/api/v1/archived-workflows": {
@@ -2204,6 +2204,11 @@
             "description": "The continue option should be set when retrieving more results from the server. Since this value is\nserver defined, clients may only use the continue value from a previous query result with identical\nquery parameters (except for the value of continue) and the server may reject a continue value it\ndoes not recognize. If the specified continue value is no longer valid whether due to expiration\n(generally five to fifteen minutes) or a configuration change on the server, the server will\nrespond with a 410 ResourceExpired error together with a continue token. If the client needs a\nconsistent list, it must restart their list without the continue field. Otherwise, the client may\nsend another list request with the token received with the 410 error, the server will respond with\na list starting from the next key, but from the latest snapshot, which is inconsistent from the\nprevious list results - objects that are created, modified, or deleted after the first list request\nwill be included in the response, as long as their keys are after the \"next key\".\n\nThis field is not supported when watch is true. Clients may start a watch from the last\nresourceVersion value returned by the server and not miss any modifications.",
             "name": "listOptions.continue",
             "in": "query"
+          },
+          {
+            "type": "string",
+            "name": "fields",
+            "in": "query"
           }
         ],
         "responses": {
@@ -2966,6 +2971,11 @@
             "description": "insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the\nserving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver\nand the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real\nkubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the\nconnection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept\nthe actual log data coming from the real kubelet).\n+optional.",
             "name": "logOptions.insecureSkipTLSVerifyBackend",
             "in": "query"
+          },
+          {
+            "type": "string",
+            "name": "grep",
+            "in": "query"
           }
         ],
         "responses": {
@@ -3390,6 +3400,11 @@
             "type": "boolean",
             "description": "insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the\nserving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver\nand the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real\nkubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the\nconnection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept\nthe actual log data coming from the real kubelet).\n+optional.",
             "name": "logOptions.insecureSkipTLSVerifyBackend",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "name": "grep",
             "in": "query"
           }
         ],
@@ -6840,12 +6855,19 @@
           "description": "Depends are name of other targets which this depends on",
           "type": "string"
         },
+        "hooks": {
+          "description": "Hooks hold the lifecycle hook which is invoked at lifecycle of task, irrespective of the success, failure, or error status of the primary task",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LifecycleHook"
+          }
+        },
         "name": {
           "description": "Name is the name of the target",
           "type": "string"
         },
         "onExit": {
-          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.",
+          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use Hooks[exit].Template instead.",
           "type": "string"
         },
         "template": {
@@ -7035,6 +7057,10 @@
           "description": "Depth specifies clones/fetches should be shallow and include the given number of commits from the branch tip",
           "type": "integer"
         },
+        "disableSubmodules": {
+          "description": "DisableSubmodules disables submodules during git clone",
+          "type": "boolean"
+        },
         "fetch": {
           "description": "Fetch specifies a number of refs that should be fetched before checkout",
           "type": "array",
@@ -7127,19 +7153,27 @@
       ],
       "properties": {
         "body": {
+          "description": "Body is content of the HTTP Request",
           "type": "string",
           "format": "byte"
         },
         "headers": {
+          "description": "Headers are an optional list of headers to send with HTTP requests",
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPHeader"
           }
         },
         "method": {
+          "description": "Method is HTTP methods for HTTP Request",
           "type": "string"
         },
+        "timeoutSeconds": {
+          "description": "TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds",
+          "type": "integer"
+        },
         "url": {
+          "description": "URL of the HTTP Request",
           "type": "string"
         }
       }
@@ -7268,6 +7302,20 @@
     },
     "io.argoproj.workflow.v1alpha1.Item": {
       "description": "Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number"
+    },
+    "io.argoproj.workflow.v1alpha1.LifecycleHook": {
+      "type": "object",
+      "required": [
+        "template"
+      ],
+      "properties": {
+        "arguments": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
+        },
+        "template": {
+          "type": "string"
+        }
+      }
     },
     "io.argoproj.workflow.v1alpha1.Link": {
       "description": "A link to another app.",
@@ -8341,7 +8389,7 @@
           "x-kubernetes-patch-strategy": "merge"
         },
         "http": {
-          "description": "HTTP is http template",
+          "description": "HTTP makes a HTTP request",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTP"
         },
         "initContainers": {
@@ -9255,12 +9303,19 @@
           "description": "ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ContinueOn"
         },
+        "hooks": {
+          "description": "Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LifecycleHook"
+          }
+        },
         "name": {
           "description": "Name of the step",
           "type": "string"
         },
         "onExit": {
-          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.",
+          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use Hooks[exit].Template instead.",
           "type": "string"
         },
         "template": {

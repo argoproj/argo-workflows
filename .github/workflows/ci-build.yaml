@@ -37,11 +37,6 @@ jobs:
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-20.04
-    # test-api: 7m (1m10s locally)
-    # test-cli: 12m (4m locally)
-    # test-cron: 8m
-    # test-executor 8m (2m locally)
-    # test-functional: 13m (7m locally)
     timeout-minutes: 20
     env:
       KUBECONFIG: /home/runner/.kubeconfig
@@ -97,7 +92,6 @@ jobs:
         with:
           path: dist/kustomize
           key: kustomize
-      - run: git fetch --tags
       - run: mkdir -p /tmp/log/argo-e2e
       - name: Install and start K3S
         timeout-minutes: 3
@@ -115,8 +109,8 @@ jobs:
           echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts
           echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
-      - run: make install install controller cli $(go env GOPATH)/bin/goreman PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info
-      - run: make start PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info 2>&1 > /tmp/log/argo-e2e/argo.log &
+      - run: make install controller cli $(go env GOPATH)/bin/goreman PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info
+      - run: make start PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info UI=false > /tmp/log/argo-e2e/argo.log 2>&1 &
         timeout-minutes: 4
       - name: make/pull argoexec-image
         run: |
@@ -128,15 +122,9 @@ jobs:
       - run: make wait
         timeout-minutes: 4
       - run: make ${{matrix.test}} E2E_TIMEOUT=1m STATIC_FILES=false
-      - name: Get wait container logs
+      - name: cat argo.log
         if: ${{ failure() }}
-        run: kubectl get pod -o name | xargs -L 1 kubectl logs -c wait
-      - name: Upload logs
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@v1
-        with:
-          name: ${{matrix.test}}-${{matrix.containerRuntimeExecutor}}
-          path: /tmp/log/argo-e2e
+        run: cat /tmp/log/argo-e2e/argo.log
 
   codegen:
     name: Codegen
@@ -177,7 +165,6 @@ jobs:
           sudo find /usr/local/include -type f | xargs sudo chmod a+r
           sudo find /usr/local/include -type d | xargs sudo chmod a+rx
           ls /usr/local/include/google/protobuf/
-      - run: git fetch --tags
       - name: Create links
         run: |
           mkdir -p /home/runner/go/src/github.com/argoproj
@@ -211,7 +198,7 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: "14"
-      - uses: actions/cache@v1
+      - uses: actions/cache@v2
         with:
           path: ui/node_modules
           key: ${{ runner.os }}-node-dep-v1-${{ hashFiles('**/yarn.lock') }}

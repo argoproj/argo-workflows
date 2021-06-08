@@ -1,96 +1,225 @@
 # Release Instructions
 
-Allow 1h to do a release.
-
-## Preparation
-
-* [ ] Cherry-pick your changes from master onto the release branch.
-* [ ] The release branch should be green in CI before you start.
-
 ## Release
 
-Releasing requires a clean tree state, so back-up any untracked files in your Git directory.
+### 1. Cherry-pick Issue
 
-**Only once your files are backed up**, run:
+Create a cherry-pick issue to allow the team and community to comment on the release contents.
 
-    git clean -fdx  # WARNING: Will delete untracked files!
-
-To generate new manifests and perform basic checks:
-
-    make prepare-release -B VERSION=v2.11.5
-
-Publish the images and local Git changes (disabling K3D as this is faster and more reliable for releases):
-
-    make publish-release K3D=false VERSION=v2.11.5
+1. Locate the previous cherry-pick issue
+2. Get the hash of the most recent commit still available on the previous issue
+3. Generate new issue contents:
     
-Wait 1h to 2h.
+    ```sh
+    $ git checkout master # Ensure we are on master
+    $ git log --pretty=format:"%an: %s %h"  [COMMIT_HASH]..HEAD
+    ```
+4. Create a new issue on GitHub with the title `[VERSION] cherry-pick` (e.g. `v3.0.2 cherry-pick`) and the generated commits
+as content.
 
-* [ ] Check the images were pushed successfully.
-* [ ] Check the correct versions are printed.
-* [ ] Check the executor was correctly built.
+### 2. Cherry-pick to Release Branch
+
+Once the team and community is satisfied with the commits to be cherry-picked, cherry-pick them into the appropriate
+release branch. There should be a single release branch per minor release (e.g. `release-3.0`, `release-3.1`, etc.)
+
+1. Checkout the release branch and cherry-pick commits
+
+    ```sh
+    $ git checkout relesae-3.0
+    $ git cherry-pick [COMMIT_IDS...]
+    ```
+
+2. Hope for few merge conflicts!
+
+    A merge conflict during cherry-picking usually means the commit is based on another commit that should be 
+    cherry-picked first. In case of a merge conflict, you can undo the cherry-picking by `git cherry-pick --abort` and 
+    revisit the list of commits to make sure the prior commits are cherry-picked as well.
+
+3. Once done cherry-picking, push the release branch to ensure the branch can build and all tests pass.
+
+### 3. Prepare the Release
+
+> v2
+
+`v2` releases still depend on the previous repository name (`github.com/argoproj/argo`). To release for `v2`,
+make a local clone of the repository under the name `argo`:
+
+```shell
+$ pwd
+/Users/<user>/go/src/github.com/argoproj/argo-workflows
+$ cd ..
+$ cp -r argo-workflows argo
+$ cd argo
+```
+
+Then follow all the normal steps. You should delete the `argo` folder once the release is done to avoid confusion and conflicts.
+
+#### Preparing the release
+
+> Before v3.1
+
+1. Releasing requires a clean tree state, so back-up any untracked files in your Git directory.
+   
+   **Only once your files are backed up**, run:
+      ```shell
+       $ git clean -fdx  # WARNING: Will delete untracked files!
+      ```
+
+2. To generate new manifests and perform basic checks:
+   
+      ```shell
+      $ make prepare-release -B VERSION=v3.0.3
+      ```
+
+3. Once done, push the release branch and ensure the branch is green and all tests pass.
+
+      ```shell
+      $ git push
+      ```
+
+4. Publish the images and local Git changes (disabling K3D as this is faster and more reliable for releases):
+
+      ```shell
+      $ make publish-release K3D=false VERSION=v3.0.3
+      ```
+
+5. Wait 1h to 2h.
+
+> v3.1 and after
+
+Create and push a release tag:
 
 ```
-docker run argoproj/argoexec:v2.11.5 version
-docker run argoproj/workflow-controller:v2.11.5 version
-docker run argoproj/argocli:v2.11.5 version
+git tag v3.1.0
+git push origin v3.1.0
 ```
 
-* [ ] Check the manifests contain the correct tags: https://raw.githubusercontent.com/argoproj/argo-workflows/v2.11.5/manifests/install.yaml
+The release will then be done automatically by a Github action.
 
-* [ ] Check the manifests apply: `kubectl -n argo apply -f https://raw.githubusercontent.com/argoproj/argo-workflows/v2.11.5/manifests/install.yaml`
+### 4. Ensure the Release Succeeded
 
-### Release Notes
+> Before v3.1
 
-Create [the release](https://github.com/argoproj/argo-workflows/releases) in Github. You can get some text for this using [Github Toolkit](https://github.com/alexec/github-toolkit):
+1. Check the images were pushed successfully. Ensure the `GitTreeState` is `Clean`.
+   ```sh
+   $ docker run argoproj/argoexec:v3.0.3 version
+   $ docker run argoproj/workflow-controller:v3.0.3 version
+   $ docker run argoproj/argocli:v3.0.3 version
+   ```
+   
+1. Check the correct versions are printed. Ensure the `GitTreeState` is `Clean`.
 
-    ght relnote v2.7.3..v2.11.4
+   ```sh
+   $ ./dist/argo-darwin-amd64 version
+   ```
 
-Release notes checklist:
+1. Check the manifests contain the correct tags (search for `v3.0.3`): [https://raw.githubusercontent.com/argoproj/argo-workflows/v3.0.3/manifests/install.yaml](https://raw.githubusercontent.com/argoproj/argo-workflows/v3.0.3/manifests/install.yaml) 
 
-* [ ] All breaking changes are listed with migration steps
-* [ ] The release notes identify every publicly known vulnerability with a CVE assignment 
+1. Check the manifests apply: `kubectl -n argo apply -f https://raw.githubusercontent.com/argoproj/argo-workflows/v3.0.3/manifests/install.yaml`
 
-### Update Stable Tag
+> v3.1 and after
+
+No action needed.
+
+### 5. Release Notes
+
+In [upgrading](upgrading.md), detail:
+
+* All breaking changes are listed with migration steps
+* The release notes identify every publicly known vulnerability with a CVE assignment
+
+The change log is automatically generated by a Github action.
+
+> Before v3.1
+
+The release title should be the version number (e.g. `v3.0.3`) and nothing else.
+
+Use hack/release-notes.md as the template for your new release notes.
+
+> v3.1 and after
+
+This is done automatically by a Github action.
+
+### 6. Upload Binaries and SHA256 Sums To GitHub
+
+> Before v3.1
+
+After running `make publish-release`, you will have the zipped binaries and SHA256 sums in your local.
+
+Open them with:
+
+```shell
+$ open dist
+```
+
+Upload only the zipped binaries (`.gz` suffix) and SHA256 sums (`.sha256` suffix) to GitHub. There should be 12 uploaded files in total.
+
+> v3.1 and after
+
+This is done automatically by a Github action.
+
+### 7. Update Stable Tag
+
+> Before v3.1
 
 If this is GA:
 
-* [ ] Update the `stable` tag
+Update the `stable` tag
 
 ```
 git tag -f stable
 git push -f origin stable
 ```
 
-* [ ] Check the manifests contain the correct tags: https://raw.githubusercontent.com/argoproj/argo-workflows/stable/manifests/install.yaml
+Check the manifests contain the correct tags: [https://raw.githubusercontent.com/argoproj/argo-workflows/stable/manifests/install.yaml](https://raw.githubusercontent.com/argoproj/argo-workflows/stable/manifests/install.yaml)
 
-### Update Homebrew
+> v3.1 and after
+
+Delete the `stable` tag.
+
+```
+git tag -D stable
+git push origin :stable
+```
+
+### 8. Update Homebrew
 
 If this is GA:
 
-* [ ] Update the Homebrew formula.
+Update the Homebrew formula.
 
 ```bash
 export HOMEBREW_GITHUB_API_TOKEN=$GITHUB_TOKEN
-brew bump-formula-pr argo --version 2.11.5
+brew bump-formula-pr argo --version 3.0.3
 ```
 
-* [ ] Check that Homebrew was successfully updated after the PR was merged:
+Check that Homebrew was successfully updated after the PR was merged:
  
  ```
  brew upgrade argo
  /usr/local/bin/argo version
  ```
 
-### Update Java SDK
+### 9. Update Java SDK
 
 If this is GA:
 
-* [ ] Update the Java SDK formula.
+Update the Java SDK formula.
 
 ```
 git clone git@github.com:argoproj-labs/argo-client-java.git
 cd argo-client-java
-make publish VERSION=v2.11.5
+make publish VERSION=v3.0.3
 ```
 
-* [ ] Check package published: https://github.com/argoproj-labs/argo-client-java/packages
+Check package published: [https://github.com/argoproj-labs/argo-client-java/packages](https://github.com/argoproj-labs/argo-client-java/packages)
+
+### 10. Publish Release
+
+> Before v3.1
+
+Finally, press publish on the GitHub release. Congrats, you're done!
+
+> v3.1 and after
+
+This is done automatically by a Github action. 

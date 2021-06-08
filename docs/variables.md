@@ -54,7 +54,7 @@ args: [ "{{ inputs.parameters.message }}" ]
 The tag is substituted with the result of evaluating the tag as an expression.
 
 Note that any hyphenated parameter names will cause a parsing error. You can reference them by
-indexing into the parameter map, e.g. `inputs.parameters["my-param"]`.
+indexing into the parameter map, e.g. `inputs.parameters['my-param']`.
 
 [Learn about the expression syntax](https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md).
 
@@ -83,13 +83,13 @@ We provide some core functions:
 Cast to int:
 
 ```
-asInt(inputs.parameters["my-int-param"])
+asInt(inputs.parameters['my-int-param'])
 ```
 
 Cast to float:
 
 ```
-asFloat(inputs.parameters["my-float-param"])
+asFloat(inputs.parameters['my-float-param'])
 ```
 
 Cast to string:
@@ -109,7 +109,7 @@ You can also use [Sprig functions](http://masterminds.github.io/sprig/):
 Trim a string:
 
 ```
-sprig.trim(inputs.parameters["my-string-param"])
+sprig.trim(inputs.parameters['my-string-param'])
 ```
 
 !!! Warning In Sprig functions, errors are not often not raised. E.g. if `int` is used on an invalid value, it
@@ -185,8 +185,7 @@ step.
 | `inputs.parameters.<NAME>` | Input parameter of the metric-emitting template |
 | `outputs.parameters.<NAME>` | Output parameter of the metric-emitting template |
 | `outputs.result` | Output result of the metric-emitting template |
-| `resourcesDuration.{cpu,memory}` | Resources duration **in
-seconds**. Must be one of `resourcesDuration.cpu` or `resourcesDuration.memory`, if available. For more info, see the [Resource Duration](resource-duration.md) doc.|
+| `resourcesDuration.{cpu,memory}` | Resources duration **in seconds**. Must be one of `resourcesDuration.cpu` or `resourcesDuration.memory`, if available. For more info, see the [Resource Duration](resource-duration.md) doc.|
 
 ### Realtime Metrics
 

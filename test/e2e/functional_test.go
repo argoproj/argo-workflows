@@ -471,6 +471,41 @@ func (s *FunctionalSuite) TestWorkflowTemplateRefWithExitHandler() {
 		})
 }
 
+func (s *FunctionalSuite) TestWorkflowTemplateRefWithExitHandlerError() {
+	s.Given().
+		WorkflowTemplate(`
+metadata:
+  name: test-exit-handler
+spec:
+  entrypoint: main
+  onExit: exit-handler
+  templates:
+    - name: main
+      container:
+        name: main
+        image: argoproj/argosay:v2
+    - name: exit-handler
+      templateRef:
+        name: nonexistent
+        template: exit-handler
+`).
+		Workflow(`
+metadata:
+  generateName: test-exit-handler-
+spec:
+  workflowTemplateRef:
+    name: test-exit-handler
+`).
+		When().
+		CreateWorkflowTemplates().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeErrored).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Contains(t, status.Message, "error in exit template execution")
+		})
+}
+
 func (s *FunctionalSuite) TestParametrizableAds() {
 	s.Given().
 		Workflow(`
@@ -635,10 +670,8 @@ spec:
     - name: main
       container:
         image: argoproj/argosay:v2
-        args:
-          - echo
-          - ":) Hello Argo!"
-      podSpecPatch: '{"terminationGracePeriodSeconds":5, "containers":[{"name":"main", "resources":{"limits":{"cpu": "100m"}}}]}'
+      # ordering of the containers in the next line is intentionally reversed
+      podSpecPatch: '{"terminationGracePeriodSeconds":5, "containers":[{"name":"main", "resources":{"limits":{"cpu": "100m"}}}, {"name":"wait", "resources":{"limits":{"cpu": "101m"}}}]}'
 `).
 		When().
 		SubmitWorkflow().
@@ -649,6 +682,8 @@ spec:
 			for _, c := range p.Spec.Containers {
 				if c.Name == "main" {
 					assert.Equal(t, c.Resources.Limits.Cpu().String(), "100m")
+				} else if c.Name == "wait" {
+					assert.Equal(t, c.Resources.Limits.Cpu().String(), "101m")
 				}
 			}
 		})

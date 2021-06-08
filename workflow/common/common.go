@@ -182,6 +182,9 @@ const (
 	SecretVolMountPath            = "/argo/secret"
 )
 
+// AnnotationKeyKillCmd specifies the command to use to kill to container, useful for injected sidecars
+var AnnotationKeyKillCmd = func(containerName string) string { return workflow.WorkflowFullName + "/kill-cmd-" + containerName }
+
 // GlobalVarWorkflowRootTags is a list of root tags in workflow which could be used for variable reference
 var GlobalVarValidWorkflowVariablePrefix = []string{"item.", "steps.", "inputs.", "outputs.", "pod.", "workflow.", "tasks."}
 
@@ -191,8 +194,6 @@ type ExecutionControl struct {
 	// It is used to signal the executor to terminate a daemoned container. In the future it will be
 	// used to support workflow or steps/dag level timeouts.
 	Deadline *time.Time `json:"deadline,omitempty"`
-	// IncludeScriptOutput is containing flag to include script output
-	IncludeScriptOutput bool `json:"includeScriptOutput,omitempty"`
 }
 
 func UnstructuredHasCompletedLabel(obj interface{}) bool {

@@ -92,12 +92,16 @@ func initExecutor() *executor.WorkflowExecutor {
 	clientset, err := kubernetes.NewForConfig(config)
 	checkErr(err)
 
+	restClient := clientset.RESTClient()
+
 	podName, ok := os.LookupEnv(common.EnvVarPodName)
 	if !ok {
 		log.Fatalf("Unable to determine pod name from environment variable %s", common.EnvVarPodName)
 	}
 	tmpl, err := executor.LoadTemplate(podAnnotationsPath)
 	checkErr(err)
+
+	includeScriptOutput := os.Getenv(common.EnvVarIncludeScriptOutput) == "true"
 
 	var cre executor.ContainerRuntimeExecutor
 	switch executorType {
@@ -114,9 +118,16 @@ func initExecutor() *executor.WorkflowExecutor {
 	}
 	checkErr(err)
 
-	wfExecutor := executor.NewExecutor(clientset, workflow.NewForConfigOrDie(config), podName, os.Getenv(common.EnvVarWorkflowName), namespace, podAnnotationsPath, cre, *tmpl)
+	wfExecutor := executor.NewExecutor(clientset, restClient, workflow.NewForConfigOrDie(config), podName, os.Getenv(common.EnvVarWorkflowName), namespace, podAnnotationsPath, cre, *tmpl, includeScriptOutput)
+
 	yamlBytes, _ := json.Marshal(&wfExecutor.Template)
-	log.Infof("Executor (version: %s, build_date: %s) initialized (pod: %s/%s) with template:\n%s", version.Version, version.BuildDate, namespace, podName, string(yamlBytes))
+	log.
+		WithField("version", version.String()).
+		WithField("namespace", namespace).
+		WithField("podName", podName).
+		WithField("template", string(yamlBytes)).
+		WithField("includeScriptOutput", includeScriptOutput).
+		Info("Executor initialized")
 	return &wfExecutor
 }
 

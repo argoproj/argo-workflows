@@ -11,6 +11,7 @@ As the Argo Community grows, we'd like to keep track of our users. Please send a
 Currently, the following organizations are **officially** using Argo Workflows:
 
 1. [23mofang](https://www.23mofang.com/)
+1. [7shifts](https://www.7shifts.com)
 1. [Acquia](https://www.acquia.com/)
 1. [Adevinta](https://www.adevinta.com/)
 1. [Admiralty](https://admiralty.io/)
@@ -56,6 +57,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Gardener](https://gardener.cloud/)
 1. [GitHub](https://github.com/)
 1. [Gladly](https://gladly.com/)
+1. [Glovo](https://www.glovoapp.com)
 1. [Google](https://www.google.com/intl/en/about/our-company/)
 1. [Graviti](https://www.graviti.cn)
 1. [Greenhouse](https://greenhouse.io)
@@ -123,6 +125,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Vispera](https://www.vispera.co)
 1. [Wavefront](https://www.wavefront.com/)
 1. [Wellcome Trust](https://wellcome.ac.uk/)
+1. [VMware](https://www.vmware.com/)
 1. [Woolworths Group](https://www.woolworthsgroup.com.au/)
 1. [Zhihu](https://www.zhihu.com/)
 
@@ -132,5 +135,5 @@ In addition, the following projects are **officially** using Argo Workflows:
 
 1. [Couler](https://github.com/couler-proj/couler)
 1. [Kubeflow](https://www.kubeflow.org/)
-2. [Onepanel](https://github.com/onepanelio/onepanel)
-3. [SQLFlow](https://github.com/sql-machine-learning/sqlflow)
+1. [Onepanel](https://github.com/onepanelio/onepanel)
+1. [SQLFlow](https://github.com/sql-machine-learning/sqlflow)

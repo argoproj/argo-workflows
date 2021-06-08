@@ -129,7 +129,7 @@ func Lint(ctx context.Context, opts *LintOptions) (*LintResults, error) {
 				r = os.Stdin
 			case err != nil:
 				return err
-			case lintExt[filepath.Ext(path)]:
+			case strings.HasPrefix(path, "/dev/") || lintExt[filepath.Ext(path)]:
 				f, err := os.Open(path)
 				if err != nil {
 					return err

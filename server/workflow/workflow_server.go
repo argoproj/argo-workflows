@@ -103,25 +103,17 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *workflowpkg.Workf
 	if err != nil {
 		return nil, err
 	}
-	err = s.hydrator.Hydrate(wf)
-	if err != nil {
-		return nil, err
+	cleaner := fields.NewCleaner(req.Fields)
+	if !cleaner.WillExclude("status.nodes") {
+		if err := s.hydrator.Hydrate(wf); err != nil {
+			return nil, err
+		}
 	}
-	if req.Fields != "" {
-		wfBytes, err := json.Marshal(wf)
-		if err != nil {
-			return nil, err
-		}
-		resClean, err := fields.CleanFields(req.Fields, wfBytes)
-		if err != nil {
-			return nil, fmt.Errorf("unable to CleanFields in request: %w", err)
-		}
-		var newWf wfv1.Workflow
-		err = json.Unmarshal(resClean, &newWf)
-		if err != nil {
-			return nil, err
-		}
-		return &newWf, nil
+	newWf := &wfv1.Workflow{}
+	if ok, err := cleaner.Clean(wf, &newWf); err != nil {
+		return nil, fmt.Errorf("unable to CleanFields in request: %w", err)
+	} else if ok {
+		return newWf, nil
 	}
 	return wf, nil
 }
@@ -138,7 +130,8 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 	if err != nil {
 		return nil, err
 	}
-	if s.offloadNodeStatusRepo.IsEnabled() {
+	cleaner := fields.NewCleaner(req.Fields)
+	if s.offloadNodeStatusRepo.IsEnabled() && !cleaner.WillExclude("items.status.nodes") {
 		offloadedNodes, err := s.offloadNodeStatusRepo.List(req.Namespace)
 		if err != nil {
 			return nil, err
@@ -158,21 +151,11 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 	sort.Sort(wfList.Items)
 
 	res := &wfv1.WorkflowList{ListMeta: metav1.ListMeta{Continue: wfList.Continue, ResourceVersion: wfList.ResourceVersion}, Items: wfList.Items}
-	if req.Fields != "" {
-		resBytes, err := json.Marshal(res)
-		if err != nil {
-			return nil, err
-		}
-		resClean, err := fields.CleanFields(req.Fields, resBytes)
-		if err != nil {
-			return nil, fmt.Errorf("unable to CleanFields in request: %w", err)
-		}
-		var newRes wfv1.WorkflowList
-		err = json.Unmarshal(resClean, &newRes)
-		if err != nil {
-			return nil, err
-		}
-		return &newRes, nil
+	newRes := &wfv1.WorkflowList{}
+	if ok, err := cleaner.Clean(res, &newRes); err != nil {
+		return nil, fmt.Errorf("unable to CleanFields in request: %w", err)
+	} else if ok {
+		return newRes, nil
 	}
 	return res, nil
 }
@@ -201,7 +184,18 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 		return err
 	}
 	defer watch.Stop()
+	cleaner := fields.NewCleaner(req.Fields).WithoutPrefix("result.object.")
 
+	clean := func(x *wfv1.Workflow) (*wfv1.Workflow, error) {
+		y := &wfv1.Workflow{}
+		if clean, err := cleaner.Clean(x, y); err != nil {
+			return nil, err
+		} else if clean {
+			return y, nil
+		} else {
+			return x, nil
+		}
+	}
 	log.Debug("Piping events to channel")
 	defer log.Debug("Result channel done")
 
@@ -229,12 +223,17 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 				return apierr.FromObject(event.Object)
 			}
 			logCtx := log.WithFields(log.Fields{"workflow": wf.Name, "type": event.Type, "phase": wf.Status.Phase})
-			err := s.hydrator.Hydrate(wf)
+			if !cleaner.WillExclude("status.nodes") {
+				if err := s.hydrator.Hydrate(wf); err != nil {
+					return err
+				}
+			}
+			newWf, err := clean(wf)
 			if err != nil {
-				return err
+				return fmt.Errorf("unable to CleanFields in request: %w", err)
 			}
 			logCtx.Debug("Sending workflow event")
-			err = ws.Send(&workflowpkg.WorkflowWatchEvent{Type: string(event.Type), Object: wf})
+			err = ws.Send(&workflowpkg.WorkflowWatchEvent{Type: string(event.Type), Object: newWf})
 			if err != nil {
 				return err
 			}

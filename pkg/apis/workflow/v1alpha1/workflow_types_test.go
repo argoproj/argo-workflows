@@ -826,6 +826,62 @@ func TestTemplate_ExcludeTemplateTypes(t *testing.T) {
 	})
 }
 
+func TestDAGTask_GetExitTemplate(t *testing.T) {
+	args := Arguments{
+		Parameters: []Parameter{
+			{
+				Name:  "test",
+				Value: AnyStringPtr("welcome"),
+			},
+		},
+	}
+	task := DAGTask{
+		Hooks: map[LifecycleEvent]LifecycleHook{
+			ExitLifecycleEvent: LifecycleHook{
+				Template:  "test",
+				Arguments: args,
+			},
+		},
+	}
+	existTmpl := task.GetExitHook(Arguments{})
+	assert.NotNil(t, existTmpl)
+	assert.Equal(t, "test", existTmpl.Template)
+	assert.Equal(t, args, existTmpl.Arguments)
+	task = DAGTask{OnExit: "test-tmpl"}
+	existTmpl = task.GetExitHook(args)
+	assert.NotNil(t, existTmpl)
+	assert.Equal(t, "test-tmpl", existTmpl.Template)
+	assert.Equal(t, args, existTmpl.Arguments)
+}
+
+func TestStep_GetExitTemplate(t *testing.T) {
+	args := Arguments{
+		Parameters: []Parameter{
+			{
+				Name:  "test",
+				Value: AnyStringPtr("welcome"),
+			},
+		},
+	}
+	task := WorkflowStep{
+		Hooks: map[LifecycleEvent]LifecycleHook{
+			ExitLifecycleEvent: LifecycleHook{
+				Template:  "test",
+				Arguments: args,
+			},
+		},
+	}
+	existTmpl := task.GetExitHook(Arguments{})
+	assert.NotNil(t, existTmpl)
+	assert.Equal(t, "test", existTmpl.Template)
+	assert.Equal(t, args, existTmpl.Arguments)
+	task = WorkflowStep{OnExit: "test-tmpl"}
+	existTmpl = task.GetExitHook(args)
+	assert.NotNil(t, existTmpl)
+	assert.Equal(t, "test-tmpl", existTmpl.Template)
+	assert.Equal(t, args, existTmpl.Arguments)
+}
+
 func TestHasChild(t *testing.T) {
 	node := NodeStatus{
 		Children: []string{"a", "b"},
@@ -835,18 +891,57 @@ func TestHasChild(t *testing.T) {
 	assert.False(t, node.HasChild(""))
 }
 
-func TestNodeStatusGetReason(t *testing.T) {
-	nodeStatus := NodeStatus{Phase: NodePending}
-	nodeStatusWithLock := NodeStatus{Phase: NodePending, SynchronizationStatus: &NodeSynchronizationStatus{Waiting: "test"}}
-	t.Run("WaitingForLockReason", func(t *testing.T) {
-		assert.Equal(t, NodeReason(""), nodeStatus.GetReason())
-		assert.Equal(t, WaitingForSyncLock, nodeStatusWithLock.GetReason())
-	})
-	t.Run("EmptyReason", func(t *testing.T) {
-		nodeStatus.Phase = NodeRunning
-		nodeStatusWithLock.Phase = NodeRunning
-		nodeStatusWithLock.SynchronizationStatus = nil
-		assert.Equal(t, NodeReason(""), nodeStatus.GetReason())
-		assert.Equal(t, NodeReason(""), nodeStatusWithLock.GetReason())
-	})
+func TestParameterGetValue(t *testing.T) {
+	empty := Parameter{}
+	defaultVal := Parameter{Default: AnyStringPtr("Default")}
+	value := Parameter{Value: AnyStringPtr("Test")}
+
+	valueFrom := Parameter{ValueFrom: &ValueFrom{}}
+	assert.False(t, empty.HasValue())
+	assert.Empty(t, empty.GetValue())
+	assert.True(t, defaultVal.HasValue())
+	assert.NotEmpty(t, defaultVal.GetValue())
+	assert.Equal(t, "Default", defaultVal.GetValue())
+	assert.True(t, value.HasValue())
+	assert.NotEmpty(t, value.GetValue())
+	assert.Equal(t, "Test", value.GetValue())
+	assert.True(t, valueFrom.HasValue())
+
+}
+
+func TestTemplateIsLeaf(t *testing.T) {
+	tmpls := []Template{
+		{
+			HTTP: &HTTP{URL: "test.com"},
+		},
+		{
+			ContainerSet: &ContainerSetTemplate{},
+		},
+		{
+			Container: &corev1.Container{},
+		},
+		{
+			Script: &ScriptTemplate{},
+		},
+		{
+			Resource: &ResourceTemplate{},
+		},
+	}
+	for _, tmpl := range tmpls {
+		assert.True(t, tmpl.IsLeaf())
+	}
+	tmpl := Template{
+		DAG: &DAGTemplate{},
+	}
+	assert.False(t, tmpl.IsLeaf())
+	tmpl = Template{
+		Steps: []ParallelSteps{},
+	}
+	assert.False(t, tmpl.IsLeaf())
+
+}
+
+func TestTemplateGetType(t *testing.T) {
+	tmpl := Template{HTTP: &HTTP{}}
+	assert.Equal(t, TemplateTypeHTTP, tmpl.GetType())
 }

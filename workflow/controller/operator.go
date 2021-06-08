@@ -110,7 +110,8 @@ var (
 	// ErrDeadlineExceeded indicates the operation exceeded its deadline for execution
 	ErrDeadlineExceeded = errors.New(errors.CodeTimeout, "Deadline exceeded")
 	// ErrParallelismReached indicates this workflow reached its parallelism limit
-	ErrParallelismReached = errors.New(errors.CodeForbidden, "Max parallelism reached")
+	ErrParallelismReached       = errors.New(errors.CodeForbidden, "Max parallelism reached")
+	ErrResourceRateLimitReached = errors.New(errors.CodeForbidden, "resource creation rate-limit reached")
 	// ErrTimeout indicates a specific template timed out
 	ErrTimeout = errors.New(errors.CodeTimeout, "timeout")
 )
@@ -381,8 +382,10 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		onExitNodeName := common.GenerateOnExitNodeName(woc.wf.ObjectMeta.Name)
 		onExitNode, err = woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: woc.execWf.Spec.OnExit}, tmplCtx, woc.execWf.Spec.Arguments, &executeTemplateOpts{onExitTemplate: true})
 		if err != nil {
-			// the error are handled in the callee so just log it.
 			woc.log.WithError(err).Error("error in exit template execution")
+			if !woc.wf.Status.Phase.Completed() {
+				woc.markWorkflowError(ctx, fmt.Errorf("error in exit template execution: %w", err))
+			}
 			return
 		}
 		if onExitNode == nil || !onExitNode.Fulfilled() {
@@ -492,7 +495,9 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 	}
 	if woc.wf.Status.Outputs != nil {
 		for _, param := range woc.wf.Status.Outputs.Parameters {
-			woc.globalParams["workflow.outputs.parameters."+param.Name] = param.Value.String()
+			if param.HasValue() {
+				woc.globalParams["workflow.outputs.parameters."+param.Name] = param.GetValue()
+			}
 		}
 	}
 }
@@ -961,8 +966,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 
 			// If the node is pending and the pod does not exist, it could be the case that we want to try to submit it
 			// again instead of marking it as an error. Check if that's the case.
-			// Node will be in pending state without Pod create if Node is waiting for Synchronize lock
-			if node.Pending() && node.GetReason() == wfv1.WaitingForSyncLock {
+			if node.Pending() {
 				continue
 			}
 
@@ -1095,7 +1099,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			newDaemonStatus = pointer.BoolPtr(true)
 			woc.log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
 		}
-		woc.cleanUpPod(pod)
+		woc.cleanUpPod(pod, tmpl)
 	default:
 		newPhase = wfv1.NodeError
 		message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.ObjectMeta.Name, pod.Status.Phase)
@@ -1205,24 +1209,22 @@ func getExitCode(pod *apiv1.Pod) *int32 {
 	return nil
 }
 
-func (woc *wfOperationCtx) cleanUpPod(pod *apiv1.Pod) {
+func podHasContainerNeedingTermination(pod *apiv1.Pod, tmpl wfv1.Template) bool {
 	for _, c := range pod.Status.ContainerStatuses {
-		if c.Name == common.WaitContainerName && c.State.Terminated == nil {
-			return // we must not do anything if the wait or main containers are still running
+		// Only clean up pod when both the wait and the main containers are terminated
+		if c.Name == common.WaitContainerName || tmpl.IsMainContainerName(c.Name) {
+			if c.State.Terminated == nil {
+				return false
+			}
 		}
 	}
-	// the wait container has terminated, so all other containers should be killed
-	for _, c := range pod.Status.ContainerStatuses {
-		if c.State.Terminated != nil {
-			continue
-		}
-		woc.queuePodForCleanup(pod.Name, terminateContainers)
-		return
-	}
+	return true
 }
 
-func (woc *wfOperationCtx) queuePodForCleanup(podName string, podCleanupAction podCleanupAction) {
-	woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, podCleanupAction)
+func (woc *wfOperationCtx) cleanUpPod(pod *apiv1.Pod, tmpl wfv1.Template) {
+	if podHasContainerNeedingTermination(pod, tmpl) {
+		woc.controller.queuePodForCleanup(woc.wf.Namespace, pod.Name, terminateContainers)
+	}
 }
 
 // getLatestFinishedAt returns the latest finishAt timestamp from all the
@@ -1702,7 +1704,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 
 			// It has to be one child at least
 			if lastChildNode != nil {
-				RetryOnDifferentHost(retryNodeName)(*woc.retryStrategy(processedTmpl), woc.wf.Status.Nodes, processedTmpl)
+				RetryOnDifferentHost(woc.wf.NodeID(retryNodeName))(*woc.retryStrategy(processedTmpl), woc.wf.Status.Nodes, processedTmpl)
 			}
 
 			localParams := make(map[string]string)
@@ -1850,7 +1852,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 		}
 		markCompleted = phase.Completed()
 	}
-	if woc.wf.Status.StartedAt.IsZero() {
+	if woc.wf.Status.StartedAt.IsZero() && phase != wfv1.WorkflowPending {
 		woc.updated = true
 		woc.wf.Status.StartedAt = metav1.Time{Time: time.Now().UTC()}
 		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration()
@@ -2150,7 +2152,7 @@ func (woc *wfOperationCtx) markNodeError(nodeName string, err error) *wfv1.NodeS
 
 // markNodePending is a convenience method to mark a node and set the message from the error
 func (woc *wfOperationCtx) markNodePending(nodeName string, err error) *wfv1.NodeStatus {
-	woc.log.Infof("Mark node %s as Pending, due to: %+v", nodeName, err)
+	woc.log.Infof("Mark node %s as Pending, due to: %v", nodeName, err)
 	return woc.markNodePhase(nodeName, wfv1.NodePending, err.Error()) // this error message will not change often
 }
 
@@ -2440,7 +2442,7 @@ func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, t
 }
 
 func (woc *wfOperationCtx) requeueIfTransientErr(err error, nodeName string) (*wfv1.NodeStatus, error) {
-	if errorsutil.IsTransientErr(err) {
+	if errorsutil.IsTransientErr(err) || err == ErrResourceRateLimitReached {
 		// Our error was most likely caused by a lack of resources.
 		woc.requeue()
 		return woc.markNodePending(nodeName, err), nil
@@ -2609,7 +2611,9 @@ func (woc *wfOperationCtx) addParamToGlobalScope(param wfv1.Parameter) {
 		return
 	}
 	paramName := fmt.Sprintf("workflow.outputs.parameters.%s", param.GlobalName)
-	woc.globalParams[paramName] = param.Value.String()
+	if param.HasValue() {
+		woc.globalParams[paramName] = param.GetValue()
+	}
 	wfUpdated := wfutil.AddParamToGlobalScope(woc.wf, woc.log, param)
 	if wfUpdated {
 		woc.updated = true
@@ -2960,37 +2964,6 @@ func (woc *wfOperationCtx) createTemplateContext(scope wfv1.ResourceScope, resou
 	}
 }
 
-func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, templateRef, parentDisplayName, parentNodeName, boundaryID string, tmplCtx *templateresolution.Context) (bool, *wfv1.NodeStatus, error) {
-	if templateRef != "" && woc.GetShutdownStrategy().ShouldExecute(true) {
-		woc.log.Infof("Running OnExit handler: %s", templateRef)
-
-		// Previously we used `parentDisplayName` to generate all onExit node names. However, as these can be non-unique
-		// we transitioned to using `parentNodeName` instead, which are guaranteed to be unique. In order to not disrupt
-		// running workflows during upgrade time, we first check if there is an onExit node that currently exists with the
-		// legacy name AND said node is a child of the parent node. If it does, we continue execution with the legacy name.
-		// If it doesn't, we use the new (and unique) name for all operations henceforth.
-		// TODO: This scaffold code should be removed after a couple of "grace period" version upgrades to allow transitions. It was introduced in v3.0.0
-		// When the scaffold code is removed, we should only have the following:
-		//
-		// 		onExitNodeName := common.GenerateOnExitNodeName(parentNodeName)
-		//
-		// See more: https://github.com/argoproj/argo-workflows/issues/5502
-		onExitNodeName := common.GenerateOnExitNodeName(parentNodeName)
-		legacyOnExitNodeName := common.GenerateOnExitNodeName(parentDisplayName)
-		if legacyNameNode := woc.wf.GetNodeByName(legacyOnExitNodeName); legacyNameNode != nil && woc.wf.GetNodeByName(parentNodeName).HasChild(legacyNameNode.ID) {
-			onExitNodeName = legacyOnExitNodeName
-		}
-
-		onExitNode, err := woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: templateRef}, tmplCtx, woc.execWf.Spec.Arguments, &executeTemplateOpts{
-			boundaryID:     boundaryID,
-			onExitTemplate: true,
-		})
-		woc.addChildNode(parentNodeName, onExitNodeName)
-		return true, onExitNode, err
-	}
-	return false, nil, nil
-}
-
 func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localScope map[string]string, realTimeScope map[string]func() float64, realTimeOnly bool) {
 	for _, metricTmpl := range metricList {
 
@@ -3276,8 +3249,7 @@ func (woc *wfOperationCtx) needsStoredWfSpecUpdate() bool {
 	// Need to recalculate StoredWorkflowSpec in 2.12.x format.
 	// This check can be removed once all user migrated from 2.11.x to 2.12.x
 	return woc.wf.Status.StoredWorkflowSpec == nil || (woc.wf.Spec.Entrypoint != "" && woc.wf.Status.StoredWorkflowSpec.Entrypoint == "") ||
-		(woc.wf.Spec.Suspend != nil && woc.wf.Status.StoredWorkflowSpec.Suspend == nil) ||
-		(woc.wf.Spec.Shutdown != "" && woc.wf.Status.StoredWorkflowSpec.Shutdown == "") ||
+		(woc.wf.Spec.Suspend != woc.wf.Status.StoredWorkflowSpec.Suspend) ||
 		(woc.wf.Spec.Shutdown != woc.wf.Status.StoredWorkflowSpec.Shutdown)
 }
 

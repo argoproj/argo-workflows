@@ -82,6 +82,8 @@ Workflow is the definition of a workflow resource
 
 - [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-continue-on-fail.yaml)
 
+- [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-custom-metrics.yaml)
+
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-daemon-task.yaml)
 
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-diamond-steps.yaml)
@@ -111,6 +113,10 @@ Workflow is the definition of a workflow resource
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-dag-level.yaml)
 
 - [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-step-level.yaml)
+
+- [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-artifacts.yaml)
+
+- [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handlers.yaml)
 
@@ -161,6 +167,8 @@ Workflow is the definition of a workflow resource
 - [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
+
+- [`k8s-patch-basic.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch-basic.yaml)
 
 - [`k8s-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch.yaml)
 
@@ -457,6 +465,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-continue-on-fail.yaml)
 
+- [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-custom-metrics.yaml)
+
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-daemon-task.yaml)
 
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-diamond-steps.yaml)
@@ -486,6 +496,10 @@ WorkflowSpec is the specification of a Workflow.
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-dag-level.yaml)
 
 - [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-step-level.yaml)
+
+- [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-artifacts.yaml)
+
+- [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handlers.yaml)
 
@@ -536,6 +550,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
+
+- [`k8s-patch-basic.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch-basic.yaml)
 
 - [`k8s-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch.yaml)
 
@@ -851,6 +867,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-continue-on-fail.yaml)
 
+- [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-custom-metrics.yaml)
+
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-daemon-task.yaml)
 
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-diamond-steps.yaml)
@@ -880,6 +898,10 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-dag-level.yaml)
 
 - [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-step-level.yaml)
+
+- [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-artifacts.yaml)
+
+- [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handlers.yaml)
 
@@ -930,6 +952,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
+
+- [`k8s-patch-basic.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch-basic.yaml)
 
 - [`k8s-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch.yaml)
 
@@ -1202,6 +1226,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-continue-on-fail.yaml)
 
+- [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-custom-metrics.yaml)
+
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-daemon-task.yaml)
 
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-diamond-steps.yaml)
@@ -1231,6 +1257,10 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-dag-level.yaml)
 
 - [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-step-level.yaml)
+
+- [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-artifacts.yaml)
+
+- [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handlers.yaml)
 
@@ -1281,6 +1311,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
+
+- [`k8s-patch-basic.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch-basic.yaml)
 
 - [`k8s-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch.yaml)
 
@@ -1530,6 +1562,8 @@ Arguments to a template
 
 - [`daemon-step.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemon-step.yaml)
 
+- [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-custom-metrics.yaml)
+
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-daemon-task.yaml)
 
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-diamond-steps.yaml)
@@ -1551,6 +1585,10 @@ Arguments to a template
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-dag-level.yaml)
 
 - [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-step-level.yaml)
+
+- [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-artifacts.yaml)
+
+- [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
 
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
@@ -1711,6 +1749,8 @@ Metrics are a list of metrics emitted from a Workflow/Template
 <br>
 
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/custom-metrics.yaml)
+
+- [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-custom-metrics.yaml)
 </details>
 
 ### Fields
@@ -1840,7 +1880,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`executor`|[`ExecutorConfig`](#executorconfig)|Executor holds configurations of the executor container.|
 |`failFast`|`boolean`|FailFast, if specified, will fail this template if any of its child pods has failed. This is useful for when this template is expanded with `withItems`, etc.|
 |`hostAliases`|`Array<`[`HostAlias`](#hostalias)`>`|HostAliases is an optional list of hosts and IPs that will be injected into the pod spec|
-|`http`|[`HTTP`](#http)|HTTP is http template|
+|`http`|[`HTTP`](#http)|HTTP makes a HTTP request|
 |`initContainers`|`Array<`[`UserContainer`](#usercontainer)`>`|InitContainers is a list of containers which run before the main container.|
 |`inputs`|[`Inputs`](#inputs)|Inputs describe what inputs parameters and artifacts are supplied to this template|
 |`memoize`|[`Memoize`](#memoize)|Memoize allows templates to use outputs generated from already executed templates|
@@ -2019,6 +2059,10 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
 
+- [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-artifacts.yaml)
+
+- [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
+
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
@@ -2131,6 +2175,8 @@ Artifact indicates an artifact to place at a specified path
 
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
 
+- [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-artifacts.yaml)
+
 - [`fun-with-gifs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fun-with-gifs.yaml)
 
 - [`global-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-outputs.yaml)
@@ -2233,6 +2279,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
 
+- [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-custom-metrics.yaml)
+
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-daemon-task.yaml)
 
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-diamond-steps.yaml)
@@ -2254,6 +2302,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-dag-level.yaml)
 
 - [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-step-level.yaml)
+
+- [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
 
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
@@ -2379,6 +2429,8 @@ Prometheus is a prometheus metric to be emitted
 <br>
 
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/custom-metrics.yaml)
+
+- [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-custom-metrics.yaml)
 </details>
 
 ### Fields
@@ -2528,6 +2580,8 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 
 - [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-continue-on-fail.yaml)
 
+- [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-custom-metrics.yaml)
+
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-daemon-task.yaml)
 
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-diamond-steps.yaml)
@@ -2639,10 +2693,11 @@ _No description available_
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`body`|`byte`|_No description available_|
-|`headers`|`Array<`[`HTTPHeader`](#httpheader)`>`|_No description available_|
-|`method`|`string`|_No description available_|
-|`url`|`string`|_No description available_|
+|`body`|`byte`|Body is content of the HTTP Request|
+|`headers`|`Array<`[`HTTPHeader`](#httpheader)`>`|Headers are an optional list of headers to send with HTTP requests|
+|`method`|`string`|Method is HTTP methods for HTTP Request|
+|`timeoutSeconds`|`integer`|TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds|
+|`url`|`string`|URL of the HTTP Request|
 
 ## UserContainer
 
@@ -2722,6 +2777,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`daemon-step.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemon-step.yaml)
 
+- [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-custom-metrics.yaml)
+
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-daemon-task.yaml)
 
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-diamond-steps.yaml)
@@ -2743,6 +2800,10 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-dag-level.yaml)
 
 - [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-step-level.yaml)
+
+- [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-artifacts.yaml)
+
+- [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
 
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
@@ -2883,6 +2944,8 @@ ResourceTemplate is a template subtype to manipulate kubernetes resources
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
 
+- [`k8s-patch-basic.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch-basic.yaml)
+
 - [`k8s-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch.yaml)
 
 - [`k8s-set-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-set-owner-reference.yaml)
@@ -2936,6 +2999,10 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 - [`dag-conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-artifacts.yaml)
 
 - [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
+
+- [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-artifacts.yaml)
+
+- [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
 
@@ -3046,6 +3113,10 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-code-output-variable.yaml)
 
 - [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-step-level.yaml)
+
+- [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-artifacts.yaml)
+
+- [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handlers.yaml)
 
@@ -3161,8 +3232,9 @@ WorkflowStep is a reference to a template to execute in a series of step
 |:----------:|:----------:|---------------|
 |`arguments`|[`Arguments`](#arguments)|Arguments hold arguments to the template|
 |`continueOn`|[`ContinueOn`](#continueon)|ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified|
+|`hooks`|[`LifecycleHook`](#lifecyclehook)|Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step|
 |`name`|`string`|Name of the step|
-|`onExit`|`string`|OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.|
+|~`onExit`~|~`string`~|~OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.~ DEPRECATED: Use Hooks[exit].Template instead.|
 |`template`|`string`|Template is the name of the template to execute as the step|
 |`templateRef`|[`TemplateRef`](#templateref)|TemplateRef is the reference to the template resource to execute as the step.|
 |`when`|`string`|When is an expression in which the step should conditionally execute|
@@ -3367,6 +3439,7 @@ GitArtifact is the location of an git artifact
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`depth`|`integer`|Depth specifies clones/fetches should be shallow and include the given number of commits from the branch tip|
+|`disableSubmodules`|`boolean`|DisableSubmodules disables submodules during git clone|
 |`fetch`|`Array< string >`|Fetch specifies a number of refs that should be fetched before checkout|
 |`insecureIgnoreHostKey`|`boolean`|InsecureIgnoreHostKey disables SSH strict host key checking during git clone|
 |`passwordSecret`|[`SecretKeySelector`](#secretkeyselector)|PasswordSecret is the secret selector to the repository password|
@@ -3512,6 +3585,8 @@ ValueFrom describes a location in which to obtain the value to a parameter
 
 - [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
 
+- [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
+
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
@@ -3568,6 +3643,8 @@ Counter is a Counter prometheus metric
 <br>
 
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/custom-metrics.yaml)
+
+- [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-custom-metrics.yaml)
 </details>
 
 ### Fields
@@ -3584,6 +3661,8 @@ Gauge is a Gauge prometheus metric
 <br>
 
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/custom-metrics.yaml)
+
+- [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-custom-metrics.yaml)
 </details>
 
 ### Fields
@@ -3639,13 +3718,21 @@ MetricLabel is a single label for a prometheus metric
 
 - [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
 
+- [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-custom-metrics.yaml)
+
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
+
+- [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-artifacts.yaml)
+
+- [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
 
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-world.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
+
+- [`k8s-patch-basic.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch-basic.yaml)
 
 - [`k8s-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch.yaml)
 
@@ -3752,6 +3839,8 @@ DAGTask represents a node in the graph during DAG execution
 
 - [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-continue-on-fail.yaml)
 
+- [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-custom-metrics.yaml)
+
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-daemon-task.yaml)
 
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-diamond-steps.yaml)
@@ -3800,8 +3889,9 @@ DAGTask represents a node in the graph during DAG execution
 |`continueOn`|[`ContinueOn`](#continueon)|ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified|
 |`dependencies`|`Array< string >`|Dependencies are name of other targets which this depends on|
 |`depends`|`string`|Depends are name of other targets which this depends on|
+|`hooks`|[`LifecycleHook`](#lifecyclehook)|Hooks hold the lifecycle hook which is invoked at lifecycle of task, irrespective of the success, failure, or error status of the primary task|
 |`name`|`string`|Name is the name of the target|
-|`onExit`|`string`|OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.|
+|~`onExit`~|~`string`~|~OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.~ DEPRECATED: Use Hooks[exit].Template instead.|
 |`template`|`string`|Name of template to execute|
 |`templateRef`|[`TemplateRef`](#templateref)|TemplateRef is the reference to the template resource to execute.|
 |`when`|`string`|When is an expression in which the task should conditionally execute|
@@ -3840,6 +3930,10 @@ DataSource sources external data into a data template
 - [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
 
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
+
+- [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-artifacts.yaml)
+
+- [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
 
@@ -3943,6 +4037,25 @@ ContinueOn defines if a workflow should continue even if a task or step fails/er
 |`error`|`boolean`|_No description available_|
 |`failed`|`boolean`|_No description available_|
 
+## LifecycleHook
+
+_No description available_
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-artifacts.yaml)
+
+- [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`arguments`|[`Arguments`](#arguments)|_No description available_|
+|`template`|`string`|_No description available_|
+
 ## Item
 
 Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number
@@ -3954,6 +4067,8 @@ Item expands a single workflow step into multiple parallel steps The value of It
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-output-artifact.yaml)
 
 - [`ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci.yaml)
+
+- [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-custom-metrics.yaml)
 
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-diamond-steps.yaml)
 
@@ -4161,6 +4276,8 @@ _No description available_
 
 - [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
 
+- [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
+
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
@@ -4292,6 +4409,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-continue-on-fail.yaml)
 
+- [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-custom-metrics.yaml)
+
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-daemon-task.yaml)
 
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-diamond-steps.yaml)
@@ -4321,6 +4440,10 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-dag-level.yaml)
 
 - [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-step-level.yaml)
+
+- [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-artifacts.yaml)
+
+- [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handlers.yaml)
 
@@ -4371,6 +4494,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
+
+- [`k8s-patch-basic.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch-basic.yaml)
 
 - [`k8s-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch.yaml)
 
@@ -4872,6 +4997,8 @@ A single application container that you want to run within a pod.
 
 - [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-continue-on-fail.yaml)
 
+- [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-custom-metrics.yaml)
+
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-daemon-task.yaml)
 
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-diamond-steps.yaml)
@@ -4901,6 +5028,10 @@ A single application container that you want to run within a pod.
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-dag-level.yaml)
 
 - [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-step-level.yaml)
+
+- [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-artifacts.yaml)
+
+- [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handlers.yaml)
 
@@ -5529,6 +5660,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-continue-on-fail.yaml)
 
+- [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-custom-metrics.yaml)
+
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-daemon-task.yaml)
 
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-diamond-steps.yaml)
@@ -5558,6 +5691,10 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-dag-level.yaml)
 
 - [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-step-level.yaml)
+
+- [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-artifacts.yaml)
+
+- [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handlers.yaml)
 
@@ -5608,6 +5745,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
+
+- [`k8s-patch-basic.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch-basic.yaml)
 
 - [`k8s-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch.yaml)
 
@@ -6199,6 +6338,8 @@ EnvVarSource represents a source for the value of an EnvVar.
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/custom-metrics.yaml)
 
 - [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
+
+- [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
 
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
