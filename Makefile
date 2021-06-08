@@ -236,7 +236,7 @@ scan-%:
 # generation
 
 .PHONY: codegen
-codegen: types swagger docs
+codegen: types swagger docs manifests
 
 .PHONY: types
 types: pkg/apis/workflow/v1alpha1/generated.proto pkg/apis/workflow/v1alpha1/openapi_generated.go pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go
@@ -355,7 +355,13 @@ dist/kustomize:
 	cd dist && ./install_kustomize.sh 3.8.8
 	dist/kustomize version
 
-manifests: dist/manifests/install.yaml \
+manifests: \
+	manifests/install.yaml \
+	manifests/namespace-install.yaml \
+	manifests/quick-start-minimal.yaml \
+	manifests/quick-start-mysql.yaml \
+	manifests/quick-start-postgres.yaml \
+	dist/manifests/install.yaml \
 	dist/manifests/namespace-install.yaml \
 	dist/manifests/quick-start-minimal.yaml \
 	dist/manifests/quick-start-mysql.yaml \
