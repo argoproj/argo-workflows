@@ -55,7 +55,8 @@ RUN if [ $(arch.sh) = ppc64le ] || [ $(arch.sh) = s390x ]; then \
     fi && \
     tar --extract --file docker.tgz --strip-components 1 --directory /usr/local/bin/ && \
     rm docker.tgz
-RUN curl -o /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/$(os.sh)/$(arch.sh)/kubectl
+RUN curl -o /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/$(os.sh)/$(arch.sh)/kubectl && \
+    chmod +x /usr/local/bin/kubectl
 RUN rm /bin/arch.sh /bin/os.sh
 
 COPY hack/ssh_known_hosts /etc/ssh/
