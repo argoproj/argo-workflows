@@ -865,7 +865,7 @@ func (woc *wfOperationCtx) taskSetReconciliation() error {
 	if err != nil {
 		return err
 	}
-	if taskSet == nil || taskSet.Status.Nodes == nil || len(taskSet.Status.Nodes) == 0{
+	if taskSet == nil || taskSet.Status.Nodes == nil || len(taskSet.Status.Nodes) == 0 {
 		return nil
 	}
 	for nodeID, taskResult := range taskSet.Status.Nodes {

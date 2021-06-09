@@ -59,6 +59,7 @@ func NewRootCommand() *cobra.Command {
 		},
 	}
 
+	command.AddCommand(NewAgentCommand())
 	command.AddCommand(NewEmissaryCommand())
 	command.AddCommand(NewInitCommand())
 	command.AddCommand(NewResourceCommand())
@@ -97,7 +98,6 @@ func initExecutor() *executor.WorkflowExecutor {
 	if !ok {
 		log.Fatalf("Unable to determine pod name from environment variable %s", common.EnvVarPodName)
 	}
-
 	tmpl, err := executor.LoadTemplate(podAnnotationsPath)
 	checkErr(err)
 

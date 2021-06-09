@@ -64,7 +64,6 @@ const (
 
 // WorkflowExecutor is program which runs as the init/wait container
 type WorkflowExecutor struct {
-
 	PodName             string
 	workflowName        string
 	Template            wfv1.Template
@@ -772,7 +771,6 @@ func (we *WorkflowExecutor) updateTaskSetStatusWithOutputs(ctx context.Context, 
 				Nodes: make(map[string]wfv1.NodeResult),
 			}
 		}
-
 
 		taskset.Status.Nodes[we.nodeID()] = wfv1.NodeResult{Outputs: outputs}
 		_, err = tasksetInterface.UpdateStatus(ctx, taskset, metav1.UpdateOptions{})
