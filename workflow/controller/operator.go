@@ -747,7 +747,6 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		}
 	}
 
-
 	if lastChildNode == nil {
 		return node, true, nil
 	}
@@ -1529,7 +1528,7 @@ func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[s
 			localScope[exitCodeKey] = exitCode
 
 			// `retries.last` variable
-			if i == len(node.Children) - 1 {
+			if i == len(node.Children)-1 {
 				localScope["retries.last.exitCode"] = exitCode
 			}
 		}
