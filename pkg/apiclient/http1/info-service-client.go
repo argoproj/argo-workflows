@@ -25,3 +25,8 @@ func (h InfoServiceClient) GetUserInfo(_ context.Context, in *infopkg.GetUserInf
 	out := &infopkg.GetUserInfoResponse{}
 	return out, h.Get(in, out, "/api/v1/userinfo")
 }
+
+func (h Facade) ListNamespaces(ctx context.Context, in *infopkg.ListNamespacesRequest, opts ...grpc.CallOption) (*infopkg.ListNamespacesResponse, error) {
+	out := &infopkg.ListNamespacesResponse{}
+	return out, h.Get(in, out, "/api/v1/namespaces")
+}

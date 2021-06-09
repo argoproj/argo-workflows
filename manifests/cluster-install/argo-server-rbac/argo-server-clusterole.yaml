@@ -6,6 +6,12 @@ rules:
   - apiGroups:
       - ""
     resources:
+      - namespaces
+    verbs:
+      - list
+  - apiGroups:
+      - ""
+    resources:
       - configmaps
     verbs:
       - get

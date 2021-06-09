@@ -21,3 +21,7 @@ export interface GetUserInfoResponse {
     emailVerified?: boolean;
     serviceAccountName?: string;
 }
+
+export interface ListNamespacesResponse {
+    namespaces?: string[];
+}

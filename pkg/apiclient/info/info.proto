@@ -29,6 +29,13 @@ message GetUserInfoResponse {
     string serviceAccountName = 6;
 }
 
+message ListNamespacesRequest {
+}
+
+message ListNamespacesResponse {
+    repeated string namespaces = 1;
+}
+
 service InfoService {
     rpc GetInfo (GetInfoRequest) returns (InfoResponse) {
         option (google.api.http).get = "/api/v1/info";
@@ -38,5 +45,9 @@ service InfoService {
     }
     rpc GetUserInfo (GetUserInfoRequest) returns (GetUserInfoResponse) {
         option (google.api.http).get = "/api/v1/userinfo";
+    }
+    // list all the namespaces the client is allowed to use
+    rpc ListNamespaces (ListNamespacesRequest) returns (ListNamespacesResponse) {
+        option (google.api.http).get = "/api/v1/namespaces";
     }
 }

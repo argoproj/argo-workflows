@@ -1,4 +1,4 @@
-import {GetUserInfoResponse, Info, Version} from '../../../models';
+import {ListNamespacesResponse, GetUserInfoResponse, Info, Version} from '../../../models';
 
 import requests from './requests';
 
@@ -19,5 +19,9 @@ export class InfoService {
 
     public getUserInfo() {
         return requests.get(`api/v1/userinfo`).then(res => res.body as GetUserInfoResponse);
+    }
+
+    public listNamespaces() {
+        return requests.get(`api/v1/namespaces`).then(res => res.body as ListNamespacesResponse);
     }
 }
