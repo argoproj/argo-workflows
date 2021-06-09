@@ -39,6 +39,7 @@ rules:
   - workflows/finalizersfinalizersz
   - workflowtasksets
   - workflowtasksets/finalizers
+  - workflowtasksets/status
   verbs:
   - get
   - list
