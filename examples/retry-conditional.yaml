@@ -14,7 +14,7 @@ spec:
       script:
         image: python:alpine3.6
         command: ["python"]
-        # fail with a 66% probability
+        # Exit 1 with 66% probability and 2 with 33%
         source: |
           import random;
           import sys;
