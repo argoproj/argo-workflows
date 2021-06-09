@@ -6949,3 +6949,90 @@ func TestWFGlobalArtifactNil(t *testing.T) {
 	woc.operate(ctx)
 	assert.NotPanics(t, func() { woc.operate(ctx) })
 }
+
+const operatorRetryExpression = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: retry-script-nhzp5
+spec:
+  entrypoint: retry-script
+  templates:
+  - inputs: {}
+    name: retry-script
+    retryStrategy:
+      limit: "10"
+      when: '{{retries.last.exitCode}} != 2'
+    script:
+      command:
+      - python
+      image: python:alpine3.6
+      source: |
+        import random;
+        import sys;
+        exit_code = random.choice([1, 1, 2]);
+        sys.exit(exit_code)
+status:
+  nodes:
+    retry-script-nhzp5:
+      children:
+      - retry-script-nhzp5-3808948932
+      - retry-script-nhzp5-2131039937
+      displayName: retry-script-nhzp5
+      id: retry-script-nhzp5
+      name: retry-script-nhzp5
+      phase: Running
+      startedAt: "2021-06-09T15:42:26Z"
+      templateName: retry-script
+      templateScope: local/retry-script-nhzp5
+      type: Retry
+    retry-script-nhzp5-2131039937:
+      displayName: retry-script-nhzp5(1)
+      finishedAt: "2021-06-09T15:42:31Z"
+      id: retry-script-nhzp5-2131039937
+      message: Error (exit code 2)
+      name: retry-script-nhzp5(1)
+      outputs:
+        exitCode: "2"
+      phase: Failed
+      startedAt: "2021-06-09T15:42:29Z"
+      templateName: retry-script
+      templateScope: local/retry-script-nhzp5
+      type: Pod
+    retry-script-nhzp5-3808948932:
+      displayName: retry-script-nhzp5(0)
+      finishedAt: "2021-06-09T15:42:28Z"
+      id: retry-script-nhzp5-3808948932
+      message: Error (exit code 1)
+      name: retry-script-nhzp5(0)
+      outputs:
+        artifacts:
+        exitCode: "1"
+      phase: Failed
+      startedAt: "2021-06-09T15:42:26Z"
+      templateName: retry-script
+      templateScope: local/retry-script-nhzp5
+      type: Pod
+  phase: Running
+  startedAt: "2021-06-09T15:42:26Z"
+`
+
+// TestOperatorRetryExpression tests that retryStrategy.when works correctly. In this test, the latest child node has
+// just failed with exit code 2. The retryStrategy's when condition specifies that retries must only be done when the
+// last exit code is NOT 2. We expect the retryStrategy to fail (even though it has 8 tries remainng).
+func TestOperatorRetryExpression(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(operatorRetryExpression)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	retryNode := woc.wf.GetNodeByName("retry-script-nhzp5")
+	assert.Equal(t, wfv1.NodeFailed, retryNode.Phase)
+	assert.Equal(t, 2, len(retryNode.Children))
+	assert.Equal(t, "retryStrategy.when evaluated to false", retryNode.Message)
+}

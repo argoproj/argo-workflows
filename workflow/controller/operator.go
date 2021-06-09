@@ -727,7 +727,26 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 	if node.Fulfilled() {
 		return node, true, nil
 	}
+
 	lastChildNode := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
+
+	if retryStrategy.When != "" && len(node.Children) > 0 {
+		localScope := buildRetryStrategyLocalScope(node, woc.wf.Status.Nodes)
+		resolvedWhen, err := template.Replace(retryStrategy.When, localScope, true)
+		if err != nil {
+			return nil, false, err
+		}
+
+		shouldContinue, err := shouldExecute(resolvedWhen)
+		if err != nil {
+			return nil, false, err
+		}
+
+		if !shouldContinue {
+			return woc.markNodePhase(node.Name, lastChildNode.Phase, "retryStrategy.when evaluated to false"), true, nil
+		}
+	}
+
 
 	if lastChildNode == nil {
 		return node, true, nil
@@ -1484,6 +1503,39 @@ func getChildNodeIndex(node *wfv1.NodeStatus, nodes wfv1.Nodes, index int) *wfv1
 	}
 
 	return &lastChildNode
+}
+
+func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[string]string {
+	localScope := make(map[string]string)
+
+	// `retries` variable
+	localScope[common.LocalVarRetries] = strconv.Itoa(len(node.Children) - 1)
+
+	// Default empty value, to be replaced by actual value below if len(node.Children) > 0
+	localScope["retries.last.exitCode"] = "-1"
+
+	for i, childNodeName := range node.Children {
+		retryNode := nodes[childNodeName]
+		retryNodeVariable := fmt.Sprintf("retry.%d", i)
+
+		// Exit code
+		exitCodeKey := fmt.Sprintf("%s.exitCode", retryNodeVariable)
+		if retryNode.Outputs != nil {
+			exitCode := *retryNode.Outputs.ExitCode
+			if exitCode == "" {
+				exitCode = "-1"
+			}
+
+			localScope[exitCodeKey] = exitCode
+
+			// `retries.last` variable
+			if i == len(node.Children) - 1 {
+				localScope["retries.last.exitCode"] = exitCode
+			}
+		}
+	}
+
+	return localScope
 }
 
 type executeTemplateOpts struct {

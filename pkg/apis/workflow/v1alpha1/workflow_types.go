@@ -1511,6 +1511,10 @@ type RetryStrategy struct {
 
 	// Affinity prevents running workflow's step on the same host
 	Affinity *RetryAffinity `json:"affinity,omitempty" protobuf:"bytes,4,opt,name=affinity"`
+
+	// When is a condition expression for when a node will be retried. If it evaluates to false, the node will not be
+	// retried and the retry strategy will be ignored
+	When string `json:"when,omitempty" protobuf:"bytes,5,opt,name=when"`
 }
 
 // The amount of requested resource * the duration that request was used.

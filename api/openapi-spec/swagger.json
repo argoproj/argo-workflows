@@ -7920,6 +7920,10 @@
         "retryPolicy": {
           "description": "RetryPolicy is a policy of NodePhase statuses that will be retried",
           "type": "string"
+        },
+        "when": {
+          "description": "When is a condition expression for when a node will be retried. If it evaluates to false, the node will not be retried and the retry strategy will be ignored",
+          "type": "string"
         }
       }
     },

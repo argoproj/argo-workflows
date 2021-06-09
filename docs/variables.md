@@ -155,6 +155,16 @@ returns `0`. Please review the Sprig documentation to understand which functions
 | `tasks.<TASKNAME>.outputs.parameters.<NAME>` | Output parameter of any previous task. When the previous task uses 'withItems' or 'withParams', this contains a JSON array of the output parameter values of each invocation |
 | `tasks.<TASKNAME>.outputs.artifacts.<NAME>` | Output artifact of any previous task |
 
+### RetryStrategy
+
+When using the `when` field within `retryStrategy`, special variables are available.
+
+| Variable | Description|
+|----------|------------|
+| `retries.<INDEX>.exitCode` | Exit code of any previous retry |
+
+`<INDEX>` may be an integer (e.g., `retries.2.exitCode`), or it may be `last` for the last exitCode (e.g., `retries.last.exitCode`).
+
 ### Container/Script Templates
 
 | Variable | Description|

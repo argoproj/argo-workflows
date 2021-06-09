@@ -4295,6 +4295,8 @@ spec:
                               x-kubernetes-int-or-string: true
                             retryPolicy:
                               type: string
+                            when:
+                              type: string
                           type: object
                         schedulerName:
                           type: string
