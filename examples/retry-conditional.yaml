@@ -10,7 +10,7 @@ spec:
     - name: retry-script
       retryStrategy:
         limit: "10"
-        when: "{{retries.last.exitCode}} != 2"  # Only continue retrying if the last exit code is NOT 2
+        when: "{{=lastRetry.exitCode != '2'}}"  # Only continue retrying if the last exit code is NOT 2
       script:
         image: python:alpine3.6
         command: ["python"]

@@ -732,7 +732,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 
 	if retryStrategy.When != "" && len(node.Children) > 0 {
 		localScope := buildRetryStrategyLocalScope(node, woc.wf.Status.Nodes)
-		resolvedWhen, err := template.Replace(retryStrategy.When, localScope, true)
+		resolvedWhen, err := template.Replace(retryStrategy.When, localScope, false)
 		if err != nil {
 			return nil, false, err
 		}
@@ -1510,29 +1510,15 @@ func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[s
 	// `retries` variable
 	localScope[common.LocalVarRetries] = strconv.Itoa(len(node.Children) - 1)
 
-	// Default empty value, to be replaced by actual value below if len(node.Children) > 0
-	localScope["retries.last.exitCode"] = "-1"
+	lastChildNode := getChildNodeIndex(node, nodes, -1)
 
-	for i, childNodeName := range node.Children {
-		retryNode := nodes[childNodeName]
-		retryNodeVariable := fmt.Sprintf("retry.%d", i)
-
-		// Exit code
-		exitCodeKey := fmt.Sprintf("%s.exitCode", retryNodeVariable)
-		if retryNode.Outputs != nil {
-			exitCode := *retryNode.Outputs.ExitCode
-			if exitCode == "" {
-				exitCode = "-1"
-			}
-
-			localScope[exitCodeKey] = exitCode
-
-			// `retries.last` variable
-			if i == len(node.Children)-1 {
-				localScope["retries.last.exitCode"] = exitCode
-			}
-		}
+	exitCode := "-1"
+	if lastChildNode.Outputs != nil {
+		exitCode = *lastChildNode.Outputs.ExitCode
 	}
+	localScope[common.LocalVarRetriesLastExitCode] = exitCode
+	localScope[common.LocalVarRetriesLastStatus] = string(lastChildNode.Phase)
+	localScope[common.LocalVarRetriesLastDuration] = fmt.Sprint(lastChildNode.GetDuration().Seconds())
 
 	return localScope
 }
