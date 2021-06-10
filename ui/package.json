@@ -33,7 +33,6 @@
         "react-moment": "^1.0.0",
         "react-monaco-editor": "^0.36.0",
         "react-router-dom": "^4.2.2",
-        "react-sparkline-svg": "^1.0.2",
         "superagent": "^3.8.2",
         "superagent-promise": "^1.1.0",
         "swagger-ui-react": "^3.29.0"

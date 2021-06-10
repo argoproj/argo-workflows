@@ -3,7 +3,6 @@ import * as React from 'react';
 import {Step} from '../../../models/step';
 import {ObjectEditor} from '../../shared/components/object-editor/object-editor';
 import {Phase} from '../../shared/components/phase';
-import {SparkMeter} from '../../shared/components/spark-meter';
 import {TickMeter} from '../../shared/components/tick-meter';
 import {Timestamp} from '../../shared/components/timestamp';
 import {parseResourceQuantity} from '../../shared/resource-quantity';
@@ -87,11 +86,8 @@ export const StepSidePanel = ({
                                                     <div className='white-box__details'>
                                                         <div className='row white-box__details-row'>
                                                             <div className='columns small-2'>Pending</div>
-                                                            <div className='columns small-2'>
+                                                            <div className='columns small-10'>
                                                                 <TickMeter value={x.pending || 0} />
-                                                            </div>
-                                                            <div className='columns small-8'>
-                                                                <SparkMeter value={x.pending} />
                                                             </div>
                                                         </div>
                                                         <div className='row white-box__details-row'>
@@ -129,6 +125,12 @@ export const StepSidePanel = ({
                                             const total = Object.values(x.metrics || {})
                                                 .filter(m => m.total)
                                                 .reduce((a, b) => a + b.total, 0);
+                                            const rate = Object.entries(x.metrics || {})
+                                                // the rate will remain after scale-down, so we must filter out, as it'll be wrong
+                                                .filter(([replica, m]) => parseInt(replica, 10) < step.status.replicas)
+                                                .map(([, m]) => m)
+                                                .map(m => parseResourceQuantity(m.rate))
+                                                .reduce((a, b) => a + b, 0);
                                             const errors = Object.values(x.metrics || {})
                                                 .filter(m => m.errors)
                                                 .reduce((a, b) => a + b.errors, 0);
@@ -141,7 +143,10 @@ export const StepSidePanel = ({
                                                             <div className='columns small-2'>
                                                                 <TickMeter value={total} />
                                                             </div>
-                                                            <div className='columns small-2' />
+
+                                                            <div className='columns small-2' title='Rate'>
+                                                                ＊<TickMeter value={rate} /> <small>TPS</small>
+                                                            </div>
                                                             <div className='columns small-5'>{x.lastMessage ? x.lastMessage.data : '-'}</div>
                                                             <div className='columns small-1'>{x.lastMessage ? <Timestamp date={x.lastMessage.time} /> : '-'}</div>
                                                         </div>

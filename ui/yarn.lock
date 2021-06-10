@@ -6165,11 +6165,6 @@ mem@^4.0.0:
     mimic-fn "^2.0.0"
     p-is-promise "^2.0.0"
 
-memoize-one@^5.0.4:
-  version "5.2.1"
-  resolved "https://registry.yarnpkg.com/memoize-one/-/memoize-one-5.2.1.tgz#8337aa3c4335581839ec01c3d594090cebe8f00e"
-  integrity sha512-zYiwtZUcYyXKo/np96AGZAckk+FWWsUdJ3cHGGmld7+AhvcWmQyGCYUh1hc4Q/pkOhb65dQR/pqCyK0cOaHz4Q==
-
 memoizee@^0.4.12:
   version "0.4.14"
   resolved "https://registry.yarnpkg.com/memoizee/-/memoizee-0.4.14.tgz#07a00f204699f9a95c2d9e77218271c7cd610d57"
@@ -7724,13 +7719,6 @@ react-side-effect@^2.1.0:
   resolved "https://registry.yarnpkg.com/react-side-effect/-/react-side-effect-2.1.1.tgz#66c5701c3e7560ab4822a4ee2742dee215d72eb3"
   integrity sha512-2FoTQzRNTncBVtnzxFOk2mCpcfxQpenBMbk5kSVBg5UcPqV9fRbgY2zhb7GTWWOlpFmAxhClBDlIq8Rsubz1yQ==
 
-react-sparkline-svg@^1.0.2:
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/react-sparkline-svg/-/react-sparkline-svg-1.0.2.tgz#e3231957321df23eb0346600bbd11362ffcf436a"
-  integrity sha512-bo6t/P1Ze/ABBvWM2I8KeUL7BFOO/y/RjyxlYjcUreeOImnjqW3icYyGnIDKPE8L6bPwOitpP7nYmZL1sMCRtg==
-  dependencies:
-    sparkline-svg "^1.0.4"
-
 react-syntax-highlighter@=13.5.0:
   version "13.5.0"
   resolved "https://registry.yarnpkg.com/react-syntax-highlighter/-/react-syntax-highlighter-13.5.0.tgz#c0f3fd826a52b2a6ce5786d4ce60c3e0665b65c0"
@@ -8696,13 +8684,6 @@ space-separated-tokens@^1.0.0:
   version "1.1.5"
   resolved "https://registry.yarnpkg.com/space-separated-tokens/-/space-separated-tokens-1.1.5.tgz#85f32c3d10d9682007e917414ddc5c26d1aa6899"
   integrity sha512-q/JSVd1Lptzhf5bkYm4ob4iWPjx0KiRe3sRFBNrVqbJkFaBm5vbbowy1mymoPNLRa52+oadOhJ+K49wsSeSjTA==
-
-sparkline-svg@^1.0.4:
-  version "1.0.4"
-  resolved "https://registry.yarnpkg.com/sparkline-svg/-/sparkline-svg-1.0.4.tgz#b2dde1d31d623564416be5223616e5ca43905bc0"
-  integrity sha512-qnhnl8b8BQK/7CLK2Y/406gOsKiienAi3ep8TQW00d2RwNzJdpP44qUn66ySmHkDbG2uahWN/FriKleNKlFfbQ==
-  dependencies:
-    memoize-one "^5.0.4"
 
 spdx-correct@^3.0.0:
   version "3.1.1"
