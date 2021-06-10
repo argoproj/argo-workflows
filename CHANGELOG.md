@@ -1,5 +1,16 @@
 # Changelog
 
+## v3.1.0-rc14 (2021-06-09)
+
+ * [d385e610](https://github.com/argoproj/argo-workflows/commit/d385e6107ab8d4ea4826bd6972608f8fbc86fbe5) fix(executor): Fix docker not terminating. Fixes #6064 (#6083)
+ * [83da6dea](https://github.com/argoproj/argo-workflows/commit/83da6deae5eaaeca16e49edb584a0a46980239bb) feat(manifests): add 'app' label to workflow-controller-metrics service (#6079)
+ * [1c27b5f9](https://github.com/argoproj/argo-workflows/commit/1c27b5f90dea80b5dc7f088bef0dc908e8c19661) fix(executor): Fix emissary kill. Fixes #6030 (#6084)
+
+### Contributors
+
+ * Alex Collins
+ * Daan Seynaeve
+
 ## v3.1.0-rc13 (2021-06-07)
 
  * [5d4947cc](https://github.com/argoproj/argo-workflows/commit/5d4947ccf3051a14aa7ca260ea16cdffffc20e6f) chore(executor): Adjust resource JSON object log to debug level (#6100)
