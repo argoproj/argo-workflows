@@ -6962,7 +6962,7 @@ spec:
     name: retry-script
     retryStrategy:
       limit: "10"
-      when: '{{retries.last.exitCode}} != 2'
+      when: "{{=asInt(lastRetry.exitCode) != 2}}"
     script:
       command:
       - python

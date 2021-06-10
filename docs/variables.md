@@ -165,6 +165,8 @@ When using the `when` field within `retryStrategy`, special variables are availa
 | `lastRetry.Status` | Status of the last retry |
 | `lastRetry.Duration` | Duration in seconds of the last retry |
 
+Note: These variables evaluate to a string type. If using advanced expressions, either cast them to int values (`when: "{{=asInt(lastRetry.exitCode) >= 2}}"`) or compare them to string values (`when: "{{=lastRetry.exitCode != '2'}}"`).
+
 ### Container/Script Templates
 
 | Variable | Description|
