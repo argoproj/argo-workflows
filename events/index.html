@@ -873,6 +873,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#workflow-template-triggered-by-the-event" title="Workflow Template triggered by the event" class="md-nav__link">
+    Workflow Template triggered by the event
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#submitting-a-workflow-from-a-workflow-template" title="Submitting A Workflow From A Workflow Template" class="md-nav__link">
     Submitting A Workflow From A Workflow Template
   </a>
@@ -2252,6 +2259,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#workflow-template-triggered-by-the-event" title="Workflow Template triggered by the event" class="md-nav__link">
+    Workflow Template triggered by the event
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#submitting-a-workflow-from-a-workflow-template" title="Submitting A Workflow From A Workflow Template" class="md-nav__link">
     Submitting A Workflow From A Workflow Template
   </a>
@@ -2385,16 +2399,37 @@
 <p class="admonition-title">Processing Order</p>
 <p>Events may not always be processed in the order they are received.   </p>
 </div>
+<h2 id="workflow-template-triggered-by-the-event">Workflow Template triggered by the event<a class="headerlink" href="#workflow-template-triggered-by-the-event" title="Permanent link">&para;</a></h2>
+<p>Before the binding between an event and a workflow template, you must create the workflow template that you want to trigger.
+The following one takes in input the "message" parameter specified into the API call body, passed through the WorkflowEventBinding parameters section, and finally resolved here as the message of the whalesay image.</p>
+<div class="highlight"><pre><span></span><code>apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: my-wf-tmple
+  namespace: argo
+spec:
+  templates:
+    - name: main
+      inputs:
+        parameters:
+          - name: message
+            value: &quot;{{workflow.parameters.message}}&quot;
+      container:
+        image: docker/whalesay:latest
+        command: [cowsay]
+        args: [&quot;{{inputs.parameters.message}}&quot;]
+  entrypoint: main
+</code></pre></div>
 <h2 id="submitting-a-workflow-from-a-workflow-template">Submitting A Workflow From A Workflow Template<a class="headerlink" href="#submitting-a-workflow-from-a-workflow-template" title="Permanent link">&para;</a></h2>
 <p>A workflow template will be submitted (i.e. workflow created from it) and that can be created using parameters from the event itself. 
 The following example will be trigger by an event with "message" in the payload. That message will be used as an argument for the created workflow.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<p><div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">WorkflowEventBinding</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">event-consumer</span>
 <span class="nt">spec</span><span class="p">:</span>
   <span class="nt">event</span><span class="p">:</span>
-    <span class="nt">selector</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">payload.message != &quot;&quot; &amp;&amp; metadata[&quot;x-argo&quot;] == [&quot;true&quot;] &amp;&amp; discriminator == &quot;my-discriminator&quot;</span>
+    <span class="nt">selector</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">payload.message != &quot;&quot; &amp;&amp; metadata[&quot;X-Argo-E2E&quot;] == [&quot;true&quot;] &amp;&amp; discriminator == &quot;my-discriminator&quot;</span>
   <span class="nt">submit</span><span class="p">:</span>
     <span class="nt">workflowTemplateRef</span><span class="p">:</span>
       <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-wf-tmple</span>
@@ -2404,6 +2439,11 @@ The following example will be trigger by an event with "message" in the payload.
         <span class="nt">valueFrom</span><span class="p">:</span>
           <span class="nt">event</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">payload.message</span>
 </code></pre></div>
+Please, notice that "workflowTemplateRef" refers to a template with the name "my-wf-tmple", this template has to be created before the triggering of the event.
+After that you have to apply the above explained WorkflowEventBinding (in this example this is called event-template.yml) to realize the binding between Workflow Template and event (you can use kubectl to do that):</p>
+<div class="highlight"><pre><span></span><code>kubectl apply -f event-template.yml   
+</code></pre></div>
+<p>Finally you can trigger the creation of your first parametrized workflow template, by using the following call:</p>
 <p>Event:</p>
 <div class="highlight"><pre><span></span><code>curl <span class="nv">$ARGO_SERVER</span>/api/v1/events/argo/my-discriminator <span class="se">\</span>
     -H <span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span> <span class="se">\</span>
