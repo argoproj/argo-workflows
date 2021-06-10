@@ -1433,25 +1433,7 @@ spec:
 
 Resources created in this way are independent of the workflow. If you want the resource to be deleted when the workflow is deleted then you can use [Kubernetes garbage collection](https://kubernetes.io/docs/concepts/workloads/controllers/garbage-collection/) with the workflow resource as an owner reference ([example](./k8s-owner-reference.yaml)).
 
-You can also collect data about the resource in output parameters (see more at [k8s-jobs.yaml](./k8s-jobs.yaml)):
-
-```
-    # Resource templates can have output parameters extracted from fields of the
-    # resource. Two techniques are provided: jsonpath and a jq filter.
-    outputs:
-      parameters:
-      # job-name is extracted using a jsonPath expression and is equivalent to:
-      # `kubectl get job <jobname> -o jsonpath='{.metadata.name}'`
-      - name: job-name
-        valueFrom:
-          jsonPath: '{.metadata.name}'
-      # job-obj is extracted using a jq filter and is equivalent to:
-      # `kubectl get job <jobname> -o json | jq -c '.'
-      # which returns the entire job object in json format
-      - name: job-obj
-        valueFrom:
-          jqFilter: '.'
-```
+You can also collect data about the resource in output parameters (see more at [k8s-jobs.yaml](./k8s-jobs.yaml))
 
 **Note:**
 When patching, the resource will accept another attribute, `mergeStrategy`, which can either be `strategic`, `merge`, or `json`. If this attribute is not supplied, it will default to `strategic`. Keep in mind that Custom Resources cannot be patched with `strategic`, so a different strategy must be chosen. For example, suppose you have the [CronTab CustomResourceDefinition](https://kubernetes.io/docs/tasks/access-kubernetes-api/custom-resources/custom-resource-definitions/#create-a-customresourcedefinition) defined, and the following instance of a CronTab:
