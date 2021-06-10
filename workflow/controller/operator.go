@@ -882,7 +882,7 @@ func (woc *wfOperationCtx) taskSetReconciliation() error {
 }
 
 func isAgentPod(pod *apiv1.Pod) bool {
-	return strings.Contains(pod.Name, "agent")
+	return strings.HasSuffix(pod.Name, "-agent")
 }
 
 func (woc *wfOperationCtx) reconcileAgentNode(pod *apiv1.Pod) {
@@ -2789,10 +2789,14 @@ func (woc *wfOperationCtx) executeTaskSet(ctx context.Context, nodeName string, 
 	}
 	mainCtr := woc.newExecContainer(common.MainContainerName, tmpl)
 	mainCtr.Command = []string{"argoexec", "agent"}
-	_, err := woc.createWorkflowPod(ctx, woc.wf.Name+"-agent", []apiv1.Container{*mainCtr}, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline, includeScriptOutput: true}, true)
+	// Append Agent in end of pod name to differentiate from normal podname
+	podName := woc.wf.NodeID("agent") + "-agent"
+	_, err := woc.createWorkflowPod(ctx, podName, []apiv1.Container{*mainCtr}, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline, includeScriptOutput: true}, true)
 	if err != nil {
 		return woc.requeueIfTransientErr(err, node.Name)
 	}
+	woc.wf.Labels[common.LabelKeyAgentPod] = podName
+	woc.updated = true
 	return node, nil
 }
 
@@ -3420,15 +3424,17 @@ func (woc *wfOperationCtx) substituteGlobalVariables() error {
 }
 
 func (woc *wfOperationCtx) DeleteAgentPod(ctx context.Context) error {
-	agentPodName := fmt.Sprintf("%s-agent", woc.wf.Name)
-	log.WithField("workflow", woc.wf.Name).WithField("namespace", woc.wf.Namespace).Infof("Deleting Agent Pod")
-	var err error
-	err = waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
-		err = woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Delete(ctx, agentPodName, metav1.DeleteOptions{})
-		return apierr.IsNotFound(err) || err == nil, err
-	})
-	if err != nil {
-		return err
+	agentPodName, ok := woc.wf.Labels[common.LabelKeyAgentPod]
+	if ok {
+		log.WithField("workflow", woc.wf.Name).WithField("namespace", woc.wf.Namespace).Infof("Deleting Agent Pod")
+		var err error
+		err = waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
+			err = woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Delete(ctx, agentPodName, metav1.DeleteOptions{})
+			return apierr.IsNotFound(err) || err == nil, err
+		})
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
