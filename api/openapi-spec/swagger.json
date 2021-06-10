@@ -4222,10 +4222,6 @@
         "net": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.KafkaNET"
         },
-        "parallel": {
-          "type": "integer",
-          "title": "+kubebuilder:validation:Minimum=1\n+kubebuilder:default=1"
-        },
         "topic": {
           "type": "string"
         },
@@ -4358,12 +4354,11 @@
           "type": "string",
           "title": "+kubebuilder:default=default"
         },
-        "natsUrl": {
+        "natsMonitoringUrl": {
           "type": "string"
         },
-        "parallel": {
-          "type": "integer",
-          "title": "+kubebuilder:validation:Minimum=1\n+kubebuilder:default=1"
+        "natsUrl": {
+          "type": "string"
         },
         "subject": {
           "type": "string"
@@ -4424,6 +4419,10 @@
         "name": {
           "type": "string",
           "title": "+kubebuilder:default=default"
+        },
+        "retryPolicy": {
+          "type": "string",
+          "title": "+kubebuilder:default=Never"
         },
         "stan": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.STAN"
