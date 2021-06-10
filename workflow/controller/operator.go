@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/antonmedv/expr"
+	"github.com/argoproj/argo-workflows/v3/util/expr/env"
 	"math"
 	"os"
 	"reflect"
@@ -730,16 +732,17 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 
 	lastChildNode := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
 
-	if retryStrategy.When != "" && len(node.Children) > 0 {
+	if retryStrategy.Expression != "" && len(node.Children) > 0 {
 		localScope := buildRetryStrategyLocalScope(node, woc.wf.Status.Nodes)
-		resolvedWhen, err := template.Replace(retryStrategy.When, localScope, false)
+		scope := env.GetFuncMap(localScope)
+		res, err := expr.Eval(retryStrategy.Expression, scope)
 		if err != nil {
 			return nil, false, err
 		}
 
-		shouldContinue, err := shouldExecute(resolvedWhen)
-		if err != nil {
-			return nil, false, err
+		shouldContinue, ok := res.(bool)
+		if !ok {
+			return nil, false, fmt.Errorf("expression did not evaluate to a boolean")
 		}
 
 		if !shouldContinue {
@@ -1504,8 +1507,8 @@ func getChildNodeIndex(node *wfv1.NodeStatus, nodes wfv1.Nodes, index int) *wfv1
 	return &lastChildNode
 }
 
-func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[string]string {
-	localScope := make(map[string]string)
+func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[string]interface{} {
+	localScope := make(map[string]interface{})
 
 	// `retries` variable
 	localScope[common.LocalVarRetries] = strconv.Itoa(len(node.Children) - 1)

@@ -876,14 +876,14 @@ spec:
                       maxDuration:
                         type: string
                     type: object
+                  expression:
+                    type: string
                   limit:
                     anyOf:
                     - type: integer
                     - type: string
                     x-kubernetes-int-or-string: true
                   retryPolicy:
-                    type: string
-                  when:
                     type: string
                 type: object
               schedulerName:
@@ -5237,14 +5237,14 @@ spec:
                           maxDuration:
                             type: string
                         type: object
+                      expression:
+                        type: string
                       limit:
                         anyOf:
                         - type: integer
                         - type: string
                         x-kubernetes-int-or-string: true
                       retryPolicy:
-                        type: string
-                      when:
                         type: string
                     type: object
                   schedulerName:
@@ -11390,14 +11390,14 @@ spec:
                             maxDuration:
                               type: string
                           type: object
+                        expression:
+                          type: string
                         limit:
                           anyOf:
                           - type: integer
                           - type: string
                           x-kubernetes-int-or-string: true
                         retryPolicy:
-                          type: string
-                        when:
                           type: string
                       type: object
                     schedulerName:

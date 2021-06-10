@@ -5,18 +5,40 @@ kind: Workflow
 metadata:
   generateName: retry-script-
 spec:
-  entrypoint: retry-script
+  entrypoint: main
   templates:
-    - name: retry-script
-      retryStrategy:
-        limit: "10"
-        when: "{{=lastRetry.exitCode != '2'}}"  # Only continue retrying if the last exit code is NOT 2
+    - name: main
+      steps:
+        - - name: safe-to-retry
+            template: safe-to-retry
+        - - name: retry
+            template: retry-script
+            arguments:
+              parameters:
+                - name: safe-to-retry
+                  value: "{{steps.safe-to-retry.outputs.result}}"
+
+    - name: safe-to-retry
       script:
         image: python:alpine3.6
         command: ["python"]
-        # Exit 1 with 66% probability and 2 with 33%
+        source: |
+          print("true")
+
+    - name: retry-script
+      inputs:
+        parameters:
+            - name: safe-to-retry
+      retryStrategy:
+        limit: "3"
+        # Only continue retrying if the last exit code is greater than 1 and the input parameter is true
+        expression: "asInt(lastRetry.exitCode) > 1 && {{inputs.parameters.safe-to-retry}} == true"
+      script:
+        image: python:alpine3.6
+        command: ["python"]
+        # Exit 1 with 50% probability and 2 with 50%
         source: |
           import random;
           import sys;
-          exit_code = random.choice([1, 1, 2]);
+          exit_code = random.choice([1, 2]);
           sys.exit(exit_code)
