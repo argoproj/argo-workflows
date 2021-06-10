@@ -161,9 +161,9 @@ When using the `when` field within `retryStrategy`, special variables are availa
 
 | Variable | Description|
 |----------|------------|
-| `retries.<INDEX>.exitCode` | Exit code of any previous retry |
-
-`<INDEX>` may be an integer (e.g., `retries.2.exitCode`), or it may be `last` for the last exitCode (e.g., `retries.last.exitCode`).
+| `lastRetry.exitCode` | Exit code of the last retry |
+| `lastRetry.Status` | Status of the last retry |
+| `lastRetry.Duration` | Duration in seconds of the last retry |
 
 ### Container/Script Templates
 
