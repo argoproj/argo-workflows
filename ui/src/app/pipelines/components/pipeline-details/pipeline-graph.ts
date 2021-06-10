@@ -1,5 +1,5 @@
 import {Pipeline} from '../../../../models/pipeline';
-import {Step} from '../../../../models/step';
+import {Metrics, Step} from '../../../../models/step';
 import {Graph} from '../../../shared/components/graph/types';
 import {Icon} from '../../../shared/components/icon';
 import {parseResourceQuantity} from '../../../shared/resource-quantity';
@@ -34,7 +34,20 @@ const stepIcon = (type: Type): Icon => {
 
 const pendingSymbol = '🕑';
 const errorSymbol = '⚠️';
-const tachometerSymbol = '＊';
+
+const formatRates = (metrics: Metrics, replicas: number) => {
+    const rates = Object.entries(metrics || {})
+        // the rate will remain after scale-down, so we must filter out, as it'll be wrong
+        .filter(([replica, m]) => parseInt(replica, 10) < replicas);
+    return rates.length > 0
+        ? '＊' +
+              rates
+                  .map(([, m]) => m)
+                  .map(m => parseResourceQuantity(m.rate))
+                  .reduce((a, b) => a + b, 0)
+                  .toPrecision(3)
+        : '';
+};
 
 export const graph = (pipeline: Pipeline, steps: Step[]) => {
     const g = new Graph();
@@ -70,16 +83,11 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
         const classNames = status.phase === 'Running' ? 'flow' : '';
         (spec.sources || []).forEach((x, i) => {
             const ss = (status.sourceStatuses || {})[x.name || ''] || {};
-            const rate = Object.entries(ss.metrics || {})
-                // the rate will remain after scale-down, so we must filter out, as it'll be wrong
-                .filter(([replica, m]) => parseInt(replica, 10) < step.status.replicas)
-                .map(([, m]) => m)
-                .map(m => parseResourceQuantity(m.rate))
-                .reduce((a, b) => a + b, 0)
-                .toPrecision(3);
 
             const label =
-                (recent(ss.lastError && new Date(ss.lastError.time)) ? errorSymbol : '') + (ss.pending ? ' ' + pendingSymbol + ss.pending + ' ' : '') + (tachometerSymbol + rate);
+                (recent(ss.lastError && new Date(ss.lastError.time)) ? errorSymbol : '') +
+                (ss.pending ? ' ' + pendingSymbol + ss.pending + ' ' : '') +
+                formatRates(ss.metrics, step.status.replicas);
             if (x.cron) {
                 const cronId = 'cron/' + stepId + '/' + x.cron.schedule;
                 g.nodes.set(cronId, {genre: 'cron', icon: 'clock', label: x.cron.schedule});
@@ -103,7 +111,7 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
         });
         (spec.sinks || []).forEach((x, i) => {
             const ss = (status.sinkStatuses || {})[x.name || ''] || {};
-            const label = recent(ss.lastError && new Date(ss.lastError.time)) ? errorSymbol : '';
+            const label = (recent(ss.lastError && new Date(ss.lastError.time)) ? errorSymbol : '') + formatRates(ss.metrics, step.status.replicas);
             if (x.kafka) {
                 const kafkaId = x.kafka.name || x.kafka.url || 'default';
                 const topicId = 'kafka/' + kafkaId + '/' + x.kafka.topic;

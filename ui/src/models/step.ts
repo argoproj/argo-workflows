@@ -1,6 +1,6 @@
 import {ObjectMeta, Time, WatchEvent} from 'argo-ui/src/models/kubernetes';
 
-interface Metrics {
+export interface Metrics {
     total?: number;
     errors?: number;
     rate?: string;
