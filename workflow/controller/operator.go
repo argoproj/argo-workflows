@@ -889,9 +889,9 @@ func (woc *wfOperationCtx) reconcileAgentNode(pod *apiv1.Pod) {
 	for _, node := range woc.wf.Status.Nodes {
 		if node.Type == wfv1.NodeTypeHTTP {
 			if newState := woc.assessNodeStatus(pod, &node); newState != nil {
-				if !node.Fulfilled() {
+				if newState.Fulfilled() {
 					woc.wf.Status.Nodes[node.ID] = *newState
-					woc.addOutputsToGlobalScope(node.Outputs)
+					woc.addOutputsToGlobalScope(newState.Outputs)
 					woc.updated = true
 				}
 			}
@@ -1095,7 +1095,6 @@ func (woc *wfOperationCtx) getAllWorkflowPods() ([]*apiv1.Pod, error) {
 	pods := make([]*apiv1.Pod, len(objs))
 	for i, obj := range objs {
 		pod, ok := obj.(*apiv1.Pod)
-		fmt.Println(pod.Name)
 		if !ok {
 			return nil, fmt.Errorf("expected \"*apiv1.Pod\", got \"%v\"", reflect.TypeOf(obj).String())
 		}
