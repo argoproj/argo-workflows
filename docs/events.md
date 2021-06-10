@@ -39,6 +39,31 @@ The event endpoint will always return in under 10 seconds because the event will
 !!! Warning "Processing Order"
     Events may not always be processed in the order they are received.   
   
+## Workflow Template triggered by the event
+
+Before the binding between an event and a workflow template, you must create the workflow template that you want to trigger.
+The following one takes in input the "message" parameter specified into the API call body, passed through the WorkflowEventBinding parameters section, and finally resolved here as the message of the whalesay image.
+
+```
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: my-wf-tmple
+  namespace: argo
+spec:
+  templates:
+    - name: main
+      inputs:
+        parameters:
+          - name: message
+            value: "{{workflow.parameters.message}}"
+      container:
+        image: docker/whalesay:latest
+        command: [cowsay]
+        args: ["{{inputs.parameters.message}}"]
+  entrypoint: main
+```
+
 ## Submitting A Workflow From A Workflow Template
 
 A workflow template will be submitted (i.e. workflow created from it) and that can be created using parameters from the event itself. 
@@ -51,7 +76,7 @@ metadata:
   name: event-consumer
 spec:
   event:
-    selector: payload.message != "" && metadata["x-argo"] == ["true"] && discriminator == "my-discriminator"
+    selector: payload.message != "" && metadata["X-Argo-E2E"] == ["true"] && discriminator == "my-discriminator"
   submit:
     workflowTemplateRef:
       name: my-wf-tmple
@@ -61,6 +86,14 @@ spec:
         valueFrom:
           event: payload.message
 ```
+Please, notice that "workflowTemplateRef" refers to a template with the name "my-wf-tmple", this template has to be created before the triggering of the event.
+After that you have to apply the above explained WorkflowEventBinding (in this example this is called event-template.yml) to realize the binding between Workflow Template and event (you can use kubectl to do that):
+
+```
+kubectl apply -f event-template.yml   
+```
+
+Finally you can trigger the creation of your first parametrized workflow template, by using the following call:
 
 Event:
 
