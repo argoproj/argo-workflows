@@ -206,7 +206,7 @@ func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace,
 				log.Infof("Returning from successful wait for resource %s in namespace %s", resourceName, resourceNamespace)
 				return true, nil
 			}
-			if isErrRetryable {
+			if isErrRetryable || argoerr.IsTransientErr(err) {
 				log.Infof("Waiting for resource %s in namespace %s resulted in retryable error: %v", resourceName, resourceNamespace, err)
 				return false, nil
 			}
@@ -231,9 +231,6 @@ func (we *WorkflowExecutor) checkResourceState(ctx context.Context, selfLink str
 	request := we.RESTClient.Get().RequestURI(selfLink)
 	stream, err := request.Stream(ctx)
 
-	if argoerr.IsTransientErr(err) {
-		return true, errors.Errorf(errors.CodeNotFound, "The error is detected to be transient: %v. Retrying...", err)
-	}
 	if err != nil {
 		err = errors.Cause(err)
 		if apierr.IsNotFound(err) {
