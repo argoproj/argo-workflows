@@ -75,7 +75,7 @@ func TestHTTPTemplate(t *testing.T) {
 		pods, err := controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).List(ctx, metav1.ListOptions{})
 		assert.NoError(t, err)
 		for _, pod := range pods.Items {
-			assert.Equal(t, pod.Name, "hello-world-agent")
+			assert.Equal(t, pod.Name, "hello-world-1340600742-agent")
 		}
 		// tss, err :=controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(wf.Namespace).List(ctx, metav1.ListOptions{})
 		ts, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(wf.Namespace).Get(ctx, "hello-world", metav1.GetOptions{})
