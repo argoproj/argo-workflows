@@ -1,4 +1,4 @@
-import {ListNamespacesResponse, GetUserInfoResponse, Info, Version} from '../../../models';
+import {GetUserInfoResponse, Info, ListNamespacesResponse, Version} from '../../../models';
 
 import requests from './requests';
 

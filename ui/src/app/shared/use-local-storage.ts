@@ -1,6 +1,6 @@
 import {Dispatch, SetStateAction} from 'react';
 
-interface item<T> {
+interface Item<T> {
     value: T;
     storedAt: string; // date gets converted into string by JSON.parse
 }
@@ -10,7 +10,7 @@ export const useLocalStorage = <S>(key: string, defaultValue: S = undefined, max
     const set = (v: S) => localStorage.setItem(key, JSON.stringify({value: v, storedAt: new Date()}));
     const text = localStorage.getItem(key);
     if (text) {
-        const x = JSON.parse(text) as item<S>;
+        const x = JSON.parse(text) as Item<S>;
         if (!maxAgeSeconds || new Date(x.storedAt).getTime() > new Date().getTime() - maxAgeSeconds * 1000) {
             return [x.value, set];
         }
