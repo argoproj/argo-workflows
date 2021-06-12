@@ -2122,21 +2122,35 @@
                 
                 
                 <h1 id="stress-testing">Stress Testing<a class="headerlink" href="#stress-testing" title="Permanent link">&para;</a></h1>
-<p>Create a cluster in <a href="https://console.cloud.google.com/access/iam?cloudshell=false&amp;project=jesse-sb"><code>jesse-sb</code> project</a>.</p>
+<p>Create a cluster in <a href="https://console.cloud.google.com/access/iam?cloudshell=false&amp;project=jesse-sb"><code>jesse-sb</code> project</a>
+with at least 21 nodes.</p>
 <p>Install <code>gcloud</code> binary.</p>
 <p>Login to GCP: <code>gloud auth login</code></p>
-<p>Connect to your new cluster.</p>
-<p>Make sure you've logged in to Docker Hub: <code>docker login</code></p>
-<p>Run <code>make start PROFILE=stress IMAGE_NAMESPACE=alexcollinsintuit DOCKER_PUSH=true</code>.</p>
+<p>Get your KUBECONFIG, something like:</p>
+<div class="highlight"><pre><span></span><code>gcloud container clusters get-credentials cluster-1 --zone us-central1-c --project jesse-sb
+</code></pre></div>
+<p>Run <code>make start PROFILE=stress</code>.</p>
+<p>Make sure pods are running:</p>
+<div class="highlight"><pre><span></span><code>kubectl get deployments
+</code></pre></div>
 <p>If this fails, just try running it again.</p>
-<p>Open https://localhost:2746 and check you can run a workflow.</p>
+<ul>
+<li>Open https://localhost:2746/workflows/argo and check it loads and that you can run a workflow.</li>
+<li>Open http://localhost:9090/metrics and check you can see the Prometheus metrics.</li>
+<li>Open http://localhost:9091/graph and check you can see a Prometheus graph.</li>
+<li>Open http://localhost:6060 and check you can access pprof.</li>
+</ul>
 <p>Open <code>test/stress/main.go</code> and run it with a small number (e.g. 10) workflows and make sure they complete.</p>
-<p>Do you get <code>ImagePullBackOff</code>? Make sure image is <code>argoproj/argosay:v2</code> in  <code>kubectl -n argo edit workflowtemplate massive-workflow</code>.</p>
-<p>Open http://localhost:9091/graph.</p>
-<p>You can use <a href="https://chrome.google.com/webstore/detail/tab-auto-refresh/oomoeacogjkolheacgdkkkhbjipaomkn">this Tab Auto Refresh Chrome extension</a> to auto-refresh the page.</p>
+<p>Do you get <code>ImagePullBackOff</code>? Make sure image is <code>argoproj/argosay:v2</code>
+in  <code>kubectl -n argo edit workflowtemplate massive-workflow</code>.</p>
+<p>You can
+use <a href="https://chrome.google.com/webstore/detail/tab-auto-refresh/oomoeacogjkolheacgdkkkhbjipaomkn">this Tab Auto Refresh Chrome extension</a>
+to auto-refresh the page.</p>
 <p>Open <code>test/stress/main.go</code> and run it with a large number (e.g. 10000).</p>
-<p>Use Prometheus to analyse this.</p>
-<p>Finally, you can capture PProf using <code>./hack/capture-pprof.sh</code>.</p>
+<ul>
+<li>Use Prometheus to analyse this.</li>
+<li>Use PProf using <code>./hack/capture-pprof.sh</code> and look at allocs and profile for costly areas.</li>
+</ul>
                 
                   
                 
