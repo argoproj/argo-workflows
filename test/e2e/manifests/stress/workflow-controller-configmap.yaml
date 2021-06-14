@@ -4,6 +4,7 @@ metadata:
   name: workflow-controller-configmap
 data:
   containerRuntimeExecutor: pns
+  namespaceParallelism: "99999"
   executor: |
     imagePullPolicy: IfNotPresent
     resources:
