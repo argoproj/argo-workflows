@@ -13,6 +13,7 @@ interface Props {
     name: string;
     entrypoint: string;
     templates: Template[];
+    workflowParameters: Parameter[];
 }
 
 interface State {
@@ -25,15 +26,23 @@ interface State {
     error?: Error;
 }
 
+const workflowEntrypoint = '<default>';
+
 export class SubmitWorkflowPanel extends React.Component<Props, State> {
     constructor(props: any) {
         super(props);
+        const defaultTemplate: Template = {
+            name: workflowEntrypoint,
+            inputs: {
+                parameters: this.props.workflowParameters
+            }
+        };
         const state = {
-            entrypoint: this.props.entrypoint || (this.props.templates.length > 0 && this.props.templates[0].name),
+            entrypoint: workflowEntrypoint,
             entrypoints: this.props.templates.map(t => t.name),
-            selectedTemplate: this.props.templates.length > 0 && this.props.templates[0],
-            parameters: (this.props.templates.length > 0 && this.props.templates[0].inputs.parameters) || [],
-            templates: this.props.templates,
+            selectedTemplate: defaultTemplate,
+            parameters: this.props.workflowParameters || [],
+            templates: [defaultTemplate].concat(this.props.templates),
             labels: ['submit-from-ui=true']
         };
         this.state = state;
@@ -150,7 +159,7 @@ export class SubmitWorkflowPanel extends React.Component<Props, State> {
     private submit() {
         services.workflows
             .submit(this.props.kind, this.props.name, this.props.namespace, {
-                entryPoint: this.state.entrypoint,
+                entryPoint: this.state.entrypoint === workflowEntrypoint ? null : this.state.entrypoint,
                 parameters: this.state.parameters.map(p => p.name + '=' + p.value),
                 labels: this.state.labels.join(',')
             })

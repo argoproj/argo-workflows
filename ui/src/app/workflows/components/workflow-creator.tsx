@@ -91,6 +91,7 @@ export const WorkflowCreator = ({namespace, onCreate}: {namespace: string; onCre
                         name={workflowTemplate.metadata.name}
                         entrypoint={workflowTemplate.spec.entrypoint}
                         templates={workflowTemplate.spec.templates || []}
+                        workflowParameters={workflowTemplate.spec.arguments.parameters || []}
                     />
                     <a onClick={() => setStage('full-editor')}>
                         Edit using full workflow options <i className='fa fa-caret-right' />

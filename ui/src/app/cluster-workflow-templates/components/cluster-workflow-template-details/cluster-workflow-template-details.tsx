@@ -130,6 +130,7 @@ export const ClusterWorkflowTemplateDetails = ({history, location, match}: Route
                         name={template.metadata.name}
                         entrypoint={template.spec.entrypoint}
                         templates={template.spec.templates || []}
+                        workflowParameters={template.spec.arguments.parameters || []}
                     />
                 </SlidingPanel>
             )}
