@@ -3,6 +3,8 @@ package fixtures
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"reflect"
 	"testing"
 	"time"
@@ -171,6 +173,34 @@ func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, num int, b
 	}
 	block(t.t, events)
 	return t
+}
+
+func (t *Then) ExpectArtifact(nodeName, artifactName string, f func(t *testing.T, data []byte)) {
+	t.t.Helper()
+	nodeId := nodeIdForName(nodeName, t.wf)
+	url := "http://localhost:2746/artifacts/" + Namespace + "/" + t.wf.Name + "/" + nodeId + "/" + artifactName
+	println(url)
+	r, err := http.Get(url)
+	if err != nil {
+		t.t.Fatal(err)
+	}
+	defer r.Body.Close()
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		t.t.Fatal(err)
+	}
+	if r.StatusCode != 200 {
+		t.t.Fatal(fmt.Errorf("HTTP request not OK: %s: %q", r.Status, data))
+	}
+	f(t.t, data)
+}
+
+func nodeIdForName(nodeName string, wf *wfv1.Workflow) string {
+	if nodeName == "-" {
+		return wf.NodeID(wf.Name)
+	} else {
+		return wf.NodeID(nodeName)
+	}
 }
 
 func (t *Then) RunCli(args []string, block func(t *testing.T, output string, err error)) *Then {

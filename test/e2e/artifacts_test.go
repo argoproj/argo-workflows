@@ -130,6 +130,19 @@ func (s *ArtifactsSuite) TestOutputResult() {
 		})
 }
 
+func (s *ArtifactsSuite) TestMainLog() {
+	s.Given().
+		Workflow("@testdata/basic-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectArtifact("-", "main-logs", func(t *testing.T, data []byte) {
+			println(string(data))
+			assert.NotEmpty(t, data)
+		})
+}
+
 func TestArtifactsSuite(t *testing.T) {
 	suite.Run(t, new(ArtifactsSuite))
 }
