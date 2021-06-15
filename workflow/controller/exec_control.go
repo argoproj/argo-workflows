@@ -66,7 +66,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 	if woc.GetShutdownStrategy().Enabled() {
 		if _, onExitPod := pod.Labels[common.LabelKeyOnExit]; !woc.GetShutdownStrategy().ShouldExecute(onExitPod) {
 			woc.log.Infof("Shutting down pod %s", pod.Name)
-			woc.queuePodForCleanup(pod.Name, shutdownPod)
+			woc.controller.queuePodForCleanup(woc.wf.Namespace, pod.Name, shutdownPod)
 		}
 	}
 }
@@ -81,7 +81,7 @@ func (woc *wfOperationCtx) killDaemonedChildren(nodeID string) {
 		if childNode.Daemoned == nil || !*childNode.Daemoned {
 			continue
 		}
-		woc.queuePodForCleanup(childNode.ID, shutdownPod)
+		woc.controller.queuePodForCleanup(woc.wf.Namespace, childNode.ID, shutdownPod)
 		childNode.Phase = wfv1.NodeSucceeded
 		childNode.Daemoned = nil
 		woc.wf.Status.Nodes[childNode.ID] = childNode

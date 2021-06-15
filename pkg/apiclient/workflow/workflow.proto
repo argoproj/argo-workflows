@@ -84,6 +84,7 @@ message WorkflowLogRequest {
     string namespace = 2;
     string podName = 3;
     k8s.io.api.core.v1.PodLogOptions logOptions = 4;
+    string grep = 5;
 }
 
 message WorkflowDeleteRequest {
@@ -98,6 +99,7 @@ message WorkflowDeleteResponse {
 message WatchWorkflowsRequest {
     string namespace = 1;
     k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 2;
+    string fields = 3;
 }
 
 message WorkflowWatchEvent {

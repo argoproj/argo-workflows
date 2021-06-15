@@ -21,6 +21,46 @@ const (
 	fakeContainerName = "main"
 )
 
+func TestWorkflowExecutor_LoadArtifacts(t *testing.T) {
+	tests := []struct {
+		name     string
+		artifact wfv1.Artifact
+		error    string
+	}{
+		{"ErrNotSupplied", wfv1.Artifact{Name: "foo"}, "required artifact 'foo' not supplied"},
+		{"ErrFailedToLoad", wfv1.Artifact{
+			Name: "foo",
+			ArtifactLocation: wfv1.ArtifactLocation{
+				S3: &wfv1.S3Artifact{
+					Key: "my-key",
+				},
+			},
+		}, "failed to load artifact 'foo': template artifact location not set"},
+		{"ErrNoPath", wfv1.Artifact{
+			Name: "foo",
+			ArtifactLocation: wfv1.ArtifactLocation{
+				S3: &wfv1.S3Artifact{
+					S3Bucket: wfv1.S3Bucket{Endpoint: "my-endpoint", Bucket: "my-bucket"},
+					Key:      "my-key",
+				},
+			},
+		}, "Artifact foo did not specify a path"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			we := WorkflowExecutor{
+				Template: wfv1.Template{
+					Inputs: wfv1.Inputs{
+						Artifacts: []wfv1.Artifact{test.artifact},
+					},
+				},
+			}
+			err := we.LoadArtifacts(context.Background())
+			assert.EqualError(t, err, test.error)
+		})
+	}
+}
+
 func TestSaveParameters(t *testing.T) {
 	fakeClientset := fake.NewSimpleClientset()
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}

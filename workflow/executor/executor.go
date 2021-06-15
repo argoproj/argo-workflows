@@ -148,12 +148,12 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 				log.Warnf("Ignoring optional artifact '%s' which was not supplied", art.Name)
 				continue
 			} else {
-				return errors.Errorf("required artifact %s not supplied", art.Name)
+				return errors.Errorf(errors.CodeNotFound, "required artifact '%s' not supplied", art.Name)
 			}
 		}
 		driverArt, err := we.newDriverArt(&art)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to load artifact '%s': %w", art.Name, err)
 		}
 		artDriver, err := we.InitDriver(ctx, driverArt)
 		if err != nil {
@@ -187,7 +187,7 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 				log.Infof("Skipping optional input artifact that was not found: %s", art.Name)
 				continue
 			}
-			return err
+			return fmt.Errorf("artifact %s failed to load: %w", art.Name, err)
 		}
 
 		isTar := false

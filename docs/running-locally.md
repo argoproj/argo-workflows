@@ -2,7 +2,7 @@
 
 ## Pre-requisites
 
-* [Go](https://golang.org/dl/) (The project currently uses version 1.13)
+* [Go](https://golang.org/dl/) (The project currently uses version 1.15)
 * [Yarn](https://classic.yarnpkg.com/en/docs/install/#mac-stable)
 * [Docker](https://docs.docker.com/get-docker/)
 * [Kustomize](https://github.com/kubernetes-sigs/kustomize/blob/master/docs/INSTALL.md)
@@ -43,6 +43,10 @@ Either:
 * MySQL on  http://localhost:3306, run `make mysql-cli` to access.
 
 At this point you’ll have everything you need to use the CLI and UI.
+
+## Troubleshooting Notes
+
+If you get a similar error when running one of the make pre-commit tests `make: *** [pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json] Error 1`, ensure you are working within your $GOPATH (YOUR-GOPATH/src/github.com/argoproj/argo-workflows).
 
 ## Clean
 

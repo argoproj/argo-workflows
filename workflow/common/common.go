@@ -166,6 +166,9 @@ const (
 	SecretVolMountPath            = "/argo/secret"
 )
 
+// AnnotationKeyKillCmd specifies the command to use to kill to container, useful for injected sidecars
+var AnnotationKeyKillCmd = func(containerName string) string { return workflow.WorkflowFullName + "/kill-cmd-" + containerName }
+
 // GlobalVarWorkflowRootTags is a list of root tags in workflow which could be used for variable reference
 var GlobalVarValidWorkflowVariablePrefix = []string{"item.", "steps.", "inputs.", "outputs.", "pod.", "workflow.", "tasks."}
 

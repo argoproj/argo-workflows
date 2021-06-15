@@ -398,6 +398,10 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		pod.Spec.ActiveDeadlineSeconds = &newActiveDeadlineSeconds
 	}
 
+	if !woc.controller.rateLimiter.Allow() {
+		return nil, ErrResourceRateLimitReached
+	}
+
 	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
 
 	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})

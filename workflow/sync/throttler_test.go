@@ -4,11 +4,17 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/client-go/tools/cache"
+
 	"github.com/stretchr/testify/assert"
 )
 
+func Test_NamespaceBucket(t *testing.T) {
+	assert.Equal(t, "a", NamespaceBucket("a/b"))
+}
+
 func TestNoParallelismSamePriority(t *testing.T) {
-	throttler := NewThrottler(0, nil)
+	throttler := NewThrottler(0, SingleBucket, nil)
 
 	throttler.Add("c", 0, time.Now().Add(2*time.Hour))
 	throttler.Add("b", 0, time.Now().Add(1*time.Hour))
@@ -19,9 +25,27 @@ func TestNoParallelismSamePriority(t *testing.T) {
 	assert.True(t, throttler.Admit("c"))
 }
 
+func TestNoParallelismMultipleBuckets(t *testing.T) {
+	throttler := NewThrottler(1, func(key Key) BucketKey {
+		namespace, _, _ := cache.SplitMetaNamespaceKey(key)
+		return namespace
+	}, func(key string) {})
+
+	throttler.Add("a/0", 0, time.Now())
+	throttler.Add("a/1", 0, time.Now())
+	throttler.Add("b/0", 0, time.Now())
+	throttler.Add("b/1", 0, time.Now())
+
+	assert.True(t, throttler.Admit("a/0"))
+	assert.False(t, throttler.Admit("a/1"))
+	assert.True(t, throttler.Admit("b/0"))
+	throttler.Remove("a/0")
+	assert.True(t, throttler.Admit("a/1"))
+}
+
 func TestWithParallelismLimitAndPriority(t *testing.T) {
 	queuedKey := ""
-	throttler := NewThrottler(2, func(key string) { queuedKey = key })
+	throttler := NewThrottler(2, SingleBucket, func(key string) { queuedKey = key })
 
 	throttler.Add("a", 1, time.Now())
 	throttler.Add("b", 2, time.Now())

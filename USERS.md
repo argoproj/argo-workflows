@@ -57,6 +57,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Gardener](https://gardener.cloud/)
 1. [GitHub](https://github.com/)
 1. [Gladly](https://gladly.com/)
+1. [Glovo](https://www.glovoapp.com)
 1. [Google](https://www.google.com/intl/en/about/our-company/)
 1. [Graviti](https://www.graviti.cn)
 1. [Greenhouse](https://greenhouse.io)
@@ -124,6 +125,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Vispera](https://www.vispera.co)
 1. [Wavefront](https://www.wavefront.com/)
 1. [Wellcome Trust](https://wellcome.ac.uk/)
+1. [VMware](https://www.vmware.com/)
 1. [Woolworths Group](https://www.woolworthsgroup.com.au/)
 1. [Zhihu](https://www.zhihu.com/)
 

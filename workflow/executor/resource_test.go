@@ -6,7 +6,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/fake"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -143,4 +145,31 @@ func TestResourceConditionsMatching(t *testing.T) {
 	finished, err = matchConditions(jsonBytes, successReqs, failReqs)
 	assert.Error(t, err, "Neither success condition nor the failure condition has been matched. Retrying...")
 	assert.True(t, finished)
+}
+
+// TestInferSelfLink tests whether the inferred self link for k8s objects are correct.
+func TestInferSelfLink(t *testing.T) {
+	obj := unstructured.Unstructured{}
+	obj.SetNamespace("test-namespace")
+	obj.SetName("test-name")
+	obj.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "",
+		Version: "v1",
+		Kind:    "Pod",
+	})
+	assert.Equal(t, "api/v1/namespaces/test-namespace/pods/test-name", inferObjectSelfLink(obj))
+
+	obj.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "test.group",
+		Version: "v1",
+		Kind:    "TestKind",
+	})
+	assert.Equal(t, "apis/test.group/v1/namespaces/test-namespace/testkinds/test-name", inferObjectSelfLink(obj))
+
+	obj.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "test.group",
+		Version: "v1",
+		Kind:    "Duty",
+	})
+	assert.Equal(t, "apis/test.group/v1/namespaces/test-namespace/duties/test-name", inferObjectSelfLink(obj))
 }

@@ -222,7 +222,7 @@ argoexec-image:
 
 %-image:
 	[ ! -e dist/$* ] || mv dist/$* .
-	docker buildx build -t $(IMAGE_NAMESPACE)/$*:$(VERSION) --target $* .
+	docker buildx build -t $(IMAGE_NAMESPACE)/$*:$(VERSION) --target $* --output=type=docker .
 	[ ! -e $* ] || mv $* dist/
 	docker run --rm -t $(IMAGE_NAMESPACE)/$*:$(VERSION) version
 	if [ $(K3D) = true ]; then k3d image import $(IMAGE_NAMESPACE)/$*:$(VERSION); fi
@@ -236,7 +236,7 @@ scan-%:
 # generation
 
 .PHONY: codegen
-codegen: types swagger docs
+codegen: types swagger docs manifests
 
 .PHONY: types
 types: pkg/apis/workflow/v1alpha1/generated.proto pkg/apis/workflow/v1alpha1/openapi_generated.go pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go
@@ -355,24 +355,30 @@ dist/kustomize:
 	cd dist && ./install_kustomize.sh 3.8.8
 	dist/kustomize version
 
-manifests: dist/manifests/install.yaml \
+manifests: \
+	manifests/install.yaml \
+	manifests/namespace-install.yaml \
+	manifests/quick-start-minimal.yaml \
+	manifests/quick-start-mysql.yaml \
+	manifests/quick-start-postgres.yaml \
+	dist/manifests/install.yaml \
 	dist/manifests/namespace-install.yaml \
 	dist/manifests/quick-start-minimal.yaml \
 	dist/manifests/quick-start-mysql.yaml \
 	dist/manifests/quick-start-postgres.yaml
 
-manifests/install.yaml: /dev/null
+manifests/install.yaml: dist/kustomize /dev/null
 	dist/kustomize build --load_restrictor=none manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
-manifests/namespace-install.yaml: /dev/null
+manifests/namespace-install.yaml: dist/kustomize /dev/null
 	dist/kustomize build --load_restrictor=none manifests/namespace-install | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
-manifests/quick-start-minimal.yaml: /dev/null
+manifests/quick-start-minimal.yaml: dist/kustomize /dev/null
 	dist/kustomize build --load_restrictor=none manifests/quick-start/minimal | ./hack/auto-gen-msg.sh > manifests/quick-start-minimal.yaml
-manifests/quick-start-mysql.yaml: /dev/null
+manifests/quick-start-mysql.yaml: dist/kustomize /dev/null
 	dist/kustomize build --load_restrictor=none manifests/quick-start/mysql | ./hack/auto-gen-msg.sh > manifests/quick-start-mysql.yaml
-manifests/quick-start-postgres.yaml: /dev/null
+manifests/quick-start-postgres.yaml: dist/kustomize /dev/null
 	dist/kustomize build --load_restrictor=none manifests/quick-start/postgres | ./hack/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
 
-dist/manifests/%: manifests/$*
+dist/manifests/%: manifests/%
 	@mkdir -p dist/manifests
 	sed 's/:latest/:$(VERSION)/' manifests/$* > $@
 
@@ -403,9 +409,6 @@ install: dist/kustomize
 	dist/kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/argoproj\//$(IMAGE_NAMESPACE)\//' | sed 's/containerRuntimeExecutor: docker/containerRuntimeExecutor: $(E2E_EXECUTOR)/' | kubectl -n $(KUBE_NAMESPACE) apply --prune -l app.kubernetes.io/part-of=argo -f -
 ifeq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml
-	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy workflow-controller
-	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy argo-server
-	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy minio
 endif
 ifeq ($(RUN_MODE),kubernetes)
 	# scale to 2 replicas so we touch upon leader election
@@ -455,7 +458,7 @@ $(GOPATH)/bin/goreman:
 ifeq ($(RUN_MODE),local)
 start: install controller cli $(GOPATH)/bin/goreman
 else
-start: install argoexec-image workflow-controller-image argocli-image
+start: install
 endif
 	@echo "starting STATIC_FILES=$(STATIC_FILES) (DEV_BRANCH=$(DEV_BRANCH), GIT_BRANCH=$(GIT_BRANCH)), AUTH_MODE=$(AUTH_MODE), RUN_MODE=$(RUN_MODE)"
 	# Check dex, minio, postgres and mysql are in hosts file
