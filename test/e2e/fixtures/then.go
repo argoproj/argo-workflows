@@ -21,13 +21,14 @@ import (
 )
 
 type Then struct {
-	t          *testing.T
-	wf         *wfv1.Workflow
-	cronWf     *wfv1.CronWorkflow
-	client     v1alpha1.WorkflowInterface
-	cronClient v1alpha1.CronWorkflowInterface
-	hydrator   hydrator.Interface
-	kubeClient kubernetes.Interface
+	t           *testing.T
+	wf          *wfv1.Workflow
+	cronWf      *wfv1.CronWorkflow
+	client      v1alpha1.WorkflowInterface
+	cronClient  v1alpha1.CronWorkflowInterface
+	hydrator    hydrator.Interface
+	kubeClient  kubernetes.Interface
+	bearerToken string
 }
 
 func (t *Then) ExpectWorkflow(block func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus)) *Then {
@@ -180,17 +181,22 @@ func (t *Then) ExpectArtifact(nodeName, artifactName string, f func(t *testing.T
 	nodeId := nodeIdForName(nodeName, t.wf)
 	url := "http://localhost:2746/artifacts/" + Namespace + "/" + t.wf.Name + "/" + nodeId + "/" + artifactName
 	println(url)
-	r, err := http.Get(url)
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		t.t.Fatal(err)
 	}
-	defer r.Body.Close()
-	data, err := ioutil.ReadAll(r.Body)
+	req.Header.Set("Authorization", "Bearer "+t.bearerToken)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.t.Fatal(err)
 	}
-	if r.StatusCode != 200 {
-		t.t.Fatal(fmt.Errorf("HTTP request not OK: %s: %q", r.Status, data))
+	defer resp.Body.Close()
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.t.Fatal(err)
+	}
+	if resp.StatusCode != 200 {
+		t.t.Fatal(fmt.Errorf("HTTP request not OK: %s: %q", resp.Status, data))
 	}
 	f(t.t, data)
 }
@@ -212,11 +218,12 @@ func (t *Then) RunCli(args []string, block func(t *testing.T, output string, err
 
 func (t *Then) When() *When {
 	return &When{
-		t:          t.t,
-		client:     t.client,
-		cronClient: t.cronClient,
-		hydrator:   t.hydrator,
-		wf:         t.wf,
-		kubeClient: t.kubeClient,
+		t:           t.t,
+		client:      t.client,
+		cronClient:  t.cronClient,
+		hydrator:    t.hydrator,
+		wf:          t.wf,
+		kubeClient:  t.kubeClient,
+		bearerToken: t.bearerToken,
 	}
 }

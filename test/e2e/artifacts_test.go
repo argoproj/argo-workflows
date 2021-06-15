@@ -138,7 +138,6 @@ func (s *ArtifactsSuite) TestMainLog() {
 		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
 		ExpectArtifact("-", "main-logs", func(t *testing.T, data []byte) {
-			println(string(data))
 			assert.NotEmpty(t, data)
 		})
 }
