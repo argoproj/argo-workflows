@@ -31,6 +31,7 @@ type Given struct {
 	cwfTemplates      []*wfv1.ClusterWorkflowTemplate
 	cronWf            *wfv1.CronWorkflow
 	kubeClient        kubernetes.Interface
+	bearerToken       string
 }
 
 // creates a workflow based on the parameter, this may be:
@@ -202,5 +203,6 @@ func (g *Given) When() *When {
 		cronClient:        g.cronClient,
 		hydrator:          g.hydrator,
 		kubeClient:        g.kubeClient,
+		bearerToken:       g.bearerToken,
 	}
 }
