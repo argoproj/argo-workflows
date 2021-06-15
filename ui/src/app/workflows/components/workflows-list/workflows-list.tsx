@@ -278,7 +278,6 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                         onChange={e => {
                                             if (this.state.workflows.length === this.state.selectedWorkflows.size) {
                                                 // All workflows are selected, deselect them all
-                                                // this.setState({selectedWorkflows: new Map<string, models.Workflow>()});
                                                 this.updateCurrentlySelectedAndBatchActions(new Map<string, models.Workflow>());
                                             } else {
                                                 // Not all workflows are selected, select them all
