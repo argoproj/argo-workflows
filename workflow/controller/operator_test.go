@@ -1311,7 +1311,7 @@ func TestGetPodTemplate(t *testing.T) {
 					{
 						Env: []apiv1.EnvVar{
 							{
-								Name: common.EnvVarTemplate,
+								Name:  common.EnvVarTemplate,
 								Value: "{}",
 							},
 						},
@@ -1328,7 +1328,7 @@ func TestGetPodTemplate(t *testing.T) {
 					{
 						Env: []apiv1.EnvVar{
 							{
-								Name: common.EnvVarTemplate,
+								Name:  common.EnvVarTemplate,
 								Value: "{\"name\":\"argosay\"}",
 							},
 						},
@@ -1374,7 +1374,7 @@ func TestGetPodDeadline(t *testing.T) {
 					{
 						Env: []apiv1.EnvVar{
 							{
-								Name: common.EnvVarDeadline,
+								Name:  common.EnvVarDeadline,
 								Value: "0001-01-01T00:00:00Z",
 							},
 						},
@@ -1391,7 +1391,7 @@ func TestGetPodDeadline(t *testing.T) {
 					{
 						Env: []apiv1.EnvVar{
 							{
-								Name: common.EnvVarDeadline,
+								Name:  common.EnvVarDeadline,
 								Value: "2021-01-21T01:02:03Z",
 							},
 						},
