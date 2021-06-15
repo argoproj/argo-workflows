@@ -109,7 +109,7 @@ func NewEmissaryCommand() *cobra.Command {
 			command.Stderr = os.Stderr
 
 			// this may not be that important an optimisation, except for very long logs we don't want to capture
-			if includeScriptOutput {
+			if includeScriptOutput || template.SaveLogsAsArtifact() {
 				logger.Info("capturing logs")
 				stdout, err := os.Create(varRunArgo + "/ctr/" + containerName + "/stdout")
 				if err != nil {
