@@ -132,6 +132,8 @@ github.com/argoproj-labs/argo-dataflow v0.0.46 h1:ILyWB9qGqHPJ0KsMQsLpeTmBnQsXqP
 github.com/argoproj-labs/argo-dataflow v0.0.46/go.mod h1:QPNAstHIZDfn1xRWgEK9kpEKxVLtbzecuAzwkRVdjOo=
 github.com/argoproj-labs/argo-dataflow v0.0.49 h1:PFqrWd6szehJl/GOI88X/jCm7q2aoZcgzgJvEh9zBeE=
 github.com/argoproj-labs/argo-dataflow v0.0.49/go.mod h1:QPNAstHIZDfn1xRWgEK9kpEKxVLtbzecuAzwkRVdjOo=
+github.com/argoproj-labs/argo-dataflow v0.0.50 h1:lEeo7PMCFvTki5oi5pNAlSP4PjpjSGiOewIcbtwRVaI=
+github.com/argoproj-labs/argo-dataflow v0.0.50/go.mod h1:QPNAstHIZDfn1xRWgEK9kpEKxVLtbzecuAzwkRVdjOo=
 github.com/argoproj/argo-events v1.2.0 h1:CjF8hVUkeflhaOt9uWjJK6ai6b4pw0CCUUmOnmhWnNY=
 github.com/argoproj/argo-events v1.2.0/go.mod h1:eY+egQNBLXAz/AF4mqgHsMMa4Aur7frHjUfBg+RpX04=
 github.com/argoproj/pkg v0.8.1 h1:9h/sqAjUNyk0LaHkXR+2h94KNcSchvFX5aELNjXSOoc=
