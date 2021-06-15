@@ -436,7 +436,7 @@
           "type": "string"
         },
         "retryPolicy": {
-          "title": "+kubebuilder:default=Never",
+          "title": "+kubebuilder:default=Always",
           "type": "string"
         },
         "stan": {

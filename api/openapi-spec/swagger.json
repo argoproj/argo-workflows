@@ -4422,7 +4422,7 @@
         },
         "retryPolicy": {
           "type": "string",
-          "title": "+kubebuilder:default=Never"
+          "title": "+kubebuilder:default=Always"
         },
         "stan": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.STAN"
