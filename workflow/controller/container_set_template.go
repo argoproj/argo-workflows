@@ -27,7 +27,7 @@ func (woc *wfOperationCtx) executeContainerSet(ctx context.Context, nodeName str
 		includeScriptOutput: includeScriptOutput,
 		onExitPod:           opts.onExitTemplate,
 		executionDeadline:   opts.executionDeadline,
-	}, false)
+	})
 	if err != nil {
 		return woc.requeueIfTransientErr(err, node.Name)
 	}

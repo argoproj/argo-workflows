@@ -23,7 +23,7 @@ DEV_IMAGE             ?= $(shell [ `uname -s` = Darwin ] && echo true || echo fa
 # The name of the namespace where Kubernetes resources/RBAC will be installed
 KUBE_NAMESPACE        ?= argo
 
-VERSION               := latest
+VERSION               := agent
 DOCKER_PUSH           := false
 
 # VERSION is the version to be used for files in manifests and should always be latest unless we are releasing

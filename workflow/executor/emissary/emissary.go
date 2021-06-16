@@ -43,10 +43,6 @@ The wait container can create one file itself, used for terminating the sub-proc
 */
 type emissary struct{}
 
-func (e *emissary) GetExitCode(ctx context.Context, containerName string) (string, error) {
-	return "", nil
-}
-
 func New() (executor.ContainerRuntimeExecutor, error) {
 	return &emissary{}, nil
 }

@@ -19,10 +19,11 @@ import (
 	"strings"
 	"time"
 
+	apierr "k8s.io/apimachinery/pkg/api/errors"
+
 	argofile "github.com/argoproj/pkg/file"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
-	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -101,10 +102,6 @@ type ContainerRuntimeExecutor interface {
 	// GetOutputStream returns the entirety of the container output as a io.Reader
 	// Used to capture script results as an output parameter, and to archive container logs
 	GetOutputStream(ctx context.Context, containerName string, combinedOutput bool) (io.ReadCloser, error)
-
-	// GetExitCode returns the exit code of the container
-	// Used to capture script exit code as an output parameter
-	GetExitCode(ctx context.Context, containerName string) (string, error)
 
 	// Wait waits for the container to complete.
 	Wait(ctx context.Context, containerNames []string) error
@@ -722,24 +719,6 @@ func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
 	return nil
 }
 
-// CaptureScriptExitCode will add the exit code of a script template as output exit code
-func (we *WorkflowExecutor) CaptureScriptExitCode(ctx context.Context) error {
-	if !we.Template.HasOutput() {
-		log.Infof("Template type is neither of Script, Container, or Pod. Capturing exit code ignored")
-		return nil
-	}
-	log.Infof("Capturing script exit code")
-	exitCode, err := we.RuntimeExecutor.GetExitCode(ctx, common.MainContainerName)
-	if err != nil {
-		return err
-	}
-
-	if exitCode != "" {
-		we.Template.Outputs.ExitCode = &exitCode
-	}
-	return nil
-}
-
 // AnnotateOutputs annotation to the pod indicating all the outputs.
 func (we *WorkflowExecutor) AnnotateOutputs(ctx context.Context, logArt *wfv1.Artifact) error {
 	outputs := we.Template.Outputs.DeepCopy()
@@ -759,12 +738,12 @@ func (we *WorkflowExecutor) AnnotateOutputs(ctx context.Context, logArt *wfv1.Ar
 }
 
 func (we *WorkflowExecutor) updateTaskSetStatusWithOutputs(ctx context.Context, outputs *wfv1.Outputs) error {
-	log.Info("Patching taskset status with outputs")
+	log.Infof("Patching taskset status with outputs. %v", outputs)
 	tasksetInterface := we.workflowInterface.ArgoprojV1alpha1().WorkflowTaskSets(we.Namespace)
 	return waitutil.Backoff(ExecutorRetry, func() (bool, error) {
 		taskset, err := tasksetInterface.Get(ctx, we.workflowName, metav1.GetOptions{})
-		if err != nil && !errorsutil.IsTransientErr(err) {
-			return false, err
+		if err != nil {
+			return !errorsutil.IsTransientErr(err), err
 		}
 		if taskset.Status.Nodes == nil || len(taskset.Status.Nodes) == 0 {
 			taskset.Status = wfv1.WorkflowTaskSetStatus{
@@ -783,15 +762,15 @@ func (we *WorkflowExecutor) nodeID() string {
 }
 
 func (we *WorkflowExecutor) annotatePodWithOutputs(ctx context.Context, outputs *wfv1.Outputs) error {
-	log.Infof("Annotating pod with outputs")
-	data, err := json.Marshal(outputs)
+	log.Infof("Annotating pod with output")
+	outputBytes, err := json.Marshal(outputs)
 	if err != nil {
-		return err
+		return errors.InternalWrapError(err)
 	}
-	return we.AddAnnotation(ctx, common.AnnotationKeyOutputs, string(data))
+	return we.AddAnnotation(ctx, common.AnnotationKeyOutputs, string(outputBytes))
 }
 
-// AddError adds an error to the list of encountered errors durign execution
+// AddError adds an error to the list of encountered errors during execution
 func (we *WorkflowExecutor) AddError(err error) {
 	log.Errorf("executor error: %+v", err)
 	we.errors = append(we.errors, err)

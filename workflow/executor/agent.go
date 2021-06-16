@@ -23,8 +23,10 @@ func (we *WorkflowExecutor) Agent(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+		log.Infof("watching")
 
 		for event := range wfWatch.ResultChan() {
+			log.Infof("watching, %v", event)
 			if event.Type == watch.Deleted {
 				// We're done if the task set is deleted
 				return nil
@@ -37,7 +39,7 @@ func (we *WorkflowExecutor) Agent(ctx context.Context) error {
 
 			for _, task := range obj.Spec.Tasks {
 
-				if obj.Status.Nodes != nil && len(obj.Status.Nodes) > 0 && obj.Status.Nodes[task.NodeID].Fulfilled() {
+				if len(obj.Status.Nodes) > 0 && obj.Status.Nodes[task.NodeID].Fulfilled() {
 					continue
 				}
 
@@ -56,7 +58,6 @@ func (we *WorkflowExecutor) Agent(ctx context.Context) error {
 						obj.Status.Nodes = map[string]wfv1.NodeResult{}
 					}
 					obj.Status.Nodes[task.NodeID] = result
-					log.WithField("obj", obj).Info("will update obj")
 					ts, err := taskSetInterface.UpdateStatus(ctx, obj, metav1.UpdateOptions{})
 					if err != nil {
 						return err

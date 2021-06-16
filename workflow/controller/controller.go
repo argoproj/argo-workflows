@@ -715,7 +715,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	if woc.wf.Status.Fulfilled() {
 		err = woc.DeleteAgentPod(ctx)
 		if err != nil {
-			woc.log.Errorf("unable to delete the agent pod: %v", err)
+			woc.log.WithError(err).Error("unable to delete the agent pod")
 		}
 
 		// Send all completed pods to gcPods channel to delete it later depend on the PodGCStrategy.
