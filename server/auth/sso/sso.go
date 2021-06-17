@@ -112,9 +112,6 @@ func newSso(
 	if c.ClientSecret.Name == "" || c.ClientSecret.Key == "" {
 		return nil, fmt.Errorf("clientSecret empty")
 	}
-	if c.RedirectURL == "" {
-		return nil, fmt.Errorf("redirectUrl empty")
-	}
 	ctx := context.Background()
 	clientSecretObj, err := secretsIf.Get(ctx, c.ClientSecret.Name, metav1.GetOptions{})
 	if err != nil {
@@ -193,6 +190,7 @@ func newSso(
 func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	redirectUrl := r.URL.Query().Get("redirect")
 	state := pkgrand.RandString(10)
+	opts := []oauth2.AuthCodeOption{}
 	http.SetCookie(w, &http.Cookie{
 		Name:     state,
 		Value:    redirectUrl,
@@ -201,7 +199,19 @@ func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteLaxMode,
 		Secure:   s.secure,
 	})
-	http.Redirect(w, r, s.config.AuthCodeURL(state), http.StatusFound)
+
+	if s.config.RedirectURL == "" {
+		proto := "http"
+
+		if s.secure {
+			proto = "https"
+		}
+
+		oauthRedirectUri := fmt.Sprintf("%s://%s%soauth2/callback", proto, r.Host, s.baseHRef)
+		opts = append(opts, oauth2.SetAuthURLParam("redirect_uri", oauthRedirectUri))
+	}
+
+	http.Redirect(w, r, s.config.AuthCodeURL(state, opts...), http.StatusFound)
 }
 
 func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
