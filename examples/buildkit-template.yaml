@@ -68,8 +68,7 @@ spec:
               parameters:
                 - name: path
                   value: "{{workflow.parameters.path}}"
-            dependencies:
-              - clone
+            depends: "clone"
           - name: image
             template: image
             arguments:
@@ -78,8 +77,7 @@ spec:
                   value: "{{workflow.parameters.path}}"
                 - name: image
                   value: "{{workflow.parameters.image}}"
-            dependencies:
-              - build
+            depends: "build"
     - name: clone
       inputs:
         parameters:
