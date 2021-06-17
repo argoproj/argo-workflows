@@ -87,7 +87,7 @@ func (wfts WorkflowTaskSetManager) CreateTaskSet(ctx context.Context, wf *wfv1.W
 			return err == nil, err
 		})
 		if err != nil {
-			log.Errorf(err.Error())
+			log.WithError(err).WithField("workflow", wf.Name).WithField("namespace",wf.Namespace).Error("Failed to create WorkflowTaskSet")
 			return err
 		}
 		return nil

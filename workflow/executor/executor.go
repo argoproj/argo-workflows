@@ -745,7 +745,7 @@ func (we *WorkflowExecutor) updateTaskSetStatusWithOutputs(ctx context.Context, 
 		if err != nil {
 			return !errorsutil.IsTransientErr(err), err
 		}
-		if taskset.Status.Nodes == nil || len(taskset.Status.Nodes) == 0 {
+		if len(taskset.Status.Nodes) == 0 {
 			taskset.Status = wfv1.WorkflowTaskSetStatus{
 				Nodes: make(map[string]wfv1.NodeResult),
 			}
