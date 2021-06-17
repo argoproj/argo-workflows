@@ -59,7 +59,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Gladly](https://gladly.com/)
 1. [Glovo](https://www.glovoapp.com)
 1. [Google](https://www.google.com/intl/en/about/our-company/)
-1. [Graviti](https://www.graviti.cn)
+1. [Graviti](https://www.graviti.com)
 1. [Greenhouse](https://greenhouse.io)
 1. [Habx](https://www.habx.com/)
 1. [Helio](https://helio.exchange)
