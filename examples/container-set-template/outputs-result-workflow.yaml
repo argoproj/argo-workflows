@@ -27,8 +27,7 @@ spec:
               parameters:
                 - name: x
                   value: "{{tasks.a.outputs.result}}"
-            dependencies:
-              - a
+            depends: "a"
 
     - name: group
       containerSet:
