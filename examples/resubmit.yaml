@@ -17,10 +17,10 @@ spec:
       - name: B
         template: rand-fail-steps
       - name: C
-        dependencies: [B]
+        depends: "B"
         template: random-fail
       - name: D
-        dependencies: [A, B]
+        depends: "A && B"
         template: random-fail
 
   - name: rand-fail-steps
