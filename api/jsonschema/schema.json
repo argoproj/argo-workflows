@@ -198,6 +198,11 @@
       "type": "object"
     },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.HTTPSource": {
+      "properties": {
+        "serviceName": {
+          "type": "string"
+        }
+      },
       "type": "object"
     },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Handler": {
