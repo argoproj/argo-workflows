@@ -128,8 +128,8 @@ github.com/apache/openwhisk-client-go v0.0.0-20190915054138-716c6f973eb2/go.mod 
 github.com/apache/pulsar-client-go v0.1.1/go.mod h1:mlxC65KL1BLhGO2bnT9zWMttVzR2czVPb27D477YpyU=
 github.com/ardielle/ardielle-go v1.5.2/go.mod h1:I4hy1n795cUhaVt/ojz83SNVCYIGsAFAONtv2Dr7HUI=
 github.com/ardielle/ardielle-tools v1.5.4/go.mod h1:oZN+JRMnqGiIhrzkRN9l26Cej9dEx4jeNG6A+AdkShk=
-github.com/argoproj-labs/argo-dataflow v0.0.54 h1:tI5yBpqiw+n32BtOiWp5S7KC128WySO46r/JIM1oeno=
-github.com/argoproj-labs/argo-dataflow v0.0.54/go.mod h1:+QpDitBZSNH4uOypRFbV5WZeA7BLf9V4I9SEq+1G+W0=
+github.com/argoproj-labs/argo-dataflow v0.0.55 h1:lLikob50VoV4bcI8DRWDoMTriFhczh00l29H2cCaNTA=
+github.com/argoproj-labs/argo-dataflow v0.0.55/go.mod h1:cSzHGJWBrRY0T3unddmXNJvzlupXm9T7cd66tJEaklE=
 github.com/argoproj/argo-events v1.2.0 h1:CjF8hVUkeflhaOt9uWjJK6ai6b4pw0CCUUmOnmhWnNY=
 github.com/argoproj/argo-events v1.2.0/go.mod h1:eY+egQNBLXAz/AF4mqgHsMMa4Aur7frHjUfBg+RpX04=
 github.com/argoproj/pkg v0.8.1 h1:9h/sqAjUNyk0LaHkXR+2h94KNcSchvFX5aELNjXSOoc=
