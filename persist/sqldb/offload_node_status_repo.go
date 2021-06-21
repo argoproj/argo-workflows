@@ -26,7 +26,7 @@ type OffloadNodeStatusRepo interface {
 	Save(uid, namespace string, nodes wfv1.Nodes) (string, error)
 	Get(uid, version string) (wfv1.Nodes, error)
 	List(namespace string) (map[UUIDVersion]wfv1.Nodes, error)
-	ListOldOffloads(namespace string) ([]UUIDVersion, error)
+	ListOldOffloads(namespace string) (map[string][]string, error)
 	Delete(uid, version string) error
 	IsEnabled() bool
 }
@@ -178,7 +178,7 @@ func (wdc *nodeOffloadRepo) List(namespace string) (map[UUIDVersion]wfv1.Nodes, 
 	return res, nil
 }
 
-func (wdc *nodeOffloadRepo) ListOldOffloads(namespace string) ([]UUIDVersion, error) {
+func (wdc *nodeOffloadRepo) ListOldOffloads(namespace string) (map[string][]string, error) {
 	log.WithFields(log.Fields{"namespace": namespace}).Debug("Listing old offloaded nodes")
 	var records []UUIDVersion
 	err := wdc.session.
@@ -191,7 +191,11 @@ func (wdc *nodeOffloadRepo) ListOldOffloads(namespace string) ([]UUIDVersion, er
 	if err != nil {
 		return nil, err
 	}
-	return records, nil
+	x := make(map[string][]string)
+	for _, r := range records {
+		x[r.UID] = append(x[r.UID], r.Version)
+	}
+	return x, nil
 }
 
 func (wdc *nodeOffloadRepo) Delete(uid, version string) error {
