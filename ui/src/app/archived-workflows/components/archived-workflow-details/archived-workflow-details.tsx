@@ -226,7 +226,8 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                             value={{
                                 metadata: {
                                     namespace: this.state.workflow.metadata.namespace,
-                                    name: this.state.workflow.metadata.name
+                                    name: this.state.workflow.metadata.name,
+                                    labels: this.cloneLabelsSafely()                                    
                                 },
                                 spec: this.state.workflow.spec
                             }}
@@ -240,6 +241,15 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                 </SlidingPanel>
             </>
         );
+    }
+                            
+    private cloneLabelsSafely() {
+        //we want to copy all labels except the ones that are added during workflow execution
+        const labelsArray = Object.keys(this.state.metadata.labels)
+            .map(k => ({ key: k, value: this.state.metadata.labels[k] }))
+            .filter(e => !e.key.startsWith("workflows.argoproj.io/") || e.key == "workflows.argoproj.io/workflow-template");
+        //ninja JS to transform array into object
+        return labelsArray.reduce((obj, cur) => ({ ...obj, [cur.key]: cur.value }), {})
     }
 
     private get node() {
