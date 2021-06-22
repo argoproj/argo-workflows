@@ -948,21 +948,21 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames 
 			log.Info("Deadline monitor stopped")
 			return
 		case <-deadlineExceeded:
-			we.killMainContainer(ctx, containerNames, "Step exceeded its deadline")
+			we.killContainers(ctx, containerNames, "Step exceeded its deadline")
 			return
 		case <-terminate:
-			we.killMainContainer(ctx, containerNames, "Step terminated")
+			we.killContainers(ctx, containerNames, "Step terminated")
 			return
 		}
 	}
 }
 
-func (we *WorkflowExecutor) killMainContainer(ctx context.Context, containerNames []string, message string) {
-	log.Infof("Killing main container: %s", message)
+func (we *WorkflowExecutor) killContainers(ctx context.Context, containerNames []string, message string) {
+	log.Infof("Killing containers: %s", message)
 	util.WriteTeriminateMessage(message)
 	terminationGracePeriodDuration, _ := we.GetTerminationGracePeriodDuration(ctx)
 	if err := we.RuntimeExecutor.Kill(ctx, containerNames, terminationGracePeriodDuration); err != nil {
-		log.Warnf("Failed to kill main container: %v", err)
+		log.Warnf("Failed to kill %q: %v", containerNames, err)
 	}
 }
 
