@@ -1831,7 +1831,10 @@ func (m *CreateEventSourceRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthEventsource
 			}
 			if (iNdEx + skippy) > l {
@@ -1946,7 +1949,10 @@ func (m *GetEventSourceRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthEventsource
 			}
 			if (iNdEx + skippy) > l {
@@ -2065,7 +2071,10 @@ func (m *ListEventSourcesRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthEventsource
 			}
 			if (iNdEx + skippy) > l {
@@ -2216,7 +2225,10 @@ func (m *DeleteEventSourceRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthEventsource
 			}
 			if (iNdEx + skippy) > l {
@@ -2367,7 +2379,10 @@ func (m *UpdateEventSourceRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthEventsource
 			}
 			if (iNdEx + skippy) > l {
@@ -2614,7 +2629,10 @@ func (m *EventSourcesLogsRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthEventsource
 			}
 			if (iNdEx + skippy) > l {
@@ -2893,7 +2911,10 @@ func (m *LogEntry) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthEventsource
 			}
 			if (iNdEx + skippy) > l {
@@ -3012,7 +3033,10 @@ func (m *EventSourceWatchEvent) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthEventsource
 			}
 			if (iNdEx + skippy) > l {
@@ -3063,7 +3087,10 @@ func (m *EventSourceDeletedResponse) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthEventsource
 			}
 			if (iNdEx + skippy) > l {

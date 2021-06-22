@@ -35,11 +35,7 @@ func (woc *wfOperationCtx) executeTaskSet(ctx context.Context, nodeName string, 
 	mainCtr.Command = []string{"argoexec", "agent"}
 	// Append Agent in end of pod name to differentiate from normal podname
 	podName := woc.getAgentPodName()
-	_, err := woc.createWorkflowPod(ctx, podName, []apiv1.Container{*mainCtr}, tmpl, &createWorkflowPodOpts{
-		includeScriptOutput: false,
-		onExitPod:           opts.onExitTemplate,
-		executionDeadline:   opts.executionDeadline,
-	})
+	_, err := woc.createAgentPod(ctx, podName, []apiv1.Container{*mainCtr}, tmpl)
 	if err != nil {
 		return woc.requeueIfTransientErr(err, node.Name)
 	}
@@ -53,11 +49,11 @@ func (woc *wfOperationCtx) executeTaskSet(ctx context.Context, nodeName string, 
 }
 
 func (woc *wfOperationCtx) DeleteAgentPod(ctx context.Context) error {
-	//agentPodName := woc.getAgentPodName()
+	agentPodName := woc.getAgentPodName()
 	log.WithField("workflow", woc.wf.Name).WithField("namespace", woc.wf.Namespace).Infof("Deleting Agent Pod")
 	var err error
 	err = waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
-		//err = woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Delete(ctx, agentPodName, metav1.DeleteOptions{})
+		err = woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Delete(ctx, agentPodName, metav1.DeleteOptions{})
 		return apierr.IsNotFound(err) || err == nil, err
 	})
 	if err != nil {
@@ -93,6 +89,7 @@ func isAgentPod(pod *apiv1.Pod) bool {
 
 func (woc *wfOperationCtx) reconcileAgentNode(pod *apiv1.Pod) {
 	for _, node := range woc.wf.Status.Nodes {
+		// Update POD (Error and Failed) status to all HTTP Templates node status
 		if node.Type == wfv1.NodeTypeHTTP {
 			if newState := woc.assessNodeStatus(pod, &node); newState != nil {
 				if newState.Fulfilled() {

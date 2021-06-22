@@ -3,12 +3,10 @@ package taskset
 import (
 	"context"
 	"fmt"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/client-go/util/workqueue"
@@ -23,10 +21,6 @@ import (
 )
 
 type QueueWorkflowFunc func(string)
-
-const (
-	workflowTaskSetWorkers = 8
-)
 
 type WorkflowTaskSetManager struct {
 	wfTaskSetClient   v1alpha1.ArgoprojV1alpha1Interface
@@ -87,7 +81,7 @@ func (wfts WorkflowTaskSetManager) CreateTaskSet(ctx context.Context, wf *wfv1.W
 			return err == nil, err
 		})
 		if err != nil {
-			log.WithError(err).WithField("workflow", wf.Name).WithField("namespace",wf.Namespace).Error("Failed to create WorkflowTaskSet")
+			log.WithError(err).WithField("workflow", wf.Name).WithField("namespace", wf.Namespace).Error("Failed to create WorkflowTaskSet")
 			return err
 		}
 		return nil
@@ -127,40 +121,11 @@ func (wfts WorkflowTaskSetManager) Run(ctx context.Context) {
 			UpdateFunc: func(old, new interface{}) {
 				key, err := cache.MetaNamespaceKeyFunc(new)
 				if err == nil {
-					wfts.wfTaskSetQueue.Add(key)
+					wfts.queueWorkflowFunc(key)
 				}
 			},
 		})
 	go wfts.wfTaskSetInformer.Informer().Run(ctx.Done())
 
-	for i := 0; i < workflowTaskSetWorkers; i++ {
-		go wait.Until(wfts.taskSetWorkers, time.Second, ctx.Done())
-	}
 	<-ctx.Done()
-}
-
-func (wfts WorkflowTaskSetManager) taskSetWorkers() {
-	for wfts.processNextTaskSet() {
-	}
-}
-
-func (wfts WorkflowTaskSetManager) processNextTaskSet() bool {
-	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
-	key, quit := wfts.wfTaskSetQueue.Get()
-	if quit {
-		return false
-	}
-	defer wfts.wfTaskSetQueue.Done(key)
-	logCtx := log.WithField("TaskSet", key)
-	logCtx.Debugf("Processing %s", key)
-	_, exists, err := wfts.wfTaskSetInformer.Informer().GetIndexer().GetByKey(key.(string))
-	if err != nil {
-		logCtx.WithError(err).Error(fmt.Sprintf("Failed to get TaskSet '%s' from informer index", key))
-		return true
-	}
-	if !exists {
-		return true
-	}
-	wfts.queueWorkflowFunc(key.(string))
-	return true
 }
