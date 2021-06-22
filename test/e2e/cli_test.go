@@ -319,6 +319,17 @@ func (s *CLISuite) TestLogs() {
 	})
 }
 
+func toLines(x string) []string {
+	var y []string
+	for _, s := range strings.Split(x, "\n") {
+		println("s=", s)
+		if s != "" && !strings.Contains(s, "argo=true") {
+			y = append(y, s)
+		}
+	}
+	return y
+}
+
 // this test probably should be in the ArgoServerSuite, but it's just much easier to write the test
 // for the CLI
 func (s *CLISuite) TestLogProblems() {
@@ -331,8 +342,8 @@ func (s *CLISuite) TestLogProblems() {
 		// logs should come in order
 		RunCli([]string{"logs", "@latest", "--follow"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
-				lines := strings.Split(output, "\n")
-				if assert.Len(t, lines, 6) {
+				lines := toLines(output)
+				if assert.Len(t, lines, 5) {
 					assert.Contains(t, lines[0], "one")
 					assert.Contains(t, lines[1], "two")
 					assert.Contains(t, lines[2], "three")
@@ -347,8 +358,8 @@ func (s *CLISuite) TestLogProblems() {
 		Then().
 		RunCli([]string{"logs", "@latest"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
-				lines := strings.Split(output, "\n")
-				if assert.Len(t, lines, 6) {
+				lines := toLines(output)
+				if assert.Len(t, lines, 5) {
 					assert.Contains(t, lines[0], "one")
 					assert.Contains(t, lines[1], "two")
 					assert.Contains(t, lines[2], "three")

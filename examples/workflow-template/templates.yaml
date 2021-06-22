@@ -101,21 +101,21 @@ spec:
           - name: message
             value: inner-A
       - name: inner-B
-        dependencies: [inner-A]
+        depends: "inner-A"
         template: whalesay-template
         arguments:
           parameters:
           - name: message
             value: inner-B
       - name: inner-C
-        dependencies: [inner-A]
+        depends: "inner-A"
         template: whalesay-template
         arguments:
           parameters:
           - name: message
             value: inner-C
       - name: inner-D
-        dependencies: [inner-B, inner-C]
+        depends: "inner-B && inner-C"
         templateRef:
           name: workflow-template-whalesay-template
           template: whalesay-template

@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/pointer"
@@ -3204,7 +3205,16 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 		cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
 		// Validate the execution wfSpec
-		wfConditions, err := validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, woc.wf, validateOpts)
+		var wfConditions *wfv1.Conditions
+		err := wait.ExponentialBackoff(retry.DefaultRetry,
+			func() (bool, error) {
+				var validationErr error
+				wfConditions, validationErr = validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, woc.wf, validateOpts)
+				if validationErr != nil {
+					return !errorsutil.IsTransientErr(validationErr), validationErr
+				}
+				return true, nil
+			})
 		if err != nil {
 			msg := fmt.Sprintf("invalid spec: %s", err.Error())
 			woc.markWorkflowFailed(ctx, msg)
