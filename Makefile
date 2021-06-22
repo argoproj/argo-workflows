@@ -222,7 +222,7 @@ argoexec-image:
 
 %-image:
 	[ ! -e dist/$* ] || mv dist/$* .
-	docker buildx build -t $(IMAGE_NAMESPACE)/$*:$(VERSION) --target $* .
+	docker buildx build -t $(IMAGE_NAMESPACE)/$*:$(VERSION) --target $* --output=type=docker .
 	[ ! -e $* ] || mv $* dist/
 	docker run --rm -t $(IMAGE_NAMESPACE)/$*:$(VERSION) version
 	if [ $(K3D) = true ]; then k3d image import $(IMAGE_NAMESPACE)/$*:$(VERSION); fi
@@ -409,9 +409,6 @@ install: dist/kustomize
 	dist/kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/argoproj\//$(IMAGE_NAMESPACE)\//' | sed 's/containerRuntimeExecutor: docker/containerRuntimeExecutor: $(E2E_EXECUTOR)/' | kubectl -n $(KUBE_NAMESPACE) apply --prune -l app.kubernetes.io/part-of=argo -f -
 ifeq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml
-	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy workflow-controller
-	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy argo-server
-	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy minio
 endif
 ifeq ($(RUN_MODE),kubernetes)
 	# scale to 2 replicas so we touch upon leader election
@@ -461,7 +458,7 @@ $(GOPATH)/bin/goreman:
 ifeq ($(RUN_MODE),local)
 start: install controller cli $(GOPATH)/bin/goreman
 else
-start: install argoexec-image workflow-controller-image argocli-image
+start: install
 endif
 	@echo "starting STATIC_FILES=$(STATIC_FILES) (DEV_BRANCH=$(DEV_BRANCH), GIT_BRANCH=$(GIT_BRANCH)), AUTH_MODE=$(AUTH_MODE), RUN_MODE=$(RUN_MODE)"
 	# Check dex, minio, postgres and mysql are in hosts file

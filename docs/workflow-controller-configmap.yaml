@@ -293,9 +293,9 @@ data:
     clientSecret:
       name: client-secret-secret
       key: client-secret-key
-    # This is the redirect URL supplied to the provider (required). It must
+    # This is the redirect URL supplied to the provider (optional). It must
     # be in the form <argo-server-root-url>/oauth2/callback. It must be
-    # browser-accessible.
+    # browser-accessible. If omitted, will be automatically generated.
     redirectUrl: https://argo-server/oauth2/callback
     # Additional scopes to request. Typically needed for SSO RBAC. >= v2.12
     scopes:

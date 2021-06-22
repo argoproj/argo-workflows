@@ -6,7 +6,7 @@ echo
 
 tag=
 # we skip v0.0.0 tags, so these can be used on branches without updating release notes
-git tag -l 'v*' | grep -v 0.0.0 | sort -rV | while read last; do
+git tag -l 'v*' | grep -v 0.0.0 | sed 's/-rc/~/' | sort -rV | sed 's/~/-rc/' | while read last; do
   if [ "$tag" != "" ]; then
     echo "## $tag ($(git log $tag -n1 --format=%as))"
     echo
