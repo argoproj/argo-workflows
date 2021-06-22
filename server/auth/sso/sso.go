@@ -274,7 +274,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		Secure:   s.secure,
 	})
 	redirect := s.baseHRef
-	if cookie.Value != "" {
+	if strings.HasPrefix(cookie.Value, s.baseHRef) {
 		redirect = cookie.Value
 	}
 	http.Redirect(w, r, redirect, 302)
