@@ -44,15 +44,6 @@ spec:
 
 	socket := corev1.HostPathSocket
 	assert.ElementsMatch(t, []corev1.Volume{
-		{
-			Name: "podmetadata",
-			VolumeSource: corev1.VolumeSource{DownwardAPI: &corev1.DownwardAPIVolumeSource{
-				Items: []corev1.DownwardAPIVolumeFile{{
-					Path:     "annotations",
-					FieldRef: &corev1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "metadata.annotations"},
-				}},
-			}},
-		},
 		{Name: "docker-sock", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: "/var/run/docker.sock", Type: &socket}}},
 		{Name: "workspace", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 	}, pod.Spec.Volumes)
@@ -64,7 +55,6 @@ spec:
 		switch c.Name {
 		case common.WaitContainerName:
 			assert.ElementsMatch(t, []corev1.VolumeMount{
-				{Name: "podmetadata", MountPath: "/argo/podmetadata"},
 				{Name: "docker-sock", MountPath: "/var/run/docker.sock", ReadOnly: true},
 			}, c.VolumeMounts)
 		case "ctr-0":
@@ -120,15 +110,6 @@ spec:
 
 	socket := corev1.HostPathSocket
 	assert.ElementsMatch(t, []corev1.Volume{
-		{
-			Name: "podmetadata",
-			VolumeSource: corev1.VolumeSource{DownwardAPI: &corev1.DownwardAPIVolumeSource{
-				Items: []corev1.DownwardAPIVolumeFile{{
-					Path:     "annotations",
-					FieldRef: &corev1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "metadata.annotations"},
-				}},
-			}},
-		},
 		{Name: "docker-sock", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: "/var/run/docker.sock", Type: &socket}}},
 		{Name: "workspace", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 		{Name: "input-artifacts", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
@@ -137,7 +118,6 @@ spec:
 	if assert.Len(t, pod.Spec.InitContainers, 1) {
 		c := pod.Spec.InitContainers[0]
 		assert.ElementsMatch(t, []corev1.VolumeMount{
-			{Name: "podmetadata", MountPath: "/argo/podmetadata"},
 			{Name: "input-artifacts", MountPath: "/argo/inputs/artifacts"},
 			{Name: "workspace", MountPath: "/mainctrfs/workspace"},
 		}, c.VolumeMounts)
@@ -148,7 +128,6 @@ spec:
 		switch c.Name {
 		case common.WaitContainerName:
 			assert.ElementsMatch(t, []corev1.VolumeMount{
-				{Name: "podmetadata", MountPath: "/argo/podmetadata"},
 				{Name: "docker-sock", MountPath: "/var/run/docker.sock", ReadOnly: true},
 				{Name: "workspace", MountPath: "/mainctrfs/workspace"},
 				{Name: "input-artifacts", MountPath: "/mainctrfs/in/in-0", SubPath: "in-0"},
@@ -207,15 +186,6 @@ spec:
 
 	socket := corev1.HostPathSocket
 	assert.ElementsMatch(t, []corev1.Volume{
-		{
-			Name: "podmetadata",
-			VolumeSource: corev1.VolumeSource{DownwardAPI: &corev1.DownwardAPIVolumeSource{
-				Items: []corev1.DownwardAPIVolumeFile{{
-					Path:     "annotations",
-					FieldRef: &corev1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "metadata.annotations"},
-				}},
-			}},
-		},
 		{Name: "docker-sock", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: "/var/run/docker.sock", Type: &socket}}},
 		{Name: "workspace", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 	}, pod.Spec.Volumes)
@@ -227,7 +197,6 @@ spec:
 		switch c.Name {
 		case common.WaitContainerName:
 			assert.ElementsMatch(t, []corev1.VolumeMount{
-				{Name: "podmetadata", MountPath: "/argo/podmetadata"},
 				{Name: "docker-sock", MountPath: "/var/run/docker.sock", ReadOnly: true},
 				{Name: "workspace", MountPath: "/mainctrfs/workspace"},
 			}, c.VolumeMounts)
