@@ -17,16 +17,6 @@ const (
 	InitContainerName = "init"
 	WaitContainerName = "wait"
 
-	// PodMetadataVolumeName is the volume name defined in a workflow pod spec to expose pod metadata via downward API
-	PodMetadataVolumeName = "podmetadata"
-
-	// PodMetadataAnnotationsVolumePath is volume path for metadata.annotations in the downward API
-	PodMetadataAnnotationsVolumePath = "annotations"
-	// PodMetadataMountPath is the directory mount location for DownwardAPI volume containing pod metadata
-	PodMetadataMountPath = "/argo/" + PodMetadataVolumeName
-	// PodMetadataAnnotationsPath is the file path containing pod metadata annotations. Examined by executor
-	PodMetadataAnnotationsPath = PodMetadataMountPath + "/" + PodMetadataAnnotationsVolumePath
-
 	// DockerSockVolumeName is the volume name for the /var/run/docker.sock host path volume
 	DockerSockVolumeName = "docker-sock"
 
@@ -39,14 +29,8 @@ const (
 	AnnotationKeyRBACRule           = workflow.WorkflowFullName + "/rbac-rule"
 	AnnotationKeyRBACRulePrecedence = workflow.WorkflowFullName + "/rbac-rule-precedence"
 
-	// AnnotationKeyTemplate is the pod metadata annotation key containing the container template as JSON
-	AnnotationKeyTemplate = workflow.WorkflowFullName + "/template"
 	// AnnotationKeyOutputs is the pod metadata annotation key containing the container outputs
 	AnnotationKeyOutputs = workflow.WorkflowFullName + "/outputs"
-	// AnnotationKeyExecutionControl is the pod metadata annotation key containing execution control parameters
-	// set by the controller and obeyed by the executor. For example, the controller will use this annotation to
-	// signal the executors of daemoned containers that it should terminate.
-	AnnotationKeyExecutionControl = workflow.WorkflowFullName + "/execution"
 	// AnnotationKeyCronWfScheduledTime is the workflow metadata annotation key containing the time when the workflow
 	// was scheduled to run by CronWorkflow.
 	AnnotationKeyCronWfScheduledTime = workflow.WorkflowFullName + "/scheduled-time"
@@ -109,8 +93,12 @@ const (
 	EnvVarWorkflowName = "ARGO_WORKFLOW_NAME"
 	// EnvVarContainerName container the container's name for the current pod
 	EnvVarContainerName = "ARGO_CONTAINER_NAME"
+	// EnvVarDeadline is the deadline for the pod
+	EnvVarDeadline = "ARGO_DEADLINE"
 	// EnvVarIncludeScriptOutput capture the stdout and stderr
 	EnvVarIncludeScriptOutput = "ARGO_INCLUDE_SCRIPT_OUTPUT"
+	// EnvVarTemplate is the template
+	EnvVarTemplate = "ARGO_TEMPLATE"
 	// EnvVarContainerRuntimeExecutor contains the name of the container runtime executor to use, empty is equal to "docker"
 	EnvVarContainerRuntimeExecutor = "ARGO_CONTAINER_RUNTIME_EXECUTOR"
 	// EnvVarDownwardAPINodeIP is the envvar used to get the `status.hostIP`

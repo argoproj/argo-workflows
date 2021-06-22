@@ -175,7 +175,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 func (woc *wfOperationCtx) operate(ctx context.Context) {
 	defer func() {
 		if woc.wf.Status.Fulfilled() {
-			_ = woc.killDaemonedChildren(ctx, "")
+			woc.killDaemonedChildren("")
 		}
 		woc.persistUpdates(ctx)
 	}()
@@ -945,10 +945,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 		go func(pod *apiv1.Pod) {
 			defer wg.Done()
 			performAssessment(pod)
-			err = woc.applyExecutionControl(ctx, pod, wfNodesLock)
-			if err != nil {
-				woc.log.Warnf("Failed to apply execution control to pod %s", pod.Name)
-			}
+			woc.applyExecutionControl(ctx, pod, wfNodesLock)
 			<-parallelPodNum
 		}(pod)
 	}
@@ -1100,18 +1097,8 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		newDaemonStatus = pointer.BoolPtr(false)
 	case apiv1.PodRunning:
 		newPhase = wfv1.NodeRunning
-		tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
-		if !ok {
-			woc.log.WithField("pod", pod.ObjectMeta.Name).Warn("missing template annotation")
-			return nil
-		}
-		var tmpl wfv1.Template
-		err := json.Unmarshal([]byte(tmplStr), &tmpl)
-		if err != nil {
-			woc.log.WithError(err).WithField("pod", pod.ObjectMeta.Name).Warn("template annotation unreadable")
-			return nil
-		}
-		if tmpl.Daemon != nil && *tmpl.Daemon {
+		tmpl := woc.findTemplate(pod)
+		if tmpl != nil && tmpl.Daemon != nil && *tmpl.Daemon {
 			// pod is running and template is marked daemon. check if everything is ready
 			for _, ctrStatus := range pod.Status.ContainerStatuses {
 				if !ctrStatus.Ready {
@@ -1123,7 +1110,9 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			newDaemonStatus = pointer.BoolPtr(true)
 			woc.log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
 		}
-		woc.cleanUpPod(pod, tmpl)
+		if tmpl != nil {
+			woc.cleanUpPod(pod, *tmpl)
+		}
 	default:
 		newPhase = wfv1.NodeError
 		message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.ObjectMeta.Name, pod.Status.Phase)
