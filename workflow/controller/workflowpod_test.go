@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"testing"
@@ -267,8 +266,8 @@ func TestWFLevelExecutorServiceAccountName(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Equal(t, "exec-sa-token", pod.Spec.Volumes[2].Name)
-	assert.Equal(t, "foo-token", pod.Spec.Volumes[2].VolumeSource.Secret.SecretName)
+	assert.Equal(t, "exec-sa-token", pod.Spec.Volumes[1].Name)
+	assert.Equal(t, "foo-token", pod.Spec.Volumes[1].VolumeSource.Secret.SecretName)
 
 	waitCtr := pod.Spec.Containers[0]
 	verifyServiceAccountTokenVolumeMount(t, waitCtr, "exec-sa-token", "/var/run/secrets/kubernetes.io/serviceaccount")
@@ -294,8 +293,8 @@ func TestTmplLevelExecutorServiceAccountName(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Equal(t, "exec-sa-token", pod.Spec.Volumes[2].Name)
-	assert.Equal(t, "tmpl-token", pod.Spec.Volumes[2].VolumeSource.Secret.SecretName)
+	assert.Equal(t, "exec-sa-token", pod.Spec.Volumes[1].Name)
+	assert.Equal(t, "tmpl-token", pod.Spec.Volumes[1].VolumeSource.Secret.SecretName)
 
 	waitCtr := pod.Spec.Containers[0]
 	verifyServiceAccountTokenVolumeMount(t, waitCtr, "exec-sa-token", "/var/run/secrets/kubernetes.io/serviceaccount")
@@ -455,32 +454,6 @@ func setArtifactRepository(controller *WorkflowController, repo *config.Artifact
 	controller.artifactRepositories = armocks.DummyArtifactRepositories(repo)
 }
 
-// TestWorkflowControllerArchiveConfigUnresolvable verifies workflow fails when archive location has
-// unresolvable variables
-func TestWorkflowControllerArchiveConfigUnresolvable(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
-	wf.Spec.Templates[0].Outputs = wfv1.Outputs{
-		Artifacts: []wfv1.Artifact{
-			{
-				Name: "foo",
-				Path: "/tmp/file",
-			},
-		},
-	}
-	woc := newWoc(*wf)
-	ctx := context.Background()
-	setArtifactRepository(woc.controller, &config.ArtifactRepository{S3: &config.S3ArtifactRepository{
-		S3Bucket: wfv1.S3Bucket{
-			Bucket: "foo",
-		},
-		KeyFormat: "{{workflow.unresolvable}}",
-	}})
-	woc.operate(ctx)
-	pods, err := listPods(woc)
-	assert.NoError(t, err)
-	assert.Len(t, pods.Items, 0)
-}
-
 // TestConditionalNoAddArchiveLocation verifies we do not add archive location if it is not needed
 func TestConditionalNoAddArchiveLocation(t *testing.T) {
 	ctx := context.Background()
@@ -496,8 +469,8 @@ func TestConditionalNoAddArchiveLocation(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	var tmpl wfv1.Template
-	wfv1.MustUnmarshal([]byte(pod.Annotations[common.AnnotationKeyTemplate]), &tmpl)
+	tmpl, err := getPodTemplate(&pod)
+	assert.NoError(t, err)
 	assert.Nil(t, tmpl.ArchiveLocation)
 }
 
@@ -520,8 +493,8 @@ func TestConditionalAddArchiveLocationArchiveLogs(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	var tmpl wfv1.Template
-	wfv1.MustUnmarshal([]byte(pod.Annotations[common.AnnotationKeyTemplate]), &tmpl)
+	tmpl, err := getPodTemplate(&pod)
+	assert.NoError(t, err)
 	assert.NotNil(t, tmpl.ArchiveLocation)
 }
 
@@ -549,8 +522,8 @@ func TestConditionalArchiveLocation(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	var tmpl wfv1.Template
-	wfv1.MustUnmarshal([]byte(pod.Annotations[common.AnnotationKeyTemplate]), &tmpl)
+	tmpl, err := getPodTemplate(&pod)
+	assert.NoError(t, err)
 	assert.Nil(t, tmpl.ArchiveLocation)
 }
 
@@ -647,10 +620,9 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, pods.Items, 1)
 		pod := pods.Items[0]
-		assert.Equal(t, 3, len(pod.Spec.Volumes))
-		assert.Equal(t, "podmetadata", pod.Spec.Volumes[0].Name)
-		assert.Equal(t, "docker-sock", pod.Spec.Volumes[1].Name)
-		assert.Equal(t, "volume-name", pod.Spec.Volumes[2].Name)
+		assert.Equal(t, 2, len(pod.Spec.Volumes))
+		assert.Equal(t, "docker-sock", pod.Spec.Volumes[0].Name)
+		assert.Equal(t, "volume-name", pod.Spec.Volumes[1].Name)
 		assert.Equal(t, 1, len(pod.Spec.Containers[1].VolumeMounts))
 		assert.Equal(t, "volume-name", pod.Spec.Containers[1].VolumeMounts[0].Name)
 	})
@@ -671,9 +643,8 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, pods.Items, 1)
 		pod := pods.Items[0]
-		assert.Equal(t, 2, len(pod.Spec.Volumes))
-		assert.Equal(t, "podmetadata", pod.Spec.Volumes[0].Name)
-		assert.Equal(t, "volume-name", pod.Spec.Volumes[1].Name)
+		assert.Equal(t, 1, len(pod.Spec.Volumes))
+		assert.Equal(t, "volume-name", pod.Spec.Volumes[0].Name)
 		assert.Equal(t, 1, len(pod.Spec.Containers[1].VolumeMounts))
 		assert.Equal(t, "volume-name", pod.Spec.Containers[1].VolumeMounts[0].Name)
 	})
@@ -694,9 +665,8 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, pods.Items, 1)
 		pod := pods.Items[0]
-		assert.Equal(t, 2, len(pod.Spec.Volumes))
-		assert.Equal(t, "podmetadata", pod.Spec.Volumes[0].Name)
-		assert.Equal(t, "volume-name", pod.Spec.Volumes[1].Name)
+		assert.Equal(t, 1, len(pod.Spec.Volumes))
+		assert.Equal(t, "volume-name", pod.Spec.Volumes[0].Name)
 		assert.Equal(t, 1, len(pod.Spec.Containers[1].VolumeMounts))
 		assert.Equal(t, "volume-name", pod.Spec.Containers[1].VolumeMounts[0].Name)
 	})
@@ -717,25 +687,22 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, pods.Items, 1)
 		pod := pods.Items[0]
-		if assert.Len(t, pod.Spec.Volumes, 3) {
-			assert.Equal(t, "podmetadata", pod.Spec.Volumes[0].Name)
-			assert.Equal(t, "var-run-argo", pod.Spec.Volumes[1].Name)
-			assert.Equal(t, "volume-name", pod.Spec.Volumes[2].Name)
+		if assert.Len(t, pod.Spec.Volumes, 2) {
+			assert.Equal(t, "var-run-argo", pod.Spec.Volumes[0].Name)
+			assert.Equal(t, "volume-name", pod.Spec.Volumes[1].Name)
 		}
 		if assert.Len(t, pod.Spec.InitContainers, 1) {
 			init := pod.Spec.InitContainers[0]
-			if assert.Len(t, init.VolumeMounts, 2) {
-				assert.Equal(t, "podmetadata", init.VolumeMounts[0].Name)
-				assert.Equal(t, "var-run-argo", init.VolumeMounts[1].Name)
+			if assert.Len(t, init.VolumeMounts, 1) {
+				assert.Equal(t, "var-run-argo", init.VolumeMounts[0].Name)
 			}
 		}
 		containers := pod.Spec.Containers
 		if assert.Len(t, containers, 2) {
 			wait := containers[0]
-			if assert.Len(t, wait.VolumeMounts, 3) {
-				assert.Equal(t, "podmetadata", wait.VolumeMounts[0].Name)
-				assert.Equal(t, "volume-name", wait.VolumeMounts[1].Name)
-				assert.Equal(t, "var-run-argo", wait.VolumeMounts[2].Name)
+			if assert.Len(t, wait.VolumeMounts, 2) {
+				assert.Equal(t, "volume-name", wait.VolumeMounts[0].Name)
+				assert.Equal(t, "var-run-argo", wait.VolumeMounts[1].Name)
 			}
 			main := containers[1]
 			assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary", "--", "cowsay"}, main.Command)
@@ -786,9 +753,9 @@ func TestVolumesPodSubstitution(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Equal(t, 3, len(pod.Spec.Volumes))
-	assert.Equal(t, "volume-name", pod.Spec.Volumes[2].Name)
-	assert.Equal(t, "test-name", pod.Spec.Volumes[2].PersistentVolumeClaim.ClaimName)
+	assert.Equal(t, 2, len(pod.Spec.Volumes))
+	assert.Equal(t, "volume-name", pod.Spec.Volumes[1].Name)
+	assert.Equal(t, "test-name", pod.Spec.Volumes[1].PersistentVolumeClaim.ClaimName)
 	assert.Equal(t, 1, len(pod.Spec.Containers[1].VolumeMounts))
 	assert.Equal(t, "volume-name", pod.Spec.Containers[1].VolumeMounts[0].Name)
 }
@@ -824,8 +791,8 @@ func TestOutOfCluster(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, pods.Items, 1)
 		pod := pods.Items[0]
-		assert.Equal(t, "kubeconfig", pod.Spec.Volumes[1].Name)
-		assert.Equal(t, "foo", pod.Spec.Volumes[1].VolumeSource.Secret.SecretName)
+		assert.Equal(t, "kubeconfig", pod.Spec.Volumes[0].Name)
+		assert.Equal(t, "foo", pod.Spec.Volumes[0].VolumeSource.Secret.SecretName)
 
 		waitCtr := pod.Spec.Containers[0]
 		verifyKubeConfigVolume(waitCtr, "kubeconfig", "/kube/config")
@@ -850,8 +817,8 @@ func TestOutOfCluster(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, pods.Items, 1)
 		pod := pods.Items[0]
-		assert.Equal(t, "kube-config-secret", pod.Spec.Volumes[1].Name)
-		assert.Equal(t, "foo", pod.Spec.Volumes[1].VolumeSource.Secret.SecretName)
+		assert.Equal(t, "kube-config-secret", pod.Spec.Volumes[0].Name)
+		assert.Equal(t, "foo", pod.Spec.Volumes[0].VolumeSource.Secret.SecretName)
 
 		// kubeconfig volume is the last one
 		waitCtr := pod.Spec.Containers[0]
@@ -1372,9 +1339,9 @@ func TestHybridWfVolumesWindows(t *testing.T) {
 	ctx := context.Background()
 	mainCtr := woc.execWf.Spec.Templates[0].Container
 	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
-	assert.Equal(t, "\\\\.\\pipe\\docker_engine", pod.Spec.Containers[0].VolumeMounts[1].MountPath)
-	assert.Equal(t, false, pod.Spec.Containers[0].VolumeMounts[1].ReadOnly)
-	assert.Equal(t, (*apiv1.HostPathType)(nil), pod.Spec.Volumes[1].HostPath.Type)
+	assert.Equal(t, "\\\\.\\pipe\\docker_engine", pod.Spec.Containers[0].VolumeMounts[0].MountPath)
+	assert.Equal(t, false, pod.Spec.Containers[0].VolumeMounts[0].ReadOnly)
+	assert.Equal(t, (*apiv1.HostPathType)(nil), pod.Spec.Volumes[0].HostPath.Type)
 }
 
 func TestHybridWfVolumesLinux(t *testing.T) {
@@ -1384,9 +1351,9 @@ func TestHybridWfVolumesLinux(t *testing.T) {
 	ctx := context.Background()
 	mainCtr := woc.execWf.Spec.Templates[0].Container
 	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
-	assert.Equal(t, "/var/run/docker.sock", pod.Spec.Containers[0].VolumeMounts[1].MountPath)
-	assert.Equal(t, true, pod.Spec.Containers[0].VolumeMounts[1].ReadOnly)
-	assert.Equal(t, &hostPathSocket, pod.Spec.Volumes[1].HostPath.Type)
+	assert.Equal(t, "/var/run/docker.sock", pod.Spec.Containers[0].VolumeMounts[0].MountPath)
+	assert.Equal(t, true, pod.Spec.Containers[0].VolumeMounts[0].ReadOnly)
+	assert.Equal(t, &hostPathSocket, pod.Spec.Volumes[0].HostPath.Type)
 }
 
 var propagateMaxDuration = `
@@ -1408,14 +1375,13 @@ func TestPropagateMaxDuration(t *testing.T) {
 	// Ensure that volume mount is added when artifact is provided
 	tmpl := unmarshalTemplate(propagateMaxDuration)
 	woc := newWoc()
-	deadline := time.Now()
+	deadline := time.Time{}.Add(time.Second)
 	ctx := context.Background()
 	pod, err := woc.createWorkflowPod(ctx, tmpl.Name, []apiv1.Container{*tmpl.Container}, tmpl, &createWorkflowPodOpts{executionDeadline: deadline})
 	assert.NoError(t, err)
-	out, err := json.Marshal(map[string]time.Time{"deadline": deadline})
-	if assert.NoError(t, err) {
-		assert.Equal(t, string(out), pod.Annotations[common.AnnotationKeyExecutionControl])
-	}
+	v, err := getPodDeadline(pod)
+	assert.NoError(t, err)
+	assert.Equal(t, v, deadline)
 }
 
 var wfWithPodMetadata = `
@@ -1482,4 +1448,23 @@ func TestPodMetadata(t *testing.T) {
 	assert.Equal(t, "buzz", pod.ObjectMeta.Labels["workflow-level-pod-label"])
 	assert.Equal(t, "hello", pod.ObjectMeta.Annotations["template-level-pod-annotation"])
 	assert.Equal(t, "world", pod.ObjectMeta.Labels["template-level-pod-label"])
+}
+
+func TestGetDeadline(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	ctx := context.Background()
+	woc := newWoc(*wf)
+	mainCtr := woc.execWf.Spec.Templates[0].Container
+	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	deadline, _ := getPodDeadline(pod)
+	assert.Equal(t, time.Time{}, deadline)
+
+	executionDeadline := time.Now().Add(5 * time.Minute)
+	wf = wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	ctx = context.Background()
+	woc = newWoc(*wf)
+	mainCtr = woc.execWf.Spec.Templates[0].Container
+	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{executionDeadline: executionDeadline})
+	deadline, _ = getPodDeadline(pod)
+	assert.Equal(t, executionDeadline.Format(time.RFC3339), deadline.Format(time.RFC3339))
 }
