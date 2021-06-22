@@ -6949,3 +6949,111 @@ func TestWFGlobalArtifactNil(t *testing.T) {
 	woc.operate(ctx)
 	assert.NotPanics(t, func() { woc.operate(ctx) })
 }
+
+const testDagTwoChildrenWithNonExpectedNodeType = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: ingest-pipeline-cdw-m2fnc
+spec:
+  arguments:
+    parameters:
+    - name: job_name
+      value: all_the_data
+  entrypoint: ingest-task
+  templates:
+  - dag:
+      tasks:
+      - dependencies:
+        - sent
+        name: ing
+        template: ingest-collections
+      - dependencies:
+        - sent
+        name: mat
+        template: materializations
+      - arguments:
+          parameters:
+          - name: job_name
+            value: all_the_data
+        name: sent
+        template: sentinel
+    name: ingest-task
+  - container:
+      args:
+      - sleep 30; date; echo got sentinel for {{inputs.parameters.job_name}}
+      command:
+      - sh
+      - -c
+      image: alpine:3.13.5
+    inputs:
+      parameters:
+      - name: job_name
+    name: sentinel
+  - name: ingest-collections
+    steps:
+    - - name: get-ingest-collections
+        template: get-ingest-collections
+  - name: get-ingest-collections
+    script:
+      command:
+      - python
+      image: python:alpine3.6
+      source: |
+        import json
+  - name: materializations
+    steps:
+    - - name: get-materializations
+        template: get-materializations
+  - name: get-materializations
+    script:
+      command:
+      - python
+      image: python:alpine3.6
+      name: ""
+      resources: {}
+      source: |
+        import json
+status:
+  nodes:
+    ingest-pipeline-cdw-m2fnc:
+      children:
+      - ingest-pipeline-cdw-m2fnc-141178578
+      displayName: ingest-pipeline-cdw-m2fnc
+      id: ingest-pipeline-cdw-m2fnc
+      name: ingest-pipeline-cdw-m2fnc
+      phase: Running
+      startedAt: "2021-06-22T18:51:02Z"
+      templateName: ingest-task
+      templateScope: local/ingest-pipeline-cdw-m2fnc
+      type: DAG
+    ingest-pipeline-cdw-m2fnc-141178578:
+      boundaryID: ingest-pipeline-cdw-m2fnc
+      displayName: sent
+      finishedAt: "2021-06-22T18:51:34Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: ingest-pipeline-cdw-m2fnc-141178578
+      name: ingest-pipeline-cdw-m2fnc.sent
+      phase: Succeeded
+      startedAt: "2021-06-22T18:51:02Z"
+      templateName: sentinel
+      templateScope: local/ingest-pipeline-cdw-m2fnc
+      type: Pod
+  phase: Running
+  startedAt: "2021-06-22T18:51:02Z"
+`
+
+func TestDagTwoChildrenWithNonExpectedNodeType(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(testDagTwoChildrenWithNonExpectedNodeType)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+
+	sentNode := woc.wf.Status.Nodes.FindByDisplayName("sent")
+
+	//Ensure that both child tasks are labeled as children of the "sent" node
+	assert.Len(t, sentNode.Children, 2)
+}
