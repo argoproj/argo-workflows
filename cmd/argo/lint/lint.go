@@ -130,11 +130,15 @@ func Lint(ctx context.Context, opts *LintOptions) (*LintResults, error) {
 			case err != nil:
 				return err
 			case strings.HasPrefix(path, "/dev/") || lintExt[filepath.Ext(path)]:
-				f, err := os.Open(path)
+				f, err := os.Open(filepath.Clean(path))
 				if err != nil {
 					return err
 				}
-				defer f.Close()
+				defer func() {
+					if err := f.Close(); err != nil {
+						log.Fatalf("Error closing file[%s]: %v", path, err)
+					}
+				}()
 				r = f
 			case info.IsDir():
 				return nil // skip
