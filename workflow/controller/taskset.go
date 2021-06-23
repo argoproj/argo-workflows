@@ -168,8 +168,6 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context, nodeName string, 
 	// artifact location/path.
 	pod.ObjectMeta.Annotations = map[string]string{}
 
-	pod.ObjectMeta.Annotations[common.AnnotationKeyTemplate] = "null"
-
 	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, podName)
 
 	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
