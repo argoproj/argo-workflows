@@ -78,7 +78,7 @@ func NewEmissaryCommand() *cobra.Command {
 					for _, y := range x.Dependencies {
 						logger.Infof("waiting for dependency %q", y)
 						for {
-							data, err := ioutil.ReadFile(varRunArgo + "/ctr/" + y + "/exitcode")
+							data, err := ioutil.ReadFile(filepath.Clean(varRunArgo + "/ctr/" + y + "/exitcode"))
 							if os.IsNotExist(err) {
 								time.Sleep(time.Second)
 								continue
@@ -120,7 +120,7 @@ func NewEmissaryCommand() *cobra.Command {
 
 				stderr, err := os.Create(varRunArgo + "/ctr/" + containerName + "/stderr")
 				if err != nil {
-					return fmt.Errorf("failed to open stderr: %w", err)
+						return fmt.Errorf("failed to open stderr: %w", err)
 				}
 				defer func() { _ = stderr.Close() }()
 				command.Stderr = io.MultiWriter(os.Stderr, stderr)
@@ -132,7 +132,7 @@ func NewEmissaryCommand() *cobra.Command {
 
 			go func() {
 				for {
-					data, _ := ioutil.ReadFile(varRunArgo + "/ctr/" + containerName + "/signal")
+					data, _ := ioutil.ReadFile(filepath.Clean(varRunArgo + "/ctr/" + containerName + "/signal"))
 					_ = os.Remove(varRunArgo + "/ctr/" + containerName + "/signal")
 					s, _ := strconv.Atoi(string(data))
 					if s > 0 {
@@ -212,7 +212,7 @@ func saveParameter(srcPath string) error {
 		logger.Infof("no need to save parameter - on overlapping volume: %s", srcPath)
 		return nil
 	}
-	src, err := os.Open(srcPath)
+	src, err := os.Open(filepath.Clean(srcPath))
 	if os.IsNotExist(err) { // might be optional, so we ignore
 		logger.WithError(err).Errorf("cannot save parameter %s", srcPath)
 		return nil
