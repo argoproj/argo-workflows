@@ -5,7 +5,7 @@ import {Icon} from '../../../shared/components/icon';
 import {parseResourceQuantity} from '../../../shared/resource-quantity';
 import {recent} from './recent';
 
-type Type = '' | 'cat' | 'container' | 'expand' | 'filter' | 'flatten' | 'git' | 'group' | 'handler' | 'map';
+type Type = '' | 'cat' | 'container' | 'dedupe' | 'expand' | 'filter' | 'flatten' | 'git' | 'group' | 'handler' | 'map';
 
 const stepIcon = (type: Type): Icon => {
     switch (type) {
@@ -13,6 +13,8 @@ const stepIcon = (type: Type): Icon => {
             return 'arrows-alt-h';
         case 'container':
             return 'cube';
+        case 'dedupe':
+            return 'filter';
         case 'expand':
             return 'expand';
         case 'filter':
@@ -61,6 +63,8 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
             ? 'cat'
             : spec.container
             ? 'container'
+            : spec.dedupe
+            ? 'dedupe'
             : spec.expand
             ? 'expand'
             : spec.filter

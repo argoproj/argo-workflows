@@ -120,6 +120,7 @@ export const PipelineDetails = ({history, match, location}: RouteComponentProps<
                                 cat: true,
                                 container: true,
                                 cron: true,
+                                dedupe: true,
                                 expand: true,
                                 filter: true,
                                 flatten: true,

@@ -12,6 +12,7 @@ export interface Step {
         name: string;
         cat?: {};
         container?: {};
+        dedupe?: {};
         expand?: {};
         filter?: string;
         flatten?: {};
