@@ -120,7 +120,7 @@ func NewEmissaryCommand() *cobra.Command {
 
 				stderr, err := os.Create(varRunArgo + "/ctr/" + containerName + "/stderr")
 				if err != nil {
-						return fmt.Errorf("failed to open stderr: %w", err)
+					return fmt.Errorf("failed to open stderr: %w", err)
 				}
 				defer func() { _ = stderr.Close() }()
 				command.Stderr = io.MultiWriter(os.Stderr, stderr)
