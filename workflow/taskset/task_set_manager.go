@@ -88,7 +88,7 @@ func (wfts WorkflowTaskSetManager) CreateTaskSet(ctx context.Context, wf *wfv1.W
 	} else {
 		taskSet, err := util.UnstructuredToTaskSet(obj)
 		if err != nil {
-			log.WithError(err).Error(fmt.Sprintf("Failed to get TaskSet '%s' from informer index", key))
+			log.WithError(err).Error(fmt.Errorf("Failed to get TaskSet '%s' from informer index", key))
 			return err
 		}
 		task := wfv1.Task{
@@ -104,7 +104,7 @@ func (wfts WorkflowTaskSetManager) CreateTaskSet(ctx context.Context, wf *wfv1.W
 			})
 
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to update TaskSet. %v", err)
 			}
 		}
 
