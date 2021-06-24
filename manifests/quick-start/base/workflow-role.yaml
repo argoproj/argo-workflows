@@ -58,3 +58,13 @@ rules:
       - list
       - patch
       - update
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - workflowtasksets
+      - workflowtasksets/status
+    verbs:
+      - watch
+      - get
+      - patch
+      - update

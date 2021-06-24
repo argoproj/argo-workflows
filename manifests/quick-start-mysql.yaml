@@ -494,6 +494,16 @@ rules:
   - list
   - patch
   - update
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflowtasksets
+  - workflowtasksets/status
+  verbs:
+  - watch
+  - get
+  - patch
+  - update
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
