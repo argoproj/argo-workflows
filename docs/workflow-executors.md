@@ -39,7 +39,7 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
 * Artifacts:
     * Output artifacts must be saved on volumes (e.g. [emptyDir](empty-dir.md)) and not the base image layer (e.g. `/tmp`)
 * Step/Task result:
-    * Warnings that normally goes to stderr will get captured in a step or a dag task's `outputs.result`. May require changes if your pipeline is condition on `steps/tasks.name.outputs.result`
+    * Warnings that normally goes to stderr will get captured in a step or a dag task's `outputs.result`. May require changes if your pipeline is conditioned on `steps/tasks.name.outputs.result`
 * Configuration:
     * Additional Kubelet configuration maybe needed
 
@@ -58,7 +58,7 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
 * Artifacts:
     * Output artifacts must be saved on volumes (e.g. [emptyDir](empty-dir.md)) and not the base image layer (e.g. `/tmp`)
 * Step/Task result:
-    * Warnings that normally goes to stderr will get captured in a step or a dag task's `outputs.result`. May require changes if your pipeline is condition on `steps/tasks.name.outputs.result`
+    * Warnings that normally goes to stderr will get captured in a step or a dag task's `outputs.result`. May require changes if your pipeline is conditioned on `steps/tasks.name.outputs.result`
 * Configuration:
     * No additional configuration needed.
 
