@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
@@ -14,11 +15,10 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/util/retry"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
-
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -164,6 +164,20 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context, nodeName string, 
 	pod.Spec.Containers = append(pod.Spec.Containers, *waitCtr)
 
 	pod.Spec.Containers = append(pod.Spec.Containers, mainCtrs...)
+
+	envVars := []apiv1.EnvVar{
+		{Name: common.EnvVarTemplate, Value: wfv1.MustMarshallJSON(tmpl)},
+		{Name: common.EnvVarWorkflowName, Value: woc.wf.Name},
+		{Name: common.EnvVarPodName, Value: podName},
+		{Name: common.EnvVarDeadline, Value: woc.getDeadline(&createWorkflowPodOpts{}).Format(time.RFC3339)},
+	}
+
+	for i, c := range pod.Spec.Containers {
+		c.Env = append(c.Env, apiv1.EnvVar{Name: common.EnvVarContainerName, Value: c.Name})
+		c.Env = append(c.Env, envVars...)
+		pod.Spec.Containers[i] = c
+	}
+
 	// Set the container template JSON in pod annotations, which executor examines for things like
 	// artifact location/path.
 	pod.ObjectMeta.Annotations = map[string]string{}

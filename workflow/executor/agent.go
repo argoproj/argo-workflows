@@ -11,9 +11,12 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/util/retry"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util"
+	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	argowait "github.com/argoproj/argo-workflows/v3/util/wait"
 )
 
 func (we *WorkflowExecutor) Agent(ctx context.Context) error {
@@ -36,13 +39,11 @@ func (we *WorkflowExecutor) Agent(ctx context.Context) error {
 			if !ok {
 				return apierr.FromObject(event.Object)
 			}
-
-			for _, task := range obj.Spec.Tasks {
-
+			tasks := obj.Spec.Tasks.DeepCopy()
+			for _, task := range tasks {
 				if len(obj.Status.Nodes) > 0 && obj.Status.Nodes[task.NodeID].Fulfilled() {
 					continue
 				}
-
 				switch {
 				case task.Template.HTTP != nil:
 					result := wfv1.NodeResult{}
@@ -58,12 +59,19 @@ func (we *WorkflowExecutor) Agent(ctx context.Context) error {
 						obj.Status.Nodes = map[string]wfv1.NodeResult{}
 					}
 					obj.Status.Nodes[task.NodeID] = result
-					ts, err := taskSetInterface.UpdateStatus(ctx, obj, metav1.UpdateOptions{})
-					if err != nil {
-						return err
-					}
+					err = argowait.Backoff(retry.DefaultBackoff, func() (bool, error) {
+						obj, err = taskSetInterface.UpdateStatus(ctx, obj, metav1.UpdateOptions{})
 
-					log.WithField("taskset", ts).Info("got back task set")
+						if errorsutil.IsTransientErr(err) || apierr.IsConflict(err) {
+							return false, err
+						}
+
+						log.WithField("taskset", obj).Info("got back task set")
+						return true, err
+					})
+					if err != nil {
+						log.WithError(err).WithField("taskset", obj).Errorf("failed to update the taskset")
+					}
 				default:
 					return fmt.Errorf("agent cannot execute: unknown task type")
 				}

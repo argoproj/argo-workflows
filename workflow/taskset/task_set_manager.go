@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	log "github.com/sirupsen/logrus"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/tools/cache"
@@ -17,7 +18,6 @@ import (
 	informer "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
 	argowait "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 type QueueWorkflowFunc func(string)
@@ -42,53 +42,42 @@ func (wfts WorkflowTaskSetManager) CreateTaskSet(ctx context.Context, wf *wfv1.W
 	key := fmt.Sprintf("%s/%s", wf.Namespace, wf.Name)
 	log.WithField("workflow", wf.Name).WithField("namespace", wf.Namespace).WithField("TaskSet", key).Infof("Creating TaskSet")
 
-	obj, exists, err := wfts.wfTaskSetInformer.Informer().GetIndexer().GetByKey(key)
-	if err != nil {
-		log.WithError(err).Error(fmt.Sprintf("Failed to get TaskSet '%s' from informer index", key))
-		return err
+	taskSet := wfv1.WorkflowTaskSet{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       workflow.WorkflowTaskSetKind,
+			APIVersion: workflow.APIVersion,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: wf.Namespace,
+			Name:      wf.Name,
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: wf.APIVersion,
+					Kind:       wf.Kind,
+					UID:        wf.UID,
+					Name:       wf.Name,
+				},
+			},
+		},
+		Spec: wfv1.WorkflowTaskSetSpec{
+			Tasks: []wfv1.Task{
+				{
+					NodeID:   nodeId,
+					Template: tmpl,
+				},
+			},
+		},
 	}
-
-	if !exists {
-		taskSet := wfv1.WorkflowTaskSet{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       workflow.WorkflowTaskSetKind,
-				APIVersion: workflow.APIVersion,
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: wf.Namespace,
-				Name:      wf.Name,
-				OwnerReferences: []metav1.OwnerReference{
-					{
-						APIVersion: wf.APIVersion,
-						Kind:       wf.Kind,
-						UID:        wf.UID,
-						Name:       wf.Name,
-					},
-				},
-			},
-			Spec: wfv1.WorkflowTaskSetSpec{
-				Tasks: []wfv1.Task{
-					{
-						NodeID:   nodeId,
-						Template: tmpl,
-					},
-				},
-			},
-		}
-		err = argowait.Backoff(retry.DefaultBackoff, func() (bool, error) {
-			var err error
-			_, err = wfts.wfTaskSetClient.WorkflowTaskSets(wf.Namespace).Create(ctx, &taskSet, metav1.CreateOptions{})
-			return err == nil, err
-		})
+	log.WithField("workflow", wf.Name).WithField("namespace", wf.Namespace).WithField("TaskSet", key).Debug("creating new taskset")
+	err := argowait.Backoff(retry.DefaultBackoff, func() (bool, error) {
+		var err error
+		_, err = wfts.wfTaskSetClient.WorkflowTaskSets(wf.Namespace).Create(ctx, &taskSet, metav1.CreateOptions{})
+		return err == nil || apierr.IsConflict(err) || apierr.IsAlreadyExists(err), err
+	})
+	if apierr.IsConflict(err) || apierr.IsAlreadyExists(err) {
+		taskSet, err := wfts.wfTaskSetClient.WorkflowTaskSets(wf.Namespace).Get(ctx, wf.Name, metav1.GetOptions{})
 		if err != nil {
-			log.WithError(err).WithField("workflow", wf.Name).WithField("namespace", wf.Namespace).Error("Failed to create WorkflowTaskSet")
-			return err
-		}
-		return nil
-	} else {
-		taskSet, err := util.UnstructuredToTaskSet(obj)
-		if err != nil {
-			log.WithError(err).Error(fmt.Errorf("Failed to get TaskSet '%s' from informer index", key))
+			log.WithError(err).Error(fmt.Errorf("failed to get TaskSet '%s' from informer index", key))
 			return err
 		}
 		task := wfv1.Task{
@@ -96,6 +85,7 @@ func (wfts WorkflowTaskSetManager) CreateTaskSet(ctx context.Context, wf *wfv1.W
 			Template: tmpl,
 		}
 		if existing := taskSet.Spec.Tasks.GetTask(nodeId); existing == nil {
+			log.WithField("workflow", wf.Name).WithField("namespace", wf.Namespace).WithField("TaskSet", key).Debug("updating existing taskset")
 			taskSet.Spec.Tasks = append(taskSet.Spec.Tasks, task)
 			err = argowait.Backoff(retry.DefaultBackoff, func() (bool, error) {
 				var err error
@@ -107,7 +97,9 @@ func (wfts WorkflowTaskSetManager) CreateTaskSet(ctx context.Context, wf *wfv1.W
 				return fmt.Errorf("failed to update TaskSet. %v", err)
 			}
 		}
-
+	} else if err != nil {
+		log.WithError(err).WithField("workflow", wf.Name).WithField("namespace", wf.Namespace).Error("Failed to create WorkflowTaskSet")
+		return err
 	}
 	return nil
 }
