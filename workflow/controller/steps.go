@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -114,7 +115,10 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 				var childNodes []wfv1.NodeStatus
 				for _, node := range woc.wf.Status.Nodes {
 					if node.BoundaryID == stepsCtx.boundaryID && strings.HasPrefix(node.Name, childNodeName+"(") && node.Type != wfv1.NodeTypeSkipped {
-						childNodes = append(childNodes, node)
+						matched, err := regexp.Match(".*\\([0-9]+\\)$", []byte(node.Name))
+						if err == nil && matched {
+							childNodes = append(childNodes, node)
+						}
 					}
 				}
 				if len(childNodes) > 0 {
