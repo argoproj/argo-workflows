@@ -2270,7 +2270,7 @@ func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
 		return []string{node.ID}
 	case wfv1.NodeTypePod:
 		// If a pod does not come from a container set, its outbound node is itself
-		if woc.execWf.GetTemplateByName(node.TemplateName).ContainerSet == nil {
+		if woc.execWf.GetTemplateByName(node.TemplateName).GetType() != wfv1.TemplateTypeContainerSet {
 			return []string{node.ID}
 		}
 		// If a pod comes from a container set, it should be treated as a container or task group
