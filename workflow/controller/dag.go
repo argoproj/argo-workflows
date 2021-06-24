@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -513,7 +514,10 @@ func (woc *wfOperationCtx) buildLocalScopeFromTask(dagCtx *dagContext, task *wfv
 			var ancestorNodes []wfv1.NodeStatus
 			for _, node := range woc.wf.Status.Nodes {
 				if node.BoundaryID == dagCtx.boundaryID && strings.HasPrefix(node.Name, ancestorNode.Name+"(") {
-					ancestorNodes = append(ancestorNodes, node)
+					matched, err := regexp.Match(".*\\([0-9]+\\)$", []byte(node.Name))
+					if err == nil && matched {
+						ancestorNodes = append(ancestorNodes, node)
+					}
 				}
 			}
 			_, _, templateStored, err := dagCtx.tmplCtx.ResolveTemplate(ancestorNode)
