@@ -1,8 +1,6 @@
 package common
 
 import (
-	"time"
-
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -175,16 +173,6 @@ var AnnotationKeyKillCmd = func(containerName string) string { return workflow.W
 
 // GlobalVarWorkflowRootTags is a list of root tags in workflow which could be used for variable reference
 var GlobalVarValidWorkflowVariablePrefix = []string{"item.", "steps.", "inputs.", "outputs.", "pod.", "workflow.", "tasks."}
-
-// ExecutionControl contains execution control parameters for executor to decide how to execute the container
-type ExecutionControl struct {
-	// Deadline is a max timestamp in which an executor can run the container before terminating it
-	// It is used to signal the executor to terminate a daemoned container. In the future it will be
-	// used to support workflow or steps/dag level timeouts.
-	Deadline *time.Time `json:"deadline,omitempty"`
-	// IncludeScriptOutput is containing flag to include script output
-	IncludeScriptOutput bool `json:"includeScriptOutput,omitempty"`
-}
 
 func UnstructuredHasCompletedLabel(obj interface{}) bool {
 	if wf, ok := obj.(*unstructured.Unstructured); ok {
