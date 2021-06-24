@@ -507,7 +507,7 @@ func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
 		} else {
 			log.Infof("Copying %s from volume mount", param.ValueFrom.Path)
 			mountedPath := filepath.Join(common.ExecutorMainFilesystemDir, param.ValueFrom.Path)
-			data, err := ioutil.ReadFile(mountedPath)
+			data, err := ioutil.ReadFile(filepath.Clean(mountedPath))
 			if err != nil {
 				// We have a default value to use instead of returning an error
 				if param.ValueFrom.Default != nil {
@@ -555,7 +555,7 @@ func (we *WorkflowExecutor) SaveLogs(ctx context.Context) (*wfv1.Artifact, error
 
 // GetSecret will retrieve the Secrets from VolumeMount
 func (we *WorkflowExecutor) GetSecret(ctx context.Context, accessKeyName string, accessKey string) (string, error) {
-	file, err := ioutil.ReadFile(filepath.Join(common.SecretVolMountPath, accessKeyName, accessKey))
+	file, err := ioutil.ReadFile(filepath.Clean(filepath.Join(common.SecretVolMountPath, accessKeyName, accessKey)))
 	if err != nil {
 		return "", err
 	}
@@ -789,11 +789,15 @@ func (we *WorkflowExecutor) AddAnnotation(ctx context.Context, key, value string
 // isTarball returns whether or not the file is a tarball
 func isTarball(filePath string) (bool, error) {
 	log.Infof("Detecting if %s is a tarball", filePath)
-	f, err := os.Open(filePath)
+	f, err := os.Open(filepath.Clean(filePath))
 	if err != nil {
 		return false, err
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Fatalf("Error closing file[%s]: %v", filePath, err)
+		}
+	}()
 	gzr, err := gzip.NewReader(f)
 	if err != nil {
 		return false, nil
@@ -854,7 +858,7 @@ func unzip(zipPath string, destPath string) error {
 				if err = os.MkdirAll(filepath.Dir(path), f.Mode()); err != nil {
 					return err
 				}
-				f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+				f, err := os.OpenFile(filepath.Clean(path), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 				if err != nil {
 					return err
 				}

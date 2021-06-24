@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -82,7 +83,7 @@ func inferObjectSelfLink(obj unstructured.Unstructured) string {
 }
 
 func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath string, flags []string) ([]string, error) {
-	buff, err := ioutil.ReadFile(manifestPath)
+	buff, err := ioutil.ReadFile(filepath.Clean(manifestPath))
 	if err != nil {
 		return []string{}, errors.New(errors.CodeBadRequest, err.Error())
 	}

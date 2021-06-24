@@ -3,6 +3,7 @@ package fixtures
 import (
 	"fmt"
 	"io/ioutil"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -71,7 +72,7 @@ func (g *Given) readResource(text string, v metav1.Object) {
 	}
 
 	{
-		file, err := ioutil.ReadFile(file)
+		file, err := ioutil.ReadFile(filepath.Clean(file))
 		if err != nil {
 			g.t.Fatal(err)
 		}
