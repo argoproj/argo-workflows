@@ -1233,11 +1233,6 @@ func TestAssessNodeStatus(t *testing.T) {
 	}, {
 		name: "pod running",
 		pod: &apiv1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{
-					common.AnnotationKeyTemplate: "{}",
-				},
-			},
 			Status: apiv1.PodStatus{
 				Phase: apiv1.PodRunning,
 			},
@@ -1263,6 +1258,153 @@ func TestAssessNodeStatus(t *testing.T) {
 			woc := newWorkflowOperationCtx(wf, controller)
 			got := woc.assessNodeStatus(tt.pod, tt.node)
 			assert.Equal(t, tt.want, got.Phase)
+		})
+	}
+}
+
+func getPodTemplate(pod *apiv1.Pod) (*wfv1.Template, error) {
+	tmpl := &wfv1.Template{}
+	for _, c := range pod.Spec.Containers {
+		for _, e := range c.Env {
+			if e.Name == common.EnvVarTemplate {
+				return tmpl, json.Unmarshal([]byte(e.Value), tmpl)
+			}
+		}
+	}
+	return nil, fmt.Errorf("not found")
+}
+
+func getPodDeadline(pod *apiv1.Pod) (time.Time, error) {
+	for _, c := range pod.Spec.Containers {
+		for _, e := range c.Env {
+			if e.Name == common.EnvVarDeadline {
+				return time.Parse(time.RFC3339, e.Value)
+			}
+		}
+	}
+	return time.Time{}, fmt.Errorf("not found")
+}
+
+func TestGetPodTemplate(t *testing.T) {
+	tests := []struct {
+		name string
+		pod  *apiv1.Pod
+		want *wfv1.Template
+	}{{
+		name: "missing template",
+		pod: &apiv1.Pod{
+			Spec: apiv1.PodSpec{
+				Containers: []apiv1.Container{
+					{
+						Env: []apiv1.EnvVar{},
+					},
+				},
+			},
+		},
+		want: nil,
+	}, {
+		name: "empty template",
+		pod: &apiv1.Pod{
+			Spec: apiv1.PodSpec{
+				Containers: []apiv1.Container{
+					{
+						Env: []apiv1.EnvVar{
+							{
+								Name:  common.EnvVarTemplate,
+								Value: "{}",
+							},
+						},
+					},
+				},
+			},
+		},
+		want: &wfv1.Template{},
+	}, {
+		name: "simple template",
+		pod: &apiv1.Pod{
+			Spec: apiv1.PodSpec{
+				Containers: []apiv1.Container{
+					{
+						Env: []apiv1.EnvVar{
+							{
+								Name:  common.EnvVarTemplate,
+								Value: "{\"name\":\"argosay\"}",
+							},
+						},
+					},
+				},
+			},
+		},
+		want: &wfv1.Template{
+			Name: "argosay",
+		},
+	}}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, _ := getPodTemplate(tt.pod)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestGetPodDeadline(t *testing.T) {
+	tests := []struct {
+		name string
+		pod  *apiv1.Pod
+		want time.Time
+	}{{
+		name: "missing deadline",
+		pod: &apiv1.Pod{
+			Spec: apiv1.PodSpec{
+				Containers: []apiv1.Container{
+					{
+						Env: []apiv1.EnvVar{},
+					},
+				},
+			},
+		},
+		want: time.Time{},
+	}, {
+		name: "zero deadline",
+		pod: &apiv1.Pod{
+			Spec: apiv1.PodSpec{
+				Containers: []apiv1.Container{
+					{
+						Env: []apiv1.EnvVar{
+							{
+								Name:  common.EnvVarDeadline,
+								Value: "0001-01-01T00:00:00Z",
+							},
+						},
+					},
+				},
+			},
+		},
+		want: time.Time{},
+	}, {
+		name: "a deadline",
+		pod: &apiv1.Pod{
+			Spec: apiv1.PodSpec{
+				Containers: []apiv1.Container{
+					{
+						Env: []apiv1.EnvVar{
+							{
+								Name:  common.EnvVarDeadline,
+								Value: "2021-01-21T01:02:03Z",
+							},
+						},
+					},
+				},
+			},
+		},
+		want: time.Date(2021, time.Month(1), 21, 1, 2, 3, 0, time.UTC),
+	}}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, _ := getPodDeadline(tt.pod)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -2569,10 +2711,9 @@ func TestResolvePlaceholdersInOutputValues(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
 
-	templateString := pods.Items[0].ObjectMeta.Annotations["workflows.argoproj.io/template"]
-	var template wfv1.Template
-	wfv1.MustUnmarshal([]byte(templateString), &template)
-	parameterValue := template.Outputs.Parameters[0].Value
+	tmpl, err := getPodTemplate(&pods.Items[0])
+	assert.NoError(t, err)
+	parameterValue := tmpl.Outputs.Parameters[0].Value
 	assert.NotNil(t, parameterValue)
 	assert.Equal(t, "output-value-placeholders-wf", parameterValue.String())
 }
@@ -2606,9 +2747,8 @@ func TestResolvePodNameInRetries(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
 
-	templateString := pods.Items[0].ObjectMeta.Annotations["workflows.argoproj.io/template"]
-	var template wfv1.Template
-	wfv1.MustUnmarshal([]byte(templateString), &template)
+	template, err := getPodTemplate(&pods.Items[0])
+	assert.NoError(t, err)
 	parameterValue := template.Outputs.Parameters[0].Value
 	assert.NotNil(t, parameterValue)
 	assert.Equal(t, "output-value-placeholders-wf-3033990984", parameterValue.String())
@@ -2707,19 +2847,16 @@ func TestResourceTemplate(t *testing.T) {
 	if !assert.NoError(t, err) {
 		t.Fatal(err)
 	}
-	tmplStr := pod.Annotations[common.AnnotationKeyTemplate]
-	tmpl := wfv1.Template{}
-	err = yaml.Unmarshal([]byte(tmplStr), &tmpl)
-	if !assert.NoError(t, err) {
-		t.Fatal(err)
+	tmpl, err := getPodTemplate(pod)
+	if assert.NoError(t, err) {
+		cm := apiv1.ConfigMap{}
+		err = yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &cm)
+		if !assert.NoError(t, err) {
+			t.Fatal(err)
+		}
+		assert.Equal(t, "resource-cm", cm.Name)
+		assert.Empty(t, cm.ObjectMeta.OwnerReferences)
 	}
-	cm := apiv1.ConfigMap{}
-	err = yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &cm)
-	if !assert.NoError(t, err) {
-		t.Fatal(err)
-	}
-	assert.Equal(t, "resource-cm", cm.Name)
-	assert.Empty(t, cm.ObjectMeta.OwnerReferences)
 }
 
 var resourceWithOwnerReferenceTemplate = `
@@ -2801,9 +2938,7 @@ func TestResourceWithOwnerReferenceTemplate(t *testing.T) {
 
 	objectMetas := map[string]metav1.ObjectMeta{}
 	for _, pod := range pods.Items {
-		tmplStr := pod.Annotations[common.AnnotationKeyTemplate]
-		tmpl := wfv1.Template{}
-		err = yaml.Unmarshal([]byte(tmplStr), &tmpl)
+		tmpl, err := getPodTemplate(&pod)
 		if !assert.NoError(t, err) {
 			t.Fatal(err)
 		}
@@ -3835,9 +3970,8 @@ func TestResolvePlaceholdersInGlobalVariables(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
 
-	templateString := pods.Items[0].ObjectMeta.Annotations["workflows.argoproj.io/template"]
-	var template wfv1.Template
-	wfv1.MustUnmarshal([]byte(templateString), &template)
+	template, err := getPodTemplate(&pods.Items[0])
+	assert.NoError(t, err)
 	namespaceValue := template.Outputs.Parameters[0].Value
 	assert.NotNil(t, namespaceValue)
 	assert.Equal(t, "testNamespace", namespaceValue.String())
@@ -5668,8 +5802,8 @@ func TestWFWithRetryAndWithParam(t *testing.T) {
 			ctrs := pods.Items[0].Spec.Containers
 			assert.Len(t, ctrs, 2)
 			envs := ctrs[1].Env
-			assert.Len(t, envs, 2)
-			assert.Equal(t, apiv1.EnvVar{Name: "ARGO_INCLUDE_SCRIPT_OUTPUT", Value: "true"}, envs[1])
+			assert.Len(t, envs, 4)
+			assert.Equal(t, apiv1.EnvVar{Name: "ARGO_INCLUDE_SCRIPT_OUTPUT", Value: "true"}, envs[2])
 		}
 	})
 }
