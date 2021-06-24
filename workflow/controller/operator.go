@@ -2268,7 +2268,26 @@ func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
 	switch node.Type {
 	case wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend:
 		return []string{node.ID}
-	case wfv1.NodeTypeContainer, wfv1.NodeTypePod, wfv1.NodeTypeTaskGroup:
+	case wfv1.NodeTypePod:
+
+		// Recover the template that created this pod. If we can't just let the pod be its own outbound node
+		tmplCtx, err := woc.createTemplateContext(node.GetTemplateScope())
+		if err != nil {
+			return []string{node.ID}
+		}
+		_, parentTemplate, _, err := tmplCtx.ResolveTemplate(&node)
+		if err != nil {
+			return []string{node.ID}
+		}
+
+		// If this pod does not come from a container set, its outbound node is itself
+		if parentTemplate.GetType() != wfv1.TemplateTypeContainerSet {
+			return []string{node.ID}
+		}
+
+		// If this pod comes from a container set, it should be treated as a container or task group
+		fallthrough
+	case wfv1.NodeTypeContainer, wfv1.NodeTypeTaskGroup:
 		if len(node.Children) == 0 {
 			return []string{node.ID}
 		}
