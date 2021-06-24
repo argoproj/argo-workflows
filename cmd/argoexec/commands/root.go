@@ -122,7 +122,6 @@ func initExecutor() *executor.WorkflowExecutor {
 	}
 	checkErr(err)
 
-
 	wfExecutor := executor.NewExecutor(clientset, restClient, workflow.NewForConfigOrDie(config), podName, os.Getenv(common.EnvVarWorkflowName), namespace, cre, *tmpl, includeScriptOutput, deadline)
 
 	log.
