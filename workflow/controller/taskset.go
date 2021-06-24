@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,8 +16,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/util/retry"
-	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -48,26 +45,12 @@ func (woc *wfOperationCtx) executeTaskSet(ctx context.Context, nodeName string, 
 	return node, nil
 }
 
-func (woc *wfOperationCtx) DeleteAgentPod(ctx context.Context) error {
-	agentPodName := woc.getAgentPodName()
-	log.WithField("workflow", woc.wf.Name).WithField("namespace", woc.wf.Namespace).Infof("Deleting Agent Pod")
-	var err error
-	err = waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
-		err = woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Delete(ctx, agentPodName, metav1.DeleteOptions{})
-		return apierr.IsNotFound(err) || err == nil, err
-	})
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (woc *wfOperationCtx) taskSetReconciliation() error {
 	taskSet, err := woc.getWorkflowTaskSet()
 	if err != nil {
 		return err
 	}
-	if taskSet == nil || taskSet.Status.Nodes == nil || len(taskSet.Status.Nodes) == 0 {
+	if taskSet == nil || len(taskSet.Status.Nodes) == 0 {
 		return nil
 	}
 	for nodeID, taskResult := range taskSet.Status.Nodes {

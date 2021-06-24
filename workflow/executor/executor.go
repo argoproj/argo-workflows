@@ -680,7 +680,7 @@ func (we *WorkflowExecutor) GetTerminationGracePeriodDuration(ctx context.Contex
 
 // CaptureScriptResult will add the stdout of a script template as output result
 func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
-	if we.IncludeScriptOutput {
+	if !we.IncludeScriptOutput {
 		log.Infof("No Script output reference in workflow. Capturing script output ignored")
 		return nil
 	}
