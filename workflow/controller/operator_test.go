@@ -7056,3 +7056,62 @@ func TestDagTwoChildrenWithNonExpectedNodeType(t *testing.T) {
 	//Ensure that both child tasks are labeled as children of the "sent" node
 	assert.Len(t, sentNode.Children, 2)
 }
+
+const testDagTwoChildrenContainerSet = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: outputs-result-pn6gb
+spec:
+  entrypoint: main
+  templates:
+  - dag:
+      tasks:
+      - name: a
+        template: group
+      - arguments:
+          parameters:
+          - name: x
+            value: '{{tasks.a.outputs.result}}'
+        depends: a
+        name: b
+        template: verify
+    name: main
+  - containerSet:
+      containers:
+      - args:
+        - -c
+        - |
+          print("hi")
+        image: python:alpine3.6
+        name: main
+    name: group
+  - inputs:
+      parameters:
+      - name: x
+    name: verify
+    script:
+      image: python:alpine3.6
+      source: |
+        assert "{{inputs.parameters.x}}" == "hi"
+status:
+  phase: Running
+  startedAt: "2021-06-24T18:05:35Z"
+`
+
+// In this test, a pod originating from a container set should not be its own outbound node. "a" should only have one child
+// and "main" should be the outbound node.
+func TestDagTwoChildrenContainerSet(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(testDagTwoChildrenContainerSet)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+	woc.operate(ctx)
+
+	sentNode := woc.wf.Status.Nodes.FindByDisplayName("a")
+
+	assert.Len(t, sentNode.Children, 1)
+}
