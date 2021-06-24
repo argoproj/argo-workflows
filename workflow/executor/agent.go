@@ -100,6 +100,9 @@ func (we *WorkflowExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.T
 	}
 
 	out, err := http.DefaultClient.Do(request)
+	// Close the connection to reuse it
+	defer out.Body.Close()
+
 	if err != nil {
 		return nil, err
 	}
