@@ -2316,6 +2316,10 @@
 <li>Output artifacts must be saved on volumes (e.g. <a href="../empty-dir/">emptyDir</a>) and not the base image layer (e.g. <code>/tmp</code>)</li>
 </ul>
 </li>
+<li>Step/Task result:<ul>
+<li>Warnings that normally goes to stderr will get captured in a step or a dag task's <code>outputs.result</code>. May require changes if your pipeline is conditioned on <code>steps/tasks.name.outputs.result</code></li>
+</ul>
+</li>
 <li>Configuration:<ul>
 <li>Additional Kubelet configuration maybe needed</li>
 </ul>
@@ -2341,6 +2345,10 @@
 </li>
 <li>Artifacts:<ul>
 <li>Output artifacts must be saved on volumes (e.g. <a href="../empty-dir/">emptyDir</a>) and not the base image layer (e.g. <code>/tmp</code>)</li>
+</ul>
+</li>
+<li>Step/Task result:<ul>
+<li>Warnings that normally goes to stderr will get captured in a step or a dag task's <code>outputs.result</code>. May require changes if your pipeline is conditioned on <code>steps/tasks.name.outputs.result</code></li>
 </ul>
 </li>
 <li>Configuration:<ul>
