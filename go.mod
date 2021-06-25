@@ -10,7 +10,7 @@ require (
 	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/TwinProduction/go-color v0.0.3
-	github.com/aliyun/aliyun-oss-go-sdk v2.1.5+incompatible
+	github.com/aliyun/aliyun-oss-go-sdk v2.1.8+incompatible
 	github.com/antonmedv/expr v1.8.8
 	github.com/argoproj/argo-events v1.2.0
 	github.com/argoproj/pkg v0.8.1
@@ -31,6 +31,7 @@ require (
 	github.com/go-swagger/go-swagger v0.25.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/protobuf v1.4.3
+	github.com/gorilla/handlers v1.4.2
 	github.com/gorilla/websocket v1.4.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.1.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
