@@ -4104,6 +4104,19 @@
         }
       }
     },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Dedupe": {
+      "type": "object",
+      "properties": {
+        "maxSize": {
+          "title": "+kubebuilder:default=\"1M\"",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.api.resource.Quantity"
+        },
+        "uid": {
+          "type": "string",
+          "title": "+kubebuilder:default=\"sha1(msg)\""
+        }
+      }
+    },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Error": {
       "type": "object",
       "properties": {
@@ -4481,6 +4494,9 @@
         },
         "container": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Container"
+        },
+        "dedupe": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Dedupe"
         },
         "expand": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Expand"
