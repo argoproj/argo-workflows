@@ -27,8 +27,7 @@ spec:
               parameters:
                 - name: x
                   value: "{{tasks.a.outputs.result}}"
-            dependencies:
-              - a
+            dependencies: ["a"]
 
     - name: group
       containerSet:
@@ -48,4 +47,3 @@ spec:
         image: python:alpine3.6
         source: |
           assert "{{inputs.parameters.x}}" == "hi"
-

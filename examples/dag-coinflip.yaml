@@ -2,6 +2,10 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: dag-diamond-coinflip-
+  annotations:
+    workflows.argoproj.io/description: |
+      This is an example of coin flip defined as a DAG.
+      You can also run it in Python: https://couler-proj.github.io/couler/examples/#dag
 spec:
   entrypoint: diamond
   templates:
@@ -11,13 +15,13 @@ spec:
       - name: A
         template: coinflip
       - name: B
-        dependencies: [A]
+        depends: "A"
         template: coinflip
       - name: C
-        dependencies: [A]
+        depends: "A"
         template: coinflip
       - name: D
-        dependencies: [B, C]
+        depends: "B && C"
         template: coinflip
 
   - name: coinflip

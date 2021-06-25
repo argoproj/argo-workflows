@@ -112,9 +112,6 @@ func newSso(
 	if c.ClientSecret.Name == "" || c.ClientSecret.Key == "" {
 		return nil, fmt.Errorf("clientSecret empty")
 	}
-	if c.RedirectURL == "" {
-		return nil, fmt.Errorf("redirectUrl empty")
-	}
 	ctx := context.Background()
 	clientSecretObj, err := secretsIf.Get(ctx, c.ClientSecret.Name, metav1.GetOptions{})
 	if err != nil {
@@ -201,7 +198,9 @@ func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteLaxMode,
 		Secure:   s.secure,
 	})
-	http.Redirect(w, r, s.config.AuthCodeURL(state), http.StatusFound)
+
+	redirectOption := oauth2.SetAuthURLParam("redirect_uri", s.getRedirectUrl(r))
+	http.Redirect(w, r, s.config.AuthCodeURL(state, redirectOption), http.StatusFound)
 }
 
 func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
@@ -214,7 +213,8 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(fmt.Sprintf("invalid state: %v", err)))
 		return
 	}
-	oauth2Token, err := s.config.Exchange(ctx, r.URL.Query().Get("code"))
+	redirectOption := oauth2.SetAuthURLParam("redirect_uri", s.getRedirectUrl(r))
+	oauth2Token, err := s.config.Exchange(ctx, r.URL.Query().Get("code"), redirectOption)
 	if err != nil {
 		w.WriteHeader(401)
 		_, _ = w.Write([]byte(fmt.Sprintf("failed to exchange token: %v", err)))
@@ -284,4 +284,20 @@ func (s *sso) Authorize(authorization string) (*types.Claims, error) {
 		return nil, fmt.Errorf("failed to validate claims: %v", err)
 	}
 	return c, nil
+}
+
+func (s *sso) getRedirectUrl(r *http.Request) string {
+	if s.config.RedirectURL != "" {
+		return s.config.RedirectURL
+	}
+
+	proto := "http"
+
+	if r.URL.Scheme != "" {
+		proto = r.URL.Scheme
+	} else if s.secure {
+		proto = "https"
+	}
+
+	return fmt.Sprintf("%s://%s%soauth2/callback", proto, r.Host, s.baseHRef)
 }
