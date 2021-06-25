@@ -726,8 +726,15 @@ func (we *WorkflowExecutor) AnnotateOutputs(ctx context.Context, logArt *wfv1.Ar
 	if !outputs.HasOutputs() {
 		return nil
 	}
+	log.Infof("Annotating pod with output")
+	outputBytes, err := json.Marshal(outputs)
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
 
-	if err := we.annotatePodWithOutputs(ctx, outputs); !apierr.IsForbidden(err) { // me were either successful (nil) or some other error
+	err = we.AddAnnotation(ctx, common.AnnotationKeyOutputs, string(outputBytes))
+
+	if !apierr.IsForbidden(err) { // me were either successful (nil) or some other error
 		return err
 	}
 
@@ -756,15 +763,6 @@ func (we *WorkflowExecutor) updateTaskSetStatusWithOutputs(ctx context.Context, 
 
 func (we *WorkflowExecutor) nodeID() string {
 	return we.PodName
-}
-
-func (we *WorkflowExecutor) annotatePodWithOutputs(ctx context.Context, outputs *wfv1.Outputs) error {
-	log.Infof("Annotating pod with output")
-	outputBytes, err := json.Marshal(outputs)
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
-	return we.AddAnnotation(ctx, common.AnnotationKeyOutputs, string(outputBytes))
 }
 
 // AddError adds an error to the list of encountered errors during execution
