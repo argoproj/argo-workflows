@@ -110,22 +110,4 @@ status:
 			assert.True(t, strings.HasSuffix(pod.Name, "-agent"))
 		}
 	})
-	t.Run("DeleteTaskSet", func(t *testing.T) {
-		woc := newWorkflowOperationCtx(wf, controller)
-		woc.operate(ctx)
-		pods, err := woc.controller.kubeclientset.CoreV1().Pods("default").List(ctx, v1.ListOptions{})
-		assert.NoError(t, err)
-		assert.NotEmpty(t, pods.Items)
-		assert.Len(t, pods.Items, 1)
-		for _, pod := range pods.Items {
-			assert.NotNil(t, pod)
-			assert.True(t, strings.HasSuffix(pod.Name, "-agent"))
-		}
-		err = woc.DeleteAgentPod(ctx)
-		assert.NoError(t, err)
-		pods, err = woc.controller.kubeclientset.CoreV1().Pods("default").List(ctx, v1.ListOptions{})
-		assert.NoError(t, err)
-		assert.Empty(t, pods.Items)
-		assert.Len(t, pods.Items, 0)
-	})
 }

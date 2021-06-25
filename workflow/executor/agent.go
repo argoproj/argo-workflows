@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 
 	log "github.com/sirupsen/logrus"
@@ -17,6 +16,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	argowait "github.com/argoproj/argo-workflows/v3/util/wait"
+	argohttp "github.com/argoproj/argo-workflows/v3/workflow/executor/http"
 )
 
 func (we *WorkflowExecutor) Agent(ctx context.Context) error {
@@ -26,10 +26,9 @@ func (we *WorkflowExecutor) Agent(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		log.Infof("watching")
 
 		for event := range wfWatch.ResultChan() {
-			log.Infof("watching, %v", event)
+			log.WithField("taskset", we.workflowName).Infof("watching taskset, %v", event)
 			if event.Type == watch.Deleted {
 				// We're done if the task set is deleted
 				return nil
@@ -39,7 +38,7 @@ func (we *WorkflowExecutor) Agent(ctx context.Context) error {
 			if !ok {
 				return apierr.FromObject(event.Object)
 			}
-			tasks := obj.Spec.Tasks.DeepCopy()
+			tasks := obj.Spec.Tasks
 			for _, task := range tasks {
 				if len(obj.Status.Nodes) > 0 && obj.Status.Nodes[task.NodeID].Fulfilled() {
 					continue
@@ -98,27 +97,12 @@ func (we *WorkflowExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.T
 		}
 		request.Header.Add(header.Name, value)
 	}
-
-	out, err := http.DefaultClient.Do(request)
-	// Close the connection to reuse it
-	defer out.Body.Close()
-
+	response, err := argohttp.SendHttpRequest(request)
 	if err != nil {
 		return nil, err
 	}
-
-	log.WithFields(log.Fields{"url": request.URL, "status": out.Status}).Info("HTTP request made")
-	if out.StatusCode >= 300 {
-		return nil, fmt.Errorf(out.Status)
-	}
-
-	data, err := ioutil.ReadAll(out.Body)
-	if err != nil {
-		return nil, err
-	}
-
 	outputs := &wfv1.Outputs{}
-	outputs.Parameters = append(outputs.Parameters, wfv1.Parameter{Name: "result", Value: wfv1.AnyStringPtr(string(data))})
+	outputs.Parameters = append(outputs.Parameters, wfv1.Parameter{Name: "result", Value: wfv1.AnyStringPtr(response)})
 
 	return outputs, nil
 }

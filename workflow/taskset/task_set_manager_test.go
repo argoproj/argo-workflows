@@ -29,18 +29,49 @@ func TestCreateTaskSet(t *testing.T) {
 		},
 		Spec: v1alpha1.WorkflowSpec{},
 	}
-	nodeID := "test-xrgzj"
+
 	tmpl := v1alpha1.Template{
 		Name: "HTTP",
 		HTTP: &v1alpha1.HTTP{
 			URL: "http://test.com",
 		},
 	}
-	err := taskSetMgr.CreateTaskSet(context.Background(), &wf, nodeID, tmpl)
-	assert.NoError(t, err)
-	taskSet, err := wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").Get(context.Background(), "test", v1.GetOptions{})
-	assert.NoError(t, err)
-	assert.NotNil(t, taskSet)
-	assert.Len(t, taskSet.Spec.Tasks, 1)
-	assert.Equal(t, tmpl, taskSet.Spec.Tasks[0].Template)
+	t.Run("CreateTaskset", func(t *testing.T) {
+		nodeID := "test-xrgzj"
+		err := taskSetMgr.CreateTaskSet(context.Background(), &wf, nodeID, tmpl)
+		assert.NoError(t, err)
+		taskSet, err := wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").Get(context.Background(), "test", v1.GetOptions{})
+		assert.NoError(t, err)
+		assert.NotNil(t, taskSet)
+		assert.Len(t, taskSet.Spec.Tasks, 1)
+		assert.Equal(t, tmpl, taskSet.Spec.Tasks[0].Template)
+
+		err = taskSetMgr.CreateTaskSet(context.Background(), &wf, nodeID, tmpl)
+		assert.NoError(t, err)
+		taskSet1, err := wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").Get(context.Background(), "test", v1.GetOptions{})
+		assert.NoError(t, err)
+		assert.NotNil(t, taskSet1)
+		assert.Equal(t, taskSet.ResourceVersion, taskSet1.ResourceVersion)
+		assert.Len(t, taskSet.Spec.Tasks, 1)
+		assert.Equal(t, tmpl, taskSet.Spec.Tasks[0].Template)
+	})
+	t.Run("UpdateTaskinTaskset", func(t *testing.T) {
+		nodeID := "test-xrgzj"
+		err := taskSetMgr.CreateTaskSet(context.Background(), &wf, nodeID, tmpl)
+		assert.NoError(t, err)
+		taskSet, err := wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").Get(context.Background(), "test", v1.GetOptions{})
+		assert.NoError(t, err)
+		assert.NotNil(t, taskSet)
+		assert.Len(t, taskSet.Spec.Tasks, 1)
+		assert.Equal(t, tmpl, taskSet.Spec.Tasks[0].Template)
+
+		nodeID = "test-xrgzj-1"
+		err = taskSetMgr.CreateTaskSet(context.Background(), &wf, nodeID, tmpl)
+		assert.NoError(t, err)
+		taskSet, err = wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").Get(context.Background(), "test", v1.GetOptions{})
+		assert.NoError(t, err)
+		assert.NotNil(t, taskSet)
+		assert.Len(t, taskSet.Spec.Tasks, 2)
+		assert.Equal(t, tmpl, taskSet.Spec.Tasks[0].Template)
+	})
 }

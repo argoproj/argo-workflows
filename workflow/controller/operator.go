@@ -878,7 +878,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 		if pod == nil {
 			return
 		}
-		if isAgentPod(pod) {
+		if woc.isAgentPod(pod) {
 			woc.reconcileAgentNode(pod)
 		}
 		nodeNameForPod := pod.Annotations[common.AnnotationKeyNodeName]

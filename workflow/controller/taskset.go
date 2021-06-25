@@ -3,7 +3,6 @@ package controller
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	apiv1 "k8s.io/api/core/v1"
@@ -36,12 +35,11 @@ func (woc *wfOperationCtx) executeTaskSet(ctx context.Context, nodeName string, 
 	if err != nil {
 		return woc.requeueIfTransientErr(err, node.Name)
 	}
-	if node.Phase == wfv1.NodePending {
-		err := woc.controller.taskSetManager.CreateTaskSet(ctx, woc.wf, node.ID, *tmpl)
-		if err != nil {
-			return nil, err
-		}
+	err = woc.controller.taskSetManager.CreateTaskSet(ctx, woc.wf, node.ID, *tmpl)
+	if err != nil {
+		return nil, err
 	}
+
 	return node, nil
 }
 
@@ -54,10 +52,7 @@ func (woc *wfOperationCtx) taskSetReconciliation() error {
 		return nil
 	}
 	for nodeID, taskResult := range taskSet.Status.Nodes {
-		node, ok := woc.wf.Status.Nodes[nodeID]
-		if !ok {
-			continue
-		}
+		node := woc.wf.Status.Nodes[nodeID]
 		node.Outputs = taskResult.Outputs.DeepCopy()
 		node.Phase = taskResult.Phase
 		node.Message = taskResult.Message
@@ -66,8 +61,8 @@ func (woc *wfOperationCtx) taskSetReconciliation() error {
 	return nil
 }
 
-func isAgentPod(pod *apiv1.Pod) bool {
-	return strings.HasSuffix(pod.Name, "-agent")
+func (woc *wfOperationCtx) isAgentPod(pod *apiv1.Pod) bool {
+	return pod.Name == woc.getAgentPodName()
 }
 
 func (woc *wfOperationCtx) reconcileAgentNode(pod *apiv1.Pod) {
@@ -161,11 +156,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context, nodeName string, 
 		pod.Spec.Containers[i] = c
 	}
 
-	// Set the container template JSON in pod annotations, which executor examines for things like
-	// artifact location/path.
-	pod.ObjectMeta.Annotations = map[string]string{}
-
-	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, podName)
+	woc.log.Debugf("Creating Agent Pod: %s (%s)", nodeName, podName)
 
 	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
@@ -182,6 +173,5 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context, nodeName string, 
 		return nil, errors.InternalWrapError(err)
 	}
 	woc.log.Infof("Created pod: %s (%s)", nodeName, created.Name)
-	woc.activePods++
 	return created, nil
 }
