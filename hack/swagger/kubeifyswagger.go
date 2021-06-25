@@ -3,11 +3,12 @@ package main
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"reflect"
 )
 
 func kubeifySwagger(in, out string) {
-	f, err := os.Open(in)
+	f, err := os.Open(filepath.Clean(in))
 	if err != nil {
 		panic(err)
 	}
