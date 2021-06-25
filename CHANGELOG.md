@@ -360,8 +360,8 @@
  * Reijer Copier
  * Riccardo Piccoli
  * Roi Kramer
- * Saïfane FARFAR
  * Saravanan Balasubramanian
+ * Saïfane FARFAR
  * Shoubhik Bose
  * Simon Behar
  * Stephan van Maris
@@ -381,6 +381,20 @@
  * tobisinghania
  * uucloud
  * wanglong001
+
+## v3.0.8 (2021-06-21)
+
+ * [6d7887cce](https://github.com/argoproj/argo-workflows/commit/6d7887cce650f999bb6f788a43fcefe3ca398185) Update manifests to v3.0.8
+ * [449237971](https://github.com/argoproj/argo-workflows/commit/449237971ba81e8397667be77a01957ec15d576e) fix(ui): Fix-up local storage namespaces. Fixes #6109 (#6144)
+ * [87852e94a](https://github.com/argoproj/argo-workflows/commit/87852e94aa2530ebcbd3aeaca647ae8ff42774ac) fix(controller): dehydrate workflow before deleting offloaded node status (#6112)
+ * [d8686ee1a](https://github.com/argoproj/argo-workflows/commit/d8686ee1ade34d7d5ef687bcb638415756b2f364) fix(executor): Fix docker not terminating. Fixes #6064 (#6083)
+ * [c2abdb8e6](https://github.com/argoproj/argo-workflows/commit/c2abdb8e6f16486a0785dc852d293c19bd721399) fix(controller): Handling panic in leaderelection (#6072)
+
+### Contributors
+
+ * Alex Collins
+ * Reijer Copier
+ * Saravanan Balasubramanian
 
 ## v3.0.7 (2021-05-25)
 
