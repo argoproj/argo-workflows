@@ -15,7 +15,7 @@ spec:
           parameters:
           - {name: message, value: A}
       - name: B
-        dependencies: [A]
+        depends: "A"
         template: whalesay
         arguments:
           parameters:
@@ -25,7 +25,7 @@ spec:
         - bar
         - baz
       - name: C
-        dependencies: [B]
+        depends: "B"
         template: whalesay
         arguments:
           parameters:

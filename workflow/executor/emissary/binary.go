@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 )
 
 func copyBinary() error {
@@ -11,7 +12,7 @@ func copyBinary() error {
 	if err != nil {
 		return err
 	}
-	in, err := os.Open(name)
+	in, err := os.Open(filepath.Clean(name))
 	if err != nil {
 		return err
 	}

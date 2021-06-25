@@ -124,7 +124,11 @@ func downloadObject(client *storage.Client, bucket, key, objName, path string) e
 	if err != nil {
 		return fmt.Errorf("os create %s: %v", localPath, err)
 	}
-	defer out.Close()
+	defer func() {
+		if err := out.Close(); err != nil {
+			log.Fatalf("Error closing file[%s]: %v", localPath, err)
+		}
+	}()
 	_, err = io.Copy(out, rc)
 	if err != nil {
 		return fmt.Errorf("io copy: %v", err)
@@ -236,11 +240,15 @@ func uploadObjects(client *storage.Client, bucket, key, path string) error {
 
 // upload an object to GCS
 func uploadObject(client *storage.Client, bucket, key, localPath string) error {
-	f, err := os.Open(localPath)
+	f, err := os.Open(filepath.Clean(localPath))
 	if err != nil {
 		return fmt.Errorf("os open: %v", err)
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Fatalf("Error closing file[%s]: %v", localPath, err)
+		}
+	}()
 	ctx := context.Background()
 	wc := client.Bucket(bucket).Object(key).NewWriter(ctx)
 	if _, err = io.Copy(wc, f); err != nil {

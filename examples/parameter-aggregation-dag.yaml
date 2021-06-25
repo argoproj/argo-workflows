@@ -20,14 +20,14 @@ spec:
         withItems: [1, 2, 3, 4]
       - name: print-nums
         template: whalesay
-        dependencies: [odd-or-even]
+        depends: "odd-or-even"
         arguments:
           parameters:
           - name: message
             value: "{{tasks.odd-or-even.outputs.parameters.num}}"
       - name: print-evenness
         template: whalesay
-        dependencies: [odd-or-even]
+        depends: "odd-or-even"
         arguments:
           parameters:
           - name: message
@@ -35,7 +35,7 @@ spec:
       # Next, for each even number, divide it by two (using a script template).
       # Skip odd numbers using a `when` clause.
       - name: divide-by-2
-        dependencies: [odd-or-even]
+        depends: "odd-or-even"
         template: divide-by-2
         arguments:
           parameters:
@@ -45,7 +45,7 @@ spec:
         when: "{{item.evenness}} == even"
       # Finally, print all numbers processed in the previous step
       - name: print
-        dependencies: [divide-by-2]
+        depends: "divide-by-2"
         template: whalesay
         arguments:
           parameters:

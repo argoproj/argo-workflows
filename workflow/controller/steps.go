@@ -40,7 +40,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 
 	defer func() {
 		if woc.wf.Status.Nodes[node.ID].Fulfilled() {
-			_ = woc.killDaemonedChildren(ctx, node.ID)
+			woc.killDaemonedChildren(node.ID)
 		}
 	}()
 

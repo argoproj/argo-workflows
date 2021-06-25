@@ -141,7 +141,7 @@ func (ossDriver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string,
 			if err != nil {
 				return !isTransientOSSErr(err), err
 			}
-			results, err := bucket.ListObjects(oss.Prefix(artifact.OSS.Key))
+			results, err := bucket.ListObjectsV2(oss.Prefix(artifact.OSS.Key))
 			if err != nil {
 				return !isTransientOSSErr(err), err
 			}

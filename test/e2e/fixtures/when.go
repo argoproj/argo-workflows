@@ -33,6 +33,7 @@ type When struct {
 	cronClient        v1alpha1.CronWorkflowInterface
 	hydrator          hydrator.Interface
 	kubeClient        kubernetes.Interface
+	bearerToken       string
 }
 
 func (w *When) SubmitWorkflow() *When {
@@ -412,13 +413,14 @@ func (w *When) deleteResourceQuota(name string) *When {
 
 func (w *When) Then() *Then {
 	return &Then{
-		t:          w.t,
-		wf:         w.wf,
-		cronWf:     w.cronWf,
-		client:     w.client,
-		cronClient: w.cronClient,
-		hydrator:   w.hydrator,
-		kubeClient: w.kubeClient,
+		t:           w.t,
+		wf:          w.wf,
+		cronWf:      w.cronWf,
+		client:      w.client,
+		cronClient:  w.cronClient,
+		hydrator:    w.hydrator,
+		kubeClient:  w.kubeClient,
+		bearerToken: w.bearerToken,
 	}
 }
 

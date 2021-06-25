@@ -14,8 +14,7 @@ spec:
             template: generate
           - name: consume
             template: consume
-            dependencies:
-              - generate
+            depends: "generate"
     - name: generate
       container:
         image: argoproj/argosay:v2

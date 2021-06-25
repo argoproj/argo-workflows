@@ -1,0 +1,26 @@
+import {Tooltip} from 'argo-ui';
+import * as React from 'react';
+import {useState} from 'react';
+
+export const ClipboardText = ({text}: {text: string}) => {
+    const [justClicked, setJustClicked] = useState<boolean>(false);
+
+    return (
+        <>
+            {text}
+            &nbsp; &nbsp;
+            <Tooltip content={justClicked ? 'Copied!' : 'Copy to clipboard'}>
+                <a>
+                    <i
+                        className={'fa fa-clipboard'}
+                        onClick={() => {
+                            setJustClicked(true);
+                            navigator.clipboard.writeText(text);
+                            setInterval(() => setJustClicked(false), 2000);
+                        }}
+                    />
+                </a>
+            </Tooltip>
+        </>
+    );
+};

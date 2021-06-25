@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,6 +27,6 @@ func TestKillDaemonChildrenUnmarkPod(t *testing.T) {
 
 	assert.NotNil(t, woc.wf.Status.Nodes["a"].Daemoned)
 	// Error will be that it cannot find the pod, but we only care about the node status for this test
-	_ = woc.killDaemonedChildren(context.Background(), "a")
+	woc.killDaemonedChildren("a")
 	assert.Nil(t, woc.wf.Status.Nodes["a"].Daemoned)
 }

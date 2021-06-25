@@ -187,6 +187,7 @@ var indexers = cache.Indexers{
 	indexes.SemaphoreConfigIndexName:     indexes.WorkflowSemaphoreKeysIndexFunc(),
 	indexes.WorkflowPhaseIndex:           indexes.MetaWorkflowPhaseIndexFunc(),
 	indexes.ConditionsIndex:              indexes.ConditionsIndexFunc,
+	indexes.UIDIndex:                     indexes.MetaUIDFunc,
 }
 
 // Run starts an Workflow resource controller
@@ -466,6 +467,24 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 	err := func() error {
 		pods := wfc.kubeclientset.CoreV1().Pods(namespace)
 		switch action {
+		case shutdownPod:
+			// to shutdown a pod, we signal the wait container to terminate, the wait container in turn will
+			// kill the main container (using whatever mechanism the executor uses), and will then exit itself
+			// once the main container exited
+			pod, err := wfc.getPod(namespace, podName)
+			if pod == nil || err != nil {
+				return err
+			}
+			for _, c := range pod.Spec.Containers {
+				if c.Name == common.WaitContainerName {
+					if err := signal.SignalContainer(wfc.restConfig, pod, common.WaitContainerName, syscall.SIGTERM); err != nil {
+						return err
+					}
+					return nil // done
+				}
+			}
+			// no wait container found
+			fallthrough
 		case terminateContainers:
 			if terminationGracePeriod, err := wfc.signalContainers(namespace, podName, syscall.SIGTERM); err != nil {
 				return err
@@ -508,18 +527,27 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 	return true
 }
 
-func (wfc *WorkflowController) signalContainers(namespace string, podName string, sig syscall.Signal) (time.Duration, error) {
+func (wfc *WorkflowController) getPod(namespace string, podName string) (*apiv1.Pod, error) {
 	obj, exists, err := wfc.podInformer.GetStore().GetByKey(namespace + "/" + podName)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	if !exists {
-		return 0, nil
+		return nil, nil
 	}
 	pod, ok := obj.(*apiv1.Pod)
 	if !ok {
-		return 0, fmt.Errorf("object is not a pod")
+		return nil, fmt.Errorf("object is not a pod")
 	}
+	return pod, nil
+}
+
+func (wfc *WorkflowController) signalContainers(namespace string, podName string, sig syscall.Signal) (time.Duration, error) {
+	pod, err := wfc.getPod(namespace, podName)
+	if pod == nil || err != nil {
+		return 0, err
+	}
+
 	for _, c := range pod.Status.ContainerStatuses {
 		if c.Name == common.WaitContainerName || c.State.Terminated != nil {
 			continue
@@ -553,35 +581,57 @@ func (wfc *WorkflowController) workflowGarbageCollector(stopCh <-chan struct{}) 
 					log.WithField("err", err).Error("Failed to list old offloaded nodes")
 					continue
 				}
-				if len(oldRecords) == 0 {
-					log.Info("Zero old offloads, nothing to do")
-					continue
-				}
-				// get every lives workflow (1000s) into a map
-				liveOffloadNodeStatusVersions := make(map[types.UID]string)
-				workflows, err := util.NewWorkflowLister(wfc.wfInformer).List()
-				if err != nil {
-					log.WithField("err", err).Error("Failed to list incomplete workflows")
-					continue
-				}
-				for _, wf := range workflows {
-					// this could be the empty string - as it is no longer offloaded
-					liveOffloadNodeStatusVersions[wf.UID] = wf.Status.OffloadNodeStatusVersion
-				}
-				log.WithFields(log.Fields{"len_wfs": len(liveOffloadNodeStatusVersions), "len_old_offloads": len(oldRecords)}).Info("Deleting old offloads that are not live")
-				for _, record := range oldRecords {
-					// this could be empty string
-					nodeStatusVersion, ok := liveOffloadNodeStatusVersions[types.UID(record.UID)]
-					if !ok || nodeStatusVersion != record.Version {
-						err := wfc.offloadNodeStatusRepo.Delete(record.UID, record.Version)
-						if err != nil {
-							log.WithField("err", err).Error("Failed to delete offloaded nodes")
-						}
+				log.WithField("len_wfs", len(oldRecords)).Info("Deleting old offloads that are not live")
+				for uid, versions := range oldRecords {
+					if err := wfc.deleteOffloadedNodesForWorkflow(uid, versions); err != nil {
+						log.WithError(err).WithField("uid", uid).Error("Failed to delete old offloaded nodes")
 					}
 				}
+				log.Info("Workflow GC finished")
 			}
 		}
 	}
+}
+
+func (wfc *WorkflowController) deleteOffloadedNodesForWorkflow(uid string, versions []string) error {
+	workflows, err := wfc.wfInformer.GetIndexer().ByIndex(indexes.UIDIndex, uid)
+	if err != nil {
+		return err
+	}
+	var wf *wfv1.Workflow
+	switch l := len(workflows); l {
+	case 0:
+		log.WithField("uid", uid).Info("Workflow missing, probably deleted")
+	case 1:
+		un := workflows[0].(*unstructured.Unstructured)
+		wf, err = util.FromUnstructured(un)
+		if err != nil {
+			return err
+		}
+		key := wf.ObjectMeta.Namespace + "/" + wf.ObjectMeta.Name
+		wfc.workflowKeyLock.Lock(key)
+		defer wfc.workflowKeyLock.Unlock(key)
+		// workflow might still be hydrated
+		if wfc.hydrator.IsHydrated(wf) {
+			log.WithField("uid", wf.UID).Info("Hydrated workflow encountered")
+			err = wfc.hydrator.Dehydrate(wf)
+			if err != nil {
+				return err
+			}
+		}
+	default:
+		return fmt.Errorf("expected no more than 1 workflow, got %d", l)
+	}
+	for _, version := range versions {
+		// skip delete if offload is live
+		if wf != nil && wf.Status.OffloadNodeStatusVersion == version {
+			continue
+		}
+		if err := wfc.offloadNodeStatusRepo.Delete(uid, version); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (wfc *WorkflowController) archivedWorkflowGarbageCollector(stopCh <-chan struct{}) {

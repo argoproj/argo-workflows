@@ -45,7 +45,7 @@ spec:
 	}
 
 	ctx := context.Background()
-	for i := 0; i < 500; i++ {
+	for i := 0; i < 10000; i++ {
 		_, err := w.Create(ctx, wf, metav1.CreateOptions{})
 		if err != nil {
 			panic(err)

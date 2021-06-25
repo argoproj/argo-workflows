@@ -16,6 +16,9 @@ import (
 
 func SignalContainer(restConfig *rest.Config, pod *corev1.Pod, container string, s syscall.Signal) error {
 	command := []string{"/bin/sh", "-c", "kill -%d 1"}
+	if container == common.WaitContainerName {
+		command = []string{"/bin/sh", "-c", "kill -%d $(pidof argoexec)"}
+	}
 
 	if v, ok := pod.Annotations[common.AnnotationKeyKillCmd(container)]; ok {
 		if err := json.Unmarshal([]byte(v), &command); err != nil {

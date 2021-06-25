@@ -228,7 +228,7 @@ func (c *DocGeneratorContext) loadFiles() {
 		panic(err)
 	}
 	for _, fileName := range files {
-		bytes, err := ioutil.ReadFile(fileName)
+		bytes, err := ioutil.ReadFile(filepath.Clean(fileName))
 		if err != nil {
 			panic(err)
 		}

@@ -33,10 +33,6 @@ Improve the handling of artifacts loaded from AWS, GCS, Artifactory et al.  For 
 
 Make it easier to understand how long and how much resource workflows use by supporting [automatic duration prediction](https://github.com/argoproj/argo-workflows/issues/2717) for newly started workflows and [historical workflow reports](https://github.com/argoproj/argo-workflows/issues/3557).
 
-## RBAC for SSO
-
-The #1 community voted feature is [RBAC for SSO](https://github.com/argoproj/argo-workflows/issues/3525). This will allow users to provide different access to different users within the GUI.
-
 ## Scaling, Reliability, Performance
 
 Continue to improve support for large numbers (10,000+) of massive (2,000+ node) workflows.

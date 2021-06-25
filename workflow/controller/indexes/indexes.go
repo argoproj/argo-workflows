@@ -15,4 +15,5 @@ const (
 	PodPhaseIndex                = "pod.phase"
 	ConditionsIndex              = "status.conditions"
 	SemaphoreConfigIndexName     = "bySemaphoreConfigMap"
+	UIDIndex                     = "uid"
 )

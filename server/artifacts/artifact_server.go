@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -183,12 +184,16 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 		return err
 	}
 
-	file, err := os.Open(tmpPath)
+	file, err := os.Open(filepath.Clean(tmpPath))
 	if err != nil {
 		return err
 	}
 
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			log.Fatalf("Error closing file[%s]: %v", tmpPath, err)
+		}
+	}()
 
 	stats, err := file.Stat()
 	if err != nil {

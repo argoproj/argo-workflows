@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -73,7 +74,7 @@ func (d *DockerExecutor) CopyFile(containerName string, sourcePath string, destP
 	if err != nil {
 		return err
 	}
-	copiedFile, err := os.Open(destPath)
+	copiedFile, err := os.Open(filepath.Clean(destPath))
 	if err != nil {
 		return err
 	}

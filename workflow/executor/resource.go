@@ -5,9 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"os/exec"
-	"os/signal"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -21,10 +20,8 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util"
 	envutil "github.com/argoproj/argo-workflows/v3/util/env"
 	argoerr "github.com/argoproj/argo-workflows/v3/util/errors"
-	os_specific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
 )
 
 // ExecResource will run kubectl action against a manifest
@@ -86,7 +83,7 @@ func inferObjectSelfLink(obj unstructured.Unstructured) string {
 }
 
 func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath string, flags []string) ([]string, error) {
-	buff, err := ioutil.ReadFile(manifestPath)
+	buff, err := ioutil.ReadFile(filepath.Clean(manifestPath))
 	if err != nil {
 		return []string{}, errors.New(errors.CodeBadRequest, err.Error())
 	}
@@ -155,28 +152,8 @@ func (g gjsonLabels) Get(label string) string {
 	return gjson.GetBytes(g.json, label).String()
 }
 
-// signalMonitoring start the goroutine which listens for a SIGUSR2.
-// Upon receiving of the signal, We update the pod annotation and exit the process.
-func (we *WorkflowExecutor) signalMonitoring() {
-	log.Infof("Starting SIGUSR2 signal monitor")
-	sigs := make(chan os.Signal, 1)
-
-	signal.Notify(sigs, os_specific.GetOsSignal())
-	go func() {
-		for {
-			<-sigs
-			log.Infof("Received SIGUSR2 signal. Process is terminated")
-			util.WriteTeriminateMessage("Received user signal to terminate the workflow")
-			os.Exit(130)
-		}
-	}()
-}
-
 // WaitResource waits for a specific resource to satisfy either the success or failure condition
 func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace, resourceName, selfLink string) error {
-	// Monitor the SIGTERM
-	we.signalMonitoring()
-
 	if we.Template.Resource.SuccessCondition == "" && we.Template.Resource.FailureCondition == "" {
 		return nil
 	}
@@ -206,7 +183,7 @@ func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace,
 				log.Infof("Returning from successful wait for resource %s in namespace %s", resourceName, resourceNamespace)
 				return true, nil
 			}
-			if isErrRetryable {
+			if isErrRetryable || argoerr.IsTransientErr(err) {
 				log.Infof("Waiting for resource %s in namespace %s resulted in retryable error: %v", resourceName, resourceNamespace, err)
 				return false, nil
 			}
@@ -231,9 +208,6 @@ func (we *WorkflowExecutor) checkResourceState(ctx context.Context, selfLink str
 	request := we.RESTClient.Get().RequestURI(selfLink)
 	stream, err := request.Stream(ctx)
 
-	if argoerr.IsTransientErr(err) {
-		return true, errors.Errorf(errors.CodeNotFound, "The error is detected to be transient: %v. Retrying...", err)
-	}
 	if err != nil {
 		err = errors.Cause(err)
 		if apierr.IsNotFound(err) {

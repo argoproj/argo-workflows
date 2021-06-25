@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -58,7 +59,7 @@ func LoadObject(text string) (runtime.Object, error) {
 	var yaml string
 	if strings.HasPrefix(text, "@") {
 		file := strings.TrimPrefix(text, "@")
-		f, err := ioutil.ReadFile(file)
+		f, err := ioutil.ReadFile(filepath.Clean(file))
 		if err != nil {
 			return nil, err
 		}

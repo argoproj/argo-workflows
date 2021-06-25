@@ -23,28 +23,28 @@ spec:
             value: "1"
       - name: b2
         template: B
-        dependencies: [b1]
+        depends: "b1"
         arguments:
           parameters:
           - name: msg
             value: "2"
       - name: b3
         template: B
-        dependencies: [b1]
+        depends: "b1"
         arguments:
           parameters:
           - name: msg
             value: "3"
       - name: b4
         template: B
-        dependencies: [b1]
+        depends: "b1"
         arguments:
           parameters:
           - name: msg
             value: "4"
       - name: b5
         template: B
-        dependencies: [b2, b3, b4]
+        depends: "b2 && b3 && b4"
         arguments:
           parameters:
           - name: msg
@@ -64,14 +64,14 @@ spec:
             value: "{{inputs.parameters.msg}} c1"
       - name: c2
         template: one-job
-        dependencies: [c1]
+        depends: "c1"
         arguments:
           parameters:
           - name: msg
             value: "{{inputs.parameters.msg}} c2"
       - name: c3
         template: one-job
-        dependencies: [c1]
+        depends: "c1"
         arguments:
           parameters:
           - name: msg

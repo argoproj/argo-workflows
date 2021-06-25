@@ -3,6 +3,7 @@ package fixtures
 import (
 	"fmt"
 	"io/ioutil"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -31,6 +32,7 @@ type Given struct {
 	cwfTemplates      []*wfv1.ClusterWorkflowTemplate
 	cronWf            *wfv1.CronWorkflow
 	kubeClient        kubernetes.Interface
+	bearerToken       string
 }
 
 // creates a workflow based on the parameter, this may be:
@@ -70,7 +72,7 @@ func (g *Given) readResource(text string, v metav1.Object) {
 	}
 
 	{
-		file, err := ioutil.ReadFile(file)
+		file, err := ioutil.ReadFile(filepath.Clean(file))
 		if err != nil {
 			g.t.Fatal(err)
 		}
@@ -202,5 +204,6 @@ func (g *Given) When() *When {
 		cronClient:        g.cronClient,
 		hydrator:          g.hydrator,
 		kubeClient:        g.kubeClient,
+		bearerToken:       g.bearerToken,
 	}
 }
