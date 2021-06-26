@@ -182,6 +182,21 @@ jobs:
         with:
           version: v1.36.0
 
+  security:
+    name: Security Scan
+    runs-on: ubuntu-20.04
+    needs: [ tests, codegen, lint ]
+    timeout-minutes: 5
+    env:
+      GOPATH: /home/runner/go
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v2
+      - name: Run Gosec Security Scanner
+        uses: securego/gosec@v2.8.1
+        with:
+          args: '-include=G307,G304 ./...'
+
   ui:
     name: UI
     runs-on: ubuntu-20.04
