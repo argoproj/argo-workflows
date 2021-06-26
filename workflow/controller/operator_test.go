@@ -3379,8 +3379,8 @@ metadata:
   name: my-pdb-wf
 spec:
   entrypoint: main
-  poddisruptionbudget:
-    minavailable: 100%
+  podDisruptionBudget:
+    minAvailable: 9999
   templates:
   - name: main
     container:
