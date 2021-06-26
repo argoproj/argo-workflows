@@ -186,7 +186,7 @@ jobs:
     name: Security Scan
     runs-on: ubuntu-20.04
     needs: [ tests, codegen, lint ]
-    timeout-minutes: 5
+    timeout-minutes: 6
     env:
       GOPATH: /home/runner/go
     steps:
