@@ -3380,7 +3380,7 @@ metadata:
 spec:
   entrypoint: main
   podDisruptionBudget:
-    minAvailable: 9999
+    minAvailable: "9999" # This should be an integer but schema currently only supports strings
   templates:
   - name: main
     container:
