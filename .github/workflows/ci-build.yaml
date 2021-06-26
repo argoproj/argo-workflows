@@ -195,7 +195,7 @@ jobs:
       - name: Run Gosec Security Scanner
         uses: securego/gosec@v2.8.1
         with:
-          args: '-include=G307,G304 ./...'
+          args: '-include=G307,G304 -exclude-dir=/github/workspace/server/static ./...'
 
   ui:
     name: UI
