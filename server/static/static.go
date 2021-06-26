@@ -19,7 +19,7 @@ func NewFilesServer(baseHRef string, hsts bool, xframeOpts string, corsAllowOrig
 
 func (s *FilesServer) ServerFiles(w http.ResponseWriter, r *http.Request) {
 	// If there is no stored static file, we'll redirect to the js app
-	if Hash(strings.TrimLeft(r.URL.Path, "/")) == "" { // #nosec
+	if Hash(strings.TrimLeft(r.URL.Path, "/")) == "" {
 		r.URL.Path = "index.html"
 	}
 
@@ -51,5 +51,5 @@ func (s *FilesServer) ServerFiles(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// in my IDE (IntelliJ) the next line is red for some reason - but this is fine
-	ServeHTTP(w, r) // #nosec
+	ServeHTTP(w, r)
 }

@@ -192,6 +192,7 @@ jobs:
     steps:
       - name: Checkout Source
         uses: actions/checkout@v2
+      - run: cp server/static/files.go.stub server/static/files.go
       - name: Run Gosec Security Scanner
         uses: securego/gosec@v2.8.1
         with:
