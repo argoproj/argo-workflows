@@ -3617,9 +3617,9 @@ func schema_pkg_apis_workflow_v1alpha1_RetryStrategy(ref common.ReferenceCallbac
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RetryAffinity"),
 						},
 					},
-					"when": {
+					"expression": {
 						SchemaProps: spec.SchemaProps{
-							Description: "When is a condition expression for when a node will be retried. If it evaluates to false, the node will not be retried and the retry strategy will be ignored",
+							Description: "Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not be retried and the retry strategy will be ignored/",
 							Type:        []string{"string"},
 							Format:      "",
 						},
