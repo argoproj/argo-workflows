@@ -1,0 +1,13 @@
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: dag-inline
+  annotations:
+    workflows.argoproj.io/description: |
+      This example demonstrates running cron workflow that has a DAG with inline templates.
+    workflows.argoproj.io/version: ">= 3.2.0"
+spec:
+  schedule: "*/5 * * * *"
+  workflowSpec:
+    workflowTemplateRef:
+      name: dag-inline

@@ -322,12 +322,14 @@ func GetTemplateGetterString(getter wfv1.TemplateHolder) string {
 
 // GetTemplateHolderString returns string of TemplateReferenceHolder.
 func GetTemplateHolderString(tmplHolder wfv1.TemplateReferenceHolder) string {
-	tmplName := tmplHolder.GetTemplateName()
-	tmplRef := tmplHolder.GetTemplateRef()
-	if tmplRef != nil {
-		return fmt.Sprintf("%T (%s/%s)", tmplHolder, tmplRef.Name, tmplRef.Template)
+	if tmplHolder.GetTemplate() != nil {
+		return fmt.Sprintf("%T inlined", tmplHolder)
+	} else if x := tmplHolder.GetTemplateName(); x != "" {
+		return fmt.Sprintf("%T (%s)", tmplHolder, x)
+	} else if x := tmplHolder.GetTemplateRef(); x != nil {
+		return fmt.Sprintf("%T (%s/%s#%v)", tmplHolder, x.Name, x.Template, x.ClusterScope)
 	} else {
-		return fmt.Sprintf("%T (%s)", tmplHolder, tmplName)
+		return fmt.Sprintf("%T invalid (https://argoproj.github.io/argo-workflows/templates/)", tmplHolder)
 	}
 }
 
