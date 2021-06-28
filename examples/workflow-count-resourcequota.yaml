@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: workflow-count
+  annotations:
+    workflows.argoproj.io/description: |
+      This resource quota prevents creation of more than a certain number of workflows being created in a namespace.
+
+      The user will get an error when they try to create more. As the count includes both completed and incomplete
+      workflows, and complete workflows do not make any significant demands of your cluster, you probably want to use it
+      with a workflow GC strategy, so that a build up of completed workflows does not prevent you from creating and
+      running new workflows.
+
+      Argo Workflowws has feature called "parallelism" that limits the number of running workflows, ignoring completed
+      workflows.
+
+      <= v3.1 you can configure a global limit to the total number of running workflows in the cluster. This is suitable
+      for single-tenancy set-up.
+
+      For multi-tenancy set-up, where each tenant own a single namespace, then in >= v3.1 you can globaly configure a
+      limit for the total number of running workflows within each namespace.
+spec:
+  hard:
+    count/workflows.argoproj.io: "100"

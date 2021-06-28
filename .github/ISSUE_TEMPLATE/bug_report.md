@@ -7,6 +7,12 @@ labels: 'bug'
 
 What happened/what you expected to happen?
 
+Before we start, around 2/3 of issues can be fixed by one of the following:
+
+* Have you double-checked your configuration? Maybe 30% of issues are wrong configuration.
+* Have you tested to see if it is fixed in the latest version? Maybe 20% of issues are fixed by this.
+* Have you tried using the PNS executer instead of Docker? Maybe 50% of artifact related issues are fixed by this.
+
 ## Diagnostics
 
 👀 Yes! We need all of your diagnostics, please make sure you add it all, otherwise we'll go around in circles asking you for it:

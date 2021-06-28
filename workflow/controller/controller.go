@@ -467,6 +467,24 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 	err := func() error {
 		pods := wfc.kubeclientset.CoreV1().Pods(namespace)
 		switch action {
+		case shutdownPod:
+			// to shutdown a pod, we signal the wait container to terminate, the wait container in turn will
+			// kill the main container (using whatever mechanism the executor uses), and will then exit itself
+			// once the main container exited
+			pod, err := wfc.getPod(namespace, podName)
+			if pod == nil || err != nil {
+				return err
+			}
+			for _, c := range pod.Spec.Containers {
+				if c.Name == common.WaitContainerName {
+					if err := signal.SignalContainer(wfc.restConfig, pod, common.WaitContainerName, syscall.SIGTERM); err != nil {
+						return err
+					}
+					return nil // done
+				}
+			}
+			// no wait container found
+			fallthrough
 		case terminateContainers:
 			if terminationGracePeriod, err := wfc.signalContainers(namespace, podName, syscall.SIGTERM); err != nil {
 				return err
@@ -509,18 +527,27 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 	return true
 }
 
-func (wfc *WorkflowController) signalContainers(namespace string, podName string, sig syscall.Signal) (time.Duration, error) {
+func (wfc *WorkflowController) getPod(namespace string, podName string) (*apiv1.Pod, error) {
 	obj, exists, err := wfc.podInformer.GetStore().GetByKey(namespace + "/" + podName)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	if !exists {
-		return 0, nil
+		return nil, nil
 	}
 	pod, ok := obj.(*apiv1.Pod)
 	if !ok {
-		return 0, fmt.Errorf("object is not a pod")
+		return nil, fmt.Errorf("object is not a pod")
 	}
+	return pod, nil
+}
+
+func (wfc *WorkflowController) signalContainers(namespace string, podName string, sig syscall.Signal) (time.Duration, error) {
+	pod, err := wfc.getPod(namespace, podName)
+	if pod == nil || err != nil {
+		return 0, err
+	}
+
 	for _, c := range pod.Status.ContainerStatuses {
 		if c.Name == common.WaitContainerName || c.State.Terminated != nil {
 			continue
@@ -741,7 +768,8 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		}
 		if doPodGC {
 			for podName := range woc.completedPods {
-				woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
+				delay := woc.controller.Config.GetPodGCDeleteDelayDuration()
+				woc.controller.queuePodForCleanupAfter(woc.wf.Namespace, podName, deletePod, delay)
 			}
 		}
 	}
