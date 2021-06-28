@@ -86,6 +86,7 @@ RUN cat .dockerignore >> .gitignore
 RUN git status --porcelain | cut -c4- | xargs git update-index --skip-worktree
 
 RUN --mount=type=cache,target=/root/.cache/go-build make dist/argoexec
+RUN setcap CAP_SYS_PTRACE,CAP_SYS_CHROOT+ei dist/argoexec
 
 ####################################################################################################
 
@@ -120,7 +121,6 @@ RUN --mount=type=cache,target=/root/.cache/go-build make dist/argo
 FROM argoexec-base as argoexec
 
 COPY --from=argoexec-build /go/src/github.com/argoproj/argo-workflows/dist/argoexec /usr/local/bin/
-RUN setcap CAP_SYS_PTRACE,CAP_SYS_CHROOT+ei /usr/local/bin/argoexec
 ENTRYPOINT [ "argoexec" ]
 
 ####################################################################################################

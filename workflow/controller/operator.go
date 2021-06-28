@@ -596,10 +596,12 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 			switch woc.execWf.Spec.PodGC.Strategy {
 			case wfv1.PodGCOnPodSuccess:
 				if podPhase == apiv1.PodSucceeded {
-					woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
+					delay := woc.controller.Config.GetPodGCDeleteDelayDuration()
+					woc.controller.queuePodForCleanupAfter(woc.wf.Namespace, podName, deletePod, delay)
 				}
 			case wfv1.PodGCOnPodCompletion:
-				woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
+				delay := woc.controller.Config.GetPodGCDeleteDelayDuration()
+				woc.controller.queuePodForCleanupAfter(woc.wf.Namespace, podName, deletePod, delay)
 			}
 		} else {
 			// label pods which will not be deleted
@@ -1174,14 +1176,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 
 	if node.Fulfilled() && node.FinishedAt.IsZero() {
 		updated = true
-		if !node.IsDaemoned() {
-			node.FinishedAt = getLatestFinishedAt(pod)
-		}
-		if node.FinishedAt.IsZero() {
-			// If we get here, the container is daemoned so the
-			// finishedAt might not have been set.
-			node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
-		}
+		node.FinishedAt = getLatestFinishedAt(pod)
 		node.ResourcesDuration = resource.DurationForPod(pod)
 	}
 	if updated {
@@ -1217,18 +1212,13 @@ func (woc *wfOperationCtx) cleanUpPod(pod *apiv1.Pod, tmpl wfv1.Template) {
 	}
 }
 
-// getLatestFinishedAt returns the latest finishAt timestamp from all the
-// containers of this pod.
 func getLatestFinishedAt(pod *apiv1.Pod) metav1.Time {
 	var latest metav1.Time
-	for _, ctr := range pod.Status.InitContainerStatuses {
-		if ctr.State.Terminated != nil && ctr.State.Terminated.FinishedAt.After(latest.Time) {
-			latest = ctr.State.Terminated.FinishedAt
-		}
-	}
-	for _, ctr := range pod.Status.ContainerStatuses {
-		if ctr.State.Terminated != nil && ctr.State.Terminated.FinishedAt.After(latest.Time) {
-			latest = ctr.State.Terminated.FinishedAt
+	for _, ctr := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
+		if r := ctr.State.Running; r != nil { // if we are running, then the finished at time must be now or after
+			latest = metav1.Now()
+		} else if t := ctr.State.Terminated; t != nil && t.FinishedAt.After(latest.Time) {
+			latest = t.FinishedAt
 		}
 	}
 	return latest
