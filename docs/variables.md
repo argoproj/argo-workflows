@@ -104,6 +104,12 @@ Convert to a JSON string (needed for `withParam`):
 toJson([1, 2])
 ```
 
+Extract data from JSON:
+
+```
+jsonpath(inputs.parameters.json, '$.some.path')
+```
+
 You can also use [Sprig functions](http://masterminds.github.io/sprig/):
 
 Trim a string:
