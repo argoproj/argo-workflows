@@ -120,6 +120,8 @@ Workflow is the definition of a workflow resource
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handlers.yaml)
 
+- [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-destructure-json.yaml)
+
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
@@ -502,6 +504,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handlers.yaml)
+
+- [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-destructure-json.yaml)
 
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
@@ -907,6 +911,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handlers.yaml)
 
+- [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-destructure-json.yaml)
+
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
@@ -1268,6 +1274,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handlers.yaml)
 
+- [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-destructure-json.yaml)
+
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
@@ -1595,6 +1603,8 @@ Arguments to a template
 - [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-artifacts.yaml)
 
 - [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
+
+- [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-destructure-json.yaml)
 
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
@@ -2069,6 +2079,8 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
 
+- [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-destructure-json.yaml)
+
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
@@ -2310,6 +2322,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-step-level.yaml)
 
 - [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
+
+- [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-destructure-json.yaml)
 
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
@@ -2608,6 +2622,8 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-dag-level.yaml)
 
+- [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-destructure-json.yaml)
+
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
 - [`key-only-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/key-only-artifact.yaml)
@@ -2810,6 +2826,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 - [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-artifacts.yaml)
 
 - [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
+
+- [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-destructure-json.yaml)
 
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
@@ -3593,6 +3611,8 @@ ValueFrom describes a location in which to obtain the value to a parameter
 
 - [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
 
+- [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-destructure-json.yaml)
+
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
@@ -3732,6 +3752,8 @@ MetricLabel is a single label for a prometheus metric
 
 - [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
 
+- [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-destructure-json.yaml)
+
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-world.yaml)
@@ -3866,6 +3888,8 @@ DAGTask represents a node in the graph during DAG execution
 - [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-task-level-timeout.yaml)
 
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-dag-level.yaml)
+
+- [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-destructure-json.yaml)
 
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
@@ -4284,6 +4308,8 @@ _No description available_
 
 - [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
 
+- [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-destructure-json.yaml)
+
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
@@ -4452,6 +4478,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handlers.yaml)
+
+- [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-destructure-json.yaml)
 
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
@@ -5042,6 +5070,8 @@ A single application container that you want to run within a pod.
 - [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handlers.yaml)
+
+- [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-destructure-json.yaml)
 
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
@@ -5706,6 +5736,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handlers.yaml)
 
+- [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-destructure-json.yaml)
+
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
@@ -6350,6 +6382,8 @@ EnvVarSource represents a source for the value of an EnvVar.
 - [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
 
 - [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
+
+- [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-destructure-json.yaml)
 
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
