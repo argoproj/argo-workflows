@@ -479,6 +479,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#retrystrategy" title="RetryStrategy" class="md-nav__link">
+    RetryStrategy
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#containerscript-templates" title="Container/Script Templates" class="md-nav__link">
     Container/Script Templates
   </a>
@@ -2335,6 +2342,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#retrystrategy" title="RetryStrategy" class="md-nav__link">
+    RetryStrategy
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#containerscript-templates" title="Container/Script Templates" class="md-nav__link">
     Container/Script Templates
   </a>
@@ -2599,6 +2613,31 @@ returns <code>0</code>. Please review the Sprig documentation to understand whic
 </tr>
 </tbody>
 </table>
+<h3 id="retrystrategy">RetryStrategy<a class="headerlink" href="#retrystrategy" title="Permanent link">&para;</a></h3>
+<p>When using the <code>when</code> field within <code>retryStrategy</code>, special variables are available.</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>lastRetry.exitCode</code></td>
+<td>Exit code of the last retry</td>
+</tr>
+<tr>
+<td><code>lastRetry.Status</code></td>
+<td>Status of the last retry</td>
+</tr>
+<tr>
+<td><code>lastRetry.Duration</code></td>
+<td>Duration in seconds of the last retry</td>
+</tr>
+</tbody>
+</table>
+<p>Note: These variables evaluate to a string type. If using advanced expressions, either cast them to int values (<code>when: "{{=asInt(lastRetry.exitCode) &gt;= 2}}"</code>) or compare them to string values (<code>when: "{{=lastRetry.exitCode != '2'}}"</code>).</p>
 <h3 id="containerscript-templates">Container/Script Templates<a class="headerlink" href="#containerscript-templates" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
