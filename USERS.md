@@ -74,6 +74,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [İşbank](https://www.isbank.com.tr/en)
 1. [Jungle](https://www.jungle.ai/)
 1. [Karius](https://www.kariusdx.com/)
+1. [KarrotPay](https://www.daangnpay.com/)
 1. [Kasa](https://www.kasa.co.kr/)
 1. [KintoHub](https://www.kintohub.com/)
 1. [Localytics](https://www.localytics.com/)

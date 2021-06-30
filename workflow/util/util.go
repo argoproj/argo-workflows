@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -473,8 +474,8 @@ func AddParamToGlobalScope(wf *wfv1.Workflow, log *log.Entry, param wfv1.Paramet
 		wf.Status.Outputs.Parameters = append(wf.Status.Outputs.Parameters, gParam)
 		wfUpdated = true
 	} else {
-		prevVal := *wf.Status.Outputs.Parameters[index].Value
-		if prevVal != *param.Value {
+		prevVal := wf.Status.Outputs.Parameters[index].Value
+		if prevVal == nil || *prevVal != *param.Value {
 			log.Infof("overwriting %s: '%s' -> '%s'", paramName, wf.Status.Outputs.Parameters[index].Value, param.Value)
 			wf.Status.Outputs.Parameters[index].Value = param.Value
 			wfUpdated = true
@@ -977,7 +978,7 @@ func ReadFromFilePathsOrUrls(filePathsOrUrls ...string) ([][]byte, error) {
 				return [][]byte{}, err
 			}
 		} else {
-			body, err = ioutil.ReadFile(filePathOrUrl)
+			body, err = ioutil.ReadFile(filepath.Clean(filePathOrUrl))
 			if err != nil {
 				return [][]byte{}, err
 			}
