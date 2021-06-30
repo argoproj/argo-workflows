@@ -159,6 +159,13 @@ const (
 	// LocalVarExitCode is a step level variable (currently only available in metric emission) that tracks the step's exit code
 	LocalVarExitCode = "exitCode"
 
+	// LocalVarRetriesLastExitCode is a variable that references information about the last retry's exit code
+	LocalVarRetriesLastExitCode = "lastRetry.exitCode"
+	// LocalVarRetriesLastStatus is a variable that references information about the last retry's status
+	LocalVarRetriesLastStatus = "lastRetry.status"
+	// LocalVarRetriesLastDuration is a variable that references information about the last retry's duration
+	LocalVarRetriesLastDuration = "lastRetry.duration"
+
 	KubeConfigDefaultMountPath    = "/kube/config"
 	KubeConfigDefaultVolumeName   = "kubeconfig"
 	ServiceAccountTokenMountPath  = "/var/run/secrets/kubernetes.io/serviceaccount"
