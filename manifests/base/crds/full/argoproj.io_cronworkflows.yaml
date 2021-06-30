@@ -898,6 +898,8 @@ spec:
                           maxDuration:
                             type: string
                         type: object
+                      expression:
+                        type: string
                       limit:
                         anyOf:
                         - type: integer
@@ -5257,6 +5259,8 @@ spec:
                               maxDuration:
                                 type: string
                             type: object
+                          expression:
+                            type: string
                           limit:
                             anyOf:
                             - type: integer
@@ -11408,6 +11412,8 @@ spec:
                                 maxDuration:
                                   type: string
                               type: object
+                            expression:
+                              type: string
                             limit:
                               anyOf:
                               - type: integer
