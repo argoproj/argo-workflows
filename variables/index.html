@@ -2481,6 +2481,9 @@ indexing into the parameter map, e.g. <code>inputs.parameters['my-param']</code>
 <p>Convert to a JSON string (needed for <code>withParam</code>):</p>
 <div class="highlight"><pre><span></span><code>toJson([1, 2])
 </code></pre></div>
+<p>Extract data from JSON:</p>
+<div class="highlight"><pre><span></span><code>jsonpath(inputs.parameters.json, &#39;$.some.path&#39;)
+</code></pre></div>
 <p>You can also use <a href="http://masterminds.github.io/sprig/">Sprig functions</a>:</p>
 <p>Trim a string:</p>
 <div class="highlight"><pre><span></span><code>sprig.trim(inputs.parameters[&#39;my-string-param&#39;])
