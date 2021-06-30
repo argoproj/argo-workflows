@@ -31,12 +31,12 @@ type impl struct {
 }
 
 func (t *impl) Replace(replaceMap map[string]string, allowUnresolved bool) (string, error) {
-	env := exprenv.GetFuncMap(envMap(replaceMap))
 	replacedTmpl := &bytes.Buffer{}
 	_, err := t.Template.ExecuteFunc(replacedTmpl, func(w io.Writer, tag string) (int, error) {
 		kind, expression := parseTag(tag)
 		switch kind {
 		case kindExpression:
+			env := exprenv.GetFuncMap(envMap(replaceMap))
 			return expressionReplace(w, expression, env, allowUnresolved)
 		default:
 			return simpleReplace(w, tag, replaceMap, allowUnresolved)
