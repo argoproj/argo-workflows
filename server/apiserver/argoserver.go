@@ -6,6 +6,8 @@ import (
 	"net"
 	"net/http"
 	"time"
+	"os"
+	"strconv"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_logrus "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
@@ -56,10 +58,14 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 )
 
-const (
-	// MaxGRPCMessageSize contains max grpc message size
-	MaxGRPCMessageSize = 100 * 1024 * 1024
-)
+func getGRPCMessageSize() int {
+	MaxGRPCMessageSize := 100 * 1024 * 1024
+	value, exists := os.LookupEnv("GRPC_MESSAGE_SIZE")
+    	if exists {
+		MaxGRPCMessageSize, _ = strconv.Atoi(value)
+	}
+   	return MaxGRPCMessageSize
+}
 
 type argoServer struct {
 	baseHRef string
@@ -225,8 +231,8 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 		// Set both the send and receive the bytes limit to be 100MB
 		// The proper way to achieve high performance is to have pagination
 		// while we work toward that, we can have high limit first
-		grpc.MaxRecvMsgSize(MaxGRPCMessageSize),
-		grpc.MaxSendMsgSize(MaxGRPCMessageSize),
+		grpc.MaxRecvMsgSize(getGRPCMessageSize()),
+		grpc.MaxSendMsgSize(getGRPCMessageSize()),
 		grpc.ConnectionTimeout(300 * time.Second),
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
 			grpc_prometheus.UnaryServerInterceptor,
@@ -246,6 +252,7 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 
 	grpcServer := grpc.NewServer(sOpts...)
 
+	log.Infof("GRPC Server Max Message Size is: %d", getGRPCMessageSize())
 	infopkg.RegisterInfoServiceServer(grpcServer, info.NewInfoServer(as.managedNamespace, links))
 	eventpkg.RegisterEventServiceServer(grpcServer, eventServer)
 	eventsourcepkg.RegisterEventSourceServiceServer(grpcServer, eventsource.NewEventSourceServer())
@@ -271,7 +278,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 		TLSConfig: as.tlsConfig,
 	}
 	dialOpts := []grpc.DialOption{
-		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxGRPCMessageSize)),
+		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(getGRPCMessageSize())),
 	}
 	if as.tlsConfig != nil {
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(as.tlsConfig)))
