@@ -198,20 +198,27 @@ func (d *DockerExecutor) Wait(ctx context.Context, containerNames []string) erro
 			log.WithError(err).Error("failed to poll container IDs")
 		}
 	}()
-	for !d.haveContainers(containerNames) {
+	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			time.Sleep(1 * time.Second)
+			if d.haveContainers(containerNames) {
+				containerIDs, err := d.getContainerIDs(containerNames)
+				if err != nil {
+					return err
+				}
+				_, err = common.RunCommand("docker", append([]string{"wait"}, containerIDs...)...)
+				if err != nil && strings.Contains(err.Error(), "No such container") {
+					// e.g. reason could be ContainerCannotRun
+					log.WithError(err).Info("ignoring error as container may have been re-created and therefore container ID may have changed")
+					continue
+				}
+				return err
+			}
+			time.Sleep(time.Second)
 		}
 	}
-	containerIDs, err := d.getContainerIDs(containerNames)
-	if err != nil {
-		return err
-	}
-	_, err = common.RunCommand("docker", append([]string{"wait"}, containerIDs...)...)
-	return err
 }
 
 func (d *DockerExecutor) listContainers() (map[string]ctr, error) {
@@ -269,10 +276,6 @@ func (d *DockerExecutor) pollContainerIDs(ctx context.Context, containerNames []
 				}
 				if c.createdAt.Before(started.Add(-15 * time.Second)) {
 					log.Infof("ignoring container %q created at %v, too long before process started", containerName, c.createdAt)
-					continue
-				}
-				if c.status == "Created" && d.containers[containerName].status != "" {
-					log.Infof("ignoring created container %q that would %s -> %s", containerName, d.containers[containerName].status, c.status)
 					continue
 				}
 				d.containers[containerName] = c
