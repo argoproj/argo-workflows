@@ -1471,6 +1471,28 @@
         }
       }
     },
+    "/api/v1/settings": {
+      "get": {
+        "tags": [
+          "InfoService"
+        ],
+        "operationId": "InfoService_GetSettings",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GetSettingsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/stream/event-sources/{namespace}": {
       "get": {
         "tags": [
@@ -7016,6 +7038,14 @@
         },
         "value": {
           "description": "Value is the value of the metric",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.GetSettingsResponse": {
+      "type": "object",
+      "properties": {
+        "uiCssURL": {
           "type": "string"
         }
       }

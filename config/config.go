@@ -126,6 +126,9 @@ type Config struct {
 	// The command/args for each image, needed when the command is not specified and the emissary executor is used.
 	// https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary
 	Images map[string]Image `json:"images,omitempty"`
+
+	// UiCssURL local or remote path to user-defined CSS to customize the UI.
+	UiCssURL string `json:"ui.cssurl,omitempty"`
 }
 
 func (c Config) GetContainerRuntimeExecutor(labels labels.Labels) (string, error) {
