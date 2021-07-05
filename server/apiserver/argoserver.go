@@ -62,7 +62,8 @@ const (
 )
 
 type argoServer struct {
-	baseHRef string
+	baseHRef      string
+	extraFilesDir string
 	// https://itnext.io/practical-guide-to-securing-grpc-connections-with-go-and-tls-part-1-f63058e9d6d1
 	tlsConfig                *tls.Config
 	hsts                     bool
@@ -80,12 +81,13 @@ type argoServer struct {
 }
 
 type ArgoServerOpts struct {
-	BaseHRef   string
-	TLSConfig  *tls.Config
-	Namespace  string
-	Clients    *types.Clients
-	RestConfig *rest.Config
-	AuthModes  auth.Modes
+	BaseHRef      string
+	ExtraFilesDir string
+	TLSConfig     *tls.Config
+	Namespace     string
+	Clients       *types.Clients
+	RestConfig    *rest.Config
+	AuthModes     auth.Modes
 	// config map name
 	ConfigName               string
 	ManagedNamespace         string
@@ -118,6 +120,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 	}
 	return &argoServer{
 		baseHRef:                 opts.BaseHRef,
+		extraFilesDir:            opts.ExtraFilesDir,
 		tlsConfig:                opts.TLSConfig,
 		hsts:                     opts.HSTS,
 		namespace:                opts.Namespace,
@@ -311,7 +314,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mux.Handle("/oauth2/callback", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleCallback)))
 	mux.Handle("/metrics", promhttp.Handler())
 	// we only enable HTST if we are secure mode, otherwise you would never be able access the UI
-	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef, as.tlsConfig != nil && as.hsts, as.xframeOptions, as.accessControlAllowOrigin).ServerFiles)
+	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef, as.tlsConfig != nil && as.hsts, as.xframeOptions, as.accessControlAllowOrigin, as.extraFilesDir).ServerFiles)
 	return &httpServer
 }
 

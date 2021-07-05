@@ -6,15 +6,24 @@ import (
 	"strings"
 )
 
+var (
+	extraPath = "/extra/"
+)
+
 type FilesServer struct {
-	baseHRef        string
-	hsts            bool
-	xframeOpts      string
-	corsAllowOrigin string
+	baseHRef          string
+	hsts              bool
+	xframeOpts        string
+	corsAllowOrigin   string
+	extraFilesHandler http.Handler
 }
 
-func NewFilesServer(baseHRef string, hsts bool, xframeOpts string, corsAllowOrigin string) *FilesServer {
-	return &FilesServer{baseHRef, hsts, xframeOpts, corsAllowOrigin}
+func NewFilesServer(baseHRef string, hsts bool, xframeOpts string, corsAllowOrigin string, extraFilesDir string) *FilesServer {
+	var extraFilesHandler http.Handler
+	if extraFilesDir != "" {
+		extraFilesHandler = http.StripPrefix(extraPath, http.FileServer(http.Dir(extraFilesDir)))
+	}
+	return &FilesServer{baseHRef, hsts, xframeOpts, corsAllowOrigin, extraFilesHandler}
 }
 
 func (s *FilesServer) ServerFiles(w http.ResponseWriter, r *http.Request) {
@@ -48,6 +57,13 @@ func (s *FilesServer) ServerFiles(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Security-Policy", "default-src 'self' 'unsafe-inline'; img-src 'self' data:")
 	if s.hsts {
 		w.Header().Set("Strict-Transport-Security", "max-age=31536000")
+	}
+
+	if s.extraFilesHandler != nil {
+		if strings.HasPrefix(r.URL.Path, extraPath) {
+			s.extraFilesHandler.ServeHTTP(w, r)
+			return
+		}
 	}
 
 	// in my IDE (IntelliJ) the next line is red for some reason - but this is fine
