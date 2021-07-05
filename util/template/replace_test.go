@@ -7,7 +7,7 @@ import (
 )
 
 func Test_Replace(t *testing.T) {
-	t.Run("InvailedTemplate", func(t *testing.T) {
+	t.Run("InvalidTemplate", func(t *testing.T) {
 		_, err := Replace("{{", nil, false)
 		assert.Error(t, err)
 	})
