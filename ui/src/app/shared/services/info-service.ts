@@ -1,5 +1,5 @@
 import request = require('superagent');
-import {GetUserInfoResponse, Info, Version, Settings} from '../../../models';
+import {GetUserInfoResponse, Info, Settings, Version} from '../../../models';
 
 import requests from './requests';
 
@@ -23,6 +23,6 @@ export class InfoService {
     }
 
     public getSettings() {
-        return request.get(`api/v1/settings`).then(res => res.body as Settings)
+        return request.get(`api/v1/settings`).then(res => res.body as Settings);
     }
 }

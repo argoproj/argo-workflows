@@ -23,5 +23,5 @@ export interface GetUserInfoResponse {
 }
 
 export interface Settings {
-	uiCssURL?: string;
+    uiCssURL?: string;
 }

@@ -5,7 +5,7 @@ import * as PropTypes from 'prop-types';
 import * as React from 'react';
 import {AppRouter} from './app-router';
 import {ContextApis, Provider} from './shared/context';
-import { services } from './shared/services';
+import {services} from './shared/services';
 
 const history = createBrowserHistory();
 
