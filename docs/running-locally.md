@@ -55,6 +55,13 @@ Either:
 
 At this point you’ll have everything you need to use the CLI and UI.
 
+
+### 6. Build Argo images
+
+Before submitting/running workflows, build all Argo images, so they're available for the workflow.
+
+    make build
+
 ## Troubleshooting Notes
 
 If you get a similar error when running one of the make pre-commit tests `make: *** [pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json] Error 1`, ensure you are working within your $GOPATH (YOUR-GOPATH/src/github.com/argoproj/argo-workflows).
