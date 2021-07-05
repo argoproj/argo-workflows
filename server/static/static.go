@@ -27,6 +27,13 @@ func NewFilesServer(baseHRef string, hsts bool, xframeOpts string, corsAllowOrig
 }
 
 func (s *FilesServer) ServerFiles(w http.ResponseWriter, r *http.Request) {
+	if s.extraFilesHandler != nil {
+		if strings.HasPrefix(r.URL.Path, extraPath) {
+			s.extraFilesHandler.ServeHTTP(w, r)
+			return
+		}
+	}
+
 	// If there is no stored static file, we'll redirect to the js app
 	if Hash(strings.TrimLeft(r.URL.Path, "/")) == "" {
 		r.URL.Path = "index.html"
@@ -57,13 +64,6 @@ func (s *FilesServer) ServerFiles(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Security-Policy", "default-src 'self' 'unsafe-inline'; img-src 'self' data:")
 	if s.hsts {
 		w.Header().Set("Strict-Transport-Security", "max-age=31536000")
-	}
-
-	if s.extraFilesHandler != nil {
-		if strings.HasPrefix(r.URL.Path, extraPath) {
-			s.extraFilesHandler.ServeHTTP(w, r)
-			return
-		}
 	}
 
 	// in my IDE (IntelliJ) the next line is red for some reason - but this is fine
