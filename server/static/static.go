@@ -49,11 +49,13 @@ func (s *FilesServer) ServerFiles(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Serve extra files if any.
-	if s.extraFilesHandler != nil {
-		if strings.HasPrefix(r.URL.Path, extraPath) {
+	if strings.HasPrefix(r.URL.Path, extraPath) {
+		if s.extraFilesHandler != nil {
 			s.extraFilesHandler.ServeHTTP(w, r)
-			return
+		} else {
+			http.NotFound(w, r)
 		}
+		return
 	}
 
 	// If there is no stored static file, we'll redirect to the js app
