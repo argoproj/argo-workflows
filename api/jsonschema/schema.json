@@ -2846,6 +2846,36 @@
       ],
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.ArtifactRepository": {
+      "description": "ArtifactRepository represents an artifact repository in which a controller will store its artifacts",
+      "properties": {
+        "archiveLogs": {
+          "description": "ArchiveLogs enables log archiving",
+          "type": "boolean"
+        },
+        "artifactory": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifactRepository",
+          "description": "Artifactory stores artifacts to JFrog Artifactory"
+        },
+        "gcs": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GCSArtifactRepository",
+          "description": "GCS stores artifact in a GCS object store"
+        },
+        "hdfs": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HDFSArtifactRepository",
+          "description": "HDFS stores artifacts in HDFS"
+        },
+        "oss": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OSSArtifactRepository",
+          "description": "OSS stores artifact in a OSS-compliant object store"
+        },
+        "s3": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.S3ArtifactRepository",
+          "description": "S3 stores artifact in a S3-compliant object store"
+        }
+      },
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.ArtifactRepositoryRef": {
       "properties": {
         "configMap": {
@@ -2861,6 +2891,10 @@
     },
     "io.argoproj.workflow.v1alpha1.ArtifactRepositoryRefStatus": {
       "properties": {
+        "artifactRepository": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactRepository",
+          "description": "The repository the workflow will use. This maybe empty before v3.1."
+        },
         "configMap": {
           "description": "The name of the config map. Defaults to \"artifact-repositories\".",
           "type": "string"
@@ -2902,24 +2936,15 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.ArtifactoryArtifactRepository": {
-      "properties": {
-        "artifactoryAuth": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryAuth"
-        },
-        "repoURL": {
-          "description": "RepoURL is the url for artifactory repo.",
-          "type": "string"
-        }
-      },
-      "title": "ArtifactoryArtifactRepository defines the controller configuration for an artifactory artifact repository",
-      "type": "object"
-    },
-    "io.argoproj.workflow.v1alpha1.ArtifactoryAuth": {
-      "description": "ArtifactoryAuth describes the secret selectors required for authenticating to artifactory",
+      "description": "ArtifactoryArtifactRepository defines the controller configuration for an artifactory artifact repository",
       "properties": {
         "passwordSecret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "description": "PasswordSecret is the secret selector to the repository password"
+        },
+        "repoURL": {
+          "description": "RepoURL is the url for artifactory repo.",
+          "type": "string"
         },
         "usernameSecret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
@@ -3601,23 +3626,14 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.GCSArtifactRepository": {
-      "properties": {
-        "gCSBucket": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GCSBucket"
-        },
-        "keyFormat": {
-          "title": "KeyFormat is defines the format of how to store keys. Can reference workflow variables",
-          "type": "string"
-        }
-      },
-      "title": "GCSArtifactRepository defines the controller configuration for a GCS artifact repository",
-      "type": "object"
-    },
-    "io.argoproj.workflow.v1alpha1.GCSBucket": {
-      "description": "GCSBucket contains the access information for interfacring with a GCS bucket",
+      "description": "GCSArtifactRepository defines the controller configuration for a GCS artifact repository",
       "properties": {
         "bucket": {
           "description": "Bucket is the name of the bucket",
+          "type": "string"
+        },
+        "keyFormat": {
+          "description": "KeyFormat is defines the format of how to store keys. Can reference workflow variables",
           "type": "string"
         },
         "serviceAccountKeySecret": {
@@ -3772,24 +3788,7 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.HDFSArtifactRepository": {
-      "properties": {
-        "force": {
-          "title": "Force copies a file forcibly even if it exists (default: false)",
-          "type": "boolean"
-        },
-        "hDFSConfig": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HDFSConfig"
-        },
-        "pathFormat": {
-          "title": "PathFormat is defines the format of path to store a file. Can reference workflow variables",
-          "type": "string"
-        }
-      },
-      "title": "HDFSArtifactRepository defines the controller configuration for an HDFS artifact repository",
-      "type": "object"
-    },
-    "io.argoproj.workflow.v1alpha1.HDFSConfig": {
-      "description": "HDFSConfig is configurations for HDFS",
+      "description": "HDFSArtifactRepository defines the controller configuration for an HDFS artifact repository",
       "properties": {
         "addresses": {
           "description": "Addresses is accessible addresses of HDFS name nodes",
@@ -3797,6 +3796,10 @@
             "type": "string"
           },
           "type": "array"
+        },
+        "force": {
+          "description": "Force copies a file forcibly even if it exists (default: false)",
+          "type": "boolean"
         },
         "hdfsUser": {
           "description": "HDFSUser is the user to access HDFS file system. It is ignored if either ccache or keytab is used.",
@@ -3824,6 +3827,10 @@
         },
         "krbUsername": {
           "description": "KrbUsername is the Kerberos username used with Kerberos keytab It must be set if keytab is used.",
+          "type": "string"
+        },
+        "pathFormat": {
+          "description": "PathFormat is defines the format of path to store a file. Can reference workflow variables",
           "type": "string"
         }
       },
@@ -4376,20 +4383,7 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.OSSArtifactRepository": {
-      "properties": {
-        "keyFormat": {
-          "title": "KeyFormat is defines the format of how to store keys. Can reference workflow variables",
-          "type": "string"
-        },
-        "oSSBucket": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OSSBucket"
-        }
-      },
-      "title": "OSSArtifactRepository defines the controller configuration for an OSS artifact repository",
-      "type": "object"
-    },
-    "io.argoproj.workflow.v1alpha1.OSSBucket": {
-      "description": "OSSBucket contains the access information required for interfacing with an Alibaba Cloud OSS bucket",
+      "description": "OSSArtifactRepository defines the controller configuration for an OSS artifact repository",
       "properties": {
         "accessKeySecret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
@@ -4405,6 +4399,10 @@
         },
         "endpoint": {
           "description": "Endpoint is the hostname of the bucket endpoint",
+          "type": "string"
+        },
+        "keyFormat": {
+          "description": "KeyFormat is defines the format of how to store keys. Can reference workflow variables",
           "type": "string"
         },
         "lifecycleRule": {
@@ -4704,24 +4702,7 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.S3ArtifactRepository": {
-      "properties": {
-        "keyFormat": {
-          "title": "KeyFormat is defines the format of how to store keys. Can reference workflow variables",
-          "type": "string"
-        },
-        "keyPrefix": {
-          "title": "KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.\nDEPRECATED. Use KeyFormat instead",
-          "type": "string"
-        },
-        "s3Bucket": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.S3Bucket"
-        }
-      },
-      "title": "S3ArtifactRepository defines the controller configuration for an S3 artifact repository",
-      "type": "object"
-    },
-    "io.argoproj.workflow.v1alpha1.S3Bucket": {
-      "description": "S3Bucket contains the access information required for interfacing with an S3 bucket",
+      "description": "S3ArtifactRepository defines the controller configuration for an S3 artifact repository",
       "properties": {
         "accessKeySecret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
@@ -4742,6 +4723,14 @@
         "insecure": {
           "description": "Insecure will connect to the service with TLS",
           "type": "boolean"
+        },
+        "keyFormat": {
+          "description": "KeyFormat is defines the format of how to store keys. Can reference workflow variables",
+          "type": "string"
+        },
+        "keyPrefix": {
+          "description": "KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts. DEPRECATED. Use KeyFormat instead",
+          "type": "string"
         },
         "region": {
           "description": "Region contains the optional bucket region",
