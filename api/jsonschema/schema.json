@@ -2901,6 +2901,33 @@
       ],
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.ArtifactoryArtifactRepository": {
+      "properties": {
+        "artifactoryAuth": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryAuth"
+        },
+        "repoURL": {
+          "description": "RepoURL is the url for artifactory repo.",
+          "type": "string"
+        }
+      },
+      "title": "ArtifactoryArtifactRepository defines the controller configuration for an artifactory artifact repository",
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.ArtifactoryAuth": {
+      "description": "ArtifactoryAuth describes the secret selectors required for authenticating to artifactory",
+      "properties": {
+        "passwordSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "PasswordSecret is the secret selector to the repository password"
+        },
+        "usernameSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "UsernameSecret is the secret selector to the repository username"
+        }
+      },
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.Backoff": {
       "description": "Backoff is a backoff strategy to use within retryStrategy",
       "properties": {
@@ -3573,6 +3600,33 @@
       ],
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.GCSArtifactRepository": {
+      "properties": {
+        "gCSBucket": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GCSBucket"
+        },
+        "keyFormat": {
+          "title": "KeyFormat is defines the format of how to store keys. Can reference workflow variables",
+          "type": "string"
+        }
+      },
+      "title": "GCSArtifactRepository defines the controller configuration for a GCS artifact repository",
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.GCSBucket": {
+      "description": "GCSBucket contains the access information for interfacring with a GCS bucket",
+      "properties": {
+        "bucket": {
+          "description": "Bucket is the name of the bucket",
+          "type": "string"
+        },
+        "serviceAccountKeySecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "ServiceAccountKeySecret is the secret selector to the bucket's service account key"
+        }
+      },
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.Gauge": {
       "description": "Gauge is a Gauge prometheus metric",
       "properties": {
@@ -3715,6 +3769,64 @@
       "required": [
         "path"
       ],
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.HDFSArtifactRepository": {
+      "properties": {
+        "force": {
+          "title": "Force copies a file forcibly even if it exists (default: false)",
+          "type": "boolean"
+        },
+        "hDFSConfig": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HDFSConfig"
+        },
+        "pathFormat": {
+          "title": "PathFormat is defines the format of path to store a file. Can reference workflow variables",
+          "type": "string"
+        }
+      },
+      "title": "HDFSArtifactRepository defines the controller configuration for an HDFS artifact repository",
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.HDFSConfig": {
+      "description": "HDFSConfig is configurations for HDFS",
+      "properties": {
+        "addresses": {
+          "description": "Addresses is accessible addresses of HDFS name nodes",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "hdfsUser": {
+          "description": "HDFSUser is the user to access HDFS file system. It is ignored if either ccache or keytab is used.",
+          "type": "string"
+        },
+        "krbCCacheSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "KrbCCacheSecret is the secret selector for Kerberos ccache Either ccache or keytab can be set to use Kerberos."
+        },
+        "krbConfigConfigMap": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector",
+          "description": "KrbConfig is the configmap selector for Kerberos config as string It must be set if either ccache or keytab is used."
+        },
+        "krbKeytabSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "KrbKeytabSecret is the secret selector for Kerberos keytab Either ccache or keytab can be set to use Kerberos."
+        },
+        "krbRealm": {
+          "description": "KrbRealm is the Kerberos realm used with Kerberos keytab It must be set if keytab is used.",
+          "type": "string"
+        },
+        "krbServicePrincipalName": {
+          "description": "KrbServicePrincipalName is the principal name of Kerberos service It must be set if either ccache or keytab is used.",
+          "type": "string"
+        },
+        "krbUsername": {
+          "description": "KrbUsername is the Kerberos username used with Kerberos keytab It must be set if keytab is used.",
+          "type": "string"
+        }
+      },
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.HTTP": {
@@ -4263,6 +4375,53 @@
       ],
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.OSSArtifactRepository": {
+      "properties": {
+        "keyFormat": {
+          "title": "KeyFormat is defines the format of how to store keys. Can reference workflow variables",
+          "type": "string"
+        },
+        "oSSBucket": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OSSBucket"
+        }
+      },
+      "title": "OSSArtifactRepository defines the controller configuration for an OSS artifact repository",
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.OSSBucket": {
+      "description": "OSSBucket contains the access information required for interfacing with an Alibaba Cloud OSS bucket",
+      "properties": {
+        "accessKeySecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "AccessKeySecret is the secret selector to the bucket's access key"
+        },
+        "bucket": {
+          "description": "Bucket is the name of the bucket",
+          "type": "string"
+        },
+        "createBucketIfNotPresent": {
+          "description": "CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist",
+          "type": "boolean"
+        },
+        "endpoint": {
+          "description": "Endpoint is the hostname of the bucket endpoint",
+          "type": "string"
+        },
+        "lifecycleRule": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OSSLifecycleRule",
+          "description": "LifecycleRule specifies how to manage bucket's lifecycle"
+        },
+        "secretKeySecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "SecretKeySecret is the secret selector to the bucket's secret key"
+        },
+        "securityToken": {
+          "description": "SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.OSSLifecycleRule": {
       "description": "OSSLifecycleRule specifies how to manage bucket's lifecycle",
       "properties": {
@@ -4524,6 +4683,65 @@
         "key": {
           "description": "Key is the key in the bucket where the artifact resides",
           "type": "string"
+        },
+        "region": {
+          "description": "Region contains the optional bucket region",
+          "type": "string"
+        },
+        "roleARN": {
+          "description": "RoleARN is the Amazon Resource Name (ARN) of the role to assume.",
+          "type": "string"
+        },
+        "secretKeySecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "SecretKeySecret is the secret selector to the bucket's secret key"
+        },
+        "useSDKCreds": {
+          "description": "UseSDKCreds tells the driver to figure out credentials based on sdk defaults.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.S3ArtifactRepository": {
+      "properties": {
+        "keyFormat": {
+          "title": "KeyFormat is defines the format of how to store keys. Can reference workflow variables",
+          "type": "string"
+        },
+        "keyPrefix": {
+          "title": "KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.\nDEPRECATED. Use KeyFormat instead",
+          "type": "string"
+        },
+        "s3Bucket": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.S3Bucket"
+        }
+      },
+      "title": "S3ArtifactRepository defines the controller configuration for an S3 artifact repository",
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.S3Bucket": {
+      "description": "S3Bucket contains the access information required for interfacing with an S3 bucket",
+      "properties": {
+        "accessKeySecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "AccessKeySecret is the secret selector to the bucket's access key"
+        },
+        "bucket": {
+          "description": "Bucket is the name of the bucket",
+          "type": "string"
+        },
+        "createBucketIfNotPresent": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CreateS3BucketOptions",
+          "description": "CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist"
+        },
+        "endpoint": {
+          "description": "Endpoint is the hostname of the bucket endpoint",
+          "type": "string"
+        },
+        "insecure": {
+          "description": "Insecure will connect to the service with TLS",
+          "type": "boolean"
         },
         "region": {
           "description": "Region contains the optional bucket region",

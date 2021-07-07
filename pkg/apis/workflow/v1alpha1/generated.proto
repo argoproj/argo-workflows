@@ -159,6 +159,9 @@ message ArtifactRepositoryRefStatus {
 
   // If this ref represents the default artifact repository, rather than a config map.
   optional bool default = 3;
+
+  // The repository the workflow will use. This maybe empty before v3.1.
+  optional ArtifactRepository artifactRepository = 4;
 }
 
 // ArtifactoryArtifact is the location of an artifactory artifact

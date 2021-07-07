@@ -47,11 +47,11 @@ func (s *artifactRepositories) Resolve(ctx context.Context, ref *wfv1.ArtifactRe
 	} else {
 		refs = []*wfv1.ArtifactRepositoryRefStatus{
 			{Namespace: workflowNamespace},
-			wfv1.DefaultArtifactRepositoryRefStatus,
+			{Default: true},
 		}
 	}
 	for _, r := range refs {
-		resolvedRef, _, err := s.get(ctx, r)
+		resolvedRef, err := s.get(ctx, r)
 		if err != nil && (apierr.IsNotFound(err) || strings.Contains(err.Error(), "config map missing key")) {
 			continue
 		}
@@ -65,13 +65,24 @@ func (s *artifactRepositories) Resolve(ctx context.Context, ref *wfv1.ArtifactRe
 }
 
 func (s *artifactRepositories) Get(ctx context.Context, ref *wfv1.ArtifactRepositoryRefStatus) (*wfv1.ArtifactRepository, error) {
-	_, repo, err := s.get(ctx, ref)
-	return repo, err
+	ref, err := s.get(ctx, ref)
+	if err != nil {
+		return nil, err
+	}
+	return ref.ArtifactRepository, nil
 }
 
-func (s *artifactRepositories) get(ctx context.Context, ref *wfv1.ArtifactRepositoryRefStatus) (*wfv1.ArtifactRepositoryRefStatus, *wfv1.ArtifactRepository, error) {
+func (s *artifactRepositories) get(ctx context.Context, ref *wfv1.ArtifactRepositoryRefStatus) (*wfv1.ArtifactRepositoryRefStatus, error) {
+	if ref.ArtifactRepository != nil {
+		return ref, nil
+	}
 	if ref.Default {
-		return ref, s.defaultArtifactRepository, nil
+		return &wfv1.ArtifactRepositoryRefStatus{
+			ArtifactRepositoryRef: ref.ArtifactRepositoryRef,
+			Namespace:             ref.Namespace,
+			Default:               true,
+			ArtifactRepository:    s.defaultArtifactRepository,
+		}, nil
 	}
 	var cm *v1.ConfigMap
 	namespace := ref.Namespace
@@ -82,16 +93,23 @@ func (s *artifactRepositories) get(ctx context.Context, ref *wfv1.ArtifactReposi
 		return !errorsutil.IsTransientErr(err), err
 	})
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	key := ref.GetKeyOr(cm.Annotations["workflows.argoproj.io/default-artifact-repository"])
 	value, ok := cm.Data[key]
 	if !ok {
-		return nil, nil, fmt.Errorf(`config map missing key "%s" for artifact repository ref "%v"`, key, ref)
+		return nil, fmt.Errorf(`config map missing key "%s" for artifact repository ref "%v"`, key, ref)
 	}
 	repo := &wfv1.ArtifactRepository{}
+	if err := yaml.Unmarshal([]byte(value), repo); err != nil {
+		return nil, fmt.Errorf(`failed to unmarshall config map key %q for artifact repository ref "%v": %w`, key, ref, err)
+	}
 	// we need the fully filled out ref so we can store it in the workflow status and it will never change
 	// (even if the config map default annotation is changed)
 	// this means users can change the default
-	return &wfv1.ArtifactRepositoryRefStatus{Namespace: namespace, ArtifactRepositoryRef: wfv1.ArtifactRepositoryRef{ConfigMap: configMap, Key: key}}, repo, yaml.Unmarshal([]byte(value), repo)
+	return &wfv1.ArtifactRepositoryRefStatus{
+		Namespace:             namespace,
+		ArtifactRepositoryRef: wfv1.ArtifactRepositoryRef{ConfigMap: configMap, Key: key},
+		ArtifactRepository:    repo,
+	}, nil
 }
