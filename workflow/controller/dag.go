@@ -701,19 +701,6 @@ func (d *dagContext) evaluateDependsLogic(taskName string) (bool, bool, error) {
 			}
 		}
 
-		// Previously we used `depNode.DisplayName` to generate all onExit node names. However, as these can be non-unique
-		// we transitioned to using `depNode.Name` instead, which are guaranteed to be unique. In order to not disrupt
-		// running workflows during upgrade time, we do an additional check to see if there is an onExit node with the old
-		// name (`depNode.DisplayName`).
-		// TODO: This scaffold code should be removed after a couple of "grace period" version upgrades to allow transitions. It was introduced in v3.0.0
-		// See more: https://github.com/argoproj/argo-workflows/issues/5502
-		legacyOnExitNodeName := common.GenerateOnExitNodeName(depNode.DisplayName)
-		if onExitNode := d.wf.GetNodeByName(legacyOnExitNodeName); onExitNode != nil && d.wf.GetNodeByName(depNode.Name).HasChild(onExitNode.ID) {
-			if !onExitNode.Fulfilled() {
-				return false, false, nil
-			}
-		}
-
 		evalTaskName := strings.Replace(taskName, "-", "_", -1)
 		if _, ok := evalScope[evalTaskName]; ok {
 			continue
