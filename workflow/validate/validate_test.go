@@ -2188,7 +2188,7 @@ spec:
       args: ["name: {{inputs.parameters.name}} namespace: {{inputs.parameters.namespace}} serviceAccountName: {{inputs.parameters.serviceAccountName}} uid: {{inputs.parameters.uid}} priority: {{inputs.parameters.priority}}"]
 `
 
-func TestWorfklowGlobalVariables(t *testing.T) {
+func TestWorkflowGlobalVariables(t *testing.T) {
 	_, err := validate(globalVariables)
 	assert.NoError(t, err)
 }
