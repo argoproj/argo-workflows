@@ -9,12 +9,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 
-	"github.com/argoproj/argo-workflows/v3/config"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 func TestArtifactRepositories(t *testing.T) {
-	defaultArtifactRepository := &config.ArtifactRepository{}
+	defaultArtifactRepository := &wfv1.ArtifactRepository{}
 	k := kubefake.NewSimpleClientset()
 	i := New(k, "my-ctrl-ns", defaultArtifactRepository)
 	t.Run("Explicit.WorkflowNamespace", func(t *testing.T) {

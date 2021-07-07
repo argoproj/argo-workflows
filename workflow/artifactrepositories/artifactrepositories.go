@@ -12,7 +12,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo-workflows/v3/config"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/util/retry"
@@ -25,17 +24,17 @@ type Interface interface {
 	// Resolve Figures out the correct repository to for a workflow.
 	Resolve(ctx context.Context, ref *wfv1.ArtifactRepositoryRef, workflowNamespace string) (*wfv1.ArtifactRepositoryRefStatus, error)
 	// Get returns the referenced repository. May return nil (if no default artifact repository is configured).
-	Get(ctx context.Context, ref *wfv1.ArtifactRepositoryRefStatus) (*config.ArtifactRepository, error)
+	Get(ctx context.Context, ref *wfv1.ArtifactRepositoryRefStatus) (*wfv1.ArtifactRepository, error)
 }
 
-func New(kubernetesInterface kubernetes.Interface, namespace string, defaultArtifactRepository *config.ArtifactRepository) Interface {
+func New(kubernetesInterface kubernetes.Interface, namespace string, defaultArtifactRepository *wfv1.ArtifactRepository) Interface {
 	return &artifactRepositories{kubernetesInterface, namespace, defaultArtifactRepository}
 }
 
 type artifactRepositories struct {
 	kubernetesInterface       kubernetes.Interface
 	namespace                 string
-	defaultArtifactRepository *config.ArtifactRepository
+	defaultArtifactRepository *wfv1.ArtifactRepository
 }
 
 func (s *artifactRepositories) Resolve(ctx context.Context, ref *wfv1.ArtifactRepositoryRef, workflowNamespace string) (*wfv1.ArtifactRepositoryRefStatus, error) {
@@ -65,12 +64,12 @@ func (s *artifactRepositories) Resolve(ctx context.Context, ref *wfv1.ArtifactRe
 	return nil, fmt.Errorf(`failed to find any artifact repository for artifact repository ref "%v"`, ref)
 }
 
-func (s *artifactRepositories) Get(ctx context.Context, ref *wfv1.ArtifactRepositoryRefStatus) (*config.ArtifactRepository, error) {
+func (s *artifactRepositories) Get(ctx context.Context, ref *wfv1.ArtifactRepositoryRefStatus) (*wfv1.ArtifactRepository, error) {
 	_, repo, err := s.get(ctx, ref)
 	return repo, err
 }
 
-func (s *artifactRepositories) get(ctx context.Context, ref *wfv1.ArtifactRepositoryRefStatus) (*wfv1.ArtifactRepositoryRefStatus, *config.ArtifactRepository, error) {
+func (s *artifactRepositories) get(ctx context.Context, ref *wfv1.ArtifactRepositoryRefStatus) (*wfv1.ArtifactRepositoryRefStatus, *wfv1.ArtifactRepository, error) {
 	if ref.Default {
 		return ref, s.defaultArtifactRepository, nil
 	}
@@ -90,7 +89,7 @@ func (s *artifactRepositories) get(ctx context.Context, ref *wfv1.ArtifactReposi
 	if !ok {
 		return nil, nil, fmt.Errorf(`config map missing key "%s" for artifact repository ref "%v"`, key, ref)
 	}
-	repo := &config.ArtifactRepository{}
+	repo := &wfv1.ArtifactRepository{}
 	// we need the fully filled out ref so we can store it in the workflow status and it will never change
 	// (even if the config map default annotation is changed)
 	// this means users can change the default
