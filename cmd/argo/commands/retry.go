@@ -108,6 +108,7 @@ func retryWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServi
 			namespace: retryOpts.namespace,
 			fields:    retryOpts.fieldSelector,
 			labels:    retryOpts.labelSelector,
+			output:    "name",
 		})
 		if err != nil {
 			return err

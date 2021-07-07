@@ -43,6 +43,7 @@ func Test_retryWorkflows(t *testing.T) {
 			ListOptions: &metav1.ListOptions{
 				LabelSelector: retryOpts.labelSelector,
 			},
+			Fields: nameFields,
 		}
 
 		wfList := &wfv1.WorkflowList{Items: wfv1.Workflows{
@@ -83,6 +84,7 @@ func Test_retryWorkflows(t *testing.T) {
 			ListOptions: &metav1.ListOptions{
 				LabelSelector: retryOpts.labelSelector,
 			},
+			Fields: nameFields,
 		}
 
 		wfList := &wfv1.WorkflowList{Items: wfv1.Workflows{

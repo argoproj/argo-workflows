@@ -104,6 +104,7 @@ func resubmitWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowSe
 			namespace: resubmitOpts.namespace,
 			fields:    resubmitOpts.fieldSelector,
 			labels:    resubmitOpts.labelSelector,
+			output:    "json",
 		})
 		if err != nil {
 			return err
