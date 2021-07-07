@@ -87,7 +87,6 @@ func stopWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 			namespace: stopArgs.namespace,
 			fields:    stopArgs.fieldSelector,
 			labels:    stopArgs.labelSelector,
-			output:    "name",
 		})
 		if err != nil {
 			return err

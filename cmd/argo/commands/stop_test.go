@@ -53,7 +53,7 @@ func Test_stopWorkflows(t *testing.T) {
 			ListOptions: &metav1.ListOptions{
 				LabelSelector: stopArgs.labelSelector,
 			},
-			Fields: nameFields,
+			Fields: defaultFields,
 		}
 
 		c.On("ListWorkflows", mock.Anything, wfListReq).Return(&wfv1.WorkflowList{Items: wfv1.Workflows{
@@ -82,7 +82,7 @@ func Test_stopWorkflows(t *testing.T) {
 			ListOptions: &metav1.ListOptions{
 				LabelSelector: stopArgs.labelSelector,
 			},
-			Fields: nameFields,
+			Fields: defaultFields,
 		}
 
 		c.On("ListWorkflows", mock.Anything, wfListReq).Return(&wfv1.WorkflowList{Items: wfv1.Workflows{
