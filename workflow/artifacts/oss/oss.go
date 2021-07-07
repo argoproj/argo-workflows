@@ -18,7 +18,6 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
-	"github.com/argoproj/pkg/file"
 )
 
 // ArtifactDriver is a driver for OSS
@@ -74,7 +73,7 @@ func (ossDriver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string)
 			// If we get here, the error was a NoSuchKey. The key might be a oss "directory"
 			isDir, err := IsOssDirectory(bucket, objectName)
 			if err != nil {
-				return false, fmt.Errorf("failed to test if %s/%s is a directory: %w", bucketName, objectName, err)
+				return !isTransientOSSErr(err), fmt.Errorf("failed to test if %s/%s is a directory: %w", bucketName, objectName, err)
 			}
 			if !isDir {
 				// It's neither a file, nor a directory. Return the original NoSuchKey error
@@ -82,7 +81,7 @@ func (ossDriver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string)
 			}
 
 			if err = GetOssDirectory(bucket, objectName, path); err != nil {
-				return false, fmt.Errorf("failed get directory: %v", err)
+				return !isTransientOSSErr(err), fmt.Errorf("failed get directory: %v", err)
 			}
 			return true, nil
 		})
@@ -247,7 +246,7 @@ func putDirectory(bucket *oss.Bucket, objectName, dir string) error {
 		fObjectName := path.Join(objectName, nameInDir)
 		err = putFile(bucket, fObjectName, fpath)
 		if err != nil {
-			return errors.InternalWrapError(err)
+			return err
 		}
 		return nil
 	})
@@ -310,7 +309,7 @@ func GetOssDirectory(bucket *oss.Bucket, objectName, path string) error {
 		err = bucket.GetObjectToFile(f, fpath)
 		if err != nil {
 			log.Warnf("failed to load object %s to %s error: %v", f, fpath, err)
-			return fmt.Errorf("failed to load object %s to %s error: %w", f, fpath, err)
+			return err
 		}
 	}
 	return nil
