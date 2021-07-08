@@ -217,11 +217,18 @@ func (m *Metrics) OperationPanic() {
 	m.errors[ErrorCauseOperationPanic].Inc()
 }
 
-func (m *Metrics) CronWorkflowError(cause ErrorCause) {
+func (m *Metrics) CronWorkflowSubmissionError() {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
-	m.errors[cause].Inc()
+	m.errors[ErrorCauseCronWorkflowSubmissionError].Inc()
+}
+
+func (m *Metrics) CronWorkflowSpecError() {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	m.errors[ErrorCauseCronWorkflowSpecError].Inc()
 }
 
 // Act as a metrics provider for a workflow queue

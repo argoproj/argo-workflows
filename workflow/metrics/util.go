@@ -203,6 +203,7 @@ func getErrorCounters() map[ErrorCause]prometheus.Counter {
 	return map[ErrorCause]prometheus.Counter{
 		ErrorCauseOperationPanic:              prometheus.NewCounter(getOptsByPahse(ErrorCauseOperationPanic)),
 		ErrorCauseCronWorkflowSubmissionError: prometheus.NewCounter(getOptsByPahse(ErrorCauseCronWorkflowSubmissionError)),
+		ErrorCauseCronWorkflowSpecError:       prometheus.NewCounter(getOptsByPahse(ErrorCauseCronWorkflowSpecError)),
 	}
 }
 
