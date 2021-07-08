@@ -18,7 +18,7 @@ func init() {
 }
 
 func expressionReplace(w io.Writer, expression string, env map[string]interface{}, allowUnresolved bool) (int, error) {
-	// The template is JSON-marshalled. This JSON-unmarshalls the expression to undo any character escapes.
+	// The template is JSON-marshaled. This JSON-unmarshals the expression to undo any character escapes.
 	var unmarshalledExpression string
 	err := json.Unmarshal([]byte(fmt.Sprintf(`"%s"`, expression)), &unmarshalledExpression)
 	if err != nil {
