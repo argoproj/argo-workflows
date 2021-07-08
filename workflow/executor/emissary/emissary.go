@@ -62,7 +62,7 @@ func (e emissary) writeTemplate(t wfv1.Template) error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile("/var/run/argo/template", data, 0o400) // chmod -r--------
+	return ioutil.WriteFile("/var/run/argo/template", data, 0o444) // chmod -r--r--r--
 }
 
 func (e emissary) GetFileContents(_ string, sourcePath string) (string, error) {
@@ -137,7 +137,7 @@ func (e emissary) isComplete(containerNames []string) bool {
 
 func (e emissary) Kill(ctx context.Context, containerNames []string, terminationGracePeriodDuration time.Duration) error {
 	for _, containerName := range containerNames {
-		if err := ioutil.WriteFile("/var/run/argo/ctr/"+containerName+"/signal", []byte(strconv.Itoa(int(syscall.SIGTERM))), 0o600); err != nil {
+		if err := ioutil.WriteFile("/var/run/argo/ctr/"+containerName+"/signal", []byte(strconv.Itoa(int(syscall.SIGTERM))), 0o644); err != nil {
 			return err
 		}
 	}
@@ -148,7 +148,7 @@ func (e emissary) Kill(ctx context.Context, containerNames []string, termination
 		return err
 	}
 	for _, containerName := range containerNames {
-		if err := ioutil.WriteFile("/var/run/argo/ctr/"+containerName+"/signal", []byte(strconv.Itoa(int(syscall.SIGKILL))), 0o600); err != nil {
+		if err := ioutil.WriteFile("/var/run/argo/ctr/"+containerName+"/signal", []byte(strconv.Itoa(int(syscall.SIGKILL))), 0o644); err != nil {
 			return err
 		}
 	}
