@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/antonmedv/expr"
 	"github.com/argoproj/pkg/humanize"
 	argokubeerr "github.com/argoproj/pkg/kube/errors"
 	"github.com/argoproj/pkg/strftime"
@@ -27,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/pointer"
@@ -41,6 +43,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/diff"
 	envutil "github.com/argoproj/argo-workflows/v3/util/env"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/util/expr/env"
 	"github.com/argoproj/argo-workflows/v3/util/intstr"
 	"github.com/argoproj/argo-workflows/v3/util/resource"
 	"github.com/argoproj/argo-workflows/v3/util/retry"
@@ -110,7 +113,8 @@ var (
 	// ErrDeadlineExceeded indicates the operation exceeded its deadline for execution
 	ErrDeadlineExceeded = errors.New(errors.CodeTimeout, "Deadline exceeded")
 	// ErrParallelismReached indicates this workflow reached its parallelism limit
-	ErrParallelismReached = errors.New(errors.CodeForbidden, "Max parallelism reached")
+	ErrParallelismReached       = errors.New(errors.CodeForbidden, "Max parallelism reached")
+	ErrResourceRateLimitReached = errors.New(errors.CodeForbidden, "resource creation rate-limit reached")
 	// ErrTimeout indicates a specific template timed out
 	ErrTimeout = errors.New(errors.CodeTimeout, "timeout")
 )
@@ -173,7 +177,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 func (woc *wfOperationCtx) operate(ctx context.Context) {
 	defer func() {
 		if woc.wf.Status.Fulfilled() {
-			_ = woc.killDaemonedChildren(ctx, "")
+			woc.killDaemonedChildren("")
 		}
 		woc.persistUpdates(ctx)
 	}()
@@ -494,7 +498,9 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 	}
 	if woc.wf.Status.Outputs != nil {
 		for _, param := range woc.wf.Status.Outputs.Parameters {
-			woc.globalParams["workflow.outputs.parameters."+param.Name] = param.Value.String()
+			if param.HasValue() {
+				woc.globalParams["workflow.outputs.parameters."+param.Name] = param.GetValue()
+			}
 		}
 	}
 }
@@ -592,10 +598,12 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 			switch woc.execWf.Spec.PodGC.Strategy {
 			case wfv1.PodGCOnPodSuccess:
 				if podPhase == apiv1.PodSucceeded {
-					woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
+					delay := woc.controller.Config.GetPodGCDeleteDelayDuration()
+					woc.controller.queuePodForCleanupAfter(woc.wf.Namespace, podName, deletePod, delay)
 				}
 			case wfv1.PodGCOnPodCompletion:
-				woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
+				delay := woc.controller.Config.GetPodGCDeleteDelayDuration()
+				woc.controller.queuePodForCleanupAfter(woc.wf.Namespace, podName, deletePod, delay)
 			}
 		} else {
 			// label pods which will not be deleted
@@ -724,7 +732,26 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 	if node.Fulfilled() {
 		return node, true, nil
 	}
+
 	lastChildNode := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
+
+	if retryStrategy.Expression != "" && len(node.Children) > 0 {
+		localScope := buildRetryStrategyLocalScope(node, woc.wf.Status.Nodes)
+		scope := env.GetFuncMap(localScope)
+		res, err := expr.Eval(retryStrategy.Expression, scope)
+		if err != nil {
+			return nil, false, err
+		}
+
+		shouldContinue, ok := res.(bool)
+		if !ok {
+			return nil, false, fmt.Errorf("expression did not evaluate to a boolean")
+		}
+
+		if !shouldContinue {
+			return woc.markNodePhase(node.Name, lastChildNode.Phase, "retryStrategy.when evaluated to false"), true, nil
+		}
+	}
 
 	if lastChildNode == nil {
 		return node, true, nil
@@ -933,10 +960,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 		go func(pod *apiv1.Pod) {
 			defer wg.Done()
 			performAssessment(pod)
-			err = woc.applyExecutionControl(ctx, pod, wfNodesLock)
-			if err != nil {
-				woc.log.Warnf("Failed to apply execution control to pod %s", pod.Name)
-			}
+			woc.applyExecutionControl(ctx, pod, wfNodesLock)
 			<-parallelPodNum
 		}(pod)
 	}
@@ -1073,18 +1097,8 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		newDaemonStatus = pointer.BoolPtr(false)
 	case apiv1.PodRunning:
 		newPhase = wfv1.NodeRunning
-		tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
-		if !ok {
-			woc.log.WithField("pod", pod.ObjectMeta.Name).Warn("missing template annotation")
-			return nil
-		}
-		var tmpl wfv1.Template
-		err := json.Unmarshal([]byte(tmplStr), &tmpl)
-		if err != nil {
-			woc.log.WithError(err).WithField("pod", pod.ObjectMeta.Name).Warn("template annotation unreadable")
-			return nil
-		}
-		if tmpl.Daemon != nil && *tmpl.Daemon {
+		tmpl := woc.findTemplate(pod)
+		if tmpl != nil && tmpl.Daemon != nil && *tmpl.Daemon {
 			// pod is running and template is marked daemon. check if everything is ready
 			for _, ctrStatus := range pod.Status.ContainerStatuses {
 				if !ctrStatus.Ready {
@@ -1096,7 +1110,9 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			newDaemonStatus = pointer.BoolPtr(true)
 			woc.log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
 		}
-		woc.cleanUpPod(pod)
+		if tmpl != nil {
+			woc.cleanUpPod(pod, *tmpl)
+		}
 	default:
 		newPhase = wfv1.NodeError
 		message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.ObjectMeta.Name, pod.Status.Phase)
@@ -1181,14 +1197,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 
 	if node.Fulfilled() && node.FinishedAt.IsZero() {
 		updated = true
-		if !node.IsDaemoned() {
-			node.FinishedAt = getLatestFinishedAt(pod)
-		}
-		if node.FinishedAt.IsZero() {
-			// If we get here, the container is daemoned so the
-			// finishedAt might not have been set.
-			node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
-		}
+		node.FinishedAt = getLatestFinishedAt(pod)
 		node.ResourcesDuration = resource.DurationForPod(pod)
 	}
 	if updated {
@@ -1206,38 +1215,31 @@ func getExitCode(pod *apiv1.Pod) *int32 {
 	return nil
 }
 
-func (woc *wfOperationCtx) cleanUpPod(pod *apiv1.Pod) {
+func podHasContainerNeedingTermination(pod *apiv1.Pod, tmpl wfv1.Template) bool {
 	for _, c := range pod.Status.ContainerStatuses {
-		if c.Name == common.WaitContainerName && c.State.Terminated == nil {
-			return // we must not do anything if the wait or main containers are still running
+		// Only clean up pod when both the wait and the main containers are terminated
+		if c.Name == common.WaitContainerName || tmpl.IsMainContainerName(c.Name) {
+			if c.State.Terminated == nil {
+				return false
+			}
 		}
 	}
-	// the wait container has terminated, so all other containers should be killed
-	for _, c := range pod.Status.ContainerStatuses {
-		if c.State.Terminated != nil {
-			continue
-		}
-		woc.queuePodForCleanup(pod.Name, terminateContainers)
-		return
+	return true
+}
+
+func (woc *wfOperationCtx) cleanUpPod(pod *apiv1.Pod, tmpl wfv1.Template) {
+	if podHasContainerNeedingTermination(pod, tmpl) {
+		woc.controller.queuePodForCleanup(woc.wf.Namespace, pod.Name, terminateContainers)
 	}
 }
 
-func (woc *wfOperationCtx) queuePodForCleanup(podName string, podCleanupAction podCleanupAction) {
-	woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, podCleanupAction)
-}
-
-// getLatestFinishedAt returns the latest finishAt timestamp from all the
-// containers of this pod.
 func getLatestFinishedAt(pod *apiv1.Pod) metav1.Time {
 	var latest metav1.Time
-	for _, ctr := range pod.Status.InitContainerStatuses {
-		if ctr.State.Terminated != nil && ctr.State.Terminated.FinishedAt.After(latest.Time) {
-			latest = ctr.State.Terminated.FinishedAt
-		}
-	}
-	for _, ctr := range pod.Status.ContainerStatuses {
-		if ctr.State.Terminated != nil && ctr.State.Terminated.FinishedAt.After(latest.Time) {
-			latest = ctr.State.Terminated.FinishedAt
+	for _, ctr := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
+		if r := ctr.State.Running; r != nil { // if we are running, then the finished at time must be now or after
+			latest = metav1.Now()
+		} else if t := ctr.State.Terminated; t != nil && t.FinishedAt.After(latest.Time) {
+			latest = t.FinishedAt
 		}
 	}
 	return latest
@@ -1485,6 +1487,25 @@ func getChildNodeIndex(node *wfv1.NodeStatus, nodes wfv1.Nodes, index int) *wfv1
 	return &lastChildNode
 }
 
+func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[string]interface{} {
+	localScope := make(map[string]interface{})
+
+	// `retries` variable
+	localScope[common.LocalVarRetries] = strconv.Itoa(len(node.Children) - 1)
+
+	lastChildNode := getChildNodeIndex(node, nodes, -1)
+
+	exitCode := "-1"
+	if lastChildNode.Outputs != nil {
+		exitCode = *lastChildNode.Outputs.ExitCode
+	}
+	localScope[common.LocalVarRetriesLastExitCode] = exitCode
+	localScope[common.LocalVarRetriesLastStatus] = string(lastChildNode.Phase)
+	localScope[common.LocalVarRetriesLastDuration] = fmt.Sprint(lastChildNode.GetDuration().Seconds())
+
+	return localScope
+}
+
 type executeTemplateOpts struct {
 	// boundaryID is an ID for node grouping
 	boundaryID string
@@ -1703,7 +1724,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 
 			// It has to be one child at least
 			if lastChildNode != nil {
-				RetryOnDifferentHost(retryNodeName)(*woc.retryStrategy(processedTmpl), woc.wf.Status.Nodes, processedTmpl)
+				RetryOnDifferentHost(woc.wf.NodeID(retryNodeName))(*woc.retryStrategy(processedTmpl), woc.wf.Status.Nodes, processedTmpl)
 			}
 
 			localParams := make(map[string]string)
@@ -1851,7 +1872,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 		}
 		markCompleted = phase.Completed()
 	}
-	if woc.wf.Status.StartedAt.IsZero() {
+	if woc.wf.Status.StartedAt.IsZero() && phase != wfv1.WorkflowPending {
 		woc.updated = true
 		woc.wf.Status.StartedAt = metav1.Time{Time: time.Now().UTC()}
 		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration()
@@ -2151,7 +2172,7 @@ func (woc *wfOperationCtx) markNodeError(nodeName string, err error) *wfv1.NodeS
 
 // markNodePending is a convenience method to mark a node and set the message from the error
 func (woc *wfOperationCtx) markNodePending(nodeName string, err error) *wfv1.NodeStatus {
-	woc.log.Infof("Mark node %s as Pending, due to: %+v", nodeName, err)
+	woc.log.Infof("Mark node %s as Pending, due to: %v", nodeName, err)
 	return woc.markNodePhase(nodeName, wfv1.NodePending, err.Error()) // this error message will not change often
 }
 
@@ -2266,7 +2287,26 @@ func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
 	switch node.Type {
 	case wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend:
 		return []string{node.ID}
-	case wfv1.NodeTypeContainer, wfv1.NodeTypePod, wfv1.NodeTypeTaskGroup:
+	case wfv1.NodeTypePod:
+
+		// Recover the template that created this pod. If we can't just let the pod be its own outbound node
+		tmplCtx, err := woc.createTemplateContext(node.GetTemplateScope())
+		if err != nil {
+			return []string{node.ID}
+		}
+		_, parentTemplate, _, err := tmplCtx.ResolveTemplate(&node)
+		if err != nil {
+			return []string{node.ID}
+		}
+
+		// If this pod does not come from a container set, its outbound node is itself
+		if parentTemplate.GetType() != wfv1.TemplateTypeContainerSet {
+			return []string{node.ID}
+		}
+
+		// If this pod comes from a container set, it should be treated as a container or task group
+		fallthrough
+	case wfv1.NodeTypeContainer, wfv1.NodeTypeTaskGroup:
 		if len(node.Children) == 0 {
 			return []string{node.ID}
 		}
@@ -2441,7 +2481,7 @@ func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, t
 }
 
 func (woc *wfOperationCtx) requeueIfTransientErr(err error, nodeName string) (*wfv1.NodeStatus, error) {
-	if errorsutil.IsTransientErr(err) {
+	if errorsutil.IsTransientErr(err) || err == ErrResourceRateLimitReached {
 		// Our error was most likely caused by a lack of resources.
 		woc.requeue()
 		return woc.markNodePending(nodeName, err), nil
@@ -2610,7 +2650,9 @@ func (woc *wfOperationCtx) addParamToGlobalScope(param wfv1.Parameter) {
 		return
 	}
 	paramName := fmt.Sprintf("workflow.outputs.parameters.%s", param.GlobalName)
-	woc.globalParams[paramName] = param.Value.String()
+	if param.HasValue() {
+		woc.globalParams[paramName] = param.GetValue()
+	}
 	wfUpdated := wfutil.AddParamToGlobalScope(woc.wf, woc.log, param)
 	if wfUpdated {
 		woc.updated = true
@@ -3212,7 +3254,16 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 		cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
 		// Validate the execution wfSpec
-		wfConditions, err := validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, woc.wf, validateOpts)
+		var wfConditions *wfv1.Conditions
+		err := wait.ExponentialBackoff(retry.DefaultRetry,
+			func() (bool, error) {
+				var validationErr error
+				wfConditions, validationErr = validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, woc.wf, validateOpts)
+				if validationErr != nil {
+					return !errorsutil.IsTransientErr(validationErr), validationErr
+				}
+				return true, nil
+			})
 		if err != nil {
 			msg := fmt.Sprintf("invalid spec: %s", err.Error())
 			woc.markWorkflowFailed(ctx, msg)
@@ -3246,8 +3297,7 @@ func (woc *wfOperationCtx) needsStoredWfSpecUpdate() bool {
 	// Need to recalculate StoredWorkflowSpec in 2.12.x format.
 	// This check can be removed once all user migrated from 2.11.x to 2.12.x
 	return woc.wf.Status.StoredWorkflowSpec == nil || (woc.wf.Spec.Entrypoint != "" && woc.wf.Status.StoredWorkflowSpec.Entrypoint == "") ||
-		(woc.wf.Spec.Suspend != nil && woc.wf.Status.StoredWorkflowSpec.Suspend == nil) ||
-		(woc.wf.Spec.Shutdown != "" && woc.wf.Status.StoredWorkflowSpec.Shutdown == "") ||
+		(woc.wf.Spec.Suspend != woc.wf.Status.StoredWorkflowSpec.Suspend) ||
 		(woc.wf.Spec.Shutdown != woc.wf.Status.StoredWorkflowSpec.Shutdown)
 }
 

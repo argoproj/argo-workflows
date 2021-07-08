@@ -37,11 +37,6 @@ jobs:
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-20.04
-    # test-api: 7m (1m10s locally)
-    # test-cli: 12m (4m locally)
-    # test-cron: 8m
-    # test-executor 8m (2m locally)
-    # test-functional: 13m (7m locally)
     timeout-minutes: 20
     env:
       KUBECONFIG: /home/runner/.kubeconfig
@@ -97,7 +92,6 @@ jobs:
         with:
           path: dist/kustomize
           key: kustomize
-      - run: git fetch --tags
       - run: mkdir -p /tmp/log/argo-e2e
       - name: Install and start K3S
         timeout-minutes: 3
@@ -115,28 +109,17 @@ jobs:
           echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts
           echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
-      - run: make install install controller cli $(go env GOPATH)/bin/goreman PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info
-      - run: make start PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info 2>&1 > /tmp/log/argo-e2e/argo.log &
+      - run: make install controller cli $(go env GOPATH)/bin/goreman PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info
+      - run: make start PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info UI=false > /tmp/log/argo-e2e/argo.log 2>&1 &
         timeout-minutes: 4
-      - name: make/pull argoexec-image
-        run: |
-          if [ ${{matrix.test}} == test-executor ]; then
-            make argoexec-image STATIC_FILES=false
-          else
-            docker pull argoproj/argoexec:latest
-          fi
+      - name: make argoexec-image
+        run: make argoexec-image STATIC_FILES=false
       - run: make wait
         timeout-minutes: 4
       - run: make ${{matrix.test}} E2E_TIMEOUT=1m STATIC_FILES=false
-      - name: Get wait container logs
+      - name: cat argo.log
         if: ${{ failure() }}
-        run: kubectl get pod -o name | xargs -L 1 kubectl logs -c wait
-      - name: Upload logs
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@v1
-        with:
-          name: ${{matrix.test}}-${{matrix.containerRuntimeExecutor}}
-          path: /tmp/log/argo-e2e
+        run: cat /tmp/log/argo-e2e/argo.log
 
   codegen:
     name: Codegen
@@ -177,7 +160,6 @@ jobs:
           sudo find /usr/local/include -type f | xargs sudo chmod a+r
           sudo find /usr/local/include -type d | xargs sudo chmod a+rx
           ls /usr/local/include/google/protobuf/
-      - run: git fetch --tags
       - name: Create links
         run: |
           mkdir -p /home/runner/go/src/github.com/argoproj
@@ -199,6 +181,22 @@ jobs:
       - uses: golangci/golangci-lint-action@v2
         with:
           version: v1.36.0
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-20.04
+    needs: [ tests, codegen, lint ]
+    timeout-minutes: 6
+    env:
+      GOPATH: /home/runner/go
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v2
+      - run: cp server/static/files.go.stub server/static/files.go
+      - name: Run Gosec Security Scanner
+        uses: securego/gosec@v2.8.1
+        with:
+          args: '-include=G307,G304 ./...'
 
   ui:
     name: UI

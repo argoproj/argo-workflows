@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"syscall"
@@ -68,7 +69,7 @@ func (p *PNSExecutor) GetFileContents(containerName string, sourcePath string) (
 		return "", err
 	}
 	defer func() { _ = p.exitChroot() }()
-	out, err := ioutil.ReadFile(sourcePath)
+	out, err := ioutil.ReadFile(filepath.Clean(sourcePath))
 	if err != nil {
 		return "", err
 	}

@@ -38,35 +38,26 @@ COPY . .
 
 ####################################################################################################
 
-FROM docker.io/library/debian:10.7-slim as argoexec-base
+FROM alpine:3 as argoexec-base
 
 ARG DOCKER_CHANNEL
 ARG DOCKER_VERSION
 ARG KUBECTL_VERSION
-ARG JQ_VERSION
 
-RUN apt-get update && \
-    apt-get --no-install-recommends install -y curl procps git apt-utils apt-transport-https ca-certificates tar mime-support libcap2-bin && \
-    apt-get clean \
-    && rm -rf \
-        /var/lib/apt/lists/* \
-        /tmp/* \
-        /var/tmp/* \
-        /usr/share/man \
-        /usr/share/doc \
-        /usr/share/doc-base
+RUN apk --no-cache add curl procps git tar libcap jq
 
-COPY hack/recurl.sh hack/arch.sh hack/os.sh /
-RUN if [ $(./arch.sh) = ppc64le ] || [ $(./arch.sh) = s390x ]; then \
-        ./recurl.sh docker.tgz https://download.docker.com/$(./os.sh)/static/${DOCKER_CHANNEL}/$(uname -m)/docker-18.06.3-ce.tgz; \
+COPY hack/arch.sh hack/os.sh /bin/
+
+RUN if [ $(arch.sh) = ppc64le ] || [ $(arch.sh) = s390x ]; then \
+        curl -o docker.tgz https://download.docker.com/$(os.sh)/static/${DOCKER_CHANNEL}/$(uname -m)/docker-18.06.3-ce.tgz; \
     else \
-        ./recurl.sh docker.tgz https://download.docker.com/$(./os.sh)/static/${DOCKER_CHANNEL}/$(uname -m)/docker-${DOCKER_VERSION}.tgz; \
+        curl -o docker.tgz https://download.docker.com/$(os.sh)/static/${DOCKER_CHANNEL}/$(uname -m)/docker-${DOCKER_VERSION}.tgz; \
     fi && \
     tar --extract --file docker.tgz --strip-components 1 --directory /usr/local/bin/ && \
     rm docker.tgz
-RUN ./recurl.sh /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/$(./os.sh)/$(./arch.sh)/kubectl
-RUN ./recurl.sh /usr/local/bin/jq https://github.com/stedolan/jq/releases/download/jq-${JQ_VERSION}/jq-linux64
-RUN rm recurl.sh arch.sh os.sh
+RUN curl -o /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/$(os.sh)/$(arch.sh)/kubectl && \
+    chmod +x /usr/local/bin/kubectl
+RUN rm /bin/arch.sh /bin/os.sh
 
 COPY hack/ssh_known_hosts /etc/ssh/
 COPY hack/nsswitch.conf /etc/
@@ -95,6 +86,7 @@ RUN cat .dockerignore >> .gitignore
 RUN git status --porcelain | cut -c4- | xargs git update-index --skip-worktree
 
 RUN --mount=type=cache,target=/root/.cache/go-build make dist/argoexec
+RUN setcap CAP_SYS_PTRACE,CAP_SYS_CHROOT+ei dist/argoexec
 
 ####################################################################################################
 
@@ -129,7 +121,6 @@ RUN --mount=type=cache,target=/root/.cache/go-build make dist/argo
 FROM argoexec-base as argoexec
 
 COPY --from=argoexec-build /go/src/github.com/argoproj/argo-workflows/dist/argoexec /usr/local/bin/
-RUN setcap CAP_SYS_PTRACE,CAP_SYS_CHROOT+ei /usr/local/bin/argoexec
 ENTRYPOINT [ "argoexec" ]
 
 ####################################################################################################

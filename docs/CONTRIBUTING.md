@@ -6,7 +6,7 @@ Please [raise an issue in Github](https://github.com/argoproj/argo-workflows/iss
 
 ## Code of Conduct
 
-See [code of conduct](https://github.com/argoproj/argo-workflows/blob/master/CODE_OF_CONDUCT.md).
+See [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/master/code-of-conduct.md).
 
 ## How To Contribute
 

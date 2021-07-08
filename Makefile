@@ -39,7 +39,7 @@ else
 STATIC_FILES          ?= $(shell [ $(DEV_BRANCH) = true ] && echo false || echo true)
 endif
 
-START_UI              ?= $(shell [ "$(CI)" != "" ] && echo true || echo false)
+UI                    ?= true
 GOTEST                ?= go test -v
 PROFILE               ?= minimal
 # by keeping this short we speed up the tests
@@ -87,8 +87,6 @@ endif
 ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
 CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
 CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
-MANIFESTS        := $(shell find manifests -mindepth 2 -type f)
-E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR ?= pns
 TYPES := $(shell find pkg/apis/workflow/v1alpha1 -type f -name '*.go' -not -name openapi_generated.go -not -name '*generated*' -not -name '*test.go')
 CRDS := $(shell find manifests/base/crds -type f -name 'argoproj.io_*.yaml')
@@ -224,7 +222,7 @@ argoexec-image:
 
 %-image:
 	[ ! -e dist/$* ] || mv dist/$* .
-	docker buildx build -t $(IMAGE_NAMESPACE)/$*:$(VERSION) --target $* .
+	docker buildx build -t $(IMAGE_NAMESPACE)/$*:$(VERSION) --target $* --output=type=docker .
 	[ ! -e $* ] || mv $* dist/
 	docker run --rm -t $(IMAGE_NAMESPACE)/$*:$(VERSION) version
 	if [ $(K3D) = true ]; then k3d image import $(IMAGE_NAMESPACE)/$*:$(VERSION); fi
@@ -238,7 +236,7 @@ scan-%:
 # generation
 
 .PHONY: codegen
-codegen: types swagger docs
+codegen: types swagger docs manifests
 
 .PHONY: types
 types: pkg/apis/workflow/v1alpha1/generated.proto pkg/apis/workflow/v1alpha1/openapi_generated.go pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go
@@ -255,7 +253,7 @@ swagger: \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json \
 	manifests/base/crds/full/argoproj.io_workflows.yaml \
-	manifests/install.yaml \
+	manifests \
 	api/openapi-spec/swagger.json \
 	api/jsonschema/schema.json
 
@@ -357,14 +355,32 @@ dist/kustomize:
 	cd dist && ./install_kustomize.sh 3.8.8
 	dist/kustomize version
 
-# generates several installation files
-manifests/install.yaml: $(MANIFESTS) dist/kustomize
-	./hack/update-image-tags.sh manifests/base $(VERSION)
+manifests: \
+	manifests/install.yaml \
+	manifests/namespace-install.yaml \
+	manifests/quick-start-minimal.yaml \
+	manifests/quick-start-mysql.yaml \
+	manifests/quick-start-postgres.yaml \
+	dist/manifests/install.yaml \
+	dist/manifests/namespace-install.yaml \
+	dist/manifests/quick-start-minimal.yaml \
+	dist/manifests/quick-start-mysql.yaml \
+	dist/manifests/quick-start-postgres.yaml
+
+manifests/install.yaml: dist/kustomize /dev/null
 	dist/kustomize build --load_restrictor=none manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
+manifests/namespace-install.yaml: dist/kustomize /dev/null
 	dist/kustomize build --load_restrictor=none manifests/namespace-install | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
+manifests/quick-start-minimal.yaml: dist/kustomize /dev/null
 	dist/kustomize build --load_restrictor=none manifests/quick-start/minimal | ./hack/auto-gen-msg.sh > manifests/quick-start-minimal.yaml
+manifests/quick-start-mysql.yaml: dist/kustomize /dev/null
 	dist/kustomize build --load_restrictor=none manifests/quick-start/mysql | ./hack/auto-gen-msg.sh > manifests/quick-start-mysql.yaml
+manifests/quick-start-postgres.yaml: dist/kustomize /dev/null
 	dist/kustomize build --load_restrictor=none manifests/quick-start/postgres | ./hack/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
+
+dist/manifests/%: manifests/%
+	@mkdir -p dist/manifests
+	sed 's/:latest/:$(VERSION)/' manifests/$* > $@
 
 # lint/test/etc
 
@@ -389,13 +405,10 @@ test: server/static/files.go dist/argosay
 install: dist/kustomize
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
-	@echo "installing PROFILE=$(PROFILE) VERSION=$(VERSION), E2E_EXECUTOR=$(E2E_EXECUTOR)"
-	dist/kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/argoproj\//$(IMAGE_NAMESPACE)\//' | sed 's/:latest/:$(VERSION)/' | sed 's/containerRuntimeExecutor: docker/containerRuntimeExecutor: $(E2E_EXECUTOR)/' | kubectl -n $(KUBE_NAMESPACE) apply --prune -l app.kubernetes.io/part-of=argo -f -
+	@echo "installing PROFILE=$(PROFILE), E2E_EXECUTOR=$(E2E_EXECUTOR)"
+	dist/kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/argoproj\//$(IMAGE_NAMESPACE)\//' | sed 's/containerRuntimeExecutor: docker/containerRuntimeExecutor: $(E2E_EXECUTOR)/' | kubectl -n $(KUBE_NAMESPACE) apply --prune -l app.kubernetes.io/part-of=argo -f -
 ifeq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml
-	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy workflow-controller
-	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy argo-server
-	kubectl -n $(KUBE_NAMESPACE) rollout restart deploy minio
 endif
 ifeq ($(RUN_MODE),kubernetes)
 	# scale to 2 replicas so we touch upon leader election
@@ -445,7 +458,7 @@ $(GOPATH)/bin/goreman:
 ifeq ($(RUN_MODE),local)
 start: install controller cli $(GOPATH)/bin/goreman
 else
-start: install argoexec-image workflow-controller-image argocli-image
+start: install
 endif
 	@echo "starting STATIC_FILES=$(STATIC_FILES) (DEV_BRANCH=$(DEV_BRANCH), GIT_BRANCH=$(GIT_BRANCH)), AUTH_MODE=$(AUTH_MODE), RUN_MODE=$(RUN_MODE)"
 	# Check dex, minio, postgres and mysql are in hosts file
@@ -457,7 +470,7 @@ endif
 	grep '127.0.0.1[[:blank:]]*mysql' /etc/hosts
 	./hack/port-forward.sh
 ifeq ($(RUN_MODE),local)
-	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start $(shell if [ -z $GREP_LOGS ]; then echo; else echo "| grep \"$(GREP_LOGS)\""; fi)
+	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) UI=$(UI) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start $(shell if [ -z $GREP_LOGS ]; then echo; else echo "| grep \"$(GREP_LOGS)\""; fi)
 endif
 
 $(GOPATH)/bin/stern:
@@ -466,14 +479,6 @@ $(GOPATH)/bin/stern:
 .PHONY: logs
 logs: $(GOPATH)/bin/stern
 	stern -l workflows.argoproj.io/workflow 2>&1
-
-.PHONY: watch-pods
-watch-pods:
-	# NODE_ID:.metadata.name
-	# EXECUTION_CONTROL:.metadata.annotations.workflows\.argoproj\.io/execution
-	kubectl get pod \
-	  -o=custom-columns='WORKFLOW:.metadata.labels.workflows\.argoproj\.io/workflow,NODE_NAME:.metadata.annotations.workflows\.argoproj\.io/node-name,STATUS:.status.phase,MESSAGE:.metadata.annotations.workflows\.argoproj\.io/node-message,CTRS:.status.containerStatuses[*].name,CTR STATUS:.status.containerStatuses[*].state.terminated.reason,EXIT CODES:.status.containerStatuses[*].state.terminated.exitCode' \
-	  -w
 
 .PHONY: wait
 wait:
@@ -551,7 +556,7 @@ dist/mixed.swagger.json: $(GOPATH)/bin/swagger $(SWAGGER_FILES) dist/swagger-con
 	swagger mixin -c $(shell cat dist/swagger-conflicts) $(SWAGGER_FILES) -o dist/mixed.swagger.json
 
 dist/swaggifed.swagger.json: dist/mixed.swagger.json hack/swaggify.sh
-	cat dist/mixed.swagger.json | sed 's/VERSION/$(VERSION)/' | ./hack/swaggify.sh > dist/swaggifed.swagger.json
+	cat dist/mixed.swagger.json | ./hack/swaggify.sh > dist/swaggifed.swagger.json
 
 dist/kubeified.swagger.json: dist/swaggifed.swagger.json dist/kubernetes.swagger.json
 	go run ./hack/swagger kubeifyswagger dist/swaggifed.swagger.json dist/kubeified.swagger.json
@@ -585,41 +590,14 @@ validate-examples: api/jsonschema/schema.json
 .PHONY: pre-commit
 pre-commit: codegen lint test start
 
-changelog:
-	@mkdir -p dist
 ifeq ($(GIT_BRANCH),master)
-	# on master, we just show the last 10 commits
-	git log --oneline -n10 > dist/changes
-	git log --oneline -n10 --format=%an | sort -u > dist/contributors
+LOG_OPTS := '-n10'
 else
-	# on a branch we show all commits since master
-	git log --oneline    origin/master.. > dist/changes
-	git log --format=%an origin/master.. | sort -u > dist/contributors
-endif
-	echo '## Changes' > dist/changelog.md
-	cat dist/changes >> dist/changelog.md
-	echo '## Contributors' >> dist/changelog.md
-	cat dist/contributors >> dist/changelog.md
-
-# release - targets only available on release branch
-ifneq ($(findstring release,$(GIT_BRANCH)),)
-
-.PHONY: prepare-release
-prepare-release: check-version-warning clean codegen manifests
-	# Commit if any changes
-	git diff --quiet || git commit -am "Update manifests to $(VERSION)"
-    # use "annotated" tag, rather than "lightweight", so in future we can distingush from "stable"
-	git tag -a $(VERSION) -m $(VERSION)
-
-.PHONY: publish-release
-publish-release:
-	git push
-	git push $(GIT_REMOTE) $(VERSION)
+LOG_OPTS := 'origin/master..'
 endif
 
-.PHONY: check-version-warning
-check-version-warning:
-	@if [[ "$(VERSION)" =~ ^[0-9]+\.[0-9]+\.[0-9]+.*$  ]]; then echo -n "It looks like you're trying to use a SemVer version, but have not prepended it with a "v" (such as "v$(VERSION)"). The "v" is required for our releases. Do you wish to continue anyway? [y/N]" && read ans && [ $${ans:-N} = y ]; fi
+release-notes: /dev/null
+	version=$(VERSION) envsubst < hack/release-notes.md > release-notes
 
 .PHONY: parse-examples
 parse-examples:

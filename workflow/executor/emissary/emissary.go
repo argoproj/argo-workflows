@@ -62,11 +62,11 @@ func (e emissary) writeTemplate(t wfv1.Template) error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile("/var/run/argo/template", data, 0o400) // chmod -r--------
+	return ioutil.WriteFile("/var/run/argo/template", data, 0o444) // chmod -r--r--r--
 }
 
 func (e emissary) GetFileContents(_ string, sourcePath string) (string, error) {
-	data, err := ioutil.ReadFile(filepath.Join("/var/run/argo/outputs/parameters", sourcePath))
+	data, err := ioutil.ReadFile(filepath.Clean(filepath.Join("/var/run/argo/outputs/parameters", sourcePath)))
 	return string(data), err
 }
 
@@ -76,7 +76,7 @@ func (e emissary) CopyFile(_ string, sourcePath string, destPath string, _ int) 
 	// TODO - warn the user we ignored compression?
 	sourceFile := filepath.Join("/var/run/argo/outputs/artifacts", sourcePath+".tgz")
 	log.Infof("%s -> %s", sourceFile, destPath)
-	src, err := os.Open(sourceFile)
+	src, err := os.Open(filepath.Clean(sourceFile))
 	if err != nil {
 		return err
 	}
@@ -100,7 +100,7 @@ func (e emissary) GetOutputStream(_ context.Context, containerName string, combi
 	}
 	var files []io.ReadCloser
 	for _, name := range names {
-		f, err := os.Open("/var/run/argo/ctr/" + containerName + "/" + name)
+		f, err := os.Open(filepath.Clean("/var/run/argo/ctr/" + containerName + "/" + name))
 		if os.IsNotExist(err) {
 			continue
 		} else if err != nil {
@@ -137,7 +137,7 @@ func (e emissary) isComplete(containerNames []string) bool {
 
 func (e emissary) Kill(ctx context.Context, containerNames []string, terminationGracePeriodDuration time.Duration) error {
 	for _, containerName := range containerNames {
-		if err := ioutil.WriteFile("/var/run/argo/ctr/"+containerName+"/signal", []byte(strconv.Itoa(int(syscall.SIGTERM))), 0o600); err != nil {
+		if err := ioutil.WriteFile("/var/run/argo/ctr/"+containerName+"/signal", []byte(strconv.Itoa(int(syscall.SIGTERM))), 0o644); err != nil {
 			return err
 		}
 	}
@@ -148,7 +148,7 @@ func (e emissary) Kill(ctx context.Context, containerNames []string, termination
 		return err
 	}
 	for _, containerName := range containerNames {
-		if err := ioutil.WriteFile("/var/run/argo/ctr/"+containerName+"/signal", []byte(strconv.Itoa(int(syscall.SIGKILL))), 0o600); err != nil {
+		if err := ioutil.WriteFile("/var/run/argo/ctr/"+containerName+"/signal", []byte(strconv.Itoa(int(syscall.SIGKILL))), 0o644); err != nil {
 			return err
 		}
 	}

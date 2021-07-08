@@ -29,29 +29,6 @@ import (
 )
 
 var (
-	// volumePodMetadata makes available the pod metadata available as a file
-	// to the executor's init and sidecar containers. Specifically, the template
-	// of the pod is stored as an annotation
-	volumePodMetadata = apiv1.Volume{
-		Name: common.PodMetadataVolumeName,
-		VolumeSource: apiv1.VolumeSource{
-			DownwardAPI: &apiv1.DownwardAPIVolumeSource{
-				Items: []apiv1.DownwardAPIVolumeFile{
-					{
-						Path: common.PodMetadataAnnotationsVolumePath,
-						FieldRef: &apiv1.ObjectFieldSelector{
-							APIVersion: "v1",
-							FieldPath:  "metadata.annotations",
-						},
-					},
-				},
-			},
-		},
-	}
-	volumeMountPodMetadata = apiv1.VolumeMount{
-		Name:      volumePodMetadata.Name,
-		MountPath: common.PodMetadataMountPath,
-	}
 	volumeVarArgo = apiv1.Volume{
 		Name: "var-run-argo",
 		VolumeSource: apiv1.VolumeSource{
@@ -273,7 +250,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 
 	addSchedulingConstraints(pod, wfSpec, tmpl)
-	woc.addMetadata(pod, tmpl, opts)
+	woc.addMetadata(pod, tmpl)
 
 	err = addVolumeReferences(pod, woc.volumes, tmpl, woc.wf.Status.PersistentVolumeClaims)
 	if err != nil {
@@ -320,21 +297,23 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		}
 	}
 
-	for i, c := range pod.Spec.Containers {
-		c.Env = append(c.Env,
-			apiv1.EnvVar{Name: common.EnvVarContainerName, Value: c.Name},
-			apiv1.EnvVar{Name: common.EnvVarIncludeScriptOutput, Value: strconv.FormatBool(c.Name == common.MainContainerName && opts.includeScriptOutput)},
-		)
-		pod.Spec.Containers[i] = c
+	// Add standard environment variables, making pod spec larger
+	envVars := []apiv1.EnvVar{
+		{Name: common.EnvVarTemplate, Value: wfv1.MustMarshallJSON(tmpl)},
+		{Name: common.EnvVarIncludeScriptOutput, Value: strconv.FormatBool(opts.includeScriptOutput)},
+		{Name: common.EnvVarDeadline, Value: woc.getDeadline(opts).Format(time.RFC3339)},
 	}
 
-	// Set the container template JSON in pod annotations, which executor examines for things like
-	// artifact location/path.
-	tmplBytes, err := json.Marshal(tmpl)
-	if err != nil {
-		return nil, err
+	for i, c := range pod.Spec.InitContainers {
+		c.Env = append(c.Env, apiv1.EnvVar{Name: common.EnvVarContainerName, Value: c.Name})
+		c.Env = append(c.Env, envVars...)
+		pod.Spec.InitContainers[i] = c
 	}
-	pod.ObjectMeta.Annotations[common.AnnotationKeyTemplate] = string(tmplBytes)
+	for i, c := range pod.Spec.Containers {
+		c.Env = append(c.Env, apiv1.EnvVar{Name: common.EnvVarContainerName, Value: c.Name})
+		c.Env = append(c.Env, envVars...)
+		pod.Spec.Containers[i] = c
+	}
 
 	// Perform one last variable substitution here. Some variables come from the from workflow
 	// configmap (e.g. archive location) or volumes attribute, and were not substituted
@@ -348,14 +327,20 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	// only to check ArchiveLocation for now, since everything else should have been substituted
 	// earlier (i.e. in executeTemplate). But archive location is unique in that the variables
 	// are formulated from the configmap. We can expand this to other fields as necessary.
-	err = json.Unmarshal([]byte(pod.ObjectMeta.Annotations[common.AnnotationKeyTemplate]), &tmpl)
-	if err != nil {
-		return nil, err
-	}
-	for _, obj := range []interface{}{tmpl.ArchiveLocation} {
-		err = verifyResolvedVariables(obj)
-		if err != nil {
-			return nil, err
+	for _, c := range pod.Spec.Containers {
+		for _, e := range c.Env {
+			if e.Name == common.EnvVarTemplate {
+				err = json.Unmarshal([]byte(e.Value), tmpl)
+				if err != nil {
+					return nil, err
+				}
+				for _, obj := range []interface{}{tmpl.ArchiveLocation} {
+					err = verifyResolvedVariables(obj)
+					if err != nil {
+						return nil, err
+					}
+				}
+			}
 		}
 	}
 
@@ -390,6 +375,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Error occurred during strategic merge patch")
 		}
+		pod.Spec = apiv1.PodSpec{} // zero out the pod spec so we cannot get conflicts
 		err = json.Unmarshal(modJson, &pod.Spec)
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Error in Unmarshalling after merge the patch")
@@ -412,6 +398,10 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		pod.Spec.ActiveDeadlineSeconds = &newActiveDeadlineSeconds
 	}
 
+	if !woc.controller.rateLimiter.Allow() {
+		return nil, ErrResourceRateLimitReached
+	}
+
 	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
 
 	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
@@ -431,6 +421,17 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	woc.log.Infof("Created pod: %s (%s)", nodeName, created.Name)
 	woc.activePods++
 	return created, nil
+}
+
+func (woc *wfOperationCtx) getDeadline(opts *createWorkflowPodOpts) *time.Time {
+	deadline := time.Time{}
+	if woc.workflowDeadline != nil {
+		deadline = *woc.workflowDeadline
+	}
+	if !opts.executionDeadline.IsZero() && (deadline.IsZero() || opts.executionDeadline.Before(deadline)) {
+		deadline = opts.executionDeadline
+	}
+	return &deadline
 }
 
 func (woc *wfOperationCtx) getImage(image string) config.Image {
@@ -572,9 +573,7 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 }
 
 func (woc *wfOperationCtx) createVolumes(tmpl *wfv1.Template) []apiv1.Volume {
-	volumes := []apiv1.Volume{
-		volumePodMetadata,
-	}
+	var volumes []apiv1.Volume
 	if woc.controller.Config.KubeConfig != nil {
 		name := woc.controller.Config.KubeConfig.VolumeName
 		if name == "" {
@@ -606,9 +605,6 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 		Image:           woc.controller.executorImage(),
 		ImagePullPolicy: woc.controller.executorImagePullPolicy(),
 		Env:             woc.createEnvVars(),
-		VolumeMounts: []apiv1.VolumeMount{
-			volumeMountPodMetadata,
-		},
 	}
 	if woc.controller.Config.Executor != nil {
 		exec.Args = woc.controller.Config.Executor.Args
@@ -660,7 +656,7 @@ func isResourcesSpecified(ctr *apiv1.Container) bool {
 }
 
 // addMetadata applies metadata specified in the template
-func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template, opts *createWorkflowPodOpts) {
+func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template) {
 	if woc.wf.Spec.PodMetadata != nil {
 		// add workflow-level pod annotations and labels
 		for k, v := range woc.wf.Spec.PodMetadata.Annotations {
@@ -676,29 +672,6 @@ func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template, opts
 	}
 	for k, v := range tmpl.Metadata.Labels {
 		pod.ObjectMeta.Labels[k] = v
-	}
-
-	execCtl := common.ExecutionControl{
-		IncludeScriptOutput: opts.includeScriptOutput,
-	}
-
-	if woc.workflowDeadline != nil {
-		execCtl.Deadline = woc.workflowDeadline
-	}
-
-	// If we're passed down an executionDeadline, only set it if there isn't one set already, or if it's before than
-	// the one already set.
-	if !opts.executionDeadline.IsZero() && (execCtl.Deadline == nil || opts.executionDeadline.Before(*execCtl.Deadline)) {
-		execCtl.Deadline = &opts.executionDeadline
-	}
-
-	if execCtl.Deadline != nil || opts.includeScriptOutput {
-		execCtlBytes, err := json.Marshal(execCtl)
-		if err != nil {
-			panic(err)
-		}
-
-		pod.ObjectMeta.Annotations[common.AnnotationKeyExecutionControl] = string(execCtlBytes)
 	}
 }
 

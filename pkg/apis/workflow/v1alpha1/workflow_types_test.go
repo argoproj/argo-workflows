@@ -890,3 +890,58 @@ func TestHasChild(t *testing.T) {
 	assert.False(t, node.HasChild("c"))
 	assert.False(t, node.HasChild(""))
 }
+
+func TestParameterGetValue(t *testing.T) {
+	empty := Parameter{}
+	defaultVal := Parameter{Default: AnyStringPtr("Default")}
+	value := Parameter{Value: AnyStringPtr("Test")}
+
+	valueFrom := Parameter{ValueFrom: &ValueFrom{}}
+	assert.False(t, empty.HasValue())
+	assert.Empty(t, empty.GetValue())
+	assert.True(t, defaultVal.HasValue())
+	assert.NotEmpty(t, defaultVal.GetValue())
+	assert.Equal(t, "Default", defaultVal.GetValue())
+	assert.True(t, value.HasValue())
+	assert.NotEmpty(t, value.GetValue())
+	assert.Equal(t, "Test", value.GetValue())
+	assert.True(t, valueFrom.HasValue())
+
+}
+
+func TestTemplateIsLeaf(t *testing.T) {
+	tmpls := []Template{
+		{
+			HTTP: &HTTP{URL: "test.com"},
+		},
+		{
+			ContainerSet: &ContainerSetTemplate{},
+		},
+		{
+			Container: &corev1.Container{},
+		},
+		{
+			Script: &ScriptTemplate{},
+		},
+		{
+			Resource: &ResourceTemplate{},
+		},
+	}
+	for _, tmpl := range tmpls {
+		assert.True(t, tmpl.IsLeaf())
+	}
+	tmpl := Template{
+		DAG: &DAGTemplate{},
+	}
+	assert.False(t, tmpl.IsLeaf())
+	tmpl = Template{
+		Steps: []ParallelSteps{},
+	}
+	assert.False(t, tmpl.IsLeaf())
+
+}
+
+func TestTemplateGetType(t *testing.T) {
+	tmpl := Template{HTTP: &HTTP{}}
+	assert.Equal(t, TemplateTypeHTTP, tmpl.GetType())
+}

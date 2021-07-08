@@ -5,25 +5,23 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"os/exec"
-	"os/signal"
+	"path/filepath"
 	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util"
 	envutil "github.com/argoproj/argo-workflows/v3/util/env"
 	argoerr "github.com/argoproj/argo-workflows/v3/util/errors"
-	os_specific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
 )
 
 // ExecResource will run kubectl action against a manifest
@@ -38,9 +36,12 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, fla
 
 	out, err := cmd.Output()
 	if err != nil {
-		exErr := err.(*exec.ExitError)
-		errMsg := strings.TrimSpace(string(exErr.Stderr))
-		return "", "", "", errors.New(errors.CodeBadRequest, errMsg)
+		if exErr, ok := err.(*exec.ExitError); ok {
+			errMsg := strings.TrimSpace(string(exErr.Stderr))
+			return "", "", "", errors.New(errors.CodeBadRequest, errMsg)
+		} else {
+			return "", "", "", errors.New(errors.CodeBadRequest, err.Error())
+		}
 	}
 	if action == "delete" {
 		return "", "", "", nil
@@ -59,14 +60,30 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, fla
 	if resourceName == "" || resourceKind == "" {
 		return "", "", "", errors.New(errors.CodeBadRequest, "Kind and name are both required but at least one of them is missing from the manifest")
 	}
-	resourceFullName := fmt.Sprintf("%s.%s/%s", resourceKind, resourceGroup, resourceName)
-	selfLink := obj.GetSelfLink()
+	resourceFullName := fmt.Sprintf("%s.%s/%s", strings.ToLower(resourceKind), resourceGroup, resourceName)
+	selfLink := inferObjectSelfLink(obj)
 	log.Infof("Resource: %s/%s. SelfLink: %s", obj.GetNamespace(), resourceFullName, selfLink)
 	return obj.GetNamespace(), resourceFullName, selfLink, nil
 }
 
+func inferObjectSelfLink(obj unstructured.Unstructured) string {
+	gvk := obj.GroupVersionKind()
+	// This is the best guess we can do here and is what `kubectl` uses under the hood. Hopefully future versions of the
+	// REST client would remove the need to infer the plural name.
+	pluralGVR, _ := meta.UnsafeGuessKindToResource(gvk)
+	var selfLinkPrefix string
+	if gvk.Group == "" {
+		selfLinkPrefix = "api"
+	} else {
+		selfLinkPrefix = "apis"
+	}
+	// We cannot use `obj.GetSelfLink()` directly since it is deprecated and will be removed after Kubernetes 1.21: https://github.com/kubernetes/enhancements/tree/master/keps/sig-api-machinery/1164-remove-selflink
+	return fmt.Sprintf("%s/%s/namespaces/%s/%s/%s",
+		selfLinkPrefix, obj.GetAPIVersion(), obj.GetNamespace(), pluralGVR.Resource, obj.GetName())
+}
+
 func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath string, flags []string) ([]string, error) {
-	buff, err := ioutil.ReadFile(manifestPath)
+	buff, err := ioutil.ReadFile(filepath.Clean(manifestPath))
 	if err != nil {
 		return []string{}, errors.New(errors.CodeBadRequest, err.Error())
 	}
@@ -84,10 +101,17 @@ func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath stri
 		output = "name"
 	}
 
+	appendFileFlag := true
 	if action == "patch" {
 		mergeStrategy := "strategic"
 		if we.Template.Resource.MergeStrategy != "" {
 			mergeStrategy = we.Template.Resource.MergeStrategy
+			if mergeStrategy == "json" {
+				// Action "patch" require flag "-p" with resource arguments.
+				// But kubectl disallow specify both "-f" flag and resource arguments.
+				// Flag "-f" should be excluded for action "patch" here if it's a json patch.
+				appendFileFlag = false
+			}
 		}
 
 		args = append(args, "--type")
@@ -101,10 +125,7 @@ func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath stri
 		args = append(args, flags...)
 	}
 
-	// Action "patch" require flag "-p" with resource arguments.
-	// But kubectl disallow specify both "-f" flag and resource arguments.
-	// Flag "-f" should be excluded for action "patch" here.
-	if len(buff) != 0 && action != "patch" {
+	if len(buff) != 0 && appendFileFlag {
 		args = append(args, "-f")
 		args = append(args, manifestPath)
 	}
@@ -131,28 +152,8 @@ func (g gjsonLabels) Get(label string) string {
 	return gjson.GetBytes(g.json, label).String()
 }
 
-// signalMonitoring start the goroutine which listens for a SIGUSR2.
-// Upon receiving of the signal, We update the pod annotation and exit the process.
-func (we *WorkflowExecutor) signalMonitoring() {
-	log.Infof("Starting SIGUSR2 signal monitor")
-	sigs := make(chan os.Signal, 1)
-
-	signal.Notify(sigs, os_specific.GetOsSignal())
-	go func() {
-		for {
-			<-sigs
-			log.Infof("Received SIGUSR2 signal. Process is terminated")
-			util.WriteTeriminateMessage("Received user signal to terminate the workflow")
-			os.Exit(130)
-		}
-	}()
-}
-
 // WaitResource waits for a specific resource to satisfy either the success or failure condition
 func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace, resourceName, selfLink string) error {
-	// Monitor the SIGTERM
-	we.signalMonitoring()
-
 	if we.Template.Resource.SuccessCondition == "" && we.Template.Resource.FailureCondition == "" {
 		return nil
 	}
@@ -182,7 +183,7 @@ func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace,
 				log.Infof("Returning from successful wait for resource %s in namespace %s", resourceName, resourceNamespace)
 				return true, nil
 			}
-			if isErrRetryable {
+			if isErrRetryable || argoerr.IsTransientErr(err) {
 				log.Infof("Waiting for resource %s in namespace %s resulted in retryable error: %v", resourceName, resourceNamespace, err)
 				return false, nil
 			}
@@ -207,9 +208,6 @@ func (we *WorkflowExecutor) checkResourceState(ctx context.Context, selfLink str
 	request := we.RESTClient.Get().RequestURI(selfLink)
 	stream, err := request.Stream(ctx)
 
-	if argoerr.IsTransientErr(err) {
-		return true, errors.Errorf(errors.CodeNotFound, "The error is detected to be transient: %v. Retrying...", err)
-	}
 	if err != nil {
 		err = errors.Cause(err)
 		if apierr.IsNotFound(err) {
@@ -224,7 +222,7 @@ func (we *WorkflowExecutor) checkResourceState(ctx context.Context, selfLink str
 		return false, err
 	}
 	jsonString := string(jsonBytes)
-	log.Info(jsonString)
+	log.Debug(jsonString)
 	if !gjson.Valid(jsonString) {
 		return false, errors.Errorf(errors.CodeNotFound, "Encountered invalid JSON response when checking resource status. Will not be retried: %q", jsonString)
 	}

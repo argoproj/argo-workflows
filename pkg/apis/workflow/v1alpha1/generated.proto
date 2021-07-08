@@ -449,6 +449,9 @@ message GitArtifact {
 
   // InsecureIgnoreHostKey disables SSH strict host key checking during git clone
   optional bool insecureIgnoreHostKey = 8;
+
+  // DisableSubmodules disables submodules during git clone
+  optional bool disableSubmodules = 9;
 }
 
 // HDFSArtifact is the location of an HDFS artifact
@@ -501,6 +504,23 @@ message HDFSKrbConfig {
   optional string krbServicePrincipalName = 6;
 }
 
+message HTTP {
+  // Method is HTTP methods for HTTP Request
+  optional string method = 1;
+
+  // URL of the HTTP Request
+  optional string url = 2;
+
+  // Headers are an optional list of headers to send with HTTP requests
+  repeated HTTPHeader headers = 3;
+
+  // TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds
+  optional int64 timeoutSeconds = 4;
+
+  // Body is content of the HTTP Request
+  optional bytes body = 5;
+}
+
 // HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container
 message HTTPArtifact {
   // URL of the artifact
@@ -508,6 +528,18 @@ message HTTPArtifact {
 
   // Headers are an optional list of headers to send with HTTP requests for artifacts
   repeated Header headers = 2;
+}
+
+message HTTPHeader {
+  optional string name = 1;
+
+  optional string value = 2;
+
+  optional HTTPHeaderSource valueFrom = 3;
+}
+
+message HTTPHeaderSource {
+  optional k8s.io.api.core.v1.SecretKeySelector secretKeyRef = 1;
 }
 
 // Header indicate a key-value request header to be used when fetching artifacts over HTTP
@@ -646,6 +678,14 @@ message MutexStatus {
   // Waiting is a list of mutexes and their respective objects this workflow is waiting for.
   // +listType=atomic
   repeated MutexHolding waiting = 2;
+}
+
+message NodeResult {
+  optional string phase = 1;
+
+  optional string message = 2;
+
+  optional Outputs outputs = 3;
 }
 
 // NodeStatus contains status information about an individual node in the workflow
@@ -932,6 +972,10 @@ message RetryStrategy {
 
   // Affinity prevents running workflow's step on the same host
   optional RetryAffinity affinity = 4;
+
+  // Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not
+  // be retried and the retry strategy will be ignored/
+  optional string expression = 5;
 }
 
 // S3Artifact is the location of an S3 artifact
@@ -1112,6 +1156,12 @@ message TarStrategy {
   optional int32 compressionLevel = 1;
 }
 
+message Task {
+  optional string nodeId = 1;
+
+  optional Template template = 2;
+}
+
 // Template is a reusable and composable unit of execution in a workflow
 message Template {
   // Name is the name of the template
@@ -1160,6 +1210,9 @@ message Template {
 
   // Data is a data template
   optional Data data = 39;
+
+  // HTTP makes a HTTP request
+  optional HTTP http = 42;
 
   // Volumes is a list of volumes that can be mounted by containers in a template.
   // +patchStrategy=merge
@@ -1643,6 +1696,32 @@ message WorkflowStep {
   // Hooks holds the lifecycle hook which is invoked at lifecycle of
   // step, irrespective of the success, failure, or error status of the primary step
   map<string, LifecycleHook> hooks = 12;
+}
+
+// +genclient
+// +kubebuilder:subresource:status
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message WorkflowTaskSet {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+
+  optional WorkflowTaskSetSpec spec = 2;
+
+  optional WorkflowTaskSetStatus status = 3;
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message WorkflowTaskSetList {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+
+  repeated WorkflowTaskSet items = 2;
+}
+
+message WorkflowTaskSetSpec {
+  repeated Task tasks = 1;
+}
+
+message WorkflowTaskSetStatus {
+  map<string, NodeResult> nodes = 1;
 }
 
 // WorkflowTemplate is the definition of a workflow template resource

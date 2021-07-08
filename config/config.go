@@ -2,7 +2,9 @@ package config
 
 import (
 	"fmt"
+	"math"
 	"path"
+	"time"
 
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,6 +15,11 @@ import (
 )
 
 var EmptyConfigFunc = func() interface{} { return &Config{} }
+
+type ResourceRateLimit struct {
+	Limit float64 `json:"limit"`
+	Burst int     `json:"burst"`
+}
 
 // Config contain the configuration settings for the workflow controller
 type Config struct {
@@ -79,6 +86,12 @@ type Config struct {
 	// Parallelism limits the max total parallel workflows that can execute at the same time
 	Parallelism int `json:"parallelism,omitempty"`
 
+	// NamespaceParallelism limits the max workflows that can execute at the same time in a namespace
+	NamespaceParallelism int `json:"namespaceParallelism,omitempty"`
+
+	// ResourceRateLimit limits the rate at which pods are created
+	ResourceRateLimit *ResourceRateLimit `json:"resourceRateLimit,omitempty"`
+
 	// Persistence contains the workflow persistence DB configuration
 	Persistence *PersistConfig `json:"persistence,omitempty"`
 
@@ -94,11 +107,15 @@ type Config struct {
 	// PodSpecLogStrategy enables the logging of podspec on controller log.
 	PodSpecLogStrategy PodSpecLogStrategy `json:"podSpecLogStrategy,omitempty"`
 
-	// PodGCGracePeriodSeconds specifies the duration in seconds before the pods in the GC queue get deleted.
-	// Value must be non-negative integer. A zero value indicates that the pods will be deleted immediately
-	// as soon as they arrived in the pod GC queue.
-	// Defaults to 30 seconds.
+	// PodGCGracePeriodSeconds specifies the duration in seconds before a terminating pod is forcefully killed.
+	// Value must be non-negative integer. A zero value indicates that the pod will be forcefully terminated immediately.
+	// Defaults to the Kubernetes default of 30 seconds.
 	PodGCGracePeriodSeconds *int64 `json:"podGCGracePeriodSeconds,omitempty"`
+
+	// PodGCDeleteDelayDuration specifies the duration in seconds before the pods in the GC queue get deleted.
+	// Value must be non-negative integer. A zero value indicates that the pods will be deleted immediately.
+	// Defaults to 5 seconds.
+	PodGCDeleteDelayDuration *metav1.Duration `json:"podGCDeleteDelayDuration,omitempty"`
 
 	// WorkflowRestrictions restricts the controller to executing Workflows that meet certain restrictions
 	WorkflowRestrictions *WorkflowRestrictions `json:"workflowRestrictions,omitempty"`
@@ -120,6 +137,24 @@ func (c Config) GetContainerRuntimeExecutor(labels labels.Labels) (string, error
 		return name, nil
 	}
 	return c.ContainerRuntimeExecutor, nil
+}
+
+func (c Config) GetResourceRateLimit() ResourceRateLimit {
+	if c.ResourceRateLimit != nil {
+		return *c.ResourceRateLimit
+	}
+	return ResourceRateLimit{
+		Limit: math.MaxFloat32,
+		Burst: math.MaxInt32,
+	}
+}
+
+func (c Config) GetPodGCDeleteDelayDuration() time.Duration {
+	if c.PodGCDeleteDelayDuration == nil {
+		return 5 * time.Second
+	}
+
+	return c.PodGCDeleteDelayDuration.Duration
 }
 
 // PodSpecLogStrategy contains the configuration for logging the pod spec in controller log for debugging purpose

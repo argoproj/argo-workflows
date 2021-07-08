@@ -6,7 +6,7 @@ Argo is an open source project that provides container-native workflows for Kube
 
 Argo is implemented as a Kubernetes CRD (Custom Resource Definition). As a result, Argo workflows can be managed using `kubectl` and natively integrates with other Kubernetes services such as volumes, secrets, and RBAC. The new Argo software is light-weight and installs in under a minute, and provides complete workflow features including parameter substitution, artifacts, fixtures, loops and recursive workflows.
 
-Many of the Argo examples used in this walkthrough are available at in this directory. If you like this project, please give us a star!
+Many of the Argo examples used in this walkthrough are available in the [`/examples` directory](https://github.com/argoproj/argo-workflows/tree/master/examples) on GitHub. If you like this project, please give us a star!
 
 For a complete description of the Argo workflow spec, please refer to [our spec definitions](https://github.com/argoproj/argo-workflows/blob/master/pkg/apis/workflow/v1alpha1/workflow_types.go).
 
@@ -1431,7 +1431,12 @@ spec:
           backoffLimit: 4
 ```
 
+**Note:**
+Currently only a single resource can be managed by a resource template so either a `generateName` or `name` must be provided in the resource's metadata.
+
 Resources created in this way are independent of the workflow. If you want the resource to be deleted when the workflow is deleted then you can use [Kubernetes garbage collection](https://kubernetes.io/docs/concepts/workloads/controllers/garbage-collection/) with the workflow resource as an owner reference ([example](./k8s-owner-reference.yaml)).
+
+You can also collect data about the resource in output parameters (see more at [k8s-jobs.yaml](./k8s-jobs.yaml))
 
 **Note:**
 When patching, the resource will accept another attribute, `mergeStrategy`, which can either be `strategic`, `merge`, or `json`. If this attribute is not supplied, it will default to `strategic`. Keep in mind that Custom Resources cannot be patched with `strategic`, so a different strategy must be chosen. For example, suppose you have the [CronTab CustomResourceDefinition](https://kubernetes.io/docs/tasks/access-kubernetes-api/custom-resources/custom-resource-definitions/#create-a-customresourcedefinition) defined, and the following instance of a CronTab:

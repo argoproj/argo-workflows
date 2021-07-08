@@ -34,6 +34,7 @@ const (
 	TemplateTypeDAG          TemplateType = "DAG"
 	TemplateTypeSuspend      TemplateType = "Suspend"
 	TemplateTypeData         TemplateType = "Data"
+	TemplateTypeHTTP         TemplateType = "HTTP"
 	TemplateTypeUnknown      TemplateType = "Unknown"
 )
 
@@ -72,6 +73,7 @@ const (
 	NodeTypeRetry     NodeType = "Retry"
 	NodeTypeSkipped   NodeType = "Skipped"
 	NodeTypeSuspend   NodeType = "Suspend"
+	NodeTypeHTTP      NodeType = "HTTP"
 )
 
 // PodGCStrategy is the strategy when to delete completed pods for GC.
@@ -538,6 +540,9 @@ type Template struct {
 	// Data is a data template
 	Data *Data `json:"data,omitempty" protobuf:"bytes,39,opt,name=data"`
 
+	// HTTP makes a HTTP request
+	HTTP *HTTP `json:"http,omitempty" protobuf:"bytes,42,opt,name=http"`
+
 	// Volumes is a list of volumes that can be mounted by containers in a template.
 	// +patchStrategy=merge
 	// +patchMergeKey=name
@@ -772,6 +777,20 @@ type ValueFrom struct {
 
 	// Expression, if defined, is evaluated to specify the value for the parameter
 	Expression string `json:"expression,omitempty" protobuf:"bytes,8,rep,name=expression"`
+}
+
+func (p *Parameter) HasValue() bool {
+	return p.Value != nil || p.Default != nil || p.ValueFrom != nil
+}
+
+func (p *Parameter) GetValue() string {
+	if p.Value != nil {
+		return p.Value.String()
+	}
+	if p.Default != nil {
+		return p.Default.String()
+	}
+	return ""
 }
 
 // SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
@@ -1492,6 +1511,10 @@ type RetryStrategy struct {
 
 	// Affinity prevents running workflow's step on the same host
 	Affinity *RetryAffinity `json:"affinity,omitempty" protobuf:"bytes,4,opt,name=affinity"`
+
+	// Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not
+	// be retried and the retry strategy will be ignored/
+	Expression string `json:"expression,omitempty" protobuf:"bytes,5,opt,name=expression"`
 }
 
 // The amount of requested resource * the duration that request was used.
@@ -1944,6 +1967,9 @@ type GitArtifact struct {
 
 	// InsecureIgnoreHostKey disables SSH strict host key checking during git clone
 	InsecureIgnoreHostKey bool `json:"insecureIgnoreHostKey,omitempty" protobuf:"varint,8,opt,name=insecureIgnoreHostKey"`
+
+	// DisableSubmodules disables submodules during git clone
+	DisableSubmodules bool `json:"disableSubmodules,omitempty" protobuf:"varint,9,opt,name=disableSubmodules"`
 }
 
 func (g *GitArtifact) HasLocation() bool {
@@ -2283,6 +2309,9 @@ func (tmpl *Template) GetType() TemplateType {
 	if tmpl.Suspend != nil {
 		return TemplateTypeSuspend
 	}
+	if tmpl.HTTP != nil {
+		return TemplateTypeHTTP
+	}
 	return TemplateTypeUnknown
 }
 
@@ -2298,7 +2327,7 @@ func (tmpl *Template) IsPodType() bool {
 // IsLeaf returns whether or not the template is a leaf
 func (tmpl *Template) IsLeaf() bool {
 	switch tmpl.GetType() {
-	case TemplateTypeContainer, TemplateTypeContainerSet, TemplateTypeScript, TemplateTypeResource, TemplateTypeData:
+	case TemplateTypeContainer, TemplateTypeContainerSet, TemplateTypeScript, TemplateTypeResource, TemplateTypeData, TemplateTypeHTTP:
 		return true
 	}
 	return false

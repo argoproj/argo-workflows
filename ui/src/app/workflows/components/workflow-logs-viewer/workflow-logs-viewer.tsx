@@ -23,8 +23,9 @@ function identity<T>(value: T) {
 }
 
 export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: WorkflowLogsViewerProps) => {
-    const [podName, setPodName] = useState(nodeId);
+    const [podName, setPodName] = useState(nodeId || '');
     const [selectedContainer, setContainer] = useState(container);
+    const [grep, setGrep] = useState('');
     const [error, setError] = useState<Error>();
     const [loaded, setLoaded] = useState(false);
     const [logsObservable, setLogsObservable] = useState<Observable<string>>();
@@ -33,8 +34,10 @@ export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: Work
         setError(null);
         setLoaded(false);
         const source = services.workflows
-            .getContainerLogs(workflow, podName, selectedContainer, archived)
+            .getContainerLogs(workflow, podName, selectedContainer, grep, archived)
             .map(e => (!podName ? e.podName + ': ' : '') + e.content + '\n')
+            // this next line highlights the search term in bold with a yellow background, white text
+            .map(x => x.replace(new RegExp(grep, 'g'), y => '\u001b[1m\u001b[43;1m\u001b[37m' + y + '\u001b[0m'))
             .publishReplay()
             .refCount();
         const subscription = source.subscribe(
@@ -44,9 +47,16 @@ export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: Work
         );
         setLogsObservable(source);
         return () => subscription.unsubscribe();
-    }, [workflow.metadata.namespace, workflow.metadata.name, podName, selectedContainer, archived]);
+    }, [workflow.metadata.namespace, workflow.metadata.name, podName, selectedContainer, grep, archived]);
 
-    const podNameOptions = [{value: null, label: 'All'}].concat(
+    // filter allows us to introduce a short delay, before we actually change grep
+    const [filter, setFilter] = useState('');
+    useEffect(() => {
+        const x = setTimeout(() => setGrep(filter), 1000);
+        return () => clearTimeout(x);
+    }, [filter]);
+
+    const podNames = [{value: '', label: 'All'}].concat(
         Object.values(workflow.status.nodes || {})
             .filter(x => x.type === 'Pod')
             .map(x => ({value: x.id, label: (x.displayName || x.name) + ' (' + x.id + ')'}))
@@ -72,8 +82,11 @@ export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: Work
             )}
             <div>
                 <i className='fa fa-box' />{' '}
-                <Autocomplete items={podNameOptions} value={(podNameOptions.find(x => x.value === podName) || {}).label} onSelect={(_, item) => setPodName(item.value)} /> /{' '}
+                <Autocomplete items={podNames} value={(podNames.find(x => x.value === podName) || {label: ''}).label} onSelect={(_, item) => setPodName(item.value)} /> /{' '}
                 <Autocomplete items={containers} value={selectedContainer} onSelect={setContainer} />
+                <span className='fa-pull-right'>
+                    <i className='fa fa-filter' /> <input type='search' defaultValue={filter} onChange={v => setFilter(v.target.value)} placeholder='Filter (regexp)...' />
+                </span>
             </div>
             <ErrorNotice error={error} />
             {selectedContainer === 'init' && (
@@ -111,7 +124,7 @@ export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: Work
             <p>
                 {execSpec(workflow).podGC && (
                     <>
-                        <WarningIcon /> You pod GC settings will delete pods and their logs immediately on completion.
+                        <WarningIcon /> Your pod GC settings will delete pods and their logs immediately on completion.
                     </>
                 )}{' '}
                 Logs do not appear for pods that are deleted.{' '}

@@ -320,7 +320,13 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 	}
 	if tmpl.RetryStrategy != nil {
 		localParams[common.LocalVarRetries] = placeholderGenerator.NextPlaceholder()
+		localParams[common.LocalVarRetriesLastExitCode] = placeholderGenerator.NextPlaceholder()
+		localParams[common.LocalVarRetriesLastStatus] = placeholderGenerator.NextPlaceholder()
+		localParams[common.LocalVarRetriesLastDuration] = placeholderGenerator.NextPlaceholder()
 		scope[common.LocalVarRetries] = placeholderGenerator.NextPlaceholder()
+		scope[common.LocalVarRetriesLastExitCode] = placeholderGenerator.NextPlaceholder()
+		scope[common.LocalVarRetriesLastStatus] = placeholderGenerator.NextPlaceholder()
+		scope[common.LocalVarRetriesLastDuration] = placeholderGenerator.NextPlaceholder()
 	}
 	if tmpl.IsLeaf() {
 		for _, art := range tmpl.Outputs.Artifacts {
@@ -1157,7 +1163,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 	// Verify dependencies for all tasks can be resolved as well as template names
 	for _, task := range tmpl.DAG.Tasks {
 
-		if '0' <= task.Name[0] && task.Name[0] <= '9' {
+		if (usingDepends || len(task.Dependencies) > 0) && '0' <= task.Name[0] && task.Name[0] <= '9' {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s name cannot begin with a digit when using either 'depends' or 'dependencies'", tmpl.Name, task.Name)
 		}
 
@@ -1242,13 +1248,13 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
-		err = validateDAGTaskArgumentDependency(task.Arguments, ancestry)
-		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
-		}
 		err = validateArguments(fmt.Sprintf("templates.%s.tasks.%s.arguments.", tmpl.Name, task.Name), task.Arguments)
 		if err != nil {
 			return err
+		}
+		err = validateDAGTaskArgumentDependency(task.Arguments, ancestry)
+		if err != nil {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
 		// Validate the template again with actual arguments.
 		_, err = ctx.validateTemplateHolder(&task, tmplCtx, &task.Arguments)
