@@ -349,7 +349,6 @@ func ListOssDirectory(bucket *oss.Bucket, objectKey string) (files []string, err
 
 		marker = oss.Marker(lor.NextMarker)
 		if !lor.IsTruncated {
-			//all done
 			break
 		}
 	}
