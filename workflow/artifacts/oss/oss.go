@@ -240,8 +240,7 @@ func putDirectory(bucket *oss.Bucket, objectName, dir string) error {
 			return errors.InternalWrapError(err)
 		}
 		fObjectName := filepath.Join(objectName, nameInDir)
-		//for local dir, create an OSS dir explicitly;
-		//thus, for an empty local dir, an empty OSS dir is also created.
+		// create an OSS dir explicitly for every local dir, , including empty dirs.
 		if info.Mode().IsDir() {
 			// create OSS dir
 			if !strings.HasSuffix(fObjectName, "/") {
@@ -264,7 +263,11 @@ func putDirectory(bucket *oss.Bucket, objectName, dir string) error {
 	})
 }
 
+<<<<<<< HEAD
 //IsOssErrCode tests if an err is an oss.ServiceError with the specified code
+=======
+// IsOssErrCode tests if an err is an oss.ServiceError with the specified code
+>>>>>>> 46a698db34a1cf3b26e8a60f685639fe92e1edb3
 func IsOssErrCode(err error, code string) bool {
 	if serr, ok := err.(oss.ServiceError); ok {
 		if serr.Code == code {
@@ -349,7 +352,10 @@ func ListOssDirectory(bucket *oss.Bucket, objectKey string) (files []string, err
 
 		marker = oss.Marker(lor.NextMarker)
 		if !lor.IsTruncated {
+<<<<<<< HEAD
 			//all done
+=======
+>>>>>>> 46a698db34a1cf3b26e8a60f685639fe92e1edb3
 			break
 		}
 	}
