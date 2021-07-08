@@ -81,6 +81,14 @@ func CreateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts, submitOpts 
 			log.Fatal(err)
 		}
 		cronWf.Spec.WorkflowSpec = newWf.Spec
+		if generateName := newWf.ObjectMeta.GenerateName; generateName != "" {
+			cronWf.ObjectMeta.GenerateName = generateName
+			cronWf.ObjectMeta.Name = ""
+		}
+		if name := newWf.ObjectMeta.Name; name != "" {
+			cronWf.ObjectMeta.Name = name
+			cronWf.ObjectMeta.GenerateName = ""
+		}
 		if cronWf.Namespace == "" {
 			cronWf.Namespace = client.Namespace()
 		}
