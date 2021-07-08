@@ -2,10 +2,8 @@ package template
 
 import (
 	"bytes"
-	"io"
-	"strings"
-
 	"github.com/valyala/fasttemplate"
+	"io"
 
 	exprenv "github.com/argoproj/argo-workflows/v3/util/expr/env"
 )
@@ -38,7 +36,6 @@ func (t *impl) Replace(replaceMap map[string]string, allowUnresolved bool) (stri
 		switch kind {
 		case kindExpression:
 			env := exprenv.GetFuncMap(envMap(replaceMap))
-			expression = strings.ReplaceAll(expression, "\\\"", "\"") // remove escape character left over from JSON-encoding
 			return expressionReplace(w, expression, env, allowUnresolved)
 		default:
 			return simpleReplace(w, tag, replaceMap, allowUnresolved)
