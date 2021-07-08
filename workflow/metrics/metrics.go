@@ -207,6 +207,7 @@ type ErrorCause string
 const (
 	ErrorCauseOperationPanic              ErrorCause = "OperationPanic"
 	ErrorCauseCronWorkflowSubmissionError ErrorCause = "CronWorkflowSubmissionError"
+	ErrorCauseCronWorkflowSpecError       ErrorCause = "CronWorkflowSpecError"
 )
 
 func (m *Metrics) OperationPanic() {
@@ -216,11 +217,11 @@ func (m *Metrics) OperationPanic() {
 	m.errors[ErrorCauseOperationPanic].Inc()
 }
 
-func (m *Metrics) CronWorkflowSubmissionError() {
+func (m *Metrics) CronWorkflowError(cause ErrorCause) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
-	m.errors[ErrorCauseCronWorkflowSubmissionError].Inc()
+	m.errors[cause].Inc()
 }
 
 // Act as a metrics provider for a workflow queue
