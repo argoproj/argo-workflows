@@ -293,7 +293,7 @@ func IsOssDirectory(bucket *oss.Bucket, objectName string) (bool, error) {
 	return false, nil
 }
 
-// GetOssDirectory download a oss "directory" to local path
+// GetOssDirectory download an OSS "directory" to local path
 func GetOssDirectory(bucket *oss.Bucket, objectName, path string) error {
 	files, err := ListOssDirectory(bucket, objectName)
 	if err != nil {
