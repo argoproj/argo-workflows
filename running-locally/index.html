@@ -1970,6 +1970,54 @@
     Pre-requisites
   </a>
   
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-set-up-a-local-cluster" title="1. Set up a local cluster" class="md-nav__link">
+    1. Set up a local cluster
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-set-up-local-service-aliases" title="2. Set up local service aliases" class="md-nav__link">
+    2. Set up local service aliases
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-install-argo-and-start-the-controller" title="3. Install Argo and start the controller" class="md-nav__link">
+    3. Install Argo and start the controller
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-optional-set-up-a-db-for-the-workflow-archive" title="4. (Optional) Set up a DB for the Workflow archive" class="md-nav__link">
+    4. (Optional) Set up a DB for the Workflow archive
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-check-out-the-argo-services-running-locally" title="5. Check out the Argo services running locally" class="md-nav__link">
+    5. Check out the Argo services running locally
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-build-argo-images" title="6. Build Argo images" class="md-nav__link">
+    6. Build Argo images
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2159,6 +2207,54 @@
     Pre-requisites
   </a>
   
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-set-up-a-local-cluster" title="1. Set up a local cluster" class="md-nav__link">
+    1. Set up a local cluster
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-set-up-local-service-aliases" title="2. Set up local service aliases" class="md-nav__link">
+    2. Set up local service aliases
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-install-argo-and-start-the-controller" title="3. Install Argo and start the controller" class="md-nav__link">
+    3. Install Argo and start the controller
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-optional-set-up-a-db-for-the-workflow-archive" title="4. (Optional) Set up a DB for the Workflow archive" class="md-nav__link">
+    4. (Optional) Set up a DB for the Workflow archive
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-check-out-the-argo-services-running-locally" title="5. Check out the Argo services running locally" class="md-nav__link">
+    5. Check out the Argo services running locally
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-build-argo-images" title="6. Build Argo images" class="md-nav__link">
+    6. Build Argo images
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2200,16 +2296,18 @@
 <li><a href="https://golang.org/dl/">Go</a> (The project currently uses version 1.15)</li>
 <li><a href="https://classic.yarnpkg.com/en/docs/install/#mac-stable">Yarn</a></li>
 <li><a href="https://docs.docker.com/get-docker/">Docker</a></li>
-<li><a href="https://github.com/kubernetes-sigs/kustomize/blob/master/docs/INSTALL.md">Kustomize</a></li>
+<li><a href="https://kubectl.docs.kubernetes.io/installation/kustomize/">Kustomize</a></li>
 <li><a href="http://google.github.io/proto-lens/installing-protoc.html">protoc</a> <code>brew install protobuf</code></li>
 <li><a href="https://stedolan.github.io/jq/download/"><code>jq</code></a></li>
 <li>A local Kubernetes cluster</li>
 </ul>
+<h3 id="1-set-up-a-local-cluster">1. Set up a local cluster<a class="headerlink" href="#1-set-up-a-local-cluster" title="Permanent link">&para;</a></h3>
 <p>We recommend using <a href="https://k3d.io/">K3D</a> to set up the local Kubernetes cluster since this will allow you to test RBAC set-up and is fast. You can set-up K3D to be part of your default kube config as follows:</p>
 <div class="codehilite"><pre><span></span><code><span class="nv">k3d</span> <span class="nv">cluster</span> <span class="nv">start</span> <span class="o">--</span><span class="k">wait</span>
 </code></pre></div>
 
 <p>Alternatively, you can use <a href="https://github.com/kubernetes/minikube">Minikube</a> to set up the local Kubernetes cluster. Once a local Kubernetes cluster has started via <code>minikube start</code>, your kube config will use Minikube's context automatically.</p>
+<h3 id="2-set-up-local-service-aliases">2. Set up local service aliases<a class="headerlink" href="#2-set-up-local-service-aliases" title="Permanent link">&para;</a></h3>
 <p>Add to /etc/hosts:</p>
 <div class="codehilite"><pre><span></span><code><span class="mf">127.0.0.1</span> <span class="n">dex</span>
 <span class="mf">127.0.0.1</span> <span class="n">minio</span>
@@ -2217,14 +2315,17 @@
 <span class="mf">127.0.0.1</span> <span class="n">mysql</span>
 </code></pre></div>
 
+<h3 id="3-install-argo-and-start-the-controller">3. Install Argo and start the controller<a class="headerlink" href="#3-install-argo-and-start-the-controller" title="Permanent link">&para;</a></h3>
 <p>To install into the “argo” namespace of your cluster: Argo and MinIO (for saving artifacts and logs):</p>
 <div class="codehilite"><pre><span></span><code>make start
 </code></pre></div>
 
+<h3 id="4-optional-set-up-a-db-for-the-workflow-archive">4. (Optional) Set up a DB for the Workflow archive<a class="headerlink" href="#4-optional-set-up-a-db-for-the-workflow-archive" title="Permanent link">&para;</a></h3>
 <p>If you want MySQL for the workflow archive:</p>
 <div class="codehilite"><pre><span></span><code>make start PROFILE=mysql
 </code></pre></div>
 
+<h3 id="5-check-out-the-argo-services-running-locally">5. Check out the Argo services running locally<a class="headerlink" href="#5-check-out-the-argo-services-running-locally" title="Permanent link">&para;</a></h3>
 <p>You’ll now have</p>
 <ul>
 <li>Argo Server API on https://localhost:2746</li>
@@ -2237,6 +2338,11 @@
 <li>MySQL on  http://localhost:3306, run <code>make mysql-cli</code> to access.</li>
 </ul>
 <p>At this point you’ll have everything you need to use the CLI and UI.</p>
+<h3 id="6-build-argo-images">6. Build Argo images<a class="headerlink" href="#6-build-argo-images" title="Permanent link">&para;</a></h3>
+<p>Before submitting/running workflows, build all Argo images, so they're available for the workflow.</p>
+<div class="codehilite"><pre><span></span><code>make build
+</code></pre></div>
+
 <h2 id="troubleshooting-notes">Troubleshooting Notes<a class="headerlink" href="#troubleshooting-notes" title="Permanent link">&para;</a></h2>
 <p>If you get a similar error when running one of the make pre-commit tests <code>make: *** [pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json] Error 1</code>, ensure you are working within your $GOPATH (YOUR-GOPATH/src/github.com/argoproj/argo-workflows).</p>
 <h2 id="clean">Clean<a class="headerlink" href="#clean" title="Permanent link">&para;</a></h2>
