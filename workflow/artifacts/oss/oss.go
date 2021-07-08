@@ -264,7 +264,7 @@ func putDirectory(bucket *oss.Bucket, objectName, dir string) error {
 	})
 }
 
-//IsOssErrCode tests if an err is an oss.ServiceError with the specified code
+// IsOssErrCode tests if an err is an oss.ServiceError with the specified code
 func IsOssErrCode(err error, code string) bool {
 	if serr, ok := err.(oss.ServiceError); ok {
 		if serr.Code == code {
