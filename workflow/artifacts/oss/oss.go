@@ -3,7 +3,6 @@ package oss
 import (
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -235,15 +234,28 @@ func putDirectory(bucket *oss.Bucket, objectName, dir string) error {
 		if err != nil {
 			return errors.InternalWrapError(err)
 		}
-		if !info.Mode().IsRegular() {
-			return nil
-		}
-		// build the name to be used in the archive
+		// build the name to be used in oss
 		nameInDir, err := filepath.Rel(dir, fpath)
 		if err != nil {
 			return errors.InternalWrapError(err)
 		}
-		fObjectName := path.Join(objectName, nameInDir)
+		fObjectName := filepath.Join(objectName, nameInDir)
+		//for local dir, create an oss dir explicitly;
+		//thus, for an empty local dir, an empty oss dir is also created.
+		if info.Mode().IsDir() {
+			// create oss dir
+			if !strings.HasSuffix(fObjectName, "/") {
+				fObjectName += "/"
+			}
+			err = bucket.PutObject(fObjectName, nil)
+			if err != nil {
+				return err
+			}
+		}
+		if !info.Mode().IsRegular() {
+			return nil
+		}
+
 		err = putFile(bucket, fObjectName, fpath)
 		if err != nil {
 			return err
@@ -294,14 +306,14 @@ func GetOssDirectory(bucket *oss.Bucket, objectName, path string) error {
 		}
 		fpath := filepath.Join(path, innerName)
 		if strings.HasSuffix(f, "/") {
-			err = os.MkdirAll(fpath, 0777)
+			err = os.MkdirAll(fpath, 0o700)
 			if err != nil {
 				return fmt.Errorf("mkdir %s error: %w", fpath, err)
 			}
 			continue
 		}
 		dirPath := filepath.Dir(fpath)
-		err = os.MkdirAll(dirPath, 0777)
+		err = os.MkdirAll(dirPath, 0o700)
 		if err != nil {
 			return fmt.Errorf("mkdir %s error: %w", dirPath, err)
 		}
@@ -329,7 +341,8 @@ func ListOssDirectory(bucket *oss.Bucket, objectKey string) (files []string, err
 	for {
 		lor, err := bucket.ListObjects(oss.MaxKeys(batchCount), marker, pre)
 		if err != nil {
-			return files, fmt.Errorf("oss list object(%s) error: %w", objectKey, err)
+			log.Warnf("oss list object(%s) error: %v", objectKey, err)
+			return files, err
 		}
 		for _, obj := range lor.Objects {
 			files = append(files, obj.Key)
