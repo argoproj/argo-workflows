@@ -62,12 +62,12 @@ func (ossDriver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string)
 				return !isTransientOSSErr(err), err
 			}
 			objectName := inputArtifact.OSS.Key
-			err = bucket.GetObjectToFile(objectName, path)
-			if err == nil {
+			origErr := bucket.GetObjectToFile(objectName, path)
+			if origErr == nil {
 				return true, nil
 			}
-			if !IsOssErrCode(err, "NoSuchKey") {
-				return !isTransientOSSErr(err), fmt.Errorf("failed to get file: %w", err)
+			if !IsOssErrCode(origErr, "NoSuchKey") {
+				return !isTransientOSSErr(origErr), fmt.Errorf("failed to get file: %w", origErr)
 			}
 			// If we get here, the error was a NoSuchKey. The key might be a oss "directory"
 			isDir, err := IsOssDirectory(bucket, objectName)
@@ -76,7 +76,7 @@ func (ossDriver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string)
 			}
 			if !isDir {
 				// It's neither a file, nor a directory. Return the original NoSuchKey error
-				return false, errors.New(errors.CodeNotFound, err.Error())
+				return false, origErr
 			}
 
 			if err = GetOssDirectory(bucket, objectName, path); err != nil {
@@ -293,7 +293,7 @@ func IsOssDirectory(bucket *oss.Bucket, objectName string) (bool, error) {
 	return false, nil
 }
 
-// GetOssDirectory download a oss "directory" to local path
+// GetOssDirectory download an OSS "directory" to local path
 func GetOssDirectory(bucket *oss.Bucket, objectName, path string) error {
 	files, err := ListOssDirectory(bucket, objectName)
 	if err != nil {
@@ -336,10 +336,9 @@ func ListOssDirectory(bucket *oss.Bucket, objectKey string) (files []string, err
 	}
 
 	pre := oss.Prefix(objectKey)
-	const batchCount = 50
 	marker := oss.Marker("")
 	for {
-		lor, err := bucket.ListObjects(oss.MaxKeys(batchCount), marker, pre)
+		lor, err := bucket.ListObjects(marker, pre)
 		if err != nil {
 			log.Warnf("oss list object(%s) error: %v", objectKey, err)
 			return files, err
