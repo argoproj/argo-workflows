@@ -240,8 +240,7 @@ func putDirectory(bucket *oss.Bucket, objectName, dir string) error {
 			return errors.InternalWrapError(err)
 		}
 		fObjectName := filepath.Join(objectName, nameInDir)
-		//for local dir, create an OSS dir explicitly;
-		//thus, for an empty local dir, an empty OSS dir is also created.
+		// create an OSS dir explicitly for every local dir, , including empty dirs.
 		if info.Mode().IsDir() {
 			// create OSS dir
 			if !strings.HasSuffix(fObjectName, "/") {
