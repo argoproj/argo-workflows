@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 )
 
 func copyBinary() error {
@@ -11,12 +12,14 @@ func copyBinary() error {
 	if err != nil {
 		return err
 	}
-	in, err := os.Open(name)
+	in, err := os.Open(filepath.Clean(name))
 	if err != nil {
 		return err
 	}
 	defer func() { _ = in.Close() }()
-	out, err := os.OpenFile("/var/run/argo/argoexec", os.O_RDWR|os.O_CREATE, 0o500) // r-x------
+	// argoexec needs to be executable from non-root user in the main container.
+	// Therefore we set permission 0o555 == r-xr-xr-x.
+	out, err := os.OpenFile("/var/run/argo/argoexec", os.O_RDWR|os.O_CREATE, 0o555)
 	if err != nil {
 		return err
 	}

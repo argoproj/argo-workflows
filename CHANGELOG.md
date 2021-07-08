@@ -1,5 +1,21 @@
 # Changelog
 
+## v3.1.1 (2021-06-28)
+
+ * [4d12bbfee](https://github.com/argoproj/argo-workflows/commit/4d12bbfee13faea6d2715c809fab40ae33a66074) fix(conttroller): Always set finishedAt dote. Fixes #6135 (#6139)
+ * [401a66188](https://github.com/argoproj/argo-workflows/commit/401a66188d25bef16078bba370fc26d1fbd56288) fix: Fix certain sibling tasks not connected to parent (#6193)
+ * [99b42eb1c](https://github.com/argoproj/argo-workflows/commit/99b42eb1c0902c7df6a3e2904dafd93b294c9e96) fix(controller): Wrong validate order when validate DAG task's argument (#6190)
+ * [18b2371e3](https://github.com/argoproj/argo-workflows/commit/18b2371e36f106062d1a2cc2e81ca37052b8296b) fix(controller): dehydrate workflow before deleting offloaded node status (#6112)
+ * [a58cbdc39](https://github.com/argoproj/argo-workflows/commit/a58cbdc3966188a1ea5d9207f99e289ee758804f) fix(controller): Allow retry on transient errors when validating workflow spec. Fixes #6163 (#6178)
+
+### Contributors
+
+ * Alex Collins
+ * BOOK
+ * Reijer Copier
+ * Simon Behar
+ * Yuan Tang
+
 ## v3.1.0 (2021-06-15)
 
  * [fad026e36](https://github.com/argoproj/argo-workflows/commit/fad026e367dd08b0217155c433f2f87c310506c5) fix(ui): Fix event-flow scrolling. Fixes #6133 (#6147)
@@ -360,8 +376,8 @@
  * Reijer Copier
  * Riccardo Piccoli
  * Roi Kramer
- * Saïfane FARFAR
  * Saravanan Balasubramanian
+ * Saïfane FARFAR
  * Shoubhik Bose
  * Simon Behar
  * Stephan van Maris
@@ -381,6 +397,20 @@
  * tobisinghania
  * uucloud
  * wanglong001
+
+## v3.0.8 (2021-06-21)
+
+ * [6d7887cce](https://github.com/argoproj/argo-workflows/commit/6d7887cce650f999bb6f788a43fcefe3ca398185) Update manifests to v3.0.8
+ * [449237971](https://github.com/argoproj/argo-workflows/commit/449237971ba81e8397667be77a01957ec15d576e) fix(ui): Fix-up local storage namespaces. Fixes #6109 (#6144)
+ * [87852e94a](https://github.com/argoproj/argo-workflows/commit/87852e94aa2530ebcbd3aeaca647ae8ff42774ac) fix(controller): dehydrate workflow before deleting offloaded node status (#6112)
+ * [d8686ee1a](https://github.com/argoproj/argo-workflows/commit/d8686ee1ade34d7d5ef687bcb638415756b2f364) fix(executor): Fix docker not terminating. Fixes #6064 (#6083)
+ * [c2abdb8e6](https://github.com/argoproj/argo-workflows/commit/c2abdb8e6f16486a0785dc852d293c19bd721399) fix(controller): Handling panic in leaderelection (#6072)
+
+### Contributors
+
+ * Alex Collins
+ * Reijer Copier
+ * Saravanan Balasubramanian
 
 ## v3.0.7 (2021-05-25)
 
