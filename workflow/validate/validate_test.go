@@ -2824,3 +2824,45 @@ spec:
 		}
 	}
 }
+
+func TestSortDAGTasksWithDepends(t *testing.T) {
+	wfUsingDependsManifest := `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: sort-dag-tasks-test-
+  namespace: argo
+spec:
+  entrypoint: main
+  templates:
+    - dag:
+        tasks:
+          - name: "8ea51cf2"
+            template: 8ea51cf2-template
+          - depends: 8ea51cf2
+            name: "ba1f414f"
+            template: ba1f414f-template
+          - depends: ba1f414f.Succeeded || ba1f414f.Failed || ba1f414f.Errored
+            name: "f7d273f8"
+            template: f7d273f8-template
+      name: main`
+	wf := unmarshalWf(wfUsingDependsManifest)
+	tmpl := wf.Spec.Templates[0]
+	nameToTask := make(map[string]wfv1.DAGTask)
+	for _, task := range tmpl.DAG.Tasks {
+		nameToTask[task.Name] = task
+	}
+
+	dagValidationCtx := &dagValidationContext{
+		tasks:        nameToTask,
+		dependencies: make(map[string]map[string]common.DependencyType),
+	}
+	err := sortDAGTasks(&tmpl, dagValidationCtx)
+	assert.NoError(t, err)
+	var taskOrderAfterSort, expectedOrder []string
+	expectedOrder = []string{"8ea51cf2", "ba1f414f", "f7d273f8"}
+	for _, task := range tmpl.DAG.Tasks {
+		taskOrderAfterSort = append(taskOrderAfterSort, task.Name)
+	}
+	assert.Equal(t, expectedOrder, taskOrderAfterSort)
+}
