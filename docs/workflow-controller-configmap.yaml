@@ -118,7 +118,7 @@ data:
       useSDKCreds: false
 
   # Specifies the container runtime interface to use (default: docker)
-  # must be one of: docker, kubelet, k8sapi, pns
+  # must be one of: docker, kubelet, k8sapi, pns, emissary
   # It has lower precedence than either `--container-runtime-executor` and `containerRuntimeExecutors`.
   containerRuntimeExecutor: docker
 
