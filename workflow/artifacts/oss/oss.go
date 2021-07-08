@@ -234,16 +234,16 @@ func putDirectory(bucket *oss.Bucket, objectName, dir string) error {
 		if err != nil {
 			return errors.InternalWrapError(err)
 		}
-		// build the name to be used in oss
+		// build the name to be used in OSS
 		nameInDir, err := filepath.Rel(dir, fpath)
 		if err != nil {
 			return errors.InternalWrapError(err)
 		}
 		fObjectName := filepath.Join(objectName, nameInDir)
-		//for local dir, create an oss dir explicitly;
-		//thus, for an empty local dir, an empty oss dir is also created.
+		//for local dir, create an OSS dir explicitly;
+		//thus, for an empty local dir, an empty OSS dir is also created.
 		if info.Mode().IsDir() {
-			// create oss dir
+			// create OSS dir
 			if !strings.HasSuffix(fObjectName, "/") {
 				fObjectName += "/"
 			}
@@ -274,7 +274,7 @@ func IsOssErrCode(err error, code string) bool {
 	return false
 }
 
-// IsDirectory tests if the key is acting like a oss directory. This just means it has at least one
+// IsDirectory tests if the key is acting like a OSS directory. This just means it has at least one
 // object which is prefixed with the given key
 func IsOssDirectory(bucket *oss.Bucket, objectName string) (bool, error) {
 	if objectName == "" {
@@ -327,7 +327,7 @@ func GetOssDirectory(bucket *oss.Bucket, objectName, path string) error {
 	return nil
 }
 
-// ListOssDirectory lists all the files which are the descendants of the specified objectKey, if a file has suffix '/', then it is an oss directory
+// ListOssDirectory lists all the files which are the descendants of the specified objectKey, if a file has suffix '/', then it is an OSS directory
 func ListOssDirectory(bucket *oss.Bucket, objectKey string) (files []string, err error) {
 	if objectKey != "" {
 		if !strings.HasSuffix(objectKey, "/") {
