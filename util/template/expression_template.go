@@ -28,7 +28,6 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 		return 0, fmt.Errorf("failed to unmarshall JSON expression: %w", err)
 	}
 
-
 	if _, ok := env["retries"]; !ok && hasRetries(unmarshalledExpression) && allowUnresolved {
 		// this is to make sure expressions like `sprig.int(retries)` don't get resolved to 0 when `retries` don't exist in the env
 		// See https://github.com/argoproj/argo-workflows/issues/5388
