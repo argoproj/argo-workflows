@@ -29,6 +29,13 @@ message GetUserInfoResponse {
     string serviceAccountName = 6;
 }
 
+message GetSettingsRequest {
+}
+
+message GetSettingsResponse {
+    string uiCssURL = 1;
+}
+
 service InfoService {
     rpc GetInfo (GetInfoRequest) returns (InfoResponse) {
         option (google.api.http).get = "/api/v1/info";
@@ -38,5 +45,8 @@ service InfoService {
     }
     rpc GetUserInfo (GetUserInfoRequest) returns (GetUserInfoResponse) {
         option (google.api.http).get = "/api/v1/userinfo";
+    }
+    rpc GetSettings (GetSettingsRequest) returns (GetSettingsResponse) {
+        option (google.api.http).get = "/api/v1/settings";
     }
 }

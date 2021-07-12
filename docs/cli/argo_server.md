@@ -27,6 +27,7 @@ See https://argoproj.github.io/argo-workflows/argo-server.md
       --configmap string                     Name of K8s configmap to retrieve workflow controller configuration (default "workflow-controller-configmap")
       --event-operation-queue-size int       how many events operations that can be queued at once (default 16)
       --event-worker-count int               how many event workers to run (default 4)
+      --extra-files-dir string               Value to serve files from a specified directory. Defaults no serve.
   -h, --help                                 help for server
       --hsts                                 Whether or not we should add a HTTP Secure Transport Security header. This only has effect if secure is enabled. (default true)
       --log-format string                    The formatter to use for logs. One of: text|json (default "text")

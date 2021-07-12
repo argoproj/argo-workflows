@@ -25,3 +25,8 @@ func (h InfoServiceClient) GetUserInfo(_ context.Context, in *infopkg.GetUserInf
 	out := &infopkg.GetUserInfoResponse{}
 	return out, h.Get(in, out, "/api/v1/userinfo")
 }
+
+func (h InfoServiceClient) GetSettings(_ context.Context, in *infopkg.GetSettingsRequest, _ ...grpc.CallOption) (*infopkg.GetSettingsResponse, error) {
+	out := &infopkg.GetSettingsResponse{}
+	return out, h.Get(in, out, "/api/v1/settings")
+}

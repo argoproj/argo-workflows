@@ -38,6 +38,7 @@ func NewServerCommand() *cobra.Command {
 		configMap                string
 		port                     int
 		baseHRef                 string
+		extraFilesDir            string
 		secure                   bool
 		htst                     bool
 		namespaced               bool   // --namespaced
@@ -92,6 +93,7 @@ See %s`, help.ArgoSever),
 				"namespace":        namespace,
 				"managedNamespace": managedNamespace,
 				"baseHRef":         baseHRef,
+				"extraFilesDir":    extraFilesDir,
 				"secure":           secure,
 			}).Info()
 
@@ -127,6 +129,7 @@ See %s`, help.ArgoSever),
 
 			opts := apiserver.ArgoServerOpts{
 				BaseHRef:                 baseHRef,
+				ExtraFilesDir:            extraFilesDir,
 				TLSConfig:                tlsConfig,
 				HSTS:                     htst,
 				Namespace:                namespace,
@@ -179,6 +182,7 @@ See %s`, help.ArgoSever),
 		defaultBaseHRef = "/"
 	}
 	command.Flags().StringVar(&baseHRef, "basehref", defaultBaseHRef, "Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /. Defaults to the environment variable BASE_HREF.")
+	command.Flags().StringVar(&extraFilesDir, "extra-files-dir", "", "Value to serve files from a specified directory. Defaults no serve.")
 	// "-e" for encrypt, like zip
 	// We default to secure mode if we find certs available, otherwise we default to insecure mode.
 	_, err := os.Stat("argo-server.crt")

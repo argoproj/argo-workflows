@@ -12,6 +12,7 @@ import (
 type infoServer struct {
 	managedNamespace string
 	links            []*wfv1.Link
+	uiCssURL         string
 }
 
 func (i *infoServer) GetUserInfo(ctx context.Context, _ *infopkg.GetUserInfoRequest) (*infopkg.GetUserInfoResponse, error) {
@@ -38,6 +39,12 @@ func (i *infoServer) GetVersion(context.Context, *infopkg.GetVersionRequest) (*w
 	return &version, nil
 }
 
-func NewInfoServer(managedNamespace string, links []*wfv1.Link) infopkg.InfoServiceServer {
-	return &infoServer{managedNamespace, links}
+func (i *infoServer) GetSettings(context.Context, *infopkg.GetSettingsRequest) (*infopkg.GetSettingsResponse, error) {
+	return &infopkg.GetSettingsResponse{
+		UiCssURL: i.uiCssURL,
+	}, nil
+}
+
+func NewInfoServer(managedNamespace string, links []*wfv1.Link, uiCssURL string) infopkg.InfoServiceServer {
+	return &infoServer{managedNamespace, links, uiCssURL}
 }
