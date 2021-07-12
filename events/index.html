@@ -2402,23 +2402,23 @@
 <h2 id="workflow-template-triggered-by-the-event">Workflow Template triggered by the event<a class="headerlink" href="#workflow-template-triggered-by-the-event" title="Permanent link">&para;</a></h2>
 <p>Before the binding between an event and a workflow template, you must create the workflow template that you want to trigger.
 The following one takes in input the "message" parameter specified into the API call body, passed through the WorkflowEventBinding parameters section, and finally resolved here as the message of the whalesay image.</p>
-<div class="highlight"><pre><span></span><code>apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: my-wf-tmple
-  namespace: argo
-spec:
-  templates:
-    - name: main
-      inputs:
-        parameters:
-          - name: message
-            value: &quot;{{workflow.parameters.message}}&quot;
-      container:
-        image: docker/whalesay:latest
-        command: [cowsay]
-        args: [&quot;{{inputs.parameters.message}}&quot;]
-  entrypoint: main
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">WorkflowTemplate</span>
+<span class="nt">metadata</span><span class="p">:</span>
+  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-wf-tmple</span>
+  <span class="nt">namespace</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argo</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">templates</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">main</span>
+      <span class="nt">inputs</span><span class="p">:</span>
+        <span class="nt">parameters</span><span class="p">:</span>
+          <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">message</span>
+            <span class="nt">value</span><span class="p">:</span> <span class="s">&quot;{{workflow.parameters.message}}&quot;</span>
+      <span class="nt">container</span><span class="p">:</span>
+        <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">docker/whalesay:latest</span>
+        <span class="nt">command</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">cowsay</span><span class="p p-Indicator">]</span>
+        <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;{{inputs.parameters.message}}&quot;</span><span class="p p-Indicator">]</span>
+  <span class="nt">entrypoint</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">main</span>
 </code></pre></div>
 <h2 id="submitting-a-workflow-from-a-workflow-template">Submitting A Workflow From A Workflow Template<a class="headerlink" href="#submitting-a-workflow-from-a-workflow-template" title="Permanent link">&para;</a></h2>
 <p>A workflow template will be submitted (i.e. workflow created from it) and that can be created using parameters from the event itself. 
