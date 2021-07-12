@@ -1072,8 +1072,6 @@ func (r *ArtifactRepositoryRef) String() string {
 	return fmt.Sprintf("%s#%s", r.ConfigMap, r.Key)
 }
 
-var DefaultArtifactRepositoryRefStatus = &ArtifactRepositoryRefStatus{Default: true}
-
 // +protobuf.options.(gogoproto.goproto_stringer)=false
 type ArtifactRepositoryRefStatus struct {
 	ArtifactRepositoryRef `json:",inline" protobuf:"bytes,1,opt,name=artifactRepositoryRef"`
@@ -1081,6 +1079,8 @@ type ArtifactRepositoryRefStatus struct {
 	Namespace string `json:"namespace,omitempty" protobuf:"bytes,2,opt,name=namespace"`
 	// If this ref represents the default artifact repository, rather than a config map.
 	Default bool `json:"default,omitempty" protobuf:"varint,3,opt,name=default"`
+	// The repository the workflow will use. This maybe empty before v3.1.
+	ArtifactRepository *ArtifactRepository `json:"artifactRepository,omitempty" protobuf:"bytes,4,opt,name=artifactRepository"`
 }
 
 func (r *ArtifactRepositoryRefStatus) String() string {
