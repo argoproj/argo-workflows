@@ -43,7 +43,19 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 	if result == nil {
 		return 0, fmt.Errorf("failed to evaluate expression %q", expression)
 	}
-	return w.Write([]byte(fmt.Sprintf("%v", result)))
+	resultMarshaled, err := json.Marshal(fmt.Sprintf("%v", result))
+	if (err != nil || resultMarshaled == nil) && allowUnresolved {
+		return w.Write([]byte(fmt.Sprintf("{{%s%s}}", kindExpression, expression)))
+	}
+	if err != nil {
+		return 0, fmt.Errorf("failed to marshal evaluated espression: %w", err)
+	}
+	if resultMarshaled == nil {
+		return 0, fmt.Errorf("failed to marshal evaluated marshaled expression %q", expression)
+	}
+	// Trim leading and trailing quotes. The value is being inserted into something that's already a string.
+	marshaledLength := len(resultMarshaled)
+	return w.Write(resultMarshaled[1:marshaledLength-1])
 }
 
 func envMap(replaceMap map[string]string) map[string]interface{} {
