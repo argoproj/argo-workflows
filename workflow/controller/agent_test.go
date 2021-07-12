@@ -13,7 +13,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
-func TestExecuteTaskSet1(t *testing.T) {
+func TestExecuteTaskSet(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:

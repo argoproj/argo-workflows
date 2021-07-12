@@ -8316,21 +8316,6 @@
         }
       }
     },
-    "io.argoproj.workflow.v1alpha1.Task": {
-      "type": "object",
-      "required": [
-        "nodeId",
-        "template"
-      ],
-      "properties": {
-        "nodeId": {
-          "type": "string"
-        },
-        "template": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
-        }
-      }
-    },
     "io.argoproj.workflow.v1alpha1.Template": {
       "description": "Template is a reusable and composable unit of execution in a workflow",
       "type": "object",
@@ -9023,6 +9008,9 @@
           "description": "Affinity sets the scheduling constraints for all pods in the io.argoproj.workflow.v1alpha1. Can be overridden by an affinity specified in the template",
           "$ref": "#/definitions/io.k8s.api.core.v1.Affinity"
         },
+        "agentServiceAccountName": {
+          "type": "string"
+        },
         "arguments": {
           "description": "Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{io.argoproj.workflow.v1alpha1.parameters.myparam}}",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
@@ -9422,9 +9410,9 @@
       "type": "object",
       "properties": {
         "tasks": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Task"
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
           }
         }
       }
@@ -9547,6 +9535,9 @@
         "affinity": {
           "description": "Affinity sets the scheduling constraints for all pods in the io.argoproj.workflow.v1alpha1. Can be overridden by an affinity specified in the template",
           "$ref": "#/definitions/io.k8s.api.core.v1.Affinity"
+        },
+        "agentServiceAccountName": {
+          "type": "string"
         },
         "arguments": {
           "description": "Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{io.argoproj.workflow.v1alpha1.parameters.myparam}}",

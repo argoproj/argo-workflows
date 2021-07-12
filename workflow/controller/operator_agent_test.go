@@ -42,14 +42,10 @@ metadata:
   uid: b80385b8-8b72-4f13-af6d-f429a2cad443
 spec:
   tasks:
-  - nodeId: hello-world
-    template:
+    http-template-nxvtg-1265710817:
       http:
-        url: https://www.google.com/
-      inputs: {}
-      metadata: {}
-      name: http
-      outputs: {}
+        url: http://www.google.com
+
 status:
   nodes:
     hello-world:

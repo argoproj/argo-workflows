@@ -2,176 +2,143 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"time"
 
-	apiv1 "k8s.io/api/core/v1"
+	log "github.com/sirupsen/logrus"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/tools/cache"
-	"k8s.io/utils/pointer"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/util/retry"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	argowait "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
-func (woc *wfOperationCtx) getAgentPodName() string {
-	return woc.wf.NodeID("agent") + "-agent"
+func (woc *wfOperationCtx) patchTaskSet(ctx context.Context, patch interface{}, pathTypeType types.PatchType) error {
+	patchByte, err := json.Marshal(patch)
+	fmt.Println(string(patchByte))
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+	return argowait.Backoff(retry.DefaultBackoff, func() (bool, error) {
+		var err error
+		_, err = woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace).Patch(ctx, woc.wf.Name, pathTypeType, patchByte, metav1.PatchOptions{})
+		return apierr.IsNotFound(err) || !errorsutil.IsTransientErr(err), err
+	})
 }
 
-func (woc *wfOperationCtx) executeTaskSet(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
-	node := woc.wf.GetNodeByName(nodeName)
-	if node == nil {
-		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeHTTP, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
+type ThingSpec struct {
+	Op   string `json:"op"`
+	Path string `json:"path"`
+}
+
+func (woc *wfOperationCtx) deleteTaskSetStatus(ctx context.Context) error {
+	patch := []ThingSpec{{Op: "remove", Path: "/status/nodes"}}
+	return woc.patchTaskSet(ctx, patch, types.JSONPatchType)
+}
+
+func (woc *wfOperationCtx) completeTaskSet(ctx context.Context) error {
+	patch := map[string]interface{}{
+		"metadata": metav1.ObjectMeta{
+			Labels: map[string]string{
+				common.LabelKeyCompleted: "true",
+			},
+		},
 	}
-	mainCtr := woc.newExecContainer(common.MainContainerName, tmpl)
-	mainCtr.Command = []string{"argoexec", "agent"}
-	// Append Agent in end of pod name to differentiate from normal podname
-	podName := woc.getAgentPodName()
-	_, err := woc.createAgentPod(ctx, podName, []apiv1.Container{*mainCtr}, tmpl)
-	if err != nil {
-		return woc.requeueIfTransientErr(err, node.Name)
-	}
-	err = woc.controller.taskSetManager.CreateTaskSet(ctx, woc.wf, node.ID, *tmpl)
+	return woc.patchTaskSet(ctx, patch, types.MergePatchType)
+}
+
+func (woc *wfOperationCtx) getWorkflowTaskSet() (*wfv1.WorkflowTaskSet, error) {
+	taskSet, exist, err := woc.controller.wfTaskSetInformer.Informer().GetIndexer().GetByKey(woc.wf.Namespace + "/" + woc.wf.Name)
 	if err != nil {
 		return nil, err
 	}
+	if !exist {
+		return nil, nil
+	}
 
-	return node, nil
+	return taskSet.(*wfv1.WorkflowTaskSet), nil
 }
 
-func (woc *wfOperationCtx) taskSetReconciliation() error {
-	taskSet, err := woc.getWorkflowTaskSet()
+func (woc *wfOperationCtx) taskSetReconciliation(ctx context.Context) error {
+	workflowTaskset, err := woc.getWorkflowTaskSet()
 	if err != nil {
 		return err
 	}
-	if taskSet == nil || len(taskSet.Status.Nodes) == 0 {
+	woc.log.Infof("TaskSet Reconciliation")
+	if workflowTaskset != nil && len(workflowTaskset.Status.Nodes) > 0 {
+		for nodeID, taskResult := range workflowTaskset.Status.Nodes {
+			node := woc.wf.Status.Nodes[nodeID]
+			node.Outputs = taskResult.Outputs.DeepCopy()
+			node.Phase = taskResult.Phase
+			node.Message = taskResult.Message
+			woc.wf.Status.Nodes[nodeID] = node
+			node.FinishedAt = metav1.Now()
+			woc.updated = true
+
+			// Delete task if it is already processed.
+			//delete(woc.taskSet, nodeID)
+		}
+	}
+	return woc.CreateTaskSet(ctx)
+}
+
+func (woc *wfOperationCtx) CreateTaskSet(ctx context.Context) error {
+
+	if len(woc.taskSet) == 0 {
 		return nil
 	}
-	for nodeID, taskResult := range taskSet.Status.Nodes {
-		node := woc.wf.Status.Nodes[nodeID]
-		node.Outputs = taskResult.Outputs.DeepCopy()
-		node.Phase = taskResult.Phase
-		node.Message = taskResult.Message
-		woc.wf.Status.Nodes[nodeID] = node
+	woc.log.Infof("CreateTaskSet")
+
+	key := fmt.Sprintf("%s/%s", woc.wf.Namespace, woc.wf.Name)
+	log.WithField("workflow", woc.wf.Name).WithField("namespace", woc.wf.Namespace).WithField("TaskSet", key).Infof("Creating TaskSet")
+	taskSet := wfv1.WorkflowTaskSet{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       workflow.WorkflowTaskSetKind,
+			APIVersion: workflow.APIVersion,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: woc.wf.Namespace,
+			Name:      woc.wf.Name,
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: woc.wf.APIVersion,
+					Kind:       woc.wf.Kind,
+					UID:        woc.wf.UID,
+					Name:       woc.wf.Name,
+				},
+			},
+		},
+		Spec: wfv1.WorkflowTaskSetSpec{
+			Tasks: woc.taskSet,
+		},
+	}
+	log.WithField("workflow", woc.wf.Name).WithField("namespace", woc.wf.Namespace).WithField("TaskSet", key).Debug("creating new taskset")
+	err := argowait.Backoff(retry.DefaultBackoff, func() (bool, error) {
+		var err error
+		_, err = woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace).Create(ctx, &taskSet, metav1.CreateOptions{})
+		return err == nil || apierr.IsConflict(err) || apierr.IsAlreadyExists(err), err
+	})
+	if apierr.IsConflict(err) || apierr.IsAlreadyExists(err) {
+		log.WithField("workflow", woc.wf.Name).WithField("namespace", woc.wf.Namespace).WithField("TaskSet", woc.taskSet).Debug("patching the exiting taskset")
+		spec := map[string]interface{}{
+			"spec": wfv1.WorkflowTaskSetSpec{Tasks: woc.taskSet},
+		}
+		// patch the new templates into taskset
+		err = woc.patchTaskSet(ctx, spec, types.MergePatchType)
+		if err != nil {
+			log.WithError(err).WithField("workflow", woc.wf.Name).WithField("namespace", woc.wf.Namespace).Error("Failed to patch WorkflowTaskSet")
+			return fmt.Errorf("failed to patch TaskSet. %v", err)
+		}
+
+	} else if err != nil {
+		log.WithError(err).WithField("workflow", woc.wf.Name).WithField("namespace", woc.wf.Namespace).Error("Failed to create WorkflowTaskSet")
+		return err
 	}
 	return nil
-}
-
-func (woc *wfOperationCtx) isAgentPod(pod *apiv1.Pod) bool {
-	return pod.Name == woc.getAgentPodName()
-}
-
-func (woc *wfOperationCtx) reconcileAgentNode(pod *apiv1.Pod) {
-	for _, node := range woc.wf.Status.Nodes {
-		// Update POD (Error and Failed) status to all HTTP Templates node status
-		if node.Type == wfv1.NodeTypeHTTP {
-			if newState := woc.assessNodeStatus(pod, &node); newState != nil {
-				if newState.Fulfilled() {
-					woc.wf.Status.Nodes[node.ID] = *newState
-					woc.addOutputsToGlobalScope(newState.Outputs)
-					woc.updated = true
-				}
-			}
-		}
-	}
-}
-
-func (woc *wfOperationCtx) createAgentPod(ctx context.Context, nodeName string, mainCtrs []apiv1.Container, tmpl *wfv1.Template) (*apiv1.Pod, error) {
-	podName := woc.getAgentPodName()
-
-	obj, exists, err := woc.controller.podInformer.GetStore().Get(cache.ExplicitKey(woc.wf.Namespace + "/" + podName))
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to get pod from informer store: %w", err)
-	}
-
-	if exists {
-		existing, ok := obj.(*apiv1.Pod)
-		if ok {
-			woc.log.WithField("podPhase", existing.Status.Phase).Debugf("Skipped pod %s (%s) creation: already exists", tmpl.Name, podName)
-			return existing, nil
-		}
-	}
-
-	for i, c := range mainCtrs {
-		if c.Name == "" {
-			c.Name = common.MainContainerName
-		}
-		// Allow customization of main container resources.
-		if isResourcesSpecified(woc.controller.Config.MainContainer) {
-			c.Resources = *woc.controller.Config.MainContainer.Resources.DeepCopy()
-		}
-		mainCtrs[i] = c
-	}
-
-	pod := &apiv1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      podName,
-			Namespace: woc.wf.ObjectMeta.Namespace,
-			Labels: map[string]string{
-				common.LabelKeyWorkflow:  woc.wf.ObjectMeta.Name, // Allows filtering by pods related to specific workflow
-				common.LabelKeyCompleted: "false",                // Allows filtering by incomplete workflow pods
-			},
-			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
-			},
-		},
-		Spec: apiv1.PodSpec{
-			RestartPolicy:    apiv1.RestartPolicyNever,
-			Volumes:          woc.createVolumes(tmpl),
-			ImagePullSecrets: woc.execWf.Spec.ImagePullSecrets,
-		},
-	}
-
-	if woc.controller.Config.InstanceID != "" {
-		pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
-	}
-	if woc.getContainerRuntimeExecutor() == common.ContainerRuntimeExecutorPNS {
-		pod.Spec.ShareProcessNamespace = pointer.BoolPtr(true)
-	}
-
-	err = woc.setupServiceAccount(ctx, pod, tmpl)
-	if err != nil {
-		return nil, err
-	}
-	waitCtr := woc.newWaitContainer(tmpl)
-	pod.Spec.Containers = append(pod.Spec.Containers, *waitCtr)
-
-	pod.Spec.Containers = append(pod.Spec.Containers, mainCtrs...)
-
-	envVars := []apiv1.EnvVar{
-		{Name: common.EnvVarTemplate, Value: wfv1.MustMarshallJSON(tmpl)},
-		{Name: common.EnvVarWorkflowName, Value: woc.wf.Name},
-		{Name: common.EnvVarPodName, Value: podName},
-		{Name: common.EnvVarDeadline, Value: woc.getDeadline(&createWorkflowPodOpts{}).Format(time.RFC3339)},
-	}
-
-	for i, c := range pod.Spec.Containers {
-		c.Env = append(c.Env, apiv1.EnvVar{Name: common.EnvVarContainerName, Value: c.Name})
-		c.Env = append(c.Env, envVars...)
-		pod.Spec.Containers[i] = c
-	}
-
-	woc.log.Debugf("Creating Agent Pod: %s (%s)", nodeName, podName)
-
-	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
-	if err != nil {
-		if apierr.IsAlreadyExists(err) {
-			// workflow pod names are deterministic. We can get here if the
-			// controller fails to persist the workflow after creating the pod.
-			woc.log.Infof("Failed pod %s (%s) creation: already exists", nodeName, podName)
-			return created, nil
-		}
-		if errorsutil.IsTransientErr(err) {
-			return nil, err
-		}
-		woc.log.Infof("Failed to create pod %s (%s): %v", nodeName, podName, err)
-		return nil, errors.InternalWrapError(err)
-	}
-	woc.log.Infof("Created pod: %s (%s)", nodeName, created.Name)
-	return created, nil
 }

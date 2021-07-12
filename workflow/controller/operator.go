@@ -105,6 +105,8 @@ type wfOperationCtx struct {
 	// In Submit From WorkflowTemplate: It holds merged workflow with WorkflowDefault, Workflow and WorkflowTemplate
 	// 'execWf.Spec' should usually be used instead `wf.Spec`
 	execWf *wfv1.Workflow
+
+	taskSet map[string]wfv1.Template
 }
 
 var (
@@ -155,6 +157,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		deadline:               time.Now().UTC().Add(maxOperationTime),
 		eventRecorder:          wfc.eventRecorderManager.Get(wf.Namespace),
 		preExecutionNodePhases: make(map[string]wfv1.NodePhase),
+		taskSet:                make(map[string]wfv1.Template),
 	}
 
 	if woc.wf.Status.Nodes == nil {
@@ -272,10 +275,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		if err == nil {
 			woc.failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
 		}
-		err = woc.taskSetReconciliation()
-		if err == nil {
-			woc.failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
-		}
+
 		if err != nil {
 			woc.log.WithError(err).WithField("workflow", woc.wf.ObjectMeta.Name).Error("workflow timeout")
 			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowTimedOut", "Workflow timed out")
@@ -340,6 +340,18 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			}
 		}
 		return
+	}
+
+	err = woc.taskSetReconciliation(ctx)
+	if err != nil {
+		woc.log.WithError(err).Error("error in workflowtaskset reconciliation")
+		woc.markWorkflowError(ctx, err)
+	}
+
+	err = woc.reconcileAgentPod(ctx)
+	if err != nil {
+		woc.log.WithError(err).Error("error in agent pod reconciliation")
+		woc.markWorkflowError(ctx, err)
 	}
 
 	if node == nil || !node.Fulfilled() {
@@ -589,6 +601,12 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		time.Sleep(1 * time.Second)
 	}
 
+	err = woc.deleteTaskSetStatus(ctx)
+
+	if err != nil {
+		woc.log.Warnf("Error updating taskset: %v %s", err, apierr.ReasonForError(err))
+	}
+
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
 	// Failing to do so means we can have inconsistent state.
 	// TODO: The completedPods will be labeled multiple times. I think it would be improved in the future.
@@ -612,6 +630,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 			woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, labelPodCompleted)
 		}
 	}
+
 }
 
 func (woc *wfOperationCtx) writeBackToInformer() error {
@@ -881,7 +900,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 			return
 		}
 		if woc.isAgentPod(pod) {
-			woc.reconcileAgentNode(pod)
+			woc.updateAgentPodStatus(pod)
 		}
 		nodeNameForPod := pod.Annotations[common.AnnotationKeyNodeName]
 
@@ -1030,21 +1049,6 @@ func (woc *wfOperationCtx) failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
 			}
 		}
 	}
-}
-
-func (woc *wfOperationCtx) getWorkflowTaskSet() (*wfv1.WorkflowTaskSet, error) {
-	obj, exist, err := woc.controller.wfTaskSetInformer.Informer().GetIndexer().GetByKey(woc.wf.Namespace + "/" + woc.wf.Name)
-	if err != nil {
-		return nil, err
-	}
-	if !exist {
-		return nil, nil
-	}
-	taskSet, err := wfutil.UnstructuredToTaskSet(obj)
-	if err != nil {
-		return nil, err
-	}
-	return taskSet, nil
 }
 
 // getAllWorkflowPods returns all pods related to the current workflow
@@ -1743,7 +1747,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	case wfv1.TemplateTypeData:
 		node, err = woc.executeData(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	case wfv1.TemplateTypeHTTP:
-		node, err = woc.executeTaskSet(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
+		node = woc.executeHTTPTemplate(nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	default:
 		err = errors.Errorf(errors.CodeBadRequest, "Template '%s' missing specification", processedTmpl.Name)
 		return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, opts.boundaryID, wfv1.NodeError, err.Error()), err
