@@ -9,19 +9,27 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 
-	"github.com/argoproj/argo-workflows/v3/config"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 func TestArtifactRepositories(t *testing.T) {
-	defaultArtifactRepository := &config.ArtifactRepository{}
+	defaultArtifactRepository := &wfv1.ArtifactRepository{
+		S3: &wfv1.S3ArtifactRepository{KeyFormat: "foo"},
+	}
+	defaultArtifactRepositoryRefStatus := &wfv1.ArtifactRepositoryRefStatus{
+		Default:            true,
+		ArtifactRepository: defaultArtifactRepository,
+	}
 	k := kubefake.NewSimpleClientset()
 	i := New(k, "my-ctrl-ns", defaultArtifactRepository)
 	t.Run("Explicit.WorkflowNamespace", func(t *testing.T) {
 		ctx := context.Background()
 		_, err := k.CoreV1().ConfigMaps("my-wf-ns").Create(ctx, &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{Name: "artifact-repositories"},
-			Data:       map[string]string{"my-key": ""},
+			Data: map[string]string{"my-key": `
+s3:
+  keyFormat: bar
+`},
 		}, metav1.CreateOptions{})
 		assert.NoError(t, err)
 
@@ -31,8 +39,12 @@ func TestArtifactRepositories(t *testing.T) {
 			assert.Equal(t, "artifact-repositories", ref.ConfigMap)
 			assert.Equal(t, "my-key", ref.Key)
 			assert.False(t, ref.Default)
+			assert.NotNil(t, ref.ArtifactRepository)
 		}
-
+		repo, err := i.Get(ctx, ref)
+		if assert.NoError(t, err) {
+			assert.Equal(t, &wfv1.ArtifactRepository{S3: &wfv1.S3ArtifactRepository{KeyFormat: "bar"}}, repo)
+		}
 		err = k.CoreV1().ConfigMaps("my-wf-ns").Delete(ctx, "artifact-repositories", metav1.DeleteOptions{})
 		assert.NoError(t, err)
 	})
@@ -40,7 +52,10 @@ func TestArtifactRepositories(t *testing.T) {
 		ctx := context.Background()
 		_, err := k.CoreV1().ConfigMaps("my-ctrl-ns").Create(ctx, &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{Name: "artifact-repositories"},
-			Data:       map[string]string{"my-key": ""},
+			Data: map[string]string{"my-key": `
+s3:
+  keyFormat: bar
+`},
 		}, metav1.CreateOptions{})
 		assert.NoError(t, err)
 
@@ -50,8 +65,12 @@ func TestArtifactRepositories(t *testing.T) {
 			assert.Equal(t, "artifact-repositories", ref.ConfigMap)
 			assert.Equal(t, "my-key", ref.Key)
 			assert.False(t, ref.Default)
+			assert.NotNil(t, ref.ArtifactRepository)
 		}
-
+		repo, err := i.Get(ctx, ref)
+		if assert.NoError(t, err) {
+			assert.Equal(t, &wfv1.ArtifactRepository{S3: &wfv1.S3ArtifactRepository{KeyFormat: "bar"}}, repo)
+		}
 		err = k.CoreV1().ConfigMaps("my-ctrl-ns").Delete(ctx, "artifact-repositories", metav1.DeleteOptions{})
 		assert.NoError(t, err)
 	})
@@ -80,7 +99,10 @@ func TestArtifactRepositories(t *testing.T) {
 				Name:        "artifact-repositories",
 				Annotations: map[string]string{"workflows.argoproj.io/default-artifact-repository": "default-v1"},
 			},
-			Data: map[string]string{"default-v1": ""},
+			Data: map[string]string{"default-v1": `
+s3:
+  keyFormat: bar
+`},
 		}, metav1.CreateOptions{})
 		assert.NoError(t, err)
 
@@ -90,6 +112,11 @@ func TestArtifactRepositories(t *testing.T) {
 			assert.Equal(t, "artifact-repositories", ref.ConfigMap)
 			assert.Equal(t, "default-v1", ref.Key)
 			assert.False(t, ref.Default)
+			assert.NotNil(t, ref.ArtifactRepository)
+		}
+		repo, err := i.Get(ctx, ref)
+		if assert.NoError(t, err) {
+			assert.Equal(t, &wfv1.ArtifactRepository{S3: &wfv1.S3ArtifactRepository{KeyFormat: "bar"}}, repo)
 		}
 		err = k.CoreV1().ConfigMaps("my-wf-ns").Delete(ctx, "artifact-repositories", metav1.DeleteOptions{})
 		assert.NoError(t, err)
@@ -105,7 +132,7 @@ func TestArtifactRepositories(t *testing.T) {
 
 		ref, err := i.Resolve(ctx, nil, "my-wf-ns")
 		if assert.NoError(t, err) {
-			assert.Equal(t, wfv1.DefaultArtifactRepositoryRefStatus, ref)
+			assert.Equal(t, defaultArtifactRepositoryRefStatus, ref)
 		}
 		err = k.CoreV1().ConfigMaps("my-wf-ns").Delete(ctx, "artifact-repositories", metav1.DeleteOptions{})
 		assert.NoError(t, err)
@@ -114,6 +141,6 @@ func TestArtifactRepositories(t *testing.T) {
 		ctx := context.Background()
 		ref, err := i.Resolve(ctx, nil, "my-wf-ns")
 		assert.NoError(t, err)
-		assert.Equal(t, wfv1.DefaultArtifactRepositoryRefStatus, ref)
+		assert.Equal(t, defaultArtifactRepositoryRefStatus, ref)
 	})
 }
