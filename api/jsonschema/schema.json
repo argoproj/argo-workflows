@@ -5058,6 +5058,10 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Backoff",
           "description": "Backoff is a backoff strategy"
         },
+        "expression": {
+          "description": "Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not be retried and the retry strategy will be ignored/",
+          "type": "string"
+        },
         "limit": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString",
           "description": "Limit is the maximum number of attempts when retrying a container"

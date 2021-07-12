@@ -54,7 +54,7 @@ under step/DAG level output parameter. Both use the
 * [Steps parameter example](examples/conditional-parameters.yaml)
 * [DAG parameter example](examples/dag-conditional-parameters.yaml)
 
-## Build-In Functions
+## Built-In Functions
 
 Convenient functions added to support more use cases:
 
