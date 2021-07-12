@@ -37,5 +37,13 @@ func Test_Template_Replace(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, "2", r)
 		})
+		t.Run("StringAsJson", func(t *testing.T) {
+			template, err := NewTemplate(`{{=toJson('test')}}`)
+			assert.NoError(t, err)
+			r, err := template.Replace(map[string]string{}, true)
+			assert.NoError(t, err)
+			// Output should be escaped since it will be embedded in stringified JSON before unmarshaling.
+			assert.Equal(t,`\"test\"`, r)
+		})
 	})
 }
