@@ -176,7 +176,7 @@ func (ctx *Context) ResolveTemplate(tmplHolder wfv1.TemplateReferenceHolder) (*C
 	return ctx.resolveTemplateImpl(tmplHolder, 0)
 }
 
-// resolveTemplateImpl digs into referenes and returns a merged template.
+// resolveTemplateImpl digs into references and returns a merged template.
 // This method processes inputs and arguments so the inputs of the final
 //  resolved template include intermediate parameter passing.
 // The other fields are just merged and shallower templates overwrite deeper.
