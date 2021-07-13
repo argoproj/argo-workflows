@@ -4054,6 +4054,25 @@
         }
       }
     },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Backoff": {
+      "type": "object",
+      "title": "default backoff is 100ms",
+      "properties": {
+        "cap": {
+          "title": "the cap of the backoff, should be \u003e100ms, otherwise backoff is capped immediately",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Duration"
+        },
+        "jitterPercentage": {
+          "type": "integer",
+          "title": "the amount of jitter per step, typically 10-20%, \u003e100% is valid, but strange"
+        },
+        "steps": {
+          "type": "string",
+          "format": "uint64",
+          "title": "the number of backoff steps, zero means no retries"
+        }
+      }
+    },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Cat": {
       "type": "object"
     },
@@ -4108,7 +4127,7 @@
       "type": "object",
       "properties": {
         "maxSize": {
-          "title": "+kubebuilder:default=\"1M\"",
+          "title": "MaxSize is the maximum number of entries to keep in the in-memory database used to store recent UIDs.\nLarger number mean bigger windows of time for dedupe, but greater memory usage.\n+kubebuilder:default=\"1M\"",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.api.resource.Quantity"
         },
         "uid": {
@@ -4186,9 +4205,37 @@
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.HTTP": {
       "type": "object"
     },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.HTTPHeader": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "valueFrom": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.HTTPHeaderSource"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.HTTPHeaderSource": {
+      "type": "object",
+      "properties": {
+        "secretKeyRef": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
+    },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.HTTPSink": {
       "type": "object",
       "properties": {
+        "headers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.HTTPHeader"
+          }
+        },
         "url": {
           "type": "string"
         }
@@ -4298,6 +4345,11 @@
         "rate": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.api.resource.Quantity"
         },
+        "retries": {
+          "type": "string",
+          "format": "uint64",
+          "title": "current rate of messages per second"
+        },
         "total": {
           "type": "string",
           "format": "uint64"
@@ -4354,6 +4406,9 @@
             "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Condition"
           }
         },
+        "lastUpdated": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
+        },
         "message": {
           "type": "string"
         },
@@ -4365,6 +4420,9 @@
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.STAN": {
       "type": "object",
       "properties": {
+        "auth": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.STANAuth"
+        },
         "clusterId": {
           "type": "string"
         },
@@ -4383,6 +4441,14 @@
         },
         "subjectPrefix": {
           "type": "string"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.STANAuth": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         }
       }
     },
@@ -4438,9 +4504,9 @@
           "type": "string",
           "title": "+kubebuilder:default=default"
         },
-        "retryPolicy": {
-          "type": "string",
-          "title": "+kubebuilder:default=Always"
+        "retry": {
+          "title": "+kubebuilder:default={steps: 2, jitterPercentage: 10}",
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Backoff"
         },
         "stan": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.STAN"
@@ -13368,6 +13434,15 @@
         "fieldManager": {
           "type": "string",
           "title": "fieldManager is a name associated with the actor or entity\nthat is making these changes. The value must be less than or\n128 characters long, and only contain printable characters,\nas defined by https://golang.org/pkg/unicode/#IsPrint.\n+optional"
+        }
+      }
+    },
+    "io.k8s.apimachinery.pkg.apis.meta.v1.Duration": {
+      "description": "Duration is a wrapper around time.Duration which supports correct\nmarshaling to YAML and JSON. In particular, it marshals into strings, which\ncan be used as map keys in json.",
+      "type": "object",
+      "properties": {
+        "duration": {
+          "type": "string"
         }
       }
     },
