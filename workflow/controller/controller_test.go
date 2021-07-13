@@ -153,8 +153,8 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 				},
 			},
 		},
-		artifactRepositories: armocks.DummyArtifactRepositories(&config.ArtifactRepository{
-			S3: &config.S3ArtifactRepository{
+		artifactRepositories: armocks.DummyArtifactRepositories(&wfv1.ArtifactRepository{
+			S3: &wfv1.S3ArtifactRepository{
 				S3Bucket: wfv1.S3Bucket{Endpoint: "my-endpoint", Bucket: "my-bucket"},
 			},
 		}),
