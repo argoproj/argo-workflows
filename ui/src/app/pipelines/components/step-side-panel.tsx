@@ -80,15 +80,23 @@ export const StepSidePanel = ({
                                             const errors = Object.values(x.metrics || {})
                                                 .filter(m => m.errors)
                                                 .reduce((a, b) => a + b.errors, 0);
+                                            const retries = Object.values(x.metrics || {})
+                                                .filter(m => m.retries)
+                                                .reduce((a, b) => a + b.retries, 0);
                                             return (
                                                 <div className='white-box' key={name}>
                                                     <p>{name}</p>
                                                     <div className='white-box__details'>
                                                         <div className='row white-box__details-row'>
                                                             <div className='columns small-2'>Pending</div>
-                                                            <div className='columns small-10'>
+                                                            <div className='columns small-4'>
                                                                 <TickMeter value={x.pending || 0} />
                                                             </div>
+
+                                                                <div className='columns small-2'>Retries</div>
+                                                                <div className='columns small-4'>
+                                                                    <TickMeter value={retries} />
+                                                                </div>
                                                         </div>
                                                         <div className='row white-box__details-row'>
                                                             <div className='columns small-2'>Total</div>

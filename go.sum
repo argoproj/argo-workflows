@@ -128,8 +128,8 @@ github.com/apache/openwhisk-client-go v0.0.0-20190915054138-716c6f973eb2/go.mod 
 github.com/apache/pulsar-client-go v0.1.1/go.mod h1:mlxC65KL1BLhGO2bnT9zWMttVzR2czVPb27D477YpyU=
 github.com/ardielle/ardielle-go v1.5.2/go.mod h1:I4hy1n795cUhaVt/ojz83SNVCYIGsAFAONtv2Dr7HUI=
 github.com/ardielle/ardielle-tools v1.5.4/go.mod h1:oZN+JRMnqGiIhrzkRN9l26Cej9dEx4jeNG6A+AdkShk=
-github.com/argoproj-labs/argo-dataflow v0.0.58 h1:7trY/eR8G7DCP0QqZQ6gtaRDZDREid5QJoCsWPDVIH0=
-github.com/argoproj-labs/argo-dataflow v0.0.58/go.mod h1:OqdO5qchkt/uP04+nH/ROkX+I8jIvT4QRQynECDOO1g=
+github.com/argoproj-labs/argo-dataflow v0.0.60 h1:aTvse913iVLtYxVkuQs2LezUuxYs5OHvnsJuICucc8Q=
+github.com/argoproj-labs/argo-dataflow v0.0.60/go.mod h1:WFeVBgJ0PGo4heeZE9UyglpT3yJF9gWtAjeFMF8iz6c=
 github.com/argoproj/argo-events v1.2.0 h1:CjF8hVUkeflhaOt9uWjJK6ai6b4pw0CCUUmOnmhWnNY=
 github.com/argoproj/argo-events v1.2.0/go.mod h1:eY+egQNBLXAz/AF4mqgHsMMa4Aur7frHjUfBg+RpX04=
 github.com/argoproj/pkg v0.8.1 h1:9h/sqAjUNyk0LaHkXR+2h94KNcSchvFX5aELNjXSOoc=
@@ -751,9 +751,11 @@ github.com/nats-io/nats-streaming-server v0.17.0/go.mod h1:ewPBEsmp62Znl3dcRsYtl
 github.com/nats-io/nats-streaming-server v0.21.1/go.mod h1:2W8QfNVOtcFpmf0bRiwuLtRb0/hkX4NuOxPOFNOThVQ=
 github.com/nats-io/nats.go v1.9.1/go.mod h1:ZjDU1L/7fJ09jvUSRVBR2e7+RnLiiIQyqyzEE/Zbp4w=
 github.com/nats-io/nats.go v1.10.0/go.mod h1:AjGArbfyR50+afOUotNX2Xs5SYHf+CoOa5HH1eEl2HE=
+github.com/nats-io/nats.go v1.11.0/go.mod h1:BPko4oXsySz4aSWeFgOHLZs3G4Jq4ZAyE6/zMCxRT6w=
 github.com/nats-io/nkeys v0.1.0/go.mod h1:xpnFELMwJABBLVhffcfd1MZx6VsNRFpEugbxziKVo7w=
 github.com/nats-io/nkeys v0.1.3/go.mod h1:xpnFELMwJABBLVhffcfd1MZx6VsNRFpEugbxziKVo7w=
 github.com/nats-io/nkeys v0.1.4/go.mod h1:XdZpAbhgyyODYqjTawOnIOI7VlbKSarI9Gfy1tqEu/s=
+github.com/nats-io/nkeys v0.3.0/go.mod h1:gvUNGjVcM2IPr5rCsRsC6Wb3Hr2CQAm08dsxtV6A5y4=
 github.com/nats-io/nuid v1.0.1/go.mod h1:19wcPz3Ph3q0Jbyiqsd0kePYG7A95tJPxeL+1OSON2c=
 github.com/nats-io/stan.go v0.6.0/go.mod h1:eIcD5bi3pqbHT/xIIvXMwvzXYElgouBvaVRftaE+eac=
 github.com/nats-io/stan.go v0.8.3/go.mod h1:Ejm8bbHnMTSptU6uNMAVuxeapMJYBB/Ml3ej6z4GoSY=
@@ -1053,6 +1055,7 @@ golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0/go.mod h1:LzIPMQfyMNhhGPh
 golang.org/x/crypto v0.0.0-20201112155050-0c6587e931a9/go.mod h1:LzIPMQfyMNhhGPhUkYOs5KpL4U8rLKemX1yGLhDgUto=
 golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad/go.mod h1:jdWPYTVW3xRLrWPugEBEK3UY2ZEsg3UU495nc5E+M+I=
 golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83/go.mod h1:jdWPYTVW3xRLrWPugEBEK3UY2ZEsg3UU495nc5E+M+I=
+golang.org/x/crypto v0.0.0-20210314154223-e6e6c4f2bb5b/go.mod h1:T9bdIzuCu7OtxOm1hfPfRQxPLYneinmdGuTeoZ9dtd4=
 golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2 h1:It14KIkyBFYkHkwZ7k45minvA9aorojkyjGk9KJ5B/w=
 golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2/go.mod h1:T9bdIzuCu7OtxOm1hfPfRQxPLYneinmdGuTeoZ9dtd4=
 golang.org/x/exp v0.0.0-20190121172915-509febef88a4/go.mod h1:CJ0aWSM057203Lf6IL+f9T1iT9GByDxfZKAQTCR3kQA=
