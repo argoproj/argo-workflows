@@ -363,7 +363,11 @@ func (woc *cronWfOperationCtx) reportCronWorkflowError(conditionType v1alpha1.Co
 		Message: errString,
 		Status:  v1.ConditionTrue,
 	})
-	woc.metrics.CronWorkflowSubmissionError()
+	if conditionType == v1alpha1.ConditionTypeSpecError {
+		woc.metrics.CronWorkflowSpecError()
+	} else {
+		woc.metrics.CronWorkflowSubmissionError()
+	}
 }
 
 func inferScheduledTime() time.Time {
