@@ -93,10 +93,10 @@ export const StepSidePanel = ({
                                                                 <TickMeter value={x.pending || 0} />
                                                             </div>
 
-                                                                <div className='columns small-2'>Retries</div>
-                                                                <div className='columns small-4'>
-                                                                    <TickMeter value={retries} />
-                                                                </div>
+                                                            <div className='columns small-2'>Retries</div>
+                                                            <div className='columns small-4'>
+                                                                <TickMeter value={retries} />
+                                                            </div>
                                                         </div>
                                                         <div className='row white-box__details-row'>
                                                             <div className='columns small-2'>Total</div>
