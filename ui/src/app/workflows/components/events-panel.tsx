@@ -109,21 +109,23 @@ export const EventsPanel = ({namespace, name, kind}: {namespace: string; name: s
                         <div className='columns small-2'>Object</div>
                         <div className='columns small-5'>Message</div>
                     </div>
-                    {events.map(e => (
-                        <div className='row argo-table-list__row' key={e.metadata.uid}>
-                            <div className='columns small-1' title={e.type}>
-                                {e.type === 'Normal' ? <i className='fa fa-check-circle status-icon--init' /> : <i className='fa fa-exclamation-circle status-icon--pending' />}
+                    {events
+                        .sort((a, b) => -a.lastTimestamp.localeCompare(b.lastTimestamp))
+                        .map(e => (
+                            <div className='row argo-table-list__row' key={e.metadata.uid}>
+                                <div className='columns small-1' title={e.type}>
+                                    {e.type === 'Normal' ? <i className='fa fa-check-circle status-icon--init' /> : <i className='fa fa-exclamation-circle status-icon--pending' />}
+                                </div>
+                                <div className='columns small-2'>
+                                    <Timestamp date={e.lastTimestamp} />
+                                </div>
+                                <div className='columns small-2'>{e.reason}</div>
+                                <div className='columns small-2'>
+                                    {e.involvedObject.kind}/{e.involvedObject.name}
+                                </div>
+                                <div className='columns small-5'>{e.message}</div>
                             </div>
-                            <div className='columns small-2'>
-                                <Timestamp date={e.lastTimestamp} />
-                            </div>
-                            <div className='columns small-2'>{e.reason}</div>
-                            <div className='columns small-2'>
-                                {e.involvedObject.kind}/{e.involvedObject.name}
-                            </div>
-                            <div className='columns small-5'>{e.message}</div>
-                        </div>
-                    ))}
+                        ))}
                 </div>
             )}
         </>
