@@ -30,7 +30,9 @@ export interface Step {
                 url?: string;
                 topic: string;
             };
-            http?: {};
+            http?: {
+                serviceName?: string;
+            };
         }[];
         sinks: {
             name?: string;
