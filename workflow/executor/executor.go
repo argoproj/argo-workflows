@@ -19,6 +19,8 @@ import (
 	"syscall"
 	"time"
 
+	apierr "k8s.io/apimachinery/pkg/api/errors"
+
 	argofile "github.com/argoproj/pkg/file"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
@@ -29,6 +31,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/util/archive"
 	envutil "github.com/argoproj/argo-workflows/v3/util/env"
@@ -62,10 +65,12 @@ const (
 // WorkflowExecutor is program which runs as the init/wait container
 type WorkflowExecutor struct {
 	PodName             string
+	workflowName        string
 	Template            wfv1.Template
 	IncludeScriptOutput bool
 	Deadline            time.Time
 	ClientSet           kubernetes.Interface
+	workflowInterface   workflow.Interface
 	RESTClient          rest.Interface
 	Namespace           string
 	RuntimeExecutor     ContainerRuntimeExecutor
@@ -89,7 +94,6 @@ type Initializer interface {
 type ContainerRuntimeExecutor interface {
 	// GetFileContents returns the file contents of a file in a container as a string
 	GetFileContents(containerName string, sourcePath string) (string, error)
-
 	// CopyFile copies a source file in a container to a local path
 	CopyFile(containerName, sourcePath, destPath string, compressionLevel int) error
 
@@ -108,11 +112,13 @@ type ContainerRuntimeExecutor interface {
 }
 
 // NewExecutor instantiates a new workflow executor
-func NewExecutor(clientset kubernetes.Interface, restClient rest.Interface, podName, namespace string, cre ContainerRuntimeExecutor, template wfv1.Template, includeScriptOutput bool, deadline time.Time) WorkflowExecutor {
+func NewExecutor(clientset kubernetes.Interface, restClient rest.Interface, workflowInterface workflow.Interface, podName, workflowName, namespace string, cre ContainerRuntimeExecutor, template wfv1.Template, includeScriptOutput bool, deadline time.Time) WorkflowExecutor {
 	return WorkflowExecutor{
 		PodName:             podName,
+		workflowName:        workflowName,
 		ClientSet:           clientset,
 		RESTClient:          restClient,
+		workflowInterface:   workflowInterface,
 		Namespace:           namespace,
 		RuntimeExecutor:     cre,
 		Template:            template,
@@ -251,7 +257,7 @@ func (we *WorkflowExecutor) StageFiles() error {
 	default:
 		return nil
 	}
-	err := ioutil.WriteFile(filePath, body, 0o644)
+	err := ioutil.WriteFile(filePath, body, 0644)
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
@@ -725,7 +731,38 @@ func (we *WorkflowExecutor) AnnotateOutputs(ctx context.Context, logArt *wfv1.Ar
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
-	return we.AddAnnotation(ctx, common.AnnotationKeyOutputs, string(outputBytes))
+
+	err = we.AddAnnotation(ctx, common.AnnotationKeyOutputs, string(outputBytes))
+
+	if !apierr.IsForbidden(err) { // me were either successful (nil) or some other error
+		return err
+	}
+
+	return we.updateTaskSetStatusWithOutputs(ctx, outputs)
+}
+
+func (we *WorkflowExecutor) updateTaskSetStatusWithOutputs(ctx context.Context, outputs *wfv1.Outputs) error {
+	log.Infof("Patching taskset status with outputs. %v", outputs)
+	tasksetInterface := we.workflowInterface.ArgoprojV1alpha1().WorkflowTaskSets(we.Namespace)
+	return waitutil.Backoff(ExecutorRetry, func() (bool, error) {
+		taskset, err := tasksetInterface.Get(ctx, we.workflowName, metav1.GetOptions{})
+		if err != nil {
+			return !errorsutil.IsTransientErr(err), err
+		}
+		if len(taskset.Status.Nodes) == 0 {
+			taskset.Status = wfv1.WorkflowTaskSetStatus{
+				Nodes: make(map[string]wfv1.NodeResult),
+			}
+		}
+
+		taskset.Status.Nodes[we.nodeID()] = wfv1.NodeResult{Outputs: outputs}
+		_, err = tasksetInterface.UpdateStatus(ctx, taskset, metav1.UpdateOptions{})
+		return !errorsutil.IsTransientErr(err), err
+	})
+}
+
+func (we *WorkflowExecutor) nodeID() string {
+	return we.PodName
 }
 
 // AddError adds an error to the list of encountered errors during execution

@@ -17,6 +17,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/argoproj/argo-workflows/v3"
+	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/util/cmd"
 	"github.com/argoproj/argo-workflows/v3/util/logs"
@@ -60,6 +61,7 @@ func NewRootCommand() *cobra.Command {
 		},
 	}
 
+	command.AddCommand(NewAgentCommand())
 	command.AddCommand(NewEmissaryCommand())
 	command.AddCommand(NewInitCommand())
 	command.AddCommand(NewResourceCommand())
@@ -120,7 +122,8 @@ func initExecutor() *executor.WorkflowExecutor {
 	}
 	checkErr(err)
 
-	wfExecutor := executor.NewExecutor(clientset, restClient, podName, namespace, cre, *tmpl, includeScriptOutput, deadline)
+	wfExecutor := executor.NewExecutor(clientset, restClient, workflow.NewForConfigOrDie(config), podName, os.Getenv(common.EnvVarWorkflowName), namespace, cre, *tmpl, includeScriptOutput, deadline)
+
 	log.
 		WithField("version", version.String()).
 		WithField("namespace", namespace).

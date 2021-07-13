@@ -66,6 +66,8 @@ func objectForKind(kind string) metav1.Object {
 		return &wfv1.WorkflowEventBinding{}
 	case wf.WorkflowTemplateKind:
 		return &wfv1.WorkflowTemplate{}
+	case wf.WorkflowTaskSetKind:
+		return &wfv1.WorkflowTaskSet{}
 	default:
 		return &metav1.ObjectMeta{}
 	}

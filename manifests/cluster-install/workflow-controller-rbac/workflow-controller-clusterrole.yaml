@@ -36,7 +36,9 @@ rules:
   - argoproj.io
   resources:
   - workflows
-  - workflows/finalizers
+  - workflows/finalizersfinalizersz
+  - workflowtasksets
+  - workflowtasksets/finalizers
   verbs:
   - get
   - list

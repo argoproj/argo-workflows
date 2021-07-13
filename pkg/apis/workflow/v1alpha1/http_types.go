@@ -1,8 +1,6 @@
 package v1alpha1
 
-import (
-	v1 "k8s.io/api/core/v1"
-)
+import v1 "k8s.io/api/core/v1"
 
 type HTTPHeaderSource struct {
 	SecretKeyRef *v1.SecretKeySelector `json:"secretKeyRef,omitempty" protobuf:"bytes,1,opt,name=secretKeyRef"`
