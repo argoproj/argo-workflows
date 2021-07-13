@@ -293,7 +293,6 @@ rules:
   - workflows/finalizers
   - workflowtasksets
   - workflowtasksets/finalizers
-  - workflowtasksets/status
   verbs:
   - get
   - list
@@ -486,22 +485,13 @@ rules:
   - argoproj.io
   resources:
   - workflowtasksets
+  - workflowtasksets/finalizers
   verbs:
-  - watch
-  - get
   - list
-  - patch
-  - update
-- apiGroups:
-  - argoproj.io
-  resources:
-  - workflowtasksets
-  - workflowtasksets/status
-  verbs:
   - watch
   - get
-  - patch
   - update
+  - patch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
