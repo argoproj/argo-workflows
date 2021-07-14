@@ -1,5 +1,7 @@
 name: Snyk
-on: push
+on:
+  schedule:
+    - cron: "30 2 * * *"
 jobs:
   security:
     runs-on: ubuntu-latest
