@@ -129,6 +129,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [VMware](https://www.vmware.com/)
 1. [Woolworths Group](https://www.woolworthsgroup.com.au/)
 1. [Zhihu](https://www.zhihu.com/)
+1. [Galixir](https://www.galixir.com/)
 
 ### Projects Using Argo
 
