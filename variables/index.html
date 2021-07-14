@@ -2455,8 +2455,8 @@
 <p>Since v3.1</p>
 </blockquote>
 <p>The tag is substituted with the result of evaluating the tag as an expression.</p>
-<p>Note that any hyphenated parameter names will cause a parsing error. You can reference them by
-indexing into the parameter map, e.g. <code>inputs.parameters['my-param']</code>.</p>
+<p>Note that any hyphenated parameter names or step names will cause a parsing error. You can reference them by
+indexing into the parameter or step map, e.g. <code>inputs.parameters['my-param']</code> or <code>steps['my-step'].outputs.result</code>.</p>
 <p><a href="https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md">Learn about the expression syntax</a>.</p>
 <h4 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h4>
 <p>Plain list:</p>
