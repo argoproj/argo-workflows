@@ -34,7 +34,6 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo-workflows/v3/config"
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -83,7 +82,7 @@ type wfOperationCtx struct {
 	// It is then used in addVolumeReferences() when creating a pod.
 	volumes []apiv1.Volume
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
-	artifactRepository *config.ArtifactRepository
+	artifactRepository *wfv1.ArtifactRepository
 	// map of completed pods with their corresponding phases
 	completedPods map[string]apiv1.PodPhase
 	// deadline is the dealine time in which this operation should relinquish
