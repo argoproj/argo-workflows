@@ -2434,12 +2434,20 @@ argo-server   LoadBalancer   <span class="m">10</span>.43.43.130   <span class="
 <span class="nn">...</span>
 </code></pre></div>
 <p>Create a ingress, with the annotation <code>ingress.kubernetes.io/rewrite-target: /</code>:</p>
+<blockquote>
+<p>If TLS is enabled (default in v3.0 and after), the ingress controller must be told
+that the backend uses HTTPS. The method depends on the ingress controller, e.g.
+Traefik expects an <code>ingress.kubernetes.io/protocol</code> annotation, while ingress-nginx
+uses <code>nginx.ingress.kubernetes.io/backend-protocol</code></p>
+</blockquote>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">networking.k8s.io/v1beta1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Ingress</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argo-server</span>
   <span class="nt">annotations</span><span class="p">:</span>
     <span class="nt">ingress.kubernetes.io/rewrite-target</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/$2</span>
+    <span class="nt">ingress.kubernetes.io/protocol</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">https</span> <span class="c1"># Traefik</span>
+    <span class="nt">nginx.ingress.kubernetes.io/backend-protocol</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">https</span> <span class="c1"># ingress-nginx</span>
 <span class="nt">spec</span><span class="p">:</span>
   <span class="nt">rules</span><span class="p">:</span>
     <span class="p p-Indicator">-</span> <span class="nt">http</span><span class="p">:</span>
