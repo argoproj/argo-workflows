@@ -29,13 +29,14 @@ import (
 
 type cronWfOperationCtx struct {
 	// CronWorkflow is the CronWorkflow to be run
-	name        string
-	cronWf      *v1alpha1.CronWorkflow
-	wfClientset versioned.Interface
-	wfClient    typed.WorkflowInterface
-	cronWfIf    typed.CronWorkflowInterface
-	log         *log.Entry
-	metrics     *metrics.Metrics
+	name                            string
+	cronWf                          *v1alpha1.CronWorkflow
+	wfClientset                     versioned.Interface
+	wfClient                        typed.WorkflowInterface
+	cronWfIf                        typed.CronWorkflowInterface
+	log                             *log.Entry
+	metrics                         *metrics.Metrics
+	consecutiveSubmissionErrorCount int
 	// scheduledTimeFunc returns the last scheduled time when it is called
 	scheduledTimeFunc ScheduledTimeFunc
 }
@@ -78,6 +79,14 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 		return
 	}
 
+	if woc.cronWf.Spec.FailedSubmissionsBackoffLimit != nil && *woc.cronWf.Spec.FailedSubmissionsBackoffLimit > 0 {
+		limit := int(*woc.cronWf.Spec.FailedSubmissionsBackoffLimit)
+		if woc.consecutiveSubmissionErrorCount > limit {
+			woc.cronWf.Spec.Suspend = true
+			woc.log.Infof("Suspended CronWorkflow %s since there are %d consecutively failed workflows, which exceeds the allowed limit: %d", woc.cronWf.Name, woc.consecutiveSubmissionErrorCount, limit)
+		}
+	}
+
 	proceed, err := woc.enforceRuntimePolicy(ctx)
 	if err != nil {
 		woc.reportCronWorkflowError(v1alpha1.ConditionTypeSubmissionError, fmt.Sprintf("Concurrency policy error: %s", err))
@@ -101,6 +110,11 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 	woc.cronWf.Status.Active = append(woc.cronWf.Status.Active, getWorkflowObjectReference(wf, runWf))
 	woc.cronWf.Status.LastScheduledTime = &v1.Time{Time: scheduledRuntime}
 	woc.cronWf.Status.Conditions.RemoveCondition(v1alpha1.ConditionTypeSubmissionError)
+	woc.consecutiveSubmissionErrorCount = 0
+	if woc.cronWf.Spec.Suspend {
+		//woc.cronWf.Spec.Suspend = false
+		woc.log.Infof("Resumed previously suspended CronWorkflow %s since there are no longer consecutively failed workflows", woc.cronWf.Name)
+	}
 }
 
 func (woc *cronWfOperationCtx) validateCronWorkflow() error {
@@ -108,8 +122,14 @@ func (woc *cronWfOperationCtx) validateCronWorkflow() error {
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 	err := validate.ValidateCronWorkflow(wftmplGetter, cwftmplGetter, woc.cronWf)
 	if err != nil {
+		woc.cronWf.Spec.Suspend = true
+		woc.log.Infof("Suspended CronWorkflow %s since its spec is invalid: %v", woc.cronWf.Name, err)
 		woc.reportCronWorkflowError(v1alpha1.ConditionTypeSpecError, fmt.Sprint(err))
 	} else {
+		if woc.cronWf.Spec.Suspend {
+			//woc.cronWf.Spec.Suspend = false
+			woc.log.Infof("Resumed previously suspended CronWorkflow %s since its spec is valid", woc.cronWf.Name)
+		}
 		woc.cronWf.Status.Conditions.RemoveCondition(v1alpha1.ConditionTypeSpecError)
 	}
 	return err
@@ -363,6 +383,9 @@ func (woc *cronWfOperationCtx) reportCronWorkflowError(conditionType v1alpha1.Co
 		Message: errString,
 		Status:  v1.ConditionTrue,
 	})
+	if conditionType == v1alpha1.ConditionTypeSubmissionError {
+		woc.consecutiveSubmissionErrorCount++
+	}
 	woc.metrics.CronWorkflowSubmissionError()
 }
 

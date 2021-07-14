@@ -355,6 +355,85 @@ spec:
 				assert.True(t, wfList.Items[0].Status.FinishedAt.Time.After(time.Now().Add(-1*time.Minute)))
 			})
 	})
+	s.Run("TestFailedSubmissionsBackoffLimit", func() {
+		s.T().Parallel()
+		var listOptions v1.ListOptions
+		wfInformerListOptionsFunc(&listOptions, "test-cron-wf-fail-backoff-limit-2")
+		s.Given().
+			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: test-cron-wf-fail-backoff-limit-2
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: "Forbid"
+  startingDeadlineSeconds: 0
+  successfulJobsHistoryLimit: 4
+  failedJobsHistoryLimit: 4
+  failedSubmissionsBackoffLimit: 2
+  workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
+    podGC:
+      strategy: OnPodCompletion
+    entrypoint: whalesay
+    templates:
+      - name: whalesay
+        container:
+          image: argoproj/argosay:v2
+          args: ["exit", "1"]`).
+			When().
+			CreateCronWorkflow().
+			Wait(2*time.Minute+25*time.Second).
+			Then().
+			ExpectWorkflowList(listOptions, func(t *testing.T, wfList *wfv1.WorkflowList) {
+				assert.Equal(t, 2, len(wfList.Items))
+			}).
+			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
+				assert.Equal(t, true, cronWf.Spec.Suspend)
+			})
+	})
+	s.Run("TestSuspendCronWfWithInvalidSpec", func() {
+		s.T().Parallel()
+		var listOptions v1.ListOptions
+		wfInformerListOptionsFunc(&listOptions, "test-cron-wf-with-invalid-spec")
+		s.Given().
+			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: test-cron-wf-with-invalid-spec
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: "Forbid"
+  startingDeadlineSeconds: 0
+  successfulJobsHistoryLimit: 4
+  failedJobsHistoryLimit: 4
+  workflowSpec:
+    metadata:
+      labels:
+        workflows.argoproj.io/test: "true"
+    unknown: unknown
+    podGC:
+      strategy: OnPodCompletion
+    entrypoint: whalesay
+    templates:
+      - name: whalesay
+        container:
+          image: argoproj/argosay:v2
+          args: ["exit", "1"]`).
+			When().
+			CreateCronWorkflow().
+			Wait(2*time.Minute+25*time.Second).
+			Then().
+			ExpectWorkflowList(listOptions, func(t *testing.T, wfList *wfv1.WorkflowList) {
+				assert.Equal(t, 0, len(wfList.Items))
+			}).
+			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
+				assert.Equal(t, true, cronWf.Spec.Suspend)
+				assert.Equal(t, 0, len(cronWf.Status.Active))
+			})
+	})
 }
 
 func wfInformerListOptionsFunc(options *v1.ListOptions, cronWfName string) {

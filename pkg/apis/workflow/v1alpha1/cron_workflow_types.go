@@ -55,6 +55,8 @@ type CronWorkflowSpec struct {
 	Timezone string `json:"timezone,omitempty" protobuf:"bytes,8,opt,name=timezone"`
 	// WorkflowMetadata contains some metadata of the workflow to be run
 	WorkflowMetadata *metav1.ObjectMeta `json:"workflowMetadata,omitempty" protobuf:"bytes,9,opt,name=workflowMeta"`
+	// FailedSubmissionsBackoffLimit is the number of consecutively failed submissions allowed before a CronWorkflow is suspended automatically
+	FailedSubmissionsBackoffLimit *int32 `json:"failedSubmissionsBackoffLimit,omitempty" protobuf:"varint,10,opt,name=failedSubmissionsBackoffLimit"`
 }
 
 // CronWorkflowStatus is the status of a CronWorkflow
