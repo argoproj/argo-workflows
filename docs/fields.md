@@ -2006,6 +2006,7 @@ _No description available_
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
+|`artifactRepository`|[`ArtifactRepository`](#artifactrepository)|The repository the workflow will use. This maybe empty before v3.1.|
 |`configMap`|`string`|The name of the config map. Defaults to "artifact-repositories".|
 |`default`|`boolean`|If this ref represents the default artifact repository, rather than a config map.|
 |`key`|`string`|The config map key. Defaults to the value of the "workflows.argoproj.io/default-artifact-repository" annotation.|
@@ -3305,6 +3306,20 @@ SuspendTemplate is a template subtype to suspend a workflow at a predetermined p
 |:----------:|:----------:|---------------|
 |`duration`|`string`|Duration is the seconds to wait before automatically resuming a template|
 
+## ArtifactRepository
+
+ArtifactRepository represents an artifact repository in which a controller will store its artifacts
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`archiveLogs`|`boolean`|ArchiveLogs enables log archiving|
+|`artifactory`|[`ArtifactoryArtifactRepository`](#artifactoryartifactrepository)|Artifactory stores artifacts to JFrog Artifactory|
+|`gcs`|[`GCSArtifactRepository`](#gcsartifactrepository)|GCS stores artifact in a GCS object store|
+|`hdfs`|[`HDFSArtifactRepository`](#hdfsartifactrepository)|HDFS stores artifacts in HDFS|
+|`oss`|[`OSSArtifactRepository`](#ossartifactrepository)|OSS stores artifact in a OSS-compliant object store|
+|`s3`|[`S3ArtifactRepository`](#s3artifactrepository)|S3 stores artifact in a S3-compliant object store|
+
 ## MemoizationStatus
 
 MemoizationStatus is the status of this memoized node
@@ -4162,6 +4177,111 @@ Sequence expands a workflow step into numeric range
 |`end`|[`IntOrString`](#intorstring)|Number at which to end the sequence (default: 0). Not to be used with Count|
 |`format`|`string`|Format is a printf format string to format the value in the sequence|
 |`start`|[`IntOrString`](#intorstring)|Number at which to start the sequence (default: 0)|
+
+## ArtifactoryArtifactRepository
+
+ArtifactoryArtifactRepository defines the controller configuration for an artifactory artifact repository
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifactory-artifact.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`passwordSecret`|[`SecretKeySelector`](#secretkeyselector)|PasswordSecret is the secret selector to the repository password|
+|`repoURL`|`string`|RepoURL is the url for artifactory repo.|
+|`usernameSecret`|[`SecretKeySelector`](#secretkeyselector)|UsernameSecret is the secret selector to the repository username|
+
+## GCSArtifactRepository
+
+GCSArtifactRepository defines the controller configuration for a GCS artifact repository
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-gcs.yaml)
+
+- [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-gcs.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`bucket`|`string`|Bucket is the name of the bucket|
+|`keyFormat`|`string`|KeyFormat is defines the format of how to store keys. Can reference workflow variables|
+|`serviceAccountKeySecret`|[`SecretKeySelector`](#secretkeyselector)|ServiceAccountKeySecret is the secret selector to the bucket's service account key|
+
+## HDFSArtifactRepository
+
+HDFSArtifactRepository defines the controller configuration for an HDFS artifact repository
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hdfs-artifact.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`addresses`|`Array< string >`|Addresses is accessible addresses of HDFS name nodes|
+|`force`|`boolean`|Force copies a file forcibly even if it exists (default: false)|
+|`hdfsUser`|`string`|HDFSUser is the user to access HDFS file system. It is ignored if either ccache or keytab is used.|
+|`krbCCacheSecret`|[`SecretKeySelector`](#secretkeyselector)|KrbCCacheSecret is the secret selector for Kerberos ccache Either ccache or keytab can be set to use Kerberos.|
+|`krbConfigConfigMap`|[`ConfigMapKeySelector`](#configmapkeyselector)|KrbConfig is the configmap selector for Kerberos config as string It must be set if either ccache or keytab is used.|
+|`krbKeytabSecret`|[`SecretKeySelector`](#secretkeyselector)|KrbKeytabSecret is the secret selector for Kerberos keytab Either ccache or keytab can be set to use Kerberos.|
+|`krbRealm`|`string`|KrbRealm is the Kerberos realm used with Kerberos keytab It must be set if keytab is used.|
+|`krbServicePrincipalName`|`string`|KrbServicePrincipalName is the principal name of Kerberos service It must be set if either ccache or keytab is used.|
+|`krbUsername`|`string`|KrbUsername is the Kerberos username used with Kerberos keytab It must be set if keytab is used.|
+|`pathFormat`|`string`|PathFormat is defines the format of path to store a file. Can reference workflow variables|
+
+## OSSArtifactRepository
+
+OSSArtifactRepository defines the controller configuration for an OSS artifact repository
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`input-artifact-oss.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-oss.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`accessKeySecret`|[`SecretKeySelector`](#secretkeyselector)|AccessKeySecret is the secret selector to the bucket's access key|
+|`bucket`|`string`|Bucket is the name of the bucket|
+|`createBucketIfNotPresent`|`boolean`|CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist|
+|`endpoint`|`string`|Endpoint is the hostname of the bucket endpoint|
+|`keyFormat`|`string`|KeyFormat is defines the format of how to store keys. Can reference workflow variables|
+|`lifecycleRule`|[`OSSLifecycleRule`](#osslifecyclerule)|LifecycleRule specifies how to manage bucket's lifecycle|
+|`secretKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SecretKeySecret is the secret selector to the bucket's secret key|
+|`securityToken`|`string`|SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm|
+
+## S3ArtifactRepository
+
+S3ArtifactRepository defines the controller configuration for an S3 artifact repository
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`accessKeySecret`|[`SecretKeySelector`](#secretkeyselector)|AccessKeySecret is the secret selector to the bucket's access key|
+|`bucket`|`string`|Bucket is the name of the bucket|
+|`createBucketIfNotPresent`|[`CreateS3BucketOptions`](#creates3bucketoptions)|CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist|
+|`endpoint`|`string`|Endpoint is the hostname of the bucket endpoint|
+|`insecure`|`boolean`|Insecure will connect to the service with TLS|
+|`keyFormat`|`string`|KeyFormat is defines the format of how to store keys. Can reference workflow variables|
+|~`keyPrefix`~|~`string`~|~KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.~ DEPRECATED. Use KeyFormat instead|
+|`region`|`string`|Region contains the optional bucket region|
+|`roleARN`|`string`|RoleARN is the Amazon Resource Name (ARN) of the role to assume.|
+|`secretKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SecretKeySecret is the secret selector to the bucket's secret key|
+|`useSDKCreds`|`boolean`|UseSDKCreds tells the driver to figure out credentials based on sdk defaults.|
 
 ## MutexHolding
 

@@ -131,6 +131,11 @@ spec:
 
 Create a ingress, with the annotation `ingress.kubernetes.io/rewrite-target: /`:
 
+>If TLS is enabled (default in v3.0 and after), the ingress controller must be told
+>that the backend uses HTTPS. The method depends on the ingress controller, e.g.
+>Traefik expects an `ingress.kubernetes.io/protocol` annotation, while ingress-nginx
+>uses `nginx.ingress.kubernetes.io/backend-protocol`
+
 ```yaml
 apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
@@ -138,6 +143,8 @@ metadata:
   name: argo-server
   annotations:
     ingress.kubernetes.io/rewrite-target: /$2
+    ingress.kubernetes.io/protocol: https # Traefik
+    nginx.ingress.kubernetes.io/backend-protocol: https # ingress-nginx
 spec:
   rules:
     - http:

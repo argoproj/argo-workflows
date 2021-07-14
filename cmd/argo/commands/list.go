@@ -37,6 +37,22 @@ type listFlags struct {
 	fields        string
 }
 
+var (
+	nameFields    = "metadata,items.metadata.name"
+	defaultFields = "metadata,items.metadata,items.spec,items.status.phase,items.status.message,items.status.finishedAt,items.status.startedAt,items.status.estimatedDuration,items.status.progress"
+)
+
+func (f listFlags) displayFields() string {
+	switch f.output {
+	case "name":
+		return nameFields
+	case "json", "yaml":
+		return ""
+	default:
+		return defaultFields
+	}
+}
+
 func NewListCommand() *cobra.Command {
 	var (
 		listArgs      listFlags
@@ -68,7 +84,7 @@ func NewListCommand() *cobra.Command {
 	command.Flags().BoolVar(&listArgs.completed, "completed", false, "Show completed workflows. Mutually exclusive with --running.")
 	command.Flags().BoolVar(&listArgs.running, "running", false, "Show running workflows. Mutually exclusive with --completed.")
 	command.Flags().BoolVar(&listArgs.resubmitted, "resubmitted", false, "Show resubmitted workflows")
-	command.Flags().StringVarP(&listArgs.output, "output", "o", "", "Output format. One of: wide|name")
+	command.Flags().StringVarP(&listArgs.output, "output", "o", "", "Output format. One of: name|wide|yaml|json")
 	command.Flags().StringVar(&listArgs.createdSince, "since", "", "Show only workflows created after than a relative duration")
 	command.Flags().Int64VarP(&listArgs.chunkSize, "chunk-size", "", 0, "Return large lists in chunks rather than all at once. Pass 0 to disable.")
 	command.Flags().BoolVar(&listArgs.noHeaders, "no-headers", false, "Don't print headers (default print headers).")
@@ -109,7 +125,11 @@ func listWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 	var workflows wfv1.Workflows
 	for {
 		log.WithField("listOpts", listOpts).Debug()
-		wfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{Namespace: flags.namespace, ListOptions: listOpts})
+		wfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{
+			Namespace:   flags.namespace,
+			ListOptions: listOpts,
+			Fields:      flags.displayFields(),
+		})
 		if err != nil {
 			return nil, err
 		}
