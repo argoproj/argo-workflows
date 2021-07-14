@@ -78,6 +78,12 @@ func JoinWorkflowSpec(wfSpec, wftSpec, wfDefaultSpec *wfv1.WorkflowSpec) (*wfv1.
 			return nil, err
 		}
 	}
+
+	// This condition will update the workflow Spec suspend value if merged value is different.
+	// This scenario will happen when Workflow with WorkflowTemplateRef has suspend template
+	if wfSpec.Suspend != targetWf.Spec.Suspend {
+		targetWf.Spec.Suspend = wfSpec.Suspend
+	}
 	return &targetWf, nil
 }
 
