@@ -118,6 +118,9 @@
         "in": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Interface"
         },
+        "resources": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
+        },
         "volumeMounts": {
           "items": {
             "$ref": "#/definitions/io.k8s.api.core.v1.VolumeMount"
