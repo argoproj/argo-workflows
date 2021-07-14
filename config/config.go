@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"math"
-	"path"
 	"time"
 
 	apiv1 "k8s.io/api/core/v1"
@@ -11,7 +10,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 var EmptyConfigFunc = func() interface{} { return &Config{} }
@@ -60,7 +58,7 @@ type Config struct {
 	KubeletInsecure bool `json:"kubeletInsecure,omitempty"`
 
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
-	ArtifactRepository ArtifactRepository `json:"artifactRepository,omitempty"`
+	ArtifactRepository wfv1.ArtifactRepository `json:"artifactRepository,omitempty"`
 
 	// Namespace is a label selector filter to limit the controller's watch to a specific namespace
 	// DEPRECATED: support will be remove in a future release
@@ -178,61 +176,6 @@ type KubeConfig struct {
 	MountPath string `json:"mountPath,omitempty"`
 }
 
-// ArtifactRepository represents an artifact repository in which a controller will store its artifacts
-type ArtifactRepository struct {
-	// ArchiveLogs enables log archiving
-	ArchiveLogs *bool `json:"archiveLogs,omitempty"`
-	// S3 stores artifact in a S3-compliant object store
-	S3 *S3ArtifactRepository `json:"s3,omitempty"`
-	// Artifactory stores artifacts to JFrog Artifactory
-	Artifactory *ArtifactoryArtifactRepository `json:"artifactory,omitempty"`
-	// HDFS stores artifacts in HDFS
-	HDFS *HDFSArtifactRepository `json:"hdfs,omitempty"`
-	// OSS stores artifact in a OSS-compliant object store
-	OSS *OSSArtifactRepository `json:"oss,omitempty"`
-	// GCS stores artifact in a GCS object store
-	GCS *GCSArtifactRepository `json:"gcs,omitempty"`
-}
-
-func (a *ArtifactRepository) IsArchiveLogs() bool {
-	return a != nil && a.ArchiveLogs != nil && *a.ArchiveLogs
-}
-
-type ArtifactRepositoryType interface {
-	IntoArtifactLocation(l *wfv1.ArtifactLocation)
-}
-
-func (a *ArtifactRepository) Get() ArtifactRepositoryType {
-	if a == nil {
-		return nil
-	} else if a.Artifactory != nil {
-		return a.Artifactory
-	} else if a.GCS != nil {
-		return a.GCS
-	} else if a.HDFS != nil {
-		return a.HDFS
-	} else if a.OSS != nil {
-		return a.OSS
-	} else if a.S3 != nil {
-		return a.S3
-	}
-	return nil
-}
-
-// ToArtifactLocation returns the artifact location set with default template key:
-// key = `{{workflow.name}}/{{pod.name}}`
-func (a *ArtifactRepository) ToArtifactLocation() *wfv1.ArtifactLocation {
-	if a == nil {
-		return nil
-	}
-	l := &wfv1.ArtifactLocation{ArchiveLogs: a.ArchiveLogs}
-	v := a.Get()
-	if v != nil {
-		v.IntoArtifactLocation(l)
-	}
-	return l
-}
-
 type PersistConfig struct {
 	NodeStatusOffload bool `json:"nodeStatusOffLoad,omitempty"`
 	// Archive workflows to persistence.
@@ -293,93 +236,6 @@ type PostgreSQLConfig struct {
 type MySQLConfig struct {
 	DatabaseConfig
 	Options map[string]string `json:"options,omitempty"`
-}
-
-// S3ArtifactRepository defines the controller configuration for an S3 artifact repository
-type S3ArtifactRepository struct {
-	wfv1.S3Bucket `json:",inline"`
-
-	// KeyFormat is defines the format of how to store keys. Can reference workflow variables
-	KeyFormat string `json:"keyFormat,omitempty"`
-
-	// KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.
-	// DEPRECATED. Use KeyFormat instead
-	KeyPrefix string `json:"keyPrefix,omitempty"`
-}
-
-func (r *S3ArtifactRepository) IntoArtifactLocation(l *wfv1.ArtifactLocation) {
-	k := r.KeyFormat
-	if k == "" {
-		k = path.Join(r.KeyPrefix, common.DefaultArchivePattern)
-	}
-	l.S3 = &wfv1.S3Artifact{S3Bucket: r.S3Bucket, Key: k}
-}
-
-// OSSArtifactRepository defines the controller configuration for an OSS artifact repository
-type OSSArtifactRepository struct {
-	wfv1.OSSBucket `json:",inline"`
-
-	// KeyFormat is defines the format of how to store keys. Can reference workflow variables
-	KeyFormat string `json:"keyFormat,omitempty"`
-}
-
-func (r *OSSArtifactRepository) IntoArtifactLocation(l *wfv1.ArtifactLocation) {
-	k := r.KeyFormat
-	if k == "" {
-		k = common.DefaultArchivePattern
-	}
-	l.OSS = &wfv1.OSSArtifact{OSSBucket: r.OSSBucket, Key: k}
-}
-
-// GCSArtifactRepository defines the controller configuration for a GCS artifact repository
-type GCSArtifactRepository struct {
-	wfv1.GCSBucket `json:",inline"`
-
-	// KeyFormat is defines the format of how to store keys. Can reference workflow variables
-	KeyFormat string `json:"keyFormat,omitempty"`
-}
-
-func (r *GCSArtifactRepository) IntoArtifactLocation(l *wfv1.ArtifactLocation) {
-	k := r.KeyFormat
-	if k == "" {
-		k = common.DefaultArchivePattern
-	}
-	l.GCS = &wfv1.GCSArtifact{GCSBucket: r.GCSBucket, Key: k}
-}
-
-// ArtifactoryArtifactRepository defines the controller configuration for an artifactory artifact repository
-type ArtifactoryArtifactRepository struct {
-	wfv1.ArtifactoryAuth `json:",inline"`
-	// RepoURL is the url for artifactory repo.
-	RepoURL string `json:"repoURL,omitempty"`
-}
-
-func (r *ArtifactoryArtifactRepository) IntoArtifactLocation(l *wfv1.ArtifactLocation) {
-	u := ""
-	if r.RepoURL != "" {
-		u = r.RepoURL + "/"
-	}
-	u = fmt.Sprintf("%s%s", u, common.DefaultArchivePattern)
-	l.Artifactory = &wfv1.ArtifactoryArtifact{ArtifactoryAuth: r.ArtifactoryAuth, URL: u}
-}
-
-// HDFSArtifactRepository defines the controller configuration for an HDFS artifact repository
-type HDFSArtifactRepository struct {
-	wfv1.HDFSConfig `json:",inline"`
-
-	// PathFormat is defines the format of path to store a file. Can reference workflow variables
-	PathFormat string `json:"pathFormat,omitempty"`
-
-	// Force copies a file forcibly even if it exists (default: false)
-	Force bool `json:"force,omitempty"`
-}
-
-func (r *HDFSArtifactRepository) IntoArtifactLocation(l *wfv1.ArtifactLocation) {
-	p := r.PathFormat
-	if p == "" {
-		p = common.DefaultArchivePattern
-	}
-	l.HDFS = &wfv1.HDFSArtifact{HDFSConfig: r.HDFSConfig, Path: p, Force: r.Force}
 }
 
 // MetricsConfig defines a config for a metrics server

@@ -14,7 +14,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 
-	"github.com/argoproj/argo-workflows/v3/config"
 	sqldbmocks "github.com/argoproj/argo-workflows/v3/persist/sqldb/mocks"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	fakewfv1 "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
@@ -125,8 +124,8 @@ func newServer() *ArtifactServer {
 		return &fakeArtifactDriver{data: []byte("my-data")}, nil
 	}
 
-	artifactRepositories := armocks.DummyArtifactRepositories(&config.ArtifactRepository{
-		S3: &config.S3ArtifactRepository{
+	artifactRepositories := armocks.DummyArtifactRepositories(&wfv1.ArtifactRepository{
+		S3: &wfv1.S3ArtifactRepository{
 			S3Bucket: wfv1.S3Bucket{
 				Endpoint: "my-endpoint",
 				Bucket:   "my-bucket",
