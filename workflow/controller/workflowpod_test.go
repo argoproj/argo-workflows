@@ -469,7 +469,7 @@ func TestWorkflowControllerArchiveConfigUnresolvable(t *testing.T) {
 	}
 	woc := newWoc(*wf)
 	ctx := context.Background()
-	setArtifactRepository(woc.controller, &config.ArtifactRepository{S3: &config.S3ArtifactRepository{
+	setArtifactRepository(woc.controller, &wfv1.ArtifactRepository{S3: &wfv1.S3ArtifactRepository{
 		S3Bucket: wfv1.S3Bucket{
 			Bucket: "foo",
 		},
