@@ -129,7 +129,8 @@ func GetBearerToken(in *restclient.Config, explicitKubeConfigPath string) (strin
 		}
 		req := http.Request{Header: map[string][]string{}}
 
-		_, _ = rt.RoundTrip(&req)
+		newT := NewUserAgentRoundTripper("dummy", rt)
+		_, _ = newT.RoundTrip(&req)
 
 		token := req.Header.Get("Authorization")
 		return strings.TrimPrefix(token, "Bearer "), nil
