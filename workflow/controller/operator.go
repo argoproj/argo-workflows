@@ -34,7 +34,6 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo-workflows/v3/config"
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -83,7 +82,7 @@ type wfOperationCtx struct {
 	// It is then used in addVolumeReferences() when creating a pod.
 	volumes []apiv1.Volume
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
-	artifactRepository *config.ArtifactRepository
+	artifactRepository *wfv1.ArtifactRepository
 	// map of completed pods with their corresponding phases
 	completedPods map[string]apiv1.PodPhase
 	// deadline is the dealine time in which this operation should relinquish
@@ -3307,21 +3306,25 @@ func (woc *wfOperationCtx) setStoredWfSpec() error {
 		wfDefault = &wfv1.Workflow{}
 	}
 
-	if woc.needsStoredWfSpecUpdate() {
+	workflowTemplateSpec := woc.wf.Status.StoredWorkflowSpec
+
+	// Load the spec from WorkflowTemplate in first time.
+	if woc.wf.Status.StoredWorkflowSpec == nil {
 		wftHolder, err := woc.fetchWorkflowSpec()
 		if err != nil {
 			return err
 		}
-
 		// Join WFT and WfDefault metadata to Workflow metadata.
 		wfutil.JoinWorkflowMetaData(&woc.wf.ObjectMeta, wftHolder.GetWorkflowMetadata(), &wfDefault.ObjectMeta)
-
+		workflowTemplateSpec = wftHolder.GetWorkflowSpec()
+	}
+	// Update the Entrypoint, ShutdownStrategy and Suspend
+	if woc.needsStoredWfSpecUpdate() {
 		// Join workflow, workflow template, and workflow default metadata to workflow spec.
-		mergedWf, err := wfutil.JoinWorkflowSpec(&woc.wf.Spec, wftHolder.GetWorkflowSpec(), &wfDefault.Spec)
+		mergedWf, err := wfutil.JoinWorkflowSpec(&woc.wf.Spec, workflowTemplateSpec, &wfDefault.Spec)
 		if err != nil {
 			return err
 		}
-
 		woc.wf.Status.StoredWorkflowSpec = &mergedWf.Spec
 		woc.updated = true
 	} else if woc.controller.Config.WorkflowRestrictions.MustNotChangeSpec() {
