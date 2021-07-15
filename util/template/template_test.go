@@ -13,6 +13,7 @@ type SimpleValue struct {
 
 func processTemplate(t *testing.T, tmpl SimpleValue) SimpleValue {
 	tmplBytes, err := json.Marshal(tmpl)
+	assert.NoError(t, err)
 	r, err := Replace(string(tmplBytes), map[string]string{}, true)
 	assert.NoError(t, err)
 	var newTmpl SimpleValue
