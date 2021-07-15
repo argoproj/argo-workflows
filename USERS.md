@@ -54,6 +54,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [FOLIO](http://corp.folio-sec.com/)
 1. [FreeWheel](https://freewheel.com/)
 1. [Fynd Trak](https://trak.fynd.com/)
+1. [Galixir](https://www.galixir.com/)
 1. [Gardener](https://gardener.cloud/)
 1. [GitHub](https://github.com/)
 1. [Gladly](https://gladly.com/)
@@ -129,7 +130,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [VMware](https://www.vmware.com/)
 1. [Woolworths Group](https://www.woolworthsgroup.com.au/)
 1. [Zhihu](https://www.zhihu.com/)
-1. [Galixir](https://www.galixir.com/)
+
 
 ### Projects Using Argo
 
