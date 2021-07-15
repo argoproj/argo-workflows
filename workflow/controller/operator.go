@@ -3335,21 +3335,25 @@ func (woc *wfOperationCtx) setStoredWfSpec() error {
 		wfDefault = &wfv1.Workflow{}
 	}
 
-	if woc.needsStoredWfSpecUpdate() {
+	workflowTemplateSpec := woc.wf.Status.StoredWorkflowSpec
+
+	// Load the spec from WorkflowTemplate in first time.
+	if woc.wf.Status.StoredWorkflowSpec == nil {
 		wftHolder, err := woc.fetchWorkflowSpec()
 		if err != nil {
 			return err
 		}
-
 		// Join WFT and WfDefault metadata to Workflow metadata.
 		wfutil.JoinWorkflowMetaData(&woc.wf.ObjectMeta, wftHolder.GetWorkflowMetadata(), &wfDefault.ObjectMeta)
-
+		workflowTemplateSpec = wftHolder.GetWorkflowSpec()
+	}
+	// Update the Entrypoint, ShutdownStrategy and Suspend
+	if woc.needsStoredWfSpecUpdate() {
 		// Join workflow, workflow template, and workflow default metadata to workflow spec.
-		mergedWf, err := wfutil.JoinWorkflowSpec(&woc.wf.Spec, wftHolder.GetWorkflowSpec(), &wfDefault.Spec)
+		mergedWf, err := wfutil.JoinWorkflowSpec(&woc.wf.Spec, workflowTemplateSpec, &wfDefault.Spec)
 		if err != nil {
 			return err
 		}
-
 		woc.wf.Status.StoredWorkflowSpec = &mergedWf.Spec
 		woc.updated = true
 	} else if woc.controller.Config.WorkflowRestrictions.MustNotChangeSpec() {
