@@ -1,49 +1,57 @@
 package template
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
+type SimpleValue struct {
+	Value string `json:"value,omitempty"`
+}
+
+func processTemplate(t *testing.T, tmpl SimpleValue) SimpleValue {
+	tmplBytes, err := json.Marshal(tmpl)
+	r, err := Replace(string(tmplBytes), map[string]string{}, true)
+	assert.NoError(t, err)
+	var newTmpl SimpleValue
+	err = json.Unmarshal([]byte(r), &newTmpl)
+	assert.NoError(t, err)
+	return newTmpl
+}
+
 func Test_Template_Replace(t *testing.T) {
 	t.Run("ExpressionWithEscapedCharacters", func(t *testing.T) {
 		t.Run("SingleQuotes", func(t *testing.T) {
-			template, err := NewTemplate("{{='test'}}")
-			assert.NoError(t, err)
-			r, err := template.Replace(map[string]string{}, true)
-			assert.NoError(t, err)
-			assert.Equal(t, "test", r)
+			tmpl := SimpleValue{Value: "{{='test'}}"}
+			newTmpl := processTemplate(t, tmpl)
+			assert.Equal(t, "test", newTmpl.Value)
 		})
 		t.Run("DoubleQuotes", func(t *testing.T) {
-			template, err := NewTemplate(`{{=\"test\"}}`)
-			assert.NoError(t, err)
-			r, err := template.Replace(map[string]string{}, true)
-			assert.NoError(t, err)
-			assert.Equal(t, "test", r)
+			tmpl := SimpleValue{Value: `{{="test"}}`}
+			newTmpl := processTemplate(t, tmpl)
+			assert.Equal(t, "test", newTmpl.Value)
 		})
-		t.Run("EscapedBackslashes", func(t *testing.T) {
-			// In YAML, this would look like {{='some\\path\\with\\backslashes'}}, making it valid expr.
-			template, err := NewTemplate(`{{='some\\\\path\\\\with\\\\backslashes'}}`)
-			assert.NoError(t, err)
-			r, err := template.Replace(map[string]string{}, true)
-			assert.NoError(t, err)
-			assert.Equal(t, `some\path\with\backslashes`, r)
+		t.Run("EscapedBackslashInString", func(t *testing.T) {
+			tmpl := SimpleValue{Value: `{{='some\\path\\with\\backslashes'}}`}
+			newTmpl := processTemplate(t, tmpl)
+			assert.Equal(t, `some\path\with\backslashes`, newTmpl.Value)
+		})
+		t.Run("EscapedNewlineInString", func(t *testing.T) {
+			tmpl := SimpleValue{Value: `{{='some\nstring\nwith\nescaped\nnewlines'}}`}
+			newTmpl := processTemplate(t, tmpl)
+			assert.Equal(t, "some\nstring\nwith\nescaped\nnewlines", newTmpl.Value)
 		})
 		t.Run("Newline", func(t *testing.T) {
-			template, err := NewTemplate(`{{=1 +\n1}}`)
-			assert.NoError(t, err)
-			r, err := template.Replace(map[string]string{}, true)
-			assert.NoError(t, err)
-			assert.Equal(t, "2", r)
+			tmpl := SimpleValue{Value: "{{=1 + \n1}}"}
+			newTmpl := processTemplate(t, tmpl)
+			assert.Equal(t, "2", newTmpl.Value)
 		})
 		t.Run("StringAsJson", func(t *testing.T) {
-			template, err := NewTemplate(`{{=toJson('test')}}`)
-			assert.NoError(t, err)
-			r, err := template.Replace(map[string]string{}, true)
-			assert.NoError(t, err)
-			// Output should be escaped since it will be embedded in stringified JSON before unmarshaling.
-			assert.Equal(t,`\"test\"`, r)
+			tmpl := SimpleValue{Value: "{{=toJson('test')}}"}
+			newTmpl := processTemplate(t, tmpl)
+			assert.Equal(t, `"test"`, newTmpl.Value)
 		})
 	})
 }
