@@ -54,5 +54,25 @@ func Test_Template_Replace(t *testing.T) {
 			newTmpl := processTemplate(t, tmpl)
 			assert.Equal(t, `"test"`, newTmpl.Value)
 		})
+		t.Run("ObjectAsJson", func(t *testing.T) {
+			tmpl := SimpleValue{Value: "{{=toJson({test: 1})}}"}
+			newTmpl := processTemplate(t, tmpl)
+			assert.Equal(t, `{"test":1}`, newTmpl.Value)
+		})
+		t.Run("ArrayAsJson", func(t *testing.T) {
+			tmpl := SimpleValue{Value: "{{=toJson([1, '2', {an: 'object'}])}}"}
+			newTmpl := processTemplate(t, tmpl)
+			assert.Equal(t, `[1,"2",{"an":"object"}]`, newTmpl.Value)
+		})
+		t.Run("SingleQuoteAsString", func(t *testing.T) {
+			tmpl := SimpleValue{Value: `{{="'"}}`}
+			newTmpl := processTemplate(t, tmpl)
+			assert.Equal(t, `'`, newTmpl.Value)
+		})
+		t.Run("DoubleQuoteAsString", func(t *testing.T) {
+			tmpl := SimpleValue{Value: `{{='"'}}`}
+			newTmpl := processTemplate(t, tmpl)
+			assert.Equal(t, `"`, newTmpl.Value)
+		})
 	})
 }
