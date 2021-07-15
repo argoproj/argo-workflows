@@ -129,7 +129,8 @@ func GetBearerToken(in *restclient.Config, explicitKubeConfigPath string) (strin
 		}
 		req := http.Request{Header: map[string][]string{}}
 
-		_, _ = rt.RoundTrip(&req)
+		newT := NewUserAgentRoundTripper("dummy", rt)
+		newT.RoundTrip(&req)
 
 		token := req.Header.Get("Authorization")
 		return strings.TrimPrefix(token, "Bearer "), nil
@@ -145,6 +146,20 @@ func GetBearerToken(in *restclient.Config, explicitKubeConfigPath string) (strin
 		}
 	}
 	return "", errors.Errorf("could not find a token")
+}
+
+type userAgentRoundTripper struct {
+	agent string
+	rt    http.RoundTripper
+}
+
+func (rt userAgentRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	req.Header.Set("User-Agent", rt.agent)
+	return rt.rt.RoundTrip(req)
+}
+
+func NewUserAgentRoundTripper(agent string, rt http.RoundTripper) http.RoundTripper {
+	return &userAgentRoundTripper{agent, rt}
 }
 
 func encodeBasicAuthToken(username, password string) string {
