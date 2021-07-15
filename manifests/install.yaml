@@ -552,7 +552,7 @@ spec:
       containers:
       - args:
         - server
-        image: docker.io/argoproj/argocli:latest
+        image: docker.io/argoproj/argocli:v3.1.1
         name: argo-server
         ports:
         - containerPort: 2746
@@ -598,7 +598,7 @@ spec:
         - --configmap
         - workflow-controller-configmap
         - --executor-image
-        - argoproj/argoexec:latest
+        - argoproj/argoexec:v3.1.1
         command:
         - workflow-controller
         env:
@@ -607,7 +607,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.name
-        image: docker.io/argoproj/workflow-controller:latest
+        image: docker.io/argoproj/workflow-controller:v3.1.1
         livenessProbe:
           failureThreshold: 3
           httpGet:
