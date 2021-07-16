@@ -8,6 +8,9 @@ import {Timestamp} from '../../shared/components/timestamp';
 import {parseResourceQuantity} from '../../shared/resource-quantity';
 import {EventsPanel} from '../../workflows/components/events-panel';
 import {PipelineLogsViewer} from './pipeline-logs-viewer';
+import {totalRate} from './total-rate';
+
+const prettyNumber = (x: number): number => (x < 1 ? x : Math.round(x));
 
 export const StepSidePanel = ({
     isShown,
@@ -71,12 +74,7 @@ export const StepSidePanel = ({
                                             const total = Object.values(x.metrics || {})
                                                 .filter(m => m.total)
                                                 .reduce((a, b) => a + b.total, 0);
-                                            const rate = Object.entries(x.metrics || {})
-                                                // the rate will remain after scale-down, so we must filter out, as it'll be wrong
-                                                .filter(([replica, m]) => parseInt(replica, 10) < step.status.replicas)
-                                                .map(([, m]) => m)
-                                                .map(m => parseResourceQuantity(m.rate))
-                                                .reduce((a, b) => a + b, 0);
+                                            const rate = totalRate(x.metrics, step.status.replicas);
                                             const errors = Object.values(x.metrics || {})
                                                 .filter(m => m.errors)
                                                 .reduce((a, b) => a + b.errors, 0);
@@ -104,7 +102,7 @@ export const StepSidePanel = ({
                                                                 <TickMeter value={total} />
                                                             </div>
                                                             <div className='columns small-2' title='Rate'>
-                                                                ＊<TickMeter value={rate} /> <small>TPS</small>
+                                                                <TickMeter value={rate} /> <small>TPS</small>
                                                             </div>
                                                             <div className='columns small-5'>{x.lastMessage ? x.lastMessage.data : '-'}</div>
                                                             <div className='columns small-1'>{x.lastMessage ? <Timestamp date={x.lastMessage.time} /> : '-'}</div>
@@ -153,7 +151,7 @@ export const StepSidePanel = ({
                                                             </div>
 
                                                             <div className='columns small-2' title='Rate'>
-                                                                ＊<TickMeter value={rate} /> <small>TPS</small>
+                                                                <TickMeter value={prettyNumber(rate)} /> <small>TPS</small>
                                                             </div>
                                                             <div className='columns small-5'>{x.lastMessage ? x.lastMessage.data : '-'}</div>
                                                             <div className='columns small-1'>{x.lastMessage ? <Timestamp date={x.lastMessage.time} /> : '-'}</div>
@@ -164,7 +162,7 @@ export const StepSidePanel = ({
                                                                 <TickMeter value={errors} />
                                                             </div>
                                                             <div className='columns small-2'>
-                                                                <TickMeter value={Math.floor((10000 * errors) / total) / 100} />%
+                                                                <TickMeter value={prettyNumber(Math.floor((10000 * errors) / total) / 100)} />%
                                                             </div>
                                                             <div className='columns small-5'>{x.lastError ? x.lastError.message : '-'}</div>
                                                             <div className='columns small-1'>{x.lastError ? <Timestamp date={x.lastError.time} /> : '-'}</div>

@@ -2,7 +2,7 @@ import {Pipeline} from '../../../../models/pipeline';
 import {Metrics, Step} from '../../../../models/step';
 import {Graph} from '../../../shared/components/graph/types';
 import {Icon} from '../../../shared/components/icon';
-import {parseResourceQuantity} from '../../../shared/resource-quantity';
+import {totalRate} from '../total-rate';
 import {recent} from './recent';
 
 type Type = '' | 'cat' | 'container' | 'dedupe' | 'expand' | 'filter' | 'flatten' | 'git' | 'group' | 'handler' | 'map';
@@ -34,21 +34,14 @@ const stepIcon = (type: Type): Icon => {
     }
 };
 
-const pendingSymbol = '🕑';
+const pendingSymbol = '◷';
 const errorSymbol = '⚠️';
 
-const formatRates = (metrics: Metrics, replicas: number) => {
+const formatRates = (metrics: Metrics, replicas: number): string => {
     const rates = Object.entries(metrics || {})
         // the rate will remain after scale-down, so we must filter out, as it'll be wrong
         .filter(([replica, m]) => parseInt(replica, 10) < replicas);
-    return rates.length > 0
-        ? '＊' +
-              rates
-                  .map(([, m]) => m)
-                  .map(m => parseResourceQuantity(m.rate))
-                  .reduce((a, b) => a + b, 0)
-                  .toPrecision(3)
-        : '';
+    return rates.length > 0 ? 'Δ' + totalRate(metrics, replicas) : '';
 };
 
 export const graph = (pipeline: Pipeline, steps: Step[]) => {
@@ -115,7 +108,7 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
         });
         (spec.sinks || []).forEach((x, i) => {
             const ss = (status.sinkStatuses || {})[x.name || ''] || {};
-            const label = (recent(ss.lastError && new Date(ss.lastError.time)) ? errorSymbol : '') + formatRates(ss.metrics, step.status.replicas);
+            const label = (recent(ss.lastError && new Date(ss.lastError.time)) ? errorSymbol : '') + totalRate(ss.metrics, step.status.replicas);
             if (x.kafka) {
                 const kafkaId = x.kafka.name || x.kafka.url || 'default';
                 const topicId = 'kafka/' + kafkaId + '/' + x.kafka.topic;
