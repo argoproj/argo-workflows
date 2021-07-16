@@ -74,5 +74,10 @@ func Test_Template_Replace(t *testing.T) {
 			newTmpl := processTemplate(t, tmpl)
 			assert.Equal(t, `"`, newTmpl.Value)
 		})
+		t.Run("Boolean", func(t *testing.T) {
+			tmpl := SimpleValue{Value: `{{=true == false}}`}
+			newTmpl := processTemplate(t, tmpl)
+			assert.Equal(t, "false", newTmpl.Value)
+		})
 	})
 }
