@@ -322,6 +322,18 @@
       },
       "type": "object"
     },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.KafkaSource": {
+      "properties": {
+        "kafka": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Kafka"
+        },
+        "startOffset": {
+          "title": "+kubebuilder:default=Last",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Log": {
       "type": "object"
     },
@@ -444,6 +456,10 @@
         "clusterId": {
           "type": "string"
         },
+        "maxInflight": {
+          "title": "Max inflight messages when subscribing to the stan server, which means how many messages\nbetween commits, therefore potential duplicates during disruption\n+kubebuilder:default=20",
+          "type": "integer"
+        },
         "name": {
           "title": "+kubebuilder:default=default",
           "type": "string"
@@ -516,7 +532,7 @@
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.HTTPSource"
         },
         "kafka": {
-          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Kafka"
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.KafkaSource"
         },
         "name": {
           "title": "+kubebuilder:default=default",
