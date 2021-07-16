@@ -230,7 +230,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.updated = wfUpdate
 		if !acquired {
 			woc.log.Warn("Workflow processing has been postponed due to concurrency limit")
-			woc.wf.Status.Message = msg
+			woc.markWorkflowPhase(ctx, wfv1.WorkflowPending, msg)
 			return
 		}
 	}
