@@ -301,8 +301,6 @@ spec:
                         type: array
                     type: object
                 type: object
-              agentServiceAccountName:
-                type: string
               arguments:
                 properties:
                   artifacts:
@@ -22611,8 +22609,6 @@ spec:
                             type: array
                         type: object
                     type: object
-                  agentServiceAccountName:
-                    type: string
                   arguments:
                     properties:
                       artifacts:

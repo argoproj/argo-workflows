@@ -27,19 +27,28 @@ func (woc *wfOperationCtx) patchTaskSet(ctx context.Context, patch interface{}, 
 	}
 	return argowait.Backoff(retry.DefaultBackoff, func() (bool, error) {
 		var err error
-		_, err = woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace).Patch(ctx, woc.wf.Name, pathTypeType, patchByte, metav1.PatchOptions{})
+		wts, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace).Patch(ctx, woc.wf.Name, pathTypeType, patchByte, metav1.PatchOptions{})
+		fmt.Println(wts)
 		return apierr.IsNotFound(err) || !errorsutil.IsTransientErr(err), err
 	})
 }
 
-type ThingSpec struct {
-	Op   string `json:"op"`
-	Path string `json:"path"`
-}
-
-func (woc *wfOperationCtx) deleteTaskSetStatus(ctx context.Context) error {
-	patch := []ThingSpec{{Op: "remove", Path: "/status/nodes"}}
-	return woc.patchTaskSet(ctx, patch, types.JSONPatchType)
+func (woc *wfOperationCtx) removeCompletedTaskSetStatus(ctx context.Context) error {
+	completedHTTPNodes := woc.getCompletedHTTPNodes()
+	deletedNode := make(map[string]interface{})
+	for _, node := range completedHTTPNodes {
+		deletedNode[node.ID] = nil
+	}
+	// Delete the completed Tasks and nodes status
+	patch := map[string]interface{}{
+		"spec": map[string]interface{}{
+			"tasks": deletedNode,
+		},
+		"status": map[string]interface{}{
+			"nodes": deletedNode,
+		},
+	}
+	return woc.patchTaskSet(ctx, patch, types.MergePatchType)
 }
 
 func (woc *wfOperationCtx) completeTaskSet(ctx context.Context) error {
@@ -80,9 +89,6 @@ func (woc *wfOperationCtx) taskSetReconciliation(ctx context.Context) error {
 			woc.wf.Status.Nodes[nodeID] = node
 			node.FinishedAt = metav1.Now()
 			woc.updated = true
-
-			// Delete task if it is already processed.
-			//delete(woc.taskSet, nodeID)
 		}
 	}
 	return woc.CreateTaskSet(ctx)

@@ -355,8 +355,6 @@ type WorkflowSpec struct {
 
 	// TemplateDefaults holds default template values that will apply to all templates in the Workflow, unless overridden on the template-level
 	TemplateDefaults *Template `json:"templateDefaults,omitempty" protobuf:"bytes,39,opt,name=templateDefaults"`
-
-	AgentServiceAccountName string `json:"agentServiceAccountName,omitempty" protobuf:"bytes,40,opt,name=agentServiceAccountName"`
 }
 
 // GetVolumeClaimGC returns the VolumeClaimGC that was defined in the workflow spec.  If none was provided, a default value is returned.

@@ -602,7 +602,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		time.Sleep(1 * time.Second)
 	}
 
-	err = woc.deleteTaskSetStatus(ctx)
+	err = woc.removeCompletedTaskSetStatus(ctx)
 
 	if err != nil {
 		woc.log.Warnf("Error updating taskset: %v %s", err, apierr.ReasonForError(err))

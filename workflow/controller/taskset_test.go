@@ -60,29 +60,6 @@ spec:
         - name: url
           value: http://openlibrary.org/people/george08/nofound.json
       name: http
-status:
-  nodes:
-    http-template-1-3690327077:
-      outputs:
-        parameters:
-        - name: result
-          value: |
-            {
-              "swagger": "2.0",
-              "info": {
-                "title": "pkg/apis/workflow/v1alpha1/generated.proto",
-                "version": "version not set"
-              },
-              "consumes": [
-                "application/json"
-              ],
-              "produces": [
-                "application/json"
-              ],
-              "paths": {},
-              "definitions": {}
-            }
-      phase: Succeeded
     `, &ts)
 
 	t.Run("CreateTaskSet", func(t *testing.T) {

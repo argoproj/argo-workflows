@@ -12,3 +12,13 @@ func (woc *wfOperationCtx) executeHTTPTemplate(nodeName string, templateScope st
 	}
 	return node
 }
+
+func (woc *wfOperationCtx) getCompletedHTTPNodes() []wfv1.NodeStatus {
+	var nodeStatus []wfv1.NodeStatus
+	for _, node := range woc.wf.Status.Nodes {
+		if node.Type == wfv1.NodeTypeHTTP && node.Fulfilled() {
+			nodeStatus = append(nodeStatus, node)
+		}
+	}
+	return nodeStatus
+}

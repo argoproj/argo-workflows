@@ -33,7 +33,10 @@ func (woc *wfOperationCtx) reconcileAgentPod(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	woc.updateAgentPodStatus(pod)
+	// Check Pod is just created
+	if pod.Status.Phase != "" {
+		woc.updateAgentPodStatus(pod)
+	}
 	return nil
 }
 
@@ -56,10 +59,11 @@ func (woc *wfOperationCtx) updateAgentPodStatus(pod *apiv1.Pod) {
 }
 
 func (woc *wfOperationCtx) assessAgentPodStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
+	woc.log.Infof("assessAgentPodStatus")
 	var newPhase wfv1.NodePhase
 	var message string
 	updated := false
-	fmt.Println(pod.Name, pod.Status.Phase)
+	woc.log.Infof(pod.Name, pod.Status.Phase)
 	switch pod.Status.Phase {
 	case apiv1.PodPending:
 		newPhase = wfv1.NodePending
@@ -77,7 +81,7 @@ func (woc *wfOperationCtx) assessAgentPodStatus(pod *apiv1.Pod, node *wfv1.NodeS
 		message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.ObjectMeta.Name, pod.Status.Phase)
 	}
 
-	if node.Phase != newPhase {
+	if !node.Fulfilled() && (node.Phase != newPhase) {
 		woc.log.Infof("Updating node %s status %s -> %s", node.ID, node.Phase, newPhase)
 		// if we are transitioning from Pending to a different state, clear out pending message
 		if node.Phase == wfv1.NodePending {
@@ -97,6 +101,7 @@ func (woc *wfOperationCtx) assessAgentPodStatus(pod *apiv1.Pod, node *wfv1.NodeS
 		updated = true
 		node.FinishedAt = getLatestFinishedAt(pod)
 	}
+
 	if updated {
 		return node
 	}
@@ -139,7 +144,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 				{
 					Name:            "main",
 					Command:         []string{"argoexec"},
-					Args:            []string{"agent1"},
+					Args:            []string{"agent"},
 					Image:           woc.controller.executorImage(),
 					ImagePullPolicy: apiv1.PullIfNotPresent,
 					Env: []apiv1.EnvVar{
@@ -153,7 +158,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	if woc.controller.Config.InstanceID != "" {
 		pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
 	}
-	if woc.wf.Spec.AgentServiceAccountName != "" {
+	if woc.wf.Spec.ServiceAccountName != "" {
 		pod.Spec.ServiceAccountName = woc.wf.Spec.ServiceAccountName
 	}
 

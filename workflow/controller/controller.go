@@ -1193,12 +1193,7 @@ func (wfc *WorkflowController) newWorkflowTaskSetInformer() wfextvv1alpha1.Workf
 			UpdateFunc: func(old, new interface{}) {
 				key, err := cache.MetaNamespaceKeyFunc(new)
 				if err == nil {
-					wts, ok := new.(*wfv1.WorkflowTaskSet)
-					if ok {
-						if len(wts.Status.Nodes) > 0 {
-							wfc.wfQueue.AddRateLimited(key)
-						}
-					}
+					wfc.wfQueue.Add(key)
 				}
 			},
 		})
