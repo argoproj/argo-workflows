@@ -114,7 +114,10 @@ func (c *k8sAPIClient) until(ctx context.Context, f func(pod *corev1.Pod) bool) 
 	podInterface := c.clientset.CoreV1().Pods(c.namespace)
 	for {
 		done, err := func() (bool, error) {
-			w, err := podInterface.Watch(ctx, metav1.ListOptions{FieldSelector: "metadata.name=" + c.podName})
+			w, err := podInterface.Watch(ctx, metav1.ListOptions{
+				FieldSelector:   "metadata.name=" + c.podName,
+				ResourceVersion: "0",
+			})
 			if err != nil {
 				return true, fmt.Errorf("failed to establish pod watch: %w", err)
 			}
