@@ -17,6 +17,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Admiralty](https://admiralty.io/)
 1. [Adobe](https://www.adobe.com/)
 1. [Alibaba Cloud](https://www.alibabacloud.com/about)
+1. [Alibaba Group](https://www.alibabagroup.com/)
 1. [Ant Group](https://www.antgroup.com/)
 1. [AppDirect](https://www.appdirect.com/)
 1. [Astraea](https://astraea.earth/)
@@ -127,6 +128,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Wavefront](https://www.wavefront.com/)
 1. [Wellcome Trust](https://wellcome.ac.uk/)
 1. [VMware](https://www.vmware.com/)
+1. [WooliesX](https://wooliesx.com.au/)
 1. [Woolworths Group](https://www.woolworthsgroup.com.au/)
 1. [Zhihu](https://www.zhihu.com/)
 
