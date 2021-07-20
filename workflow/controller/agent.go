@@ -63,7 +63,6 @@ func (woc *wfOperationCtx) assessAgentPodStatus(pod *apiv1.Pod, node *wfv1.NodeS
 	var newPhase wfv1.NodePhase
 	var message string
 	updated := false
-	woc.log.Infof(pod.Name, pod.Status.Phase)
 	switch pod.Status.Phase {
 	case apiv1.PodPending:
 		newPhase = wfv1.NodePending
