@@ -970,7 +970,7 @@ spec:
     container:
       image: alpine:latest
       command: [sh, -c]
-      args: ["echo {{workflow.status}} {{workflow.uid}}"]
+      args: ["echo {{workflow.status}} {{workflow.uid}} {{workflow.duration}}"]
 `
 
 var workflowStatusNotOnExit = `
@@ -2172,7 +2172,9 @@ spec:
           - name: uid
             value: "{{workflow.uid}}"
           - name: priority
-            value: "{{workflow.priority}}"    
+            value: "{{workflow.priority}}"
+          - name: duration
+            value: "{{workflow.duration}}"
 
   - name: whalesay
     inputs:
@@ -2182,10 +2184,11 @@ spec:
       - name: serviceAccountName
       - name: uid
       - name: priority
+      - name: duration
     container:
       image: docker/whalesay:latest
       command: [cowsay]
-      args: ["name: {{inputs.parameters.name}} namespace: {{inputs.parameters.namespace}} serviceAccountName: {{inputs.parameters.serviceAccountName}} uid: {{inputs.parameters.uid}} priority: {{inputs.parameters.priority}}"]
+      args: ["name: {{inputs.parameters.name}} namespace: {{inputs.parameters.namespace}} serviceAccountName: {{inputs.parameters.serviceAccountName}} uid: {{inputs.parameters.uid}} priority: {{inputs.parameters.priority}} duration: {{inputs.parameters.duration}}"]
 `
 
 func TestWorkflowGlobalVariables(t *testing.T) {
