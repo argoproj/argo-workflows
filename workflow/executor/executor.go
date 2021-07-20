@@ -19,8 +19,6 @@ import (
 	"syscall"
 	"time"
 
-	apierr "k8s.io/apimachinery/pkg/api/errors"
-
 	argofile "github.com/argoproj/pkg/file"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
@@ -64,7 +62,6 @@ const (
 // WorkflowExecutor is program which runs as the init/wait container
 type WorkflowExecutor struct {
 	PodName             string
-	workflowName        string
 	Template            wfv1.Template
 	IncludeScriptOutput bool
 	Deadline            time.Time
@@ -92,6 +89,7 @@ type Initializer interface {
 type ContainerRuntimeExecutor interface {
 	// GetFileContents returns the file contents of a file in a container as a string
 	GetFileContents(containerName string, sourcePath string) (string, error)
+
 	// CopyFile copies a source file in a container to a local path
 	CopyFile(containerName, sourcePath, destPath string, compressionLevel int) error
 
@@ -110,10 +108,9 @@ type ContainerRuntimeExecutor interface {
 }
 
 // NewExecutor instantiates a new workflow executor
-func NewExecutor(clientset kubernetes.Interface, restClient rest.Interface, podName, workflowName, namespace string, cre ContainerRuntimeExecutor, template wfv1.Template, includeScriptOutput bool, deadline time.Time) WorkflowExecutor {
+func NewExecutor(clientset kubernetes.Interface, restClient rest.Interface, podName, namespace string, cre ContainerRuntimeExecutor, template wfv1.Template, includeScriptOutput bool, deadline time.Time) WorkflowExecutor {
 	return WorkflowExecutor{
 		PodName:             podName,
-		workflowName:        workflowName,
 		ClientSet:           clientset,
 		RESTClient:          restClient,
 		Namespace:           namespace,
@@ -728,17 +725,7 @@ func (we *WorkflowExecutor) AnnotateOutputs(ctx context.Context, logArt *wfv1.Ar
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
-
-	err = we.AddAnnotation(ctx, common.AnnotationKeyOutputs, string(outputBytes))
-
-	if !apierr.IsForbidden(err) { // me were either successful (nil) or some other error
-		return err
-	}
-	return nil
-}
-
-func (we *WorkflowExecutor) nodeID() string {
-	return we.PodName
+	return we.AddAnnotation(ctx, common.AnnotationKeyOutputs, string(outputBytes))
 }
 
 // AddError adds an error to the list of encountered errors during execution
