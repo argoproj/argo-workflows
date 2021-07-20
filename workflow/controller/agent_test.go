@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	apiv1 "k8s.io/api/core/v1"
 	"strings"
 	"testing"
 
@@ -135,4 +136,32 @@ status:
 			assert.Equal(t, "testID", pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID])
 		}
 	})
+}
+
+func TestAssessAgentPodStatus(t *testing.T) {
+	t.Run("Failed", func(t *testing.T) {
+		pod1 := &apiv1.Pod{
+			Status: apiv1.PodStatus{Phase: apiv1.PodFailed},
+		}
+		nodeStatus := &wfv1.NodeStatus{Phase: wfv1.NodePending}
+		nodeStatus1 := assessAgentPodStatus(pod1, nodeStatus)
+		assert.Equal(t, wfv1.NodeFailed, nodeStatus1.Phase)
+	})
+	t.Run("Running", func(t *testing.T) {
+		pod1 := &apiv1.Pod{
+			Status: apiv1.PodStatus{Phase: apiv1.PodRunning},
+		}
+		nodeStatus := &wfv1.NodeStatus{Phase: wfv1.NodePending}
+		nodeStatus1 := assessAgentPodStatus(pod1, nodeStatus)
+		assert.Equal(t, wfv1.NodeRunning, nodeStatus1.Phase)
+	})
+	t.Run("Success", func(t *testing.T) {
+		pod1 := &apiv1.Pod{
+			Status: apiv1.PodStatus{Phase: apiv1.PodSucceeded},
+		}
+		nodeStatus := &wfv1.NodeStatus{Phase: wfv1.NodePending}
+		nodeStatus1 := assessAgentPodStatus(pod1, nodeStatus)
+		assert.Equal(t, wfv1.NodeSucceeded, nodeStatus1.Phase)
+	})
+
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -45,7 +46,7 @@ func (woc *wfOperationCtx) updateAgentPodStatus(pod *apiv1.Pod) {
 	for _, node := range woc.wf.Status.Nodes {
 		// Update POD (Error and Failed) status to all HTTP Templates node status
 		if node.Type == wfv1.NodeTypeHTTP {
-			if newState := woc.assessAgentPodStatus(pod, &node); newState != nil {
+			if newState := assessAgentPodStatus(pod, &node); newState != nil {
 				if woc.wf.Status.Nodes[node.ID].Phase != newState.Phase {
 					woc.wf.Status.Nodes[node.ID] = *newState
 					if newState.Fulfilled() {
@@ -58,8 +59,8 @@ func (woc *wfOperationCtx) updateAgentPodStatus(pod *apiv1.Pod) {
 	}
 }
 
-func (woc *wfOperationCtx) assessAgentPodStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
-	woc.log.Infof("assessAgentPodStatus")
+func assessAgentPodStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
+	log.Infof("assessAgentPodStatus")
 	var newPhase wfv1.NodePhase
 	var message string
 	updated := false
@@ -70,8 +71,9 @@ func (woc *wfOperationCtx) assessAgentPodStatus(pod *apiv1.Pod, node *wfv1.NodeS
 	case apiv1.PodSucceeded:
 		newPhase = wfv1.NodeSucceeded
 	case apiv1.PodFailed:
-		newPhase, message = woc.inferFailedReason(pod)
-		woc.log.WithField("displayName", node.DisplayName).WithField("templateName", node.TemplateName).
+		newPhase = wfv1.NodeFailed
+		message = pod.Status.Message
+		log.WithField("displayName", node.DisplayName).WithField("templateName", node.TemplateName).
 			WithField("pod", pod.Name).Infof("Pod failed: %s", message)
 	case apiv1.PodRunning:
 		newPhase = wfv1.NodeRunning
@@ -81,7 +83,7 @@ func (woc *wfOperationCtx) assessAgentPodStatus(pod *apiv1.Pod, node *wfv1.NodeS
 	}
 
 	if !node.Fulfilled() && (node.Phase != newPhase) {
-		woc.log.Infof("Updating node %s status %s -> %s", node.ID, node.Phase, newPhase)
+		log.Infof("Updating node %s status %s -> %s", node.ID, node.Phase, newPhase)
 		// if we are transitioning from Pending to a different state, clear out pending message
 		if node.Phase == wfv1.NodePending {
 			node.Message = ""
@@ -91,7 +93,7 @@ func (woc *wfOperationCtx) assessAgentPodStatus(pod *apiv1.Pod, node *wfv1.NodeS
 	}
 
 	if message != "" && node.Message != message {
-		woc.log.Infof("Updating node %s message: %s", node.ID, message)
+		log.Infof("Updating node %s message: %s", node.ID, message)
 		updated = true
 		node.Message = message
 	}
