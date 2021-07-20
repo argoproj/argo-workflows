@@ -537,7 +537,7 @@ func validateArtifactLocation(errPrefix string, art wfv1.ArtifactLocation) error
 	return nil
 }
 
-// resolveAllVariables is a helper to ensure all {{variables}} are resolveable from current scope
+// resolveAllVariables is a helper to ensure all {{variables}} are resolvable from current scope
 func resolveAllVariables(scope map[string]interface{}, tmplStr string) error {
 	_, allowAllItemRefs := scope[anyItemMagicValue] // 'item.*' is a magic placeholder value set by addItemsToScope
 	_, allowAllWorkflowOutputParameterRefs := scope[anyWorkflowOutputParameterMagicValue]
@@ -561,6 +561,7 @@ func resolveAllVariables(scope map[string]interface{}, tmplStr string) error {
 			} else if strings.HasPrefix(tag, common.GlobalVarWorkflowCreationTimestamp) {
 			} else if strings.HasPrefix(tag, common.GlobalVarWorkflowCronScheduleTime) {
 				// Allow runtime resolution for "scheduledTime" which will pass from CronWorkflow
+			} else if strings.HasPrefix(tag, common.GlobalVarWorkflowDuration) {
 			} else {
 				return fmt.Errorf("failed to resolve {{%s}}", tag)
 			}
@@ -1133,8 +1134,20 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 	if len(tmpl.DAG.Tasks) == 0 {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s must have at least one task", tmpl.Name)
 	}
+	usingDepends := false
+	nameToTask := make(map[string]wfv1.DAGTask)
+	for _, task := range tmpl.DAG.Tasks {
+		if task.Depends != "" {
+			usingDepends = true
+		}
+		nameToTask[task.Name] = task
+	}
 
-	err = sortDAGTasks(tmpl)
+	dagValidationCtx := &dagValidationContext{
+		tasks:        nameToTask,
+		dependencies: make(map[string]map[string]common.DependencyType),
+	}
+	err = sortDAGTasks(tmpl, dagValidationCtx)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s sorting failed: %s", tmpl.Name, err.Error())
 	}
@@ -1142,20 +1155,6 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 	err = validateWorkflowFieldNames(tmpl.DAG.Tasks)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks%s", tmpl.Name, err.Error())
-	}
-	usingDepends := false
-	nameToTask := make(map[string]wfv1.DAGTask)
-	for _, task := range tmpl.DAG.Tasks {
-		if task.Depends != "" {
-			usingDepends = true
-		}
-
-		nameToTask[task.Name] = task
-	}
-
-	dagValidationCtx := &dagValidationContext{
-		tasks:        nameToTask,
-		dependencies: make(map[string]map[string]common.DependencyType),
 	}
 
 	resolvedTemplates := make(map[string]*wfv1.Template)
@@ -1350,14 +1349,20 @@ func verifyNoCycles(tmpl *wfv1.Template, ctx *dagValidationContext) error {
 	return nil
 }
 
-func sortDAGTasks(tmpl *wfv1.Template) error {
+func sortDAGTasks(tmpl *wfv1.Template, ctx *dagValidationContext) error {
 	taskMap := make(map[string]*wfv1.DAGTask, len(tmpl.DAG.Tasks))
 	sortingGraph := make([]*sorting.TopologicalSortingNode, len(tmpl.DAG.Tasks))
 	for index := range tmpl.DAG.Tasks {
-		taskMap[tmpl.DAG.Tasks[index].Name] = &tmpl.DAG.Tasks[index]
+		task := tmpl.DAG.Tasks[index]
+		taskMap[task.Name] = &task
+		dependenciesMap, _ := common.GetTaskDependencies(&task, ctx)
+		var dependencies []string
+		for taskName := range dependenciesMap {
+			dependencies = append(dependencies, taskName)
+		}
 		sortingGraph[index] = &sorting.TopologicalSortingNode{
-			NodeName:     tmpl.DAG.Tasks[index].Name,
-			Dependencies: tmpl.DAG.Tasks[index].Dependencies,
+			NodeName:     task.Name,
+			Dependencies: dependencies,
 		}
 	}
 	sortingResult, err := sorting.TopologicalSorting(sortingGraph)
