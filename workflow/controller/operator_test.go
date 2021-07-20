@@ -3067,7 +3067,7 @@ spec:
     container:
       image: alpine:latest
       command: [sh, -c]
-      args: ["echo send e-mail: {{workflow.name}} {{workflow.status}}. Failed steps {{workflow.failures}}"]
+      args: ["echo send e-mail: {{workflow.name}} {{workflow.status}} {{workflow.duration}}. Failed steps {{workflow.failures}}"]
 `
 
 func TestStepsOnExitFailures(t *testing.T) {
