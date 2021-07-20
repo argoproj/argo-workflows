@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: background-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+        command:
+          - sh
+          - -c
+          - |
+            set -ex
+            (sleep 10 && echo "wake up") &  # sleep for 10 seconds in the background and then echo "wake up"
+            echo "exit" # after echoing "exit", the main script should finish

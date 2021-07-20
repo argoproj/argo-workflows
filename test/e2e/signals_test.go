@@ -133,6 +133,14 @@ func (s *SignalsSuite) TestInjectedSidecarKillAnnotation() {
 		WaitForWorkflow(fixtures.ToBeSucceeded, kill2xDuration)
 }
 
+func (s *SignalsSuite) TestBackgroundProcessesWorkflow() {
+	s.Given().
+		Workflow("@testdata/background-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded, kill2xDuration)
+}
+
 func TestSignalsSuite(t *testing.T) {
 	suite.Run(t, new(SignalsSuite))
 }
