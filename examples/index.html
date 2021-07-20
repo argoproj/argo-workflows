@@ -3375,7 +3375,7 @@ STEP                          PODNAME                              MESSAGE
     <span class="nt">container</span><span class="p">:</span>
       <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">alpine:latest</span>
       <span class="nt">command</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">sh</span><span class="p p-Indicator">,</span> <span class="nv">-c</span><span class="p p-Indicator">]</span>
-      <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">send</span><span class="nv"> </span><span class="s">e-mail:</span><span class="nv"> </span><span class="s">{{workflow.name}}</span><span class="nv"> </span><span class="s">{{workflow.status}}&quot;</span><span class="p p-Indicator">]</span>
+      <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">send</span><span class="nv"> </span><span class="s">e-mail:</span><span class="nv"> </span><span class="s">{{workflow.name}}</span><span class="nv"> </span><span class="s">{{workflow.status}}</span><span class="nv"> </span><span class="s">{{workflow.duration}}&quot;</span><span class="p p-Indicator">]</span>
   <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">celebrate</span>
     <span class="nt">container</span><span class="p">:</span>
       <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">alpine:latest</span>
