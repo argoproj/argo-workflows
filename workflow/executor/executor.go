@@ -31,7 +31,6 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/util/archive"
 	envutil "github.com/argoproj/argo-workflows/v3/util/env"
@@ -70,7 +69,6 @@ type WorkflowExecutor struct {
 	IncludeScriptOutput bool
 	Deadline            time.Time
 	ClientSet           kubernetes.Interface
-	workflowInterface   workflow.Interface
 	RESTClient          rest.Interface
 	Namespace           string
 	RuntimeExecutor     ContainerRuntimeExecutor
@@ -112,13 +110,12 @@ type ContainerRuntimeExecutor interface {
 }
 
 // NewExecutor instantiates a new workflow executor
-func NewExecutor(clientset kubernetes.Interface, restClient rest.Interface, workflowInterface workflow.Interface, podName, workflowName, namespace string, cre ContainerRuntimeExecutor, template wfv1.Template, includeScriptOutput bool, deadline time.Time) WorkflowExecutor {
+func NewExecutor(clientset kubernetes.Interface, restClient rest.Interface, podName, workflowName, namespace string, cre ContainerRuntimeExecutor, template wfv1.Template, includeScriptOutput bool, deadline time.Time) WorkflowExecutor {
 	return WorkflowExecutor{
 		PodName:             podName,
 		workflowName:        workflowName,
 		ClientSet:           clientset,
 		RESTClient:          restClient,
-		workflowInterface:   workflowInterface,
 		Namespace:           namespace,
 		RuntimeExecutor:     cre,
 		Template:            template,
@@ -737,28 +734,7 @@ func (we *WorkflowExecutor) AnnotateOutputs(ctx context.Context, logArt *wfv1.Ar
 	if !apierr.IsForbidden(err) { // me were either successful (nil) or some other error
 		return err
 	}
-
-	return we.updateTaskSetStatusWithOutputs(ctx, outputs)
-}
-
-func (we *WorkflowExecutor) updateTaskSetStatusWithOutputs(ctx context.Context, outputs *wfv1.Outputs) error {
-	log.Infof("Patching taskset status with outputs. %v", outputs)
-	tasksetInterface := we.workflowInterface.ArgoprojV1alpha1().WorkflowTaskSets(we.Namespace)
-	return waitutil.Backoff(ExecutorRetry, func() (bool, error) {
-		taskset, err := tasksetInterface.Get(ctx, we.workflowName, metav1.GetOptions{})
-		if err != nil {
-			return !errorsutil.IsTransientErr(err), err
-		}
-		if len(taskset.Status.Nodes) == 0 {
-			taskset.Status = wfv1.WorkflowTaskSetStatus{
-				Nodes: make(map[string]wfv1.NodeResult),
-			}
-		}
-
-		taskset.Status.Nodes[we.nodeID()] = wfv1.NodeResult{Outputs: outputs}
-		_, err = tasksetInterface.UpdateStatus(ctx, taskset, metav1.UpdateOptions{})
-		return !errorsutil.IsTransientErr(err), err
-	})
+	return nil
 }
 
 func (we *WorkflowExecutor) nodeID() string {

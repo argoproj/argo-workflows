@@ -21,7 +21,6 @@ import (
 
 func (woc *wfOperationCtx) patchTaskSet(ctx context.Context, patch interface{}, pathTypeType types.PatchType) error {
 	patchByte, err := json.Marshal(patch)
-	fmt.Println(string(patchByte))
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
@@ -35,6 +34,9 @@ func (woc *wfOperationCtx) patchTaskSet(ctx context.Context, patch interface{}, 
 
 func (woc *wfOperationCtx) removeCompletedTaskSetStatus(ctx context.Context) error {
 	completedHTTPNodes := woc.getCompletedHTTPNodes()
+	if len(completedHTTPNodes) == 0 {
+		return nil
+	}
 	deletedNode := make(map[string]interface{})
 	for _, node := range completedHTTPNodes {
 		deletedNode[node.ID] = nil

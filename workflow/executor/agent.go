@@ -12,6 +12,7 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -33,6 +34,7 @@ type AgentExecutor struct {
 }
 
 func (ae *AgentExecutor) Agent(ctx context.Context) error {
+	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 
 	taskSetInterface := ae.WorkflowInterface.ArgoprojV1alpha1().WorkflowTaskSets(ae.Namespace)
 	for {
