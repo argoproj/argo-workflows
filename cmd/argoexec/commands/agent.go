@@ -23,12 +23,12 @@ func NewAgentCommand() *cobra.Command {
 		Use:          "agent",
 		SilenceUsage: true, // this prevents confusing usage message being printed on error
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return intAgentExecutor().Agent(context.Background())
+			return initAgentExecutor().Agent(context.Background())
 		},
 	}
 }
 
-func intAgentExecutor() *executor.AgentExecutor {
+func initAgentExecutor() *executor.AgentExecutor {
 	version := argo.GetVersion()
 	log.WithFields(log.Fields{"version": version.Version}).Info("Starting Workflow Executor")
 	config, err := clientConfig.ClientConfig()
