@@ -956,7 +956,7 @@ spec:
     container:
       image: alpine:latest
       command: [sh, -c]
-      args: ["echo send e-mail: {{workflow.name}} {{workflow.status}}"]
+      args: ["echo send e-mail: {{workflow.name}} {{workflow.status}} {{workflow.duration}}"]
   - name: celebrate
     container:
       image: alpine:latest
