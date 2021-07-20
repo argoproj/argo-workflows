@@ -12,12 +12,9 @@ spec:
   suspend: false                    # Set to "true" to suspend scheduling
   workflowSpec:
     entrypoint: whalesay
-    synchronization:
-      mutex:
-        name: test
     templates:
       - name: whalesay
         container:
-          image: alpine:latest
-          command: [sh, -c]
-          args: [ "sleep 500"]
+          image: docker/whalesay:latest
+          command: [cowsay]
+          args: ["🕓 hello world. Scheduled on: {{workflow.scheduledTime}}"]
