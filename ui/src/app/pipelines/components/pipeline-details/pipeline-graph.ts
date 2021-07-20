@@ -37,12 +37,16 @@ const stepIcon = (type: Type): Icon => {
 const pendingSymbol = '◷';
 const errorSymbol = '⚠️';
 
-const formatRates = (metrics: Metrics, replicas: number): string => {
+function formatRates(metrics: Metrics, replicas: number): string {
     const rates = Object.entries(metrics || {})
         // the rate will remain after scale-down, so we must filter out, as it'll be wrong
         .filter(([replica, m]) => parseInt(replica, 10) < replicas);
     return rates.length > 0 ? 'Δ' + totalRate(metrics, replicas) : '';
-};
+}
+
+function formatPending(pending: number) {
+    return pending ? ' ' + pendingSymbol + pending.toLocaleString() + ' ' : '';
+}
 
 export const graph = (pipeline: Pipeline, steps: Step[]) => {
     const g = new Graph();
@@ -80,11 +84,7 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
         const classNames = status.phase === 'Running' ? 'flow' : '';
         (spec.sources || []).forEach((x, i) => {
             const ss = (status.sourceStatuses || {})[x.name || ''] || {};
-
-            const label =
-                (recent(ss.lastError && new Date(ss.lastError.time)) ? errorSymbol : '') +
-                (ss.pending ? ' ' + pendingSymbol + ss.pending + ' ' : '') +
-                formatRates(ss.metrics, step.status.replicas);
+            const label = (recent(ss.lastError && new Date(ss.lastError.time)) ? errorSymbol : '') + formatPending(ss.pending) + formatRates(ss.metrics, step.status.replicas);
             if (x.cron) {
                 const cronId = 'cron/' + stepId + '/' + x.cron.schedule;
                 g.nodes.set(cronId, {genre: 'cron', icon: 'clock', label: x.cron.schedule});
