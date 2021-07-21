@@ -87,6 +87,10 @@ func downloadObjects(client *storage.Client, bucket, key, path string) error {
 	if err != nil {
 		return err
 	}
+	if len(objNames) < 1 {
+		msg := fmt.Sprintf("no results for key: %s", key)
+		return errors.New(errors.CodeNotFound, msg)
+	}
 	for _, objName := range objNames {
 		err = downloadObject(client, bucket, key, objName, path)
 		if err != nil {
