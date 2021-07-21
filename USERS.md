@@ -12,6 +12,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 
 1. [23mofang](https://www.23mofang.com/)
 1. [7shifts](https://www.7shifts.com)
+1. [4intelligence](https://4intelligence.com.br/)
 1. [Acquia](https://www.acquia.com/)
 1. [Adevinta](https://www.adevinta.com/)
 1. [Admiralty](https://admiralty.io/)
