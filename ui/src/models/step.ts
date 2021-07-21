@@ -58,14 +58,14 @@ export interface StepStatus {
     sourceStatuses?: SourceStatuses;
 }
 
-export interface SourceStatuses {
+interface SourceStatuses {
     [name: string]: {
         pending?: number;
         metrics?: {[name: string]: Metrics};
     };
 }
 
-export interface SinkStatuses {
+interface SinkStatuses {
     [name: string]: {
         metrics?: {[replica: string]: Metrics};
     };

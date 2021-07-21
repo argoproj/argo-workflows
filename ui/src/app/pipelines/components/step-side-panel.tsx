@@ -174,7 +174,7 @@ export const sinkStatusesPanel = (status: StepStatus) => (
                     .reduce((a, b) => a + b.total, 0);
                 const rate = Object.entries(x.metrics || {})
                     // the rate will remain after scale-down, so we must filter out, as it'll be wrong
-                    .filter(([replica, m]) => parseInt(replica, 10) < status.replicas)
+                    .filter(([replica]) => parseInt(replica, 10) < status.replicas)
                     .map(([, m]) => m)
                     .map(m => parseResourceQuantity(m.rate))
                     .reduce((a, b) => a + b, 0);
