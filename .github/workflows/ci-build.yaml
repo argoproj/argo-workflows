@@ -43,6 +43,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        rep:
+          - 0
+          - 1
+          - 2
         include:
           - test: test-api
             containerRuntimeExecutor: emissary
