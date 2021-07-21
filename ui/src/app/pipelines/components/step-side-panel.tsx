@@ -68,7 +68,7 @@ export const StepSidePanel = ({
     );
 };
 
-export const statusPanel = (step: Step) =>
+const statusPanel = (step: Step) =>
     step.status && (
         <>
             {statusHeader(step.status)}
@@ -104,7 +104,7 @@ const statusHeader = (status: StepStatus) => (
     </div>
 );
 
-export const sourceStatusesPanel = (status: StepStatus) => (
+const sourceStatusesPanel = (status: StepStatus) => (
     <>
         <h5>Source Statuses</h5>
         {status.sourceStatuses ? (
@@ -163,7 +163,7 @@ export const sourceStatusesPanel = (status: StepStatus) => (
     </>
 );
 
-export const sinkStatusesPanel = (status: StepStatus) => (
+const sinkStatusesPanel = (status: StepStatus) => (
     <>
         {' '}
         <h5>Sink Statuses</h5>

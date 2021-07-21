@@ -3,7 +3,6 @@ import {Metrics, Step} from '../../../../models/step';
 import {Graph} from '../../../shared/components/graph/types';
 import {Icon} from '../../../shared/components/icon';
 import {totalRate} from '../total-rate';
-import {recent} from './recent';
 
 type Type = '' | 'cat' | 'container' | 'dedupe' | 'expand' | 'filter' | 'flatten' | 'git' | 'group' | 'handler' | 'map';
 
@@ -35,12 +34,11 @@ const stepIcon = (type: Type): Icon => {
 };
 
 const pendingSymbol = '◷';
-const errorSymbol = '⚠️';
 
 function formatRates(metrics: Metrics, replicas: number): string {
     const rates = Object.entries(metrics || {})
         // the rate will remain after scale-down, so we must filter out, as it'll be wrong
-        .filter(([replica, m]) => parseInt(replica, 10) < replicas);
+        .filter(([replica]) => parseInt(replica, 10) < replicas);
     return rates.length > 0 ? 'Δ' + totalRate(metrics, replicas) : '';
 }
 
@@ -82,9 +80,9 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
         g.nodes.set(stepId, {genre: type, label: nodeLabel, icon: stepIcon(type), classNames: status.phase});
 
         const classNames = status.phase === 'Running' ? 'flow' : '';
-        (spec.sources || []).forEach((x, i) => {
+        (spec.sources || []).forEach(x => {
             const ss = (status.sourceStatuses || {})[x.name || ''] || {};
-            const label = (recent(ss.lastError && new Date(ss.lastError.time)) ? errorSymbol : '') + formatPending(ss.pending) + formatRates(ss.metrics, step.status.replicas);
+            const label = formatPending(ss.pending) + formatRates(ss.metrics, step.status.replicas);
             if (x.cron) {
                 const cronId = 'cron/' + stepId + '/' + x.cron.schedule;
                 g.nodes.set(cronId, {genre: 'cron', icon: 'clock', label: x.cron.schedule});
@@ -106,9 +104,9 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
                 g.edges.set({v: subjectId, w: stepId}, {classNames, label});
             }
         });
-        (spec.sinks || []).forEach((x, i) => {
+        (spec.sinks || []).forEach(x => {
             const ss = (status.sinkStatuses || {})[x.name || ''] || {};
-            const label = (recent(ss.lastError && new Date(ss.lastError.time)) ? errorSymbol : '') + totalRate(ss.metrics, step.status.replicas);
+            const label = '' + totalRate(ss.metrics, step.status.replicas);
             if (x.kafka) {
                 const kafkaId = x.kafka.name || x.kafka.url || 'default';
                 const topicId = 'kafka/' + kafkaId + '/' + x.kafka.topic;
