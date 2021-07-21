@@ -4076,6 +4076,17 @@
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Cat": {
       "type": "object"
     },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Code": {
+      "type": "object",
+      "properties": {
+        "runtime": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        }
+      }
+    },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Container": {
       "type": "object",
       "properties": {
@@ -4136,18 +4147,6 @@
         "uid": {
           "type": "string",
           "title": "+kubebuilder:default=\"sha1(msg)\""
-        }
-      }
-    },
-    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Error": {
-      "type": "object",
-      "properties": {
-        "message": {
-          "type": "string",
-          "title": "+kubebuilder:validation:MaxLength=64"
-        },
-        "time": {
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
         }
       }
     },
@@ -4252,17 +4251,6 @@
         }
       }
     },
-    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Handler": {
-      "type": "object",
-      "properties": {
-        "code": {
-          "type": "string"
-        },
-        "runtime": {
-          "type": "string"
-        }
-      }
-    },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Interface": {
       "type": "object",
       "properties": {
@@ -4320,18 +4308,6 @@
     },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Log": {
       "type": "object"
-    },
-    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Message": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "type": "string",
-          "title": "+kubebuilder:validation:MaxLength=64"
-        },
-        "time": {
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
-        }
-      }
     },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Metadata": {
       "type": "object",
@@ -4535,12 +4511,6 @@
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.SourceStatus": {
       "type": "object",
       "properties": {
-        "lastError": {
-          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Error"
-        },
-        "lastMessage": {
-          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Message"
-        },
         "metrics": {
           "type": "object",
           "additionalProperties": {
@@ -4577,6 +4547,9 @@
         "cat": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Cat"
         },
+        "code": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Code"
+        },
         "container": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Container"
         },
@@ -4597,9 +4570,6 @@
         },
         "group": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Group"
-        },
-        "handler": {
-          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Handler"
         },
         "map": {
           "type": "string"
