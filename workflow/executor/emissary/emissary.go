@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/errors"
 	log "github.com/sirupsen/logrus"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -78,6 +79,11 @@ func (e emissary) CopyFile(_ string, sourcePath string, destPath string, _ int) 
 	log.Infof("%s -> %s", sourceFile, destPath)
 	src, err := os.Open(filepath.Clean(sourceFile))
 	if err != nil {
+		// If compressed file does not exist then the source artifact did not exist
+		// and we throw an Argo NotFound error to handle optional artifacts upstream
+		if os.IsNotExist(err) {
+			return errors.New(errors.CodeNotFound, err.Error())
+		}
 		return err
 	}
 	defer func() { _ = src.Close() }()
