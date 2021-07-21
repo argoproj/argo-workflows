@@ -46,23 +46,28 @@ export interface Step {
             http?: {url: string};
         }[];
     };
-    status?: {
-        phase?: string;
-        message?: string;
-        replicas: number;
-        lastScaledAt?: Time;
-        sinkStatuses?: {[name: string]: {lastMessage?: {data: string; time: Time}; lastError?: {message: string; time: Time}; metrics?: {[name: string]: Metrics}}};
-        sourceStatuses?: {
-            [name: string]: {
-                lastMessage?: {
-                    time: Time;
-                    data: string;
-                };
-                lastError?: {message: string; time: Time};
-                pending?: number;
-                metrics?: {[replica: string]: Metrics};
-            };
-        };
+    status?: StepStatus;
+}
+
+export interface StepStatus {
+    phase?: string;
+    message?: string;
+    replicas: number;
+    lastScaledAt?: Time;
+    sinkStatuses?: SinkStatuses;
+    sourceStatuses?: SourceStatuses;
+}
+
+export interface SourceStatuses {
+    [name: string]: {
+        pending?: number;
+        metrics?: {[name: string]: Metrics};
+    };
+}
+
+export interface SinkStatuses {
+    [name: string]: {
+        metrics?: {[replica: string]: Metrics};
     };
 }
 
