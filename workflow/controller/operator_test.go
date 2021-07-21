@@ -171,7 +171,7 @@ spec:
 	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
-  assert.Equal(t, woc.globalParams[common.GlobalVarWorkflowDuration], "0.000000")
+	assert.Equal(t, woc.globalParams[common.GlobalVarWorkflowDuration], "0.000000")
 
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	woc = newWorkflowOperationCtx(woc.wf, controller)
