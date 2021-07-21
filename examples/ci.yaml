@@ -70,10 +70,10 @@ spec:
       - name: workdir
         mountPath: /go
 
-  - name: run-hello
-    inputs:
-      parameters:
-      - name: os-image
+    - name: run-hello
+      inputs:
+        parameters:
+        - name: os-image
     container:
       image: "{{inputs.parameters.os-image}}"
       command: [sh, -c]
