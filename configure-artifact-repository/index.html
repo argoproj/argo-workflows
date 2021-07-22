@@ -2470,6 +2470,7 @@ configure the artifact storage for your workflow:</p>
         <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-oss-credentials</span>
         <span class="nt">key</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">secretKey</span>
 </code></pre></div>
+<p>You can also set <code>createBucketIfNotPresent</code> to <code>true</code> to tell the artifact driver to automatically create the OSS bucket if it doesn't exist yet when saving artifacts. Note that you'll need to set additional permission for your OSS account to create new buckets.</p>
 <h1 id="configure-the-default-artifact-repository">Configure the Default Artifact Repository<a class="headerlink" href="#configure-the-default-artifact-repository" title="Permanent link">&para;</a></h1>
 <p>In order for Argo to use your artifact repository, you can configure it as the
 default repository. Edit the workflow-controller config map with the correct
