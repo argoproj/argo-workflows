@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
@@ -2126,26 +2127,18 @@ func (woc *wfOperationCtx) recordNodePhaseEvent(node *wfv1.NodeStatus) {
 		eventType = apiv1.EventTypeNormal
 	}
 	eventConfig := woc.controller.Config.NodeEvents
-	if eventConfig.SendAsPod != nil && *eventConfig.SendAsPod {
+	var involvedObject runtime.Object = woc.wf
+	if eventConfig.SendAsPod {
 		pod, err := woc.getPodByNode(node)
 		if err != nil {
 			woc.log.Infof("Error getting pod from workflow node: %s", err)
 		}
 		if pod != nil {
-			woc.eventRecorder.AnnotatedEventf(
-				pod,
-				map[string]string{
-					common.AnnotationKeyNodeType: string(node.Type),
-					common.AnnotationKeyNodeName: node.Name,
-				},
-				eventType,
-				fmt.Sprintf("WorkflowNode%s", node.Phase),
-				message,
-			)
+			involvedObject = pod
 		}
 	}
 	woc.eventRecorder.AnnotatedEventf(
-		woc.wf,
+		involvedObject,
 		map[string]string{
 			common.AnnotationKeyNodeType: string(node.Type),
 			common.AnnotationKeyNodeName: node.Name,

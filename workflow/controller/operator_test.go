@@ -3395,8 +3395,6 @@ spec:
 			"Normal WorkflowRunning Workflow Running",
 			"Normal WorkflowNodeRunning Running node dag-events",
 			"Normal WorkflowNodeRunning Running node dag-events.a",
-			"Normal WorkflowNodeRunning Running node dag-events.a",
-			"Normal WorkflowNodeSucceeded Succeeded node dag-events.a",
 			"Normal WorkflowNodeSucceeded Succeeded node dag-events.a",
 			"Normal WorkflowNodeSucceeded Succeeded node dag-events",
 			"Normal WorkflowSucceeded Workflow completed",
@@ -3420,8 +3418,6 @@ spec:
 			"Normal WorkflowNodeRunning Running node steps-events",
 			"Normal WorkflowNodeRunning Running node steps-events[0]",
 			"Normal WorkflowNodeRunning Running node steps-events[0].a",
-			"Normal WorkflowNodeRunning Running node steps-events[0].a",
-			"Normal WorkflowNodeSucceeded Succeeded node steps-events[0].a",
 			"Normal WorkflowNodeSucceeded Succeeded node steps-events[0].a",
 			"Normal WorkflowNodeSucceeded Succeeded node steps-events[0]",
 			"Normal WorkflowNodeSucceeded Succeeded node steps-events",
@@ -3442,8 +3438,6 @@ spec:
 `: {
 			"Normal WorkflowRunning Workflow Running",
 			"Normal WorkflowNodeRunning Running node no-dag-or-steps",
-			"Normal WorkflowNodeRunning Running node no-dag-or-steps",
-			"Normal WorkflowNodeSucceeded Succeeded node no-dag-or-steps",
 			"Normal WorkflowNodeSucceeded Succeeded node no-dag-or-steps",
 			"Normal WorkflowSucceeded Workflow completed",
 		},
@@ -3453,8 +3447,7 @@ spec:
 		t.Run(wf.Name, func(t *testing.T) {
 			cancel, controller := newController(wf)
 			defer cancel()
-			sendAsPod := true
-			controller.Config.NodeEvents = config.NodeEvents{SendAsPod: &sendAsPod}
+			controller.Config.NodeEvents = config.NodeEvents{SendAsPod: true}
 			woc := newWorkflowOperationCtx(wf, controller)
 			createRunningPods(ctx, woc)
 			woc.operate(ctx)
