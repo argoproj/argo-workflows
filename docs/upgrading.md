@@ -1,3 +1,4 @@
+
 # Upgrading
 
 Breaking changes  typically (sometimes we don't realise they are breaking) have "!" in the commit message, as per
@@ -40,6 +41,18 @@ containerRuntimeExecutors: |
         workflows.argoproj.io/container-runtime-executor: emissary
 ```
 
+### [be63efe89](https://github.com/argoproj/argo-workflows/commit/e6fa41a) feat(controller): Expression template tags. Resolves #4548 & #1293 (#5115)
+
+This PR introduced a new expression syntax know as "expression tag template". A user has reported that this does not
+always play nicely with the `when` condition syntax (Goevaluate).
+
+This can be resolved using a single quote in your when expression:
+
+```
+when: "'{{inputs.parameters.should-print}}' != '2021-01-01'"
+```
+
+[Learn more](https://github.com/argoproj/argo-workflows/issues/6314)
 
 ## Upgrading to v3.0
 
