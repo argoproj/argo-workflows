@@ -2112,17 +2112,7 @@ func (woc *wfOperationCtx) getPodByNode(node *wfv1.NodeStatus) (*apiv1.Pod, erro
 	if node.Type != wfv1.NodeTypePod {
 		return nil, fmt.Errorf("Expected node type %s, got %s", wfv1.NodeTypePod, node.Type)
 	}
-	podList, err := woc.getAllWorkflowPods()
-	if err != nil {
-		return nil, err
-	}
-	for _, pod := range podList {
-		nodeNameForPod := pod.Annotations[common.AnnotationKeyNodeName]
-		if node.Name == nodeNameForPod {
-			return pod, nil
-		}
-	}
-	return nil, fmt.Errorf("No pod could be found for node %s", node.Name)
+	return woc.controller.getPod(woc.wf.GetNamespace(), node.ID)
 }
 
 func (woc *wfOperationCtx) recordNodePhaseEvent(node *wfv1.NodeStatus) {

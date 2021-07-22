@@ -3492,6 +3492,7 @@ spec:
         image: docker/whalesay:latest
 `
 	wf := wfv1.MustUnmarshalWorkflow(workflowText)
+	wf.Namespace = "argo"
 	ctx := context.Background()
 	cancel, controller := newController(wf)
 	defer cancel()
@@ -3512,7 +3513,7 @@ spec:
 	invalidNode := wfv1.NodeStatus{Type: wfv1.NodeTypePod, Name: "doesnt-exist"}
 	pod, err = woc.getPodByNode(&invalidNode)
 	assert.Nil(t, pod)
-	assert.Error(t, err, "No pod could be found for node doesnt-exist")
+	assert.Nil(t, err)
 }
 
 var pdbwf = `
