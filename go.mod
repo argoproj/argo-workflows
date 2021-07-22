@@ -10,7 +10,7 @@ require (
 	github.com/TwinProduction/go-color v0.0.3
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.8+incompatible
 	github.com/antonmedv/expr v1.8.8
-	github.com/argoproj/argo-events v1.2.0
+	github.com/argoproj/argo-events v1.4.0
 	github.com/argoproj/pkg v0.8.1
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/blushft/go-diagrams v0.0.0-20201006005127-c78c821223d9
@@ -29,7 +29,7 @@ require (
 	github.com/go-swagger/go-swagger v0.25.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/protobuf v1.4.3
-	github.com/google/go-cmp v0.5.5 // indirect
+	github.com/gorilla/handlers v1.4.2
 	github.com/gorilla/websocket v1.4.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.1.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
