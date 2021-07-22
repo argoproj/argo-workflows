@@ -19,6 +19,7 @@ import (
 	"google.golang.org/grpc/credentials"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/rest"
+	"k8s.io/utils/env"
 
 	"github.com/argoproj/argo-workflows/v3"
 	"github.com/argoproj/argo-workflows/v3/config"
@@ -56,10 +57,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 )
 
-const (
-	// MaxGRPCMessageSize contains max grpc message size
-	MaxGRPCMessageSize = 100 * 1024 * 1024
-)
+var MaxGRPCMessageSize int
 
 type argoServer struct {
 	baseHRef string
@@ -94,6 +92,17 @@ type ArgoServerOpts struct {
 	EventWorkerCount         int
 	XFrameOptions            string
 	AccessControlAllowOrigin string
+}
+
+func init() {
+	var err error
+	MaxGRPCMessageSize, err = env.GetInt("GRPC_MESSAGE_SIZE", 100 * 1024 * 1024)
+	if err != nil {
+		log.Fatalf("GRPC_MESSAGE_SIZE environment variable must be set as an integer", err)
+	}
+	log.WithFields(log.Fields{
+		"GRPC_MESSAGE_SIZE": MaxGRPCMessageSize,
+		}).Info("GRPC Server Max Message Size, MaxGRPCMessageSize, is set")
 }
 
 func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error) {
