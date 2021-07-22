@@ -6,8 +6,6 @@ import (
 	"net"
 	"net/http"
 	"time"
-	"os"
-	"strconv"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_logrus "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
@@ -21,6 +19,7 @@ import (
 	"google.golang.org/grpc/credentials"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/rest"
+	"k8s.io/utils/env"
 
 	"github.com/argoproj/argo-workflows/v3"
 	"github.com/argoproj/argo-workflows/v3/config"
@@ -97,14 +96,13 @@ type ArgoServerOpts struct {
 
 func init() {
 	var err error
-	MaxGRPCMessageSize = 100 * 1024 * 1024
-        value, exists := os.LookupEnv("GRPC_MESSAGE_SIZE")
-        if exists {
-		MaxGRPCMessageSize, err = strconv.Atoi(value)
-                if err != nil {
-			panic(err)
-		}
-        }
+	MaxGRPCMessageSize, err = env.GetInt("GRPC_MESSAGE_SIZE", 100 * 1024 * 1024)
+	if err != nil {
+		log.Fatalf("GRPC_MESSAGE_SIZE environment variable must be set as an integer", err)
+	}
+	log.WithFields(log.Fields{
+		"GRPC_MESSAGE_SIZE": MaxGRPCMessageSize,
+		}).Info("GRPC Server Max Message Size, MaxGRPCMessageSize, is set")
 }
 
 func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error) {
@@ -257,7 +255,6 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 
 	grpcServer := grpc.NewServer(sOpts...)
 
-	log.Infof("GRPC Server Max Message Size is: %d", MaxGRPCMessageSize)
 	infopkg.RegisterInfoServiceServer(grpcServer, info.NewInfoServer(as.managedNamespace, links))
 	eventpkg.RegisterEventServiceServer(grpcServer, eventServer)
 	eventsourcepkg.RegisterEventSourceServiceServer(grpcServer, eventsource.NewEventSourceServer())
