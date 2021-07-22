@@ -310,4 +310,3 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 		assert.Contains(woc.wf.Status.StoredWorkflowSpec.Arguments.Artifacts, art)
 	})
 }
-
