@@ -148,6 +148,37 @@ spec:
 	}), "zero node durations empty")
 }
 
+func TestGlobalParamDuration(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+metadata:
+  name: my-wf
+  namespace: my-ns
+spec:
+  entrypoint: main
+  templates:
+   - name: main
+     dag:
+       tasks:
+       - name: pod
+         template: pod
+   - name: pod
+     container: 
+       image: my-image
+`)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, woc.globalParams[common.GlobalVarWorkflowDuration], "0.000000")
+
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+	assert.Greater(t, woc.globalParams[common.GlobalVarWorkflowDuration], "0.000000")
+}
+
 func TestEstimatedDuration(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(`
 metadata:
