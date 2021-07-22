@@ -202,7 +202,7 @@ func dataFromSliceOrFile(data []byte, file string) ([]byte, error) {
 	if len(data) > 0 {
 		return data, nil
 	}
-	
+
 	if len(file) > 0 {
 		fileData, err := ioutil.ReadFile(filepath.Clean(file))
 		if err != nil {
