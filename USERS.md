@@ -11,6 +11,7 @@ As the Argo Community grows, we'd like to keep track of our users. Please send a
 Currently, the following organizations are **officially** using Argo Workflows:
 
 1. [23mofang](https://www.23mofang.com/)
+1. [4intelligence](https://4intelligence.com.br/)
 1. [7shifts](https://www.7shifts.com)
 1. [Acquia](https://www.acquia.com/)
 1. [Adevinta](https://www.adevinta.com/)
@@ -30,6 +31,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [bonprix](https://en.bonprix.de/corporate/our-company/)
 1. [Canva](https://www.canva.com/)
 1. [Capital One](https://www.capitalone.com/tech/)
+1. [Carrefour](https://www.carrefour.com/)
 1. [CarTrack](https://www.cartrack.com/)
 1. [CCRi](https://www.ccri.com/)
 1. [CloudSeeds](https://www.cloudseeds.de/)
