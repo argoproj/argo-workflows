@@ -1623,6 +1623,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#be63efe89-featcontroller-expression-template-tags-resolves-4548-1293-5115" title="be63efe89 feat(controller): Expression template tags. Resolves #4548 &amp; #1293 (#5115)" class="md-nav__link">
+    be63efe89 feat(controller): Expression template tags. Resolves #4548 &amp; #1293 (#5115)
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2263,6 +2270,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#be63efe89-featcontroller-expression-template-tags-resolves-4548-1293-5115" title="be63efe89 feat(controller): Expression template tags. Resolves #4548 &amp; #1293 (#5115)" class="md-nav__link">
+    be63efe89 feat(controller): Expression template tags. Resolves #4548 &amp; #1293 (#5115)
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2359,6 +2373,13 @@ the <a href="https://www.conventionalcommits.org/en/v1.0.0/#summary">conventiona
       <span class="no">matchLabels:</span>
         <span class="no">workflows.argoproj.io/container-runtime-executor: emissary</span>
 </code></pre></div>
+<h3 id="be63efe89-featcontroller-expression-template-tags-resolves-4548-1293-5115"><a href="https://github.com/argoproj/argo-workflows/commit/e6fa41a">be63efe89</a> feat(controller): Expression template tags. Resolves #4548 &amp; #1293 (#5115)<a class="headerlink" href="#be63efe89-featcontroller-expression-template-tags-resolves-4548-1293-5115" title="Permanent link">&para;</a></h3>
+<p>This PR introduced a new expression syntax know as "expression tag template". A user has reported that this does not
+always play nicely with the <code>when</code> condition syntax (Goevaluate).</p>
+<p>This can be resolved using a single quote in your when expression:</p>
+<div class="highlight"><pre><span></span><code>when: &quot;&#39;{{inputs.parameters.should-print}}&#39; != &#39;2021-01-01&#39;&quot;
+</code></pre></div>
+<p><a href="https://github.com/argoproj/argo-workflows/issues/6314">Learn more</a></p>
 <h2 id="upgrading-to-v30">Upgrading to v3.0<a class="headerlink" href="#upgrading-to-v30" title="Permanent link">&para;</a></h2>
 <h3 id="defbd600e-fix-default-argo_securetrue-fixes-5607-5626"><a href="https://github.com/argoproj/argo-workflows/commit/defbd600e37258c8cdf30f64d4da9f4563eb7901">defbd600e</a> fix: Default ARGO_SECURE=true. Fixes #5607 (#5626)<a class="headerlink" href="#defbd600e-fix-default-argo_securetrue-fixes-5607-5626" title="Permanent link">&para;</a></h3>
 <p>The server now starts with TLS enabled by default if a key is available. The original behaviour can be configured with <code>--secure=false</code>.</p>
