@@ -115,6 +115,9 @@ data:
         key: secretKey
       # If this is set to true, argo workflows will use AWS SDK default credentials provider chain. This will allow things like
       # IRSA and any of the authentication methods that the golang SDK uses in it's default chain.
+      # If you are using IRSA on AWS, and set this option to true, you will also need to modify Argo-Server Deployment with
+      # `spec.template.spec.securityContext.fsGroup: 65534` configuration. This is required for IRSA to be able to access 
+      # `/var/run/secrets/eks.amazonaws.com/serviceaccount/token` file, and authenticate with AWS.
       useSDKCreds: false
 
   # Specifies the container runtime interface to use (default: docker)
