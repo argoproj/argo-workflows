@@ -30,6 +30,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [bonprix](https://en.bonprix.de/corporate/our-company/)
 1. [Canva](https://www.canva.com/)
 1. [Capital One](https://www.capitalone.com/tech/)
+1. [Carrefour](https://www.carrefour.com/)
 1. [CarTrack](https://www.cartrack.com/)
 1. [CCRi](https://www.ccri.com/)
 1. [CloudSeeds](https://www.cloudseeds.de/)
@@ -128,6 +129,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Wavefront](https://www.wavefront.com/)
 1. [Wellcome Trust](https://wellcome.ac.uk/)
 1. [VMware](https://www.vmware.com/)
+1. [WooliesX](https://wooliesx.com.au/)
 1. [Woolworths Group](https://www.woolworthsgroup.com.au/)
 1. [Zhihu](https://www.zhihu.com/)
 
