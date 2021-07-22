@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -201,8 +202,9 @@ func dataFromSliceOrFile(data []byte, file string) ([]byte, error) {
 	if len(data) > 0 {
 		return data, nil
 	}
+	
 	if len(file) > 0 {
-		fileData, err := ioutil.ReadFile(file)
+		fileData, err := ioutil.ReadFile(filepath.Clean(file))
 		if err != nil {
 			return []byte{}, err
 		}
