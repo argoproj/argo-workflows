@@ -165,7 +165,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	wfSpec := woc.execWf.Spec.DeepCopy()
 
 	for i, c := range mainCtrs {
-		if c.Name == "" {
+		if c.Name == "" || tmpl.GetType() != wfv1.TemplateTypeContainerSet {
 			c.Name = common.MainContainerName
 		}
 		// Allow customization of main container resources.
