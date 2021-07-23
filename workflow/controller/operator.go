@@ -229,13 +229,21 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.updated = wfUpdate
 		if !acquired {
 			woc.log.Warn("Workflow processing has been postponed due to concurrency limit")
-			woc.wf.Status.Message = msg
+			phase := woc.wf.Status.Phase
+			if phase == wfv1.WorkflowUnknown {
+				phase = wfv1.WorkflowPending
+			}
+			woc.markWorkflowPhase(ctx, phase, msg)
 			return
 		}
 	}
 
 	// Update workflow duration variable
-	woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", time.Since(woc.wf.Status.StartedAt.Time).Seconds())
+	if woc.wf.Status.StartedAt.IsZero() {
+		woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", time.Duration(0).Seconds())
+	} else {
+		woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", time.Since(woc.wf.Status.StartedAt.Time).Seconds())
+	}
 
 	// Populate the phase of all the nodes prior to execution
 	for _, node := range woc.wf.Status.Nodes {
