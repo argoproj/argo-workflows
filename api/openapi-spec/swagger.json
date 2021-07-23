@@ -4289,6 +4289,9 @@
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.KafkaNET": {
       "type": "object",
       "properties": {
+        "sasl": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.SASL"
+        },
         "tls": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.TLS"
         }
@@ -4405,6 +4408,23 @@
         },
         "phase": {
           "type": "string"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.SASL": {
+      "type": "object",
+      "properties": {
+        "mechanism": {
+          "type": "string",
+          "title": "SASLMechanism is the name of the enabled SASL mechanism.\nPossible values: OAUTHBEARER, PLAIN (defaults to PLAIN).\n+optional"
+        },
+        "password": {
+          "title": "Password for SASL/PLAIN authentication",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "user": {
+          "title": "User is the authentication identity (authcid) to present for\nSASL/PLAIN or SASL/SCRAM authentication",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         }
       }
     },
@@ -4682,7 +4702,21 @@
       }
     },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.TLS": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "caCertSecret": {
+          "title": "CACertSecret refers to the secret that contains the CA cert",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "certSecret": {
+          "title": "CertSecret refers to the secret that contains the cert",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "keySecret": {
+          "title": "KeySecret refers to the secret that contains the key",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
     },
     "google.protobuf.Any": {
       "type": "object",

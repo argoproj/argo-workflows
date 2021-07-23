@@ -304,6 +304,9 @@
     },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.KafkaNET": {
       "properties": {
+        "sasl": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.SASL"
+        },
         "tls": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.TLS"
         }
@@ -420,6 +423,23 @@
         },
         "phase": {
           "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.SASL": {
+      "properties": {
+        "mechanism": {
+          "title": "SASLMechanism is the name of the enabled SASL mechanism.\nPossible values: OAUTHBEARER, PLAIN (defaults to PLAIN).\n+optional",
+          "type": "string"
+        },
+        "password": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "title": "Password for SASL/PLAIN authentication"
+        },
+        "user": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "title": "User is the authentication identity (authcid) to present for\nSASL/PLAIN or SASL/SCRAM authentication"
         }
       },
       "type": "object"
@@ -698,6 +718,20 @@
       "type": "object"
     },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.TLS": {
+      "properties": {
+        "caCertSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "title": "CACertSecret refers to the secret that contains the CA cert"
+        },
+        "certSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "title": "CertSecret refers to the secret that contains the cert"
+        },
+        "keySecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "title": "KeySecret refers to the secret that contains the key"
+        }
+      },
       "type": "object"
     },
     "google.protobuf.Any": {

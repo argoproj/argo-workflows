@@ -12,7 +12,7 @@ require (
 	github.com/TwinProduction/go-color v0.0.3
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.8+incompatible
 	github.com/antonmedv/expr v1.8.9
-	github.com/argoproj-labs/argo-dataflow v0.0.72
+	github.com/argoproj-labs/argo-dataflow v0.0.73
 	github.com/argoproj/argo-events v1.2.0
 	github.com/argoproj/pkg v0.9.1
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
