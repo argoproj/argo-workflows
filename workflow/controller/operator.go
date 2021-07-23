@@ -3348,7 +3348,13 @@ func (woc *wfOperationCtx) mergedTemplateDefaultsInto(originalTmpl *wfv1.Templat
 }
 
 func (woc *wfOperationCtx) substituteGlobalVariables() error {
-	wfSpec, err := json.Marshal(woc.execWf.Spec)
+	execWfSpec := woc.execWf.Spec
+
+	// To Avoid the stale Global parameter value substitution to templates.
+	// Updated Global parameter values will be substituted in 'executetemplate' for templates.
+	execWfSpec.Templates = nil
+
+	wfSpec, err := json.Marshal(execWfSpec)
 	if err != nil {
 		return err
 	}
