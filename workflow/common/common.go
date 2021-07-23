@@ -139,7 +139,7 @@ const (
 	// GlobalVarWorkflowDuration is the current duration of this workflow
 	GlobalVarWorkflowDuration = "workflow.duration"
 	// GlobalVarWorkflowParameters is a JSON string containing all workflow parameters
-	GlobalVarWorkflowParameters = "workflow.parameters"
+	GlobalVarWorkflowParameters = "workflow.parameters.json"
 	// GlobalVarWorkflowCronScheduleTime is the scheduled timestamp of a Workflow started by a CronWorkflow
 	GlobalVarWorkflowCronScheduleTime = "workflow.scheduledTime"
 
