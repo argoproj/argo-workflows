@@ -6896,7 +6896,7 @@ func TestSubstituteGlobalVariables(t *testing.T) {
 	assert.Equal(t, "mutex1", woc.execWf.Spec.Synchronization.Mutex.Name)
 	tempStr, err := json.Marshal(woc.execWf.Spec.Templates)
 	assert.NoError(t, err)
-	assert.Contains(t, string(tempStr), "{{workflow.parameters.message}}" )
+	assert.Contains(t, string(tempStr), "{{workflow.parameters.message}}")
 }
 
 var wfPending = `
