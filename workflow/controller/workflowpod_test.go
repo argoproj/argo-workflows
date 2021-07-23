@@ -553,6 +553,13 @@ func Test_createWorkflowPod_rateLimited(t *testing.T) {
 	}
 }
 
+func Test_createWorkflowPod_containerName(t *testing.T) {
+	woc := newWoc()
+	pod, err := woc.createWorkflowPod(context.Background(), "", []apiv1.Container{{Name: "invalid"}}, &wfv1.Template{}, &createWorkflowPodOpts{})
+	assert.NoError(t, err)
+	assert.Equal(t, common.MainContainerName, pod.Spec.Containers[1].Name)
+}
+
 func Test_createWorkflowPod_emissary(t *testing.T) {
 	t.Run("NoCommand", func(t *testing.T) {
 		woc := newWoc()
