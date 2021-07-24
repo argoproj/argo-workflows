@@ -15,6 +15,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor"
+	osspecific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
 )
 
 /*
@@ -50,7 +51,7 @@ func New() (executor.ContainerRuntimeExecutor, error) {
 func (e *emissary) Init(t wfv1.Template) error {
 	// default umask can be 022
 	// setting umask as 0 allow granting write access to other non-root users
-	syscall.Umask(0)
+	osspecific.CallUmask(0)
 	if err := copyBinary(); err != nil {
 		return err
 	}

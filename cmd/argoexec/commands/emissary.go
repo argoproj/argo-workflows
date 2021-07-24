@@ -47,7 +47,7 @@ func NewEmissaryCommand() *cobra.Command {
 
 			// default umask can be 022
 			// setting umask as 0 allow granting write access to other non-root users
-			syscall.Umask(0)
+			osspecific.CallUmask(0)
 
 			// Dir permission set to rwxrwxrwx, so that non-root wait container can also write kill signal to the folder.
 			// Note it's important varRunArgo+"/ctr/" folder is writable by all, because multiple containers may want to
