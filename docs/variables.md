@@ -228,7 +228,7 @@ For `Template`-level metrics:
 | `workflow.serviceAccountName` | Workflow service account name |
 | `workflow.uid` | Workflow UID. Useful for setting ownership reference to a resource, or a unique artifact location |
 | `workflow.parameters.<NAME>` | Input parameter to the workflow |
-| `workflow.parameters.json` | All input parameters to the workflow as a JSON string |
+| `workflow.parameters` | All input parameters to the workflow as a JSON string |
 | `workflow.outputs.parameters.<NAME>` | Global parameter in the workflow |
 | `workflow.outputs.artifacts.<NAME>` | Global artifact in the workflow |
 | `workflow.annotations.<NAME>` | Workflow annotations |

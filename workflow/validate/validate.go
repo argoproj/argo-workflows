@@ -768,6 +768,11 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 			if err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
 			}
+
+			if !validateWhenExpression(step.When) {
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s when expression doesn't support 'expr' format '{{='. 'When' expression is only support govaluate format {{", tmpl.Name)
+			}
+
 			if step.HasExitHook() {
 				ctx.addOutputsToScope(resolvedTmpl, fmt.Sprintf("steps.%s", step.Name), scope, false, false)
 			}
@@ -1126,6 +1131,10 @@ func (d *dagValidationContext) GetTaskFinishedAtTime(taskName string) time.Time 
 	return time.Now()
 }
 
+func validateWhenExpression(when string) bool {
+	return strings.HasPrefix(when, "{{=")
+}
+
 func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmplCtx *templateresolution.Context, tmpl *wfv1.Template) error {
 	err := validateNonLeaf(tmpl)
 	if err != nil {
@@ -1172,6 +1181,10 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 
 		if usingDepends && task.ContinueOn != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s cannot use 'continueOn' when using 'depends'. Instead use 'dep-task.Failed'/'dep-task.Errored'", tmpl.Name)
+		}
+
+		if !validateWhenExpression(task.When) {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s when doesn't support 'expr' expression '{{='. 'When' expression is only support govaluate format {{", tmpl.Name)
 		}
 
 		resolvedTmpl, err := ctx.validateTemplateHolder(&task, tmplCtx, &FakeArguments{})
