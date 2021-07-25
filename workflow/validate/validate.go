@@ -548,8 +548,8 @@ func resolveAllVariables(scope map[string]interface{}, globalParams map[string]s
 			return nil
 		}
 		_, ok := scope[tag]
-		_, globalOk := globalParams[tag]
-		if !ok && !globalOk {
+		_, isGlobal := globalParams[tag]
+		if !ok && !isGlobal {
 			if (tag == "item" || strings.HasPrefix(tag, "item.")) && allowAllItemRefs {
 				// we are *probably* referencing a undetermined item using withParam
 				// NOTE: this is far from foolproof.
