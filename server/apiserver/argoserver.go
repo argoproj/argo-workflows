@@ -99,7 +99,7 @@ func init() {
         var err error
         MaxGRPCMessageSize, err = env.GetInt("GRPC_MESSAGE_SIZE", 100 * 1024 * 1024)
         if err != nil {
-                log.Fatalf("GRPC_MESSAGE_SIZE environment variable must be set as an integer", err)
+		log.Fatalf("GRPC_MESSAGE_SIZE environment variable must be set as an integer: %v", err)
         }
         log.WithFields(log.Fields{
                 "GRPC_MESSAGE_SIZE": MaxGRPCMessageSize,
