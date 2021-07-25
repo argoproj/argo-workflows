@@ -380,7 +380,7 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 	if err != nil {
 		return err
 	}
-	err = validateOutputs(scope, newTmpl)
+	err = validateOutputs(scope, ctx.globalParams, newTmpl)
 	if err != nil {
 		return err
 	}
@@ -538,7 +538,7 @@ func validateArtifactLocation(errPrefix string, art wfv1.ArtifactLocation) error
 }
 
 // resolveAllVariables is a helper to ensure all {{variables}} are resolvable from current scope
-func resolveAllVariables(scope map[string]interface{}, tmplStr string) error {
+func resolveAllVariables(scope map[string]interface{}, globalParams map[string]string, tmplStr string) error {
 	_, allowAllItemRefs := scope[anyItemMagicValue] // 'item.*' is a magic placeholder value set by addItemsToScope
 	_, allowAllWorkflowOutputParameterRefs := scope[anyWorkflowOutputParameterMagicValue]
 	_, allowAllWorkflowOutputArtifactRefs := scope[anyWorkflowOutputArtifactMagicValue]
@@ -548,7 +548,8 @@ func resolveAllVariables(scope map[string]interface{}, tmplStr string) error {
 			return nil
 		}
 		_, ok := scope[tag]
-		if !ok {
+		_, globalOk := globalParams[tag]
+		if !ok && !globalOk {
 			if (tag == "item" || strings.HasPrefix(tag, "item.")) && allowAllItemRefs {
 				// we are *probably* referencing a undetermined item using withParam
 				// NOTE: this is far from foolproof.
@@ -592,7 +593,7 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
-	err = resolveAllVariables(scope, string(tmplBytes))
+	err = resolveAllVariables(scope, ctx.globalParams, string(tmplBytes))
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s: %s", tmpl.Name, err.Error())
 	}
@@ -778,7 +779,7 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 		if err != nil {
 			return errors.InternalWrapError(err)
 		}
-		err = resolveAllVariables(scope, string(stepBytes))
+		err = resolveAllVariables(scope, ctx.globalParams, string(stepBytes))
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps %s", tmpl.Name, err.Error())
 		}
@@ -894,7 +895,7 @@ func (ctx *templateValidationCtx) addOutputsToScope(tmpl *wfv1.Template, prefix 
 	}
 }
 
-func validateOutputs(scope map[string]interface{}, tmpl *wfv1.Template) error {
+func validateOutputs(scope map[string]interface{}, globalParams map[string]string, tmpl *wfv1.Template) error {
 	err := validateWorkflowFieldNames(tmpl.Outputs.Parameters)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs.parameters %s", tmpl.Name, err.Error())
@@ -907,7 +908,7 @@ func validateOutputs(scope map[string]interface{}, tmpl *wfv1.Template) error {
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
-	err = resolveAllVariables(scope, string(outputBytes))
+	err = resolveAllVariables(scope, globalParams, string(outputBytes))
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs %s", tmpl.Name, err.Error())
 	}
@@ -1207,7 +1208,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		return err
 	}
 
-	err = resolveAllVariables(scope, tmpl.DAG.Target)
+	err = resolveAllVariables(scope, ctx.globalParams, tmpl.DAG.Target)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.targets %s", tmpl.Name, err.Error())
 	}
@@ -1243,7 +1244,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
-		err = resolveAllVariables(taskScope, string(taskBytes))
+		err = resolveAllVariables(taskScope, ctx.globalParams, string(taskBytes))
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
