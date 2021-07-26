@@ -4054,6 +4054,25 @@
         }
       }
     },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.AWSCredentials": {
+      "type": "object",
+      "properties": {
+        "accessKeyId": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "secretAccessKey": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.AWSEndpoint": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string"
+        }
+      }
+    },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Backoff": {
       "type": "object",
       "title": "default backoff is 100ms",
@@ -4181,6 +4200,9 @@
         "path": {
           "description": "+kubebuilder:default=.",
           "type": "string"
+        },
+        "sshPrivateKey": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         },
         "url": {
           "type": "string"
@@ -4411,6 +4433,31 @@
         }
       }
     },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.S3Source": {
+      "type": "object",
+      "properties": {
+        "bucket": {
+          "type": "string"
+        },
+        "credentials": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.AWSCredentials"
+        },
+        "endpoint": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.AWSEndpoint"
+        },
+        "name": {
+          "type": "string",
+          "title": "+kubebuilder:default=default"
+        },
+        "pollPeriod": {
+          "title": "+kubebuilder:default=\"1m\"",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Duration"
+        },
+        "region": {
+          "type": "string"
+        }
+      }
+    },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.SASL": {
       "type": "object",
       "properties": {
@@ -4508,6 +4555,9 @@
       "properties": {
         "cron": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Cron"
+        },
+        "files": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.S3Source"
         },
         "http": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.HTTPSource"
