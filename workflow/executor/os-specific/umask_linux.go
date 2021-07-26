@@ -2,6 +2,8 @@ package os_specific
 
 import "syscall"
 
-func CallUmask(mask int) (oldmask int) {
-	return syscall.Umask(mask)
+func AllowGrantingAccessToEveryone() {
+	// default umask can be 022
+	// setting umask as 0 allow granting write access to other non-root users
+	syscall.Umask(0)
 }

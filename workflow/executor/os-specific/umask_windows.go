@@ -2,7 +2,7 @@ package os_specific
 
 import "syscall"
 
-func CallUmask(mask int) (oldmask int) {
-	// There's no umask in windows.
-	return 0
+func AllowGrantingAccessToEveryone() {
+	// There's no umask in Windows.
+	// TODO: figure out how we can allow this in Windows.
 }

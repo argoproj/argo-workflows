@@ -49,9 +49,7 @@ func New() (executor.ContainerRuntimeExecutor, error) {
 }
 
 func (e *emissary) Init(t wfv1.Template) error {
-	// default umask can be 022
-	// setting umask as 0 allow granting write access to other non-root users
-	osspecific.CallUmask(0)
+	osspecific.AllowGrantingAccessToEveryone()
 	if err := copyBinary(); err != nil {
 		return err
 	}
