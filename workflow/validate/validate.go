@@ -1132,7 +1132,7 @@ func (d *dagValidationContext) GetTaskFinishedAtTime(taskName string) time.Time 
 }
 
 func validateWhenExpression(when string) bool {
-	return strings.HasPrefix(when, "{{=")
+	return !strings.HasPrefix(when, "{{=")
 }
 
 func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmplCtx *templateresolution.Context, tmpl *wfv1.Template) error {
