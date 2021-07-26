@@ -15,6 +15,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor"
+	osspecific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
 )
 
 /*
@@ -48,6 +49,7 @@ func New() (executor.ContainerRuntimeExecutor, error) {
 }
 
 func (e *emissary) Init(t wfv1.Template) error {
+	osspecific.AllowGrantingAccessToEveryone()
 	if err := copyBinary(); err != nil {
 		return err
 	}
@@ -137,7 +139,9 @@ func (e emissary) isComplete(containerNames []string) bool {
 
 func (e emissary) Kill(ctx context.Context, containerNames []string, terminationGracePeriodDuration time.Duration) error {
 	for _, containerName := range containerNames {
-		if err := ioutil.WriteFile("/var/run/argo/ctr/"+containerName+"/signal", []byte(strconv.Itoa(int(syscall.SIGTERM))), 0o644); err != nil {
+		// allow write-access by other users, because other containers
+		// should delete the signal after receiving it
+		if err := ioutil.WriteFile("/var/run/argo/ctr/"+containerName+"/signal", []byte(strconv.Itoa(int(syscall.SIGTERM))), 0o666); err != nil {
 			return err
 		}
 	}
@@ -148,7 +152,9 @@ func (e emissary) Kill(ctx context.Context, containerNames []string, termination
 		return err
 	}
 	for _, containerName := range containerNames {
-		if err := ioutil.WriteFile("/var/run/argo/ctr/"+containerName+"/signal", []byte(strconv.Itoa(int(syscall.SIGKILL))), 0o644); err != nil {
+		// allow write-access by other users, because other containers
+		// should delete the signal after receiving it
+		if err := ioutil.WriteFile("/var/run/argo/ctr/"+containerName+"/signal", []byte(strconv.Itoa(int(syscall.SIGKILL))), 0o666); err != nil {
 			return err
 		}
 	}
