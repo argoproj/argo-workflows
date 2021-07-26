@@ -1975,7 +1975,7 @@ spec:
           arguments:
             parameters:
             - name: json
-              value: "Workflow: {{workflow.parameters.json}}. Template: {{inputs.parameters}}"
+              value: "Workflow: {{workflow.parameters}}. Template: {{inputs.parameters}}"
 
   - name: whalesay
     inputs:
