@@ -39,14 +39,19 @@ func NewEmissaryCommand() *cobra.Command {
 			exitCode := 64
 
 			defer func() {
-				err := ioutil.WriteFile(varRunArgo+"/ctr/"+containerName+"/exitcode", []byte(strconv.Itoa(exitCode)), 0o600)
+				err := ioutil.WriteFile(varRunArgo+"/ctr/"+containerName+"/exitcode", []byte(strconv.Itoa(exitCode)), 0o644)
 				if err != nil {
 					logger.Error(fmt.Errorf("failed to write exit code: %w", err))
 				}
 			}()
 
-			// this also indicates we've started
-			if err := os.MkdirAll(varRunArgo+"/ctr/"+containerName, 0o700); err != nil {
+			osspecific.AllowGrantingAccessToEveryone()
+
+			// Dir permission set to rwxrwxrwx, so that non-root wait container can also write kill signal to the folder.
+			// Note it's important varRunArgo+"/ctr/" folder is writable by all, because multiple containers may want to
+			// write to it with different users.
+			// This also indicates we've started.
+			if err := os.MkdirAll(varRunArgo+"/ctr/"+containerName, 0o777); err != nil {
 				return fmt.Errorf("failed to create ctr directory: %w", err)
 			}
 
@@ -190,7 +195,7 @@ func saveArtifact(srcPath string) error {
 	dstPath := varRunArgo + "/outputs/artifacts/" + srcPath + ".tgz"
 	logger.Infof("%s -> %s", srcPath, dstPath)
 	z := filepath.Dir(dstPath)
-	if err := os.MkdirAll(z, 0o700); err != nil { // chmod rwx------
+	if err := os.MkdirAll(z, 0o755); err != nil { // chmod rwxr-xr-x
 		return fmt.Errorf("failed to create directory %s: %w", z, err)
 	}
 	dst, err := os.Create(dstPath)
@@ -224,7 +229,7 @@ func saveParameter(srcPath string) error {
 	dstPath := varRunArgo + "/outputs/parameters/" + srcPath
 	logger.Infof("%s -> %s", srcPath, dstPath)
 	z := filepath.Dir(dstPath)
-	if err := os.MkdirAll(z, 0o700); err != nil { // chmod rwx------
+	if err := os.MkdirAll(z, 0o755); err != nil { // chmod rwxr-xr-x
 		return fmt.Errorf("failed to create directory %s: %w", z, err)
 	}
 	dst, err := os.Create(dstPath)
