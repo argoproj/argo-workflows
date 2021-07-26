@@ -7,9 +7,6 @@ import (
 )
 
 const (
-	// DefaultArchivePattern is the default pattern when storing artifacts in an archive repository
-	DefaultArchivePattern = "{{workflow.name}}/{{pod.name}}"
-
 	// Container names used in the workflow pod
 	MainContainerName = "main"
 	InitContainerName = "init"
@@ -39,7 +36,7 @@ const (
 	// Who created this workflow.
 	LabelKeyCreator      = workflow.WorkflowFullName + "/creator"
 	LabelKeyCreatorEmail = workflow.WorkflowFullName + "/creator-email"
-	// LabelKeyCompleted is the metadata label applied on worfklows and workflow pods to indicates if resource is completed
+	// LabelKeyCompleted is the metadata label applied on workflows and workflow pods to indicates if resource is completed
 	// Workflows and pods with a completed=true label will be ignored by the controller.
 	// See also `LabelKeyWorkflowArchivingStatus`.
 	LabelKeyCompleted = workflow.WorkflowFullName + "/completed"
@@ -158,6 +155,13 @@ const (
 	LocalVarResourcesDuration = "resourcesDuration"
 	// LocalVarExitCode is a step level variable (currently only available in metric emission) that tracks the step's exit code
 	LocalVarExitCode = "exitCode"
+
+	// LocalVarRetriesLastExitCode is a variable that references information about the last retry's exit code
+	LocalVarRetriesLastExitCode = "lastRetry.exitCode"
+	// LocalVarRetriesLastStatus is a variable that references information about the last retry's status
+	LocalVarRetriesLastStatus = "lastRetry.status"
+	// LocalVarRetriesLastDuration is a variable that references information about the last retry's duration
+	LocalVarRetriesLastDuration = "lastRetry.duration"
 
 	KubeConfigDefaultMountPath    = "/kube/config"
 	KubeConfigDefaultVolumeName   = "kubeconfig"

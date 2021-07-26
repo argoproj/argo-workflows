@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/antonmedv/expr"
 	"github.com/argoproj/pkg/humanize"
 	argokubeerr "github.com/argoproj/pkg/kube/errors"
 	"github.com/argoproj/pkg/strftime"
@@ -26,14 +27,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo-workflows/v3/config"
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -42,6 +42,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/diff"
 	envutil "github.com/argoproj/argo-workflows/v3/util/env"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/util/expr/env"
 	"github.com/argoproj/argo-workflows/v3/util/intstr"
 	"github.com/argoproj/argo-workflows/v3/util/resource"
 	"github.com/argoproj/argo-workflows/v3/util/retry"
@@ -81,7 +82,7 @@ type wfOperationCtx struct {
 	// It is then used in addVolumeReferences() when creating a pod.
 	volumes []apiv1.Volume
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
-	artifactRepository *config.ArtifactRepository
+	artifactRepository *wfv1.ArtifactRepository
 	// map of completed pods with their corresponding phases
 	completedPods map[string]apiv1.PodPhase
 	// deadline is the dealine time in which this operation should relinquish
@@ -229,13 +230,21 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.updated = wfUpdate
 		if !acquired {
 			woc.log.Warn("Workflow processing has been postponed due to concurrency limit")
-			woc.wf.Status.Message = msg
+			phase := woc.wf.Status.Phase
+			if phase == wfv1.WorkflowUnknown {
+				phase = wfv1.WorkflowPending
+			}
+			woc.markWorkflowPhase(ctx, phase, msg)
 			return
 		}
 	}
 
 	// Update workflow duration variable
-	woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", time.Since(woc.wf.Status.StartedAt.Time).Seconds())
+	if woc.wf.Status.StartedAt.IsZero() {
+		woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", time.Duration(0).Seconds())
+	} else {
+		woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", time.Since(woc.wf.Status.StartedAt.Time).Seconds())
+	}
 
 	// Populate the phase of all the nodes prior to execution
 	for _, node := range woc.wf.Status.Nodes {
@@ -596,10 +605,12 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 			switch woc.execWf.Spec.PodGC.Strategy {
 			case wfv1.PodGCOnPodSuccess:
 				if podPhase == apiv1.PodSucceeded {
-					woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
+					delay := woc.controller.Config.GetPodGCDeleteDelayDuration()
+					woc.controller.queuePodForCleanupAfter(woc.wf.Namespace, podName, deletePod, delay)
 				}
 			case wfv1.PodGCOnPodCompletion:
-				woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, deletePod)
+				delay := woc.controller.Config.GetPodGCDeleteDelayDuration()
+				woc.controller.queuePodForCleanupAfter(woc.wf.Namespace, podName, deletePod, delay)
 			}
 		} else {
 			// label pods which will not be deleted
@@ -728,7 +739,26 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 	if node.Fulfilled() {
 		return node, true, nil
 	}
+
 	lastChildNode := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
+
+	if retryStrategy.Expression != "" && len(node.Children) > 0 {
+		localScope := buildRetryStrategyLocalScope(node, woc.wf.Status.Nodes)
+		scope := env.GetFuncMap(localScope)
+		res, err := expr.Eval(retryStrategy.Expression, scope)
+		if err != nil {
+			return nil, false, err
+		}
+
+		shouldContinue, ok := res.(bool)
+		if !ok {
+			return nil, false, fmt.Errorf("expression did not evaluate to a boolean")
+		}
+
+		if !shouldContinue {
+			return woc.markNodePhase(node.Name, lastChildNode.Phase, "retryStrategy.when evaluated to false"), true, nil
+		}
+	}
 
 	if lastChildNode == nil {
 		return node, true, nil
@@ -1174,14 +1204,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 
 	if node.Fulfilled() && node.FinishedAt.IsZero() {
 		updated = true
-		if !node.IsDaemoned() {
-			node.FinishedAt = getLatestFinishedAt(pod)
-		}
-		if node.FinishedAt.IsZero() {
-			// If we get here, the container is daemoned so the
-			// finishedAt might not have been set.
-			node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
-		}
+		node.FinishedAt = getLatestFinishedAt(pod)
 		node.ResourcesDuration = resource.DurationForPod(pod)
 	}
 	if updated {
@@ -1217,18 +1240,13 @@ func (woc *wfOperationCtx) cleanUpPod(pod *apiv1.Pod, tmpl wfv1.Template) {
 	}
 }
 
-// getLatestFinishedAt returns the latest finishAt timestamp from all the
-// containers of this pod.
 func getLatestFinishedAt(pod *apiv1.Pod) metav1.Time {
 	var latest metav1.Time
-	for _, ctr := range pod.Status.InitContainerStatuses {
-		if ctr.State.Terminated != nil && ctr.State.Terminated.FinishedAt.After(latest.Time) {
-			latest = ctr.State.Terminated.FinishedAt
-		}
-	}
-	for _, ctr := range pod.Status.ContainerStatuses {
-		if ctr.State.Terminated != nil && ctr.State.Terminated.FinishedAt.After(latest.Time) {
-			latest = ctr.State.Terminated.FinishedAt
+	for _, ctr := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
+		if r := ctr.State.Running; r != nil { // if we are running, then the finished at time must be now or after
+			latest = metav1.Now()
+		} else if t := ctr.State.Terminated; t != nil && t.FinishedAt.After(latest.Time) {
+			latest = t.FinishedAt
 		}
 	}
 	return latest
@@ -1474,6 +1492,25 @@ func getChildNodeIndex(node *wfv1.NodeStatus, nodes wfv1.Nodes, index int) *wfv1
 	}
 
 	return &lastChildNode
+}
+
+func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[string]interface{} {
+	localScope := make(map[string]interface{})
+
+	// `retries` variable
+	localScope[common.LocalVarRetries] = strconv.Itoa(len(node.Children) - 1)
+
+	lastChildNode := getChildNodeIndex(node, nodes, -1)
+
+	exitCode := "-1"
+	if lastChildNode.Outputs != nil {
+		exitCode = *lastChildNode.Outputs.ExitCode
+	}
+	localScope[common.LocalVarRetriesLastExitCode] = exitCode
+	localScope[common.LocalVarRetriesLastStatus] = string(lastChildNode.Phase)
+	localScope[common.LocalVarRetriesLastDuration] = fmt.Sprint(lastChildNode.GetDuration().Seconds())
+
+	return localScope
 }
 
 type executeTemplateOpts struct {
@@ -2079,6 +2116,13 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 	return node
 }
 
+func (woc *wfOperationCtx) getPodByNode(node *wfv1.NodeStatus) (*apiv1.Pod, error) {
+	if node.Type != wfv1.NodeTypePod {
+		return nil, fmt.Errorf("Expected node type %s, got %s", wfv1.NodeTypePod, node.Type)
+	}
+	return woc.controller.getPod(woc.wf.GetNamespace(), node.ID)
+}
+
 func (woc *wfOperationCtx) recordNodePhaseEvent(node *wfv1.NodeStatus) {
 	message := fmt.Sprintf("%v node %s", node.Phase, node.Name)
 	if node.Message != "" {
@@ -2089,8 +2133,19 @@ func (woc *wfOperationCtx) recordNodePhaseEvent(node *wfv1.NodeStatus) {
 	case wfv1.NodeSucceeded, wfv1.NodeRunning:
 		eventType = apiv1.EventTypeNormal
 	}
+	eventConfig := woc.controller.Config.NodeEvents
+	var involvedObject runtime.Object = woc.wf
+	if eventConfig.SendAsPod {
+		pod, err := woc.getPodByNode(node)
+		if err != nil {
+			woc.log.Infof("Error getting pod from workflow node: %s", err)
+		}
+		if pod != nil {
+			involvedObject = pod
+		}
+	}
 	woc.eventRecorder.AnnotatedEventf(
-		woc.wf,
+		involvedObject,
 		map[string]string{
 			common.AnnotationKeyNodeType: string(node.Type),
 			common.AnnotationKeyNodeName: node.Name,
@@ -3225,7 +3280,7 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 
 		// Validate the execution wfSpec
 		var wfConditions *wfv1.Conditions
-		err := wait.ExponentialBackoff(retry.DefaultRetry,
+		err := waitutil.Backoff(retry.DefaultRetry,
 			func() (bool, error) {
 				var validationErr error
 				wfConditions, validationErr = validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, woc.wf, validateOpts)
@@ -3277,21 +3332,25 @@ func (woc *wfOperationCtx) setStoredWfSpec() error {
 		wfDefault = &wfv1.Workflow{}
 	}
 
-	if woc.needsStoredWfSpecUpdate() {
+	workflowTemplateSpec := woc.wf.Status.StoredWorkflowSpec
+
+	// Load the spec from WorkflowTemplate in first time.
+	if woc.wf.Status.StoredWorkflowSpec == nil {
 		wftHolder, err := woc.fetchWorkflowSpec()
 		if err != nil {
 			return err
 		}
-
 		// Join WFT and WfDefault metadata to Workflow metadata.
 		wfutil.JoinWorkflowMetaData(&woc.wf.ObjectMeta, wftHolder.GetWorkflowMetadata(), &wfDefault.ObjectMeta)
-
+		workflowTemplateSpec = wftHolder.GetWorkflowSpec()
+	}
+	// Update the Entrypoint, ShutdownStrategy and Suspend
+	if woc.needsStoredWfSpecUpdate() {
 		// Join workflow, workflow template, and workflow default metadata to workflow spec.
-		mergedWf, err := wfutil.JoinWorkflowSpec(&woc.wf.Spec, wftHolder.GetWorkflowSpec(), &wfDefault.Spec)
+		mergedWf, err := wfutil.JoinWorkflowSpec(&woc.wf.Spec, workflowTemplateSpec, &wfDefault.Spec)
 		if err != nil {
 			return err
 		}
-
 		woc.wf.Status.StoredWorkflowSpec = &mergedWf.Spec
 		woc.updated = true
 	} else if woc.controller.Config.WorkflowRestrictions.MustNotChangeSpec() {
@@ -3338,7 +3397,13 @@ func (woc *wfOperationCtx) mergedTemplateDefaultsInto(originalTmpl *wfv1.Templat
 }
 
 func (woc *wfOperationCtx) substituteGlobalVariables() error {
-	wfSpec, err := json.Marshal(woc.execWf.Spec)
+	execWfSpec := woc.execWf.Spec
+
+	// To Avoid the stale Global parameter value substitution to templates.
+	// Updated Global parameter values will be substituted in 'executetemplate' for templates.
+	execWfSpec.Templates = nil
+
+	wfSpec, err := json.Marshal(execWfSpec)
 	if err != nil {
 		return err
 	}

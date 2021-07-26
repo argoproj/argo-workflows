@@ -1077,8 +1077,6 @@ func (r *ArtifactRepositoryRef) String() string {
 	return fmt.Sprintf("%s#%s", r.ConfigMap, r.Key)
 }
 
-var DefaultArtifactRepositoryRefStatus = &ArtifactRepositoryRefStatus{Default: true}
-
 // +protobuf.options.(gogoproto.goproto_stringer)=false
 type ArtifactRepositoryRefStatus struct {
 	ArtifactRepositoryRef `json:",inline" protobuf:"bytes,1,opt,name=artifactRepositoryRef"`
@@ -1086,6 +1084,8 @@ type ArtifactRepositoryRefStatus struct {
 	Namespace string `json:"namespace,omitempty" protobuf:"bytes,2,opt,name=namespace"`
 	// If this ref represents the default artifact repository, rather than a config map.
 	Default bool `json:"default,omitempty" protobuf:"varint,3,opt,name=default"`
+	// The repository the workflow will use. This maybe empty before v3.1.
+	ArtifactRepository *ArtifactRepository `json:"artifactRepository,omitempty" protobuf:"bytes,4,opt,name=artifactRepository"`
 }
 
 func (r *ArtifactRepositoryRefStatus) String() string {
@@ -1518,6 +1518,10 @@ type RetryStrategy struct {
 
 	// Affinity prevents running workflow's step on the same host
 	Affinity *RetryAffinity `json:"affinity,omitempty" protobuf:"bytes,4,opt,name=affinity"`
+
+	// Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not
+	// be retried and the retry strategy will be ignored/
+	Expression string `json:"expression,omitempty" protobuf:"bytes,5,opt,name=expression"`
 }
 
 // The amount of requested resource * the duration that request was used.

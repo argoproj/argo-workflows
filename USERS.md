@@ -11,12 +11,14 @@ As the Argo Community grows, we'd like to keep track of our users. Please send a
 Currently, the following organizations are **officially** using Argo Workflows:
 
 1. [23mofang](https://www.23mofang.com/)
+1. [4intelligence](https://4intelligence.com.br/)
 1. [7shifts](https://www.7shifts.com)
 1. [Acquia](https://www.acquia.com/)
 1. [Adevinta](https://www.adevinta.com/)
 1. [Admiralty](https://admiralty.io/)
 1. [Adobe](https://www.adobe.com/)
 1. [Alibaba Cloud](https://www.alibabacloud.com/about)
+1. [Alibaba Group](https://www.alibabagroup.com/)
 1. [Ant Group](https://www.antgroup.com/)
 1. [AppDirect](https://www.appdirect.com/)
 1. [Astraea](https://astraea.earth/)
@@ -29,6 +31,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [bonprix](https://en.bonprix.de/corporate/our-company/)
 1. [Canva](https://www.canva.com/)
 1. [Capital One](https://www.capitalone.com/tech/)
+1. [Carrefour](https://www.carrefour.com/)
 1. [CarTrack](https://www.cartrack.com/)
 1. [CCRi](https://www.ccri.com/)
 1. [CloudSeeds](https://www.cloudseeds.de/)
@@ -124,10 +127,12 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Tulip](https://tulip.com/)
 1. [UFirstGroup](https://www.ufirstgroup.com)
 1. [Vispera](https://www.vispera.co)
+1. [VMware](https://www.vmware.com/)
 1. [Wavefront](https://www.wavefront.com/)
 1. [Wellcome Trust](https://wellcome.ac.uk/)
-1. [VMware](https://www.vmware.com/)
+1. [WooliesX](https://wooliesx.com.au/)
 1. [Woolworths Group](https://www.woolworthsgroup.com.au/)
+1. [Workiva](https://www.workiva.com/)
 1. [Zhihu](https://www.zhihu.com/)
 
 ### Projects Using Argo

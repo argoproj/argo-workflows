@@ -122,16 +122,9 @@ var _ events.EventRecorderManager = &testEventRecorderManager{}
 func newController(options ...interface{}) (context.CancelFunc, *WorkflowController) {
 	// get all the objects and add to the fake
 	var objects []runtime.Object
-	var uns []runtime.Object
 	for _, opt := range options {
 		switch v := opt.(type) {
-		// special case for workflows must be unstructured
 		case *wfv1.Workflow:
-			un, err := util.ToUnstructured(v)
-			if err != nil {
-				panic(err)
-			}
-			uns = append(uns, un)
 			objects = append(objects, v)
 		case runtime.Object:
 			objects = append(objects, v)
@@ -139,7 +132,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 	}
 
 	wfclientset := fakewfclientset.NewSimpleClientset(objects...)
-	dynamicClient := dynamicfake.NewSimpleDynamicClient(scheme.Scheme, uns...)
+	dynamicClient := dynamicfake.NewSimpleDynamicClient(scheme.Scheme, objects...)
 	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 0)
 	ctx, cancel := context.WithCancel(context.Background())
 	kube := fake.NewSimpleClientset()
@@ -153,8 +146,8 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 				},
 			},
 		},
-		artifactRepositories: armocks.DummyArtifactRepositories(&config.ArtifactRepository{
-			S3: &config.S3ArtifactRepository{
+		artifactRepositories: armocks.DummyArtifactRepositories(&wfv1.ArtifactRepository{
+			S3: &wfv1.S3ArtifactRepository{
 				S3Bucket: wfv1.S3Bucket{Endpoint: "my-endpoint", Bucket: "my-bucket"},
 			},
 		}),
