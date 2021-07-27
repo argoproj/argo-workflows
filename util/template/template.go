@@ -2,6 +2,7 @@ package template
 
 import (
 	"bytes"
+	log "github.com/sirupsen/logrus"
 	"io"
 
 	"github.com/valyala/fasttemplate"
@@ -34,6 +35,13 @@ func (t *impl) Replace(replaceMap map[string]string, allowUnresolved bool) (stri
 	replacedTmpl := &bytes.Buffer{}
 	_, err := t.Template.ExecuteFunc(replacedTmpl, func(w io.Writer, tag string) (int, error) {
 		kind, expression := parseTag(tag)
+		log.WithFields(log.Fields{
+			"tag":             tag,
+			"replaceMap":      replaceMap,
+			"kind":            kind,
+			"expression":      expression,
+			"allowUnresolved": allowUnresolved,
+		}).Debug("template replace")
 		switch kind {
 		case kindExpression:
 			env := exprenv.GetFuncMap(envMap(replaceMap))
