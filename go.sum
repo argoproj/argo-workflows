@@ -147,8 +147,8 @@ github.com/apache/thrift v0.12.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb
 github.com/apache/thrift v0.13.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
 github.com/ardielle/ardielle-go v1.5.2/go.mod h1:I4hy1n795cUhaVt/ojz83SNVCYIGsAFAONtv2Dr7HUI=
 github.com/ardielle/ardielle-tools v1.5.4/go.mod h1:oZN+JRMnqGiIhrzkRN9l26Cej9dEx4jeNG6A+AdkShk=
-github.com/argoproj-labs/argo-dataflow v0.0.74 h1:B8NFzWdhBoQYbe/TN9ziJujyMgTo4W/1SBHLSlNFSLw=
-github.com/argoproj-labs/argo-dataflow v0.0.74/go.mod h1:4B5f3hbQVdxUI4+Dra8Xt4IasBU5TgHZb5a+GxaIhow=
+github.com/argoproj-labs/argo-dataflow v0.0.75-0.20210727172825-862fd5107b4c h1:mu9N+5DzbzkWAHdB75J0OpN4QjFWrKsZzXIib2Msj5I=
+github.com/argoproj-labs/argo-dataflow v0.0.75-0.20210727172825-862fd5107b4c/go.mod h1:4B5f3hbQVdxUI4+Dra8Xt4IasBU5TgHZb5a+GxaIhow=
 github.com/argoproj/argo-events v1.4.0 h1:RIzAOomP/4rnv3X6KIDKzXZJ56JKFxSYmksoE98ILWI=
 github.com/argoproj/argo-events v1.4.0/go.mod h1:wI5A0U3Wj9ZvfPn3ioL18Dz29+7aibtlyU9pS0Ry+bg=
 github.com/argoproj/pkg v0.9.0/go.mod h1:ra+bQPmbVAoEL+gYSKesuigt4m49i3Qa3mE/xQcjCiA=

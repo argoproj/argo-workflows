@@ -4433,7 +4433,7 @@
         }
       }
     },
-    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.S3Source": {
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.S3": {
       "type": "object",
       "properties": {
         "bucket": {
@@ -4449,12 +4449,32 @@
           "type": "string",
           "title": "+kubebuilder:default=default"
         },
+        "region": {
+          "type": "string"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.S3Sink": {
+      "type": "object",
+      "properties": {
+        "bucket": {
+          "type": "string",
+          "title": "an expression over the message, e.g. `\"subpath/\"+string(msg)`"
+        },
+        "s3": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.S3"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.S3Source": {
+      "type": "object",
+      "properties": {
         "pollPeriod": {
           "title": "+kubebuilder:default=\"1m\"",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Duration"
         },
-        "region": {
-          "type": "string"
+        "s3": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.S3"
         }
       }
     },
@@ -4545,6 +4565,9 @@
           "type": "string",
           "title": "+kubebuilder:default=default"
         },
+        "s3": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.S3Sink"
+        },
         "stan": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.STAN"
         }
@@ -4555,9 +4578,6 @@
       "properties": {
         "cron": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Cron"
-        },
-        "files": {
-          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.S3Source"
         },
         "http": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.HTTPSource"
@@ -4572,6 +4592,9 @@
         "retry": {
           "title": "+kubebuilder:default={steps: 2, jitterPercentage: 10}",
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Backoff"
+        },
+        "s3": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.S3Source"
         },
         "stan": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.STAN"

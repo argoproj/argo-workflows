@@ -44,6 +44,7 @@ export type Icon =
     | 'list'
     | 'microchip'
     | 'object-group'
+    | 'object-ungroup'
     | 'play'
     | 'play-circle'
     | 'plus-circle'

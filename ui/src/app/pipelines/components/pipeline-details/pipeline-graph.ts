@@ -4,12 +4,14 @@ import {Graph} from '../../../shared/components/graph/types';
 import {Icon} from '../../../shared/components/icon';
 import {totalRate} from '../total-rate';
 
-type Type = '' | 'cat' | 'container' | 'dedupe' | 'expand' | 'filter' | 'flatten' | 'git' | 'group' | 'handler' | 'map';
+type Type = '' | 'cat' | 'code' | 'container' | 'dedupe' | 'expand' | 'filter' | 'flatten' | 'git' | 'group' | 'map' | 'split';
 
 const stepIcon = (type: Type): Icon => {
     switch (type) {
         case 'cat':
             return 'arrows-alt-h';
+        case 'code':
+            return 'code';
         case 'container':
             return 'cube';
         case 'dedupe':
@@ -24,10 +26,10 @@ const stepIcon = (type: Type): Icon => {
             return 'code-branch';
         case 'group':
             return 'object-group';
-        case 'handler':
-            return 'code';
         case 'map':
             return 'arrows-alt-h';
+        case 'split':
+            return 'object-ungroup';
         default:
             return 'square';
     }
@@ -56,6 +58,8 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
 
         const type: Type = spec.cat
             ? 'cat'
+            : spec.code
+            ? 'code'
             : spec.container
             ? 'container'
             : spec.dedupe
@@ -70,8 +74,6 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
             ? 'flatten'
             : spec.group
             ? 'group'
-            : spec.handler
-            ? 'handler'
             : spec.map
             ? 'map'
             : '';
@@ -102,6 +104,11 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
                 const subjectId = 'http/' + y;
                 g.nodes.set(subjectId, {genre: 'http', icon: 'cloud', label: y.hostname});
                 g.edges.set({v: subjectId, w: stepId}, {classNames, label});
+            } else if (x.s3) {
+                const bucket = x.s3.bucket;
+                const id = 's3/' + bucket;
+                g.nodes.set(id, {genre: 's3', icon: 'hdd', label: bucket});
+                g.edges.set({v: id, w: stepId}, {classNames, label});
             }
         });
         (spec.sinks || []).forEach(x => {
@@ -126,6 +133,11 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
                 const subjectId = 'http/' + y;
                 g.nodes.set(subjectId, {genre: 'http', icon: 'cloud', label: y.hostname});
                 g.edges.set({v: stepId, w: subjectId}, {classNames, label});
+            } else if (x.s3) {
+                const bucket = x.s3.bucket;
+                const id = 's3/' + bucket;
+                g.nodes.set(id, {genre: 's3', icon: 'hdd', label: bucket});
+                g.edges.set({v: stepId, w: id}, {classNames, label});
             }
         });
     });

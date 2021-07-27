@@ -118,6 +118,7 @@ export const PipelineDetails = ({history, match, location}: RouteComponentProps<
                             nodeGenresTitle='Type'
                             nodeGenres={{
                                 cat: true,
+                                code: true,
                                 container: true,
                                 cron: true,
                                 dedupe: true,
@@ -126,12 +127,12 @@ export const PipelineDetails = ({history, match, location}: RouteComponentProps<
                                 flatten: true,
                                 git: true,
                                 group: true,
-                                handler: true,
                                 http: true,
                                 log: true,
                                 map: true,
                                 kafka: true,
-                                stan: true
+                                stan: true,
+                                s3: true
                             }}
                             defaultIconShape='circle'
                             nodeClassNamesTitle='Status'

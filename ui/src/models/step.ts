@@ -12,6 +12,7 @@ export interface Step {
     spec: {
         name: string;
         cat?: {};
+        code?: {};
         container?: {};
         dedupe?: {};
         expand?: {};
@@ -19,8 +20,8 @@ export interface Step {
         flatten?: {};
         git?: {};
         group?: {};
-        handler?: {};
         map?: string;
+        split?: {};
         sources: {
             name?: string;
             cron?: {schedule: string};
@@ -33,6 +34,9 @@ export interface Step {
             http?: {
                 serviceName?: string;
             };
+            s3?: {
+                bucket: string;
+            };
         }[];
         sinks: {
             name?: string;
@@ -44,6 +48,9 @@ export interface Step {
                 topic: string;
             };
             http?: {url: string};
+            s3?: {
+                bucket: string;
+            };
         }[];
     };
     status?: StepStatus;
