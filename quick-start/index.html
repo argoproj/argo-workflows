@@ -2180,7 +2180,7 @@ kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflo
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>To run Argo on GKE Autopilot, you must use the <code>k8sapi</code> executor. Find more information on our <a href="../workflow-executors/">executors doc</a>.</p>
+<p>To run Argo on GKE Autopilot, you must use the <code>emissary</code> executor or the <code>k8sapi</code> executor. Find more information on our <a href="../workflow-executors/">executors doc</a>.</p>
 </div>
 <p>If you are running Argo Workflows locally (e.g. using Minikube or Docker for Desktop), open a port-forward so you can access the namespace:</p>
 <div class="highlight"><pre><span></span><code>kubectl -n argo port-forward deployment/argo-server <span class="m">2746</span>:2746
