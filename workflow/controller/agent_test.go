@@ -144,25 +144,26 @@ func TestAssessAgentPodStatus(t *testing.T) {
 		pod1 := &apiv1.Pod{
 			Status: apiv1.PodStatus{Phase: apiv1.PodFailed},
 		}
-		nodeStatus := &wfv1.NodeStatus{Phase: wfv1.NodePending}
-		nodeStatus1 := assessAgentPodStatus(pod1, nodeStatus)
-		assert.Equal(t, wfv1.NodeFailed, nodeStatus1.Phase)
+		nodeStatus, msg := assessAgentPodStatus(pod1)
+		assert.Equal(t, wfv1.WorkflowFailed, nodeStatus)
+		assert.Equal(t, "", msg)
 	})
 	t.Run("Running", func(t *testing.T) {
 		pod1 := &apiv1.Pod{
 			Status: apiv1.PodStatus{Phase: apiv1.PodRunning},
 		}
-		nodeStatus := &wfv1.NodeStatus{Phase: wfv1.NodePending}
-		nodeStatus1 := assessAgentPodStatus(pod1, nodeStatus)
-		assert.Equal(t, wfv1.NodeRunning, nodeStatus1.Phase)
+
+		nodeStatus, msg := assessAgentPodStatus(pod1)
+		assert.Equal(t, wfv1.WorkflowPhase(""), nodeStatus)
+		assert.Equal(t, "", msg)
 	})
 	t.Run("Success", func(t *testing.T) {
 		pod1 := &apiv1.Pod{
 			Status: apiv1.PodStatus{Phase: apiv1.PodSucceeded},
 		}
-		nodeStatus := &wfv1.NodeStatus{Phase: wfv1.NodePending}
-		nodeStatus1 := assessAgentPodStatus(pod1, nodeStatus)
-		assert.Equal(t, wfv1.NodeSucceeded, nodeStatus1.Phase)
+		nodeStatus, msg := assessAgentPodStatus(pod1)
+		assert.Equal(t, wfv1.WorkflowPhase(""), nodeStatus)
+		assert.Equal(t, "", msg)
 	})
 
 }

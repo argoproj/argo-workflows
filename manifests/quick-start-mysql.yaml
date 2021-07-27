@@ -174,6 +174,8 @@ spec:
     kind: WorkflowTaskSet
     listKind: WorkflowTaskSetList
     plural: workflowtasksets
+    shortNames:
+    - wfts
     singular: workflowtaskset
   scope: Namespaced
   versions:

@@ -36,77 +36,34 @@ func (woc *wfOperationCtx) reconcileAgentPod(ctx context.Context) error {
 	}
 	// Check Pod is just created
 	if pod.Status.Phase != "" {
-		woc.updateAgentPodStatus(pod)
+		woc.updateAgentPodStatus(ctx, pod)
 	}
 	return nil
 }
 
-func (woc *wfOperationCtx) updateAgentPodStatus(pod *apiv1.Pod) {
+func (woc *wfOperationCtx) updateAgentPodStatus(ctx context.Context, pod *apiv1.Pod) {
 	woc.log.Infof("updateAgentPodStatus")
-	for _, node := range woc.wf.Status.Nodes {
-		// Update POD (Error and Failed) status to all HTTP Templates node status
-		if node.Type == wfv1.NodeTypeHTTP {
-			if newState := assessAgentPodStatus(pod, &node); newState != nil {
-				if woc.wf.Status.Nodes[node.ID].Phase != newState.Phase {
-					woc.wf.Status.Nodes[node.ID] = *newState
-					if newState.Fulfilled() {
-						woc.addOutputsToGlobalScope(newState.Outputs)
-					}
-				}
-				woc.updated = true
-			}
-		}
+	newPhase, message := assessAgentPodStatus(pod)
+	if newPhase == wfv1.WorkflowFailed || newPhase == wfv1.WorkflowError {
+		woc.markWorkflowError(ctx,fmt.Errorf("agent pod failed with reason %s", message))
 	}
 }
 
-func assessAgentPodStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
-	log.Infof("assessAgentPodStatus")
-	var newPhase wfv1.NodePhase
+func assessAgentPodStatus(pod *apiv1.Pod) (wfv1.WorkflowPhase,string) {
+	var newPhase wfv1.WorkflowPhase
 	var message string
-	updated := false
+	log.Infof("assessAgentPodStatus")
 	switch pod.Status.Phase {
-	case apiv1.PodPending:
-		newPhase = wfv1.NodePending
-		message = getPendingReason(pod)
-	case apiv1.PodSucceeded:
-		newPhase = wfv1.NodeSucceeded
+	case apiv1.PodSucceeded, apiv1.PodRunning, apiv1.PodPending:
+		return "", ""
 	case apiv1.PodFailed:
-		newPhase = wfv1.NodeFailed
+		newPhase = wfv1.WorkflowFailed
 		message = pod.Status.Message
-		log.WithField("displayName", node.DisplayName).WithField("templateName", node.TemplateName).
-			WithField("pod", pod.Name).Infof("Pod failed: %s", message)
-	case apiv1.PodRunning:
-		newPhase = wfv1.NodeRunning
 	default:
-		newPhase = wfv1.NodeError
+		newPhase = wfv1.WorkflowError
 		message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.ObjectMeta.Name, pod.Status.Phase)
 	}
-
-	if !node.Fulfilled() && (node.Phase != newPhase) {
-		log.Infof("Updating node %s status %s -> %s", node.ID, node.Phase, newPhase)
-		// if we are transitioning from Pending to a different state, clear out pending message
-		if node.Phase == wfv1.NodePending {
-			node.Message = ""
-		}
-		updated = true
-		node.Phase = newPhase
-	}
-
-	if message != "" && node.Message != message {
-		log.Infof("Updating node %s message: %s", node.ID, message)
-		updated = true
-		node.Message = message
-	}
-
-	if node.Fulfilled() && node.FinishedAt.IsZero() {
-		updated = true
-		node.FinishedAt = getLatestFinishedAt(pod)
-	}
-
-	if updated {
-		return node
-	}
-	return nil
+	return newPhase, message
 }
 
 func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, error) {

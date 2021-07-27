@@ -5,6 +5,7 @@ import (
 )
 
 // +genclient
+// +kubebuilder:resource:shortName=wfts
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type WorkflowTaskSet struct {
 	metav1.TypeMeta   `json:",inline"`

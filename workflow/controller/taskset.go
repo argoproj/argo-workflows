@@ -20,27 +20,26 @@ import (
 )
 
 func (woc *wfOperationCtx) patchTaskSet(ctx context.Context, patch interface{}, pathTypeType types.PatchType) error {
+	fmt.Println(patch)
 	patchByte, err := json.Marshal(patch)
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
 	return argowait.Backoff(retry.DefaultBackoff, func() (bool, error) {
 		var err error
-		wts, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace).Patch(ctx, woc.wf.Name, pathTypeType, patchByte, metav1.PatchOptions{})
-		fmt.Println(wts)
+		_, err = woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace).Patch(ctx, woc.wf.Name, pathTypeType, patchByte, metav1.PatchOptions{})
 		return apierr.IsNotFound(err) || !errorsutil.IsTransientErr(err), err
 	})
 }
 
-func (woc *wfOperationCtx) removeCompletedTaskSetStatus(ctx context.Context) error {
-	completedHTTPNodes := woc.getCompletedHTTPNodes()
-	if len(completedHTTPNodes) == 0 {
-		return nil
-	}
+func (woc *wfOperationCtx) getDeleteTaskAndNodePatch() map[string]interface{} {
 	deletedNode := make(map[string]interface{})
-	for _, node := range completedHTTPNodes {
-		deletedNode[node.ID] = nil
+	for _, node := range woc.wf.Status.Nodes {
+		if node.Type == wfv1.NodeTypeHTTP && node.Fulfilled() {
+			deletedNode[node.ID] = nil
+		}
 	}
+
 	// Delete the completed Tasks and nodes status
 	patch := map[string]interface{}{
 		"spec": map[string]interface{}{
@@ -50,15 +49,19 @@ func (woc *wfOperationCtx) removeCompletedTaskSetStatus(ctx context.Context) err
 			"nodes": deletedNode,
 		},
 	}
-	return woc.patchTaskSet(ctx, patch, types.MergePatchType)
+	return patch
+}
+
+func (woc *wfOperationCtx) removeCompletedTaskSetStatus(ctx context.Context) error {
+
+	return woc.patchTaskSet(ctx, woc.getDeleteTaskAndNodePatch(), types.MergePatchType)
 }
 
 func (woc *wfOperationCtx) completeTaskSet(ctx context.Context) error {
-	patch := map[string]interface{}{
-		"metadata": metav1.ObjectMeta{
-			Labels: map[string]string{
-				common.LabelKeyCompleted: "true",
-			},
+	patch := woc.getDeleteTaskAndNodePatch()
+	patch["metadata"] = metav1.ObjectMeta{
+		Labels: map[string]string{
+			common.LabelKeyCompleted: "true",
 		},
 	}
 	return woc.patchTaskSet(ctx, patch, types.MergePatchType)
