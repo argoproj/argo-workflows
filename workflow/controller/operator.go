@@ -1643,7 +1643,6 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		} else {
 			woc.log.Infof("Node %s acquired synchronization lock", nodeName)
 			if node != nil {
-				node.Message = ""
 				node = woc.markNodeWaitingForLock(node.Name, "")
 			}
 		}
@@ -2166,6 +2165,7 @@ func (woc *wfOperationCtx) markNodeWaitingForLock(nodeName string, lockName stri
 	if lockName == "" {
 		// If we are no longer waiting for a lock, nil out the sync status
 		node.SynchronizationStatus = nil
+		node.Message = ""
 	} else {
 		node.SynchronizationStatus.Waiting = lockName
 	}
