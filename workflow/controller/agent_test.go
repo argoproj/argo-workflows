@@ -2,9 +2,10 @@ package controller
 
 import (
 	"context"
-	apiv1 "k8s.io/api/core/v1"
 	"strings"
 	"testing"
+
+	apiv1 "k8s.io/api/core/v1"
 
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 
