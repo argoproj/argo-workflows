@@ -96,14 +96,14 @@ type ArgoServerOpts struct {
 }
 
 func init() {
-        var err error
-        MaxGRPCMessageSize, err = env.GetInt("GRPC_MESSAGE_SIZE", 100 * 1024 * 1024)
-        if err != nil {
+	var err error
+	MaxGRPCMessageSize, err = env.GetInt("GRPC_MESSAGE_SIZE", 100*1024*1024)
+	if err != nil {
 		log.Fatalf("GRPC_MESSAGE_SIZE environment variable must be set as an integer: %v", err)
-        }
-        log.WithFields(log.Fields{
-                "GRPC_MESSAGE_SIZE": MaxGRPCMessageSize,
-                }).Info("GRPC Server Max Message Size, MaxGRPCMessageSize, is set")
+	}
+	log.WithFields(log.Fields{
+		"GRPC_MESSAGE_SIZE": MaxGRPCMessageSize,
+	}).Info("GRPC Server Max Message Size, MaxGRPCMessageSize, is set")
 }
 
 func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error) {
