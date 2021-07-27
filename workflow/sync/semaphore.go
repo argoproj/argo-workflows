@@ -177,7 +177,6 @@ func (s *PrioritySemaphore) tryAcquire(holderKey string) (bool, string) {
 		item := s.pending.peek()
 		nextKey = fmt.Sprintf("%v", item.key)
 		if holderKey != nextKey && !isSameWorkflowNodeKeys(holderKey, nextKey) {
-			s.log.Debugf("key is not in front of queue. %s - %s", holderKey, nextKey)
 			// Enqueue the front workflow if lock is available
 			if len(s.lockHolder) < s.limit {
 				s.nextWorkflow(nextKey)
@@ -187,7 +186,6 @@ func (s *PrioritySemaphore) tryAcquire(holderKey string) (bool, string) {
 	}
 
 	if s.acquire(holderKey) {
-		s.log.Debugf("Current semaphore Holders. %v", s.lockHolder)
 		s.pending.pop()
 		s.log.Infof("%s acquired by %s ", s.name, nextKey)
 		return true, ""
