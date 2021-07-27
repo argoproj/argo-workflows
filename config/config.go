@@ -22,7 +22,7 @@ type ResourceRateLimit struct {
 // Config contain the configuration settings for the workflow controller
 type Config struct {
 
-	// NodeEvents configures how node events are omitted
+	// NodeEvents configures how node events are emitted
 	NodeEvents NodeEvents `json:"nodeEvents,omitempty"`
 
 	// ExecutorImage is the image name of the executor to use when running pods
