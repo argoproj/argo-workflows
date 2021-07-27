@@ -273,10 +273,6 @@ func (d *DockerExecutor) pollContainerIDs(ctx context.Context, containerNames []
 				if d.containers[containerName].containerID == c.containerID { // already found
 					continue
 				}
-				if c.createdAt.Before(started.Add(-15 * time.Second)) {
-					log.Infof("ignoring container %q created at %v, too long before process started", containerName, c.createdAt)
-					continue
-				}
 				d.containers[containerName] = c
 				log.Infof("mapped container name %q to container ID %q (created at %v, status %s)", containerName, c.containerID, c.createdAt, c.status)
 			}
