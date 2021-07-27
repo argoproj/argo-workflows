@@ -56,6 +56,7 @@ func initAgentExecutor() *executor.AgentExecutor {
 		Namespace:         namespace,
 		WorkflowName:      workflowName,
 		WorkflowInterface: workflow.NewForConfigOrDie(config),
+		CompleteTask:      make(map[string]struct{}),
 	}
 	return &agentExecutor
 

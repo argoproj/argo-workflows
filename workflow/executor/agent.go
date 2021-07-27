@@ -31,6 +31,7 @@ type AgentExecutor struct {
 	WorkflowInterface workflow.Interface
 	RESTClient        rest.Interface
 	Namespace         string
+	CompleteTask      map[string]struct{}
 }
 
 func (ae *AgentExecutor) Agent(ctx context.Context) error {
@@ -61,9 +62,11 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 			}
 			tasks := obj.Spec.Tasks
 			for nodeID, tmpl := range tasks {
-				if len(obj.Status.Nodes) > 0 && obj.Status.Nodes[nodeID].Fulfilled() {
+
+				if _, ok := ae.CompleteTask[nodeID]; ok {
 					continue
 				}
+
 				switch {
 				case tmpl.HTTP != nil:
 					result := wfv1.NodeResult{}
@@ -90,6 +93,8 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 					obj, err = taskSetInterface.Patch(ctx, ae.WorkflowName, types.MergePatchType, patch, metav1.PatchOptions{})
 
 					log.WithField("taskset", obj).Infof("updated content, %s", patch)
+
+					ae.CompleteTask[nodeID] = struct{}{}
 
 					if err != nil {
 						log.WithError(err).WithField("taskset", obj).Errorf("failed to update the taskset")
