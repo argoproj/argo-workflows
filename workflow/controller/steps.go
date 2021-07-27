@@ -119,7 +119,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 				}
 				if len(childNodes) > 0 {
 					// Expanded child nodes should be created from the same template.
-					_, tmpl, templateStored, err := stepsCtx.tmplCtx.ResolveTemplate(&childNodes[0])
+					_, _, templateStored, err := stepsCtx.tmplCtx.ResolveTemplate(&childNodes[0])
 					if err != nil {
 						return node, err
 					}
@@ -128,7 +128,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 						woc.updated = true
 					}
 
-					err = woc.processAggregateNodeOutputs(tmpl, stepsCtx.scope, prefix, childNodes)
+					err = woc.processAggregateNodeOutputs(stepsCtx.scope, prefix, childNodes)
 					if err != nil {
 						return node, err
 					}
