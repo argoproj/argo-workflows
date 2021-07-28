@@ -113,7 +113,7 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
         });
         (spec.sinks || []).forEach(x => {
             const ss = (status.sinkStatuses || {})[x.name || ''] || {};
-            const label = '' + totalRate(ss.metrics, step.status.replicas);
+            const label = formatRates(ss.metrics, step.status.replicas);
             if (x.kafka) {
                 const kafkaId = x.kafka.name || x.kafka.url || 'default';
                 const topicId = 'kafka/' + kafkaId + '/' + x.kafka.topic;
