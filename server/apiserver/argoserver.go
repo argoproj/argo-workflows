@@ -101,9 +101,6 @@ func init() {
 	if err != nil {
 		log.Fatalf("GRPC_MESSAGE_SIZE environment variable must be set as an integer: %v", err)
 	}
-	log.WithFields(log.Fields{
-		"GRPC_MESSAGE_SIZE": MaxGRPCMessageSize,
-	}).Info("GRPC Server Max Message Size, MaxGRPCMessageSize, is set")
 }
 
 func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error) {
@@ -220,6 +217,9 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		url = "https://localhost" + address
 	}
 	log.Infof("Argo Server started successfully on %s", url)
+	log.WithFields(log.Fields{
+		"GRPC_MESSAGE_SIZE": MaxGRPCMessageSize,
+	}).Info("GRPC Server Max Message Size, MaxGRPCMessageSize, is set")
 	browserOpenFunc(url)
 
 	<-as.stopCh
