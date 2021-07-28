@@ -135,5 +135,12 @@ If your OIDC provider returns a different object/data structure for groups, you 
 ```yaml
 sso:
   # Specify custom claim name for OIDC groups.
-  customGroupClaimName: my_custom_group_claim
+  customGroupClaimName: argo_groups
+```
+
+ #### Example expr
+
+```shell
+# assuming customClaimGroupName: argo_groups
+workflows.argoproj.io/rbac-rule: "'argo_admins' in argo_groups"
 ```
