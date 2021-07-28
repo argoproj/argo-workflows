@@ -95,6 +95,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [nrd.io](https://nrd.io/)
 1. [NVIDIA](https://www.nvidia.com/)
 1. [Onepanel](https://docs.onepanel.ai)
+1. [Oracle] (https://www.oracle.com)
 1. [OVH](https://www.ovh.com/)
 1. [Peak AI](https://www.peak.ai/)
 1. [PDOK](https://www.pdok.nl/)
@@ -135,7 +136,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Woolworths Group](https://www.woolworthsgroup.com.au/)
 1. [Workiva](https://www.workiva.com/)
 1. [Zhihu](https://www.zhihu.com/)
-1. [Oracle] (https://www.oracle.com)
+
 
 
 ### Projects Using Argo
