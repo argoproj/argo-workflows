@@ -18,14 +18,14 @@ func SendHttpRequest(request *http.Request) (string, error) {
 	defer out.Body.Close()
 
 	log.WithFields(log.Fields{"url": request.URL, "status": out.Status}).Info("HTTP request made")
-	if out.StatusCode >= 300 {
-		return "", fmt.Errorf(out.Status)
-	}
-
 	data, err := ioutil.ReadAll(out.Body)
 	if err != nil {
 		return "", err
 	}
+	if out.StatusCode >= 300 {
+		return "", fmt.Errorf(out.Status)
+	}
+
 	return string(data), nil
 
 }
