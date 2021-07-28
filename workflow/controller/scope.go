@@ -106,8 +106,8 @@ func (s *wfScope) resolveArtifact(art *wfv1.Artifact) (*wfv1.Artifact, error) {
 	}
 
 	if art.SubPath != "" {
-		resolvedSubPath, err := template.Replace(art.SubPath, s.getParameters(), true)
-		if err != nil {
+		resolvedSubPath := art.SubPath
+		if err := template.Replace(&resolvedSubPath, s.getParameters(), true); err != nil {
 			return nil, err
 		}
 

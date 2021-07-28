@@ -32,7 +32,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/config"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	intstrutil "github.com/argoproj/argo-workflows/v3/util/intstr"
-	"github.com/argoproj/argo-workflows/v3/util/template"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
 	hydratorfake "github.com/argoproj/argo-workflows/v3/workflow/hydrator/fake"
@@ -5503,14 +5502,11 @@ func Test_processItem(t *testing.T) {
 	task := wfv1.DAGTask{
 		WithParam: `[{"number": 2, "string": "foo", "list": [0, "1"], "json": {"number": 2, "string": "foo", "list": [0, "1"]}}]`,
 	}
-	taskBytes, err := json.Marshal(task)
-	assert.NoError(t, err)
 	var items []wfv1.Item
 	wfv1.MustUnmarshal([]byte(task.WithParam), &items)
 
 	var newTask wfv1.DAGTask
-	tmpl, _ := template.NewTemplate(string(taskBytes))
-	newTaskName, err := processItem(tmpl, "task-name", 0, items[0], &newTask)
+	newTaskName, err := processItem("task-name", 0, items[0], &newTask)
 	if assert.NoError(t, err) {
 		assert.Equal(t, `task-name(0:json:{"list":[0,"1"],"number":2,"string":"foo"},list:[0,"1"],number:2,string:foo)`, newTaskName)
 	}

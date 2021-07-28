@@ -544,18 +544,9 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 	}
 
 	// Replace task's parameters
-	taskBytes, err := json.Marshal(task)
-	if err != nil {
-		return nil, errors.InternalWrapError(err)
-	}
-	newTaskStr, err := template.Replace(string(taskBytes), woc.globalParams.Merge(scope.getParameters()), true)
-	if err != nil {
+	newTask := *task.DeepCopy()
+	if err := template.Replace(&newTask, woc.globalParams.Merge(scope.getParameters()), true); err != nil {
 		return nil, err
-	}
-	var newTask wfv1.DAGTask
-	err = json.Unmarshal([]byte(newTaskStr), &newTask)
-	if err != nil {
-		return nil, errors.InternalWrapError(err)
 	}
 
 	// If we are not executing, don't attempt to resolve any artifact references. We only check if we are executing after
@@ -637,25 +628,16 @@ func expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
 		return []wfv1.DAGTask{task}, nil
 	}
 
-	taskBytes, err := json.Marshal(task)
-	if err != nil {
-		return nil, errors.InternalWrapError(err)
-	}
-
 	// these fields can be very large (>100m) and marshalling 10k x 100m = 6GB of memory used and
 	// very poor performance, so we just nil them out
 	task.WithItems = nil
 	task.WithParam = ""
 	task.WithSequence = nil
 
-	tmpl, err := template.NewTemplate(string(taskBytes))
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse argo variable: %w", err)
-	}
 	expandedTasks := make([]wfv1.DAGTask, 0)
 	for i, item := range items {
-		var newTask wfv1.DAGTask
-		newTaskName, err := processItem(tmpl, task.Name, i, item, &newTask)
+		newTask := *task.DeepCopy()
+		newTaskName, err := processItem(task.Name, i, item, &newTask)
 		if err != nil {
 			return nil, err
 		}

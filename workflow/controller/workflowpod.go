@@ -448,17 +448,8 @@ func substitutePodParams(pod *apiv1.Pod, globalParams common.Parameters, tmpl *w
 		podParams["inputs.parameters."+inParam.Name] = inParam.Value.String()
 	}
 	podParams[common.LocalVarPodName] = pod.Name
-	specBytes, err := json.Marshal(pod)
-	if err != nil {
-		return nil, err
-	}
-	newSpecBytes, err := template.Replace(string(specBytes), podParams, true)
-	if err != nil {
-		return nil, err
-	}
-	var newSpec apiv1.Pod
-	err = json.Unmarshal([]byte(newSpecBytes), &newSpec)
-	if err != nil {
+	newSpec := *pod.DeepCopy()
+	if err := template.Replace(&newSpec, podParams, true); err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
 	return &newSpec, nil

@@ -7,50 +7,54 @@ import (
 )
 
 func Test_Replace(t *testing.T) {
-	t.Run("InvailedTemplate", func(t *testing.T) {
-		_, err := Replace("{{", nil, false)
-		assert.Error(t, err)
-	})
 	t.Run("Simple", func(t *testing.T) {
 		t.Run("Valid", func(t *testing.T) {
-			r, err := Replace("{{foo}}", map[string]string{"foo": "bar"}, false)
+			obj := "{{foo}}"
+			err := Replace(&obj, map[string]string{"foo": "bar"}, false)
 			assert.NoError(t, err)
-			assert.Equal(t, "bar", r)
+			assert.Equal(t, "bar", obj)
 		})
 		t.Run("Unresolved", func(t *testing.T) {
 			t.Run("Allowed", func(t *testing.T) {
-				_, err := Replace("{{foo}}", nil, true)
+				obj := "{{foo}}"
+				err := Replace(&obj, nil, true)
 				assert.NoError(t, err)
 			})
 			t.Run("Disallowed", func(t *testing.T) {
-				_, err := Replace("{{foo}}", nil, false)
+				obj := "{{foo}}"
+				err := Replace(&obj, nil, false)
 				assert.EqualError(t, err, "failed to resolve {{foo}}")
 			})
 		})
 	})
 	t.Run("Expression", func(t *testing.T) {
 		t.Run("Valid", func(t *testing.T) {
-			r, err := Replace("{{=foo}}", map[string]string{"foo": "bar"}, false)
+			obj := "{{=foo}}"
+			err := Replace(&obj, map[string]string{"foo": "bar"}, false)
 			assert.NoError(t, err)
-			assert.Equal(t, "bar", r)
+			assert.Equal(t, "bar", obj)
 		})
 		t.Run("Unresolved", func(t *testing.T) {
 			t.Run("Allowed", func(t *testing.T) {
-				_, err := Replace("{{=foo}}", nil, true)
+				obj := "{{=foo}}"
+				err := Replace(&obj, nil, true)
 				assert.NoError(t, err)
 			})
 			t.Run("AllowedRetries", func(t *testing.T) {
-				replaced, err := Replace("{{=sprig.int(retries)}}", nil, true)
+				obj := "{{=sprig.int(retries)}}"
+				err := Replace(&obj, nil, true)
 				assert.NoError(t, err)
-				assert.Equal(t, replaced, "{{=sprig.int(retries)}}")
+				assert.Equal(t, obj, "{{=sprig.int(retries)}}")
 			})
 			t.Run("Disallowed", func(t *testing.T) {
-				_, err := Replace("{{=foo}}", nil, false)
+				obj := "{{=foo}}"
+				err := Replace(&obj, nil, false)
 				assert.EqualError(t, err, "failed to evaluate expression \"foo\"")
 			})
 		})
 		t.Run("Error", func(t *testing.T) {
-			_, err := Replace("{{=!}}", nil, false)
+			obj := "{{=!}}"
+			err := Replace(&obj, nil, false)
 			if assert.Error(t, err) {
 				assert.Contains(t, err.Error(), "failed to evaluate expression")
 			}
@@ -64,54 +68,54 @@ func TestNestedReplaceString(t *testing.T) {
 	test := `{{- with secret "{{inputs.parameters.message}}" -}}
     {{ .Data.data.gitcreds }}
   {{- end }}`
-	replacement, err := Replace(test, replaceMap, true)
+	err := Replace(&test, replaceMap, true)
 	if assert.NoError(t, err) {
-		assert.Equal(t, "{{- with secret \"hello world\" -}}\n    {{ .Data.data.gitcreds }}\n  {{- end }}", replacement)
+		assert.Equal(t, "{{- with secret \"hello world\" -}}\n    {{ .Data.data.gitcreds }}\n  {{- end }}", test)
 	}
 
 	test = `{{- with {{ secret "{{inputs.parameters.message}}" -}}
     {{ .Data.data.gitcreds }}
   {{- end }}`
 
-	replacement, err = Replace(test, replaceMap, true)
+	err = Replace(&test, replaceMap, true)
 	if assert.NoError(t, err) {
-		assert.Equal(t, "{{- with {{ secret \"hello world\" -}}\n    {{ .Data.data.gitcreds }}\n  {{- end }}", replacement)
+		assert.Equal(t, "{{- with {{ secret \"hello world\" -}}\n    {{ .Data.data.gitcreds }}\n  {{- end }}", test)
 	}
 
 	test = `{{- with {{ secret "{{inputs.parameters.message}}" -}} }}
     {{ .Data.data.gitcreds }}
   {{- end }}`
 
-	replacement, err = Replace(test, replaceMap, true)
+	err = Replace(&test, replaceMap, true)
 	if assert.NoError(t, err) {
-		assert.Equal(t, "{{- with {{ secret \"hello world\" -}} }}\n    {{ .Data.data.gitcreds }}\n  {{- end }}", replacement)
+		assert.Equal(t, "{{- with {{ secret \"hello world\" -}} }}\n    {{ .Data.data.gitcreds }}\n  {{- end }}", test)
 	}
 
 	test = `{{- with secret "{{inputs.parameters.message}}" -}} }}
     {{ .Data.data.gitcreds }}
   {{- end }}`
 
-	replacement, err = Replace(test, replaceMap, true)
+	err = Replace(&test, replaceMap, true)
 	if assert.NoError(t, err) {
-		assert.Equal(t, "{{- with secret \"hello world\" -}} }}\n    {{ .Data.data.gitcreds }}\n  {{- end }}", replacement)
+		assert.Equal(t, "{{- with secret \"hello world\" -}} }}\n    {{ .Data.data.gitcreds }}\n  {{- end }}", test)
 	}
 
 	test = `{{- with {{ {{ }} secret "{{inputs.parameters.message}}" -}} }}
     {{ .Data.data.gitcreds }}
   {{- end }}`
 
-	replacement, err = Replace(test, replaceMap, true)
+	err = Replace(&test, replaceMap, true)
 	if assert.NoError(t, err) {
-		assert.Equal(t, "{{- with {{ {{ }} secret \"hello world\" -}} }}\n    {{ .Data.data.gitcreds }}\n  {{- end }}", replacement)
+		assert.Equal(t, "{{- with {{ {{ }} secret \"hello world\" -}} }}\n    {{ .Data.data.gitcreds }}\n  {{- end }}", test)
 	}
 
 	test = `{{- with {{ {{ }} secret "{{does-not-exist}}" -}} }}
     {{ .Data.data.gitcreds }}
   {{- end }}`
 
-	replacement, err = Replace(test, replaceMap, true)
+	err = Replace(&test, replaceMap, true)
 	if assert.NoError(t, err) {
-		assert.Equal(t, test, replacement)
+		assert.Equal(t, test, test)
 	}
 }
 
@@ -119,8 +123,8 @@ func TestReplaceStringWithWhiteSpace(t *testing.T) {
 	replaceMap := map[string]string{"inputs.parameters.message": "hello world"}
 
 	test := `{{ inputs.parameters.message }}`
-	replacement, err := Replace(test, replaceMap, true)
+	err := Replace(&test, replaceMap, true)
 	if assert.NoError(t, err) {
-		assert.Equal(t, "hello world", replacement)
+		assert.Equal(t, "hello world", test)
 	}
 }

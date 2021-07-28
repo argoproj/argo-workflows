@@ -2871,7 +2871,7 @@ func parseStringToDuration(durationString string) (time.Duration, error) {
 	return suspendDuration, nil
 }
 
-func processItem(tmpl template.Template, name string, index int, item wfv1.Item, obj interface{}) (string, error) {
+func processItem(name string, index int, item wfv1.Item, obj interface{}) (string, error) {
 	replaceMap := make(map[string]string)
 	var newName string
 
@@ -2912,15 +2912,7 @@ func processItem(tmpl template.Template, name string, index int, item wfv1.Item,
 	default:
 		return "", errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string, number, list, or map. received: %v", index, item)
 	}
-	newStepStr, err := tmpl.Replace(replaceMap, false)
-	if err != nil {
-		return "", err
-	}
-	err = json.Unmarshal([]byte(newStepStr), &obj)
-	if err != nil {
-		return "", errors.InternalWrapError(err)
-	}
-	return newName, nil
+	return newName, template.Replace(obj, replaceMap, false)
 }
 
 func generateNodeName(name string, index int, desc interface{}) string {
@@ -2986,26 +2978,7 @@ func expandSequence(seq *wfv1.Sequence) ([]wfv1.Item, error) {
 }
 
 func (woc *wfOperationCtx) substituteParamsInVolumes(params map[string]string) error {
-	if woc.volumes == nil {
-		return nil
-	}
-
-	volumes := woc.volumes
-	volumesBytes, err := json.Marshal(volumes)
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
-	newVolumesStr, err := template.Replace(string(volumesBytes), params, true)
-	if err != nil {
-		return err
-	}
-	var newVolumes []apiv1.Volume
-	err = json.Unmarshal([]byte(newVolumesStr), &newVolumes)
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
-	woc.volumes = newVolumes
-	return nil
+	return template.Replace(woc.volumes, params, true)
 }
 
 // createTemplateContext creates a new template context.
@@ -3044,21 +3017,9 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 		// Substitute parameters in non-value fields of the template to support variables in places such as labels,
 		// name, and help. We do not substitute value fields here (i.e. gauge, histogram, counter) here because they
 		// might be realtime ({{workflow.duration}} will not be substituted the same way if it's realtime or if it isn't).
-		metricTmplBytes, err := json.Marshal(metricTmpl)
-		if err != nil {
-			woc.reportMetricEmissionError(fmt.Sprintf("unable to substitute parameters for metric '%s' (marshal): %s", metricTmpl.Name, err))
-			continue
-		}
-		replacedValue, err := template.Replace(string(metricTmplBytes), localScope, false)
-		if err != nil {
+		metricTmplSubstituted := *metricTmpl.DeepCopy()
+		if err := template.Replace(&metricTmplSubstituted, localScope, false); err != nil {
 			woc.reportMetricEmissionError(fmt.Sprintf("unable to substitute parameters for metric '%s': %s", metricTmpl.Name, err))
-			continue
-		}
-
-		var metricTmplSubstituted wfv1.Prometheus
-		err = json.Unmarshal([]byte(replacedValue), &metricTmplSubstituted)
-		if err != nil {
-			woc.reportMetricEmissionError(fmt.Sprintf("unable to substitute parameters for metric '%s' (unmarshal): %s", metricTmpl.Name, err))
 			continue
 		}
 		// Only substitute non-value fields here. Value field substitution happens below
@@ -3104,12 +3065,10 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 			metricSpec := metricTmpl.DeepCopy()
 
 			// Finally substitute value parameters
-			replacedValue, err := template.Replace(metricSpec.GetValueString(), localScope, false)
-			if err != nil {
+			if err := template.Replace(metricSpec, localScope, false); err != nil {
 				woc.reportMetricEmissionError(fmt.Sprintf("unable to substitute parameters for metric '%s': %s", metricSpec.Name, err))
 				continue
 			}
-			metricSpec.SetValueString(replacedValue)
 
 			metric := woc.controller.metrics.GetCustomMetric(metricSpec.GetDesc())
 			// It is valid to pass a nil metric to ConstructOrUpdateMetric, in that case the metric will be created for us
@@ -3397,23 +3356,5 @@ func (woc *wfOperationCtx) mergedTemplateDefaultsInto(originalTmpl *wfv1.Templat
 }
 
 func (woc *wfOperationCtx) substituteGlobalVariables() error {
-	execWfSpec := woc.execWf.Spec
-
-	// To Avoid the stale Global parameter value substitution to templates.
-	// Updated Global parameter values will be substituted in 'executetemplate' for templates.
-	execWfSpec.Templates = nil
-
-	wfSpec, err := json.Marshal(execWfSpec)
-	if err != nil {
-		return err
-	}
-	resolveSpec, err := template.Replace(string(wfSpec), woc.globalParams, true)
-	if err != nil {
-		return err
-	}
-	err = json.Unmarshal([]byte(resolveSpec), &woc.execWf.Spec)
-	if err != nil {
-		return err
-	}
-	return nil
+	return template.Replace(&woc.execWf.Spec, woc.globalParams, true)
 }

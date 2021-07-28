@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -59,18 +58,8 @@ func (woc *wfOperationCtx) resolveExitTmplArgument(args wfv1.Arguments, prefix s
 	for _, arts := range outputs.Artifacts {
 		scope.addArtifactToScope(fmt.Sprintf("%s.outputs.artifacts.%s", prefix, arts.Name), arts)
 	}
-
-	stepBytes, err := json.Marshal(args)
-	if err != nil {
-		return args, err
-	}
-	newStepStr, err := template.Replace(string(stepBytes), woc.globalParams.Merge(scope.getParameters()), true)
-	if err != nil {
-		return args, err
-	}
-	var newArgs wfv1.Arguments
-	err = json.Unmarshal([]byte(newStepStr), &newArgs)
-	if err != nil {
+	newArgs := *args.DeepCopy()
+	if err := template.Replace(&newArgs, woc.globalParams.Merge(scope.getParameters()), true); err != nil {
 		return args, err
 	}
 	// Step 2: replace all artifact references

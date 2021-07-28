@@ -346,18 +346,9 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 	for i, step := range stepGroup {
 		// Step 1: replace all parameter scope references in the step
 		// TODO: improve this
-		stepBytes, err := json.Marshal(step)
-		if err != nil {
-			return nil, errors.InternalWrapError(err)
-		}
-		newStepStr, err := template.Replace(string(stepBytes), woc.globalParams.Merge(scope.getParameters()), true)
-		if err != nil {
+		newStep := *step.DeepCopy()
+		if err := template.Replace(&newStep, woc.globalParams.Merge(scope.getParameters()), true); err != nil {
 			return nil, err
-		}
-		var newStep wfv1.WorkflowStep
-		err = json.Unmarshal([]byte(newStepStr), &newStep)
-		if err != nil {
-			return nil, errors.InternalWrapError(err)
 		}
 
 		// If we are not executing, don't attempt to resolve any artifact references. We only check if we are executing after
@@ -457,18 +448,9 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 	step.WithParam = ""
 	step.WithSequence = nil
 
-	stepBytes, err := json.Marshal(step)
-	if err != nil {
-		return nil, errors.InternalWrapError(err)
-	}
-	t, err := template.NewTemplate(string(stepBytes))
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse argo variable: %w", err)
-	}
-
 	for i, item := range items {
-		var newStep wfv1.WorkflowStep
-		newStepName, err := processItem(t, step.Name, i, item, &newStep)
+		newStep := *step.DeepCopy()
+		newStepName, err := processItem(step.Name, i, item, &newStep)
 		if err != nil {
 			return nil, err
 		}

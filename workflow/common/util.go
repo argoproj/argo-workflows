@@ -168,20 +168,11 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 
 // SubstituteParams returns a new copy of the template with global, pod, and input parameters substituted
 func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters) (*wfv1.Template, error) {
-	tmplBytes, err := json.Marshal(tmpl)
-	if err != nil {
-		return nil, errors.InternalWrapError(err)
-	}
 	// First replace globals & locals, then replace inputs because globals could be referenced in the inputs
 	replaceMap := globalParams.Merge(localParams)
-	globalReplacedTmplStr, err := template.Replace(string(tmplBytes), replaceMap, true)
-	if err != nil {
+	globalReplacedTmpl := *tmpl.DeepCopy()
+	if err := template.Replace(&globalReplacedTmpl, replaceMap, true); err != nil {
 		return nil, err
-	}
-	var globalReplacedTmpl wfv1.Template
-	err = json.Unmarshal([]byte(globalReplacedTmplStr), &globalReplacedTmpl)
-	if err != nil {
-		return nil, errors.InternalWrapError(err)
 	}
 	// Now replace the rest of substitutions (the ones that can be made) in the template
 	replaceMap = make(map[string]string)
@@ -192,7 +183,7 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 		replaceMap["inputs.parameters."+inParam.Name] = inParam.Value.String()
 	}
 	// allow {{inputs.parameters}} to fetch the entire input parameters list as JSON
-	jsonInputParametersBytes, err := json.Marshal(globalReplacedTmpl.Inputs.Parameters)
+	jsonInputParametersBytes, err := json.Marshal(&globalReplacedTmpl.Inputs.Parameters)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
@@ -213,16 +204,10 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 		}
 	}
 
-	s, err := template.Replace(globalReplacedTmplStr, replaceMap, true)
-	if err != nil {
+	if err := template.Replace(&globalReplacedTmpl, replaceMap, true); err != nil {
 		return nil, err
 	}
-	var newTmpl wfv1.Template
-	err = json.Unmarshal([]byte(s), &newTmpl)
-	if err != nil {
-		return nil, errors.InternalWrapError(err)
-	}
-	return &newTmpl, nil
+	return &globalReplacedTmpl, nil
 }
 
 // RunCommand is a convenience function to run/log a command and log the stderr upon failure
