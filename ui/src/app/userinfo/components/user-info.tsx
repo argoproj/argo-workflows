@@ -41,7 +41,7 @@ export class UserInfo extends BasePage<RouteComponentProps<any>, State> {
                             <p>Subject: {this.state.userInfo.subject || '-'}</p>
                             <p>Groups: {(this.state.userInfo.groups && this.state.userInfo.groups.length > 0 && this.state.userInfo.groups.join(', ')) || '-'}</p>
                             <p>Email: {this.state.userInfo.email || '-'}</p>
-                            <p>Email Verified: {this.state.userInfo.emailVerified.toString() || '-'}</p>
+                            <p>Email Verified: {this.state.userInfo.emailVerified && this.state.userInfo.emailVerified.toString() || '-'}</p>
                             <p>Service Account: {this.state.userInfo.serviceAccountName || '-'}</p>
                         </>
                     )}
