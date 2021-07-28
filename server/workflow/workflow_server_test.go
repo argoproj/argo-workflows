@@ -7,7 +7,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"gopkg.in/square/go-jose.v2/jwt"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -136,11 +135,11 @@ const wf2 = `
         "uid": "91066a6c-1ddc-11ea-b443-42010aa80075"
     },
     "spec": {
-        
+
         "entrypoint": "whalesay",
         "templates": [
             {
-                
+
                 "container": {
                     "args": [
                         "hello world"
@@ -199,11 +198,11 @@ const wf3 = `
         "uid": "6522aff1-1e01-11ea-b443-42010aa80075"
     },
     "spec": {
-        
+
         "entrypoint": "whalesay",
         "templates": [
             {
-                
+
                 "container": {
                     "args": [
                         "hello world"
@@ -262,11 +261,11 @@ const wf4 = `
         "uid": "91066a6c-1ddc-11ea-b443-42010aa80075"
     },
     "spec": {
-        
+
         "entrypoint": "whalesay",
         "templates": [
             {
-                
+
                 "container": {
                     "args": [
                         "hello world"
@@ -325,11 +324,11 @@ const wf5 = `
         "uid": "6522aff1-1e01-11ea-b443-42010aa80075"
     },
     "spec": {
-        
+
         "entrypoint": "whalesay",
         "templates": [
             {
-                
+
                 "container": {
                     "args": [
                         "hello world"
@@ -589,7 +588,7 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 	kubeClientSet := fake.NewSimpleClientset()
 	wfClientset := v1alpha.NewSimpleClientset(&unlabelledObj, &wfObj1, &wfObj2, &wfObj3, &wfObj4, &wfObj5, &failedWfObj, &wftmpl, &cronwfObj, &cwfTmpl)
 	wfClientset.PrependReactor("create", "workflows", generateNameReactor)
-	ctx := context.WithValue(context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
+	ctx := context.WithValue(context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimsKey, types.Claims{"sub": "my-sub"})
 	return server, ctx
 }
 

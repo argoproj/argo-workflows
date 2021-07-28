@@ -14,10 +14,14 @@ import (
 
 func Label(ctx context.Context, obj metav1.Object) {
 	claims := auth.GetClaims(ctx)
-	if claims != nil {
-		labels.Label(obj, common.LabelKeyCreator, dnsFriendly(claims.Subject))
-		if claims.Email != "" {
-			labels.Label(obj, common.LabelKeyCreatorEmail, dnsFriendly(strings.Replace(claims.Email, "@", ".at.", 1)))
+	if len(claims) != 0 {
+		labels.Label(obj, common.LabelKeyCreator, dnsFriendly(claims["sub"].(string)))
+		// check if emai claim is available
+		emailClaim, ok := claims["email"]
+		if ok {
+			if emailClaim.(string) != "" {
+				labels.Label(obj, common.LabelKeyCreatorEmail, dnsFriendly(strings.Replace(emailClaim.(string), "@", ".at.", 1)))
+			}
 		}
 	}
 }
