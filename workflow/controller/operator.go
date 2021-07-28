@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -232,13 +233,21 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.updated = wfUpdate
 		if !acquired {
 			woc.log.Warn("Workflow processing has been postponed due to concurrency limit")
-			woc.wf.Status.Message = msg
+			phase := woc.wf.Status.Phase
+			if phase == wfv1.WorkflowUnknown {
+				phase = wfv1.WorkflowPending
+			}
+			woc.markWorkflowPhase(ctx, phase, msg)
 			return
 		}
 	}
 
 	// Update workflow duration variable
-	woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", time.Since(woc.wf.Status.StartedAt.Time).Seconds())
+	if woc.wf.Status.StartedAt.IsZero() {
+		woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", time.Duration(0).Seconds())
+	} else {
+		woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", time.Since(woc.wf.Status.StartedAt.Time).Seconds())
+	}
 
 	// Populate the phase of all the nodes prior to execution
 	for _, node := range woc.wf.Status.Nodes {
@@ -1692,7 +1701,6 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		} else {
 			woc.log.Infof("Node %s acquired synchronization lock", nodeName)
 			if node != nil {
-				node.Message = ""
 				node = woc.markNodeWaitingForLock(node.Name, "")
 			}
 		}
@@ -2136,6 +2144,13 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 	return node
 }
 
+func (woc *wfOperationCtx) getPodByNode(node *wfv1.NodeStatus) (*apiv1.Pod, error) {
+	if node.Type != wfv1.NodeTypePod {
+		return nil, fmt.Errorf("Expected node type %s, got %s", wfv1.NodeTypePod, node.Type)
+	}
+	return woc.controller.getPod(woc.wf.GetNamespace(), node.ID)
+}
+
 func (woc *wfOperationCtx) recordNodePhaseEvent(node *wfv1.NodeStatus) {
 	message := fmt.Sprintf("%v node %s", node.Phase, node.Name)
 	if node.Message != "" {
@@ -2146,8 +2161,19 @@ func (woc *wfOperationCtx) recordNodePhaseEvent(node *wfv1.NodeStatus) {
 	case wfv1.NodeSucceeded, wfv1.NodeRunning:
 		eventType = apiv1.EventTypeNormal
 	}
+	eventConfig := woc.controller.Config.NodeEvents
+	var involvedObject runtime.Object = woc.wf
+	if eventConfig.SendAsPod {
+		pod, err := woc.getPodByNode(node)
+		if err != nil {
+			woc.log.Infof("Error getting pod from workflow node: %s", err)
+		}
+		if pod != nil {
+			involvedObject = pod
+		}
+	}
 	woc.eventRecorder.AnnotatedEventf(
-		woc.wf,
+		involvedObject,
 		map[string]string{
 			common.AnnotationKeyNodeType: string(node.Type),
 			common.AnnotationKeyNodeName: node.Name,
@@ -2217,6 +2243,7 @@ func (woc *wfOperationCtx) markNodeWaitingForLock(nodeName string, lockName stri
 	if lockName == "" {
 		// If we are no longer waiting for a lock, nil out the sync status
 		node.SynchronizationStatus = nil
+		node.Message = ""
 	} else {
 		node.SynchronizationStatus.Waiting = lockName
 	}
@@ -2612,7 +2639,7 @@ func (n loopNodes) Swap(i, j int) {
 
 // processAggregateNodeOutputs adds the aggregated outputs of a withItems/withParam template as a
 // parameter in the form of a JSON list
-func (woc *wfOperationCtx) processAggregateNodeOutputs(tmpl *wfv1.Template, scope *wfScope, prefix string, childNodes []wfv1.NodeStatus) error {
+func (woc *wfOperationCtx) processAggregateNodeOutputs(scope *wfScope, prefix string, childNodes []wfv1.NodeStatus) error {
 	if len(childNodes) == 0 {
 		return nil
 	}
@@ -2645,7 +2672,7 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(tmpl *wfv1.Template, scop
 			resultsList = append(resultsList, item)
 		}
 	}
-	if tmpl.GetType() == wfv1.TemplateTypeScript {
+	{
 		resultsJSON, err := json.Marshal(resultsList)
 		if err != nil {
 			return err
@@ -3399,7 +3426,13 @@ func (woc *wfOperationCtx) mergedTemplateDefaultsInto(originalTmpl *wfv1.Templat
 }
 
 func (woc *wfOperationCtx) substituteGlobalVariables() error {
-	wfSpec, err := json.Marshal(woc.execWf.Spec)
+	execWfSpec := woc.execWf.Spec
+
+	// To Avoid the stale Global parameter value substitution to templates.
+	// Updated Global parameter values will be substituted in 'executetemplate' for templates.
+	execWfSpec.Templates = nil
+
+	wfSpec, err := json.Marshal(execWfSpec)
 	if err != nil {
 		return err
 	}

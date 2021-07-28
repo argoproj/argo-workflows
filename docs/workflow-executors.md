@@ -95,8 +95,9 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
 This is the most fully featured executor.
 
 * Reliability:
-    * Not yet well-tested.
-    * Not yet popular.
+    * Not yet well-tested
+    * Not yet popular
+    * Works on GKE Autopilot
 * More secure:
     * No `privileged` access
     * Cannot escape the privileges of the pod's service account
