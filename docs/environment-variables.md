@@ -35,6 +35,37 @@ Note that these environment variables may be removed at any time.
 | `WORKFLOW_GC_PERIOD` | `time.Duration` | `5m` | The periodicity for GC of workflows. |
 | `BUBBLE_ENTRY_TEMPLATE_ERR` | `bool` | `true` | Whether to bubble up template errors to workflow. |
 | `INFORMER_WRITE_BACK` | `bool` | `true` | Whether to write back to informer instead of catching up. |
+| `GRPC_MESSAGE_SIZE` | `string` | Use different GRPC Max message size for Argo server deployment (supporting huge workflows) |
+
+You can set environment variable for the argo-server deployment, for example:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argo-server
+spec:
+  selector:
+    matchLabels:
+      app: argo-server
+  template:
+    metadata:
+      labels:
+        app: argo-server
+    spec:
+      containers:
+      - args:
+        - server
+        image: argoproj/argocli:latest
+        name: argo-server
+        env:
+        - name: GRPC_MESSAGE_SIZE
+          value: "209715200"
+        ports:
+        ..
+        ...
+        ....
+```
 
 You can set the environment variables for controller in controller's container spec like the following:
 
