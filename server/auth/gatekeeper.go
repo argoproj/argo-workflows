@@ -120,8 +120,8 @@ func GetKubeClient(ctx context.Context) kubernetes.Interface {
 	return ctx.Value(KubeKey).(kubernetes.Interface)
 }
 
-func GetClaims(ctx context.Context) *types.Claims {
-	config, _ := ctx.Value(ClaimsKey).(*types.Claims)
+func GetClaims(ctx context.Context) types.Claims {
+	config, _ := ctx.Value(ClaimsKey).(types.Claims)
 	return config
 }
 
@@ -143,7 +143,7 @@ func getAuthHeader(md metadata.MD) string {
 	return ""
 }
 
-func (s gatekeeper) getClients(ctx context.Context) (*servertypes.Clients, *types.Claims, error) {
+func (s gatekeeper) getClients(ctx context.Context) (*servertypes.Clients, types.Claims, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	authorization := getAuthHeader(md)
 	mode, valid := s.Modes.GetMode(authorization)
@@ -175,7 +175,7 @@ func (s gatekeeper) getClients(ctx context.Context) (*servertypes.Clients, *type
 			return clients, claims, nil
 		} else {
 			// important! write an audit entry (i.e. log entry) so we know which user performed an operation
-			log.WithFields(log.Fields{"subject": claims.Subject}).Info("using the default service account for user")
+			log.WithFields(log.Fields{"subject": claims["sub"]}).Info("using the default service account for user")
 			return s.clients, claims, nil
 		}
 	default:
@@ -183,7 +183,7 @@ func (s gatekeeper) getClients(ctx context.Context) (*servertypes.Clients, *type
 	}
 }
 
-func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *types.Claims) (*servertypes.Clients, error) {
+func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims types.Claims) (*servertypes.Clients, error) {
 	list, err := s.clients.Kubernetes.CoreV1().ServiceAccounts(s.namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list SSO RBAC service accounts: %w", err)
@@ -226,9 +226,9 @@ func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *types.Claims
 		if err != nil {
 			return nil, err
 		}
-		claims.ServiceAccountName = serviceAccount.Name
+		claims["serviceaccount_name"] = serviceAccount.Name
 		// important! write an audit entry (i.e. log entry) so we know which user performed an operation
-		log.WithFields(log.Fields{"serviceAccount": serviceAccount.Name, "subject": claims.Subject}).Info("selected SSO RBAC service account for user")
+		log.WithFields(log.Fields{"serviceAccount": serviceAccount.Name, "subject": claims["sub"]}).Info("selected SSO RBAC service account for user")
 		return clients, nil
 	}
 	return nil, fmt.Errorf("no service account rule matches")
