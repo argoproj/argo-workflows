@@ -216,10 +216,10 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	if as.tlsConfig != nil {
 		url = "https://localhost" + address
 	}
-	log.Infof("Argo Server started successfully on %s", url)
 	log.WithFields(log.Fields{
 		"GRPC_MESSAGE_SIZE": MaxGRPCMessageSize,
 	}).Info("GRPC Server Max Message Size, MaxGRPCMessageSize, is set")
+	log.Infof("Argo Server started successfully on %s", url)
 	browserOpenFunc(url)
 
 	<-as.stopCh
@@ -232,7 +232,7 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 	grpc_prometheus.EnableHandlingTimeHistogram()
 
 	sOpts := []grpc.ServerOption{
-		// Set both the send and receive the bytes limit to be 100MB
+		// Set both the send and receive the bytes limit to be 100MB or GRPC_MESSAGE_SIZE
 		// The proper way to achieve high performance is to have pagination
 		// while we work toward that, we can have high limit first
 		grpc.MaxRecvMsgSize(MaxGRPCMessageSize),
