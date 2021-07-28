@@ -20,7 +20,6 @@ import (
 )
 
 func (woc *wfOperationCtx) patchTaskSet(ctx context.Context, patch interface{}, pathTypeType types.PatchType) error {
-	fmt.Println(patch)
 	patchByte, err := json.Marshal(patch)
 	if err != nil {
 		return errors.InternalWrapError(err)
@@ -84,7 +83,7 @@ func (woc *wfOperationCtx) taskSetReconciliation(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	woc.log.Infof("TaskSet Reconciliation")
+	woc.log.WithField("workflow", woc.wf.Name).WithField("namespace", woc.wf.Namespace).WithField("TaskSet", workflowTaskset.Name).Infof("TaskSet Reconciliation")
 	if workflowTaskset != nil && len(workflowTaskset.Status.Nodes) > 0 {
 		for nodeID, taskResult := range workflowTaskset.Status.Nodes {
 			node := woc.wf.Status.Nodes[nodeID]
@@ -100,12 +99,9 @@ func (woc *wfOperationCtx) taskSetReconciliation(ctx context.Context) error {
 }
 
 func (woc *wfOperationCtx) CreateTaskSet(ctx context.Context) error {
-
 	if len(woc.taskSet) == 0 {
 		return nil
 	}
-	woc.log.Infof("CreateTaskSet")
-
 	key := fmt.Sprintf("%s/%s", woc.wf.Namespace, woc.wf.Name)
 	log.WithField("workflow", woc.wf.Name).WithField("namespace", woc.wf.Namespace).WithField("TaskSet", key).Infof("Creating TaskSet")
 	taskSet := wfv1.WorkflowTaskSet{

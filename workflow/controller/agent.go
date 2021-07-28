@@ -13,7 +13,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -128,11 +127,8 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			woc.log.Infof("Failed pod %s  creation: already exists", podName)
 			return created, nil
 		}
-		if errorsutil.IsTransientErr(err) {
-			return nil, err
-		}
 		woc.log.Infof("Failed to create Agent pod %s: %v", podName, err)
-		return nil, errors.InternalWrapError(err)
+		return nil, errors.InternalWrapError(fmt.Errorf("failed to create Agent pod. Reason: %v", err))
 	}
 	woc.log.Infof("Created Agent pod: %s (%s)", podName, created.Name)
 	return created, nil
