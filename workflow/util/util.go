@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -159,33 +158,6 @@ func ToUnstructured(wf *wfv1.Workflow) (*unstructured.Unstructured, error) {
 	un.SetKind(workflow.WorkflowKind)
 	un.SetAPIVersion(workflow.APIVersion)
 	return un, nil
-}
-
-// TaskSetToUnstructured converts an WorkflowTaskSet to an Unstructured object
-func TaskSetToUnstructured(wfts *wfv1.WorkflowTaskSet) (*unstructured.Unstructured, error) {
-	obj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(wfts)
-	if err != nil {
-		return nil, err
-	}
-	un := &unstructured.Unstructured{Object: obj}
-	// we need to add these values so that the `EventRecorder` does not error
-	un.SetKind(workflow.WorkflowTaskSetKind)
-	un.SetAPIVersion(workflow.APIVersion)
-	return un, nil
-}
-
-// UnstructuredToTaskSet converts an Unstructured object to a WorkflowTaskSet
-func UnstructuredToTaskSet(obj interface{}) (*wfv1.WorkflowTaskSet, error) {
-	un, ok := obj.(*unstructured.Unstructured)
-	if !ok {
-		return nil, fmt.Errorf("malformed WorkflowTaskSet: expected *unstructured.Unstructured, got %s", reflect.TypeOf(obj).Name())
-	}
-	taskSet := &wfv1.WorkflowTaskSet{}
-	err := FromUnstructuredObj(un, taskSet)
-	if err != nil {
-		return nil, err
-	}
-	return taskSet, nil
 }
 
 // IsWorkflowCompleted returns whether or not a workflow is considered completed
