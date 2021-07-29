@@ -25,6 +25,7 @@ func main() {
 			"Workflow",
 			"WorkflowEventBinding",
 			"WorkflowTemplate",
+			"WorkflowTaskSet",
 		} {
 			v := definitions.(obj)["io.argoproj.workflow.v1alpha1."+kind].(obj)["properties"].(obj)
 			v["apiVersion"].(obj)["const"] = "argoproj.io/v1alpha1"
@@ -40,6 +41,7 @@ func main() {
 				obj{"$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"},
 				obj{"$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowEventBinding"},
 				obj{"$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplate"},
+				obj{"$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTaskSet"},
 			},
 			"definitions": definitions,
 		}

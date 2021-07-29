@@ -1,9 +1,11 @@
 package v1alpha1
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 // +genclient
-// +kubebuilder:subresource:status
+// +kubebuilder:resource:shortName=wfts
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type WorkflowTaskSet struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -13,12 +15,7 @@ type WorkflowTaskSet struct {
 }
 
 type WorkflowTaskSetSpec struct {
-	Tasks []Task `json:"tasks,omitempty" protobuf:"bytes,1,rep,name=tasks"`
-}
-
-type Task struct {
-	NodeID   string   `json:"nodeId" protobuf:"bytes,1,opt,name=nodeId"`
-	Template Template `json:"template" protobuf:"bytes,2,opt,name=template"`
+	Tasks map[string]Template `json:"tasks,omitempty" protobuf:"bytes,1,rep,name=tasks"`
 }
 
 type WorkflowTaskSetStatus struct {

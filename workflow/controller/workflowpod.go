@@ -544,6 +544,10 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 			Name:  "GODEBUG",
 			Value: "x509ignoreCN=0",
 		},
+		{
+			Name:  common.EnvVarWorkflowName,
+			Value: woc.wf.Name,
+		},
 	}
 	if woc.controller.Config.Executor != nil {
 		execEnvVars = append(execEnvVars, woc.controller.Config.Executor.Env...)

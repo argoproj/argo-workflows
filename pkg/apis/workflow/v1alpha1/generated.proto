@@ -1227,12 +1227,6 @@ message TarStrategy {
   optional int32 compressionLevel = 1;
 }
 
-message Task {
-  optional string nodeId = 1;
-
-  optional Template template = 2;
-}
-
 // Template is a reusable and composable unit of execution in a workflow
 message Template {
   // Name is the name of the template
@@ -1770,7 +1764,7 @@ message WorkflowStep {
 }
 
 // +genclient
-// +kubebuilder:subresource:status
+// +kubebuilder:resource:shortName=wfts
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message WorkflowTaskSet {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
@@ -1788,7 +1782,7 @@ message WorkflowTaskSetList {
 }
 
 message WorkflowTaskSetSpec {
-  repeated Task tasks = 1;
+  map<string, Template> tasks = 1;
 }
 
 message WorkflowTaskSetStatus {
