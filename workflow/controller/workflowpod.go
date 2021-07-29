@@ -149,9 +149,18 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		if isResourcesSpecified(woc.controller.Config.MainContainer) {
 			c.Resources = *woc.controller.Config.MainContainer.Resources.DeepCopy()
 		}
-		// Container resources in workflow spec takes precedence over the main container's configuration in controller.
-		if isResourcesSpecified(tmpl.Container) && tmpl.Container.Name == common.MainContainerName {
-			c.Resources = *tmpl.Container.Resources.DeepCopy()
+		// Template resources inv workflow spec takes precedence over the main container's configuration in controller
+		switch tmpl.GetType() {
+		case wfv1.TemplateTypeContainer:
+			if isResourcesSpecified(tmpl.Container) && tmpl.Container.Name == common.MainContainerName {
+				c.Resources = *tmpl.Container.Resources.DeepCopy()
+			}
+		case wfv1.TemplateTypeScript:
+			if isResourcesSpecified(&tmpl.Script.Container) {
+				c.Resources = *tmpl.Script.Resources.DeepCopy()
+			}
+		case wfv1.TemplateTypeContainerSet:
+
 		}
 		mainCtrs[i] = c
 	}
