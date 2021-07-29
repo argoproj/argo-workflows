@@ -22,7 +22,10 @@ func (woc *wfOperationCtx) patchTaskSet(ctx context.Context, patch interface{}, 
 		return errors.InternalWrapError(err)
 	}
 	_, err = woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace).Patch(ctx, woc.wf.Name, pathTypeType, patchByte, metav1.PatchOptions{})
-	return fmt.Errorf("failed patching taskset: %v", err)
+	if err != nil {
+		return fmt.Errorf("failed patching taskset: %v", err)
+	}
+	return nil
 }
 
 func (woc *wfOperationCtx) getDeleteTaskAndNodePatch() map[string]interface{} {
