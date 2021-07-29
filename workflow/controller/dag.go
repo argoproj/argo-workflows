@@ -167,9 +167,9 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 		if node.Type == wfv1.NodeTypeRetry {
 			// A fulfilled Retry node will always reflect the status of its last child node, so its individual attempts don't interest us.
 			// To resume the traversal, we look at the children of the last child node.
-			childNode, maybeOnExitNode := getLastRetryNode(&node, nodes)
-			if maybeOnExitNode != nil {
-				uniqueQueue.add(generatePhaseNodes([]string{maybeOnExitNode.ID}, branchPhase)...)
+			childNode, onExitNode := getLastRetryAndOnExitFromRetryNode(&node, nodes)
+			if onExitNode != nil {
+				uniqueQueue.add(generatePhaseNodes([]string{onExitNode.ID}, branchPhase)...)
 			}
 			if childNode != nil {
 				uniqueQueue.add(generatePhaseNodes(childNode.Children, branchPhase)...)
