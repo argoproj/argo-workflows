@@ -354,13 +354,14 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	err = woc.taskSetReconciliation(ctx)
 	if err != nil {
 		woc.log.WithError(err).Error("error in workflowtaskset reconciliation")
-		woc.markWorkflowError(ctx, err)
+		return
 	}
 
 	err = woc.reconcileAgentPod(ctx)
 	if err != nil {
 		woc.log.WithError(err).Error("error in agent pod reconciliation")
 		woc.markWorkflowError(ctx, err)
+		return
 	}
 
 	if node == nil || !node.Fulfilled() {
@@ -613,7 +614,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	err = woc.removeCompletedTaskSetStatus(ctx)
 
 	if err != nil {
-		woc.log.Warnf("Error updating taskset: %v %s", err, apierr.ReasonForError(err))
+		woc.log.WithError(err).Warn("error updating taskset")
 	}
 
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
@@ -929,6 +930,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 		}
 		if woc.isAgentPod(pod) {
 			woc.updateAgentPodStatus(ctx, pod)
+			return
 		}
 		nodeNameForPod := pod.Annotations[common.AnnotationKeyNodeName]
 

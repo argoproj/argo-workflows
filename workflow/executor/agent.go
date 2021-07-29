@@ -136,9 +136,6 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Temp
 }
 
 func IsWorkflowCompleted(wts *wfv1.WorkflowTaskSet) bool {
-	if len(wts.Labels) == 0 {
-		return false
-	}
 	value := wts.Labels[common.LabelKeyCompleted]
 	return value == "true"
 }

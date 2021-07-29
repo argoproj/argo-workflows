@@ -44,11 +44,11 @@ func (woc *wfOperationCtx) updateAgentPodStatus(ctx context.Context, pod *apiv1.
 	woc.log.Infof("updateAgentPodStatus")
 	newPhase, message := assessAgentPodStatus(pod)
 	if newPhase == wfv1.WorkflowFailed || newPhase == wfv1.WorkflowError {
-		woc.markWorkflowError(ctx,fmt.Errorf("agent pod failed with reason %s", message))
+		woc.markWorkflowError(ctx, fmt.Errorf("agent pod failed with reason %s", message))
 	}
 }
 
-func assessAgentPodStatus(pod *apiv1.Pod) (wfv1.WorkflowPhase,string) {
+func assessAgentPodStatus(pod *apiv1.Pod) (wfv1.WorkflowPhase, string) {
 	var newPhase wfv1.WorkflowPhase
 	var message string
 	log.Infof("assessAgentPodStatus")
@@ -87,23 +87,22 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			Name:      podName,
 			Namespace: woc.wf.ObjectMeta.Namespace,
 			Labels: map[string]string{
-				common.LabelKeyWorkflow:  woc.wf.ObjectMeta.Name, // Allows filtering by pods related to specific workflow
-				common.LabelKeyCompleted: "false",                // Allows filtering by incomplete workflow pods
+				common.LabelKeyWorkflow:  woc.wf.Name, // Allows filtering by pods related to specific workflow
+				common.LabelKeyCompleted: "false",     // Allows filtering by incomplete workflow pods
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
 			},
 		},
 		Spec: apiv1.PodSpec{
-			RestartPolicy:    apiv1.RestartPolicyNever,
+			RestartPolicy:    apiv1.RestartPolicyOnFailure,
 			ImagePullSecrets: woc.execWf.Spec.ImagePullSecrets,
 			Containers: []apiv1.Container{
 				{
-					Name:            "main",
-					Command:         []string{"argoexec"},
-					Args:            []string{"agent"},
-					Image:           woc.controller.executorImage(),
-					ImagePullPolicy: apiv1.PullIfNotPresent,
+					Name:    "main",
+					Command: []string{"argoexec"},
+					Args:    []string{"agent"},
+					Image:   woc.controller.executorImage(),
 					Env: []apiv1.EnvVar{
 						{Name: common.EnvVarWorkflowName, Value: woc.wf.Name},
 					},
@@ -124,12 +123,12 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {
-			woc.log.Infof("Failed pod %s  creation: already exists", podName)
+			woc.log.Infof("Agent Pod %s  creation: already exists", podName)
 			return created, nil
 		}
 		woc.log.Infof("Failed to create Agent pod %s: %v", podName, err)
 		return nil, errors.InternalWrapError(fmt.Errorf("failed to create Agent pod. Reason: %v", err))
 	}
-	woc.log.Infof("Created Agent pod: %s (%s)", podName, created.Name)
+	woc.log.Infof("Created Agent pod: %s", created.Name)
 	return created, nil
 }

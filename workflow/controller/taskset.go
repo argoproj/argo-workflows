@@ -9,13 +9,10 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/util/retry"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
-	argowait "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -24,11 +21,8 @@ func (woc *wfOperationCtx) patchTaskSet(ctx context.Context, patch interface{}, 
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
-	return argowait.Backoff(retry.DefaultBackoff, func() (bool, error) {
-		var err error
-		_, err = woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace).Patch(ctx, woc.wf.Name, pathTypeType, patchByte, metav1.PatchOptions{})
-		return apierr.IsNotFound(err) || !errorsutil.IsTransientErr(err), err
-	})
+	_, err = woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace).Patch(ctx, woc.wf.Name, pathTypeType, patchByte, metav1.PatchOptions{})
+	return fmt.Errorf("failed patching taskset: %v", err)
 }
 
 func (woc *wfOperationCtx) getDeleteTaskAndNodePatch() map[string]interface{} {
@@ -83,7 +77,8 @@ func (woc *wfOperationCtx) taskSetReconciliation(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	woc.log.WithField("workflow", woc.wf.Name).WithField("namespace", woc.wf.Namespace).WithField("TaskSet", workflowTaskset.Name).Infof("TaskSet Reconciliation")
+
+	woc.log.WithField("workflow", woc.wf.Name).WithField("namespace", woc.wf.Namespace).Infof("TaskSet Reconciliation")
 	if workflowTaskset != nil && len(workflowTaskset.Status.Nodes) > 0 {
 		for nodeID, taskResult := range workflowTaskset.Status.Nodes {
 			node := woc.wf.Status.Nodes[nodeID]
@@ -126,11 +121,9 @@ func (woc *wfOperationCtx) CreateTaskSet(ctx context.Context) error {
 		},
 	}
 	log.WithField("workflow", woc.wf.Name).WithField("namespace", woc.wf.Namespace).WithField("TaskSet", key).Debug("creating new taskset")
-	err := argowait.Backoff(retry.DefaultBackoff, func() (bool, error) {
-		var err error
-		_, err = woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace).Create(ctx, &taskSet, metav1.CreateOptions{})
-		return err == nil || apierr.IsConflict(err) || apierr.IsAlreadyExists(err), err
-	})
+
+	_, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace).Create(ctx, &taskSet, metav1.CreateOptions{})
+
 	if apierr.IsConflict(err) || apierr.IsAlreadyExists(err) {
 		log.WithField("workflow", woc.wf.Name).WithField("namespace", woc.wf.Namespace).WithField("TaskSet", woc.taskSet).Debug("patching the exiting taskset")
 		spec := map[string]interface{}{
