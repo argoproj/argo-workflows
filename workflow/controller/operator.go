@@ -1510,7 +1510,7 @@ func getChildNodeIndex(node *wfv1.NodeStatus, nodes wfv1.Nodes, index int) *wfv1
 	if index < 0 {
 		nodeIndex = len(node.Children) + index // This actually subtracts, since index is negative
 		if nodeIndex < 0 {
-			panic(fmt.Sprintf("child index '%d' out of bounds", index))
+			return nil
 		}
 	}
 
@@ -1521,6 +1521,19 @@ func getChildNodeIndex(node *wfv1.NodeStatus, nodes wfv1.Nodes, index int) *wfv1
 	}
 
 	return &lastChildNode
+}
+
+func getLastRetryNode(node *wfv1.NodeStatus, nodes wfv1.Nodes) (*wfv1.NodeStatus, *wfv1.NodeStatus) {
+	var maybeOnExitNode *wfv1.NodeStatus
+	for i := range node.Children {
+		node := getChildNodeIndex(node, nodes, -i-1)
+		if strings.HasSuffix(node.Name, ".onExit") {
+			maybeOnExitNode = node
+		} else {
+			return node, maybeOnExitNode
+		}
+	}
+	return nil, nil
 }
 
 func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[string]interface{} {
