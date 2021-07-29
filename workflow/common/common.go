@@ -30,6 +30,9 @@ const (
 	// was scheduled to run by CronWorkflow.
 	AnnotationKeyCronWfScheduledTime = workflow.WorkflowFullName + "/scheduled-time"
 
+	AnnotationKeyWorkflowName = workflow.WorkflowFullName + "/workflow-name"
+	AnnotationKeyWorkflowUID  = workflow.WorkflowFullName + "/workflow-uid"
+
 	// LabelKeyControllerInstanceID is the label the controller will carry forward to workflows/pod labels
 	// for the purposes of workflow segregation
 	LabelKeyControllerInstanceID = workflow.WorkflowFullName + "/controller-instanceid"

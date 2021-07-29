@@ -2183,6 +2183,10 @@ func (woc *wfOperationCtx) recordNodePhaseEvent(node *wfv1.NodeStatus) {
 		eventType = apiv1.EventTypeNormal
 	}
 	eventConfig := woc.controller.Config.NodeEvents
+	annotations := map[string]string{
+		common.AnnotationKeyNodeType: string(node.Type),
+		common.AnnotationKeyNodeName: node.Name,
+	}
 	var involvedObject runtime.Object = woc.wf
 	if eventConfig.SendAsPod {
 		pod, err := woc.getPodByNode(node)
@@ -2191,14 +2195,13 @@ func (woc *wfOperationCtx) recordNodePhaseEvent(node *wfv1.NodeStatus) {
 		}
 		if pod != nil {
 			involvedObject = pod
+			annotations[common.AnnotationKeyWorkflowName] = woc.wf.Name
+			annotations[common.AnnotationKeyWorkflowUID] = string(woc.wf.GetUID())
 		}
 	}
 	woc.eventRecorder.AnnotatedEventf(
 		involvedObject,
-		map[string]string{
-			common.AnnotationKeyNodeType: string(node.Type),
-			common.AnnotationKeyNodeName: node.Name,
-		},
+		annotations,
 		eventType,
 		fmt.Sprintf("WorkflowNode%s", node.Phase),
 		message,
