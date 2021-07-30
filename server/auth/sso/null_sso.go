@@ -15,7 +15,7 @@ func (n nullService) IsRBACEnabled() bool {
 	return false
 }
 
-func (n nullService) Authorize(string) (types.Claims, error) {
+func (n nullService) Authorize(string) (*types.Claims, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 

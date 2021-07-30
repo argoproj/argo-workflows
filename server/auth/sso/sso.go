@@ -24,8 +24,6 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/server/auth/rbac"
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
-	jsonutil "github.com/argoproj/argo-workflows/v3/util/json"
-	"github.com/argoproj/argo-workflows/v3/util/typeassert"
 )
 
 const (
@@ -38,7 +36,7 @@ const (
 //go:generate mockery -name Interface
 
 type Interface interface {
-	Authorize(authorization string) (types.Claims, error)
+	Authorize(authorization string) (*types.Claims, error)
 	HandleRedirect(writer http.ResponseWriter, request *http.Request)
 	HandleCallback(writer http.ResponseWriter, request *http.Request)
 	IsRBACEnabled() bool
@@ -55,7 +53,6 @@ type sso struct {
 	encrypter       jose.Encrypter
 	rbacConfig      *rbac.Config
 	expiry          time.Duration
-	customGroupName string
 }
 
 func (s *sso) IsRBACEnabled() bool {
@@ -71,9 +68,6 @@ type Config struct {
 	// additional scopes (on top of "openid")
 	Scopes        []string        `json:"scopes,omitempty"`
 	SessionExpiry metav1.Duration `json:"sessionExpiry,omitempty"`
-
-	// CustomGroupClaimName used to display the customer group claim name in the UI
-	CustomGroupClaimName string `json:"customGroupClaimName,omitempty"`
 }
 
 func (c Config) GetSessionExpiry() time.Duration {
@@ -190,7 +184,6 @@ func newSso(
 		encrypter:       encrypter,
 		rbacConfig:      c.RBAC,
 		expiry:          c.GetSessionExpiry(),
-		customGroupName: c.CustomGroupClaimName,
 	}, nil
 }
 
@@ -239,33 +232,29 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(fmt.Sprintf("failed to verify token: %v", err)))
 		return
 	}
-	c := types.Claims{}
-	if err := idToken.Claims(&c); err != nil {
+	c := &types.Claims{}
+	if err := idToken.Claims(c); err != nil {
 		w.WriteHeader(401)
 		_, _ = w.Write([]byte(fmt.Sprintf("failed to get claims: %v", err)))
 		return
 	}
-
-	// this is for building jwt.Claims
-	c["iss"] = issuer
-	if s.customGroupName != "" {
-		c["groupname"] = c[s.customGroupName]
+	argoClaims := &types.Claims{
+		Claims: jwt.Claims{
+			Issuer:  issuer,
+			Subject: c.Subject,
+			Expiry:  jwt.NewNumericDate(time.Now().Add(s.expiry)),
+		},
+		Groups:             c.Groups,
+		Email:              c.Email,
+		EmailVerified:      c.EmailVerified,
+		ServiceAccountName: c.ServiceAccountName,
 	}
-	c["expiry"] = jwt.NewNumericDate(time.Now().Add(s.expiry))
-
-	// (jwt.Builder).Claims expects json convertible input. We convert Claims type
-	// map[string]interface for this
-	jsonClaim, err := jsonutil.Jsonify(c)
+	raw, err := jwt.Encrypted(s.encrypter).Claims(argoClaims).CompactSerialize()
 	if err != nil {
 		panic(err)
 	}
-
-	raw, err := jwt.Encrypted(s.encrypter).Claims(jsonClaim).CompactSerialize()
-	if err != nil {
-		panic(err)
-	}
-
 	value := Prefix + raw
+	log.Debugf("handing oauth2 callback %v", value)
 	http.SetCookie(w, &http.Cookie{
 		Value:    value,
 		Name:     "authorization",
@@ -289,44 +278,19 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 }
 
 // authorize verifies a bearer token and pulls user information form the claims.
-func (s *sso) Authorize(authorization string) (types.Claims, error) {
+func (s *sso) Authorize(authorization string) (*types.Claims, error) {
 	tok, err := jwt.ParseEncrypted(strings.TrimPrefix(authorization, Prefix))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse encrypted token %v", err)
 	}
-
-	// build jwt.Claims{} and run validation
-	parsedClaim := types.Claims{}
-	if err := tok.Claims(s.privateKey, &parsedClaim); err != nil {
+	c := &types.Claims{}
+	if err := tok.Claims(s.privateKey, c); err != nil {
 		return nil, fmt.Errorf("failed to parse claims: %v", err)
 	}
-
-	claimExpiry, err := typeassert.Float64(parsedClaim["expiry"])
-	if err != nil {
-		return nil, err
-	}
-
-	claimsIssuer, err := typeassert.String(parsedClaim["iss"])
-	if err != nil {
-		return nil, err
-	}
-
-	subject, err := typeassert.String(parsedClaim["sub"])
-	if err != nil {
-		return nil, err
-	}
-
-	convertedExpiry := jwt.NumericDate(claimExpiry)
-	stdClaim := jwt.Claims{
-		Issuer:  claimsIssuer,
-		Expiry:  &convertedExpiry,
-		Subject: subject,
-	}
-
-	if err := stdClaim.Validate(jwt.Expected{Issuer: issuer}); err != nil {
+	if err := c.Validate(jwt.Expected{Issuer: issuer}); err != nil {
 		return nil, fmt.Errorf("failed to validate claims: %v", err)
 	}
-	return parsedClaim, nil
+	return c, nil
 }
 
 func (s *sso) getRedirectUrl(r *http.Request) string {

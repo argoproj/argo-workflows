@@ -16,15 +16,15 @@ type Interface struct {
 }
 
 // Authorize provides a mock function with given fields: authorization
-func (_m *Interface) Authorize(authorization string) (types.Claims, error) {
+func (_m *Interface) Authorize(authorization string) (*types.Claims, error) {
 	ret := _m.Called(authorization)
 
-	var r0 types.Claims
-	if rf, ok := ret.Get(0).(func(string) types.Claims); ok {
+	var r0 *types.Claims
+	if rf, ok := ret.Get(0).(func(string) *types.Claims); ok {
 		r0 = rf(authorization)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(types.Claims)
+			r0 = ret.Get(0).(*types.Claims)
 		}
 	}
 
