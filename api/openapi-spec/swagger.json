@@ -4156,6 +4156,51 @@
         }
       }
     },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.DBDataSource": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        },
+        "valueFrom": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.DBDataSourceFrom"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.DBDataSourceFrom": {
+      "type": "object",
+      "properties": {
+        "secretKeyRef": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.DBSink": {
+      "type": "object",
+      "properties": {
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.SQLAction"
+          }
+        },
+        "database": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Database"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Database": {
+      "type": "object",
+      "properties": {
+        "dataSource": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.DBDataSource"
+        },
+        "driver": {
+          "type": "string",
+          "title": "+kubebuilder:default=default"
+        }
+      }
+    },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Dedupe": {
       "type": "object",
       "properties": {
@@ -4197,15 +4242,24 @@
         "image": {
           "type": "string"
         },
+        "passwordSecret": {
+          "title": "PasswordSecret is the secret selector to the repository password",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
         "path": {
           "description": "+kubebuilder:default=.",
           "type": "string"
         },
-        "sshPrivateKey": {
+        "sshPrivateKeySecret": {
+          "title": "SSHPrivateKeySecret is the secret selector to the repository ssh private key",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         },
         "url": {
           "type": "string"
+        },
+        "usernameSecret": {
+          "title": "UsernameSecret is the secret selector to the repository username",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         }
       }
     },
@@ -4457,10 +4511,6 @@
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.S3Sink": {
       "type": "object",
       "properties": {
-        "bucket": {
-          "type": "string",
-          "title": "an expression over the message, e.g. `\"subpath/\"+string(msg)`"
-        },
         "s3": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.S3"
         }
@@ -4492,6 +4542,34 @@
         "user": {
           "title": "User is the authentication identity (authcid) to present for\nSASL/PLAIN or SASL/SCRAM authentication",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.SQLAction": {
+      "type": "object",
+      "properties": {
+        "onError": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.SQLStatement"
+        },
+        "onRecordNotFound": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.SQLStatement"
+        },
+        "statement": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.SQLStatement"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.SQLStatement": {
+      "type": "object",
+      "properties": {
+        "args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sql": {
+          "type": "string"
         }
       }
     },
@@ -4552,6 +4630,9 @@
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Sink": {
       "type": "object",
       "properties": {
+        "db": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.DBSink"
+        },
         "http": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.HTTPSink"
         },

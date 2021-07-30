@@ -10,7 +10,7 @@ require (
 	github.com/TwinProduction/go-color v0.0.3
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.8+incompatible
 	github.com/antonmedv/expr v1.8.9
-	github.com/argoproj-labs/argo-dataflow v0.0.75
+	github.com/argoproj-labs/argo-dataflow v0.0.76
 	github.com/argoproj/argo-events v1.4.0
 	github.com/argoproj/pkg v0.9.1
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
@@ -26,7 +26,7 @@ require (
 	github.com/go-openapi/jsonreference v0.19.5
 	github.com/go-openapi/spec v0.20.2
 	github.com/go-python/gpython v0.0.3
-	github.com/go-sql-driver/mysql v1.5.0
+	github.com/go-sql-driver/mysql v1.6.0
 	github.com/go-swagger/go-swagger v0.25.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/protobuf v1.4.3
@@ -60,7 +60,7 @@ require (
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
-	golang.org/x/tools v0.1.3-0.20210608163600-9ed039809d4c
+	golang.org/x/tools v0.1.5
 	google.golang.org/api v0.20.0
 	google.golang.org/genproto v0.0.0-20200806141610-86f49bd18e98
 	google.golang.org/grpc v1.33.1
