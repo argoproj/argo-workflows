@@ -40,6 +40,28 @@ func newWoc(wfs ...wfv1.Workflow) *wfOperationCtx {
 	return woc
 }
 
+var scriptWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: script-with-input-artifact
+    inputs:
+      artifacts:
+      - name: kubectl
+        path: /bin/kubectl
+        http:
+          url: https://storage.googleapis.com/kubernetes-release/release/v1.8.0/bin/linux/amd64/kubectl
+    script:
+      image: alpine:latest
+      command: [sh]
+      source: |
+        ls /bin/kubectl
+`
+
 var scriptTemplateWithInputArtifact = `
 name: script-with-input-artifact
 inputs:
@@ -1320,6 +1342,22 @@ func TestMainContainerCustomization(t *testing.T) {
 	}
 	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	assert.Equal(t, "0.100", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
+
+	// If script template has limits then they take precedence over config in controller
+	wf = wfv1.MustUnmarshalWorkflow(scriptWf)
+	woc = newWoc(*wf)
+	woc.controller.Config.MainContainer = mainCtrSpec
+	mainCtr = &woc.execWf.Spec.Templates[0].Script.Container
+	wf.Spec.Templates[0].Script.Container.Resources = apiv1.ResourceRequirements{
+		Limits: apiv1.ResourceList{
+			apiv1.ResourceCPU:    resource.MustParse("1"),
+			apiv1.ResourceMemory: resource.MustParse("123Mi"),
+		},
+	}
+	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	assert.Equal(t, "1", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
+	assert.Equal(t, "128974848", pod.Spec.Containers[1].Resources.Limits.Memory().AsDec().String())
+
 }
 
 func TestIsResourcesSpecified(t *testing.T) {
