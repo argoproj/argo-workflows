@@ -2,7 +2,9 @@ package commands
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -39,6 +41,9 @@ func NewServerCommand() *cobra.Command {
 		port                     int
 		baseHRef                 string
 		secure                   bool
+		tlsCertPath              string
+		tlsKeyPath               string
+		tlsCaPath                string
 		htst                     bool
 		namespaced               bool   // --namespaced
 		managedNamespace         string // --managed-namespace
@@ -54,7 +59,7 @@ func NewServerCommand() *cobra.Command {
 		Use:   "server",
 		Short: "start the Argo Server",
 		Example: fmt.Sprintf(`
-See %s`, help.ArgoSever),
+See %s`, help.ArgoServer),
 		RunE: func(c *cobra.Command, args []string) error {
 			cmd.SetLogFormatter(logFormat)
 			stats.RegisterStackDumper()
@@ -97,7 +102,24 @@ See %s`, help.ArgoSever),
 
 			var tlsConfig *tls.Config
 			if secure {
-				cer, err := tls.LoadX509KeyPair("argo-server.crt", "argo-server.key")
+
+				var caCrt []byte
+				var tlsCaCertificates *x509.CertPool
+
+				if tlsCaPath != "" {
+					caCrt, err = ioutil.ReadFile(tlsCaPath)
+					if err != nil {
+						return err
+					}
+					tlsCaCertificates := x509.NewCertPool()
+					ok := tlsCaCertificates.AppendCertsFromPEM(caCrt)
+					if !ok {
+						fmt.Printf("Failed to load CA Certificates\n")
+						os.Exit(1)
+					}
+				}
+
+				cer, err := tls.LoadX509KeyPair(tlsCertPath, tlsKeyPath)
 				if err != nil {
 					return err
 				}
@@ -107,7 +129,8 @@ See %s`, help.ArgoSever),
 				}
 				tlsConfig = &tls.Config{
 					Certificates:       []tls.Certificate{cer},
-					InsecureSkipVerify: true,
+					RootCAs:            tlsCaCertificates,
+					InsecureSkipVerify: false,
 					MinVersion:         uint16(tlsMinVersion),
 				}
 			} else {
@@ -183,6 +206,9 @@ See %s`, help.ArgoSever),
 	// We default to secure mode if we find certs available, otherwise we default to insecure mode.
 	_, err := os.Stat("argo-server.crt")
 	command.Flags().BoolVarP(&secure, "secure", "e", !os.IsNotExist(err), "Whether or not we should listen on TLS.")
+	command.Flags().StringVar(&tlsCertPath, "tls-cert-path", "/home/argo/argo-server.crt", "The path of the TLS certificate in the filesystem")
+	command.Flags().StringVar(&tlsKeyPath, "tls-key-path", "/home/argo/argo-server.key", "The path of the TLS key in the filesystem")
+	command.Flags().StringVar(&tlsCaPath, "tls-ca-path", "", "The path of the TLS Certificate Authority in the filesystem")
 	command.Flags().BoolVar(&htst, "hsts", true, "Whether or not we should add a HTTP Secure Transport Security header. This only has effect if secure is enabled.")
 	command.Flags().StringArrayVar(&authModes, "auth-mode", []string{"client"}, "API server authentication mode. Any 1 or more length permutation of: client,server,sso")
 	command.Flags().StringVar(&configMap, "configmap", "workflow-controller-configmap", "Name of K8s configmap to retrieve workflow controller configuration")
