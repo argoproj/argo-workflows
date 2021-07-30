@@ -251,6 +251,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			w.WriteHeader(401)
 			_, _ = w.Write([]byte(fmt.Sprintf("failed to get custom claim: %v", err)))
+			return
 		}
 	}
 
