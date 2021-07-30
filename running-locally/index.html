@@ -2015,6 +2015,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#7-sso-with-dex" title="7. SSO with Dex" class="md-nav__link">
+    7. SSO with Dex
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2252,6 +2259,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#7-sso-with-dex" title="7. SSO with Dex" class="md-nav__link">
+    7. SSO with Dex
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2343,8 +2357,20 @@
 <div class="codehilite"><pre><span></span><code>make build
 </code></pre></div>
 
+<h3 id="7-sso-with-dex">7. SSO with Dex<a class="headerlink" href="#7-sso-with-dex" title="Permanent link">&para;</a></h3>
+<p>For testing SSO integration, you can start a Argo with sso profile which will deploy
+a pre-configured dex instance in argo namespace</p>
+<div class="highlight"><pre><span></span><code>make start <span class="nv">PROFILE</span><span class="o">=</span>SSO
+</code></pre></div>
 <h2 id="troubleshooting-notes">Troubleshooting Notes<a class="headerlink" href="#troubleshooting-notes" title="Permanent link">&para;</a></h2>
+<ul>
+<li>
 <p>If you get a similar error when running one of the make pre-commit tests <code>make: *** [pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json] Error 1</code>, ensure you are working within your $GOPATH (YOUR-GOPATH/src/github.com/argoproj/argo-workflows).</p>
+</li>
+<li>
+<p>If you encounter out of heap issues when building UI through Docker, please validate resources allocated to Docker. Compilation may fail if allocated RAM is less than 4Gi</p>
+</li>
+</ul>
 <h2 id="clean">Clean<a class="headerlink" href="#clean" title="Permanent link">&para;</a></h2>
 <p>To clean-up everything:</p>
 <div class="codehilite"><pre><span></span><code>make clean
