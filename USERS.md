@@ -127,6 +127,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Threekit](https://www.threekit.com/)
 1. [Tiger Analytics](https://www.tigeranalytics.com/)
 1. [Tulip](https://tulip.com/)
+1. [Ubie](https://ubie.life/)
 1. [UFirstGroup](https://www.ufirstgroup.com)
 1. [Vispera](https://www.vispera.co)
 1. [VMware](https://www.vmware.com/)
