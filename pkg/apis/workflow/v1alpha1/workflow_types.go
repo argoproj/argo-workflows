@@ -2470,6 +2470,9 @@ type SuspendTemplate struct {
 
 // GetArtifactByName returns an input artifact by its name
 func (in *Inputs) GetArtifactByName(name string) *Artifact {
+	if in == nil {
+		return nil
+	}
 	return in.Artifacts.GetArtifactByName(name)
 }
 

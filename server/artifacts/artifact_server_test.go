@@ -109,6 +109,8 @@ func newServer() *ArtifactServer {
 						},
 					},
 				},
+				// a node without input/output artifacts
+				"my-node-no-artifacts": wfv1.NodeStatus{},
 			},
 		},
 	}
@@ -196,6 +198,20 @@ func TestArtifactServer_GetInputArtifact(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestArtifactServer_NodeWithoutArtifact makes sure that the server doesn't panic due to a nil-pointer error
+// when trying to get an artifact from a node result without any artifacts
+func TestArtifactServer_NodeWithoutArtifact(t *testing.T) {
+	s := newServer()
+	r := &http.Request{}
+	r.URL = mustParse(fmt.Sprintf("/input-artifacts/my-ns/my-wf/my-node-no-artifacts/%s", "my-artifact"))
+	w := &testhttp.TestResponseWriter{}
+	s.GetInputArtifact(w, r)
+	// make sure there is no nil pointer panic
+	assert.Equal(t, 500, w.StatusCode)
+	s.GetOutputArtifact(w, r)
+	assert.Equal(t, 500, w.StatusCode)
 }
 
 func TestArtifactServer_GetOutputArtifactWithoutInstanceID(t *testing.T) {
