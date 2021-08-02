@@ -940,6 +940,13 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 					return
 				}
 			}
+			if node.Type == wfv1.NodeTypePod {
+				if node.HostNodeName != pod.Spec.NodeName {
+					node.HostNodeName = pod.Spec.NodeName
+					woc.wf.Status.Nodes[nodeID] = node
+					woc.updated = true
+				}
+			}
 			if node.Fulfilled() && !node.IsDaemoned() {
 				if pod.GetLabels()[common.LabelKeyCompleted] == "true" {
 					return
@@ -953,13 +960,6 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 			}
 			if node.Succeeded() && match {
 				woc.completedPods[pod.Name] = pod.Status.Phase
-			}
-			if node.Type == wfv1.NodeTypePod {
-				if node.HostNodeName != pod.Spec.NodeName {
-					node.HostNodeName = pod.Spec.NodeName
-					woc.wf.Status.Nodes[nodeID] = node
-					woc.updated = true
-				}
 			}
 		}
 	}
