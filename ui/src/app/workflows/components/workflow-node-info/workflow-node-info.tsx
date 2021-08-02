@@ -23,15 +23,32 @@ function nodeDuration(node: models.NodeStatus, now: moment.Moment) {
     return endTime.diff(moment(node.startedAt)) / 1000;
 }
 
+// Iterate over the node's subtree and find pod in error or fail
 function failHosts(node: models.NodeStatus, workflow: models.Workflow) {
-    const hosts = [];
-    for (const childNodeID of node.children) {
-        const childNode = workflow.status.nodes[childNodeID];
-        if ((childNode.phase === models.NODE_PHASE.FAILED || childNode.phase === models.NODE_PHASE.ERROR) && hosts.indexOf(childNode.hostNodeName) === -1) {
-            hosts.push(childNode.hostNodeName);
+    const hosts = new Array<string>();
+    const toVisit = [node.id];
+    while (toVisit.length > 0) {
+        const nodeNameToVisit = toVisit[toVisit.length - 1];
+        toVisit.pop();
+
+        if (nodeNameToVisit in workflow.status.nodes) {
+            const nodeToVisit = workflow.status.nodes[nodeNameToVisit];
+            if (
+                nodeToVisit.type === 'Pod' &&
+                (nodeToVisit.phase === models.NODE_PHASE.FAILED || nodeToVisit.phase === models.NODE_PHASE.ERROR) &&
+                hosts.indexOf(nodeToVisit.hostNodeName) === -1
+            ) {
+                hosts.push(nodeToVisit.hostNodeName);
+            }
+            if (nodeToVisit.children) {
+                for (const child of nodeToVisit.children) {
+                    toVisit.push(child);
+                }
+            }
         }
     }
-    return hosts.join('\n');
+    const uniqueHosts = hosts.filter((v: string, i: number) => hosts.indexOf(v) === i);
+    return uniqueHosts.join('\n');
 }
 
 interface Props {
