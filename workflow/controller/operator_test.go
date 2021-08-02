@@ -6026,14 +6026,21 @@ func TestRetryOnDiffHost(t *testing.T) {
 	lastChild.HostNodeName = "test-fail-hostname"
 	woc.wf.Status.Nodes[lastChild.ID] = *lastChild
 
+	pod := &apiv1.Pod{
+		Spec: apiv1.PodSpec{
+			Affinity: &apiv1.Affinity{},
+		},
+	}
+
 	tmpl := &wfv1.Template{}
 	tmpl.RetryStrategy = &retries
-	RetryOnDifferentHost(nodeID)(*woc.retryStrategy(tmpl), woc.wf.Status.Nodes, tmpl)
-	assert.NotNil(t, tmpl.Affinity)
+
+	RetryOnDifferentHost(nodeID)(*woc.retryStrategy(tmpl), woc.wf.Status.Nodes, pod)
+	assert.NotNil(t, pod.Spec.Affinity)
 
 	// Verify if template's Affinity has the right value
 	targetNodeSelectorRequirement :=
-		tmpl.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0]
+		pod.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0]
 	sourceNodeSelectorRequirement := apiv1.NodeSelectorRequirement{
 		Key:      hostSelector,
 		Operator: apiv1.NodeSelectorOpNotIn,

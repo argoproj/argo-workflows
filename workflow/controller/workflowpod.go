@@ -131,6 +131,28 @@ func (woc *wfOperationCtx) hasPodSpecPatch(tmpl *wfv1.Template) bool {
 	return woc.execWf.Spec.HasPodSpecPatch() || tmpl.HasPodSpecPatch()
 }
 
+// scheduleOnDifferentHost adds affinity to prevent retry on the same host when
+// retryStrategy.affinity.nodeAntiAffinity{} is specified
+func (woc *wfOperationCtx) scheduleOnDifferentHost(node *wfv1.NodeStatus, pod *apiv1.Pod) error {
+	if node != nil && pod != nil {
+		if retryNode := FindRetryNode(woc.wf.Status.Nodes, node.ID); retryNode != nil {
+			// recover template for the retry node
+			tmplCtx, err := woc.createTemplateContext(retryNode.GetTemplateScope())
+			if err != nil {
+				return err
+			}
+			_, retryTmpl, _, err := tmplCtx.ResolveTemplate(retryNode)
+			if err != nil {
+				return err
+			}
+			if retryStrategy := woc.retryStrategy(retryTmpl); retryStrategy != nil {
+				RetryOnDifferentHost(retryNode.ID)(*retryStrategy, woc.wf.Status.Nodes, pod)
+			}
+		}
+	}
+	return nil
+}
+
 type createWorkflowPodOpts struct {
 	includeScriptOutput bool
 	onExitPod           bool
@@ -418,6 +440,10 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	node := woc.wf.GetNodeByName(nodeName)
 	templateDeadline, err := woc.checkTemplateTimeout(tmpl, node)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := woc.scheduleOnDifferentHost(node, pod); err != nil {
 		return nil, err
 	}
 

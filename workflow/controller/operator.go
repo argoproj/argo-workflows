@@ -918,6 +918,13 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 					return
 				}
 			}
+			if node.Type == wfv1.NodeTypePod {
+				if node.HostNodeName != pod.Spec.NodeName {
+					node.HostNodeName = pod.Spec.NodeName
+					woc.wf.Status.Nodes[nodeID] = node
+					woc.updated = true
+				}
+			}
 			if node.Fulfilled() && !node.IsDaemoned() {
 				if pod.GetLabels()[common.LabelKeyCompleted] == "true" {
 					return
@@ -965,7 +972,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 			// node is not a pod, it is already complete, or it can be re-run.
 			continue
 		}
-		if seenPod, ok := seenPods[nodeID]; !ok {
+		if _, ok := seenPods[nodeID]; !ok {
 
 			// grace-period to allow informer sync
 			recentlyStarted := recentlyStarted(node)
@@ -991,14 +998,6 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 				woc.updated = true
 			}
 			woc.markNodePhase(node.Name, wfv1.NodeError, "pod deleted")
-		} else {
-			// At this point we are certain that the pod associated with our node is running or has been run;
-			// it is safe to extract the k8s-node information given this knowledge.
-			if node.HostNodeName != seenPod.Spec.NodeName {
-				node.HostNodeName = seenPod.Spec.NodeName
-				woc.wf.Status.Nodes[nodeID] = node
-				woc.updated = true
-			}
 		}
 	}
 	return nil
@@ -1696,11 +1695,6 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			nodeName = fmt.Sprintf("%s(%d)", retryNodeName, len(retryParentNode.Children))
 			woc.addChildNode(retryNodeName, nodeName)
 			node = nil
-
-			// It has to be one child at least
-			if lastChildNode != nil {
-				RetryOnDifferentHost(woc.wf.NodeID(retryNodeName))(*woc.retryStrategy(processedTmpl), woc.wf.Status.Nodes, processedTmpl)
-			}
 
 			localParams := make(map[string]string)
 			// Change the `pod.name` variable to the new retry node name
