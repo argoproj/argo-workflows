@@ -71,9 +71,13 @@ func newClientConn(opts ArgoServerOpts) (*grpc.ClientConn, error) {
 	return conn, nil
 }
 
-func newContext(auth string) context.Context {
-	if auth == "" {
-		return context.Background()
+func newContext(auth string, baseContext *context.Context) context.Context {
+	ctx := context.Background()
+	if baseContext != nil {
+		ctx = *baseContext
 	}
-	return metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", auth))
+	if auth == "" {
+		return ctx
+	}
+	return metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", auth))
 }
