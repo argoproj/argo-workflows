@@ -24,10 +24,10 @@ pod GC and workflow GC to achieve this.
 
 Where Argo has a lot of work to do, the Kubernetes API can be overwhelmed. There are several strategies to reduce this:
 
-* Use the Emissary executor (>= v3.1). This does not make any Kubernetes API requests.
+* Use the Emissary executor (>= v3.1). This does not make any Kubernetes API requests (except for resources template).
 * Limit the number of concurrent workflows using parallelism.
 * Rate-limit pod creation [configuration](workflow-controller-configmap.yaml) (>= v3.1).
-* Set `DEFAULT_REQUEUE_TIME=1m`.
+* Set `DEFAULT_REQUEUE_TIME=1m` (see [docs](https://github.com/argoproj/argo-workflows/blob/master/docs/environment-variables.md)).
 
 ## Overwhelmed Database
 
