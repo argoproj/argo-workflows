@@ -60,8 +60,9 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Galixir](https://www.galixir.com/)
 1. [Gardener](https://gardener.cloud/)
 1. [GitHub](https://github.com/)
+1. [Gitpod](https://www.gitpod.io/)
 1. [Gladly](https://gladly.com/)
-1. [Glovo](https://www.glovoapp.com)
+1. [Glovo](https://www.glovoapp.com)/
 1. [Google](https://www.google.com/intl/en/about/our-company/)
 1. [Graviti](https://www.graviti.com)
 1. [Greenhouse](https://greenhouse.io)
