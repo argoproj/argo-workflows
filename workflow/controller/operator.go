@@ -1510,7 +1510,7 @@ func getChildNodeIndex(node *wfv1.NodeStatus, nodes wfv1.Nodes, index int) *wfv1
 	if index < 0 {
 		nodeIndex = len(node.Children) + index // This actually subtracts, since index is negative
 		if nodeIndex < 0 {
-			return nil
+			panic(fmt.Sprintf("child index '%d' out of bounds", index))
 		}
 	}
 
@@ -1529,6 +1529,9 @@ func getRetryNodeChildrenIds(node *wfv1.NodeStatus, nodes wfv1.Nodes) []string {
 	var childrenIds []string
 	for i := -1; i >= -len(node.Children); i-- {
 		node := getChildNodeIndex(node, nodes, i)
+		if node == nil {
+			continue
+		}
 		if strings.HasSuffix(node.Name, ".onExit") {
 			childrenIds = append(childrenIds, node.ID)
 		} else if len(node.Children) > 0 {
