@@ -62,7 +62,7 @@ func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
 	if opts.ArgoServerOpts.HTTP1 {
 		return newHTTP1Client(opts.ArgoServerOpts.GetURL(), opts.AuthSupplier(), opts.ArgoServerOpts.InsecureSkipVerify, opts.Context)
 	} else if opts.ArgoServerOpts.URL != "" {
-		return newArgoServerClient(opts.ArgoServerOpts, opts.AuthSupplier())
+		return newArgoServerClient(opts.ArgoServerOpts, opts.AuthSupplier(), opts.Context)
 	} else {
 		if opts.ClientConfigSupplier != nil {
 			opts.ClientConfig = opts.ClientConfigSupplier()

@@ -27,12 +27,12 @@ type argoServerClient struct {
 
 var _ Client = &argoServerClient{}
 
-func newArgoServerClient(opts ArgoServerOpts, auth string) (context.Context, Client, error) {
+func newArgoServerClient(opts ArgoServerOpts, auth string, baseContext *context.Context) (context.Context, Client, error) {
 	conn, err := newClientConn(opts)
 	if err != nil {
 		return nil, nil, err
 	}
-	return newContext(auth), &argoServerClient{conn}, nil
+	return newContext(auth, baseContext), &argoServerClient{conn}, nil
 }
 
 func (a *argoServerClient) NewWorkflowServiceClient() workflowpkg.WorkflowServiceClient {
