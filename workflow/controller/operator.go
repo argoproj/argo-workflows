@@ -106,6 +106,8 @@ type wfOperationCtx struct {
 	// In Submit From WorkflowTemplate: It holds merged workflow with WorkflowDefault, Workflow and WorkflowTemplate
 	// 'execWf.Spec' should usually be used instead `wf.Spec`
 	execWf *wfv1.Workflow
+
+	taskSet map[string]wfv1.Template
 }
 
 var (
@@ -156,6 +158,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		deadline:               time.Now().UTC().Add(maxOperationTime),
 		eventRecorder:          wfc.eventRecorderManager.Get(wf.Namespace),
 		preExecutionNodePhases: make(map[string]wfv1.NodePhase),
+		taskSet:                make(map[string]wfv1.Template),
 	}
 
 	if woc.wf.Status.Nodes == nil {
@@ -281,6 +284,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		if err == nil {
 			woc.failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
 		}
+
 		if err != nil {
 			woc.log.WithError(err).WithField("workflow", woc.wf.ObjectMeta.Name).Error("workflow timeout")
 			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowTimedOut", "Workflow timed out")
@@ -347,6 +351,19 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		return
 	}
 
+	err = woc.taskSetReconciliation(ctx)
+	if err != nil {
+		woc.log.WithError(err).Error("error in workflowtaskset reconciliation")
+		return
+	}
+
+	err = woc.reconcileAgentPod(ctx)
+	if err != nil {
+		woc.log.WithError(err).Error("error in agent pod reconciliation")
+		woc.markWorkflowError(ctx, err)
+		return
+	}
+
 	if node == nil || !node.Fulfilled() {
 		// node can be nil if a workflow created immediately in a parallelism == 0 state
 		return
@@ -392,9 +409,16 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		onExitNodeName := common.GenerateOnExitNodeName(woc.wf.ObjectMeta.Name)
 		onExitNode, err = woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: woc.execWf.Spec.OnExit}, tmplCtx, woc.execWf.Spec.Arguments, &executeTemplateOpts{onExitTemplate: true})
 		if err != nil {
-			woc.log.WithError(err).Error("error in exit template execution")
-			if !woc.wf.Status.Phase.Completed() {
-				woc.markWorkflowError(ctx, fmt.Errorf("error in exit template execution: %w", err))
+			x := fmt.Errorf("error in exit template execution : %w", err)
+			switch err {
+			case ErrDeadlineExceeded:
+				woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowTimedOut", x.Error())
+			case ErrParallelismReached:
+			default:
+				if !errorsutil.IsTransientErr(err) && !woc.wf.Status.Phase.Completed() && os.Getenv("BUBBLE_ENTRY_TEMPLATE_ERR") != "false" {
+					woc.markWorkflowError(ctx, x)
+					return
+				}
 			}
 			return
 		}
@@ -594,6 +618,12 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		time.Sleep(1 * time.Second)
 	}
 
+	err = woc.removeCompletedTaskSetStatus(ctx)
+
+	if err != nil {
+		woc.log.WithError(err).Warn("error updating taskset")
+	}
+
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
 	// Failing to do so means we can have inconsistent state.
 	// TODO: The completedPods will be labeled multiple times. I think it would be improved in the future.
@@ -617,6 +647,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 			woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, labelPodCompleted)
 		}
 	}
+
 }
 
 func (woc *wfOperationCtx) writeBackToInformer() error {
@@ -904,7 +935,12 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 		if pod == nil {
 			return
 		}
+		if woc.isAgentPod(pod) {
+			woc.updateAgentPodStatus(ctx, pod)
+			return
+		}
 		nodeNameForPod := pod.Annotations[common.AnnotationKeyNodeName]
+
 		nodeID := woc.wf.NodeID(nodeNameForPod)
 		seenPodLock.Lock()
 		seenPods[nodeID] = pod
@@ -939,6 +975,13 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 				if err != nil {
 					woc.markWorkflowFailed(ctx, fmt.Sprintf("failed to parse label selector %s for pod GC: %v", woc.execWf.Spec.PodGC.LabelSelector, err))
 					return
+				}
+			}
+			if node.Type == wfv1.NodeTypePod {
+				if node.HostNodeName != pod.Spec.NodeName {
+					node.HostNodeName = pod.Spec.NodeName
+					woc.wf.Status.Nodes[nodeID] = node
+					woc.updated = true
 				}
 			}
 			if node.Fulfilled() && !node.IsDaemoned() {
@@ -985,7 +1028,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 			// node is not a pod, it is already complete, or it can be re-run.
 			continue
 		}
-		if seenPod, ok := seenPods[nodeID]; !ok {
+		if _, ok := seenPods[nodeID]; !ok {
 
 			// grace-period to allow informer sync
 			recentlyStarted := recentlyStarted(node)
@@ -1011,14 +1054,6 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 				woc.updated = true
 			}
 			woc.markNodePhase(node.Name, wfv1.NodeError, "pod deleted")
-		} else {
-			// At this point we are certain that the pod associated with our node is running or has been run;
-			// it is safe to extract the k8s-node information given this knowledge.
-			if node.HostNodeName != seenPod.Spec.NodeName {
-				node.HostNodeName = seenPod.Spec.NodeName
-				woc.wf.Status.Nodes[nodeID] = node
-				woc.updated = true
-			}
 		}
 	}
 	return nil
@@ -1728,11 +1763,6 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			woc.addChildNode(retryNodeName, nodeName)
 			node = nil
 
-			// It has to be one child at least
-			if lastChildNode != nil {
-				RetryOnDifferentHost(woc.wf.NodeID(retryNodeName))(*woc.retryStrategy(processedTmpl), woc.wf.Status.Nodes, processedTmpl)
-			}
-
 			localParams := make(map[string]string)
 			// Change the `pod.name` variable to the new retry node name
 			if processedTmpl.IsPodType() {
@@ -1765,6 +1795,8 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		node, err = woc.executeSuspend(nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	case wfv1.TemplateTypeData:
 		node, err = woc.executeData(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
+	case wfv1.TemplateTypeHTTP:
+		node = woc.executeHTTPTemplate(nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	default:
 		err = errors.Errorf(errors.CodeBadRequest, "Template '%s' missing specification", processedTmpl.Name)
 		return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, opts.boundaryID, wfv1.NodeError, err.Error()), err

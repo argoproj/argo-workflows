@@ -18,26 +18,65 @@ func TestRemoveDuplicates(t *testing.T) {
 	})
 }
 
-// func GetFailHosts(nodes wfv1.Nodes, parent string) []string {
 func TestGetFailHosts(t *testing.T) {
 	nodes := wfv1.Nodes{
-		"retry_node": wfv1.NodeStatus{
-			ID:       "retry_node",
-			Phase:    wfv1.NodeFailed,
-			Children: []string{"retry_node(0)", "retry_node(1)", "retry_node(2)"},
+		"retry": wfv1.NodeStatus{
+			ID:           "A1",
+			HostNodeName: "host1",
+			Type:         wfv1.NodeTypeRetry,
+			Phase:        wfv1.NodeRunning,
+			Children:     []string{"n1", "stepgroup"},
 		},
-		"retry_node(0)": wfv1.NodeStatus{ID: "retry_node(0)", Phase: wfv1.NodeFailed, Children: []string{}, HostNodeName: "host_1"},
-		"retry_node(1)": wfv1.NodeStatus{ID: "retry_node(1)", Phase: wfv1.NodeError, Children: []string{}, HostNodeName: "host_2"},
-		"retry_node(2)": wfv1.NodeStatus{ID: "retry_node(2)", Phase: wfv1.NodeRunning, Children: []string{}, HostNodeName: ""},
+		"n1": wfv1.NodeStatus{
+			ID:           "n1",
+			HostNodeName: "hostn1",
+			Type:         wfv1.NodeTypePod,
+			Phase:        wfv1.NodeFailed,
+			Children:     []string{},
+		},
+		"stepgroup": wfv1.NodeStatus{
+			ID:           "stepgroup",
+			HostNodeName: "host2",
+			Type:         wfv1.NodeTypeStepGroup,
+			Phase:        wfv1.NodeError,
+			Children:     []string{"steps"},
+		},
+		"steps": wfv1.NodeStatus{
+			ID:           "steps",
+			HostNodeName: "host4",
+			Type:         wfv1.NodeTypeSteps,
+			Phase:        wfv1.NodeError,
+			Children:     []string{"n2", "n3"},
+		},
+		"n2": wfv1.NodeStatus{
+			ID:           "n2",
+			HostNodeName: "hostn2",
+			Type:         wfv1.NodeTypePod,
+			Phase:        wfv1.NodeRunning,
+			Children:     []string{},
+		},
+		"n3": wfv1.NodeStatus{
+			ID:           "n3",
+			HostNodeName: "hostn3",
+			Type:         wfv1.NodeTypePod,
+			Phase:        wfv1.NodeError,
+			Children:     []string{},
+		},
 	}
 	t.Run("NotExistParent", func(t *testing.T) {
 		assert.Equal(t, GetFailHosts(nodes, "not-exist-node"), []string{})
 	})
-	t.Run("ParentWithoutChildren", func(t *testing.T) {
-		assert.Equal(t, GetFailHosts(nodes, "retry_node(0)"), []string{})
+	t.Run("ParentWithoutChildrenPodTypeError", func(t *testing.T) {
+		assert.Equal(t, GetFailHosts(nodes, "n3"), []string{"hostn3"})
 	})
-	t.Run("ParentWithChildren", func(t *testing.T) {
-		assert.ElementsMatch(t, GetFailHosts(nodes, "retry_node"), []string{"host_1", "host_2"})
+	t.Run("ParentWithoutChildrenPodTypeRunning", func(t *testing.T) {
+		assert.Equal(t, GetFailHosts(nodes, "n2"), []string{})
+	})
+	t.Run("ParentWithChildrenFromRetryNode", func(t *testing.T) {
+		assert.ElementsMatch(t, GetFailHosts(nodes, "retry"), []string{"hostn1", "hostn3"})
+	})
+	t.Run("ParentWithChildrenFromNonRetryNode", func(t *testing.T) {
+		assert.ElementsMatch(t, GetFailHosts(nodes, "steps"), []string{"hostn3"})
 	})
 }
 
@@ -295,5 +334,81 @@ func TestAddHostnamesToAffinity(t *testing.T) {
 		targetNodeSelectorRequirement :=
 			targetNode.targetAffinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0]
 		assert.Equal(t, sourceNodeSelectorRequirementMerged, targetNodeSelectorRequirement)
+	})
+	t.Run("MergeWithExistingSpecAffinity", func(t *testing.T) {
+		existingNode := &apiv1.Affinity{
+			NodeAffinity: &apiv1.NodeAffinity{
+				PreferredDuringSchedulingIgnoredDuringExecution: []apiv1.PreferredSchedulingTerm{
+					{
+						Preference: apiv1.NodeSelectorTerm{
+							MatchExpressions: []apiv1.NodeSelectorRequirement{
+								{
+									Key:      "topology.kubernetes.io/region",
+									Operator: apiv1.NodeSelectorOpNotIn,
+									Values:   []string{"REG1", "REG2"},
+								},
+							},
+						},
+						Weight: 100,
+					},
+				},
+				RequiredDuringSchedulingIgnoredDuringExecution: &apiv1.NodeSelector{
+					NodeSelectorTerms: []apiv1.NodeSelectorTerm{
+						{
+							MatchExpressions: []apiv1.NodeSelectorRequirement{
+								{
+									Key:      "gpu.nvidia.com/model",
+									Operator: apiv1.NodeSelectorOpNotIn,
+									Values:   []string{"GeForce_RTX_A6000", "NVidia_A100"},
+								},
+								{
+									Key:      hostSelector,
+									Operator: apiv1.NodeSelectorOpNotIn,
+									Values:   []string{"hostname1", "hostname2", "hostnameA"},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		mergedNode := &apiv1.Affinity{
+			NodeAffinity: &apiv1.NodeAffinity{
+				PreferredDuringSchedulingIgnoredDuringExecution: []apiv1.PreferredSchedulingTerm{
+					{
+						Preference: apiv1.NodeSelectorTerm{
+							MatchExpressions: []apiv1.NodeSelectorRequirement{
+								{
+									Key:      "topology.kubernetes.io/region",
+									Operator: apiv1.NodeSelectorOpNotIn,
+									Values:   []string{"REG1", "REG2"},
+								},
+							},
+						},
+						Weight: 100,
+					},
+				},
+				RequiredDuringSchedulingIgnoredDuringExecution: &apiv1.NodeSelector{
+					NodeSelectorTerms: []apiv1.NodeSelectorTerm{
+						{
+							MatchExpressions: []apiv1.NodeSelectorRequirement{
+								{
+									Key:      "gpu.nvidia.com/model",
+									Operator: apiv1.NodeSelectorOpNotIn,
+									Values:   []string{"GeForce_RTX_A6000", "NVidia_A100"},
+								},
+								{
+									Key:      hostSelector,
+									Operator: apiv1.NodeSelectorOpNotIn,
+									Values:   []string{"hostname1", "hostname2", "hostnameA", "hostnameB", "hostnameC"},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		targetNode := AddHostnamesToAffinity(hostSelector, hostNames, existingNode)
+		assert.Equal(t, targetNode, mergedNode)
 	})
 }

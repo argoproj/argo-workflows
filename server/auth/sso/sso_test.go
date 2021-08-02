@@ -53,16 +53,19 @@ var ssoConfigSecret = &apiv1.Secret{
 func TestLoadSsoClientIdFromSecret(t *testing.T) {
 	fakeClient := fake.NewSimpleClientset(ssoConfigSecret).CoreV1().Secrets(testNamespace)
 	config := Config{
-		Issuer:       "https://test-issuer",
-		ClientID:     getSecretKeySelector("argo-sso-secret", "client-id"),
-		ClientSecret: getSecretKeySelector("argo-sso-secret", "client-secret"),
-		RedirectURL:  "https://dummy",
+		Issuer:               "https://test-issuer",
+		ClientID:             getSecretKeySelector("argo-sso-secret", "client-id"),
+		ClientSecret:         getSecretKeySelector("argo-sso-secret", "client-secret"),
+		RedirectURL:          "https://dummy",
+		CustomGroupClaimName: "argo_groups",
 	}
 	ssoInterface, err := newSso(fakeOidcFactory, config, fakeClient, "/", false)
 	assert.NoError(t, err)
 	ssoObject := ssoInterface.(*sso)
 	assert.Equal(t, "sso-client-id-value", ssoObject.config.ClientID)
 	assert.Equal(t, "sso-client-secret-value", ssoObject.config.ClientSecret)
+	assert.Equal(t, "argo_groups", ssoObject.customClaimName)
+
 	assert.Equal(t, 10*time.Hour, ssoObject.expiry)
 }
 

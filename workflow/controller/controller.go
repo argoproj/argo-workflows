@@ -40,6 +40,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions"
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
 	authutil "github.com/argoproj/argo-workflows/v3/util/auth"
 	"github.com/argoproj/argo-workflows/v3/util/diff"
@@ -108,6 +109,7 @@ type WorkflowController struct {
 	eventRecorderManager  events.EventRecorderManager
 	archiveLabelSelector  labels.Selector
 	cacheFactory          controllercache.Factory
+	wfTaskSetInformer     wfextvv1alpha1.WorkflowTaskSetInformer
 }
 
 const (
@@ -116,6 +118,7 @@ const (
 	podResyncPeriod                     = 30 * time.Minute
 	clusterWorkflowTemplateResyncPeriod = 20 * time.Minute
 	workflowExistenceCheckPeriod        = 1 * time.Minute
+	workflowTaskSetResyncPeriod         = 20 * time.Minute
 )
 
 // NewWorkflowController instantiates a new WorkflowController
@@ -206,6 +209,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListOptions, indexers)
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
+	wfc.wfTaskSetInformer = wfc.newWorkflowTaskSetInformer()
 
 	wfc.addWorkflowInformerHandlers(ctx)
 	wfc.podInformer = wfc.newPodInformer(ctx)
@@ -216,6 +220,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
+	go wfc.wfTaskSetInformer.Informer().Run(ctx.Done())
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
 	if !cache.WaitForCacheSync(ctx.Done(), wfc.wfInformer.HasSynced, wfc.wftmplInformer.Informer().HasSynced, wfc.podInformer.HasSynced) {
@@ -749,11 +754,14 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		woc.persistUpdates(ctx)
 		return true
 	}
-
 	startTime := time.Now()
 	woc.operate(ctx)
 	wfc.metrics.OperationCompleted(time.Since(startTime).Seconds())
 	if woc.wf.Status.Fulfilled() {
+		err := woc.completeTaskSet(ctx)
+		if err != nil {
+			log.WithError(err).Warn("error to complete the taskset")
+		}
 		// Send all completed pods to gcPods channel to delete it later depend on the PodGCStrategy.
 		var doPodGC bool
 		if woc.execWf.Spec.PodGC != nil {
@@ -1169,4 +1177,25 @@ func (wfc *WorkflowController) syncPodPhaseMetrics() {
 		}
 		wfc.metrics.SetPodPhaseGauge(phase, len(objs))
 	}
+}
+
+func (wfc *WorkflowController) newWorkflowTaskSetInformer() wfextvv1alpha1.WorkflowTaskSetInformer {
+	informer := externalversions.NewSharedInformerFactoryWithOptions(
+		wfc.wfclientset,
+		workflowTaskSetResyncPeriod,
+		externalversions.WithNamespace(wfc.GetManagedNamespace()),
+		externalversions.WithTweakListOptions(func(x *metav1.ListOptions) {
+			r := util.InstanceIDRequirement(wfc.Config.InstanceID)
+			x.LabelSelector = r.String()
+		})).Argoproj().V1alpha1().WorkflowTaskSets()
+	informer.Informer().AddEventHandler(
+		cache.ResourceEventHandlerFuncs{
+			UpdateFunc: func(old, new interface{}) {
+				key, err := cache.MetaNamespaceKeyFunc(new)
+				if err == nil {
+					wfc.wfQueue.Add(key)
+				}
+			},
+		})
+	return informer
 }

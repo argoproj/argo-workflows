@@ -108,6 +108,28 @@ func (woc *wfOperationCtx) hasPodSpecPatch(tmpl *wfv1.Template) bool {
 	return woc.execWf.Spec.HasPodSpecPatch() || tmpl.HasPodSpecPatch()
 }
 
+// scheduleOnDifferentHost adds affinity to prevent retry on the same host when
+// retryStrategy.affinity.nodeAntiAffinity{} is specified
+func (woc *wfOperationCtx) scheduleOnDifferentHost(node *wfv1.NodeStatus, pod *apiv1.Pod) error {
+	if node != nil && pod != nil {
+		if retryNode := FindRetryNode(woc.wf.Status.Nodes, node.ID); retryNode != nil {
+			// recover template for the retry node
+			tmplCtx, err := woc.createTemplateContext(retryNode.GetTemplateScope())
+			if err != nil {
+				return err
+			}
+			_, retryTmpl, _, err := tmplCtx.ResolveTemplate(retryNode)
+			if err != nil {
+				return err
+			}
+			if retryStrategy := woc.retryStrategy(retryTmpl); retryStrategy != nil {
+				RetryOnDifferentHost(retryNode.ID)(*retryStrategy, woc.wf.Status.Nodes, pod)
+			}
+		}
+	}
+	return nil
+}
+
 type createWorkflowPodOpts struct {
 	includeScriptOutput bool
 	onExitPod           bool
@@ -149,9 +171,18 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		if isResourcesSpecified(woc.controller.Config.MainContainer) {
 			c.Resources = *woc.controller.Config.MainContainer.Resources.DeepCopy()
 		}
-		// Container resources in workflow spec takes precedence over the main container's configuration in controller.
-		if isResourcesSpecified(tmpl.Container) && tmpl.Container.Name == common.MainContainerName {
-			c.Resources = *tmpl.Container.Resources.DeepCopy()
+		// Template resources inv workflow spec takes precedence over the main container's configuration in controller
+		switch tmpl.GetType() {
+		case wfv1.TemplateTypeContainer:
+			if isResourcesSpecified(tmpl.Container) && tmpl.Container.Name == common.MainContainerName {
+				c.Resources = *tmpl.Container.Resources.DeepCopy()
+			}
+		case wfv1.TemplateTypeScript:
+			if isResourcesSpecified(&tmpl.Script.Container) {
+				c.Resources = *tmpl.Script.Resources.DeepCopy()
+			}
+		case wfv1.TemplateTypeContainerSet:
+
 		}
 		mainCtrs[i] = c
 	}
@@ -389,6 +420,10 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		return nil, err
 	}
 
+	if err := woc.scheduleOnDifferentHost(node, pod); err != nil {
+		return nil, err
+	}
+
 	if templateDeadline != nil && (pod.Spec.ActiveDeadlineSeconds == nil || time.Since(*templateDeadline).Seconds() < float64(*pod.Spec.ActiveDeadlineSeconds)) {
 		newActiveDeadlineSeconds := int64(time.Until(*templateDeadline).Seconds())
 		if newActiveDeadlineSeconds <= 1 {
@@ -534,6 +569,10 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 		{
 			Name:  "GODEBUG",
 			Value: "x509ignoreCN=0",
+		},
+		{
+			Name:  common.EnvVarWorkflowName,
+			Value: woc.wf.Name,
 		},
 	}
 	if woc.controller.Config.Executor != nil {
