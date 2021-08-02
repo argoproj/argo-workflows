@@ -390,9 +390,16 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		onExitNodeName := common.GenerateOnExitNodeName(woc.wf.ObjectMeta.Name)
 		onExitNode, err = woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: woc.execWf.Spec.OnExit}, tmplCtx, woc.execWf.Spec.Arguments, &executeTemplateOpts{onExitTemplate: true})
 		if err != nil {
-			woc.log.WithError(err).Error("error in exit template execution")
-			if !woc.wf.Status.Phase.Completed() {
-				woc.markWorkflowError(ctx, fmt.Errorf("error in exit template execution: %w", err))
+			x := fmt.Errorf("error in exit template execution : %w", err)
+			switch err {
+			case ErrDeadlineExceeded:
+				woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowTimedOut", x.Error())
+			case ErrParallelismReached:
+			default:
+				if !errorsutil.IsTransientErr(err) && !woc.wf.Status.Phase.Completed() && os.Getenv("BUBBLE_ENTRY_TEMPLATE_ERR") != "false" {
+					woc.markWorkflowError(ctx, x)
+					return
+				}
 			}
 			return
 		}
