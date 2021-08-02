@@ -3388,5 +3388,23 @@ func (woc *wfOperationCtx) mergedTemplateDefaultsInto(originalTmpl *wfv1.Templat
 }
 
 func (woc *wfOperationCtx) substituteGlobalVariables() error {
-	return template.Replace(&woc.execWf.Spec, woc.globalParams, true)
+	execWfSpec := *woc.execWf.Spec.DeepCopy()
+
+	// To Avoid the stale Global parameter value substitution to templates.
+	// Updated Global parameter values will be substituted in 'executetemplate' for templates.
+	execWfSpec.Templates = nil
+
+	err := template.Replace(&execWfSpec, woc.globalParams, true)
+	if err != nil {
+		return err
+	}
+	resolveSpec, err := json.Marshal(execWfSpec)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(resolveSpec, &woc.execWf.Spec)
+	if err != nil {
+		return err
+	}
+	return nil
 }
