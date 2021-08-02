@@ -17,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/util/retry"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -34,7 +35,11 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, fla
 	cmd := exec.Command("kubectl", args...)
 	log.Info(strings.Join(cmd.Args, " "))
 
-	out, err := cmd.Output()
+	var out []byte
+	err = retry.OnError(retry.DefaultBackoff, argoerr.IsTransientErr, func() error {
+		out, err = cmd.Output()
+		return err
+	})
 	if err != nil {
 		if exErr, ok := err.(*exec.ExitError); ok {
 			errMsg := strings.TrimSpace(string(exErr.Stderr))
