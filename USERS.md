@@ -57,8 +57,10 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [FOLIO](http://corp.folio-sec.com/)
 1. [FreeWheel](https://freewheel.com/)
 1. [Fynd Trak](https://trak.fynd.com/)
+1. [Galixir](https://www.galixir.com/)
 1. [Gardener](https://gardener.cloud/)
 1. [GitHub](https://github.com/)
+1. [Gitpod](https://www.gitpod.io/)
 1. [Gladly](https://gladly.com/)
 1. [Glovo](https://www.glovoapp.com)
 1. [Google](https://www.google.com/intl/en/about/our-company/)
@@ -94,6 +96,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [nrd.io](https://nrd.io/)
 1. [NVIDIA](https://www.nvidia.com/)
 1. [Onepanel](https://docs.onepanel.ai)
+1. [Oracle](https://www.oracle.com/)
 1. [OVH](https://www.ovh.com/)
 1. [Peak AI](https://www.peak.ai/)
 1. [PDOK](https://www.pdok.nl/)
@@ -125,6 +128,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Threekit](https://www.threekit.com/)
 1. [Tiger Analytics](https://www.tigeranalytics.com/)
 1. [Tulip](https://tulip.com/)
+1. [Ubie](https://ubie.life/)
 1. [UFirstGroup](https://www.ufirstgroup.com)
 1. [Vispera](https://www.vispera.co)
 1. [VMware](https://www.vmware.com/)
@@ -134,6 +138,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Woolworths Group](https://www.woolworthsgroup.com.au/)
 1. [Workiva](https://www.workiva.com/)
 1. [Zhihu](https://www.zhihu.com/)
+
 
 ### Projects Using Argo
 

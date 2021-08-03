@@ -75,6 +75,7 @@ nav:
           - resuming-workflow-via-automation.md
           - async-pattern.md
           - security.md
+          - running-at-massive-scale.md
       - ide-setup.md
       - Examples: examples/README.md
       - Field Reference: fields.md
