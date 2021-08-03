@@ -1529,6 +1529,24 @@ func getChildNodeIndex(node *wfv1.NodeStatus, nodes wfv1.Nodes, index int) *wfv1
 	return &lastChildNode
 }
 
+func getRetryNodeChildrenIds(node *wfv1.NodeStatus, nodes wfv1.Nodes) []string {
+	// A fulfilled Retry node will always reflect the status of its last child node, so its individual attempts don't interest us.
+	// To resume the traversal, we look at the children of the last child node and of any on exit nodes.
+	var childrenIds []string
+	for i := -1; i >= -len(node.Children); i-- {
+		node := getChildNodeIndex(node, nodes, i)
+		if node == nil {
+			continue
+		}
+		if strings.HasSuffix(node.Name, ".onExit") {
+			childrenIds = append(childrenIds, node.ID)
+		} else if len(node.Children) > 0 {
+			childrenIds = append(childrenIds, node.Children...)
+		}
+	}
+	return childrenIds
+}
+
 func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[string]interface{} {
 	localScope := make(map[string]interface{})
 
