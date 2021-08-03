@@ -1125,6 +1125,9 @@ type WorkflowStep struct {
 	// Template is the name of the template to execute as the step
 	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
 
+	// Inline is the template. Template must be empty if this is declared (and vice-versa).
+	Inline *Template `json:"inline,omitempty" protobuf:"bytes,13,opt,name=inline"`
+
 	// Arguments hold arguments to the template
 	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,3,opt,name=arguments"`
 
@@ -1202,6 +1205,10 @@ func (step *WorkflowStep) GetExitHook(args Arguments) *LifecycleHook {
 		return &LifecycleHook{Template: step.OnExit, Arguments: args}
 	}
 	return step.Hooks.GetExitHook().WithArgs(args)
+}
+
+func (step *WorkflowStep) GetTemplate() *Template {
+	return step.Inline
 }
 
 func (step *WorkflowStep) GetTemplateName() string {
@@ -1855,6 +1862,10 @@ func (n NodeStatus) GetTemplateScope() (ResourceScope, string) {
 
 var _ TemplateReferenceHolder = &NodeStatus{}
 
+func (n *NodeStatus) GetTemplate() *Template {
+	return nil
+}
+
 func (n *NodeStatus) GetTemplateName() string {
 	return n.TemplateName
 }
@@ -2406,6 +2417,9 @@ type DAGTask struct {
 	// Name of template to execute
 	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
 
+	// Inline is the template. Template must be empty if this is declared (and vice-versa).
+	Inline *Template `json:"inline,omitempty" protobuf:"bytes,14,opt,name=inline"`
+
 	// Arguments are the parameter and artifact arguments to the template
 	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,3,opt,name=arguments"`
 
@@ -2460,6 +2474,10 @@ func (t *DAGTask) GetExitHook(args Arguments) *LifecycleHook {
 
 func (t *DAGTask) HasExitHook() bool {
 	return (t.Hooks != nil && t.Hooks.GetExitHook() != nil) || t.OnExit != ""
+}
+
+func (t *DAGTask) GetTemplate() *Template {
+	return t.Inline
 }
 
 func (t *DAGTask) GetTemplateName() string {
