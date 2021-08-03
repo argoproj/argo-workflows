@@ -444,7 +444,7 @@ dist/argosay:
 
 .PHONY: pull-images
 pull-images:
-	docker pull golang:1.15.7
+	docker pull golang:1.16
 	docker pull debian:10.7-slim
 	docker pull mysql:8
 	docker pull argoproj/argosay:v1
