@@ -1867,7 +1867,7 @@ RetryStrategy provides controls on how to retry a workflow step
 |`affinity`|[`RetryAffinity`](#retryaffinity)|Affinity prevents running workflow's step on the same host|
 |`backoff`|[`Backoff`](#backoff)|Backoff is a backoff strategy|
 |`expression`|`string`|Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not be retried and the retry strategy will be ignored/|
-|`limit`|[`IntOrString`](#intorstring)|Limit is the maximum number of attempts when retrying a container|
+|`limit`|`string`|Limit is the maximum number of attempts when retrying a container|
 |`retryPolicy`|`string`|RetryPolicy is a policy of NodePhase statuses that will be retried|
 
 ## Synchronization
@@ -1907,7 +1907,7 @@ Template is a reusable and composable unit of execution in a workflow
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`activeDeadlineSeconds`|[`IntOrString`](#intorstring)|Optional duration in seconds relative to the StartTime that the pod may be active on a node before the system actively tries to terminate the pod; value must be positive integer This field is only applicable to container and script templates.|
+|`activeDeadlineSeconds`|`string`|Optional duration in seconds relative to the StartTime that the pod may be active on a node before the system actively tries to terminate the pod; value must be positive integer This field is only applicable to container and script templates.|
 |`affinity`|[`Affinity`](#affinity)|Affinity sets the pod's scheduling constraints Overrides the affinity set at the workflow level (if any)|
 |`archiveLocation`|[`ArtifactLocation`](#artifactlocation)|Location in which all files related to the step will be stored (logs, artifacts, etc...). Can be overridden by individual items in Outputs. If omitted, will use the default artifact repository location configured in the controller, appended with the <workflowname>/<nodename> in the key.|
 |`automountServiceAccountToken`|`boolean`|AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.|
@@ -2514,7 +2514,7 @@ Backoff is a backoff strategy to use within retryStrategy
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`duration`|`string`|Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h")|
-|`factor`|[`IntOrString`](#intorstring)|Factor is a factor to multiply the base duration after each failed retry|
+|`factor`|`string`|Factor is a factor to multiply the base duration after each failed retry|
 |`maxDuration`|`string`|MaxDuration is the maximum amount of time allowed for the backoff strategy|
 
 ## Mutex
@@ -4197,10 +4197,10 @@ Sequence expands a workflow step into numeric range
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`count`|[`IntOrString`](#intorstring)|Count is number of elements in the sequence (default: 0). Not to be used with end|
-|`end`|[`IntOrString`](#intorstring)|Number at which to end the sequence (default: 0). Not to be used with Count|
+|`count`|`string`|Count is number of elements in the sequence (default: 0). Not to be used with end|
+|`end`|`string`|Number at which to end the sequence (default: 0). Not to be used with Count|
 |`format`|`string`|Format is a printf format string to format the value in the sequence|
-|`start`|[`IntOrString`](#intorstring)|Number at which to start the sequence (default: 0)|
+|`start`|`string`|Number at which to start the sequence (default: 0)|
 
 ## ArtifactoryArtifactRepository
 
@@ -5111,35 +5111,6 @@ A label selector is a label query over a set of resources. The result of matchLa
 |`matchExpressions`|`Array<`[`LabelSelectorRequirement`](#labelselectorrequirement)`>`|matchExpressions is a list of label selector requirements. The requirements are ANDed.|
 |`matchLabels`|`Map< string , string >`|matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.|
 
-## IntOrString
-
-_No description available_
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`clustertemplates.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
-
-- [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-disable-failFast.yaml)
-
-- [`retry-backoff.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-backoff.yaml)
-
-- [`retry-conditional.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-conditional.yaml)
-
-- [`retry-container.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-container.yaml)
-
-- [`retry-on-error.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-on-error.yaml)
-
-- [`retry-script.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-script.yaml)
-
-- [`retry-with-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-with-steps.yaml)
-
-- [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-defaults.yaml)
-
-- [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/templates.yaml)
-</details>
-
 ## Container
 
 A single application container that you want to run within a pod.
@@ -5741,6 +5712,10 @@ PodDNSConfigOption defines DNS resolver options of a pod.
 |:----------:|:----------:|---------------|
 |`name`|`string`|Required.|
 |`value`|`string`|_No description available_|
+
+## IntOrString
+
+_No description available_
 
 ## SELinuxOptions
 

@@ -6741,7 +6741,7 @@
         },
         "factor": {
           "description": "Factor is a factor to multiply the base duration after each failed retry",
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
+          "type": "string"
         },
         "maxDuration": {
           "description": "MaxDuration is the maximum amount of time allowed for the backoff strategy",
@@ -8421,7 +8421,7 @@
         },
         "limit": {
           "description": "Limit is the maximum number of attempts when retrying a container",
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
+          "type": "string"
         },
         "retryPolicy": {
           "description": "RetryPolicy is a policy of NodePhase statuses that will be retried",
@@ -8713,11 +8713,11 @@
       "properties": {
         "count": {
           "description": "Count is number of elements in the sequence (default: 0). Not to be used with end",
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
+          "type": "string"
         },
         "end": {
           "description": "Number at which to end the sequence (default: 0). Not to be used with Count",
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
+          "type": "string"
         },
         "format": {
           "description": "Format is a printf format string to format the value in the sequence",
@@ -8725,7 +8725,7 @@
         },
         "start": {
           "description": "Number at which to start the sequence (default: 0)",
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
+          "type": "string"
         }
       }
     },
@@ -8878,7 +8878,7 @@
       "properties": {
         "activeDeadlineSeconds": {
           "description": "Optional duration in seconds relative to the StartTime that the pod may be active on a node before the system actively tries to terminate the pod; value must be positive integer This field is only applicable to container and script templates.",
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
+          "type": "string"
         },
         "affinity": {
           "description": "Affinity sets the pod's scheduling constraints Overrides the affinity set at the workflow level (if any)",

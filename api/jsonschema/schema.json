@@ -3306,8 +3306,8 @@
           "type": "string"
         },
         "factor": {
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString",
-          "description": "Factor is a factor to multiply the base duration after each failed retry"
+          "description": "Factor is a factor to multiply the base duration after each failed retry",
+          "type": "string"
         },
         "maxDuration": {
           "description": "MaxDuration is the maximum amount of time allowed for the backoff strategy",
@@ -4990,8 +4990,8 @@
           "type": "string"
         },
         "limit": {
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString",
-          "description": "Limit is the maximum number of attempts when retrying a container"
+          "description": "Limit is the maximum number of attempts when retrying a container",
+          "type": "string"
         },
         "retryPolicy": {
           "description": "RetryPolicy is a policy of NodePhase statuses that will be retried",
@@ -5282,20 +5282,20 @@
       "description": "Sequence expands a workflow step into numeric range",
       "properties": {
         "count": {
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString",
-          "description": "Count is number of elements in the sequence (default: 0). Not to be used with end"
+          "description": "Count is number of elements in the sequence (default: 0). Not to be used with end",
+          "type": "string"
         },
         "end": {
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString",
-          "description": "Number at which to end the sequence (default: 0). Not to be used with Count"
+          "description": "Number at which to end the sequence (default: 0). Not to be used with Count",
+          "type": "string"
         },
         "format": {
           "description": "Format is a printf format string to format the value in the sequence",
           "type": "string"
         },
         "start": {
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString",
-          "description": "Number at which to start the sequence (default: 0)"
+          "description": "Number at which to start the sequence (default: 0)",
+          "type": "string"
         }
       },
       "type": "object"
@@ -5447,8 +5447,8 @@
       "description": "Template is a reusable and composable unit of execution in a workflow",
       "properties": {
         "activeDeadlineSeconds": {
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString",
-          "description": "Optional duration in seconds relative to the StartTime that the pod may be active on a node before the system actively tries to terminate the pod; value must be positive integer This field is only applicable to container and script templates."
+          "description": "Optional duration in seconds relative to the StartTime that the pod may be active on a node before the system actively tries to terminate the pod; value must be positive integer This field is only applicable to container and script templates.",
+          "type": "string"
         },
         "affinity": {
           "$ref": "#/definitions/io.k8s.api.core.v1.Affinity",
