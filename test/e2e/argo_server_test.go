@@ -319,6 +319,8 @@ func (s *ArgoServerSuite) TestOauth() {
 }
 
 func (s *ArgoServerSuite) TestUnauthorized() {
+	s.T().Skip("K3S RBAC appears to be broken: https://github.com/k3s-io/k3s/issues/3756")
+
 	token := s.bearerToken
 	defer func() { s.bearerToken = token }()
 	s.bearerToken = "test-token"
@@ -338,6 +340,8 @@ func (s *ArgoServerSuite) TestCookieAuth() {
 }
 
 func (s *ArgoServerSuite) TestPermission() {
+	s.T().Skip("K3S RBAC appears to be broken: https://github.com/k3s-io/k3s/issues/3756")
+
 	nsName := fixtures.Namespace
 	// Create good serviceaccount
 	goodSaName := "argotestgood"
