@@ -91,21 +91,28 @@
     },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Backoff": {
       "properties": {
+        "FactorPercentage": {
+          "title": "+kubebuilder:default=200",
+          "type": "integer"
+        },
         "cap": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Duration",
-          "title": "the cap of the backoff, should be \u003e100ms, otherwise backoff is capped immediately"
+          "title": "+kubebuilder:default=\"0ms\""
+        },
+        "duration": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Duration",
+          "title": "+kubebuilder:default=\"100ms\""
         },
         "jitterPercentage": {
-          "title": "the amount of jitter per step, typically 10-20%, \u003e100% is valid, but strange",
+          "title": "the amount of jitter per step, typically 10-20%, \u003e100% is valid, but strange\n+kubebuilder:default=10",
           "type": "integer"
         },
         "steps": {
           "format": "uint64",
-          "title": "the number of backoff steps, zero means no retries",
+          "title": "the number of backoff steps, zero means no retries\n+kubebuilder:default=20",
           "type": "string"
         }
       },
-      "title": "default backoff is 100ms",
       "type": "object"
     },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Cat": {
@@ -687,7 +694,7 @@
         },
         "retry": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Backoff",
-          "title": "+kubebuilder:default={steps: 2, jitterPercentage: 10}"
+          "title": "+kubebuilder:default={duration: \"100ms\", steps: 20, factorPercentage: 200, jitterPercentage: 10}"
         },
         "s3": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.S3Source"
