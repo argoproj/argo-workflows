@@ -338,6 +338,9 @@ func (s *ArgoServerSuite) TestCookieAuth() {
 }
 
 func (s *ArgoServerSuite) TestPermission() {
+
+	s.T().Skip("K3S RBAC appears to be broken: https://github.com/k3s-io/k3s/issues/3756")
+
 	nsName := fixtures.Namespace
 	// Create good serviceaccount
 	goodSaName := "argotestgood"
