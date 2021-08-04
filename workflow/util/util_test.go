@@ -339,11 +339,12 @@ func TestAddParamToGlobalScopeValueNil(t *testing.T) {
 		},
 	}
 
-	_ = AddParamToGlobalScope(&wf, nil, wfv1.Parameter{
+	p := AddParamToGlobalScope(&wf, nil, wfv1.Parameter{
 		Name:       "test",
 		Value:      nil,
 		GlobalName: "test",
 	})
+	assert.False(t, p)
 }
 
 var susWorkflow = `
