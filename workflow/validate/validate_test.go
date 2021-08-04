@@ -552,8 +552,62 @@ spec:
     outputs: {}
 `
 
+var nestedGlobalParam = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: global-output
+spec:
+  entrypoint: global-output
+  templates:
+  - name: global-output
+    steps:
+    - - name: nested
+        template: nested-level1
+    - - name: consume-global
+        template: consume-global
+        arguments:
+          artifacts:
+          - name: art
+            from: "{{workflow.outputs.artifacts.global-art}}"
+
+  - name: nested-level1
+    steps:
+      - - name: nested
+          template: nested-level2
+
+  - name: nested-level2
+    steps:
+      - - name: nested
+          template: output-global
+
+  - name: output-global
+    container:
+      image: alpine:3.7
+      command: [sh, -c]
+      args: ["sleep 1; echo -n art > /tmp/art.txt; echo -n param > /tmp/param.txt"]
+    outputs:
+      artifacts:
+      - name: hello-art
+        path: /tmp/art.txt
+        globalName: global-art
+
+  - name: consume-global
+    inputs:
+      artifacts:
+      - name: art
+        path: /art
+    container:
+      image: alpine:3.7
+      command: [sh, -c]
+      args: ["cat /art"]
+`
+
 func TestGlobalParam(t *testing.T) {
 	_, err := validate(globalParam)
+	assert.NoError(t, err)
+
+	_, err = validate(nestedGlobalParam)
 	assert.NoError(t, err)
 
 	_, err = validate(unsuppliedArgValue)
@@ -970,7 +1024,7 @@ spec:
     container:
       image: alpine:latest
       command: [sh, -c]
-      args: ["echo {{workflow.status}} {{workflow.uid}}"]
+      args: ["echo {{workflow.status}} {{workflow.uid}} {{workflow.duration}}"]
 `
 
 var workflowStatusNotOnExit = `
@@ -2172,7 +2226,9 @@ spec:
           - name: uid
             value: "{{workflow.uid}}"
           - name: priority
-            value: "{{workflow.priority}}"    
+            value: "{{workflow.priority}}"
+          - name: duration
+            value: "{{workflow.duration}}"
 
   - name: whalesay
     inputs:
@@ -2182,10 +2238,11 @@ spec:
       - name: serviceAccountName
       - name: uid
       - name: priority
+      - name: duration
     container:
       image: docker/whalesay:latest
       command: [cowsay]
-      args: ["name: {{inputs.parameters.name}} namespace: {{inputs.parameters.namespace}} serviceAccountName: {{inputs.parameters.serviceAccountName}} uid: {{inputs.parameters.uid}} priority: {{inputs.parameters.priority}}"]
+      args: ["name: {{inputs.parameters.name}} namespace: {{inputs.parameters.namespace}} serviceAccountName: {{inputs.parameters.serviceAccountName}} uid: {{inputs.parameters.uid}} priority: {{inputs.parameters.priority}} duration: {{inputs.parameters.duration}}"]
 `
 
 func TestWorkflowGlobalVariables(t *testing.T) {
@@ -2823,4 +2880,46 @@ spec:
 			assert.Contains(t, err.Error(), "containerSet.containers must have a container named \"main\" for input or output")
 		}
 	}
+}
+
+func TestSortDAGTasksWithDepends(t *testing.T) {
+	wfUsingDependsManifest := `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: sort-dag-tasks-test-
+  namespace: argo
+spec:
+  entrypoint: main
+  templates:
+    - dag:
+        tasks:
+          - name: "8ea51cf2"
+            template: 8ea51cf2-template
+          - depends: 8ea51cf2
+            name: "ba1f414f"
+            template: ba1f414f-template
+          - depends: ba1f414f.Succeeded || ba1f414f.Failed || ba1f414f.Errored
+            name: "f7d273f8"
+            template: f7d273f8-template
+      name: main`
+	wf := unmarshalWf(wfUsingDependsManifest)
+	tmpl := wf.Spec.Templates[0]
+	nameToTask := make(map[string]wfv1.DAGTask)
+	for _, task := range tmpl.DAG.Tasks {
+		nameToTask[task.Name] = task
+	}
+
+	dagValidationCtx := &dagValidationContext{
+		tasks:        nameToTask,
+		dependencies: make(map[string]map[string]common.DependencyType),
+	}
+	err := sortDAGTasks(&tmpl, dagValidationCtx)
+	assert.NoError(t, err)
+	var taskOrderAfterSort, expectedOrder []string
+	expectedOrder = []string{"8ea51cf2", "ba1f414f", "f7d273f8"}
+	for _, task := range tmpl.DAG.Tasks {
+		taskOrderAfterSort = append(taskOrderAfterSort, task.Name)
+	}
+	assert.Equal(t, expectedOrder, taskOrderAfterSort)
 }

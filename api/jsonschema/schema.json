@@ -125,11 +125,49 @@
       },
       "type": "object"
     },
+    "io.argoproj.events.v1alpha1.AMQPConsumeConfig": {
+      "properties": {
+        "autoAck": {
+          "title": "AutoAck when true, the server will acknowledge deliveries to this consumer prior to writing\nthe delivery to the network\n+optional",
+          "type": "boolean"
+        },
+        "consumerTag": {
+          "title": "ConsumerTag is the identity of the consumer included in every delivery\n+optional",
+          "type": "string"
+        },
+        "exclusive": {
+          "title": "Exclusive when true, the server will ensure that this is the sole consumer from this queue\n+optional",
+          "type": "boolean"
+        },
+        "noLocal": {
+          "title": "NoLocal flag is not supported by RabbitMQ\n+optional",
+          "type": "boolean"
+        },
+        "noWait": {
+          "title": "NowWait when true, do not wait for the server to confirm the request and immediately begin deliveries\n+optional",
+          "type": "boolean"
+        }
+      },
+      "title": "AMQPConsumeConfig holds the configuration to immediately starts delivering queued messages\n+k8s:openapi-gen=true",
+      "type": "object"
+    },
     "io.argoproj.events.v1alpha1.AMQPEventSource": {
       "properties": {
+        "auth": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.BasicAuth",
+          "title": "Auth hosts secret selectors for username and password\n+optional"
+        },
         "connectionBackoff": {
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.Backoff",
           "title": "Backoff holds parameters applied to connection.\n+optional"
+        },
+        "consume": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.AMQPConsumeConfig",
+          "title": "Consume holds the configuration to immediately starts delivering queued messages\nFor more information, visit https://godoc.org/github.com/streadway/amqp#Channel.Consume\n+optional"
+        },
+        "exchangeDeclare": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.AMQPExchangeDeclareConfig",
+          "title": "ExchangeDeclare holds the configuration for the exchange on the server\nFor more information, visit https://godoc.org/github.com/streadway/amqp#Channel.ExchangeDeclare\n+optional"
         },
         "exchangeName": {
           "title": "ExchangeName is the exchange name\nFor more information, visit https://www.rabbitmq.com/tutorials/amqp-concepts.html",
@@ -150,6 +188,14 @@
           "title": "Metadata holds the user defined metadata which will passed along the event payload.\n+optional",
           "type": "object"
         },
+        "queueBind": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.AMQPQueueBindConfig",
+          "title": "QueueBind holds the configuration that binds an exchange to a queue so that publishings to the\nexchange will be routed to the queue when the publishing routing key matches the binding routing key\nFor more information, visit https://godoc.org/github.com/streadway/amqp#Channel.QueueBind\n+optional"
+        },
+        "queueDeclare": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.AMQPQueueDeclareConfig",
+          "title": "QueueDeclare holds the configuration of a queue to hold messages and deliver to consumers.\nDeclaring creates a queue if it doesn't already exist, or ensures that an existing queue matches\nthe same parameters\nFor more information, visit https://godoc.org/github.com/streadway/amqp#Channel.QueueDeclare\n+optional"
+        },
         "routingKey": {
           "title": "Routing key for bindings",
           "type": "string"
@@ -166,6 +212,64 @@
       "title": "AMQPEventSource refers to an event-source for AMQP stream events",
       "type": "object"
     },
+    "io.argoproj.events.v1alpha1.AMQPExchangeDeclareConfig": {
+      "properties": {
+        "autoDelete": {
+          "title": "AutoDelete removes the exchange when no bindings are active\n+optional",
+          "type": "boolean"
+        },
+        "durable": {
+          "title": "Durable keeps the exchange also after the server restarts\n+optional",
+          "type": "boolean"
+        },
+        "internal": {
+          "title": "Internal when true does not accept publishings\n+optional",
+          "type": "boolean"
+        },
+        "noWait": {
+          "title": "NowWait when true does not wait for a confirmation from the server\n+optional",
+          "type": "boolean"
+        }
+      },
+      "title": "AMQPExchangeDeclareConfig holds the configuration for the exchange on the server\n+k8s:openapi-gen=true",
+      "type": "object"
+    },
+    "io.argoproj.events.v1alpha1.AMQPQueueBindConfig": {
+      "properties": {
+        "noWait": {
+          "title": "NowWait false and the queue could not be bound, the channel will be closed with an error\n+optional",
+          "type": "boolean"
+        }
+      },
+      "title": "AMQPQueueBindConfig holds the configuration that binds an exchange to a queue so that publishings to the\nexchange will be routed to the queue when the publishing routing key matches the binding routing key\n+k8s:openapi-gen=true",
+      "type": "object"
+    },
+    "io.argoproj.events.v1alpha1.AMQPQueueDeclareConfig": {
+      "properties": {
+        "autoDelete": {
+          "title": "AutoDelete removes the queue when no consumers are active\n+optional",
+          "type": "boolean"
+        },
+        "durable": {
+          "title": "Durable keeps the queue also after the server restarts\n+optional",
+          "type": "boolean"
+        },
+        "exclusive": {
+          "title": "Exclusive sets the queues to be accessible only by the connection that declares them and will be\ndeleted wgen the connection closes\n+optional",
+          "type": "boolean"
+        },
+        "name": {
+          "title": "Name of the queue. If empty the server auto-generates a unique name for this queue\n+optional",
+          "type": "string"
+        },
+        "noWait": {
+          "title": "NowWait when true, the queue assumes to be declared on the server\n+optional",
+          "type": "boolean"
+        }
+      },
+      "title": "AMQPQueueDeclareConfig holds the configuration of a queue to hold messages and deliver to consumers.\nDeclaring creates a queue if it doesn't already exist, or ensures that an existing queue matches\nthe same parameters\n+k8s:openapi-gen=true",
+      "type": "object"
+    },
     "io.argoproj.events.v1alpha1.AWSLambdaTrigger": {
       "properties": {
         "accessKey": {
@@ -176,14 +280,19 @@
           "description": "FunctionName refers to the name of the function to invoke.",
           "type": "string"
         },
+        "invocationType": {
+          "description": "Choose from the following options.\n\n   * RequestResponse (default) - Invoke the function synchronously. Keep\n   the connection open until the function returns a response or times out.\n   The API response includes the function response and additional data.\n\n   * Event - Invoke the function asynchronously. Send events that fail multiple\n   times to the function's dead-letter queue (if it's configured). The API\n   response only includes a status code.\n\n   * DryRun - Validate parameter values and verify that the user or role\n   has permission to invoke the function.\n+optional",
+          "type": "string"
+        },
         "parameters": {
           "items": {
             "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter"
           },
-          "title": "+optional",
+          "title": "Parameters is the list of key-value extracted from event's payload that are applied to\nthe trigger resource.\n+optional",
           "type": "array"
         },
         "payload": {
+          "description": "Payload is the list of key-value extracted from an event payload to construct the request payload.",
           "items": {
             "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter"
           },
@@ -225,6 +334,7 @@
           "items": {
             "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter"
           },
+          "title": "Parameters is the list of parameters to pass to resolved Argo Workflow object",
           "type": "array"
         },
         "source": {
@@ -269,6 +379,42 @@
       "title": "ArtifactLocation describes the source location for an external artifact",
       "type": "object"
     },
+    "io.argoproj.events.v1alpha1.AzureEventHubsTrigger": {
+      "properties": {
+        "fqdn": {
+          "title": "FQDN refers to the namespace dns of Azure Event Hubs to be used i.e. \u003cnamespace\u003e.servicebus.windows.net",
+          "type": "string"
+        },
+        "hubName": {
+          "title": "HubName refers to the Azure Event Hub to send events to",
+          "type": "string"
+        },
+        "parameters": {
+          "items": {
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter"
+          },
+          "title": "Parameters is the list of key-value extracted from event's payload that are applied to\nthe trigger resource.\n+optional",
+          "type": "array"
+        },
+        "payload": {
+          "description": "Payload is the list of key-value extracted from an event payload to construct the request payload.",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter"
+          },
+          "type": "array"
+        },
+        "sharedAccessKey": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "title": "SharedAccessKey refers to a K8s secret containing the primary key for the"
+        },
+        "sharedAccessKeyName": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "title": "SharedAccessKeyName refers to the name of the Shared Access Key"
+        }
+      },
+      "title": "AzureEventHubsTrigger refers to specification of the Azure Event Hubs Trigger",
+      "type": "object"
+    },
     "io.argoproj.events.v1alpha1.AzureEventsHubEventSource": {
       "properties": {
         "fqdn": {
@@ -301,19 +447,19 @@
     "io.argoproj.events.v1alpha1.Backoff": {
       "properties": {
         "duration": {
-          "title": "Duration is the duration in nanoseconds",
-          "type": "string"
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.Int64OrString",
+          "title": "The initial duration in nanoseconds or strings like \"1s\", \"3m\"\n+optional"
         },
         "factor": {
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.Amount",
-          "title": "Duration is multiplied by factor each iteration"
+          "title": "Duration is multiplied by factor each iteration\n+optional"
         },
         "jitter": {
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.Amount",
-          "title": "The amount of jitter applied each iteration"
+          "title": "The amount of jitter applied each iteration\n+optional"
         },
         "steps": {
-          "title": "Exit with error after this many steps",
+          "title": "Exit with error after this many steps\n+optional",
           "type": "integer"
         }
       },
@@ -366,7 +512,7 @@
           "type": "string"
         },
         "userPayload": {
-          "description": "UserPayload will be sent to sensor as extra data once the event is triggered\n+optional\nDeprecated. Please use Metadata instead.",
+          "description": "UserPayload will be sent to sensor as extra data once the event is triggered\n+optional\nDeprecated: will be removed in v1.5. Please use Metadata instead.",
           "format": "byte",
           "type": "string"
         }
@@ -430,7 +576,7 @@
       "description": "CustomTrigger refers to the specification of the custom trigger.",
       "properties": {
         "certFilePath": {
-          "title": "DeprecatedCertFilePath is path to the cert file within sensor for secure connection between sensor and custom trigger gRPC server.\nDEPRECATED: use CertSecret instead",
+          "title": "DeprecatedCertFilePath is path to the cert file within sensor for secure connection between sensor and custom trigger gRPC server.\nDeprecated: will be removed in v1.5, use CertSecret instead",
           "type": "string"
         },
         "certSecret": {
@@ -438,12 +584,14 @@
           "description": "CertSecret refers to the secret that contains cert for secure connection between sensor and custom trigger gRPC server."
         },
         "parameters": {
+          "description": "Parameters is the list of parameters that is applied to resolved custom trigger trigger object.",
           "items": {
             "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter"
           },
           "type": "array"
         },
         "payload": {
+          "description": "Payload is the list of key-value extracted from an event payload to construct the request payload.",
           "items": {
             "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter"
           },
@@ -479,6 +627,10 @@
         },
         "path": {
           "description": "Path is the JSONPath of the event's (JSON decoded) data key\nPath is a series of keys separated by a dot. A key may contain wildcard characters '*' and '?'.\nTo access an array value use the index as the key. The dot and wildcard characters can be escaped with '\\\\'.\nSee https://github.com/tidwall/gjson#path-syntax for more information on how to use this.",
+          "type": "string"
+        },
+        "template": {
+          "title": "Template is a go-template for extracting a string from the event's data.\nA Template is evaluated with provided path, type and value.\nThe templating follows the standard go-template syntax as well as sprig's extra functions.\nSee https://pkg.go.dev/text/template and https://masterminds.github.io/sprig/",
           "type": "string"
         },
         "type": {
@@ -628,6 +780,13 @@
           "title": "Data filter constraints with escalation",
           "type": "array"
         },
+        "exprs": {
+          "description": "Exprs contains the list of expressions evaluated against the event payload.",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.ExprFilter"
+          },
+          "type": "array"
+        },
         "time": {
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.TimeFilter",
           "title": "Time filter on the event with escalation"
@@ -657,10 +816,11 @@
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceSpec"
         },
         "status": {
-          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceStatus"
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceStatus",
+          "title": "+optional"
         }
       },
-      "title": "EventSource is the definition of a eventsource resource\n+genclient\n+kubebuilder:resource:shortName=es\n+k8s:deepcopy-gen:interfaces=io.k8s.apimachinery/pkg/runtime.Object\n+k8s:openapi-gen=true",
+      "title": "EventSource is the definition of a eventsource resource\n+genclient\n+kubebuilder:resource:shortName=es\n+kubebuilder:subresource:status\n+k8s:deepcopy-gen:interfaces=io.k8s.apimachinery/pkg/runtime.Object\n+k8s:openapi-gen=true",
       "type": "object"
     },
     "io.argoproj.events.v1alpha1.EventSourceList": {
@@ -804,7 +964,11 @@
           "type": "object"
         },
         "replica": {
-          "title": "Replica is the event source deployment replicas",
+          "title": "DeprecatedReplica is the event source deployment replicas\nDeprecated: use replicas instead, will be removed in v1.5",
+          "type": "integer"
+        },
+        "replicas": {
+          "title": "Replicas is the event source deployment replicas",
           "type": "integer"
         },
         "resource": {
@@ -875,6 +1039,22 @@
         }
       },
       "title": "EventSourceStatus holds the status of the event-source resource",
+      "type": "object"
+    },
+    "io.argoproj.events.v1alpha1.ExprFilter": {
+      "properties": {
+        "expr": {
+          "description": "Expr refers to the expression that determines the outcome of the filter.",
+          "type": "string"
+        },
+        "fields": {
+          "description": "Fields refers to set of keys that refer to the paths within event payload.",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.PayloadField"
+          },
+          "type": "array"
+        }
+      },
       "type": "object"
     },
     "io.argoproj.events.v1alpha1.FileArtifact": {
@@ -971,7 +1151,7 @@
           "title": "Remote to manage set of tracked repositories. Defaults to \"origin\".\nRefer https://git-scm.com/docs/git-remote\n+optional"
         },
         "sshKeyPath": {
-          "title": "DeprecatedSSHKeyPath is path to your ssh key path. Use this if you don't want to provide username and password.\nssh key path must be mounted in sensor pod.\nDEPRECATED: use SSHKeySecret instead.\n+optional",
+          "title": "DeprecatedSSHKeyPath is path to your ssh key path. Use this if you don't want to provide username and password.\nssh key path must be mounted in sensor pod.\nDeprecated: will be removed in v1.5, use SSHKeySecret instead.\n+optional",
           "type": "string"
         },
         "sshKeySecret": {
@@ -1052,7 +1232,7 @@
           "type": "string"
         },
         "id": {
-          "title": "Id is the webhook's id",
+          "title": "Id is the webhook's id\nDeprecated: This is not used at all, will be removed in v1.6",
           "type": "string"
         },
         "insecure": {
@@ -1067,11 +1247,18 @@
           "type": "object"
         },
         "owner": {
-          "title": "Owner refers to GitHub owner name i.e. argoproj",
+          "title": "DeprecatedOwner refers to GitHub owner name i.e. argoproj\nDeprecated: use Repositories instead. Will be unsupported in v 1.6",
           "type": "string"
         },
+        "repositories": {
+          "items": {
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.OwnedRepositories"
+          },
+          "title": "Repositories holds the information of repositories, which uses repo owner as the key,\nand list of repo names as the value",
+          "type": "array"
+        },
         "repository": {
-          "title": "Repository refers to GitHub repo name i.e. argo-events",
+          "title": "DeprecatedRepository refers to GitHub repo name i.e. argo-events\nDeprecated: use Repositories instead. Will be unsupported in v 1.6",
           "type": "string"
         },
         "webhook": {
@@ -1206,6 +1393,7 @@
           "type": "string"
         },
         "parameters": {
+          "description": "Parameters is the list of key-value extracted from event's payload that are applied to\nthe HTTP trigger resource.",
           "items": {
             "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter"
           },
@@ -1215,6 +1403,13 @@
           "items": {
             "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter"
           },
+          "type": "array"
+        },
+        "secureHeaders": {
+          "items": {
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.SecureHeader"
+          },
+          "title": "Secure Headers stored in Kubernetes Secrets for the HTTP requests.\n+optional",
           "type": "array"
         },
         "timeout": {
@@ -1231,6 +1426,20 @@
         }
       },
       "title": "HTTPTrigger is the trigger for the HTTP request",
+      "type": "object"
+    },
+    "io.argoproj.events.v1alpha1.Int64OrString": {
+      "properties": {
+        "int64Val": {
+          "type": "string"
+        },
+        "strVal": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        }
+      },
       "type": "object"
     },
     "io.argoproj.events.v1alpha1.K8SResourcePolicy": {
@@ -1300,6 +1509,10 @@
           "title": "Partition name",
           "type": "string"
         },
+        "sasl": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.SASLConfig",
+          "title": "SASL configuration for the kafka client\n+optional"
+        },
         "tls": {
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.TLSConfig",
           "title": "TLS configuration for the kafka client.\n+optional"
@@ -1332,6 +1545,7 @@
           "type": "integer"
         },
         "parameters": {
+          "description": "Parameters is the list of parameters that is applied to resolved Kafka trigger object.",
           "items": {
             "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter"
           },
@@ -1346,6 +1560,7 @@
           "type": "string"
         },
         "payload": {
+          "description": "Payload is the list of key-value extracted from an event payload to construct the request payload.",
           "items": {
             "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter"
           },
@@ -1354,6 +1569,10 @@
         "requiredAcks": {
           "description": "RequiredAcks used in producer to tell the broker how many replica acknowledgements\nDefaults to 1 (Only wait for the leader to ack).\n+optional.",
           "type": "integer"
+        },
+        "sasl": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.SASLConfig",
+          "title": "SASL configuration for the kafka client\n+optional"
         },
         "tls": {
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.TLSConfig",
@@ -1364,7 +1583,7 @@
           "type": "string"
         },
         "url": {
-          "description": "URL of the Kafka broker.",
+          "description": "URL of the Kafka broker, multiple URLs separated by comma.",
           "type": "string"
         },
         "version": {
@@ -1439,8 +1658,34 @@
       "title": "Metadata holds the annotations and labels of an event source pod",
       "type": "object"
     },
+    "io.argoproj.events.v1alpha1.NATSAuth": {
+      "properties": {
+        "basic": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.BasicAuth",
+          "title": "Baisc auth with username and password\n+optional"
+        },
+        "credential": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "title": "credential used to connect\n+optional"
+        },
+        "nkey": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "title": "NKey used to connect\n+optional"
+        },
+        "token": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "title": "Token used to connect\n+optional"
+        }
+      },
+      "title": "NATSAuth refers to the auth info for NATS EventSource",
+      "type": "object"
+    },
     "io.argoproj.events.v1alpha1.NATSEventsSource": {
       "properties": {
+        "auth": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.NATSAuth",
+          "title": "Auth information\n+optional"
+        },
         "connectionBackoff": {
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.Backoff",
           "description": "ConnectionBackoff holds backoff applied to connection."
@@ -1562,10 +1807,11 @@
           "items": {
             "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter"
           },
-          "title": "+optional",
+          "title": "Parameters is the list of key-value extracted from event's payload that are applied to\nthe trigger resource.\n+optional",
           "type": "array"
         },
         "payload": {
+          "description": "Payload is the list of key-value extracted from an event payload to construct the request payload.",
           "items": {
             "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter"
           },
@@ -1573,6 +1819,36 @@
         },
         "version": {
           "title": "Version for the API.\nDefaults to v1.\n+optional",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.events.v1alpha1.OwnedRepositories": {
+      "properties": {
+        "names": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Repository names",
+          "type": "array"
+        },
+        "owner": {
+          "title": "Orgnization or user name",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.events.v1alpha1.PayloadField": {
+      "description": "PayloadField binds a value at path within the event payload against a name.",
+      "properties": {
+        "name": {
+          "description": "Name acts as key that holds the value at the path.",
+          "type": "string"
+        },
+        "path": {
+          "description": "Path is the JSONPath of the event's (JSON decoded) data key\nPath is a series of keys separated by a dot. A key may contain wildcard characters '*' and '?'.\nTo access an array value use the index as the key. The dot and wildcard characters can be escaped with '\\\\'.\nSee https://github.com/tidwall/gjson#path-syntax for more information on how to use this.",
           "type": "string"
         }
       },
@@ -1586,7 +1862,7 @@
           "title": "CredentialSecret references to the secret that contains JSON credentials to access GCP.\nIf it is missing, it implicitly uses Workload Identity to access.\nhttps://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity\n+optional"
         },
         "credentialsFile": {
-          "title": "CredentialsFile is the file that contains credentials to authenticate for GCP\nDeprecated, use CredentialSecret instead",
+          "title": "CredentialsFile is the file that contains credentials to authenticate for GCP\nDeprecated: will be removed in v1.5, use CredentialSecret instead",
           "type": "string"
         },
         "deleteSubscriptionOnFinish": {
@@ -1851,6 +2127,24 @@
       "title": "S3Filter represents filters to apply to bucket notifications for specifying constraints on objects",
       "type": "object"
     },
+    "io.argoproj.events.v1alpha1.SASLConfig": {
+      "properties": {
+        "mechanism": {
+          "title": "SASLMechanism is the name of the enabled SASL mechanism.\nPossible values: OAUTHBEARER, PLAIN (defaults to PLAIN).\n+optional",
+          "type": "string"
+        },
+        "password": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "title": "Password for SASL/PLAIN authentication"
+        },
+        "user": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "title": "User is the authentication identity (authcid) to present for\nSASL/PLAIN or SASL/SCRAM authentication"
+        }
+      },
+      "title": "SASLConfig refers to SASL configuration for a client",
+      "type": "object"
+    },
     "io.argoproj.events.v1alpha1.SNSEventSource": {
       "properties": {
         "accessKey": {
@@ -1937,6 +2231,19 @@
       "title": "SQSEventSource refers to event-source for AWS SQS related events",
       "type": "object"
     },
+    "io.argoproj.events.v1alpha1.SecureHeader": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "valueFrom": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.ValueFromSource",
+          "title": "Values can be read from either secrets or configmaps"
+        }
+      },
+      "title": "SecureHeader refers to HTTP Headers with auth tokens as values",
+      "type": "object"
+    },
     "io.argoproj.events.v1alpha1.Selector": {
       "description": "Selector represents conditional operation to select K8s objects.",
       "properties": {
@@ -1964,10 +2271,11 @@
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.SensorSpec"
         },
         "status": {
-          "$ref": "#/definitions/io.argoproj.events.v1alpha1.SensorStatus"
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.SensorStatus",
+          "title": "+optional"
         }
       },
-      "title": "Sensor is the definition of a sensor resource\n+genclient\n+genclient:noStatus\n+kubebuilder:resource:shortName=sn\n+k8s:deepcopy-gen:interfaces=io.k8s.apimachinery/pkg/runtime.Object\n+k8s:openapi-gen=true",
+      "title": "Sensor is the definition of a sensor resource\n+genclient\n+genclient:noStatus\n+kubebuilder:resource:shortName=sn\n+kubebuilder:subresource:status\n+k8s:deepcopy-gen:interfaces=io.k8s.apimachinery/pkg/runtime.Object\n+k8s:openapi-gen=true",
       "type": "object"
     },
     "io.argoproj.events.v1alpha1.SensorList": {
@@ -1988,7 +2296,7 @@
     "io.argoproj.events.v1alpha1.SensorSpec": {
       "properties": {
         "circuit": {
-          "description": "Circuit is a boolean expression of dependency groups\nDEPRECATED: Use Switch in triggers instead.",
+          "description": "Circuit is a boolean expression of dependency groups\nDeprecated: will be removed in v1.5, use Switch in triggers instead.",
           "type": "string"
         },
         "dependencies": {
@@ -2012,6 +2320,10 @@
         "eventBusName": {
           "title": "EventBusName references to a EventBus name. By default the value is \"default\"",
           "type": "string"
+        },
+        "replicas": {
+          "title": "Replicas is the sensor deployment replicas",
+          "type": "integer"
         },
         "template": {
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.Template",
@@ -2094,7 +2406,7 @@
           "items": {
             "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter"
           },
-          "title": "+optional",
+          "title": "Parameters is the list of key-value extracted from event's payload that are applied to\nthe trigger resource.\n+optional",
           "type": "array"
         },
         "slackToken": {
@@ -2119,6 +2431,7 @@
           "type": "string"
         },
         "parameters": {
+          "description": "Parameters is the list of parameters that is applied to resolved K8s trigger object.",
           "items": {
             "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter"
           },
@@ -2257,7 +2570,7 @@
       "description": "TLSConfig refers to TLS configuration for a client.",
       "properties": {
         "caCertPath": {
-          "title": "DeprecatedCACertPath refers the file path that contains the CA cert.\nDeprecated: use CACertSecret instead",
+          "title": "DeprecatedCACertPath refers the file path that contains the CA cert.\nDeprecated: will be removed in v1.5, use CACertSecret instead",
           "type": "string"
         },
         "caCertSecret": {
@@ -2265,7 +2578,7 @@
           "title": "CACertSecret refers to the secret that contains the CA cert"
         },
         "clientCertPath": {
-          "title": "DeprecatedClientCertPath refers the file path that contains client cert.\nDeprecated: use ClientCertSecret instead",
+          "title": "DeprecatedClientCertPath refers the file path that contains client cert.\nDeprecated: will be removed in v1.5, use ClientCertSecret instead",
           "type": "string"
         },
         "clientCertSecret": {
@@ -2273,7 +2586,7 @@
           "title": "ClientCertSecret refers to the secret that contains the client cert"
         },
         "clientKeyPath": {
-          "title": "DeprecatedClientKeyPath refers the file path that contains client key.\nDeprecated: use ClientKeySecret instead",
+          "title": "DeprecatedClientKeyPath refers the file path that contains client key.\nDeprecated: will be removed in v1.5, use ClientKeySecret instead",
           "type": "string"
         },
         "clientKeySecret": {
@@ -2285,6 +2598,10 @@
     },
     "io.argoproj.events.v1alpha1.Template": {
       "properties": {
+        "affinity": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.Affinity",
+          "title": "If specified, the pod's scheduling constraints\n+optional"
+        },
         "container": {
           "$ref": "#/definitions/io.k8s.api.core.v1.Container",
           "title": "Container is the main container image to run in the sensor pod\n+optional"
@@ -2306,6 +2623,14 @@
           },
           "title": "NodeSelector is a selector which must be true for the pod to fit on a node.\nSelector which must match a node's labels for the pod to be scheduled on that node.\nMore info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/\n+optional",
           "type": "object"
+        },
+        "priority": {
+          "title": "The priority value. Various system components use this field to find the\npriority of the EventSource pod. When Priority Admission Controller is enabled,\nit prevents users from setting this field. The admission controller populates\nthis field from PriorityClassName.\nThe higher the value, the higher the priority.\nMore info: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/\n+optional",
+          "type": "integer"
+        },
+        "priorityClassName": {
+          "title": "If specified, indicates the EventSource pod's priority. \"system-node-critical\"\nand \"system-cluster-critical\" are two special keywords which indicate the\nhighest priorities with the former being the highest priority. Any other\nname must be defined by creating a PriorityClass object with that name.\nIf not specified, the pod priority will be default or zero if there is no\ndefault.\nMore info: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/\n+optional",
+          "type": "string"
         },
         "securityContext": {
           "$ref": "#/definitions/io.k8s.api.core.v1.PodSecurityContext",
@@ -2358,7 +2683,11 @@
         },
         "policy": {
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerPolicy",
-          "title": "Policy to configure backoff and execution criteria for the trigger"
+          "title": "Policy to configure backoff and execution criteria for the trigger\n+optional"
+        },
+        "retryStrategy": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.Backoff",
+          "title": "Retry strategy, defaults to no retry\n+optional"
         },
         "template": {
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerTemplate",
@@ -2447,7 +2776,7 @@
           "type": "array"
         }
       },
-      "title": "TriggerSwitch describes condition which must be satisfied in order to execute a trigger.\nDepending upon condition type, status of dependency groups is used to evaluate the result.\nDEPRECATED",
+      "title": "TriggerSwitch describes condition which must be satisfied in order to execute a trigger.\nDepending upon condition type, status of dependency groups is used to evaluate the result.\nDeprecated: will be removed in v1.5",
       "type": "object"
     },
     "io.argoproj.events.v1alpha1.TriggerTemplate": {
@@ -2460,6 +2789,10 @@
         "awsLambda": {
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.AWSLambdaTrigger",
           "title": "AWSLambda refers to the trigger designed to invoke AWS Lambda function with with on-the-fly constructable payload.\n+optional"
+        },
+        "azureEventHubs": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.AzureEventHubsTrigger",
+          "title": "AzureEventHubs refers to the trigger send an event to an Azure Event Hub.\n+optional"
         },
         "conditions": {
           "title": "Conditions is the conditions to execute the trigger.\nFor example: \"(dep01 || dep02) \u0026\u0026 dep04\"\n+optional",
@@ -2503,7 +2836,7 @@
         },
         "switch": {
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerSwitch",
-          "title": "DeprecatedSwitch is the condition to execute the trigger.\nDEPRECATED: USE conditions instead\n+optional"
+          "title": "DeprecatedSwitch is the condition to execute the trigger.\nDeprecated: will be removed in v1.5, use conditions instead\n+optional"
         }
       },
       "type": "object"
@@ -2520,6 +2853,18 @@
           "type": "boolean"
         }
       },
+      "type": "object"
+    },
+    "io.argoproj.events.v1alpha1.ValueFromSource": {
+      "properties": {
+        "configMapKeyRef": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector"
+        },
+        "secretKeyRef": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      },
+      "title": "ValueFromSource allows you to reference keys from either a Configmap or Secret",
       "type": "object"
     },
     "io.argoproj.events.v1alpha1.WatchPathConfig": {
@@ -2846,6 +3191,36 @@
       ],
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.ArtifactRepository": {
+      "description": "ArtifactRepository represents an artifact repository in which a controller will store its artifacts",
+      "properties": {
+        "archiveLogs": {
+          "description": "ArchiveLogs enables log archiving",
+          "type": "boolean"
+        },
+        "artifactory": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifactRepository",
+          "description": "Artifactory stores artifacts to JFrog Artifactory"
+        },
+        "gcs": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GCSArtifactRepository",
+          "description": "GCS stores artifact in a GCS object store"
+        },
+        "hdfs": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HDFSArtifactRepository",
+          "description": "HDFS stores artifacts in HDFS"
+        },
+        "oss": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OSSArtifactRepository",
+          "description": "OSS stores artifact in a OSS-compliant object store"
+        },
+        "s3": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.S3ArtifactRepository",
+          "description": "S3 stores artifact in a S3-compliant object store"
+        }
+      },
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.ArtifactRepositoryRef": {
       "properties": {
         "configMap": {
@@ -2861,6 +3236,10 @@
     },
     "io.argoproj.workflow.v1alpha1.ArtifactRepositoryRefStatus": {
       "properties": {
+        "artifactRepository": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactRepository",
+          "description": "The repository the workflow will use. This maybe empty before v3.1."
+        },
         "configMap": {
           "description": "The name of the config map. Defaults to \"artifact-repositories\".",
           "type": "string"
@@ -2899,6 +3278,24 @@
       "required": [
         "url"
       ],
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.ArtifactoryArtifactRepository": {
+      "description": "ArtifactoryArtifactRepository defines the controller configuration for an artifactory artifact repository",
+      "properties": {
+        "passwordSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "PasswordSecret is the secret selector to the repository password"
+        },
+        "repoURL": {
+          "description": "RepoURL is the url for artifactory repo.",
+          "type": "string"
+        },
+        "usernameSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "UsernameSecret is the secret selector to the repository username"
+        }
+      },
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.Backoff": {
@@ -3125,7 +3522,7 @@
         },
         "startupProbe": {
           "$ref": "#/definitions/io.k8s.api.core.v1.Probe",
-          "description": "StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. This is a beta feature enabled by the StartupProbe feature flag. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes"
+          "description": "StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes"
         },
         "stdin": {
           "description": "Whether this container should allocate a buffer for stdin in the container runtime. If this is not set, reads from stdin in the container will always result in EOF. Default is false.",
@@ -3429,6 +3826,10 @@
           "description": "Hooks hold the lifecycle hook which is invoked at lifecycle of task, irrespective of the success, failure, or error status of the primary task",
           "type": "object"
         },
+        "inline": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template",
+          "description": "Inline is the template. Template must be empty if this is declared (and vice-versa)."
+        },
         "name": {
           "description": "Name is the name of the target",
           "type": "string"
@@ -3573,6 +3974,24 @@
       ],
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.GCSArtifactRepository": {
+      "description": "GCSArtifactRepository defines the controller configuration for a GCS artifact repository",
+      "properties": {
+        "bucket": {
+          "description": "Bucket is the name of the bucket",
+          "type": "string"
+        },
+        "keyFormat": {
+          "description": "KeyFormat is defines the format of how to store keys. Can reference workflow variables",
+          "type": "string"
+        },
+        "serviceAccountKeySecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "ServiceAccountKeySecret is the secret selector to the bucket's service account key"
+        }
+      },
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.Gauge": {
       "description": "Gauge is a Gauge prometheus metric",
       "properties": {
@@ -3715,6 +4134,55 @@
       "required": [
         "path"
       ],
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.HDFSArtifactRepository": {
+      "description": "HDFSArtifactRepository defines the controller configuration for an HDFS artifact repository",
+      "properties": {
+        "addresses": {
+          "description": "Addresses is accessible addresses of HDFS name nodes",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "force": {
+          "description": "Force copies a file forcibly even if it exists (default: false)",
+          "type": "boolean"
+        },
+        "hdfsUser": {
+          "description": "HDFSUser is the user to access HDFS file system. It is ignored if either ccache or keytab is used.",
+          "type": "string"
+        },
+        "krbCCacheSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "KrbCCacheSecret is the secret selector for Kerberos ccache Either ccache or keytab can be set to use Kerberos."
+        },
+        "krbConfigConfigMap": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector",
+          "description": "KrbConfig is the configmap selector for Kerberos config as string It must be set if either ccache or keytab is used."
+        },
+        "krbKeytabSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "KrbKeytabSecret is the secret selector for Kerberos keytab Either ccache or keytab can be set to use Kerberos."
+        },
+        "krbRealm": {
+          "description": "KrbRealm is the Kerberos realm used with Kerberos keytab It must be set if keytab is used.",
+          "type": "string"
+        },
+        "krbServicePrincipalName": {
+          "description": "KrbServicePrincipalName is the principal name of Kerberos service It must be set if either ccache or keytab is used.",
+          "type": "string"
+        },
+        "krbUsername": {
+          "description": "KrbUsername is the Kerberos username used with Kerberos keytab It must be set if keytab is used.",
+          "type": "string"
+        },
+        "pathFormat": {
+          "description": "PathFormat is defines the format of path to store a file. Can reference workflow variables",
+          "type": "string"
+        }
+      },
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.HTTP": {
@@ -4263,6 +4731,44 @@
       ],
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.OSSArtifactRepository": {
+      "description": "OSSArtifactRepository defines the controller configuration for an OSS artifact repository",
+      "properties": {
+        "accessKeySecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "AccessKeySecret is the secret selector to the bucket's access key"
+        },
+        "bucket": {
+          "description": "Bucket is the name of the bucket",
+          "type": "string"
+        },
+        "createBucketIfNotPresent": {
+          "description": "CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist",
+          "type": "boolean"
+        },
+        "endpoint": {
+          "description": "Endpoint is the hostname of the bucket endpoint",
+          "type": "string"
+        },
+        "keyFormat": {
+          "description": "KeyFormat is defines the format of how to store keys. Can reference workflow variables",
+          "type": "string"
+        },
+        "lifecycleRule": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OSSLifecycleRule",
+          "description": "LifecycleRule specifies how to manage bucket's lifecycle"
+        },
+        "secretKeySecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "SecretKeySecret is the secret selector to the bucket's secret key"
+        },
+        "securityToken": {
+          "description": "SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.OSSLifecycleRule": {
       "description": "OSSLifecycleRule specifies how to manage bucket's lifecycle",
       "properties": {
@@ -4544,6 +5050,56 @@
       },
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.S3ArtifactRepository": {
+      "description": "S3ArtifactRepository defines the controller configuration for an S3 artifact repository",
+      "properties": {
+        "accessKeySecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "AccessKeySecret is the secret selector to the bucket's access key"
+        },
+        "bucket": {
+          "description": "Bucket is the name of the bucket",
+          "type": "string"
+        },
+        "createBucketIfNotPresent": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CreateS3BucketOptions",
+          "description": "CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist"
+        },
+        "endpoint": {
+          "description": "Endpoint is the hostname of the bucket endpoint",
+          "type": "string"
+        },
+        "insecure": {
+          "description": "Insecure will connect to the service with TLS",
+          "type": "boolean"
+        },
+        "keyFormat": {
+          "description": "KeyFormat is defines the format of how to store keys. Can reference workflow variables",
+          "type": "string"
+        },
+        "keyPrefix": {
+          "description": "KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts. DEPRECATED. Use KeyFormat instead",
+          "type": "string"
+        },
+        "region": {
+          "description": "Region contains the optional bucket region",
+          "type": "string"
+        },
+        "roleARN": {
+          "description": "RoleARN is the Amazon Resource Name (ARN) of the role to assume.",
+          "type": "string"
+        },
+        "secretKeySecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "SecretKeySecret is the secret selector to the bucket's secret key"
+        },
+        "useSDKCreds": {
+          "description": "UseSDKCreds tells the driver to figure out credentials based on sdk defaults.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.ScriptTemplate": {
       "description": "ScriptTemplate is a template subtype to enable scripting through code steps",
       "properties": {
@@ -4629,7 +5185,7 @@
         },
         "startupProbe": {
           "$ref": "#/definitions/io.k8s.api.core.v1.Probe",
-          "description": "StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. This is a beta feature enabled by the StartupProbe feature flag. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes"
+          "description": "StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes"
         },
         "stdin": {
           "description": "Whether this container should allocate a buffer for stdin in the container runtime. If this is not set, reads from stdin in the container will always result in EOF. Default is false.",
@@ -4889,21 +5445,6 @@
           "type": "integer"
         }
       },
-      "type": "object"
-    },
-    "io.argoproj.workflow.v1alpha1.Task": {
-      "properties": {
-        "nodeId": {
-          "type": "string"
-        },
-        "template": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
-        }
-      },
-      "required": [
-        "nodeId",
-        "template"
-      ],
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.Template": {
@@ -5225,7 +5766,7 @@
         },
         "startupProbe": {
           "$ref": "#/definitions/io.k8s.api.core.v1.Probe",
-          "description": "StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. This is a beta feature enabled by the StartupProbe feature flag. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes"
+          "description": "StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes"
         },
         "stdin": {
           "description": "Whether this container should allocate a buffer for stdin in the container runtime. If this is not set, reads from stdin in the container will always result in EOF. Default is false.",
@@ -5888,6 +6429,10 @@
           "description": "Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step",
           "type": "object"
         },
+        "inline": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template",
+          "description": "Inline is the template. Template must be empty if this is declared (and vice-versa)."
+        },
         "name": {
           "description": "Name of the step",
           "type": "string"
@@ -5974,10 +6519,12 @@
     "io.argoproj.workflow.v1alpha1.WorkflowTaskSet": {
       "properties": {
         "apiVersion": {
+          "const": "argoproj.io/v1alpha1",
           "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#resources",
           "type": "string"
         },
         "kind": {
+          "const": "WorkflowTaskSet",
           "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
           "type": "string"
         },
@@ -6000,10 +6547,10 @@
     "io.argoproj.workflow.v1alpha1.WorkflowTaskSetSpec": {
       "properties": {
         "tasks": {
-          "items": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Task"
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
           },
-          "type": "array"
+          "type": "object"
         }
       },
       "type": "object"
@@ -9189,6 +9736,9 @@
     },
     {
       "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplate"
+    },
+    {
+      "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTaskSet"
     }
   ],
   "type": "object"

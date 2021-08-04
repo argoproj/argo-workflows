@@ -94,6 +94,8 @@ Workflow is the definition of a workflow resource
 
 - [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-enhanced-depends.yaml)
 
+- [`dag-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-workflow.yaml)
+
 - [`dag-multiroot.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-multiroot.yaml)
 
 - [`dag-nested.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-nested.yaml)
@@ -145,6 +147,8 @@ Workflow is the definition of a workflow resource
 - [`hello-windows.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-windows.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-world.yaml)
+
+- [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
 
 - [`image-pull-secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/image-pull-secrets.yaml)
 
@@ -280,6 +284,8 @@ Workflow is the definition of a workflow resource
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/step-level-timeout.yaml)
 
+- [`steps-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps-inline-workflow.yaml)
+
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/suspend-template-outputs.yaml)
@@ -345,6 +351,8 @@ CronWorkflow is the definition of a scheduled workflow resource
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cron-backfill.yaml)
 
 - [`cron-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cron-workflow.yaml)
+
+- [`dag-inline-cronworkflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-cronworkflow.yaml)
 </details>
 
 ### Fields
@@ -367,6 +375,8 @@ WorkflowTemplate is the definition of a workflow template resource
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/buildkit-template.yaml)
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cron-backfill.yaml)
+
+- [`dag-inline-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-workflowtemplate.yaml)
 
 - [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
 
@@ -481,6 +491,14 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-enhanced-depends.yaml)
 
+- [`dag-inline-clusterworkflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-clusterworkflowtemplate.yaml)
+
+- [`dag-inline-cronworkflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-cronworkflow.yaml)
+
+- [`dag-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-workflow.yaml)
+
+- [`dag-inline-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-workflowtemplate.yaml)
+
 - [`dag-multiroot.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-multiroot.yaml)
 
 - [`dag-nested.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-nested.yaml)
@@ -532,6 +550,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`hello-windows.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-windows.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-world.yaml)
+
+- [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
 
 - [`image-pull-secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/image-pull-secrets.yaml)
 
@@ -666,6 +686,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`status-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/status-reference.yaml)
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/step-level-timeout.yaml)
+
+- [`steps-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps-inline-workflow.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps.yaml)
 
@@ -889,6 +911,14 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-enhanced-depends.yaml)
 
+- [`dag-inline-clusterworkflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-clusterworkflowtemplate.yaml)
+
+- [`dag-inline-cronworkflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-cronworkflow.yaml)
+
+- [`dag-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-workflow.yaml)
+
+- [`dag-inline-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-workflowtemplate.yaml)
+
 - [`dag-multiroot.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-multiroot.yaml)
 
 - [`dag-nested.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-nested.yaml)
@@ -940,6 +970,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`hello-windows.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-windows.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-world.yaml)
+
+- [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
 
 - [`image-pull-secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/image-pull-secrets.yaml)
 
@@ -1074,6 +1106,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`status-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/status-reference.yaml)
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/step-level-timeout.yaml)
+
+- [`steps-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps-inline-workflow.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps.yaml)
 
@@ -1254,6 +1288,14 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-enhanced-depends.yaml)
 
+- [`dag-inline-clusterworkflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-clusterworkflowtemplate.yaml)
+
+- [`dag-inline-cronworkflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-cronworkflow.yaml)
+
+- [`dag-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-workflow.yaml)
+
+- [`dag-inline-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-workflowtemplate.yaml)
+
 - [`dag-multiroot.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-multiroot.yaml)
 
 - [`dag-nested.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-nested.yaml)
@@ -1305,6 +1347,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`hello-windows.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-windows.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-world.yaml)
+
+- [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
 
 - [`image-pull-secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/image-pull-secrets.yaml)
 
@@ -1439,6 +1483,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`status-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/status-reference.yaml)
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/step-level-timeout.yaml)
+
+- [`steps-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps-inline-workflow.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps.yaml)
 
@@ -1625,6 +1671,8 @@ Arguments to a template
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/handle-large-output-results.yaml)
 
 - [`hdfs-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hdfs-artifact.yaml)
+
+- [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
 
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
 
@@ -1977,6 +2025,8 @@ WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cron-backfill.yaml)
 
+- [`dag-inline-cronworkflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-cronworkflow.yaml)
+
 - [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-of-workflows.yaml)
@@ -2006,6 +2056,7 @@ _No description available_
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
+|`artifactRepository`|[`ArtifactRepository`](#artifactrepository)|The repository the workflow will use. This maybe empty before v3.1.|
 |`configMap`|`string`|The name of the config map. Defaults to "artifact-repositories".|
 |`default`|`boolean`|If this ref represents the default artifact repository, rather than a config map.|
 |`key`|`string`|The config map key. Defaults to the value of the "workflows.argoproj.io/default-artifact-repository" annotation.|
@@ -2346,6 +2397,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/handle-large-output-results.yaml)
 
+- [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
+
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
 
 - [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-jobs.yaml)
@@ -2625,6 +2678,12 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 
 - [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-enhanced-depends.yaml)
 
+- [`dag-inline-clusterworkflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-clusterworkflowtemplate.yaml)
+
+- [`dag-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-workflow.yaml)
+
+- [`dag-inline-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-workflowtemplate.yaml)
+
 - [`dag-multiroot.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-multiroot.yaml)
 
 - [`dag-nested.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-nested.yaml)
@@ -2712,6 +2771,8 @@ _No description available_
 
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-daemon-task.yaml)
 
+- [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
+
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
 
 - [`input-artifact-http.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-http.yaml)
@@ -2760,7 +2821,7 @@ UserContainer is a container specified by a user.
 |`readinessProbe`|[`Probe`](#probe)|Periodic probe of container service readiness. Container will be removed from service endpoints if the probe fails. Cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
 |`resources`|[`ResourceRequirements`](#resourcerequirements)|Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/|
 |`securityContext`|[`SecurityContext`](#securitycontext)|Security options the pod should run with. More info: https://kubernetes.io/docs/concepts/policy/security-context/ More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/|
-|`startupProbe`|[`Probe`](#probe)|StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. This is a beta feature enabled by the StartupProbe feature flag. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
+|`startupProbe`|[`Probe`](#probe)|StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
 |`stdin`|`boolean`|Whether this container should allocate a buffer for stdin in the container runtime. If this is not set, reads from stdin in the container will always result in EOF. Default is false.|
 |`stdinOnce`|`boolean`|Whether the container runtime should close the stdin channel after it has been opened by a single attach. When stdin is true the stdin stream will remain open across multiple attach sessions. If stdinOnce is set to true, stdin is opened on container start, is empty until the first client attaches to stdin, and then remains open and accepts data until the client disconnects, at which time stdin is closed and remains closed until the container is restarted. If this flag is false, a container processes that reads from stdin will never receive an EOF. Default is false|
 |`terminationMessagePath`|`string`|Optional: Path at which the file to which the container's termination message will be written is mounted into the container's filesystem. Message written is intended to be brief final status, such as an assertion failure message. Will be truncated by the node if greater than 4096 bytes. The total message length across all containers will be limited to 12kb. Defaults to /dev/termination-log. Cannot be updated.|
@@ -2849,6 +2910,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/handle-large-output-results.yaml)
 
 - [`hdfs-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hdfs-artifact.yaml)
+
+- [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
 
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
 
@@ -3087,7 +3150,7 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 |`resources`|[`ResourceRequirements`](#resourcerequirements)|Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/|
 |`securityContext`|[`SecurityContext`](#securitycontext)|Security options the pod should run with. More info: https://kubernetes.io/docs/concepts/policy/security-context/ More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/|
 |`source`|`string`|Source contains the source code of the script to execute|
-|`startupProbe`|[`Probe`](#probe)|StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. This is a beta feature enabled by the StartupProbe feature flag. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
+|`startupProbe`|[`Probe`](#probe)|StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
 |`stdin`|`boolean`|Whether this container should allocate a buffer for stdin in the container runtime. If this is not set, reads from stdin in the container will always result in EOF. Default is false.|
 |`stdinOnce`|`boolean`|Whether the container runtime should close the stdin channel after it has been opened by a single attach. When stdin is true the stdin stream will remain open across multiple attach sessions. If stdinOnce is set to true, stdin is opened on container start, is empty until the first client attaches to stdin, and then remains open and accepts data until the client disconnects, at which time stdin is closed and remains closed until the container is restarted. If this flag is false, a container processes that reads from stdin will never receive an EOF. Default is false|
 |`terminationMessagePath`|`string`|Optional: Path at which the file to which the container's termination message will be written is mounted into the container's filesystem. Message written is intended to be brief final status, such as an assertion failure message. Will be truncated by the node if greater than 4096 bytes. The total message length across all containers will be limited to 12kb. Defaults to /dev/termination-log. Cannot be updated.|
@@ -3173,6 +3236,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 
 - [`hello-hybrid.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-hybrid.yaml)
 
+- [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
+
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
 
 - [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
@@ -3235,6 +3300,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/step-level-timeout.yaml)
 
+- [`steps-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps-inline-workflow.yaml)
+
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/suspend-template-outputs.yaml)
@@ -3276,6 +3343,7 @@ WorkflowStep is a reference to a template to execute in a series of step
 |`arguments`|[`Arguments`](#arguments)|Arguments hold arguments to the template|
 |`continueOn`|[`ContinueOn`](#continueon)|ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified|
 |`hooks`|[`LifecycleHook`](#lifecyclehook)|Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step|
+|`inline`|[`Template`](#template)|Inline is the template. Template must be empty if this is declared (and vice-versa).|
 |`name`|`string`|Name of the step|
 |~`onExit`~|~`string`~|~OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.~ DEPRECATED: Use Hooks[exit].Template instead.|
 |`template`|`string`|Template is the name of the template to execute as the step|
@@ -3304,6 +3372,20 @@ SuspendTemplate is a template subtype to suspend a workflow at a predetermined p
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`duration`|`string`|Duration is the seconds to wait before automatically resuming a template|
+
+## ArtifactRepository
+
+ArtifactRepository represents an artifact repository in which a controller will store its artifacts
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`archiveLogs`|`boolean`|ArchiveLogs enables log archiving|
+|`artifactory`|[`ArtifactoryArtifactRepository`](#artifactoryartifactrepository)|Artifactory stores artifacts to JFrog Artifactory|
+|`gcs`|[`GCSArtifactRepository`](#gcsartifactrepository)|GCS stores artifact in a GCS object store|
+|`hdfs`|[`HDFSArtifactRepository`](#hdfsartifactrepository)|HDFS stores artifacts in HDFS|
+|`oss`|[`OSSArtifactRepository`](#ossartifactrepository)|OSS stores artifact in a OSS-compliant object store|
+|`s3`|[`S3ArtifactRepository`](#s3artifactrepository)|S3 stores artifact in a S3-compliant object store|
 
 ## MemoizationStatus
 
@@ -3534,6 +3616,8 @@ HTTPArtifact allows an file served on HTTP to be placed as an input artifact in 
 
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-daemon-task.yaml)
 
+- [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
+
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
 
 - [`input-artifact-http.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-http.yaml)
@@ -3763,6 +3847,8 @@ MetricLabel is a single label for a prometheus metric
 
 - [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-custom-metrics.yaml)
 
+- [`dag-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-workflow.yaml)
+
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
 
 - [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-artifacts.yaml)
@@ -3772,6 +3858,8 @@ MetricLabel is a single label for a prometheus metric
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-world.yaml)
+
+- [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
 
@@ -3788,6 +3876,8 @@ MetricLabel is a single label for a prometheus metric
 - [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-delete-with-flags.yaml)
 
 - [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
+
+- [`steps-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps-inline-workflow.yaml)
 
 - [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-defaults.yaml)
 </details>
@@ -3848,7 +3938,7 @@ _No description available_
 |`readinessProbe`|[`Probe`](#probe)|Periodic probe of container service readiness. Container will be removed from service endpoints if the probe fails. Cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
 |`resources`|[`ResourceRequirements`](#resourcerequirements)|Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/|
 |`securityContext`|[`SecurityContext`](#securitycontext)|Security options the pod should run with. More info: https://kubernetes.io/docs/concepts/policy/security-context/ More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/|
-|`startupProbe`|[`Probe`](#probe)|StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. This is a beta feature enabled by the StartupProbe feature flag. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
+|`startupProbe`|[`Probe`](#probe)|StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
 |`stdin`|`boolean`|Whether this container should allocate a buffer for stdin in the container runtime. If this is not set, reads from stdin in the container will always result in EOF. Default is false.|
 |`stdinOnce`|`boolean`|Whether the container runtime should close the stdin channel after it has been opened by a single attach. When stdin is true the stdin stream will remain open across multiple attach sessions. If stdinOnce is set to true, stdin is opened on container start, is empty until the first client attaches to stdin, and then remains open and accepts data until the client disconnects, at which time stdin is closed and remains closed until the container is restarted. If this flag is false, a container processes that reads from stdin will never receive an EOF. Default is false|
 |`terminationMessagePath`|`string`|Optional: Path at which the file to which the container's termination message will be written is mounted into the container's filesystem. Message written is intended to be brief final status, such as an assertion failure message. Will be truncated by the node if greater than 4096 bytes. The total message length across all containers will be limited to 12kb. Defaults to /dev/termination-log. Cannot be updated.|
@@ -3894,6 +3984,12 @@ DAGTask represents a node in the graph during DAG execution
 
 - [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-enhanced-depends.yaml)
 
+- [`dag-inline-clusterworkflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-clusterworkflowtemplate.yaml)
+
+- [`dag-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-workflow.yaml)
+
+- [`dag-inline-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-workflowtemplate.yaml)
+
 - [`dag-multiroot.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-multiroot.yaml)
 
 - [`dag-nested.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-nested.yaml)
@@ -3933,6 +4029,7 @@ DAGTask represents a node in the graph during DAG execution
 |`dependencies`|`Array< string >`|Dependencies are name of other targets which this depends on|
 |`depends`|`string`|Depends are name of other targets which this depends on|
 |`hooks`|[`LifecycleHook`](#lifecyclehook)|Hooks hold the lifecycle hook which is invoked at lifecycle of task, irrespective of the success, failure, or error status of the primary task|
+|`inline`|[`Template`](#template)|Inline is the template. Template must be empty if this is declared (and vice-versa).|
 |`name`|`string`|Name is the name of the target|
 |~`onExit`~|~`string`~|~OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.~ DEPRECATED: Use Hooks[exit].Template instead.|
 |`template`|`string`|Name of template to execute|
@@ -4071,6 +4168,8 @@ ContinueOn defines if a workflow should continue even if a task or step fails/er
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-code-output-variable.yaml)
 
+- [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
+
 - [`resource-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-flags.yaml)
 
 - [`status-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/status-reference.yaml)
@@ -4162,6 +4261,111 @@ Sequence expands a workflow step into numeric range
 |`end`|[`IntOrString`](#intorstring)|Number at which to end the sequence (default: 0). Not to be used with Count|
 |`format`|`string`|Format is a printf format string to format the value in the sequence|
 |`start`|[`IntOrString`](#intorstring)|Number at which to start the sequence (default: 0)|
+
+## ArtifactoryArtifactRepository
+
+ArtifactoryArtifactRepository defines the controller configuration for an artifactory artifact repository
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifactory-artifact.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`passwordSecret`|[`SecretKeySelector`](#secretkeyselector)|PasswordSecret is the secret selector to the repository password|
+|`repoURL`|`string`|RepoURL is the url for artifactory repo.|
+|`usernameSecret`|[`SecretKeySelector`](#secretkeyselector)|UsernameSecret is the secret selector to the repository username|
+
+## GCSArtifactRepository
+
+GCSArtifactRepository defines the controller configuration for a GCS artifact repository
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-gcs.yaml)
+
+- [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-gcs.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`bucket`|`string`|Bucket is the name of the bucket|
+|`keyFormat`|`string`|KeyFormat is defines the format of how to store keys. Can reference workflow variables|
+|`serviceAccountKeySecret`|[`SecretKeySelector`](#secretkeyselector)|ServiceAccountKeySecret is the secret selector to the bucket's service account key|
+
+## HDFSArtifactRepository
+
+HDFSArtifactRepository defines the controller configuration for an HDFS artifact repository
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hdfs-artifact.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`addresses`|`Array< string >`|Addresses is accessible addresses of HDFS name nodes|
+|`force`|`boolean`|Force copies a file forcibly even if it exists (default: false)|
+|`hdfsUser`|`string`|HDFSUser is the user to access HDFS file system. It is ignored if either ccache or keytab is used.|
+|`krbCCacheSecret`|[`SecretKeySelector`](#secretkeyselector)|KrbCCacheSecret is the secret selector for Kerberos ccache Either ccache or keytab can be set to use Kerberos.|
+|`krbConfigConfigMap`|[`ConfigMapKeySelector`](#configmapkeyselector)|KrbConfig is the configmap selector for Kerberos config as string It must be set if either ccache or keytab is used.|
+|`krbKeytabSecret`|[`SecretKeySelector`](#secretkeyselector)|KrbKeytabSecret is the secret selector for Kerberos keytab Either ccache or keytab can be set to use Kerberos.|
+|`krbRealm`|`string`|KrbRealm is the Kerberos realm used with Kerberos keytab It must be set if keytab is used.|
+|`krbServicePrincipalName`|`string`|KrbServicePrincipalName is the principal name of Kerberos service It must be set if either ccache or keytab is used.|
+|`krbUsername`|`string`|KrbUsername is the Kerberos username used with Kerberos keytab It must be set if keytab is used.|
+|`pathFormat`|`string`|PathFormat is defines the format of path to store a file. Can reference workflow variables|
+
+## OSSArtifactRepository
+
+OSSArtifactRepository defines the controller configuration for an OSS artifact repository
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`input-artifact-oss.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-oss.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`accessKeySecret`|[`SecretKeySelector`](#secretkeyselector)|AccessKeySecret is the secret selector to the bucket's access key|
+|`bucket`|`string`|Bucket is the name of the bucket|
+|`createBucketIfNotPresent`|`boolean`|CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist|
+|`endpoint`|`string`|Endpoint is the hostname of the bucket endpoint|
+|`keyFormat`|`string`|KeyFormat is defines the format of how to store keys. Can reference workflow variables|
+|`lifecycleRule`|[`OSSLifecycleRule`](#osslifecyclerule)|LifecycleRule specifies how to manage bucket's lifecycle|
+|`secretKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SecretKeySecret is the secret selector to the bucket's secret key|
+|`securityToken`|`string`|SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm|
+
+## S3ArtifactRepository
+
+S3ArtifactRepository defines the controller configuration for an S3 artifact repository
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`accessKeySecret`|[`SecretKeySelector`](#secretkeyselector)|AccessKeySecret is the secret selector to the bucket's access key|
+|`bucket`|`string`|Bucket is the name of the bucket|
+|`createBucketIfNotPresent`|[`CreateS3BucketOptions`](#creates3bucketoptions)|CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist|
+|`endpoint`|`string`|Endpoint is the hostname of the bucket endpoint|
+|`insecure`|`boolean`|Insecure will connect to the service with TLS|
+|`keyFormat`|`string`|KeyFormat is defines the format of how to store keys. Can reference workflow variables|
+|~`keyPrefix`~|~`string`~|~KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.~ DEPRECATED. Use KeyFormat instead|
+|`region`|`string`|Region contains the optional bucket region|
+|`roleARN`|`string`|RoleARN is the Amazon Resource Name (ARN) of the role to assume.|
+|`secretKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SecretKeySecret is the secret selector to the bucket's secret key|
+|`useSDKCreds`|`boolean`|UseSDKCreds tells the driver to figure out credentials based on sdk defaults.|
 
 ## MutexHolding
 
@@ -4468,6 +4672,14 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-enhanced-depends.yaml)
 
+- [`dag-inline-clusterworkflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-clusterworkflowtemplate.yaml)
+
+- [`dag-inline-cronworkflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-cronworkflow.yaml)
+
+- [`dag-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-workflow.yaml)
+
+- [`dag-inline-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-workflowtemplate.yaml)
+
 - [`dag-multiroot.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-multiroot.yaml)
 
 - [`dag-nested.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-nested.yaml)
@@ -4519,6 +4731,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`hello-windows.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-windows.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-world.yaml)
+
+- [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
 
 - [`image-pull-secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/image-pull-secrets.yaml)
 
@@ -4653,6 +4867,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`status-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/status-reference.yaml)
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/step-level-timeout.yaml)
+
+- [`steps-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps-inline-workflow.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps.yaml)
 
@@ -5064,6 +5280,12 @@ A single application container that you want to run within a pod.
 
 - [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-enhanced-depends.yaml)
 
+- [`dag-inline-clusterworkflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-clusterworkflowtemplate.yaml)
+
+- [`dag-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-workflow.yaml)
+
+- [`dag-inline-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-workflowtemplate.yaml)
+
 - [`dag-multiroot.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-multiroot.yaml)
 
 - [`dag-nested.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-nested.yaml)
@@ -5223,6 +5445,8 @@ A single application container that you want to run within a pod.
 - [`status-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/status-reference.yaml)
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/step-level-timeout.yaml)
+
+- [`steps-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps-inline-workflow.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps.yaml)
 
@@ -5729,6 +5953,14 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-enhanced-depends.yaml)
 
+- [`dag-inline-clusterworkflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-clusterworkflowtemplate.yaml)
+
+- [`dag-inline-cronworkflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-cronworkflow.yaml)
+
+- [`dag-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-workflow.yaml)
+
+- [`dag-inline-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-workflowtemplate.yaml)
+
 - [`dag-multiroot.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-multiroot.yaml)
 
 - [`dag-nested.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-nested.yaml)
@@ -5780,6 +6012,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`hello-windows.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-windows.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-world.yaml)
+
+- [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
 
 - [`image-pull-secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/image-pull-secrets.yaml)
 
@@ -5914,6 +6148,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`status-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/status-reference.yaml)
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/step-level-timeout.yaml)
+
+- [`steps-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps-inline-workflow.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps.yaml)
 

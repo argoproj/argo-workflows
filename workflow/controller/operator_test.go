@@ -148,6 +148,37 @@ spec:
 	}), "zero node durations empty")
 }
 
+func TestGlobalParamDuration(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+metadata:
+  name: my-wf
+  namespace: my-ns
+spec:
+  entrypoint: main
+  templates:
+   - name: main
+     dag:
+       tasks:
+       - name: pod
+         template: pod
+   - name: pod
+     container: 
+       image: my-image
+`)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, woc.globalParams[common.GlobalVarWorkflowDuration], "0.000000")
+
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+	assert.Greater(t, woc.globalParams[common.GlobalVarWorkflowDuration], "0.000000")
+}
+
 func TestEstimatedDuration(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(`
 metadata:
@@ -3202,7 +3233,7 @@ spec:
     container:
       image: alpine:latest
       command: [sh, -c]
-      args: ["echo send e-mail: {{workflow.name}} {{workflow.status}}. Failed steps {{workflow.failures}}"]
+      args: ["echo send e-mail: {{workflow.name}} {{workflow.status}} {{workflow.duration}}. Failed steps {{workflow.failures}}"]
 `
 
 func TestStepsOnExitFailures(t *testing.T) {
@@ -3363,6 +3394,102 @@ spec:
 	}
 }
 
+func TestEventNodeEventsAsPod(t *testing.T) {
+	for manifest, want := range map[string][]string{
+		// Invalid spec
+		`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: invalid-spec
+spec:
+  entrypoint: 123
+`: {
+			"Warning WorkflowFailed invalid spec: template name '123' undefined",
+		},
+		// DAG
+		`
+metadata:
+  name: dag-events
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: a
+            template: whalesay
+    - name: whalesay
+      container:
+        image: docker/whalesay:latest
+`: {
+			"Normal WorkflowRunning Workflow Running",
+			"Normal WorkflowNodeRunning Running node dag-events",
+			"Normal WorkflowNodeRunning Running node dag-events.a",
+			"Normal WorkflowNodeSucceeded Succeeded node dag-events.a",
+			"Normal WorkflowNodeSucceeded Succeeded node dag-events",
+			"Normal WorkflowSucceeded Workflow completed",
+		},
+		// steps
+		`
+metadata:
+  name: steps-events
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: a
+            template: whalesay
+    - name: whalesay
+      container:
+        image: docker/whalesay:latest
+`: {
+			"Normal WorkflowRunning Workflow Running",
+			"Normal WorkflowNodeRunning Running node steps-events",
+			"Normal WorkflowNodeRunning Running node steps-events[0]",
+			"Normal WorkflowNodeRunning Running node steps-events[0].a",
+			"Normal WorkflowNodeSucceeded Succeeded node steps-events[0].a",
+			"Normal WorkflowNodeSucceeded Succeeded node steps-events[0]",
+			"Normal WorkflowNodeSucceeded Succeeded node steps-events",
+			"Normal WorkflowSucceeded Workflow completed",
+		},
+		// no DAG or steps
+		`
+metadata:
+  name: no-dag-or-steps
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`: {
+			"Normal WorkflowRunning Workflow Running",
+			"Normal WorkflowNodeRunning Running node no-dag-or-steps",
+			"Normal WorkflowNodeSucceeded Succeeded node no-dag-or-steps",
+			"Normal WorkflowSucceeded Workflow completed",
+		},
+	} {
+		wf := wfv1.MustUnmarshalWorkflow(manifest)
+		ctx := context.Background()
+		t.Run(wf.Name, func(t *testing.T) {
+			cancel, controller := newController(wf)
+			defer cancel()
+			controller.Config.NodeEvents = config.NodeEvents{SendAsPod: true}
+			woc := newWorkflowOperationCtx(wf, controller)
+			createRunningPods(ctx, woc)
+			woc.operate(ctx)
+			makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+			woc = newWorkflowOperationCtx(woc.wf, controller)
+			woc.operate(ctx)
+			assert.ElementsMatch(t, want, getEvents(controller, len(want)))
+		})
+	}
+}
+
 func getEvents(controller *WorkflowController, num int) []string {
 	c := controller.eventRecorderManager.(*testEventRecorderManager).eventRecorder.Events
 	events := make([]string, num)
@@ -3370,6 +3497,47 @@ func getEvents(controller *WorkflowController, num int) []string {
 		events[i] = <-c
 	}
 	return events
+}
+
+func TestGetPodByNode(t *testing.T) {
+	workflowText := `
+metadata:
+  name: dag-events
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: a
+            template: whalesay
+    - name: whalesay
+      container:
+        image: docker/whalesay:latest
+`
+	wf := wfv1.MustUnmarshalWorkflow(workflowText)
+	wf.Namespace = "argo"
+	ctx := context.Background()
+	cancel, controller := newController(wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(wf, controller)
+	createRunningPods(ctx, woc)
+	woc.operate(ctx)
+	// Parent dag node has no pod
+	parentNode := woc.wf.GetNodeByName("dag-events")
+	pod, err := woc.getPodByNode(parentNode)
+	assert.Nil(t, pod)
+	assert.Error(t, err, "Expected node type Pod, got DAG")
+	// Pod node should return a pod
+	podNode := woc.wf.GetNodeByName("dag-events.a")
+	pod, err = woc.getPodByNode(podNode)
+	assert.NotNil(t, pod)
+	assert.Nil(t, err)
+	// Invalid node should not return a pod
+	invalidNode := wfv1.NodeStatus{Type: wfv1.NodeTypePod, Name: "doesnt-exist"}
+	pod, err = woc.getPodByNode(&invalidNode)
+	assert.Nil(t, pod)
+	assert.Nil(t, err)
 }
 
 var pdbwf = `
@@ -6129,14 +6297,21 @@ func TestRetryOnDiffHost(t *testing.T) {
 	lastChild.HostNodeName = "test-fail-hostname"
 	woc.wf.Status.Nodes[lastChild.ID] = *lastChild
 
+	pod := &apiv1.Pod{
+		Spec: apiv1.PodSpec{
+			Affinity: &apiv1.Affinity{},
+		},
+	}
+
 	tmpl := &wfv1.Template{}
 	tmpl.RetryStrategy = &retries
-	RetryOnDifferentHost(nodeID)(*woc.retryStrategy(tmpl), woc.wf.Status.Nodes, tmpl)
-	assert.NotNil(t, tmpl.Affinity)
+
+	RetryOnDifferentHost(nodeID)(*woc.retryStrategy(tmpl), woc.wf.Status.Nodes, pod)
+	assert.NotNil(t, pod.Spec.Affinity)
 
 	// Verify if template's Affinity has the right value
 	targetNodeSelectorRequirement :=
-		tmpl.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0]
+		pod.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0]
 	sourceNodeSelectorRequirement := apiv1.NodeSelectorRequirement{
 		Key:      hostSelector,
 		Operator: apiv1.NodeSelectorOpNotIn,
@@ -6863,6 +7038,9 @@ func TestSubstituteGlobalVariables(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, woc.execWf)
 	assert.Equal(t, "mutex1", woc.execWf.Spec.Synchronization.Mutex.Name)
+	tempStr, err := json.Marshal(woc.execWf.Spec.Templates)
+	assert.NoError(t, err)
+	assert.Contains(t, string(tempStr), "{{workflow.parameters.message}}")
 }
 
 var wfPending = `
