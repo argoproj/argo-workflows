@@ -2435,6 +2435,7 @@ spec:
                                   - template
                                   type: object
                                 type: object
+                              inline: {}
                               name:
                                 type: string
                               onExit:

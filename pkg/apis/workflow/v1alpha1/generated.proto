@@ -344,6 +344,9 @@ message DAGTask {
   // Name of template to execute
   optional string template = 2;
 
+  // Inline is the template. Template must be empty if this is declared (and vice-versa).
+  optional Template inline = 14;
+
   // Arguments are the parameter and artifact arguments to the template
   optional Arguments arguments = 3;
 
@@ -1728,6 +1731,9 @@ message WorkflowStep {
 
   // Template is the name of the template to execute as the step
   optional string template = 2;
+
+  // Inline is the template. Template must be empty if this is declared (and vice-versa).
+  optional Template inline = 13;
 
   // Arguments hold arguments to the template
   optional Arguments arguments = 3;

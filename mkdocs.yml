@@ -40,7 +40,9 @@ nav:
           - cluster-workflow-templates.md
           - cron-workflows.md
           - cron-backfill.md
+          - templates.md
           - container-set-template.md
+          - template-defaults.md
           - work-avoidance.md
           - enhanced-depends-logic.md
           - data-sourcing-and-transformation.md
@@ -73,6 +75,7 @@ nav:
           - resuming-workflow-via-automation.md
           - async-pattern.md
           - security.md
+          - running-at-massive-scale.md
       - ide-setup.md
       - Examples: examples/README.md
       - Field Reference: fields.md
