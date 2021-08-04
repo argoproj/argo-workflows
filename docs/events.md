@@ -44,7 +44,7 @@ The event endpoint will always return in under 10 seconds because the event will
 Before the binding between an event and a workflow template, you must create the workflow template that you want to trigger.
 The following one takes in input the "message" parameter specified into the API call body, passed through the WorkflowEventBinding parameters section, and finally resolved here as the message of the whalesay image.
 
-```
+```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
@@ -89,7 +89,7 @@ spec:
 Please, notice that "workflowTemplateRef" refers to a template with the name "my-wf-tmple", this template has to be created before the triggering of the event.
 After that you have to apply the above explained WorkflowEventBinding (in this example this is called event-template.yml) to realize the binding between Workflow Template and event (you can use kubectl to do that):
 
-```
+```bash
 kubectl apply -f event-template.yml   
 ```
 

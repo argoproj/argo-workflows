@@ -29,11 +29,43 @@ Note that these environment variables may be removed at any time.
 | `RETRY_BACKOFF_DURATION` | `time.Duration` | `10ms` | The retry backoff duration when retrying API calls. |
 | `RETRY_BACKOFF_FACTOR` | `float` | `2.0` | The retry backoff factor when retrying API calls. |
 | `RETRY_BACKOFF_STEPS` | `int` | `5` | The retry backoff steps when retrying API calls. |
+| `RETRY_HOST_NAME_LABEL_KEY` | `string` | `kubernetes.io/hostname` | The label key for host name used when retrying templates. |
 | `TRANSIENT_ERROR_PATTERN` | `string` | `""` | The regular expression that represents additional patterns for transient errors. |
 | `WF_DEL_PROPAGATION_POLICY` | `string` | `""` | The deletion propagation policy for workflows. |
 | `WORKFLOW_GC_PERIOD` | `time.Duration` | `5m` | The periodicity for GC of workflows. |
 | `BUBBLE_ENTRY_TEMPLATE_ERR` | `bool` | `true` | Whether to bubble up template errors to workflow. |
 | `INFORMER_WRITE_BACK` | `bool` | `true` | Whether to write back to informer instead of catching up. |
+| `GRPC_MESSAGE_SIZE` | `string` | Use different GRPC Max message size for Argo server deployment (supporting huge workflows) |
+
+You can set environment variable for the argo-server deployment, for example:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argo-server
+spec:
+  selector:
+    matchLabels:
+      app: argo-server
+  template:
+    metadata:
+      labels:
+        app: argo-server
+    spec:
+      containers:
+      - args:
+        - server
+        image: argoproj/argocli:latest
+        name: argo-server
+        env:
+        - name: GRPC_MESSAGE_SIZE
+          value: "209715200"
+        ports:
+        ..
+        ...
+        ....
+```
 
 You can set the environment variables for controller in controller's container spec like the following:
 

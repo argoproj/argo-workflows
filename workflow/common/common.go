@@ -7,9 +7,6 @@ import (
 )
 
 const (
-	// DefaultArchivePattern is the default pattern when storing artifacts in an archive repository
-	DefaultArchivePattern = "{{workflow.name}}/{{pod.name}}"
-
 	// Container names used in the workflow pod
 	MainContainerName = "main"
 	InitContainerName = "init"
@@ -87,6 +84,8 @@ const (
 
 	// EnvVarPodName contains the name of the pod (currently unused)
 	EnvVarPodName = "ARGO_POD_NAME"
+	// EnvVarWorkflowName
+	EnvVarWorkflowName = "ARGO_WORKFLOW_NAME"
 	// EnvVarContainerName container the container's name for the current pod
 	EnvVarContainerName = "ARGO_CONTAINER_NAME"
 	// EnvVarDeadline is the deadline for the pod

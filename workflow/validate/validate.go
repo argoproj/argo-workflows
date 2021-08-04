@@ -380,7 +380,7 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 	if err != nil {
 		return err
 	}
-	err = validateOutputs(scope, newTmpl)
+	err = validateOutputs(scope, ctx.globalParams, newTmpl)
 	if err != nil {
 		return err
 	}
@@ -463,7 +463,7 @@ func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.Templat
 // validateTemplateType validates that only one template type is defined
 func validateTemplateType(tmpl *wfv1.Template) error {
 	numTypes := 0
-	for _, tmplType := range []interface{}{tmpl.Container, tmpl.ContainerSet, tmpl.Steps, tmpl.Script, tmpl.Resource, tmpl.DAG, tmpl.Suspend, tmpl.Data} {
+	for _, tmplType := range []interface{}{tmpl.Container, tmpl.ContainerSet, tmpl.Steps, tmpl.Script, tmpl.Resource, tmpl.DAG, tmpl.Suspend, tmpl.Data, tmpl.HTTP} {
 		if !reflect.ValueOf(tmplType).IsNil() {
 			numTypes++
 		}
@@ -537,8 +537,8 @@ func validateArtifactLocation(errPrefix string, art wfv1.ArtifactLocation) error
 	return nil
 }
 
-// resolveAllVariables is a helper to ensure all {{variables}} are resolveable from current scope
-func resolveAllVariables(scope map[string]interface{}, tmplStr string) error {
+// resolveAllVariables is a helper to ensure all {{variables}} are resolvable from current scope
+func resolveAllVariables(scope map[string]interface{}, globalParams map[string]string, tmplStr string) error {
 	_, allowAllItemRefs := scope[anyItemMagicValue] // 'item.*' is a magic placeholder value set by addItemsToScope
 	_, allowAllWorkflowOutputParameterRefs := scope[anyWorkflowOutputParameterMagicValue]
 	_, allowAllWorkflowOutputArtifactRefs := scope[anyWorkflowOutputArtifactMagicValue]
@@ -548,7 +548,8 @@ func resolveAllVariables(scope map[string]interface{}, tmplStr string) error {
 			return nil
 		}
 		_, ok := scope[tag]
-		if !ok {
+		_, isGlobal := globalParams[tag]
+		if !ok && !isGlobal {
 			if (tag == "item" || strings.HasPrefix(tag, "item.")) && allowAllItemRefs {
 				// we are *probably* referencing a undetermined item using withParam
 				// NOTE: this is far from foolproof.
@@ -561,6 +562,7 @@ func resolveAllVariables(scope map[string]interface{}, tmplStr string) error {
 			} else if strings.HasPrefix(tag, common.GlobalVarWorkflowCreationTimestamp) {
 			} else if strings.HasPrefix(tag, common.GlobalVarWorkflowCronScheduleTime) {
 				// Allow runtime resolution for "scheduledTime" which will pass from CronWorkflow
+			} else if strings.HasPrefix(tag, common.GlobalVarWorkflowDuration) {
 			} else {
 				return fmt.Errorf("failed to resolve {{%s}}", tag)
 			}
@@ -591,7 +593,7 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
-	err = resolveAllVariables(scope, string(tmplBytes))
+	err = resolveAllVariables(scope, ctx.globalParams, string(tmplBytes))
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s: %s", tmpl.Name, err.Error())
 	}
@@ -767,6 +769,11 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 			if err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
 			}
+
+			if !validateWhenExpression(step.When) {
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s when expression doesn't support 'expr' format '{{='. 'When' expression is only support govaluate format {{", tmpl.Name)
+			}
+
 			if step.HasExitHook() {
 				ctx.addOutputsToScope(resolvedTmpl, fmt.Sprintf("steps.%s", step.Name), scope, false, false)
 			}
@@ -777,7 +784,7 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 		if err != nil {
 			return errors.InternalWrapError(err)
 		}
-		err = resolveAllVariables(scope, string(stepBytes))
+		err = resolveAllVariables(scope, ctx.globalParams, string(stepBytes))
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps %s", tmpl.Name, err.Error())
 		}
@@ -893,7 +900,7 @@ func (ctx *templateValidationCtx) addOutputsToScope(tmpl *wfv1.Template, prefix 
 	}
 }
 
-func validateOutputs(scope map[string]interface{}, tmpl *wfv1.Template) error {
+func validateOutputs(scope map[string]interface{}, globalParams map[string]string, tmpl *wfv1.Template) error {
 	err := validateWorkflowFieldNames(tmpl.Outputs.Parameters)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs.parameters %s", tmpl.Name, err.Error())
@@ -906,7 +913,7 @@ func validateOutputs(scope map[string]interface{}, tmpl *wfv1.Template) error {
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
-	err = resolveAllVariables(scope, string(outputBytes))
+	err = resolveAllVariables(scope, globalParams, string(outputBytes))
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs %s", tmpl.Name, err.Error())
 	}
@@ -1125,6 +1132,10 @@ func (d *dagValidationContext) GetTaskFinishedAtTime(taskName string) time.Time 
 	return time.Now()
 }
 
+func validateWhenExpression(when string) bool {
+	return !strings.HasPrefix(when, "{{=")
+}
+
 func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmplCtx *templateresolution.Context, tmpl *wfv1.Template) error {
 	err := validateNonLeaf(tmpl)
 	if err != nil {
@@ -1133,8 +1144,20 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 	if len(tmpl.DAG.Tasks) == 0 {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s must have at least one task", tmpl.Name)
 	}
+	usingDepends := false
+	nameToTask := make(map[string]wfv1.DAGTask)
+	for _, task := range tmpl.DAG.Tasks {
+		if task.Depends != "" {
+			usingDepends = true
+		}
+		nameToTask[task.Name] = task
+	}
 
-	err = sortDAGTasks(tmpl)
+	dagValidationCtx := &dagValidationContext{
+		tasks:        nameToTask,
+		dependencies: make(map[string]map[string]common.DependencyType),
+	}
+	err = sortDAGTasks(tmpl, dagValidationCtx)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s sorting failed: %s", tmpl.Name, err.Error())
 	}
@@ -1142,20 +1165,6 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 	err = validateWorkflowFieldNames(tmpl.DAG.Tasks)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks%s", tmpl.Name, err.Error())
-	}
-	usingDepends := false
-	nameToTask := make(map[string]wfv1.DAGTask)
-	for _, task := range tmpl.DAG.Tasks {
-		if task.Depends != "" {
-			usingDepends = true
-		}
-
-		nameToTask[task.Name] = task
-	}
-
-	dagValidationCtx := &dagValidationContext{
-		tasks:        nameToTask,
-		dependencies: make(map[string]map[string]common.DependencyType),
 	}
 
 	resolvedTemplates := make(map[string]*wfv1.Template)
@@ -1173,6 +1182,10 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 
 		if usingDepends && task.ContinueOn != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s cannot use 'continueOn' when using 'depends'. Instead use 'dep-task.Failed'/'dep-task.Errored'", tmpl.Name)
+		}
+
+		if !validateWhenExpression(task.When) {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s when doesn't support 'expr' expression '{{='. 'When' expression is only support govaluate format {{", tmpl.Name)
 		}
 
 		resolvedTmpl, err := ctx.validateTemplateHolder(&task, tmplCtx, &FakeArguments{})
@@ -1208,7 +1221,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		return err
 	}
 
-	err = resolveAllVariables(scope, tmpl.DAG.Target)
+	err = resolveAllVariables(scope, ctx.globalParams, tmpl.DAG.Target)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.targets %s", tmpl.Name, err.Error())
 	}
@@ -1244,7 +1257,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
-		err = resolveAllVariables(taskScope, string(taskBytes))
+		err = resolveAllVariables(taskScope, ctx.globalParams, string(taskBytes))
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
@@ -1350,14 +1363,20 @@ func verifyNoCycles(tmpl *wfv1.Template, ctx *dagValidationContext) error {
 	return nil
 }
 
-func sortDAGTasks(tmpl *wfv1.Template) error {
+func sortDAGTasks(tmpl *wfv1.Template, ctx *dagValidationContext) error {
 	taskMap := make(map[string]*wfv1.DAGTask, len(tmpl.DAG.Tasks))
 	sortingGraph := make([]*sorting.TopologicalSortingNode, len(tmpl.DAG.Tasks))
 	for index := range tmpl.DAG.Tasks {
-		taskMap[tmpl.DAG.Tasks[index].Name] = &tmpl.DAG.Tasks[index]
+		task := tmpl.DAG.Tasks[index]
+		taskMap[task.Name] = &task
+		dependenciesMap, _ := common.GetTaskDependencies(&task, ctx)
+		var dependencies []string
+		for taskName := range dependenciesMap {
+			dependencies = append(dependencies, taskName)
+		}
 		sortingGraph[index] = &sorting.TopologicalSortingNode{
-			NodeName:     tmpl.DAG.Tasks[index].Name,
-			Dependencies: tmpl.DAG.Tasks[index].Dependencies,
+			NodeName:     task.Name,
+			Dependencies: dependencies,
 		}
 	}
 	sortingResult, err := sorting.TopologicalSorting(sortingGraph)

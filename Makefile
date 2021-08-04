@@ -444,7 +444,7 @@ dist/argosay:
 
 .PHONY: pull-images
 pull-images:
-	docker pull golang:1.15.7
+	docker pull golang:1.16
 	docker pull debian:10.7-slim
 	docker pull mysql:8
 	docker pull argoproj/argosay:v1
@@ -532,7 +532,7 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYP
 pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES)
 	[ -e ./vendor ] || go mod vendor
 	[ -e ./v3 ] || ln -s . v3
-	bash $(GOPATH)/pkg/mod/k8s.io/code-generator@v0.19.6/generate-groups.sh \
+	bash $(GOPATH)/pkg/mod/k8s.io/code-generator@v0.20.4/generate-groups.sh \
 	    "deepcopy,client,informer,lister" \
 	    github.com/argoproj/argo-workflows/v3/pkg/client github.com/argoproj/argo-workflows/v3/pkg/apis \
 	    workflow:v1alpha1 \

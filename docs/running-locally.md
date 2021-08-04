@@ -15,7 +15,7 @@
 We recommend using [K3D](https://k3d.io/) to set up the local Kubernetes cluster since this will allow you to test RBAC set-up and is fast. You can set-up K3D to be part of your default kube config as follows:
 
     k3d cluster start --wait
-    
+
 Alternatively, you can use [Minikube](https://github.com/kubernetes/minikube) to set up the local Kubernetes cluster. Once a local Kubernetes cluster has started via `minikube start`, your kube config will use Minikube's context automatically.
 
 
@@ -32,7 +32,7 @@ Add to /etc/hosts:
 
 To install into the “argo” namespace of your cluster: Argo and MinIO (for saving artifacts and logs):
 
-    make start 
+    make start
 
 ### 4. (Optional) Set up a DB for the Workflow archive
 
@@ -62,9 +62,20 @@ Before submitting/running workflows, build all Argo images, so they're available
 
     make build
 
+### 7. SSO with Dex
+For testing SSO integration, you can start a Argo with sso profile which will deploy
+a pre-configured dex instance in argo namespace
+
+```sh
+make start PROFILE=SSO
+```
+
 ## Troubleshooting Notes
 
-If you get a similar error when running one of the make pre-commit tests `make: *** [pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json] Error 1`, ensure you are working within your $GOPATH (YOUR-GOPATH/src/github.com/argoproj/argo-workflows).
+* If you get a similar error when running one of the make pre-commit tests `make: *** [pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json] Error 1`, ensure you are working within your $GOPATH (YOUR-GOPATH/src/github.com/argoproj/argo-workflows).
+
+* If you encounter out of heap issues when building UI through Docker, please validate resources allocated to Docker. Compilation may fail if allocated RAM is less than 4Gi
+
 
 ## Clean
 

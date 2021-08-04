@@ -165,11 +165,7 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 		}
 
 		if node.Type == wfv1.NodeTypeRetry {
-			// A fulfilled Retry node will always reflect the status of its last child node, so its individual attempts don't interest us.
-			// To resume the traversal, we look at the children of the last child node.
-			if childNode := getChildNodeIndex(&node, nodes, -1); childNode != nil {
-				uniqueQueue.add(generatePhaseNodes(childNode.Children, branchPhase)...)
-			}
+			uniqueQueue.add(generatePhaseNodes(getRetryNodeChildrenIds(&node, nodes), branchPhase)...)
 		} else {
 			uniqueQueue.add(generatePhaseNodes(node.Children, branchPhase)...)
 		}
@@ -508,7 +504,7 @@ func (woc *wfOperationCtx) buildLocalScopeFromTask(dagCtx *dagContext, task *wfv
 					ancestorNodes = append(ancestorNodes, node)
 				}
 			}
-			_, tmpl, templateStored, err := dagCtx.tmplCtx.ResolveTemplate(ancestorNode)
+			_, _, templateStored, err := dagCtx.tmplCtx.ResolveTemplate(ancestorNode)
 			if err != nil {
 				return nil, errors.InternalWrapError(err)
 			}
@@ -517,7 +513,7 @@ func (woc *wfOperationCtx) buildLocalScopeFromTask(dagCtx *dagContext, task *wfv
 				woc.updated = true
 			}
 
-			err = woc.processAggregateNodeOutputs(tmpl, scope, prefix, ancestorNodes)
+			err = woc.processAggregateNodeOutputs(scope, prefix, ancestorNodes)
 			if err != nil {
 				return nil, errors.InternalWrapError(err)
 			}
@@ -626,7 +622,7 @@ func expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
 	} else if task.WithParam != "" {
 		err = json.Unmarshal([]byte(task.WithParam), &items)
 		if err != nil {
-			return nil, errors.Errorf(errors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s", strings.TrimSpace(task.WithParam))
+			return nil, errors.Errorf(errors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s: %v", strings.TrimSpace(task.WithParam), err)
 		}
 	} else if task.WithSequence != nil {
 		items, err = expandSequence(task.WithSequence)
