@@ -9,7 +9,7 @@ spec:
   arguments:
     parameters:
       - name: weather
-        # The base64 string is th JSON: {"temps": [34, 27, 15, 57, 46]}
+        # The base64 string is this JSON: {"temps": [34, 27, 15, 57, 46]}
         value: '{"weekWeather": "eyJ0ZW1wcyI6IFszNCwgMjcsIDE1LCA1NywgNDZdfQo="}'
   entrypoint: main
   templates:
