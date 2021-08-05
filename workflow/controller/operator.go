@@ -3154,12 +3154,28 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 			metricSpec := metricTmpl.DeepCopy()
 
 			// Finally substitute value parameters
-			replacedValue, err := template.Replace(metricSpec.GetValueString(), localScope, false)
+			metricValueString := metricSpec.GetValueString()
+
+			metricValueStringJson, err := json.Marshal(metricValueString)
+			if err != nil {
+				woc.reportMetricEmissionError(fmt.Sprintf("unable to marshal metric to JSON for templating '%s': %s", metricSpec.Name, err))
+				continue
+			}
+
+			replacedValueJson, err := template.Replace(string(metricValueStringJson), localScope, false)
 			if err != nil {
 				woc.reportMetricEmissionError(fmt.Sprintf("unable to substitute parameters for metric '%s': %s", metricSpec.Name, err))
 				continue
 			}
-			metricSpec.SetValueString(replacedValue)
+
+			var replacedStringJson string
+			err = json.Unmarshal([]byte(replacedValueJson), &replacedStringJson)
+			if err != nil {
+				woc.reportMetricEmissionError(fmt.Sprintf("unable to unmarshal templated metric JSON '%s': %s", metricSpec.Name, err))
+				continue
+			}
+
+			metricSpec.SetValueString(replacedStringJson)
 
 			metric := woc.controller.metrics.GetCustomMetric(metricSpec.GetDesc())
 			// It is valid to pass a nil metric to ConstructOrUpdateMetric, in that case the metric will be created for us
