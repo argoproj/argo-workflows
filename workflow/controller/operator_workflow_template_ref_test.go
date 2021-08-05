@@ -446,14 +446,6 @@ metadata:
   name: workflow-template-whalesay-template
   namespace: default
 spec:
-  volumeClaimTemplates:
-  - metadata:
-      name: workdir
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      resources:
-        requests:
-          storage: 1Gi
   templates:
   - name: hello-hello-hello
     steps:
@@ -478,7 +470,6 @@ spec:
       image: docker/whalesay
       command: [cowsay]
       args: ["{{inputs.parameters.message}}"]
-c
 `
 
 func TestWorkflowTemplateUpdateScenario(t *testing.T) {
