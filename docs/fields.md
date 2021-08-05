@@ -122,6 +122,8 @@ Workflow is the definition of a workflow resource
 
 - [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-reusing-verbose-snippets.yaml)
 
+- [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-reusing-verbose-snippets.yaml)
+
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
@@ -504,6 +506,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handlers.yaml)
+
+- [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-reusing-verbose-snippets.yaml)
 
 - [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-reusing-verbose-snippets.yaml)
 
@@ -911,6 +915,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-reusing-verbose-snippets.yaml)
 
+- [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-reusing-verbose-snippets.yaml)
+
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
@@ -1272,6 +1278,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-reusing-verbose-snippets.yaml)
 
+- [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-reusing-verbose-snippets.yaml)
+
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
@@ -1597,6 +1605,8 @@ Arguments to a template
 - [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-artifacts.yaml)
 
 - [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
+
+- [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-reusing-verbose-snippets.yaml)
 
 - [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-reusing-verbose-snippets.yaml)
 
@@ -2317,6 +2327,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-reusing-verbose-snippets.yaml)
 
+- [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-reusing-verbose-snippets.yaml)
+
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
@@ -2781,6 +2793,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-reusing-verbose-snippets.yaml)
 
+- [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-reusing-verbose-snippets.yaml)
+
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
@@ -2979,6 +2993,8 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 - [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-artifacts.yaml)
 
 - [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
+
+- [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-reusing-verbose-snippets.yaml)
 
 - [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-reusing-verbose-snippets.yaml)
 
@@ -3929,6 +3945,8 @@ DataSource sources external data into a data template
 
 - [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-reusing-verbose-snippets.yaml)
 
+- [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-reusing-verbose-snippets.yaml)
+
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
 
 - [`loops-param-result.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-param-result.yaml)
@@ -4474,6 +4492,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handlers.yaml)
+
+- [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-reusing-verbose-snippets.yaml)
 
 - [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-reusing-verbose-snippets.yaml)
 
@@ -5335,6 +5355,8 @@ EnvVar represents an environment variable present in a Container.
 
 - [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-reusing-verbose-snippets.yaml)
 
+- [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-reusing-verbose-snippets.yaml)
+
 - [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/secrets.yaml)
 
 - [`sidecar-dind.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar-dind.yaml)
@@ -5729,6 +5751,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handlers.yaml)
+
+- [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-reusing-verbose-snippets.yaml)
 
 - [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-reusing-verbose-snippets.yaml)
 
