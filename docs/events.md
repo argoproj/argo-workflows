@@ -76,7 +76,8 @@ metadata:
   name: event-consumer
 spec:
   event:
-    selector: payload.message != "" && metadata["X-Argo-E2E"] == ["true"] && discriminator == "my-discriminator"
+    # Metadata header must be lowercase to match selector.  Incoming headers are converted to lowercase.  See "Metadata" section below for details.
+    selector: payload.message != "" && metadata["x-argo-e2e"] == ["true"] && discriminator == "my-discriminator"
   submit:
     workflowTemplateRef:
       name: my-wf-tmple
