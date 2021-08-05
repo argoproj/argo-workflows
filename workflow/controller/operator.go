@@ -1462,7 +1462,7 @@ func (woc *wfOperationCtx) createPVCs(ctx context.Context) error {
 }
 
 func (woc *wfOperationCtx) deletePVCs(ctx context.Context) error {
-	gcStrategy := woc.wf.Spec.GetVolumeClaimGC().GetStrategy()
+	gcStrategy := woc.execWf.Spec.GetVolumeClaimGC().GetStrategy()
 
 	switch gcStrategy {
 	case wfv1.VolumeClaimGCOnSuccess:
