@@ -327,7 +327,7 @@ func TestAddParamToGlobalScopeValueNil(t *testing.T) {
 	paramValue := wfv1.AnyString("test")
 	wf := wfv1.Workflow{
 		Status: wfv1.WorkflowStatus{
-			Outputs:                  &wfv1.Outputs{
+			Outputs: &wfv1.Outputs{
 				Parameters: []wfv1.Parameter{
 					{
 						Name:       "test",
