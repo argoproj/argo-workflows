@@ -47,30 +47,39 @@ jobs:
           - test: test-api
             containerRuntimeExecutor: emissary
             profile: mysql
+            runMode: kubernetes
           - test: test-cli
             containerRuntimeExecutor: emissary
             profile: mysql
+            runMode: local
           - test: test-cron
             containerRuntimeExecutor: emissary
             profile: minimal
+            runMode: local
           - test: test-executor
             containerRuntimeExecutor: docker
             profile: minimal
+            runMode: local
           - test: test-executor
             containerRuntimeExecutor: emissary
             profile: minimal
+            runMode: local
           - test: test-executor
             containerRuntimeExecutor: k8sapi
             profile: minimal
+            runMode: local
           - test: test-executor
             containerRuntimeExecutor: kubelet
             profile: minimal
+            runMode: local
           - test: test-executor
             containerRuntimeExecutor: pns
             profile: minimal
+            runMode: local
           - test: test-functional
             containerRuntimeExecutor: emissary
             profile: minimal
+            runMode: local
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
@@ -109,8 +118,10 @@ jobs:
           echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts
           echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
-      - run: make install controller cli $(go env GOPATH)/bin/goreman PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info
-      - run: make start PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info UI=false > /tmp/log/argo-e2e/argo.log 2>&1 &
+      - name: make argocli-image
+        if: ${{matrix.runMode == 'kubernetes'}}
+      - run: make install controller cli $(go env GOPATH)/bin/goreman PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info RUN_MODE=${{matrix.runMode}}
+      - run: make start PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info UI=false RUN_MODE=${{matrix.runMode}} > /tmp/log/argo-e2e/argo.log 2>&1 &
         timeout-minutes: 4
       - name: make argoexec-image
         run: make argoexec-image STATIC_FILES=false
