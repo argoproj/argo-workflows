@@ -208,11 +208,14 @@ func (d *DockerExecutor) Wait(ctx context.Context, containerNames []string) erro
 				if err != nil {
 					return err
 				}
-				_, waitErr := common.RunCommand("docker", append([]string{"wait"}, containerIDs...)...)
-				if waitErr != nil && strings.Contains(waitErr.Error(), "No such container") {
+				_, err = common.RunCommand("docker", append([]string{"wait"}, containerIDs...)...)
+				if err != nil && strings.Contains(err.Error(), "No such container") {
 					// e.g. reason could be ContainerCannotRun
-					log.WithError(waitErr).Info("ignoring error as container may have been re-created and therefore container ID may have changed")
+					log.WithError(err).Info("ignoring error as container may have been re-created and therefore container ID may have changed")
 					continue
+				}
+				if err != nil {
+					return err
 				}
 				// After docker wait, sometimes the container can still be in "Created" state.
 				// https://github.com/argoproj/argo-workflows/issues/6352
@@ -236,7 +239,7 @@ func (d *DockerExecutor) Wait(ctx context.Context, containerNames []string) erro
 				if foundUnfinished {
 					continue
 				}
-				return waitErr
+				return nil
 			}
 			time.Sleep(time.Second)
 		}
