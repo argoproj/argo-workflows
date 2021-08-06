@@ -363,21 +363,29 @@
     },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Kafka": {
       "properties": {
+        "kafkaConfig": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.KafkaConfig"
+        },
+        "name": {
+          "title": "+kubebuilder:default=default",
+          "type": "string"
+        },
+        "topic": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.KafkaConfig": {
+      "properties": {
         "brokers": {
           "items": {
             "type": "string"
           },
           "type": "array"
         },
-        "name": {
-          "title": "+kubebuilder:default=default",
-          "type": "string"
-        },
         "net": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.KafkaNET"
-        },
-        "topic": {
-          "type": "string"
         },
         "version": {
           "type": "string"
