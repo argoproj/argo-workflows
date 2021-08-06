@@ -214,7 +214,32 @@ func (d *DockerExecutor) Wait(ctx context.Context, containerNames []string) erro
 					log.WithError(err).Info("ignoring error as container may have been re-created and therefore container ID may have changed")
 					continue
 				}
-				return err
+				if err != nil {
+					return err
+				}
+				// After docker wait, sometimes the container can still be in "Created" state.
+				// https://github.com/argoproj/argo-workflows/issues/6352
+				// To workaround this issue, validate containers actually finished.
+				containers, err := d.listContainers()
+				if err != nil {
+					return err
+				}
+				foundUnfinished := false
+				for _, name := range containerNames {
+					container, ok := containers[name]
+					if !ok {
+						// ignore containers no longer found
+						continue
+					}
+					if container.status == "Created" || container.status == "Up" {
+						log.Infof("unexpected: container %q still has state %q after docker wait", name, container.status)
+						foundUnfinished = true
+					}
+				}
+				if foundUnfinished {
+					continue
+				}
+				return nil
 			}
 			time.Sleep(time.Second)
 		}
