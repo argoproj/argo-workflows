@@ -119,6 +119,7 @@ jobs:
           echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
       - name: make argocli-image
+        run: make argocli-image STATIC_FILES=false DEV_IMAGE=true
         if: ${{matrix.runMode == 'kubernetes'}}
       - run: make install controller cli $(go env GOPATH)/bin/goreman PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info RUN_MODE=${{matrix.runMode}}
       - run: make start PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info UI=false RUN_MODE=${{matrix.runMode}} > /tmp/log/argo-e2e/argo.log 2>&1 &
