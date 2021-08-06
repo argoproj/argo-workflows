@@ -1587,9 +1587,38 @@
       
     
     
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        Installation
+      </label>
+    
     <a href="./" title="Installation" class="md-nav__link md-nav__link--active">
       Installation
     </a>
+    
+      
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#recommendations" title="Recommendations" class="md-nav__link">
+    Recommendations
+  </a>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
+</nav>
     
   </li>
 
@@ -2144,6 +2173,22 @@
     
   
   
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#recommendations" title="Recommendations" class="md-nav__link">
+    Recommendations
+  </a>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -2160,15 +2205,18 @@
                 <h1 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h1>
 <p>You can choose one of three common installations:</p>
 <ul>
-<li><strong>cluster install</strong> Execute workflows in any namespace? </li>
+<li><strong>cluster install</strong> Execute workflows in any namespace?</li>
 <li><strong>namespace install</strong> Only execute workflows in the same namespace we install in (typically <code>argo</code>).</li>
 <li><strong>managed namespace install</strong>: Only execute workflows in a specific namespace (<a href="../managed-namespace/">learn more</a>).</li>
 </ul>
-<p>Choose <a href="https://github.com/argoproj/argo-workflows/tree/stable/manifests">a manifests from the list</a>.</p>
-<p>E.g.</p>
-<div class="highlight"><pre><span></span><code>kubectl create ns argo
-kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflows/stable/manifests/namespace-install.yaml 
-</code></pre></div>
+<h2 id="recommendations">Recommendations<a class="headerlink" href="#recommendations" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Make sure you're using the manifests attached to the release.</li>
+<li>Read the <a href="../upgrading/">upgrading guide</a> before any major upgrade to be aware of breaking changes.</li>
+<li>If you are using GitOps, copy the manifests into your repository, rather use <code>base</code> to reference them. Fewer issues
+  regarding network loss, and you'll be able to check what has changed each time you upgrade.</li>
+<li>Double-check you have the right version of your executor configured, it's easy to miss.</li>
+</ul>
                 
                   
                 
