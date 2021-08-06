@@ -2458,14 +2458,15 @@ The following one takes in input the "message" parameter specified into the API 
 </code></pre></div>
 <h2 id="submitting-a-workflow-from-a-workflow-template">Submitting A Workflow From A Workflow Template<a class="headerlink" href="#submitting-a-workflow-from-a-workflow-template" title="Permanent link">&para;</a></h2>
 <p>A workflow template will be submitted (i.e. workflow created from it) and that can be created using parameters from the event itself. 
-The following example will be trigger by an event with "message" in the payload. That message will be used as an argument for the created workflow.</p>
+The following example will be triggered by an event with "message" in the payload. That message will be used as an argument for the created workflow.  Note that the name of the metadata header "x-argo-e2e" is lowercase in the selector to match.  Incoming header names are converted to lowercase.</p>
 <p><div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">WorkflowEventBinding</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">event-consumer</span>
 <span class="nt">spec</span><span class="p">:</span>
   <span class="nt">event</span><span class="p">:</span>
-    <span class="nt">selector</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">payload.message != &quot;&quot; &amp;&amp; metadata[&quot;X-Argo-E2E&quot;] == [&quot;true&quot;] &amp;&amp; discriminator == &quot;my-discriminator&quot;</span>
+    <span class="c1"># metadata header name must be lowercase to match in selector</span>
+    <span class="nt">selector</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">payload.message != &quot;&quot; &amp;&amp; metadata[&quot;x-argo-e2e&quot;] == [&quot;true&quot;] &amp;&amp; discriminator == &quot;my-discriminator&quot;</span>
   <span class="nt">submit</span><span class="p">:</span>
     <span class="nt">workflowTemplateRef</span><span class="p">:</span>
       <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-wf-tmple</span>
