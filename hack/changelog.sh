@@ -10,7 +10,7 @@ git tag -l 'v*' | grep -v 0.0.0 | sed 's/-rc/~/' | sort -rV | sed 's/~/-rc/' | w
   if [ "$tag" != "" ]; then
     echo "## $tag ($(git log $tag -n1 --format=%as))"
     echo
-    git_log='git --no-pager log --no-merges --invert-grep --grep=\(build\|chore\|ci\|docs\|test\):'
+    git_log='git --no-pager log --no-merges --invert-grep --grep=^\(build\|chore\|ci\|docs\|test\):'
 	  $git_log --format=' * [%h](https://github.com/argoproj/argo-workflows/commit/%H) %s' $last..$tag
 	  echo
 	  echo "### Contributors"
