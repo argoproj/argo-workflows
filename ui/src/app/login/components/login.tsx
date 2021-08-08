@@ -1,16 +1,18 @@
 import {Page} from 'argo-ui';
 import * as React from 'react';
 import {uiUrl, uiUrlWithParams} from '../../shared/base';
+import {authCookieName, clearCookie, serviceAccountHintCookieName, setCookie} from '../../shared/cookie';
 
 require('./login.scss');
 
 const logout = () => {
-    document.cookie = 'authorization=;Max-Age=0';
+    clearCookie(authCookieName);
+    clearCookie(serviceAccountHintCookieName);
     document.location.reload(true);
 };
 const user = (token: string) => {
     const path = uiUrl('');
-    document.cookie = 'authorization=' + token + ';SameSite=Strict;path=' + path;
+    setCookie(authCookieName, token);
     document.location.href = path;
 };
 const getRedirect = (): string => {

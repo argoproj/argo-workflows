@@ -34,7 +34,7 @@ func TestUnmarshalJSON(t *testing.T) {
 					NotBefore: nil,
 					IssuedAt:  &testissuedAt,
 				},
-				ServiceAccountName: "",
+				CurrentServiceAccountName: "",
 				RawClaim: map[string]interface{}{
 					"ad_groups":         []interface{}{"argo_admin", "argo_readonly"},
 					"amr":               []interface{}{"USERNAME_PASSWORD"},
@@ -89,8 +89,8 @@ func TestUnmarshalJSON(t *testing.T) {
 					NotBefore: nil,
 					IssuedAt:  &testissuedAt,
 				},
-				Groups:             []string{"argo_admin", "argo_readonly"},
-				ServiceAccountName: "",
+				Groups:                    []string{"argo_admin", "argo_readonly"},
+				CurrentServiceAccountName: "",
 				RawClaim: map[string]interface{}{
 					"groups":            []interface{}{"argo_admin", "argo_readonly"},
 					"amr":               []interface{}{"USERNAME_PASSWORD"},

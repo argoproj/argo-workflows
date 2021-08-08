@@ -1,4 +1,4 @@
-import {Page} from 'argo-ui';
+import {Page, Select} from 'argo-ui';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router-dom';
 import {GetUserInfoResponse} from '../../../models';
@@ -6,6 +6,7 @@ import {uiUrl} from '../../shared/base';
 import {BasePage} from '../../shared/components/base-page';
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {Notice} from '../../shared/components/notice';
+import {serviceAccountHintCookieName, setCookie} from '../../shared/cookie';
 import {services} from '../../shared/services';
 import {CliHelp} from './cli-help';
 
@@ -58,8 +59,22 @@ export class UserInfo extends BasePage<RouteComponentProps<any>, State> {
                                 <dd>{this.state.userInfo.emailVerified || '-'}</dd>
                             </dl>
                             <dl>
-                                <dt>Service Account:</dt>
-                                <dd>{this.state.userInfo.serviceAccountName || '-'}</dd>
+                                <dt>Current Service Account:</dt>
+                                <dd>
+                                    <Select
+                                        placeholder={'Select a service account...'}
+                                        options={this.state.userInfo.serviceAccountNames ? this.state.userInfo.serviceAccountNames : []}
+                                        value={this.state.userInfo.currentServiceAccountName}
+                                        onChange={option => {
+                                            setCookie(serviceAccountHintCookieName, option.value);
+                                            this.setState(state => {
+                                                const newUserInfo = state.userInfo;
+                                                newUserInfo.currentServiceAccountName = option.value;
+                                                return {error: null, userInfo: newUserInfo};
+                                            });
+                                        }}
+                                    />
+                                </dd>
                             </dl>
                         </>
                     )}

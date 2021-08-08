@@ -131,13 +131,21 @@ func getAuthHeader(md metadata.MD) string {
 		return t
 	}
 	// check the HTTP cookie
+	return getCookieValueByName(md, "authorization")
+}
+
+func getServiceAccountHint(md metadata.MD) string {
+	return getCookieValueByName(md, "service-account-hint")
+}
+
+func getCookieValueByName(md metadata.MD, name string) string {
 	for _, t := range md.Get("cookie") {
 		header := http.Header{}
 		header.Add("Cookie", t)
 		request := http.Request{Header: header}
-		token, err := request.Cookie("authorization")
+		c, err := request.Cookie(name)
 		if err == nil {
-			return token.Value
+			return c.Value
 		}
 	}
 	return ""
@@ -184,6 +192,8 @@ func (s gatekeeper) getClients(ctx context.Context) (*servertypes.Clients, *type
 }
 
 func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *types.Claims) (*servertypes.Clients, error) {
+	md, _ := metadata.FromIncomingContext(ctx)
+	saHint := getServiceAccountHint(md)
 	list, err := s.clients.Kubernetes.CoreV1().ServiceAccounts(s.namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list SSO RBAC service accounts: %w", err)
@@ -218,7 +228,16 @@ func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *types.Claims
 		if !allow {
 			continue
 		}
-		authorization, err := s.authorizationForServiceAccount(ctx, serviceAccount.Name)
+		claims.ServiceAccountNames = append(claims.ServiceAccountNames, serviceAccount.Name)
+		if serviceAccount.Name == saHint {
+			claims.CurrentServiceAccountName = serviceAccount.Name
+		}
+	}
+	if len(claims.ServiceAccountNames) != 0 {
+		if claims.CurrentServiceAccountName == "" {
+			claims.CurrentServiceAccountName = claims.ServiceAccountNames[0]
+		}
+		authorization, err := s.authorizationForServiceAccount(ctx, claims.CurrentServiceAccountName)
 		if err != nil {
 			return nil, err
 		}
@@ -226,9 +245,8 @@ func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *types.Claims
 		if err != nil {
 			return nil, err
 		}
-		claims.ServiceAccountName = serviceAccount.Name
 		// important! write an audit entry (i.e. log entry) so we know which user performed an operation
-		log.WithFields(log.Fields{"serviceAccount": serviceAccount.Name, "subject": claims.Subject}).Info("selected SSO RBAC service account for user")
+		log.WithFields(log.Fields{"serviceAccount": claims.CurrentServiceAccountName, "subject": claims.Subject}).Info(" SSO RBAC service account for user")
 		return clients, nil
 	}
 	return nil, fmt.Errorf("no service account rule matches")

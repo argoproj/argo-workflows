@@ -9,11 +9,12 @@ import (
 
 type Claims struct {
 	jwt.Claims
-	Groups             []string               `json:"groups,omitempty"`
-	Email              string                 `json:"email,omitempty"`
-	EmailVerified      bool                   `json:"email_verified,omitempty"`
-	ServiceAccountName string                 `json:"service_account_name,omitempty"`
-	RawClaim           map[string]interface{} `json:"-"`
+	Groups                    []string               `json:"groups,omitempty"`
+	Email                     string                 `json:"email,omitempty"`
+	EmailVerified             bool                   `json:"email_verified,omitempty"`
+	CurrentServiceAccountName string                 `json:"current_service_account_name,omitempty"`
+	ServiceAccountNames       []string               `json:"service_account_names,omitempty"`
+	RawClaim                  map[string]interface{} `json:"-"`
 }
 
 // UnmarshalJSON is a custom Unmarshal that overwrites

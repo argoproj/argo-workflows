@@ -7442,6 +7442,9 @@
     "io.argoproj.workflow.v1alpha1.GetUserInfoResponse": {
       "type": "object",
       "properties": {
+        "currentServiceAccountName": {
+          "type": "string"
+        },
         "email": {
           "type": "string"
         },
@@ -7457,8 +7460,11 @@
         "issuer": {
           "type": "string"
         },
-        "serviceAccountName": {
-          "type": "string"
+        "serviceAccountNames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "subject": {
           "type": "string"

@@ -26,7 +26,8 @@ message GetUserInfoResponse {
     repeated string groups = 3;
     string email = 4;
     bool emailVerified = 5;
-    string serviceAccountName = 6;
+    string currentServiceAccountName = 6;
+    repeated string serviceAccountNames = 7;
 }
 
 service InfoService {

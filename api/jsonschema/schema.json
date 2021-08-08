@@ -4012,6 +4012,9 @@
     },
     "io.argoproj.workflow.v1alpha1.GetUserInfoResponse": {
       "properties": {
+        "currentServiceAccountName": {
+          "type": "string"
+        },
         "email": {
           "type": "string"
         },
@@ -4027,8 +4030,11 @@
         "issuer": {
           "type": "string"
         },
-        "serviceAccountName": {
-          "type": "string"
+        "serviceAccountNames": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
         },
         "subject": {
           "type": "string"

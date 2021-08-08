@@ -13,7 +13,7 @@ import (
 
 func Test_infoServer_GetUserInfo(t *testing.T) {
 	i := &infoServer{}
-	ctx := context.WithValue(context.TODO(), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Issuer: "my-iss", Subject: "my-sub"}, Groups: []string{"my-group"}, Email: "my@email", EmailVerified: true, ServiceAccountName: "my-sa"})
+	ctx := context.WithValue(context.TODO(), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Issuer: "my-iss", Subject: "my-sub"}, Groups: []string{"my-group"}, Email: "my@email", EmailVerified: true, CurrentServiceAccountName: "my-sa"})
 	info, err := i.GetUserInfo(ctx, nil)
 	if assert.NoError(t, err) {
 		assert.Equal(t, "my-iss", info.Issuer)
@@ -21,6 +21,6 @@ func Test_infoServer_GetUserInfo(t *testing.T) {
 		assert.Equal(t, []string{"my-group"}, info.Groups)
 		assert.Equal(t, "my@email", info.Email)
 		assert.True(t, info.EmailVerified)
-		assert.Equal(t, "my-sa", info.ServiceAccountName)
+		assert.Equal(t, "my-sa", info.CurrentServiceAccountName)
 	}
 }

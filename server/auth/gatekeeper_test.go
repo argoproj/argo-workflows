@@ -129,7 +129,7 @@ func TestServer_GetWFClient(t *testing.T) {
 				assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
 				if assert.NotNil(t, GetClaims(ctx)) {
 					assert.Equal(t, []string{"my-group", "other-group"}, GetClaims(ctx).Groups)
-					assert.Equal(t, "my-sa", GetClaims(ctx).ServiceAccountName)
+					assert.Equal(t, "my-sa", GetClaims(ctx).CurrentServiceAccountName)
 				}
 				assert.Equal(t, "my-sa", hook.LastEntry().Data["serviceAccount"])
 			}
@@ -144,7 +144,7 @@ func TestServer_GetWFClient(t *testing.T) {
 			ctx, err := g.Context(x("Bearer v2:whatever"))
 			if assert.NoError(t, err) {
 				assert.Equal(t, "my-other-sa", hook.LastEntry().Data["serviceAccount"])
-				assert.Equal(t, "my-other-sa", GetClaims(ctx).ServiceAccountName)
+				assert.Equal(t, "my-other-sa", GetClaims(ctx).CurrentServiceAccountName)
 			}
 		}
 	})
