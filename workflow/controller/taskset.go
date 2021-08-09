@@ -49,11 +49,24 @@ func (woc *wfOperationCtx) getDeleteTaskAndNodePatch() map[string]interface{} {
 }
 
 func (woc *wfOperationCtx) removeCompletedTaskSetStatus(ctx context.Context) error {
-
+	ts, err := woc.getWorkflowTaskSet()
+	if err != nil {
+		return err
+	}
+	if ts == nil {
+		return  nil
+	}
 	return woc.patchTaskSet(ctx, woc.getDeleteTaskAndNodePatch(), types.MergePatchType)
 }
 
 func (woc *wfOperationCtx) completeTaskSet(ctx context.Context) error {
+	ts, err := woc.getWorkflowTaskSet()
+	if err != nil {
+		return err
+	}
+	if ts == nil {
+		return  nil
+	}
 	patch := woc.getDeleteTaskAndNodePatch()
 	patch["metadata"] = metav1.ObjectMeta{
 		Labels: map[string]string{
@@ -66,6 +79,9 @@ func (woc *wfOperationCtx) completeTaskSet(ctx context.Context) error {
 func (woc *wfOperationCtx) getWorkflowTaskSet() (*wfv1.WorkflowTaskSet, error) {
 	taskSet, exist, err := woc.controller.wfTaskSetInformer.Informer().GetIndexer().GetByKey(woc.wf.Namespace + "/" + woc.wf.Name)
 	if err != nil {
+		if apierr.IsNotFound(err){
+			return nil, nil
+		}
 		return nil, err
 	}
 	if !exist {
@@ -80,9 +96,12 @@ func (woc *wfOperationCtx) taskSetReconciliation(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	if workflowTaskset == nil {
+		return nil
+	}
 
 	woc.log.WithField("workflow", woc.wf.Name).WithField("namespace", woc.wf.Namespace).Infof("TaskSet Reconciliation")
-	if workflowTaskset != nil && len(workflowTaskset.Status.Nodes) > 0 {
+	if len(workflowTaskset.Status.Nodes) > 0 {
 		for nodeID, taskResult := range workflowTaskset.Status.Nodes {
 			node := woc.wf.Status.Nodes[nodeID]
 			node.Outputs = taskResult.Outputs.DeepCopy()
@@ -93,10 +112,10 @@ func (woc *wfOperationCtx) taskSetReconciliation(ctx context.Context) error {
 			woc.updated = true
 		}
 	}
-	return woc.CreateTaskSet(ctx)
+	return woc.createTaskSet(ctx)
 }
 
-func (woc *wfOperationCtx) CreateTaskSet(ctx context.Context) error {
+func (woc *wfOperationCtx) createTaskSet(ctx context.Context) error {
 	if len(woc.taskSet) == 0 {
 		return nil
 	}

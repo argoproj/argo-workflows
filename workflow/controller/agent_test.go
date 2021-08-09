@@ -87,7 +87,7 @@ status:
       phase: Succeeded
     `, &ts)
 
-	t.Run("CreateTaskSet", func(t *testing.T) {
+	t.Run("createTaskSet", func(t *testing.T) {
 		cancel, controller := newController(wf, ts)
 		defer cancel()
 		woc := newWorkflowOperationCtx(wf, controller)
