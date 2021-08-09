@@ -404,6 +404,17 @@
       },
       "type": "object"
     },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.KafkaSink": {
+      "properties": {
+        "async": {
+          "type": "boolean"
+        },
+        "kafka": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Kafka"
+        }
+      },
+      "type": "object"
+    },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.KafkaSource": {
       "properties": {
         "kafka": {
@@ -658,6 +669,15 @@
       },
       "type": "object"
     },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Sidecar": {
+      "properties": {
+        "resources": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements",
+          "title": "+kubebuilder:default={limits: {\"cpu\": \"500m\", \"memory\": \"256Mi\"}, requests: {\"cpu\": \"100m\", \"memory\": \"64Mi\"}}"
+        }
+      },
+      "type": "object"
+    },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Sink": {
       "properties": {
         "db": {
@@ -667,7 +687,7 @@
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.HTTPSink"
         },
         "kafka": {
-          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Kafka"
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.KafkaSink"
         },
         "log": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Log"
@@ -805,6 +825,10 @@
         "serviceAccountName": {
           "title": "+kubebuilder:default=pipeline",
           "type": "string"
+        },
+        "sidecar": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Sidecar",
+          "title": "+kubebuilder:default={resources: {limits: {\"cpu\": \"500m\", \"memory\": \"256Mi\"}, requests: {\"cpu\": \"100m\", \"memory\": \"64Mi\"}}}"
         },
         "sinks": {
           "items": {
