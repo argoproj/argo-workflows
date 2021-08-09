@@ -49,15 +49,15 @@ func (woc *wfOperationCtx) getDeleteTaskAndNodePatch() map[string]interface{} {
 }
 
 func (woc *wfOperationCtx) removeCompletedTaskSetStatus(ctx context.Context) error {
-	if !woc.wf.Status.Nodes.HasHTTPNodes(){
-		return  nil
+	if !woc.wf.Status.Nodes.HasHTTPNodes() {
+		return nil
 	}
 	return woc.patchTaskSet(ctx, woc.getDeleteTaskAndNodePatch(), types.MergePatchType)
 }
 
 func (woc *wfOperationCtx) completeTaskSet(ctx context.Context) error {
-	if !woc.wf.Status.Nodes.HasHTTPNodes(){
-		return  nil
+	if !woc.wf.Status.Nodes.HasHTTPNodes() {
+		return nil
 	}
 	patch := woc.getDeleteTaskAndNodePatch()
 	patch["metadata"] = metav1.ObjectMeta{
@@ -71,7 +71,7 @@ func (woc *wfOperationCtx) completeTaskSet(ctx context.Context) error {
 func (woc *wfOperationCtx) getWorkflowTaskSet() (*wfv1.WorkflowTaskSet, error) {
 	taskSet, exist, err := woc.controller.wfTaskSetInformer.Informer().GetIndexer().GetByKey(woc.wf.Namespace + "/" + woc.wf.Name)
 	if err != nil {
-		if apierr.IsNotFound(err){
+		if apierr.IsNotFound(err) {
 			return nil, nil
 		}
 		return nil, err

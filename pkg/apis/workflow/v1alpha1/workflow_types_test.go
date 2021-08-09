@@ -956,21 +956,21 @@ func TestTemplateGetType(t *testing.T) {
 	assert.Equal(t, TemplateTypeHTTP, tmpl.GetType())
 }
 
-func TestHasHTTPNodes(t *testing.T){
+func TestHasHTTPNodes(t *testing.T) {
 	nodes := Nodes{
-		"test":{
+		"test": {
 			Type: NodeTypeHTTP,
 		},
-		"test1":{
+		"test1": {
 			Type: NodeTypeContainer,
 		},
 	}
 	assert.True(t, nodes.HasHTTPNodes())
 	nodes = Nodes{
-		"test":{
+		"test": {
 			Type: NodeTypeSteps,
 		},
-		"test1":{
+		"test1": {
 			Type: NodeTypeContainer,
 		},
 	}
