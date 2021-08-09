@@ -32,11 +32,11 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, fla
 		return "", "", "", err
 	}
 
-	cmd := exec.Command("kubectl", args...)
-	log.Info(strings.Join(cmd.Args, " "))
-
 	var out []byte
 	err = retry.OnError(retry.DefaultBackoff, argoerr.IsTransientErr, func() error {
+		cmd := exec.Command("kubectl", args...)
+		log.Info(strings.Join(cmd.Args, " "))
+
 		out, err = cmd.Output()
 		return err
 	})
