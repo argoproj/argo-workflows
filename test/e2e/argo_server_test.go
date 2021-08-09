@@ -32,6 +32,7 @@ const baseUrl = "http://localhost:2746"
 // testing behaviour really is a non-goal
 type ArgoServerSuite struct {
 	fixtures.E2ESuite
+	username    string
 	bearerToken string
 }
 
@@ -53,7 +54,9 @@ func (s *ArgoServerSuite) e() *httpexpect.Expect {
 			Client: httpClient,
 		}).
 		Builder(func(req *httpexpect.Request) {
-			if s.bearerToken != "" {
+			if s.username != "" {
+				req.WithBasicAuth(s.username, "garbage")
+			} else if s.bearerToken != "" {
 				req.WithHeader("Authorization", "Bearer "+s.bearerToken)
 			}
 		})
@@ -332,11 +335,20 @@ func (s *ArgoServerSuite) TestOauth() {
 
 func (s *ArgoServerSuite) TestUnauthorized() {
 	token := s.bearerToken
-	defer func() { s.bearerToken = token }()
-	s.bearerToken = "test-token"
-	s.e().GET("/api/v1/workflows/argo").
-		Expect().
-		Status(401)
+	s.T().Run("Bearer", func(t *testing.T) {
+		s.bearerToken = "test-token"
+		defer func() { s.bearerToken = token }()
+		s.e().GET("/api/v1/workflows/argo").
+			Expect().
+			Status(401)
+	})
+	s.T().Run("Basic", func(t *testing.T) {
+		s.username = "garbage"
+		defer func() { s.username = "" }()
+		s.e().GET("/api/v1/workflows/argo").
+			Expect().
+			Status(401)
+	})
 }
 func (s *ArgoServerSuite) TestCookieAuth() {
 	token := s.bearerToken

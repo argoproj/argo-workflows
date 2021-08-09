@@ -54,13 +54,10 @@ func GetRestConfig(token string) (*restclient.Config, error) {
 
 // convert a basic token (username, password) into a REST config
 func GetBasicRestConfig(username, password string) (*restclient.Config, error) {
-
-	restConfig, err := DefaultRestConfig()
+	restConfig, err := restConfigWithoutAuth()
 	if err != nil {
 		return nil, err
 	}
-	restConfig.BearerToken = ""
-	restConfig.BearerTokenFile = ""
 	restConfig.Username = username
 	restConfig.Password = password
 	return restConfig, nil
@@ -68,22 +65,51 @@ func GetBasicRestConfig(username, password string) (*restclient.Config, error) {
 
 // convert a bearer token into a REST config
 func GetBearerRestConfig(token string) (*restclient.Config, error) {
-
-	restConfig, err := DefaultRestConfig()
+	restConfig, err := restConfigWithoutAuth()
 	if err != nil {
 		return nil, err
 	}
-	restConfig.BearerToken = ""
-	restConfig.BearerTokenFile = ""
-	restConfig.Username = ""
-	restConfig.Password = ""
-	if token != "" {
-		restConfig.BearerToken = token
-	}
+	restConfig.BearerToken = token
 	return restConfig, nil
 }
 
-//Return the AuthString include Auth type(Basic or Bearer)
+// populate everything except
+// - username
+// - password
+// - bearerToken
+// - client private key
+func restConfigWithoutAuth() (*restclient.Config, error) {
+	c, err := DefaultRestConfig()
+	if err != nil {
+		return nil, err
+	}
+	t := c.TLSClientConfig
+	return &restclient.Config{
+		Host:          c.Host,
+		APIPath:       c.APIPath,
+		ContentConfig: c.ContentConfig,
+		TLSClientConfig: restclient.TLSClientConfig{
+			Insecure:   t.Insecure,
+			ServerName: t.ServerName,
+			CertFile:   t.CertFile,
+			CAFile:     t.CAFile,
+			CertData:   t.CertData,
+			CAData:     t.CAData,
+			NextProtos: c.NextProtos,
+		},
+		UserAgent:          c.UserAgent,
+		DisableCompression: c.DisableCompression,
+		Transport:          c.Transport,
+		WrapTransport:      c.WrapTransport,
+		QPS:                c.QPS,
+		Burst:              c.Burst,
+		RateLimiter:        c.RateLimiter,
+		Timeout:            c.Timeout,
+		Dial:               c.Dial,
+	}, nil
+}
+
+// Return the AuthString include Auth type(Basic or Bearer)
 func GetAuthString(in *restclient.Config, explicitKubeConfigPath string) (string, error) {
 
 	//Checking Basic Auth
