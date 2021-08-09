@@ -31,8 +31,12 @@ type WorkflowSpecHolder interface {
 
 // TemplateReferenceHolder is an object that holds a reference to other templates; e.g. WorkflowStep, DAGTask, and NodeStatus
 type TemplateReferenceHolder interface {
-	GetTemplateName() string
+	// GetTemplate returns the template. This maybe nil. This is first precedence.
+	GetTemplate() *Template
+	// GetTemplateRef returns the template ref. This maybe nil. This is second precedence.
 	GetTemplateRef() *TemplateRef
+	// GetTemplateName returns the template name. This maybe empty. This is last precedence.
+	GetTemplateName() string
 }
 
 // SubmitOpts are workflow submission options

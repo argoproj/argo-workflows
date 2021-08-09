@@ -7259,6 +7259,10 @@
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LifecycleHook"
           }
         },
+        "inline": {
+          "description": "Inline is the template. Template must be empty if this is declared (and vice-versa).",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
+        },
         "name": {
           "description": "Name is the name of the target",
           "type": "string"
@@ -9850,6 +9854,10 @@
           "additionalProperties": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LifecycleHook"
           }
+        },
+        "inline": {
+          "description": "Inline is the template. Template must be empty if this is declared (and vice-versa).",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
         },
         "name": {
           "description": "Name of the step",
