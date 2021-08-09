@@ -322,6 +322,31 @@ func TestStopWorkflowByNodeName(t *testing.T) {
 	assert.Equal(t, wfv1.NodeFailed, wf.Status.Nodes.FindByDisplayName("approve").Phase)
 }
 
+// Regression test for #6478
+func TestAddParamToGlobalScopeValueNil(t *testing.T) {
+	paramValue := wfv1.AnyString("test")
+	wf := wfv1.Workflow{
+		Status: wfv1.WorkflowStatus{
+			Outputs: &wfv1.Outputs{
+				Parameters: []wfv1.Parameter{
+					{
+						Name:       "test",
+						Value:      &paramValue,
+						GlobalName: "global_output_param",
+					},
+				},
+			},
+		},
+	}
+
+	p := AddParamToGlobalScope(&wf, nil, wfv1.Parameter{
+		Name:       "test",
+		Value:      nil,
+		GlobalName: "test",
+	})
+	assert.False(t, p)
+}
+
 var susWorkflow = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
