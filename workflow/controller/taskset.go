@@ -49,22 +49,14 @@ func (woc *wfOperationCtx) getDeleteTaskAndNodePatch() map[string]interface{} {
 }
 
 func (woc *wfOperationCtx) removeCompletedTaskSetStatus(ctx context.Context) error {
-	ts, err := woc.getWorkflowTaskSet()
-	if err != nil {
-		return err
-	}
-	if ts == nil {
+	if !woc.wf.Status.Nodes.HasHTTPNodes(){
 		return  nil
 	}
 	return woc.patchTaskSet(ctx, woc.getDeleteTaskAndNodePatch(), types.MergePatchType)
 }
 
 func (woc *wfOperationCtx) completeTaskSet(ctx context.Context) error {
-	ts, err := woc.getWorkflowTaskSet()
-	if err != nil {
-		return err
-	}
-	if ts == nil {
+	if !woc.wf.Status.Nodes.HasHTTPNodes(){
 		return  nil
 	}
 	patch := woc.getDeleteTaskAndNodePatch()
@@ -96,12 +88,9 @@ func (woc *wfOperationCtx) taskSetReconciliation(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if workflowTaskset == nil {
-		return nil
-	}
 
 	woc.log.WithField("workflow", woc.wf.Name).WithField("namespace", woc.wf.Namespace).Infof("TaskSet Reconciliation")
-	if len(workflowTaskset.Status.Nodes) > 0 {
+	if workflowTaskset != nil && len(workflowTaskset.Status.Nodes) > 0 {
 		for nodeID, taskResult := range workflowTaskset.Status.Nodes {
 			node := woc.wf.Status.Nodes[nodeID]
 			node.Outputs = taskResult.Outputs.DeepCopy()
