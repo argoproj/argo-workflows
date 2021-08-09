@@ -1,6 +1,6 @@
 # Changelog
 
-## v3.1.5 (2021-06-30)
+## v3.1.5 (2021-08-03)
 
  * [3dbee0ec3](https://github.com/argoproj/argo-workflows/commit/3dbee0ec368f3ea8c31f49c8b1a4617cc32bcce9) fix(executor): emissary - make argoexec executable from non-root containers. Fixes #6238 (#6247)
 
@@ -92,7 +92,7 @@
  * Simon Behar
  * Yuan Tang
 
-## v3.1.0 (2021-06-15)
+## v3.1.0 (2021-06-21)
 
  * [fad026e36](https://github.com/argoproj/argo-workflows/commit/fad026e367dd08b0217155c433f2f87c310506c5) fix(ui): Fix event-flow scrolling. Fixes #6133 (#6147)
  * [422f5f231](https://github.com/argoproj/argo-workflows/commit/422f5f23176d5ef75e58c5c33b744cf2d9ac38ca) fix(executor): Capture emissary main-logs. Fixes #6145 (#6146)
@@ -105,7 +105,7 @@
  * Alex Collins
  * Yuan Tang
 
-## v3.1.0-rc14 (2021-06-09)
+## v3.1.0-rc14 (2021-06-10)
 
  * [d385e6107](https://github.com/argoproj/argo-workflows/commit/d385e6107ab8d4ea4826bd6972608f8fbc86fbe5) fix(executor): Fix docker not terminating. Fixes #6064 (#6083)
  * [83da6deae](https://github.com/argoproj/argo-workflows/commit/83da6deae5eaaeca16e49edb584a0a46980239bb) feat(manifests): add 'app' label to workflow-controller-metrics service (#6079)
@@ -116,7 +116,7 @@
  * Alex Collins
  * Daan Seynaeve
 
-## v3.1.0-rc13 (2021-06-07)
+## v3.1.0-rc13 (2021-06-08)
 
  * [5d4947ccf](https://github.com/argoproj/argo-workflows/commit/5d4947ccf3051a14aa7ca260ea16cdffffc20e6f) chore(executor): Adjust resource JSON object log to debug level (#6100)
  * [0e37f6632](https://github.com/argoproj/argo-workflows/commit/0e37f6632576ffd5365c7f48d455bd9a9a0deefc) fix(executor): Improve artifact error messages. Fixes #6070 (#6086)
@@ -520,7 +520,7 @@
  * Saravanan Balasubramanian
  * dherman
 
-## v3.0.4 (2021-05-06)
+## v3.0.4 (2021-05-13)
 
  * [d7ebc548e](https://github.com/argoproj/argo-workflows/commit/d7ebc548e30cccc6b6bfc755f69145147dbe73f2) Update manifests to v3.0.4
  * [06744da67](https://github.com/argoproj/argo-workflows/commit/06744da6741dd9d8c6bfec3753bb1532f77e8a7b) fix(ui): Fix workflow summary page unscrollable issue (#5743)
@@ -3502,7 +3502,7 @@
  * Saravanan Balasubramanian
  * Simon Behar
 
-## v2.4.0 (2019-10-08)
+## v2.4.0 (2019-10-07)
 
  * [a65763142](https://github.com/argoproj/argo-workflows/commit/a65763142ecc2dbd3507f1da860f64220c535f5b) Fix child node template handling (#1654)
  * [982c7c559](https://github.com/argoproj/argo-workflows/commit/982c7c55994c87bab15fd71ef2a17bd905d63edd) Use stored templates to raggregate step outputs (#1651)
@@ -4195,7 +4195,7 @@
 ### Contributors
 
 
-## v2.1.0 (2018-04-30)
+## v2.1.0 (2018-04-29)
 
  * [937963818](https://github.com/argoproj/argo-workflows/commit/9379638189cc194f1b34ff7295f0832eac1c1651) Avoid `println` which outputs to stderr. (#844)
  * [30e472e94](https://github.com/argoproj/argo-workflows/commit/30e472e9495f264676c00875e4ba5ddfcc23e15f) Add gladly as an official argo user (#843)

@@ -84,6 +84,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [KintoHub](https://www.kintohub.com/)
 1. [Localytics](https://www.localytics.com/)
 1. [Maersk](https://www.maersk.com/solutions/digital-solutions)
+1. [Marmalade](https://www.marmalade.co/)
 1. [Max Kelsen](https://maxkelsen.com/)
 1. [Microba](https://www.microba.com/)
 1. [Microblink](https://microblink.com/)
