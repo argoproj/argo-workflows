@@ -1351,6 +1351,15 @@ func (n Nodes) Find(f func(NodeStatus) bool) *NodeStatus {
 	return nil
 }
 
+func (n Nodes) HasHTTPNodes() bool {
+	for _, i := range n {
+		if i.Type == NodeTypeHTTP {
+			return true
+		}
+	}
+	return false
+}
+
 func NodeWithDisplayName(name string) func(n NodeStatus) bool {
 	return func(n NodeStatus) bool { return n.DisplayName == name }
 }
