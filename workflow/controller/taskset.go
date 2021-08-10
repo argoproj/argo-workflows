@@ -71,9 +71,6 @@ func (woc *wfOperationCtx) completeTaskSet(ctx context.Context) error {
 func (woc *wfOperationCtx) getWorkflowTaskSet() (*wfv1.WorkflowTaskSet, error) {
 	taskSet, exist, err := woc.controller.wfTaskSetInformer.Informer().GetIndexer().GetByKey(woc.wf.Namespace + "/" + woc.wf.Name)
 	if err != nil {
-		if apierr.IsNotFound(err) {
-			return nil, nil
-		}
 		return nil, err
 	}
 	if !exist {

@@ -61,7 +61,7 @@ spec:
       name: http
     `, &ts)
 
-	t.Run("createTaskSet", func(t *testing.T) {
+	t.Run("CreateTaskSet", func(t *testing.T) {
 		cancel, controller := newController(wf, ts)
 		defer cancel()
 		woc := newWorkflowOperationCtx(wf, controller)
@@ -287,7 +287,7 @@ status:
       phase: Failed
 
     `, &ts)
-	t.Run("", func(t *testing.T) {
+	t.Run("RemoveCompletedTaskSetStatus", func(t *testing.T) {
 		cancel, controller := newController(wf, ts)
 		defer cancel()
 		_, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").Create(ctx, &ts, v1.CreateOptions{})
