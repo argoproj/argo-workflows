@@ -2166,7 +2166,7 @@
 <li>"client" - requires clients to provide their Kubernetes bearer token and use that.</li>
 <li><a href="../argo-server-sso/">"sso"</a> - since v2.9, use single sign-on, this will use the same service account as per "server" for RBAC. We expect to change this in the future so that the OAuth claims are mapped to service accounts.</li>
 </ul>
-<p>By default, the server will start with auth mode of "client".</p>
+<p>The server used to start with auth mode of "server" by default, but since v3.0 it defaults to the "client".</p>
 <p>To change the server auth mode specify the list as multiple auth-mode flags:
 <div class="highlight"><pre><span></span><code>argo server --auth-mode sso --auth-mode ...
 </code></pre></div></p>
