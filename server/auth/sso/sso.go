@@ -192,7 +192,12 @@ func newSso(
 
 func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	redirectUrl := r.URL.Query().Get("redirect")
-	state := pkgrand.RandString(10)
+	state, err := pkgrand.RandString(10)
+	if err != nil {
+		log.WithError(err).Error("failed to create state")
+		w.WriteHeader(500)
+		return
+	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     state,
 		Value:    redirectUrl,
