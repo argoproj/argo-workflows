@@ -103,7 +103,7 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                             {
                                 title: 'Pipelines',
                                 path: pipelinesUrl + '/' + namespace,
-                                iconClassName: 'fa fa-route'
+                                iconClassName: 'fa fa-wind'
                             },
                             {
                                 title: 'Event Flow',

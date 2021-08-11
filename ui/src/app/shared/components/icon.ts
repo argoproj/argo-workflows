@@ -35,6 +35,7 @@ export type Icon =
     | 'file-code'
     | 'filter'
     | 'forward'
+    | 'git-alt'
     | 'grip-vertical'
     | 'hdd'
     | 'inbox'

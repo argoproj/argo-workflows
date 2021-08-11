@@ -9,7 +9,8 @@ type Type = '' | 'cat' | 'code' | 'container' | 'dedupe' | 'expand' | 'filter' |
 const stepIcon = (type: Type): Icon => {
     switch (type) {
         case 'cat':
-            return 'arrows-alt-h';
+        case 'map':
+            return 'chevron-right';
         case 'code':
             return 'code';
         case 'container':
@@ -23,11 +24,9 @@ const stepIcon = (type: Type): Icon => {
         case 'flatten':
             return 'compress';
         case 'git':
-            return 'code-branch';
+            return 'git-alt';
         case 'group':
             return 'object-group';
-        case 'map':
-            return 'arrows-alt-h';
         case 'split':
             return 'object-ungroup';
         default:
@@ -86,18 +85,22 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
             const ss = (status.sourceStatuses || {})[x.name || ''] || {};
             const label = formatPending(ss.pending) + formatRates(ss.metrics, step.status.replicas);
             if (x.cron) {
-                const cronId = 'cron/' + stepId + '/' + x.cron.schedule;
+                const cronId = 'cron/' + stepId + '/sources/' + x.cron.schedule;
                 g.nodes.set(cronId, {genre: 'cron', icon: 'clock', label: x.cron.schedule});
                 g.edges.set({v: cronId, w: stepId}, {classNames, label});
+            } else if (x.db) {
+                const id = 'db/' + +stepId + '/sources/' + x.name;
+                g.nodes.set(id, {genre: 'db', icon: 'database', label: x.name});
+                g.edges.set({v: id, w: stepId}, {classNames, label});
             } else if (x.kafka) {
                 const kafkaId = x.kafka.name || x.kafka.url || 'default';
                 const topicId = 'kafka/' + kafkaId + '/' + x.kafka.topic;
-                g.nodes.set(topicId, {genre: 'kafka', icon: 'inbox', label: x.kafka.topic});
+                g.nodes.set(topicId, {genre: 'kafka', icon: 'stream', label: x.kafka.topic});
                 g.edges.set({v: topicId, w: stepId}, {classNames, label});
             } else if (x.stan) {
                 const stanId = x.stan.name || x.stan.url || 'default';
                 const subjectId = 'stan/' + stanId + '/' + x.stan.subject;
-                g.nodes.set(subjectId, {genre: 'stan', icon: 'inbox', label: x.stan.subject});
+                g.nodes.set(subjectId, {genre: 'stan', icon: 'stream', label: x.stan.subject});
                 g.edges.set({v: subjectId, w: stepId}, {classNames, label});
             } else if (x.http) {
                 const y = new URL('http://' + (x.http.serviceName || pipeline.metadata.name + '-' + step.spec.name) + '/sources/' + x.name);
@@ -109,24 +112,32 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
                 const id = 's3/' + bucket;
                 g.nodes.set(id, {genre: 's3', icon: 'hdd', label: bucket});
                 g.edges.set({v: id, w: stepId}, {classNames, label});
+            } else {
+                const id = 'unknown/' + stepId + '/sources/' + x.name;
+                g.nodes.set(id, {genre: 'unknown', icon: 'square', label: x.name});
+                g.edges.set({v: id, w: stepId}, {classNames, label});
             }
         });
         (spec.sinks || []).forEach(x => {
             const ss = (status.sinkStatuses || {})[x.name || ''] || {};
             const label = formatRates(ss.metrics, step.status.replicas);
-            if (x.kafka) {
+            if (x.db) {
+                const id = 'db/' + stepId + '/sinks/' + x.name;
+                g.nodes.set(id, {genre: 'db', icon: 'database', label: x.name});
+                g.edges.set({v: stepId, w: id}, {classNames, label});
+            } else if (x.kafka) {
                 const kafkaId = x.kafka.name || x.kafka.url || 'default';
                 const topicId = 'kafka/' + kafkaId + '/' + x.kafka.topic;
-                g.nodes.set(topicId, {genre: 'kafka', icon: 'inbox', label: x.kafka.topic});
+                g.nodes.set(topicId, {genre: 'kafka', icon: 'stream', label: x.kafka.topic});
                 g.edges.set({v: stepId, w: topicId}, {classNames, label});
             } else if (x.log) {
-                const logId = 'log/' + stepId + '/' + x.name;
+                const logId = 'log/' + stepId + '/sinks/' + x.name;
                 g.nodes.set(logId, {genre: 'log', icon: 'file-alt', label: 'log'});
                 g.edges.set({v: stepId, w: logId}, {classNames, label});
             } else if (x.stan) {
                 const stanId = x.stan.name || x.stan.url || 'default';
                 const subjectId = 'stan/' + stanId + '/' + x.stan.subject;
-                g.nodes.set(subjectId, {genre: 'stan', icon: 'inbox', label: x.stan.subject});
+                g.nodes.set(subjectId, {genre: 'stan', icon: 'stream', label: x.stan.subject});
                 g.edges.set({v: stepId, w: subjectId}, {classNames, label});
             } else if (x.http) {
                 const y = new URL(x.http.url);
@@ -137,6 +148,10 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
                 const bucket = x.s3.bucket;
                 const id = 's3/' + bucket;
                 g.nodes.set(id, {genre: 's3', icon: 'hdd', label: bucket});
+                g.edges.set({v: stepId, w: id}, {classNames, label});
+            } else {
+                const id = 'unknown/' + stepId + '/sinks/' + x.name;
+                g.nodes.set(id, {genre: 'unknown', icon: 'square', label: x.name});
                 g.edges.set({v: stepId, w: id}, {classNames, label});
             }
         });

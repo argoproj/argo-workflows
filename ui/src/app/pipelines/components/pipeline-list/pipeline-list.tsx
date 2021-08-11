@@ -61,16 +61,17 @@ export const PipelineList = ({match, history}: RouteComponentProps<any>) => {
                 <Loading />
             ) : pipelines.length === 0 ? (
                 <ZeroState title='No pipelines'>
+                    <p>Argo Dataflow is a Kubernetes native platform for executing large parallel data-processing pipelines.</p>
                     <p>
-                        A pipeline is made up of one or more steps. Each step within a pipeline consumes message from one or more sources (such Kafka, NATS, or a HTTP endpoint),
-                        processes it, and optionally sends a new message to one or more sinks (such as Kafka or log file).
+                        Each pipeline consists of steps. Each step creates zero or more replicas that load-balance messages from one or more sources (such as a cron, HTTP, Kafka,
+                        or NATS Streaming), processes the data, then sink it to one or more sinks (such as a HTTP, log, Kafka, NATS Streaming).
                     </p>
                     <p>
-                        Steps within a pipeline can automatically scale horizontally (starting more pods based on pending messages or a HPA), and explicitly scale vertically (going
-                        parallel within pod) to process thousands of messages per second.
+                        Each step can scale horizontally using HPA or based on queue length using built-in scaling rules. Steps can be scaled-to-zero, in which case they
+                        periodically briefly scale-to-one to measure queue length in case the pipeline needs to scale back up.
                     </p>
                     <p>
-                        <a href='https://github.com/argoproj-labs/argo-dataflow'>Learn more</a>.
+                        <a href='https://github.com/argoproj-labs/argo-dataflow'>Learn more</a>
                     </p>
                 </ZeroState>
             ) : (

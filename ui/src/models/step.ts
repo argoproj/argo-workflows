@@ -25,6 +25,7 @@ export interface Step {
         sources: {
             name?: string;
             cron?: {schedule: string};
+            db?: {};
             stan?: {name?: string; url?: string; subject: string};
             kafka?: {
                 name?: string;
@@ -40,6 +41,7 @@ export interface Step {
         }[];
         sinks: {
             name?: string;
+            db?: {};
             log?: {};
             stan?: {name?: string; url?: string; subject: string};
             kafka?: {

@@ -71,10 +71,12 @@ export const StepSidePanel = ({
 const statusPanel = (step: Step) =>
     step.status && (
         <>
-            {statusHeader(step.status)}
             <div className='row'>
-                <div className='columns small-6'>{sourceStatusesPanel(step.status)}</div>
-                <div className='columns small-6'>{sinkStatusesPanel(step.status)}</div>
+                <div className='columns small-12'>{statusHeader(step.status)}</div>
+            </div>
+            <div className='row' style={{marginTop: 10}}>
+                <div className='columns small-6'>{sourcesPanel(step.status)}</div>
+                <div className='columns small-6'>{sinksPanel(step.status)}</div>
             </div>
         </>
     );
@@ -104,9 +106,9 @@ const statusHeader = (status: StepStatus) => (
     </div>
 );
 
-const sourceStatusesPanel = (status: StepStatus) => (
+const sourcesPanel = (status: StepStatus) => (
     <>
-        <h5>Source Statuses</h5>
+        <h5>Sources</h5>
         {status.sourceStatuses ? (
             Object.entries(status.sourceStatuses).map(([name, x]) => {
                 const total = Object.values(x.metrics || {})
@@ -163,10 +165,9 @@ const sourceStatusesPanel = (status: StepStatus) => (
     </>
 );
 
-const sinkStatusesPanel = (status: StepStatus) => (
+const sinksPanel = (status: StepStatus) => (
     <>
-        {' '}
-        <h5>Sink Statuses</h5>
+        <h5>Sinks</h5>
         {status.sinkStatuses ? (
             Object.entries(status.sinkStatuses).map(([name, x]) => {
                 const total = Object.values(x.metrics || {})
@@ -191,8 +192,7 @@ const sinkStatusesPanel = (status: StepStatus) => (
                                     <TickMeter value={total} />
                                 </div>
                                 <div className='columns small-4' title='Rate'>
-                                    <TickMeter value={prettyNumber(rate)} />
-                                    <small>TPS</small>
+                                    <TickMeter value={prettyNumber(rate)} /> <small>TPS</small>
                                 </div>
                             </div>
                             <div className='row white-box__details-row'>
