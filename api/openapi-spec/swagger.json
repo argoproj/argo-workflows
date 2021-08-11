@@ -4196,6 +4196,32 @@
         }
       }
     },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.DBSource": {
+      "type": "object",
+      "properties": {
+        "commitInterval": {
+          "title": "+kubebuilder:default=\"5s\"",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Duration"
+        },
+        "database": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Database"
+        },
+        "initSchema": {
+          "type": "boolean",
+          "title": "+kubebuilder:default=true"
+        },
+        "offsetColumn": {
+          "type": "string"
+        },
+        "pollInterval": {
+          "title": "+kubebuilder:default=\"1s\"",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Duration"
+        },
+        "query": {
+          "type": "string"
+        }
+      }
+    },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Database": {
       "type": "object",
       "properties": {
@@ -4412,7 +4438,13 @@
       }
     },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Log": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "truncate": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
     },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Metadata": {
       "type": "object",
@@ -4695,6 +4727,9 @@
         "cron": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Cron"
         },
+        "db": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.DBSource"
+        },
         "http": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.HTTPSource"
         },
@@ -4779,6 +4814,13 @@
         },
         "group": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Group"
+        },
+        "imagePullSecrets": {
+          "type": "array",
+          "title": "ImagePullSecrets is a list of references to secrets in the same namespace to use for pulling any images\nin pods that reference this ServiceAccount. ImagePullSecrets are distinct from Secrets because Secrets\ncan be mounted in the pod, but ImagePullSecrets are only accessed by the kubelet.\nMore info: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod\n+patchStrategy=merge\n+patchMergeKey=name",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
+          }
         },
         "map": {
           "type": "string"
