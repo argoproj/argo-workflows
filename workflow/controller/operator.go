@@ -1731,7 +1731,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			}
 		}
 
-		woc.updated = wfUpdated
+		woc.updated = woc.updated || wfUpdated
 	}
 	// If the user has specified retries, node becomes a special retry node.
 	// This node acts as a parent of all retries that will be done for
