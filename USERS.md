@@ -21,6 +21,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Alibaba Group](https://www.alibabagroup.com/)
 1. [Ant Group](https://www.antgroup.com/)
 1. [AppDirect](https://www.appdirect.com/)
+1. [Arabesque](https://www.arabesque.com/)
 1. [Astraea](https://astraea.earth/)
 1. [BasisAI](https://basis-ai.com/)
 1. [BEI.RE](https://www.bei.re/)
