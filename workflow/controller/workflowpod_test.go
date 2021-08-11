@@ -1536,7 +1536,8 @@ func TestPodMetadataWithWorkflowDefaults(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.setExecWorkflow(ctx)
+	err := woc.setExecWorkflow(ctx)
+	assert.NoError(t, err)
 	mainCtr := woc.execWf.Spec.Templates[0].Container
 	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	assert.Equal(t, "annotation-value", pod.ObjectMeta.Annotations["controller-level-pod-annotation"])
@@ -1558,7 +1559,8 @@ func TestPodMetadataWithWorkflowDefaults(t *testing.T) {
 	wf = wfv1.MustUnmarshalWorkflow(wfWithPodMetadata)
 	ctx = context.Background()
 	woc = newWorkflowOperationCtx(wf, controller)
-	woc.setExecWorkflow(ctx)
+	err = woc.setExecWorkflow(ctx)
+	assert.NoError(t, err)
 	mainCtr = woc.execWf.Spec.Templates[0].Container
 	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	assert.Equal(t, "foo", pod.ObjectMeta.Annotations["workflow-level-pod-annotation"])
