@@ -452,8 +452,8 @@
  * Reijer Copier
  * Riccardo Piccoli
  * Roi Kramer
- * Saïfane FARFAR
  * Saravanan Balasubramanian
+ * Saïfane FARFAR
  * Shoubhik Bose
  * Simon Behar
  * Stephan van Maris
