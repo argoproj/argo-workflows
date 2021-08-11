@@ -67,7 +67,7 @@ For testing SSO integration, you can start a Argo with sso profile which will de
 a pre-configured dex instance in argo namespace
 
 ```sh
-make start PROFILE=SSO
+make start PROFILE=sso
 ```
 
 ## Troubleshooting Notes
