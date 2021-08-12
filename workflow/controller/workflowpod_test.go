@@ -1584,4 +1584,3 @@ func TestPodMetadataWithWorkflowDefaults(t *testing.T) {
 	assert.Equal(t, "label-value", pod.ObjectMeta.Labels["controller-level-pod-label"])
 	cancel()
 }
-
