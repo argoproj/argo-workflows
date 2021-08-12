@@ -1513,3 +1513,59 @@ func TestGetDeadline(t *testing.T) {
 	deadline, _ = getPodDeadline(pod)
 	assert.Equal(t, executionDeadline.Format(time.RFC3339), deadline.Format(time.RFC3339))
 }
+
+func TestPodMetadataWithWorkflowDefaults(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+
+	wfDefaultAnnotations := make(map[string]string)
+	wfDefaultAnnotations["controller-level-pod-annotation"] = "annotation-value"
+	wfDefaultAnnotations["workflow-level-pod-annotation"] = "set-by-controller"
+	wfDefaultLabels := make(map[string]string)
+	wfDefaultLabels["controller-level-pod-label"] = "label-value"
+	wfDefaultLabels["workflow-level-pod-label"] = "set-by-controller"
+	controller.Config.WorkflowDefaults = &wfv1.Workflow{
+		Spec: wfv1.WorkflowSpec{
+			PodMetadata: &wfv1.Metadata{
+				Annotations: wfDefaultAnnotations,
+				Labels:      wfDefaultLabels,
+			},
+		},
+	}
+
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	err := woc.setExecWorkflow(ctx)
+	assert.NoError(t, err)
+	mainCtr := woc.execWf.Spec.Templates[0].Container
+	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	assert.Equal(t, "annotation-value", pod.ObjectMeta.Annotations["controller-level-pod-annotation"])
+	assert.Equal(t, "set-by-controller", pod.ObjectMeta.Annotations["workflow-level-pod-annotation"])
+	assert.Equal(t, "label-value", pod.ObjectMeta.Labels["controller-level-pod-label"])
+	assert.Equal(t, "set-by-controller", pod.ObjectMeta.Labels["workflow-level-pod-label"])
+	cancel() // need to cancel to spin up pods with the same name
+
+	cancel, controller = newController()
+	defer cancel()
+	controller.Config.WorkflowDefaults = &wfv1.Workflow{
+		Spec: wfv1.WorkflowSpec{
+			PodMetadata: &wfv1.Metadata{
+				Annotations: wfDefaultAnnotations,
+				Labels:      wfDefaultLabels,
+			},
+		},
+	}
+	wf = wfv1.MustUnmarshalWorkflow(wfWithPodMetadata)
+	ctx = context.Background()
+	woc = newWorkflowOperationCtx(wf, controller)
+	err = woc.setExecWorkflow(ctx)
+	assert.NoError(t, err)
+	mainCtr = woc.execWf.Spec.Templates[0].Container
+	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	assert.Equal(t, "foo", pod.ObjectMeta.Annotations["workflow-level-pod-annotation"])
+	assert.Equal(t, "bar", pod.ObjectMeta.Labels["workflow-level-pod-label"])
+	assert.Equal(t, "annotation-value", pod.ObjectMeta.Annotations["controller-level-pod-annotation"])
+	assert.Equal(t, "label-value", pod.ObjectMeta.Labels["controller-level-pod-label"])
+	cancel()
+}
