@@ -40,6 +40,7 @@ func NewServerCommand() *cobra.Command {
 		port                     int
 		baseHRef                 string
 		secure                   bool
+		tlsCertificateSecretName string
 		htst                     bool
 		namespaced               bool   // --namespaced
 		managedNamespace         string // --managed-namespace
@@ -98,22 +99,31 @@ See %s`, help.ArgoSever),
 
 			var tlsConfig *tls.Config
 			if secure {
-				log.Infof("Generating Self Signed TLS Certificates for Secure Mode")
 				tlsMinVersion, err := env.GetInt("TLS_MIN_VERSION", tls.VersionTLS12)
 				if err != nil {
 					return err
 				}
-				tlsConfig, err = &tlsutils.GenerateX509KeyPairTLSConfig(
-					tlsutils.CertOptions{
-						Hosts:        []string{"localhost"},
-						IsCA:         false,
-						ValidFor:     0,
-						Organization: "ArgoProj",
-					}
-				)
+
+				if tlsCertificateSecretName != "" {
+					log.Infof("Getting contents of Kubernetes secret %s for TLS Certificates", tlsCertificateSecretName)
+					tlsConfig, err = tlsutils.GetTLSConfigFromSecret(clients.Kubernetes, tlsCertificateSecretName, tlsMinVersion, namespace)
+				} else {
+					log.Infof("Generating Self Signed TLS Certificates for Secure Mode")
+
+					tlsConfig, err = &tlsutils.GenerateX509KeyPairTLSConfig(
+						tlsutils.CertOptions{
+							Hosts:        []string{"localhost"},
+							IsCA:         false,
+							ValidFor:     0,
+							Organization: "ArgoProj",
+						},
+					)
+				}
+
 				if err != nil {
 					return err
 				}
+
 			} else {
 				log.Warn("You are running in insecure mode. Learn how to enable transport layer security: https://argoproj.github.io/argo-workflows/tls/")
 			}
@@ -187,6 +197,7 @@ See %s`, help.ArgoSever),
 	// We default to secure mode if we find certs available, otherwise we default to insecure mode.
 	_, err := os.Stat("argo-server.crt")
 	command.Flags().BoolVarP(&secure, "secure", "e", !os.IsNotExist(err), "Whether or not we should listen on TLS.")
+	command.Flags().StringVar(&tlsCertificateSecretName, "tls-certificate-secret-name", "", "The name of a Kubernetes secret that contains the server certificates")
 	command.Flags().BoolVar(&htst, "hsts", true, "Whether or not we should add a HTTP Secure Transport Security header. This only has effect if secure is enabled.")
 	command.Flags().StringArrayVar(&authModes, "auth-mode", []string{"client"}, "API server authentication mode. Any 1 or more length permutation of: client,server,sso")
 	command.Flags().StringVar(&configMap, "configmap", "workflow-controller-configmap", "Name of K8s configmap to retrieve workflow controller configuration")

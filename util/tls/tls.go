@@ -18,6 +18,8 @@ import (
 	"os"
 	"strings"
 	"time"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
+
 
 	log "github.com/sirupsen/logrus"
 )
@@ -31,6 +33,10 @@ const (
 	DefaultTLSMinVersion = "1.2"
 	// The default maximum TLS version to provide to clients
 	DefaultTLSMaxVersion = "1.3"
+	// The key of the tls.crt within the Kubernetes secret
+	tlsCrtSecretKey := "tls.crt"
+	// The key of the tls.key within the Kubernetes secret
+	tlsKeySecretKey := "tls.key"
 )
 
 var (
@@ -410,4 +416,29 @@ func CreateServerTLSConfig(tlsCertPath, tlsKeyPath string, hosts []string) (*tls
 
 	return &tls.Config{Certificates: []tls.Certificate{*cert}}, nil
 
+}
+
+func GetServerTLSConfigFromSecret(kubectlConfig kubernetes.Interface, tlsKubernetesSecretName string, tlsMinVersion uint16, namespace string) (tls.Config, error) {
+
+	ctx := context.Background()
+
+	certpem, err := util.GetSecrets(ctx, kubectlConfig, namespace, tlsKubernetesSecretName, tlsCrtSecretKey)
+	if err != nil {
+		return nil, err
+	}
+
+	keypem, err := util.GetSecrets(ctx, kubectlConfig, namespace, tlsKubernetesSecretName, tlsKeySecretKey)
+	if err != nil {
+		return nil, err
+	}
+
+	cert, err := tls.X509KeyPair(certpem, keypem)
+	if err != nil {
+		return nil, err
+	}
+
+	return &tls.Config{
+		Certificates: []tls.Certificate{*cer},
+		MinVersion:   uint16(tlsMinVersion),
+	}, nil
 }
