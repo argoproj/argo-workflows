@@ -30,6 +30,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/types"
 	"github.com/argoproj/argo-workflows/v3/util/cmd"
 	"github.com/argoproj/argo-workflows/v3/util/help"
+	tlsutils "github.com/argoproj/argo-workflows/v3/util/tls"
 )
 
 func NewServerCommand() *cobra.Command {
@@ -97,18 +98,21 @@ See %s`, help.ArgoSever),
 
 			var tlsConfig *tls.Config
 			if secure {
-				cer, err := tls.LoadX509KeyPair("argo-server.crt", "argo-server.key")
-				if err != nil {
-					return err
-				}
+				log.Infof("Generating Self Signed TLS Certificates for Secure Mode")
 				tlsMinVersion, err := env.GetInt("TLS_MIN_VERSION", tls.VersionTLS12)
 				if err != nil {
 					return err
 				}
-				tlsConfig = &tls.Config{
-					Certificates:       []tls.Certificate{cer},
-					InsecureSkipVerify: true,
-					MinVersion:         uint16(tlsMinVersion),
+				tlsConfig, err = &tlsutils.GenerateX509KeyPairTLSConfig(
+					tlsutils.CertOptions{
+						Hosts:        []string{"localhost"},
+						IsCA:         false,
+						ValidFor:     0,
+						Organization: "ArgoProj",
+					}
+				)
+				if err != nil {
+					return err
 				}
 			} else {
 				log.Warn("You are running in insecure mode. Learn how to enable transport layer security: https://argoproj.github.io/argo-workflows/tls/")
