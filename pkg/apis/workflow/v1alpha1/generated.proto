@@ -1086,8 +1086,20 @@ message S3Bucket {
   // UseSDKCreds tells the driver to figure out credentials based on sdk defaults.
   optional bool useSDKCreds = 8;
 
-  // CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist
+  // CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist. Setting Enabled Encryption will apply either SSE-S3 to the bucket if KmsKeyId is not set or SSE-KMS if it is.
   optional CreateS3BucketOptions createBucketIfNotPresent = 9;
+
+  // KMSKeyId tells the driver to encrypt the object using the specified KMS Key.
+  optional string kmsKeyId = 10;
+
+  // KmsEncryptionContext is a json blob that contains an encryption context. See https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html#encrypt_context for more information
+  optional string kmsEncryptionContext = 11;
+
+  // EnableEncryption tells the driver to encrypt objects if set to true. If kmsKeyId and serverSideCustomerKeySecret are not set, SSE-S3 will be used
+  optional bool enableEncryption = 12;
+
+  // ServerSideCustomerKeySecret tells the driver to encrypt the output artifacts using SSE-C with the specified secret.
+  optional k8s.io.api.core.v1.SecretKeySelector serverSideCustomerKeySecret = 13;
 }
 
 // ScriptTemplate is a template subtype to enable scripting through code steps
