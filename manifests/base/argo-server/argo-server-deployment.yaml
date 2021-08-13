@@ -14,7 +14,7 @@ spec:
       serviceAccountName: argo-server
       containers:
         - name: argo-server
-          image: docker.io/argoproj/argocli:latest
+          image: quay.io/argoproj/argocli:latest
           securityContext:
             capabilities:
               drop:
