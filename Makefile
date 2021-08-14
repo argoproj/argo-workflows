@@ -352,14 +352,6 @@ pkg/apiclient/workflowtemplate/workflow-template.swagger.json: $(PROTO_BINARIES)
 manifests/base/crds/full/argoproj.io_workflows.yaml: $(GOPATH)/bin/controller-gen $(TYPES) ./hack/crdgen.sh ./hack/crds.go
 	./hack/crdgen.sh
 
-dist/kustomize:
-	mkdir -p dist
-	rm -f dist/kustomize
-	./hack/recurl.sh dist/install_kustomize.sh https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh
-	chmod +x ./dist/install_kustomize.sh
-	cd dist && ./install_kustomize.sh 3.8.8
-	dist/kustomize version
-
 manifests: \
 	manifests/install.yaml \
 	manifests/namespace-install.yaml \
@@ -372,16 +364,16 @@ manifests: \
 	dist/manifests/quick-start-mysql.yaml \
 	dist/manifests/quick-start-postgres.yaml
 
-manifests/install.yaml: dist/kustomize /dev/null
-	dist/kustomize build --load_restrictor=none manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
-manifests/namespace-install.yaml: dist/kustomize /dev/null
-	dist/kustomize build --load_restrictor=none manifests/namespace-install | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
-manifests/quick-start-minimal.yaml: dist/kustomize /dev/null
-	dist/kustomize build --load_restrictor=none manifests/quick-start/minimal | ./hack/auto-gen-msg.sh > manifests/quick-start-minimal.yaml
-manifests/quick-start-mysql.yaml: dist/kustomize /dev/null
-	dist/kustomize build --load_restrictor=none manifests/quick-start/mysql | ./hack/auto-gen-msg.sh > manifests/quick-start-mysql.yaml
-manifests/quick-start-postgres.yaml: dist/kustomize /dev/null
-	dist/kustomize build --load_restrictor=none manifests/quick-start/postgres | ./hack/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
+manifests/install.yaml: /dev/null
+	kubectl kustomize --load_restrictor=none manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
+manifests/namespace-install.yaml: /dev/null
+	kubectl kustomize --load_restrictor=none manifests/namespace-install | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
+manifests/quick-start-minimal.yaml: /dev/null
+	kubectl kustomize --load_restrictor=none manifests/quick-start/minimal | ./hack/auto-gen-msg.sh > manifests/quick-start-minimal.yaml
+manifests/quick-start-mysql.yaml: /dev/null
+	kubectl kustomize --load_restrictor=none manifests/quick-start/mysql | ./hack/auto-gen-msg.sh > manifests/quick-start-mysql.yaml
+manifests/quick-start-postgres.yaml: /dev/null
+	kubectl kustomize --load_restrictor=none manifests/quick-start/postgres | ./hack/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
 
 dist/manifests/%: manifests/%
 	@mkdir -p dist/manifests
@@ -407,11 +399,11 @@ test: server/static/files.go dist/argosay
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
 
 .PHONY: install
-install: dist/kustomize
+install:
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 	@echo "installing PROFILE=$(PROFILE), E2E_EXECUTOR=$(E2E_EXECUTOR)"
-	dist/kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/argoproj\//$(IMAGE_NAMESPACE)\//' | sed 's/containerRuntimeExecutor: docker/containerRuntimeExecutor: $(E2E_EXECUTOR)/' | kubectl -n $(KUBE_NAMESPACE) apply --prune -l app.kubernetes.io/part-of=argo -f -
+	kubectl kustomize --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/argoproj\//$(IMAGE_NAMESPACE)\//' | sed 's/containerRuntimeExecutor: docker/containerRuntimeExecutor: $(E2E_EXECUTOR)/' | kubectl -n $(KUBE_NAMESPACE) apply --prune -l app.kubernetes.io/part-of=argo -f -
 ifeq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml
 endif
