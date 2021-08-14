@@ -754,7 +754,7 @@ stringData:
   github.com: |
     type: github
     secret: "shh!"
-  gitlab.com: |
+  gitlab.com: |-
     type: gitlab
     secret: "shh!"
 ---
