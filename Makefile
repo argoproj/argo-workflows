@@ -174,21 +174,16 @@ dist/argo-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
 dist/argo-%.gz: dist/argo-%
 	gzip --force --keep dist/argo-$*
 
-dist/argo-%: server/static/files.go argo-server.crt argo-server.key $(CLI_PKGS) go.sum
+dist/argo-%: server/static/files.go $(CLI_PKGS) go.sum
 	CGO_ENABLED=0 $(GOARGS) go build -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argo
 
-dist/argo: server/static/files.go argo-server.crt argo-server.key $(CLI_PKGS) go.sum
+dist/argo: server/static/files.go $(CLI_PKGS) go.sum
 ifeq ($(shell uname -s),Darwin)
 	# if local, then build fast: use CGO and dynamic-linking
 	go build -v -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
 else
 	CGO_ENABLED=0 go build -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argo
 endif
-
-argo-server.crt: argo-server.key
-
-argo-server.key:
-	openssl req -x509 -newkey rsa:4096 -keyout argo-server.key -out argo-server.crt -days 365 -nodes -subj /CN=localhost/O=ArgoProj
 
 argocli-image:
 
