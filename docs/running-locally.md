@@ -5,7 +5,6 @@
 * [Go](https://golang.org/dl/) (The project currently uses version 1.15)
 * [Yarn](https://classic.yarnpkg.com/en/docs/install/#mac-stable)
 * [Docker](https://docs.docker.com/get-docker/)
-* [Kustomize](https://kubectl.docs.kubernetes.io/installation/kustomize/)
 * [protoc](http://google.github.io/proto-lens/installing-protoc.html) `brew install protobuf`
 * [`jq`](https://stedolan.github.io/jq/download/)
 * A local Kubernetes cluster
