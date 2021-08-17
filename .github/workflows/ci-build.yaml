@@ -88,10 +88,6 @@ jobs:
         with:
           path: /home/runner/go/bin
           key: go-bin-v1-${{ hashFiles('**/go.mod') }}
-      - uses: actions/cache@v2
-        with:
-          path: dist/kustomize
-          key: kustomize
       - run: mkdir -p /tmp/log/argo-e2e
       - name: Install and start K3S
         timeout-minutes: 3
