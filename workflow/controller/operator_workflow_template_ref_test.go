@@ -496,7 +496,7 @@ const wfTmplWithVol = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  name: workflow-template-whalesay-template
+  name: workflow-template-whalesay-template-with-volume
   namespace: default
 spec:
   volumeClaimTemplates:

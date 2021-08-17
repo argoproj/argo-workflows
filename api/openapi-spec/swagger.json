@@ -8398,7 +8398,7 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.Probe"
         },
         "resources": {
-          "description": "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/",
+          "description": "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
           "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
         },
         "securityContext": {
@@ -10056,7 +10056,7 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.Probe"
         },
         "resources": {
-          "description": "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/",
+          "description": "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
           "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
         },
         "securityContext": {
@@ -10640,7 +10640,7 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.Probe"
         },
         "resources": {
-          "description": "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/",
+          "description": "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
           "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
         },
         "securityContext": {

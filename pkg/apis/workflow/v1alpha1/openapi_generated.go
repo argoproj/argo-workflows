@@ -1105,7 +1105,7 @@ func schema_pkg_apis_workflow_v1alpha1_ContainerNode(ref common.ReferenceCallbac
 					},
 					"resources": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/",
+							Description: "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
 							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/api/core/v1.ResourceRequirements"),
 						},
@@ -4296,7 +4296,7 @@ func schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref common.ReferenceCallba
 					},
 					"resources": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/",
+							Description: "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
 							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/api/core/v1.ResourceRequirements"),
 						},
@@ -5365,7 +5365,7 @@ func schema_pkg_apis_workflow_v1alpha1_UserContainer(ref common.ReferenceCallbac
 					},
 					"resources": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/",
+							Description: "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
 							Default:     map[string]interface{}{},
 							Ref:         ref("k8s.io/api/core/v1.ResourceRequirements"),
 						},
