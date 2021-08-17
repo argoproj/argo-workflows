@@ -9986,7 +9986,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.S3EncryptionOptions": {
-      "description": "S3EncryptionOptions used to determine encryption options used during s3 operations",
+      "description": "S3EncryptionOptions used to determine encryption options during s3 operations",
       "type": "object",
       "properties": {
         "enableEncryption": {

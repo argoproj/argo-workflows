@@ -4196,7 +4196,7 @@ func schema_pkg_apis_workflow_v1alpha1_S3EncryptionOptions(ref common.ReferenceC
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "S3EncryptionOptions used to determine encryption options used during s3 operations",
+				Description: "S3EncryptionOptions used to determine encryption options during s3 operations",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kmsKeyId": {

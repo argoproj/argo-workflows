@@ -1092,7 +1092,7 @@ message S3Bucket {
   optional S3EncryptionOptions encryptionOptions = 10;
 }
 
-// S3EncryptionOptions used to determine encryption options used during s3 operations
+// S3EncryptionOptions used to determine encryption options during s3 operations
 message S3EncryptionOptions {
   // KMSKeyId tells the driver to encrypt the object using the specified KMS Key.
   optional string kmsKeyId = 1;

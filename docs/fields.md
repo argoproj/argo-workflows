@@ -4475,7 +4475,7 @@ CreateS3BucketOptions options used to determine automatic automatic bucket-creat
 
 ## S3EncryptionOptions
 
-S3EncryptionOptions used to determine encryption options used during s3 operations
+S3EncryptionOptions used to determine encryption options during s3 operations
 
 ### Fields
 | Field Name | Field Type | Description   |
