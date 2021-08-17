@@ -163,7 +163,7 @@ images: cli-image executor-image controller-image
 # cli
 
 .PHONY: cli
-cli: dist/argo argo-server.crt argo-server.key
+cli: dist/argo
 
 ui/dist/app/index.html: $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
 	# Build UI
@@ -199,11 +199,6 @@ dist/argo-%.gz: dist/argo-%
 
 dist/argo-%: server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
-
-argo-server.crt: argo-server.key
-
-argo-server.key:
-	openssl req -x509 -newkey rsa:4096 -keyout argo-server.key -out argo-server.crt -days 365 -nodes -subj /CN=localhost/O=ArgoProj
 
 .PHONY: cli-image
 cli-image: $(CLI_IMAGE_FILE)

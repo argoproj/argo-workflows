@@ -22,6 +22,7 @@ import (
 	"github.com/argoproj/argo/v2/server/apiserver"
 	"github.com/argoproj/argo/v2/server/auth"
 	"github.com/argoproj/argo/v2/util/help"
+	tlsutils "github.com/argoproj/argo/v2/util/tls"
 )
 
 func NewServerCommand() *cobra.Command {
@@ -80,14 +81,15 @@ See %s`, help.ArgoSever),
 
 			var tlsConfig *tls.Config
 			if secure {
-				cer, err := tls.LoadX509KeyPair("argo-server.crt", "argo-server.key")
-				errors.CheckError(err)
+				log.Infof("Generating Self Signed TLS Certificates for Secure Mode")
 				tlsMinVersion, err := env.GetInt("TLS_MIN_VERSION", tls.VersionTLS12)
 				errors.CheckError(err)
+				var cer *tls.Certificate
+				cer, err = tlsutils.GenerateX509KeyPair()
+				errors.CheckError(err)
 				tlsConfig = &tls.Config{
-					Certificates:       []tls.Certificate{cer},
-					InsecureSkipVerify: true, // InsecureSkipVerify will not impact the TLS listener. It is needed for the server to speak to itself for GRPC.
-					MinVersion:         uint16(tlsMinVersion),
+					Certificates: []tls.Certificate{*cer},
+					MinVersion:   uint16(tlsMinVersion),
 				}
 			} else {
 				log.Warn("You are running in insecure mode. Learn how to enable transport layer security: https://argoproj.github.io/argo/tls/")
