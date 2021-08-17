@@ -16,6 +16,7 @@ RUN apt-get update && apt-get --no-install-recommends install -y \
     ca-certificates \
     wget \
     gcc \
+    libcap2-bin \
     zip && \
     apt-get clean \
     && rm -rf \
@@ -74,7 +75,7 @@ RUN JOBS=max yarn --cwd ui install --network-timeout 1000000
 COPY ui ui
 COPY api api
 
-RUN JOBS=max yarn --cwd ui build
+RUN NODE_OPTIONS="--max-old-space-size=2048" JOBS=max yarn --cwd ui build
 
 ####################################################################################################
 
