@@ -2074,6 +2074,11 @@ func (in *S3Bucket) DeepCopyInto(out *S3Bucket) {
 		*out = new(CreateS3BucketOptions)
 		**out = **in
 	}
+	if in.ServerSideCustomerKeySecret != nil {
+		in, out := &in.ServerSideCustomerKeySecret, &out.ServerSideCustomerKeySecret
+		*out = new(v1.SecretKeySelector)
+		(*in).DeepCopyInto(*out)
+	}
 	return
 }
 

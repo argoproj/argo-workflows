@@ -3993,8 +3993,35 @@ func schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref common.ReferenceCallback) 
 					},
 					"createBucketIfNotPresent": {
 						SchemaProps: spec.SchemaProps{
-							Description: "CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist",
+							Description: "CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist. Setting Enabled Encryption will apply either SSE-S3 to the bucket if KmsKeyId is not set or SSE-KMS if it is.",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CreateS3BucketOptions"),
+						},
+					},
+					"kmsKeyId": {
+						SchemaProps: spec.SchemaProps{
+							Description: "KMSKeyId tells the driver to encrypt the object using the specified KMS Key.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"kmsEncryptionContext": {
+						SchemaProps: spec.SchemaProps{
+							Description: "KmsEncryptionContext is a json blob that contains an encryption context. See https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html#encrypt_context for more information",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"enableEncryption": {
+						SchemaProps: spec.SchemaProps{
+							Description: "EnableEncryption tells the driver to encrypt objects if set to true. If kmsKeyId and serverSideCustomerKeySecret are not set, SSE-S3 will be used",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"serverSideCustomerKeySecret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ServerSideCustomerKeySecret tells the driver to encrypt the output artifacts using SSE-C with the specified secret.",
+							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
 					"key": {
@@ -4075,8 +4102,35 @@ func schema_pkg_apis_workflow_v1alpha1_S3ArtifactRepository(ref common.Reference
 					},
 					"createBucketIfNotPresent": {
 						SchemaProps: spec.SchemaProps{
-							Description: "CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist",
+							Description: "CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist. Setting Enabled Encryption will apply either SSE-S3 to the bucket if KmsKeyId is not set or SSE-KMS if it is.",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CreateS3BucketOptions"),
+						},
+					},
+					"kmsKeyId": {
+						SchemaProps: spec.SchemaProps{
+							Description: "KMSKeyId tells the driver to encrypt the object using the specified KMS Key.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"kmsEncryptionContext": {
+						SchemaProps: spec.SchemaProps{
+							Description: "KmsEncryptionContext is a json blob that contains an encryption context. See https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html#encrypt_context for more information",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"enableEncryption": {
+						SchemaProps: spec.SchemaProps{
+							Description: "EnableEncryption tells the driver to encrypt objects if set to true. If kmsKeyId and serverSideCustomerKeySecret are not set, SSE-S3 will be used",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"serverSideCustomerKeySecret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ServerSideCustomerKeySecret tells the driver to encrypt the output artifacts using SSE-C with the specified secret.",
+							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
 					"keyFormat": {
@@ -4164,8 +4218,35 @@ func schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref common.ReferenceCallback) co
 					},
 					"createBucketIfNotPresent": {
 						SchemaProps: spec.SchemaProps{
-							Description: "CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist",
+							Description: "CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist. Setting Enabled Encryption will apply either SSE-S3 to the bucket if KmsKeyId is not set or SSE-KMS if it is.",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CreateS3BucketOptions"),
+						},
+					},
+					"kmsKeyId": {
+						SchemaProps: spec.SchemaProps{
+							Description: "KMSKeyId tells the driver to encrypt the object using the specified KMS Key.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"kmsEncryptionContext": {
+						SchemaProps: spec.SchemaProps{
+							Description: "KmsEncryptionContext is a json blob that contains an encryption context. See https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html#encrypt_context for more information",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"enableEncryption": {
+						SchemaProps: spec.SchemaProps{
+							Description: "EnableEncryption tells the driver to encrypt objects if set to true. If kmsKeyId and serverSideCustomerKeySecret are not set, SSE-S3 will be used",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"serverSideCustomerKeySecret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ServerSideCustomerKeySecret tells the driver to encrypt the output artifacts using SSE-C with the specified secret.",
+							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
 				},

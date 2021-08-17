@@ -51,7 +51,7 @@ func (s3Driver *ArtifactDriver) newS3Client(ctx context.Context) (argos3.S3Clien
 		RoleARN:     s3Driver.RoleARN,
 		Trace:       os.Getenv(common.EnvVarArgoTrace) == "1",
 		UseSDKCreds: s3Driver.UseSDKCreds,
-		EncryptOpts: &argos3.EncryptOpts{
+		EncryptOpts: argos3.EncryptOpts{
 			KmsKeyId:              s3Driver.KmsKeyId,
 			KmsEncryptionContext:  s3Driver.KmsEncryptionContext,
 			Enabled:               s3Driver.EnableEncryption,
