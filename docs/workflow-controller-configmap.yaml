@@ -113,28 +113,30 @@ data:
       secretKeySecret:
         name: my-s3-credentials
         key: secretKey
-      
-      # If this is set to true, and kmsKeyId or serverSideCustomerKeySecret is not set the 
-      # object will be stored in s3 with SSE-S3.
-      enableEncryption: false
-      # A valid kms key id. If this value is set, the object stored in s3 will be encrypted with SSE-KMS
-      # Note: You cannot set both kmsKeyId and serverSideCustomerKeySecret
-      # kmsKeyId: ''
-      # Allows you to set a json blob of simple key value pairs. See 
-      # https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html#encrypt_context
-      # for more information
-      # kmsEncryptionContext: ''
-      # If this value is set, the object in s3 will be stored using SSE-C
-      # Note: You cannot set both kmsKeyId and serverSideCustomerKeySecret
-      # serverSideCustomerKeySecret:
-      #  name: my-s3-credentials
-      #  key: secretKey
       # If this is set to true, argo workflows will use AWS SDK default credentials provider chain. This will allow things like
       # IRSA and any of the authentication methods that the golang SDK uses in it's default chain.
       # If you are using IRSA on AWS, and set this option to true, you will also need to modify Argo-Server Deployment with
       # `spec.template.spec.securityContext.fsGroup: 65534` configuration. This is required for IRSA to be able to access 
       # `/var/run/secrets/eks.amazonaws.com/serviceaccount/token` file, and authenticate with AWS.
       useSDKCreds: false
+      
+      encryptionOptions:
+        # If this is set to true, SSE-S3 encryption will be used to store objects
+        # unless kmsKeyId or serverSideCustomerKeySecret is set 
+        enableEncryption: false
+        # A valid kms key id. If this value is set, the object stored in s3 will be encrypted with SSE-KMS
+        # Note: You cannot set both kmsKeyId and serverSideCustomerKeySecret
+        # kmsKeyId: ''
+        # Allows you to set a json blob of simple key value pairs. See 
+        # https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html#encrypt_context
+        # for more information
+        # kmsEncryptionContext: ''
+        # The actual secret object (in this example my-s3-credentials), 
+        # should be created when using a custom secret to encrypt objects in using SSE-C
+        # Note: You cannot set both kmsKeyId and serverSideCustomerKeySecret
+        # serverSideCustomerKeySecret:
+        #  name: my-s3-credentials
+        #  key: secretKey
 
       
 

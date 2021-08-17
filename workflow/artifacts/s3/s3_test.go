@@ -345,6 +345,9 @@ func TestSaveS3Artifact(t *testing.T) {
 							S3Bucket: wfv1.S3Bucket{
 								Bucket:                   tc.bucket,
 								CreateBucketIfNotPresent: &wfv1.CreateS3BucketOptions{},
+								EncryptionOptions: &wfv1.S3EncryptionOptions{
+									EnableEncryption: true,
+								},
 							},
 							Key: tc.key,
 						},

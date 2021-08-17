@@ -27,6 +27,9 @@ func NewDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 		var accessKey string
 		var secretKey string
 		var serverSideCustomerKey string
+		var kmsKeyId string
+		var kmsEncryptionContext string
+		var enableEncryption bool
 
 		if art.S3.AccessKeySecret != nil && art.S3.AccessKeySecret.Name != "" {
 			accessKeyBytes, err := ri.GetSecret(ctx, art.S3.AccessKeySecret.Name, art.S3.AccessKeySecret.Key)
@@ -41,16 +44,22 @@ func NewDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			secretKey = secretKeyBytes
 		}
 
-		if art.S3.ServerSideCustomerKeySecret != nil {
-			if art.S3.KmsKeyId != "" {
-				return nil, fmt.Errorf("serverSideCustomerKeySecret and kmsKeyId cannot be set together")
+		if art.S3.EncryptionOptions != nil {
+			if art.S3.EncryptionOptions.ServerSideCustomerKeySecret != nil {
+				if art.S3.EncryptionOptions.KmsKeyId != "" {
+					return nil, fmt.Errorf("serverSideCustomerKeySecret and kmsKeyId cannot be set together")
+				}
+
+				serverSideCustomerKeyBytes, err := ri.GetSecret(ctx, art.S3.EncryptionOptions.ServerSideCustomerKeySecret.Name, art.S3.SecretKeySecret.Key)
+				if err != nil {
+					return nil, err
+				}
+				serverSideCustomerKey = serverSideCustomerKeyBytes
 			}
 
-			serverSideCustomerKeyBytes, err := ri.GetSecret(ctx, art.S3.SecretKeySecret.Name, art.S3.SecretKeySecret.Key)
-			if err != nil {
-				return nil, err
-			}
-			serverSideCustomerKey = serverSideCustomerKeyBytes
+			enableEncryption = art.S3.EncryptionOptions.EnableEncryption
+			kmsKeyId = art.S3.EncryptionOptions.KmsKeyId
+			kmsEncryptionContext = art.S3.EncryptionOptions.KmsEncryptionContext
 		}
 
 		driver := s3.ArtifactDriver{
@@ -61,11 +70,12 @@ func NewDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			Region:                art.S3.Region,
 			RoleARN:               art.S3.RoleARN,
 			UseSDKCreds:           art.S3.UseSDKCreds,
-			KmsKeyId:              art.S3.KmsKeyId,
-			KmsEncryptionContext:  art.S3.KmsEncryptionContext,
-			EnableEncryption:      art.S3.EnableEncryption,
+			KmsKeyId:              kmsKeyId,
+			KmsEncryptionContext:  kmsEncryptionContext,
+			EnableEncryption:      enableEncryption,
 			ServerSideCustomerKey: serverSideCustomerKey,
 		}
+
 		return &driver, nil
 	}
 	if art.HTTP != nil {

@@ -93,6 +93,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3Artifact":                    schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3ArtifactRepository":          schema_pkg_apis_workflow_v1alpha1_S3ArtifactRepository(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3Bucket":                      schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3EncryptionOptions":           schema_pkg_apis_workflow_v1alpha1_S3EncryptionOptions(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ScriptTemplate":                schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SemaphoreHolding":              schema_pkg_apis_workflow_v1alpha1_SemaphoreHolding(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SemaphoreRef":                  schema_pkg_apis_workflow_v1alpha1_SemaphoreRef(ref),
@@ -3997,31 +3998,9 @@ func schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref common.ReferenceCallback) 
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CreateS3BucketOptions"),
 						},
 					},
-					"kmsKeyId": {
+					"encryptionOptions": {
 						SchemaProps: spec.SchemaProps{
-							Description: "KMSKeyId tells the driver to encrypt the object using the specified KMS Key.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"kmsEncryptionContext": {
-						SchemaProps: spec.SchemaProps{
-							Description: "KmsEncryptionContext is a json blob that contains an encryption context. See https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html#encrypt_context for more information",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"enableEncryption": {
-						SchemaProps: spec.SchemaProps{
-							Description: "EnableEncryption tells the driver to encrypt objects if set to true. If kmsKeyId and serverSideCustomerKeySecret are not set, SSE-S3 will be used",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"serverSideCustomerKeySecret": {
-						SchemaProps: spec.SchemaProps{
-							Description: "ServerSideCustomerKeySecret tells the driver to encrypt the output artifacts using SSE-C with the specified secret.",
-							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+							Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3EncryptionOptions"),
 						},
 					},
 					"key": {
@@ -4035,7 +4014,7 @@ func schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref common.ReferenceCallback) 
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CreateS3BucketOptions", "k8s.io/api/core/v1.SecretKeySelector"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CreateS3BucketOptions", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3EncryptionOptions", "k8s.io/api/core/v1.SecretKeySelector"},
 	}
 }
 
@@ -4106,31 +4085,9 @@ func schema_pkg_apis_workflow_v1alpha1_S3ArtifactRepository(ref common.Reference
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CreateS3BucketOptions"),
 						},
 					},
-					"kmsKeyId": {
+					"encryptionOptions": {
 						SchemaProps: spec.SchemaProps{
-							Description: "KMSKeyId tells the driver to encrypt the object using the specified KMS Key.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"kmsEncryptionContext": {
-						SchemaProps: spec.SchemaProps{
-							Description: "KmsEncryptionContext is a json blob that contains an encryption context. See https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html#encrypt_context for more information",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"enableEncryption": {
-						SchemaProps: spec.SchemaProps{
-							Description: "EnableEncryption tells the driver to encrypt objects if set to true. If kmsKeyId and serverSideCustomerKeySecret are not set, SSE-S3 will be used",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"serverSideCustomerKeySecret": {
-						SchemaProps: spec.SchemaProps{
-							Description: "ServerSideCustomerKeySecret tells the driver to encrypt the output artifacts using SSE-C with the specified secret.",
-							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+							Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3EncryptionOptions"),
 						},
 					},
 					"keyFormat": {
@@ -4151,7 +4108,7 @@ func schema_pkg_apis_workflow_v1alpha1_S3ArtifactRepository(ref common.Reference
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CreateS3BucketOptions", "k8s.io/api/core/v1.SecretKeySelector"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CreateS3BucketOptions", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3EncryptionOptions", "k8s.io/api/core/v1.SecretKeySelector"},
 	}
 }
 
@@ -4222,6 +4179,26 @@ func schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref common.ReferenceCallback) co
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CreateS3BucketOptions"),
 						},
 					},
+					"encryptionOptions": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3EncryptionOptions"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CreateS3BucketOptions", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3EncryptionOptions", "k8s.io/api/core/v1.SecretKeySelector"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_S3EncryptionOptions(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "S3EncryptionOptions used to determine encryption options used during s3 operations",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
 					"kmsKeyId": {
 						SchemaProps: spec.SchemaProps{
 							Description: "KMSKeyId tells the driver to encrypt the object using the specified KMS Key.",
@@ -4253,7 +4230,7 @@ func schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref common.ReferenceCallback) co
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CreateS3BucketOptions", "k8s.io/api/core/v1.SecretKeySelector"},
+			"k8s.io/api/core/v1.SecretKeySelector"},
 	}
 }
 

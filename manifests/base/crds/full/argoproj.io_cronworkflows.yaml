@@ -598,34 +598,37 @@ spec:
                                     objectLocking:
                                       type: boolean
                                   type: object
-                                enableEncryption:
-                                  type: boolean
+                                encryptionOptions:
+                                  properties:
+                                    enableEncryption:
+                                      type: boolean
+                                    kmsEncryptionContext:
+                                      type: string
+                                    kmsKeyId:
+                                      type: string
+                                    serverSideCustomerKeySecret:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                  type: object
                                 endpoint:
                                   type: string
                                 insecure:
                                   type: boolean
                                 key:
                                   type: string
-                                kmsEncryptionContext:
-                                  type: string
-                                kmsKeyId:
-                                  type: string
                                 region:
                                   type: string
                                 roleARN:
                                   type: string
                                 secretKeySecret:
-                                  properties:
-                                    key:
-                                      type: string
-                                    name:
-                                      type: string
-                                    optional:
-                                      type: boolean
-                                  required:
-                                  - key
-                                  type: object
-                                serverSideCustomerKeySecret:
                                   properties:
                                     key:
                                       type: string
@@ -1538,34 +1541,37 @@ spec:
                                   objectLocking:
                                     type: boolean
                                 type: object
-                              enableEncryption:
-                                type: boolean
+                              encryptionOptions:
+                                properties:
+                                  enableEncryption:
+                                    type: boolean
+                                  kmsEncryptionContext:
+                                    type: string
+                                  kmsKeyId:
+                                    type: string
+                                  serverSideCustomerKeySecret:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                      optional:
+                                        type: boolean
+                                    required:
+                                    - key
+                                    type: object
+                                type: object
                               endpoint:
                                 type: string
                               insecure:
                                 type: boolean
                               key:
                                 type: string
-                              kmsEncryptionContext:
-                                type: string
-                              kmsKeyId:
-                                type: string
                               region:
                                 type: string
                               roleARN:
                                 type: string
                               secretKeySecret:
-                                properties:
-                                  key:
-                                    type: string
-                                  name:
-                                    type: string
-                                  optional:
-                                    type: boolean
-                                required:
-                                - key
-                                type: object
-                              serverSideCustomerKeySecret:
                                 properties:
                                   key:
                                     type: string
@@ -2997,34 +3003,37 @@ spec:
                                                   objectLocking:
                                                     type: boolean
                                                 type: object
-                                              enableEncryption:
-                                                type: boolean
+                                              encryptionOptions:
+                                                properties:
+                                                  enableEncryption:
+                                                    type: boolean
+                                                  kmsEncryptionContext:
+                                                    type: string
+                                                  kmsKeyId:
+                                                    type: string
+                                                  serverSideCustomerKeySecret:
+                                                    properties:
+                                                      key:
+                                                        type: string
+                                                      name:
+                                                        type: string
+                                                      optional:
+                                                        type: boolean
+                                                    required:
+                                                    - key
+                                                    type: object
+                                                type: object
                                               endpoint:
                                                 type: string
                                               insecure:
                                                 type: boolean
                                               key:
                                                 type: string
-                                              kmsEncryptionContext:
-                                                type: string
-                                              kmsKeyId:
-                                                type: string
                                               region:
                                                 type: string
                                               roleARN:
                                                 type: string
                                               secretKeySecret:
-                                                properties:
-                                                  key:
-                                                    type: string
-                                                  name:
-                                                    type: string
-                                                  optional:
-                                                    type: boolean
-                                                required:
-                                                - key
-                                                type: object
-                                              serverSideCustomerKeySecret:
                                                 properties:
                                                   key:
                                                     type: string
@@ -3384,34 +3393,37 @@ spec:
                                                         objectLocking:
                                                           type: boolean
                                                       type: object
-                                                    enableEncryption:
-                                                      type: boolean
+                                                    encryptionOptions:
+                                                      properties:
+                                                        enableEncryption:
+                                                          type: boolean
+                                                        kmsEncryptionContext:
+                                                          type: string
+                                                        kmsKeyId:
+                                                          type: string
+                                                        serverSideCustomerKeySecret:
+                                                          properties:
+                                                            key:
+                                                              type: string
+                                                            name:
+                                                              type: string
+                                                            optional:
+                                                              type: boolean
+                                                          required:
+                                                          - key
+                                                          type: object
+                                                      type: object
                                                     endpoint:
                                                       type: string
                                                     insecure:
                                                       type: boolean
                                                     key:
                                                       type: string
-                                                    kmsEncryptionContext:
-                                                      type: string
-                                                    kmsKeyId:
-                                                      type: string
                                                     region:
                                                       type: string
                                                     roleARN:
                                                       type: string
                                                     secretKeySecret:
-                                                      properties:
-                                                        key:
-                                                          type: string
-                                                        name:
-                                                          type: string
-                                                        optional:
-                                                          type: boolean
-                                                      required:
-                                                      - key
-                                                      type: object
-                                                    serverSideCustomerKeySecret:
                                                       properties:
                                                         key:
                                                           type: string
@@ -3813,34 +3825,37 @@ spec:
                                           objectLocking:
                                             type: boolean
                                         type: object
-                                      enableEncryption:
-                                        type: boolean
+                                      encryptionOptions:
+                                        properties:
+                                          enableEncryption:
+                                            type: boolean
+                                          kmsEncryptionContext:
+                                            type: string
+                                          kmsKeyId:
+                                            type: string
+                                          serverSideCustomerKeySecret:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
+                                        type: object
                                       endpoint:
                                         type: string
                                       insecure:
                                         type: boolean
                                       key:
                                         type: string
-                                      kmsEncryptionContext:
-                                        type: string
-                                      kmsKeyId:
-                                        type: string
                                       region:
                                         type: string
                                       roleARN:
                                         type: string
                                       secretKeySecret:
-                                        properties:
-                                          key:
-                                            type: string
-                                          name:
-                                            type: string
-                                          optional:
-                                            type: boolean
-                                        required:
-                                        - key
-                                        type: object
-                                      serverSideCustomerKeySecret:
                                         properties:
                                           key:
                                             type: string
@@ -4764,34 +4779,37 @@ spec:
                                         objectLocking:
                                           type: boolean
                                       type: object
-                                    enableEncryption:
-                                      type: boolean
+                                    encryptionOptions:
+                                      properties:
+                                        enableEncryption:
+                                          type: boolean
+                                        kmsEncryptionContext:
+                                          type: string
+                                        kmsKeyId:
+                                          type: string
+                                        serverSideCustomerKeySecret:
+                                          properties:
+                                            key:
+                                              type: string
+                                            name:
+                                              type: string
+                                            optional:
+                                              type: boolean
+                                          required:
+                                          - key
+                                          type: object
+                                      type: object
                                     endpoint:
                                       type: string
                                     insecure:
                                       type: boolean
                                     key:
                                       type: string
-                                    kmsEncryptionContext:
-                                      type: string
-                                    kmsKeyId:
-                                      type: string
                                     region:
                                       type: string
                                     roleARN:
                                       type: string
                                     secretKeySecret:
-                                      properties:
-                                        key:
-                                          type: string
-                                        name:
-                                          type: string
-                                        optional:
-                                          type: boolean
-                                      required:
-                                      - key
-                                      type: object
-                                    serverSideCustomerKeySecret:
                                       properties:
                                         key:
                                           type: string
@@ -5239,34 +5257,37 @@ spec:
                                         objectLocking:
                                           type: boolean
                                       type: object
-                                    enableEncryption:
-                                      type: boolean
+                                    encryptionOptions:
+                                      properties:
+                                        enableEncryption:
+                                          type: boolean
+                                        kmsEncryptionContext:
+                                          type: string
+                                        kmsKeyId:
+                                          type: string
+                                        serverSideCustomerKeySecret:
+                                          properties:
+                                            key:
+                                              type: string
+                                            name:
+                                              type: string
+                                            optional:
+                                              type: boolean
+                                          required:
+                                          - key
+                                          type: object
+                                      type: object
                                     endpoint:
                                       type: string
                                     insecure:
                                       type: boolean
                                     key:
                                       type: string
-                                    kmsEncryptionContext:
-                                      type: string
-                                    kmsKeyId:
-                                      type: string
                                     region:
                                       type: string
                                     roleARN:
                                       type: string
                                     secretKeySecret:
-                                      properties:
-                                        key:
-                                          type: string
-                                        name:
-                                          type: string
-                                        optional:
-                                          type: boolean
-                                      required:
-                                      - key
-                                      type: object
-                                    serverSideCustomerKeySecret:
                                       properties:
                                         key:
                                           type: string
@@ -7792,34 +7813,37 @@ spec:
                                     objectLocking:
                                       type: boolean
                                   type: object
-                                enableEncryption:
-                                  type: boolean
+                                encryptionOptions:
+                                  properties:
+                                    enableEncryption:
+                                      type: boolean
+                                    kmsEncryptionContext:
+                                      type: string
+                                    kmsKeyId:
+                                      type: string
+                                    serverSideCustomerKeySecret:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                  type: object
                                 endpoint:
                                   type: string
                                 insecure:
                                   type: boolean
                                 key:
                                   type: string
-                                kmsEncryptionContext:
-                                  type: string
-                                kmsKeyId:
-                                  type: string
                                 region:
                                   type: string
                                 roleARN:
                                   type: string
                                 secretKeySecret:
-                                  properties:
-                                    key:
-                                      type: string
-                                    name:
-                                      type: string
-                                    optional:
-                                      type: boolean
-                                  required:
-                                  - key
-                                  type: object
-                                serverSideCustomerKeySecret:
                                   properties:
                                     key:
                                       type: string
@@ -9251,34 +9275,37 @@ spec:
                                                     objectLocking:
                                                       type: boolean
                                                   type: object
-                                                enableEncryption:
-                                                  type: boolean
+                                                encryptionOptions:
+                                                  properties:
+                                                    enableEncryption:
+                                                      type: boolean
+                                                    kmsEncryptionContext:
+                                                      type: string
+                                                    kmsKeyId:
+                                                      type: string
+                                                    serverSideCustomerKeySecret:
+                                                      properties:
+                                                        key:
+                                                          type: string
+                                                        name:
+                                                          type: string
+                                                        optional:
+                                                          type: boolean
+                                                      required:
+                                                      - key
+                                                      type: object
+                                                  type: object
                                                 endpoint:
                                                   type: string
                                                 insecure:
                                                   type: boolean
                                                 key:
                                                   type: string
-                                                kmsEncryptionContext:
-                                                  type: string
-                                                kmsKeyId:
-                                                  type: string
                                                 region:
                                                   type: string
                                                 roleARN:
                                                   type: string
                                                 secretKeySecret:
-                                                  properties:
-                                                    key:
-                                                      type: string
-                                                    name:
-                                                      type: string
-                                                    optional:
-                                                      type: boolean
-                                                  required:
-                                                  - key
-                                                  type: object
-                                                serverSideCustomerKeySecret:
                                                   properties:
                                                     key:
                                                       type: string
@@ -9638,34 +9665,37 @@ spec:
                                                           objectLocking:
                                                             type: boolean
                                                         type: object
-                                                      enableEncryption:
-                                                        type: boolean
+                                                      encryptionOptions:
+                                                        properties:
+                                                          enableEncryption:
+                                                            type: boolean
+                                                          kmsEncryptionContext:
+                                                            type: string
+                                                          kmsKeyId:
+                                                            type: string
+                                                          serverSideCustomerKeySecret:
+                                                            properties:
+                                                              key:
+                                                                type: string
+                                                              name:
+                                                                type: string
+                                                              optional:
+                                                                type: boolean
+                                                            required:
+                                                            - key
+                                                            type: object
+                                                        type: object
                                                       endpoint:
                                                         type: string
                                                       insecure:
                                                         type: boolean
                                                       key:
                                                         type: string
-                                                      kmsEncryptionContext:
-                                                        type: string
-                                                      kmsKeyId:
-                                                        type: string
                                                       region:
                                                         type: string
                                                       roleARN:
                                                         type: string
                                                       secretKeySecret:
-                                                        properties:
-                                                          key:
-                                                            type: string
-                                                          name:
-                                                            type: string
-                                                          optional:
-                                                            type: boolean
-                                                        required:
-                                                        - key
-                                                        type: object
-                                                      serverSideCustomerKeySecret:
                                                         properties:
                                                           key:
                                                             type: string
@@ -10067,34 +10097,37 @@ spec:
                                             objectLocking:
                                               type: boolean
                                           type: object
-                                        enableEncryption:
-                                          type: boolean
+                                        encryptionOptions:
+                                          properties:
+                                            enableEncryption:
+                                              type: boolean
+                                            kmsEncryptionContext:
+                                              type: string
+                                            kmsKeyId:
+                                              type: string
+                                            serverSideCustomerKeySecret:
+                                              properties:
+                                                key:
+                                                  type: string
+                                                name:
+                                                  type: string
+                                                optional:
+                                                  type: boolean
+                                              required:
+                                              - key
+                                              type: object
+                                          type: object
                                         endpoint:
                                           type: string
                                         insecure:
                                           type: boolean
                                         key:
                                           type: string
-                                        kmsEncryptionContext:
-                                          type: string
-                                        kmsKeyId:
-                                          type: string
                                         region:
                                           type: string
                                         roleARN:
                                           type: string
                                         secretKeySecret:
-                                          properties:
-                                            key:
-                                              type: string
-                                            name:
-                                              type: string
-                                            optional:
-                                              type: boolean
-                                          required:
-                                          - key
-                                          type: object
-                                        serverSideCustomerKeySecret:
                                           properties:
                                             key:
                                               type: string
@@ -11018,34 +11051,37 @@ spec:
                                           objectLocking:
                                             type: boolean
                                         type: object
-                                      enableEncryption:
-                                        type: boolean
+                                      encryptionOptions:
+                                        properties:
+                                          enableEncryption:
+                                            type: boolean
+                                          kmsEncryptionContext:
+                                            type: string
+                                          kmsKeyId:
+                                            type: string
+                                          serverSideCustomerKeySecret:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
+                                        type: object
                                       endpoint:
                                         type: string
                                       insecure:
                                         type: boolean
                                       key:
                                         type: string
-                                      kmsEncryptionContext:
-                                        type: string
-                                      kmsKeyId:
-                                        type: string
                                       region:
                                         type: string
                                       roleARN:
                                         type: string
                                       secretKeySecret:
-                                        properties:
-                                          key:
-                                            type: string
-                                          name:
-                                            type: string
-                                          optional:
-                                            type: boolean
-                                        required:
-                                        - key
-                                        type: object
-                                      serverSideCustomerKeySecret:
                                         properties:
                                           key:
                                             type: string
@@ -11493,34 +11529,37 @@ spec:
                                           objectLocking:
                                             type: boolean
                                         type: object
-                                      enableEncryption:
-                                        type: boolean
+                                      encryptionOptions:
+                                        properties:
+                                          enableEncryption:
+                                            type: boolean
+                                          kmsEncryptionContext:
+                                            type: string
+                                          kmsKeyId:
+                                            type: string
+                                          serverSideCustomerKeySecret:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
+                                        type: object
                                       endpoint:
                                         type: string
                                       insecure:
                                         type: boolean
                                       key:
                                         type: string
-                                      kmsEncryptionContext:
-                                        type: string
-                                      kmsKeyId:
-                                        type: string
                                       region:
                                         type: string
                                       roleARN:
                                         type: string
                                       secretKeySecret:
-                                        properties:
-                                          key:
-                                            type: string
-                                          name:
-                                            type: string
-                                          optional:
-                                            type: boolean
-                                        required:
-                                        - key
-                                        type: object
-                                      serverSideCustomerKeySecret:
                                         properties:
                                           key:
                                             type: string
