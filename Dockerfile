@@ -16,6 +16,7 @@ RUN apt-get update && apt-get --no-install-recommends install -y \
     ca-certificates \
     wget \
     gcc \
+    libcap2-bin \
     zip && \
     apt-get clean \
     && rm -rf \
