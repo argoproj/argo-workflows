@@ -2444,6 +2444,9 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 				}
 				return nil, fmt.Errorf("unable to resolve outputs from scope: %s", err)
 			}
+			if resolvedArt == nil {
+				continue
+			}
 			resolvedArt.Name = art.Name
 			outputs.Artifacts = append(outputs.Artifacts, *resolvedArt)
 		}
