@@ -1,5 +1,13 @@
 # Changelog
 
+## v3.1.8 (2021-08-18)
+
+ * [0df0f3a98](https://github.com/argoproj/argo-workflows/commit/0df0f3a98fac4e2aa5bc02213fb0a2ccce9a682a) fix: Fix `x509: certificate signed by unknown authority` error (#6566)
+
+### Contributors
+
+ * Alex Collins
+
 ## v3.1.7 (2021-08-18)
 
  * [5463b5d4f](https://github.com/argoproj/argo-workflows/commit/5463b5d4feb626ac80def3c521bd20e6a96708c4) fix: Generate TLS Certificates on startup and only keep in memory (#6540)
@@ -486,8 +494,8 @@
  * Reijer Copier
  * Riccardo Piccoli
  * Roi Kramer
- * Saïfane FARFAR
  * Saravanan Balasubramanian
+ * Saïfane FARFAR
  * Shoubhik Bose
  * Simon Behar
  * Stephan van Maris
