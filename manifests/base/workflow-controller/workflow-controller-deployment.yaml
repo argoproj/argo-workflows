@@ -14,7 +14,7 @@ spec:
       serviceAccountName: argo
       containers:
         - name: workflow-controller
-          image: argoproj/workflow-controller:v3.0.8
+          image: argoproj/workflow-controller:v3.0.9
           securityContext:
             capabilities:
               drop:
@@ -25,7 +25,7 @@ spec:
             - --configmap
             - workflow-controller-configmap
             - --executor-image
-            - argoproj/argoexec:v3.0.8
+            - argoproj/argoexec:v3.0.9
           env:
             - name: LEADER_ELECTION_IDENTITY
               valueFrom:
