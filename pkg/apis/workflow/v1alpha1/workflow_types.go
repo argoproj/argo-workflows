@@ -1930,8 +1930,25 @@ type S3Bucket struct {
 	// UseSDKCreds tells the driver to figure out credentials based on sdk defaults.
 	UseSDKCreds bool `json:"useSDKCreds,omitempty" protobuf:"varint,8,opt,name=useSDKCreds"`
 
-	// CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist
+	// CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist. Setting Enabled Encryption will apply either SSE-S3 to the bucket if KmsKeyId is not set or SSE-KMS if it is.
 	CreateBucketIfNotPresent *CreateS3BucketOptions `json:"createBucketIfNotPresent,omitempty" protobuf:"bytes,9,opt,name=createBucketIfNotPresent"`
+
+	EncryptionOptions *S3EncryptionOptions `json:"encryptionOptions,omitempty" protobuf:"bytes,10,opt,name=encryptionOptions"`
+}
+
+// S3EncryptionOptions used to determine encryption options during s3 operations
+type S3EncryptionOptions struct {
+	// KMSKeyId tells the driver to encrypt the object using the specified KMS Key.
+	KmsKeyId string `json:"kmsKeyId,omitempty" protobuf:"bytes,1,opt,name=kmsKeyId"`
+
+	// KmsEncryptionContext is a json blob that contains an encryption context. See https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html#encrypt_context for more information
+	KmsEncryptionContext string `json:"kmsEncryptionContext,omitempty" protobuf:"bytes,2,opt,name=kmsEncryptionContext"`
+
+	// EnableEncryption tells the driver to encrypt objects if set to true. If kmsKeyId and serverSideCustomerKeySecret are not set, SSE-S3 will be used
+	EnableEncryption bool `json:"enableEncryption,omitempty" protobuf:"varint,3,opt,name=enableEncryption"`
+
+	// ServerSideCustomerKeySecret tells the driver to encrypt the output artifacts using SSE-C with the specified secret.
+	ServerSideCustomerKeySecret *apiv1.SecretKeySelector `json:"serverSideCustomerKeySecret,omitempty" protobuf:"bytes,4,opt,name=serverSideCustomerKeySecret"`
 }
 
 // CreateS3BucketOptions options used to determine automatic automatic bucket-creation process
