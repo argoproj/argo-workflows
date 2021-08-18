@@ -1,5 +1,13 @@
 # Changelog
 
+## v3.1.7 (2021-08-18)
+
+ * [5463b5d4f](https://github.com/argoproj/argo-workflows/commit/5463b5d4feb626ac80def3c521bd20e6a96708c4) fix: Generate TLS Certificates on startup and only keep in memory (#6540)
+
+### Contributors
+
+ * David Collom
+
 ## v3.1.6 (2021-08-12)
 
  * [14e127857](https://github.com/argoproj/argo-workflows/commit/14e1278572b28d8b1854858ce7de355ce60199c9) ci-build.yaml-with-master-change
@@ -499,6 +507,17 @@
  * tobisinghania
  * uucloud
  * wanglong001
+
+## v3.0.9 (2021-08-18)
+
+ * [d5fd9f14f](https://github.com/argoproj/argo-workflows/commit/d5fd9f14fc6f55c5d6c1f382081b68e86574d74d) Update manifests to v3.0.9
+ * [4eb16eaa5](https://github.com/argoproj/argo-workflows/commit/4eb16eaa58ea2de4c4b071c6b3a565dc62e4a07a) fix: Generate TLS Certificates on startup and only keep in memory (#6540)
+ * [419b7af08](https://github.com/argoproj/argo-workflows/commit/419b7af08582252d6f0722930d026ba728fc19d6) fix: Remove client private key from client auth REST config (#6506)
+
+### Contributors
+
+ * Alex Collins
+ * David Collom
 
 ## v3.0.8 (2021-06-21)
 
