@@ -353,7 +353,7 @@ spec:
       - args:
         - server
         - --namespaced
-        image: argoproj/argocli:v2.12.12
+        image: argoproj/argocli:v2.12.13
         name: argo-server
         ports:
         - containerPort: 2746
@@ -395,11 +395,11 @@ spec:
         - --configmap
         - workflow-controller-configmap
         - --executor-image
-        - argoproj/argoexec:v2.12.12
+        - argoproj/argoexec:v2.12.13
         - --namespaced
         command:
         - workflow-controller
-        image: argoproj/workflow-controller:v2.12.12
+        image: argoproj/workflow-controller:v2.12.13
         livenessProbe:
           httpGet:
             path: /metrics
