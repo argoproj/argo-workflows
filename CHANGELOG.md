@@ -486,8 +486,8 @@
  * Reijer Copier
  * Riccardo Piccoli
  * Roi Kramer
- * Saravanan Balasubramanian
  * Saïfane FARFAR
+ * Saravanan Balasubramanian
  * Shoubhik Bose
  * Simon Behar
  * Stephan van Maris
@@ -1043,6 +1043,17 @@
  * saranyaeu2987
  * tczhao
  * zhengchenyu
+
+## v2.12.12 (2021-08-18)
+
+ * [f83ece141](https://github.com/argoproj/argo-workflows/commit/f83ece141ccb7804ffcdd0d9aecbdb016fc97d6b) Update manifests to v2.12.12
+ * [26df32eb1](https://github.com/argoproj/argo-workflows/commit/26df32eb1af1597bf66c3b5532ff1d995bb5b940) fix: Generate TLS Certificates on startup and only keep in memory (#6540)
+ * [46d744f01](https://github.com/argoproj/argo-workflows/commit/46d744f010479b34005f8848297131c14a266b76) fix: Remove client private key from client auth REST config (#6506)
+
+### Contributors
+
+ * Alex Collins
+ * David Collom
 
 ## v2.12.11 (2021-04-05)
 
