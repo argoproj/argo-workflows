@@ -214,7 +214,7 @@ func (c *HttpClientMock) Do(req *http.Request) (*http.Response, error) {
 }
 
 func TestGetUserInfoGroups(t *testing.T) {
-	t.Run("", func(t *testing.T) {
+	t.Run("UserInfoGroupsReturn", func(t *testing.T) {
 		userInfo := UserInfo{Groups: []string{"Everyone"}}
 		userInfoBytes, _ := json.Marshal(userInfo)
 		body := ioutil.NopCloser(bytes.NewReader(userInfoBytes))
