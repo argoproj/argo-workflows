@@ -2360,12 +2360,16 @@ kubectl create secret -n argo generic client-secret-secret \
 <blockquote>
 <p>v3.1.4 and after</p>
 </blockquote>
-<p>If your OIDC provider provides groups information with a claim name other than <code>groups</code>, you could confiure config-map to specify custom claim name for groups. Argo now arbitary custom claims and any claim can be used for <code>expr eval</code>. However, since group information is displayed in UI, it still needs to be an array of strings with group names as elements.</p>
+<p>If your OIDC provider provides groups information with a claim name other than <code>groups</code>, you could configure config-map to specify custom claim name for groups. Argo now arbitary custom claims and any claim can be used for <code>expr eval</code>. However, since group information is displayed in UI, it still needs to be an array of strings with group names as elements.</p>
 <p>customClaim in this case will be mapped to <code>groups</code> key and we can use the same key <code>groups</code> for evaluating our expressions</p>
 <div class="highlight"><pre><span></span><code><span class="nt">sso</span><span class="p">:</span>
   <span class="c1"># Specify custom claim name for OIDC groups.</span>
   <span class="nt">customGroupClaimName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argo_groups</span>
 </code></pre></div>
+<p>If your OIDC provider provides groups information only using the userInfo endpoint (e.g. OKta), you could configure <code>userInfoPath</code> to specify the user info endpoint that contains the groups claim. 
+<div class="highlight"><pre><span></span><code><span class="nt">sso</span><span class="p">:</span>
+  <span class="nt">userInfoPath</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/oauth2/v1/userinfo</span>
+</code></pre></div></p>
 <p>#### Example expr</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># assuming customClaimGroupName: argo_groups</span>
 workflows.argoproj.io/rbac-rule: <span class="s2">&quot;&#39;argo_admins&#39; in groups&quot;</span>
