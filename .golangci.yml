@@ -20,6 +20,7 @@ linters:
     - deadcode
     - errcheck
     - goimports
+    - gosec
     - gosimple
     - govet
     - misspell
@@ -32,3 +33,7 @@ linters:
 linters-settings:
   goimports:
     local-prefixes: github.com/argoproj/argo-workflows/
+  gosec:
+    includes:
+      - G304
+      - G307

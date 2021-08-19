@@ -5916,7 +5916,10 @@
         },
         "createBucketIfNotPresent": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CreateS3BucketOptions",
-          "description": "CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist"
+          "description": "CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist. Setting Enabled Encryption will apply either SSE-S3 to the bucket if KmsKeyId is not set or SSE-KMS if it is."
+        },
+        "encryptionOptions": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.S3EncryptionOptions"
         },
         "endpoint": {
           "description": "Endpoint is the hostname of the bucket endpoint",
@@ -5962,7 +5965,10 @@
         },
         "createBucketIfNotPresent": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CreateS3BucketOptions",
-          "description": "CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist"
+          "description": "CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist. Setting Enabled Encryption will apply either SSE-S3 to the bucket if KmsKeyId is not set or SSE-KMS if it is."
+        },
+        "encryptionOptions": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.S3EncryptionOptions"
         },
         "endpoint": {
           "description": "Endpoint is the hostname of the bucket endpoint",
@@ -5995,6 +6001,28 @@
         "useSDKCreds": {
           "description": "UseSDKCreds tells the driver to figure out credentials based on sdk defaults.",
           "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.S3EncryptionOptions": {
+      "description": "S3EncryptionOptions used to determine encryption options during s3 operations",
+      "properties": {
+        "enableEncryption": {
+          "description": "EnableEncryption tells the driver to encrypt objects if set to true. If kmsKeyId and serverSideCustomerKeySecret are not set, SSE-S3 will be used",
+          "type": "boolean"
+        },
+        "kmsEncryptionContext": {
+          "description": "KmsEncryptionContext is a json blob that contains an encryption context. See https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html#encrypt_context for more information",
+          "type": "string"
+        },
+        "kmsKeyId": {
+          "description": "KMSKeyId tells the driver to encrypt the object using the specified KMS Key.",
+          "type": "string"
+        },
+        "serverSideCustomerKeySecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "ServerSideCustomerKeySecret tells the driver to encrypt the output artifacts using SSE-C with the specified secret."
         }
       },
       "type": "object"
