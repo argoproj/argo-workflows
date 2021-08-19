@@ -3,6 +3,7 @@ package types
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"gopkg.in/square/go-jose.v2/jwt"
 )
@@ -14,6 +15,20 @@ type Claims struct {
 	EmailVerified      bool                   `json:"email_verified,omitempty"`
 	ServiceAccountName string                 `json:"service_account_name,omitempty"`
 	RawClaim           map[string]interface{} `json:"-"`
+}
+
+type UserInfo struct {
+	Groups []string `json:"groups"`
+}
+
+type HttpClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
+var httpClient HttpClient
+
+func init() {
+	httpClient = &http.Client{}
 }
 
 // UnmarshalJSON is a custom Unmarshal that overwrites
@@ -61,4 +76,33 @@ func (c *Claims) GetCustomGroup(customKeyName string) ([]string, error) {
 	}
 
 	return newSlice, nil
+}
+
+func (c *Claims) GetUserInfoGroups(accessToken, issuer, userInfoPath string) ([]string, error) {
+	url := fmt.Sprintf("%s%s", issuer, userInfoPath)
+	request, err := http.NewRequest("GET", url, nil)
+
+	if err != nil {
+		return nil, err
+	}
+
+	bearer := fmt.Sprintf("Bearer %s", accessToken)
+	request.Header.Set("Authorization", bearer)
+
+	response, err := httpClient.Do(request)
+
+	if err != nil {
+		return nil, err
+	}
+
+	userInfo := UserInfo{}
+
+	defer response.Body.Close()
+	err = json.NewDecoder(response.Body).Decode(&userInfo)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return userInfo.Groups, nil
 }
