@@ -28,8 +28,9 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [BioBox Analytics](https://biobox.io)
 1. [BlackRock](https://www.blackrock.com/)
 1. [Bloomberg](https://www.bloomberg.com/)
-1. [ByteDance](https://www.bytedance.com/en/)
 1. [bonprix](https://en.bonprix.de/corporate/our-company/)
+1. [Botkeeper](https://www.botkeeper.com/)
+1. [ByteDance](https://www.bytedance.com/en/)
 1. [Canva](https://www.canva.com/)
 1. [Capital One](https://www.capitalone.com/tech/)
 1. [Carrefour](https://www.carrefour.com/)
@@ -142,7 +143,6 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Woolworths Group](https://www.woolworthsgroup.com.au/)
 1. [Workiva](https://www.workiva.com/)
 1. [Zhihu](https://www.zhihu.com/)
-1. [Botkeeper](https://www.botkeeper.com/)
 
 ### Projects Using Argo
 

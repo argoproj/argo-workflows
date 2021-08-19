@@ -80,7 +80,11 @@ func (c *Claims) GetCustomGroup(customKeyName string) ([]string, error) {
 
 func (c *Claims) GetUserInfoGroups(accessToken, issuer, userInfoPath string) ([]string, error) {
 	url := fmt.Sprintf("%s%s", issuer, userInfoPath)
-	request, _ := http.NewRequest("GET", url, nil)
+	request, err := http.NewRequest("GET", url, nil)
+
+	if err != nil {
+		return nil, err
+	}
 
 	bearer := fmt.Sprintf("Bearer %s", accessToken)
 	request.Header.Set("Authorization", bearer)
