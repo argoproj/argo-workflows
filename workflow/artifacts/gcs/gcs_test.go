@@ -7,8 +7,9 @@ import (
 	"net/url"
 	"testing"
 
-	argoErrors "github.com/argoproj/argo-workflows/v3/errors"
 	"google.golang.org/api/googleapi"
+
+	argoErrors "github.com/argoproj/argo-workflows/v3/errors"
 )
 
 type tlsHandshakeTimeoutError struct{}
