@@ -17,6 +17,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
+	wfcommon "github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 // ArtifactDriver is a driver for OSS
@@ -33,6 +34,7 @@ var (
 
 	// OSS error code reference: https://error-center.alibabacloud.com/status/product/Oss
 	ossTransientErrorCodes = []string{"RequestTimeout", "QuotaExceeded.Refresh", "Default", "ServiceUnavailable", "Throttling", "RequestTimeTooSkewed", "SocketException", "SocketTimeout", "ServiceBusy", "DomainNetWorkVisitedException", "ConnectionTimeout", "CachedTimeTooLarge"}
+	bucketLogFilePrefix    = "bucket-log-"
 )
 
 func (ossDriver *ArtifactDriver) newOSSClient() (*oss.Client, error) {
@@ -47,7 +49,7 @@ func (ossDriver *ArtifactDriver) newOSSClient() (*oss.Client, error) {
 	return client, err
 }
 
-// Downloads artifacts from OSS compliant storage, e.g., downloading an artifact into local path
+// Load downloads artifacts from OSS compliant storage, e.g., downloading an artifact into local path
 func (ossDriver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
@@ -57,6 +59,10 @@ func (ossDriver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string)
 				return !isTransientOSSErr(err), err
 			}
 			bucketName := inputArtifact.OSS.Bucket
+			err = setBucketLogging(osscli, bucketName)
+			if err != nil {
+				return !isTransientOSSErr(err), err
+			}
 			bucket, err := osscli.Bucket(bucketName)
 			if err != nil {
 				return !isTransientOSSErr(err), err
@@ -87,7 +93,7 @@ func (ossDriver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string)
 	return err
 }
 
-// Saves an artifact to OSS compliant storage, e.g., uploading a local file to OSS bucket
+// Save stores an artifact to OSS compliant storage, e.g., uploading a local file to OSS bucket
 func (ossDriver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
 	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
@@ -102,6 +108,10 @@ func (ossDriver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact
 				return false, nil
 			}
 			bucketName := outputArtifact.OSS.Bucket
+			err = setBucketLogging(osscli, bucketName)
+			if err != nil {
+				return !isTransientOSSErr(err), err
+			}
 			if outputArtifact.OSS.CreateBucketIfNotPresent {
 				exists, err := osscli.IsBucketExist(bucketName)
 				if err != nil {
@@ -148,7 +158,12 @@ func (ossDriver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string,
 			if err != nil {
 				return !isTransientOSSErr(err), err
 			}
-			bucket, err := osscli.Bucket(artifact.OSS.Bucket)
+			bucketName := artifact.OSS.Bucket
+			err = setBucketLogging(osscli, bucketName)
+			if err != nil {
+				return !isTransientOSSErr(err), err
+			}
+			bucket, err := osscli.Bucket(bucketName)
 			if err != nil {
 				return !isTransientOSSErr(err), err
 			}
@@ -162,6 +177,16 @@ func (ossDriver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string,
 			return true, nil
 		})
 	return files, err
+}
+
+func setBucketLogging(client *oss.Client, bucketName string) error {
+	if os.Getenv(wfcommon.EnvVarArgoTrace) == "1" {
+		err := client.SetBucketLogging(bucketName, bucketName, bucketLogFilePrefix, true)
+		if err != nil {
+			return fmt.Errorf("failed to configure bucket logging: %w", err)
+		}
+	}
+	return nil
 }
 
 func setBucketLifecycleRule(client *oss.Client, ossArtifact *wfv1.OSSArtifact) error {
