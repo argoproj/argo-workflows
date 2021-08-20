@@ -105,13 +105,13 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 			gcsClient, err := g.newGCSClient()
 			if err != nil {
 				log.Warnf("Failed to create new GCS client: %v", err)
-				return isTransientGCSErr(err), err
+				return !isTransientGCSErr(err), err
 			}
 			defer gcsClient.Close()
 			err = downloadObjects(gcsClient, inputArtifact.GCS.Bucket, inputArtifact.GCS.Key, path)
 			if err != nil {
 				log.Warnf("Failed to download objects from GCS: %v", err)
-				return isTransientGCSErr(err), err
+				return !isTransientGCSErr(err), err
 			}
 			return true, nil
 		})
@@ -203,12 +203,12 @@ func (g *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error 
 			log.Infof("GCS Save path: %s, key: %s", path, outputArtifact.GCS.Key)
 			client, err := g.newGCSClient()
 			if err != nil {
-				return isTransientGCSErr(err), err
+				return !isTransientGCSErr(err), err
 			}
 			defer client.Close()
 			err = uploadObjects(client, outputArtifact.GCS.Bucket, outputArtifact.GCS.Key, path)
 			if err != nil {
-				return isTransientGCSErr(err), err
+				return !isTransientGCSErr(err), err
 			}
 			return true, nil
 		})
@@ -294,5 +294,25 @@ func uploadObject(client *storage.Client, bucket, key, localPath string) error {
 }
 
 func (g *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
+<<<<<<< HEAD
 	return nil, fmt.Errorf("ListObjects is currently not supported for this artifact type, but it will be in a future version")
+=======
+	var files []string
+	err := waitutil.Backoff(defaultRetry,
+		func() (bool, error) {
+			log.Infof("GCS List bucekt: %s, key: %s", artifact.GCS.Bucket, artifact.GCS.Key)
+			client, err := g.newGCSClient()
+			if err != nil {
+				log.Warnf("Failed to create new GCS client: %v", err)
+				return !isTransientGCSErr(err), err
+			}
+			defer client.Close()
+			files, err = listByPrefix(client, artifact.GCS.Bucket, artifact.GCS.Key, "")
+			if err != nil {
+				return !isTransientGCSErr(err), err
+			}
+			return true, nil
+		})
+	return files, err
+>>>>>>> 30340c427... fix(gcs): backoff bool should be false if error is transient (#6577)
 }
