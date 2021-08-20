@@ -20,7 +20,7 @@ spec:
   templates:
     - name: main
       volumes:
-        - name: workpsace
+        - name: workspace
           emptyDir: { }
       containerSet:
         volumeMounts:
