@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"testing"
 
+	argoErrors "github.com/argoproj/argo-workflows/v3/errors"
 	"google.golang.org/api/googleapi"
 )
 
@@ -21,6 +22,7 @@ func TestIsTransientGCSErr(t *testing.T) {
 		shouldretry bool
 	}{
 		{&googleapi.Error{Code: 0}, false},
+		{argoErrors.New(argoErrors.CodeNotFound, "no results for key: foo/bar"), false},
 		{&googleapi.Error{Code: 429}, true},
 		{&googleapi.Error{Code: 518}, true},
 		{&googleapi.Error{Code: 599}, true},
