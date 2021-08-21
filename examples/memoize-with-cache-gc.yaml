@@ -1,0 +1,34 @@
+# This example demonstrates the ability to specify the GC strategy for memoization cache.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: memoized-simple-workflow-with-cache-gc-
+spec:
+  serviceAccountName: argo
+  entrypoint: whalesay
+  arguments:
+    parameters:
+    - name: message
+      value: test-5
+  templates:
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+    memoize:
+      key: "{{inputs.parameters.message}}"
+      cache:
+        gcStrategy:
+          afterNotHitDuration: "10s"
+        configMap:
+          name: short-lived-config
+          key: whalesay-cache
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay {{inputs.parameters.message}} > /tmp/hello_world.txt"]
+    outputs:
+      parameters:
+      - name: hello
+        valueFrom:
+          path: /tmp/hello_world.txt

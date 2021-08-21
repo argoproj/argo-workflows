@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/argoproj/argo-workflows/v3/workflow/events"
-	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
+	"time"
+
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,17 +16,18 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
-	"time"
+
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/events"
+	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
 )
 
-
 type Controller struct {
-	namespace string
-	kubeclientset   kubernetes.Interface
-	cacheQueue          workqueue.RateLimitingInterface
-	metrics              *metrics.Metrics
-	cacheController       cache.Controller
-	cacheLister cache.Store
+	namespace            string
+	kubeclientset        kubernetes.Interface
+	cacheQueue           workqueue.RateLimitingInterface
+	cacheController      cache.Controller
+	cacheLister          cache.Store
 	eventRecorderManager events.EventRecorderManager
 }
 
@@ -37,21 +38,19 @@ const (
 
 func NewController(namespace string, kubeclientset kubernetes.Interface, metrics *metrics.Metrics, eventRecorderManager events.EventRecorderManager) *Controller {
 	return &Controller{
-		namespace:       namespace,
-		kubeclientset:   kubeclientset,
-		cacheQueue:          metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "cache_queue"),
+		namespace:            namespace,
+		kubeclientset:        kubeclientset,
+		cacheQueue:           metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "cache_queue"),
 		eventRecorderManager: eventRecorderManager,
 	}
 }
-
 
 func (cc *Controller) Run(ctx context.Context) {
 	defer cc.cacheQueue.ShutDown()
 	log.Infof("Starting cache controller")
 	restClient := cc.kubeclientset.CoreV1().RESTClient()
 	resource := "configmaps"
-	// TODO: Need a way to differentiate cache configmaps from other configmaps
-	labelSelector, _ := labels.Parse("gc-after-not-hit-duration")
+	labelSelector, _ := labels.Parse(common.LabelKeyCacheGCAfterNotHitDuration)
 	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
 		options.LabelSelector = labelSelector.String()
 		req := restClient.Get().
@@ -121,13 +120,13 @@ func (cc *Controller) processNextCacheItem() bool {
 	return true
 }
 
+//nolint:unparam
 func (cc *Controller) syncAll(ctx context.Context) {
 	log.Info("Syncing all caches")
 
 	caches := cc.cacheLister.List()
 
 	for _, obj := range caches {
-		log.Infof("%v", obj)
 		cm, ok := obj.(*apiv1.ConfigMap)
 		if !ok {
 			log.Error("Unable to convert object to configmap when syncing ConfigMaps")
@@ -145,7 +144,7 @@ func (cc *Controller) syncAll(ctx context.Context) {
 
 func (cc *Controller) syncConfigMap(cm *apiv1.ConfigMap) error {
 	log.Infof("Syncing ConfigMap: %s", cm.Name)
-	if gcAfterNotHitDuration := cm.Labels["gc-after-not-hit-duration"]; gcAfterNotHitDuration != "" {
+	if gcAfterNotHitDuration := cm.Labels[common.LabelKeyCacheGCAfterNotHitDuration]; gcAfterNotHitDuration != "" {
 		gcAfterNotHitDurationTime, err := time.ParseDuration(gcAfterNotHitDuration)
 		if err != nil {
 			return err
@@ -164,10 +163,11 @@ func (cc *Controller) syncConfigMap(cm *apiv1.ConfigMap) error {
 				modified = true
 			}
 		}
-		if cm.Data == nil {
-			// TODO: Add delete permission in quickstart manifests
+		selfLink := fmt.Sprintf("api/v1/namespaces/%s/configmaps/%s",
+			cm.Namespace, cm.Name)
+		if len(cm.Data) == 0 {
 			log.Infof("Deleting ConfigMap %s since it doesn't contain any cache entries", cm.Name)
-			request := cc.kubeclientset.CoreV1().RESTClient().Delete().RequestURI(cm.GetSelfLink())
+			request := cc.kubeclientset.CoreV1().RESTClient().Delete().RequestURI(selfLink)
 			stream, err := request.Stream(context.TODO())
 			if err != nil {
 				return fmt.Errorf("failed to delete ConfigMap %s: %w", cm.Name, err)
@@ -175,7 +175,8 @@ func (cc *Controller) syncConfigMap(cm *apiv1.ConfigMap) error {
 			defer func() { _ = stream.Close() }()
 		} else {
 			if modified {
-				request := cc.kubeclientset.CoreV1().RESTClient().Put().RequestURI(cm.GetSelfLink()).Body(cm)
+				log.Infof("Modified ConfigMap: %s: %v", cm.Name, cm)
+				request := cc.kubeclientset.CoreV1().RESTClient().Put().RequestURI(selfLink).Body(cm)
 				stream, err := request.Stream(context.TODO())
 				if err != nil {
 					return fmt.Errorf("failed to patch ConfigMap %s: %w", cm.Name, err)

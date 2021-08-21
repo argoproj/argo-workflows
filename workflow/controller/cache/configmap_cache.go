@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"sync"
 	"time"
+
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"

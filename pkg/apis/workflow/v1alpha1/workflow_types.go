@@ -2898,8 +2898,8 @@ type MemoizationStatus struct {
 // Cache is the configuration for the type of cache to be used
 type Cache struct {
 	// ConfigMap sets a ConfigMap-based cache
-	ConfigMap *apiv1.ConfigMapKeySelector `json:"configMap" protobuf:"bytes,1,opt,name=configMap"`
-	GCStrategy *CacheGCStrategy `json:"gcStrategy" protobuf:"bytes,2,opt,name=gcStrategy"`
+	ConfigMap  *apiv1.ConfigMapKeySelector `json:"configMap" protobuf:"bytes,1,opt,name=configMap"`
+	GCStrategy *CacheGCStrategy            `json:"gcStrategy" protobuf:"bytes,2,opt,name=gcStrategy"`
 }
 
 // CacheGCStrategy provides controls on how to GC memoization caches
