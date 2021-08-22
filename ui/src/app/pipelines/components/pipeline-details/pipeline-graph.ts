@@ -24,7 +24,7 @@ const stepIcon = (type: Type): Icon => {
         case 'flatten':
             return 'compress';
         case 'git':
-            return 'git-alt';
+            return 'code-branch';
         case 'group':
             return 'object-group';
         case 'split':
@@ -112,6 +112,10 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
                 const id = 's3/' + bucket;
                 g.nodes.set(id, {genre: 's3', icon: 'hdd', label: bucket});
                 g.edges.set({v: id, w: stepId}, {classNames, label});
+            } else if (x.volume) {
+                const id = 'volume/' + stepId + '/sources/' + x.name;
+                g.nodes.set(id, {genre: 'volume', icon: 'hdd', label: x.name});
+                g.edges.set({v: id, w: stepId}, {classNames, label});
             } else {
                 const id = 'unknown/' + stepId + '/sources/' + x.name;
                 g.nodes.set(id, {genre: 'unknown', icon: 'square', label: x.name});
@@ -148,6 +152,10 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
                 const bucket = x.s3.bucket;
                 const id = 's3/' + bucket;
                 g.nodes.set(id, {genre: 's3', icon: 'hdd', label: bucket});
+                g.edges.set({v: stepId, w: id}, {classNames, label});
+            } else if (x.volume) {
+                const id = 'volume/' + stepId + '/sinks/' + x.name;
+                g.nodes.set(id, {genre: 'volume', icon: 'hdd', label: x.name});
                 g.edges.set({v: stepId, w: id}, {classNames, label});
             } else {
                 const id = 'unknown/' + stepId + '/sinks/' + x.name;

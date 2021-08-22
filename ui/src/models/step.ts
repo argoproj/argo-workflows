@@ -38,6 +38,7 @@ export interface Step {
             s3?: {
                 bucket: string;
             };
+            volume?: {};
         }[];
         sinks: {
             name?: string;
@@ -53,6 +54,7 @@ export interface Step {
             s3?: {
                 bucket: string;
             };
+            volume?: {};
         }[];
     };
     status?: StepStatus;
