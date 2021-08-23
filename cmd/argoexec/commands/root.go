@@ -107,6 +107,7 @@ func initExecutor() *executor.WorkflowExecutor {
 	checkErr(err)
 
 	var cre executor.ContainerRuntimeExecutor
+	log.Infof("Creating a %s executor", executorType)
 	switch executorType {
 	case common.ContainerRuntimeExecutorK8sAPI:
 		cre = k8sapi.NewK8sAPIExecutor(clientset, config, podName, namespace)

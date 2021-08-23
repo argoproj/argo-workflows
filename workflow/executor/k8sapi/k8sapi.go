@@ -19,7 +19,6 @@ type K8sAPIExecutor struct {
 }
 
 func NewK8sAPIExecutor(clientset kubernetes.Interface, config *restclient.Config, podName, namespace string) *K8sAPIExecutor {
-	log.Infof("Creating a K8sAPI executor")
 	client := newK8sAPIClient(clientset, config, podName, namespace)
 	return &K8sAPIExecutor{
 		client: client,

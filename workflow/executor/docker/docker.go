@@ -41,7 +41,6 @@ type ctr struct {
 }
 
 func NewDockerExecutor(namespace, podName string) (*DockerExecutor, error) {
-	log.Infof("Creating a docker executor")
 	return &DockerExecutor{namespace, podName, make(map[string]ctr)}, nil
 }
 
