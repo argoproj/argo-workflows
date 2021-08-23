@@ -71,7 +71,6 @@ func waitOnOne(serviceClient workflowpkg.WorkflowServiceClient, ctx context.Cont
 		Namespace: namespace,
 		ListOptions: &metav1.ListOptions{
 			FieldSelector:   util.GenerateFieldSelectorFromWorkflowName(wfName),
-			ResourceVersion: "0",
 		},
 	}
 	stream, err := serviceClient.WatchWorkflows(ctx, req)
