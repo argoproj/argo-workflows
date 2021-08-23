@@ -1252,6 +1252,10 @@ message Template {
   // Name is the name of the template
   optional string name = 1;
 
+  optional string cluster = 43;
+
+  optional string namespace = 44;
+
   // Inputs describe what inputs parameters and artifacts are supplied to this template
   optional Inputs inputs = 5;
 

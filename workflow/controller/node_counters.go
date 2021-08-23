@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"fmt"
+
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
@@ -53,7 +55,16 @@ func (woc *wfOperationCtx) getUnsuccessfulChildren(boundaryID string) int64 {
 }
 
 func (woc *wfOperationCtx) nodePodExist(node wfv1.NodeStatus) bool {
-	_, podExist, _ := woc.podExists(node.ID)
+	tmpl := woc.execWf.GetTemplateByName(node.TemplateName)
+	cluster := tmpl.ClusterOr(woc.cluster())
+	namespace := tmpl.NamespaceOr(woc.wf.Namespace)
+	podInformer := woc.controller.podInformer.Cluster(cluster)
+	if podInformer == nil {
+		return false
+	}
+
+	// TODO JPZ13 consolidate with woc.podExists
+	_, podExist, _ := podInformer.GetStore().GetByKey(fmt.Sprintf("%s/%s", namespace, node.ID))
 	return podExist
 }
 

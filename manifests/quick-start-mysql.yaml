@@ -281,6 +281,7 @@ rules:
   - update
   - patch
   - delete
+  - deletecollection
 - apiGroups:
   - ""
   resources:
@@ -643,7 +644,7 @@ data:
     archiveLogs: true
     s3:
       bucket: my-bucket
-      endpoint: minio:9000
+      endpoint: minio.argo.svc.cluster.local:9000
       insecure: true
       accessKeySecret:
         name: my-minio-cred
@@ -656,7 +657,7 @@ data:
     archiveLogs: true
     s3:
       bucket: my-bucket
-      endpoint: minio:9000
+      endpoint: minio.argo.svc.cluster.local:9000
       insecure: true
       accessKeySecret:
         name: my-minio-cred
@@ -683,6 +684,7 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
+  cluster: quick-start
   containerRuntimeExecutor: docker
   containerRuntimeExecutors: |
     - name: k8sapi

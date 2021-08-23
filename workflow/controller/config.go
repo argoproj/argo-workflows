@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
@@ -23,7 +24,10 @@ func (wfc *WorkflowController) updateConfig(v interface{}) error {
 	if err != nil {
 		return err
 	}
-	log.Info("Configuration:\n" + string(bytes))
+	log.Info("Configuration:")
+	for _, s := range strings.Split(string(bytes), "\n") {
+		log.Info(s)
+	}
 	if wfc.cliExecutorImage == "" && config.ExecutorImage == "" {
 		return errors.Errorf(errors.CodeBadRequest, "ConfigMap does not have executorImage")
 	}
@@ -35,14 +39,15 @@ func (wfc *WorkflowController) updateConfig(v interface{}) error {
 		}
 	}
 	wfc.session = nil
-	wfc.artifactRepositories = artifactrepositories.New(wfc.kubeclientset, wfc.namespace, &wfc.Config.ArtifactRepository)
+	client := wfc.kubeclientset.Cluster(wfc.cluster())
+	wfc.artifactRepositories = artifactrepositories.New(client, wfc.namespace, &wfc.Config.ArtifactRepository)
 	wfc.offloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo
 	wfc.wfArchive = sqldb.NullWorkflowArchive
 	wfc.archiveLabelSelector = labels.Everything()
 	persistence := wfc.Config.Persistence
 	if persistence != nil {
 		log.Info("Persistence configuration enabled")
-		session, tableName, err := sqldb.CreateDBSession(wfc.kubeclientset, wfc.namespace, persistence)
+		session, tableName, err := sqldb.CreateDBSession(client, wfc.namespace, persistence)
 		if err != nil {
 			return err
 		}
@@ -108,4 +113,8 @@ func (wfc *WorkflowController) executorImagePullPolicy() apiv1.PullPolicy {
 	} else {
 		return apiv1.PullPolicy(wfc.Config.ExecutorImagePullPolicy)
 	}
+}
+
+func (wfc *WorkflowController) cluster() string {
+	return wfc.Config.Cluster
 }

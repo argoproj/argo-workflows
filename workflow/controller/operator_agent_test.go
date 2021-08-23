@@ -68,7 +68,7 @@ func TestHTTPTemplate(t *testing.T) {
 		ctx := context.Background()
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
-		pods, err := controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).List(ctx, metav1.ListOptions{})
+		pods, err := controller.kubeclientset.Cluster(controller.cluster()).CoreV1().Pods(woc.wf.Namespace).List(ctx, metav1.ListOptions{})
 		assert.NoError(t, err)
 		for _, pod := range pods.Items {
 			assert.Equal(t, pod.Name, "hello-world-1340600742-agent")

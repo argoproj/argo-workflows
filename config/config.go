@@ -124,6 +124,9 @@ type Config struct {
 	// The command/args for each image, needed when the command is not specified and the emissary executor is used.
 	// https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary
 	Images map[string]Image `json:"images,omitempty"`
+
+	// Cluster is the name of this cluster.
+	Cluster string `json:"cluster,omitempty"`
 }
 
 func (c Config) GetContainerRuntimeExecutor(labels labels.Labels) (string, error) {

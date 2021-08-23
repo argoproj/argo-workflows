@@ -5,6 +5,9 @@ import (
 	"testing"
 	"time"
 
+	mcdynamic "github.com/argoproj-labs/multi-cluster-kubernetes/api/dynamic"
+	mckubernetes "github.com/argoproj-labs/multi-cluster-kubernetes/api/kubernetes"
+
 	"github.com/argoproj/pkg/sync"
 	"github.com/stretchr/testify/assert"
 	authorizationv1 "k8s.io/api/authorization/v1"
@@ -14,7 +17,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/record"
@@ -151,8 +153,8 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 				S3Bucket: wfv1.S3Bucket{Endpoint: "my-endpoint", Bucket: "my-bucket"},
 			},
 		}),
-		kubeclientset:        kube,
-		dynamicInterface:     dynamicClient,
+		kubeclientset:        mckubernetes.NewSingleton("", kube),
+		dynamicInterface:     mcdynamic.NewSingleton("", dynamicClient),
 		wfclientset:          wfclientset,
 		workflowKeyLock:      sync.NewKeyLock(),
 		wfArchive:            sqldb.NullWorkflowArchive,
@@ -176,7 +178,6 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		wfc.metrics = metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{})
 		wfc.wfQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 		wfc.throttler = wfc.newThrottler()
-		wfc.podQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 		wfc.podCleanupQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 		wfc.rateLimiter = wfc.newRateLimiter()
 	}
@@ -252,11 +253,11 @@ func expectWorkflow(ctx context.Context, controller *WorkflowController, name st
 }
 
 func getPod(woc *wfOperationCtx, name string) (*apiv1.Pod, error) {
-	return woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Get(context.Background(), name, metav1.GetOptions{})
+	return woc.clientset().CoreV1().Pods(woc.wf.Namespace).Get(context.Background(), name, metav1.GetOptions{})
 }
 
 func listPods(woc *wfOperationCtx) (*apiv1.PodList, error) {
-	return woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).List(context.Background(), metav1.ListOptions{})
+	return woc.clientset().CoreV1().Pods(woc.wf.Namespace).List(context.Background(), metav1.ListOptions{})
 }
 
 type with func(pod *apiv1.Pod)
@@ -285,7 +286,7 @@ func withAnnotation(key, val string) with {
 // createRunningPods creates the pods that are marked as running in a given test so that they can be accessed by the
 // pod assessor
 func createRunningPods(ctx context.Context, woc *wfOperationCtx) {
-	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
+	podcs := woc.clientset().CoreV1().Pods(woc.wf.GetNamespace())
 	for _, node := range woc.wf.Status.Nodes {
 		if node.Type == wfv1.NodeTypePod && node.Phase == wfv1.NodeRunning {
 			pod, _ := podcs.Create(ctx, &apiv1.Pod{
@@ -302,20 +303,20 @@ func createRunningPods(ctx context.Context, woc *wfOperationCtx) {
 					Phase: apiv1.PodRunning,
 				},
 			}, metav1.CreateOptions{})
-			_ = woc.controller.podInformer.GetStore().Add(pod)
+			_ = woc.controller.podInformer.Cluster(woc.cluster()).GetStore().Add(pod)
 		}
 	}
 }
 
 func syncPodsInformer(ctx context.Context, woc *wfOperationCtx, podObjs ...apiv1.Pod) {
-	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
+	podcs := woc.clientset().CoreV1().Pods(woc.wf.GetNamespace())
 	pods, err := podcs.List(ctx, metav1.ListOptions{})
 	if err != nil {
 		panic(err)
 	}
 	podObjs = append(podObjs, pods.Items...)
 	for _, pod := range podObjs {
-		err = woc.controller.podInformer.GetIndexer().Add(&pod)
+		err = woc.controller.podInformer.Cluster(woc.cluster()).GetIndexer().Add(&pod)
 		if err != nil {
 			panic(err)
 		}
@@ -324,7 +325,7 @@ func syncPodsInformer(ctx context.Context, woc *wfOperationCtx, podObjs ...apiv1
 
 // makePodsPhase acts like a pod controller and simulates the transition of pods transitioning into a specified state
 func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhase, with ...with) {
-	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
+	podcs := woc.clientset().CoreV1().Pods(woc.wf.GetNamespace())
 	pods, err := podcs.List(ctx, metav1.ListOptions{})
 	if err != nil {
 		panic(err)
@@ -342,7 +343,7 @@ func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhas
 			if err != nil {
 				panic(err)
 			}
-			err = woc.controller.podInformer.GetStore().Update(updatedPod)
+			err = woc.controller.podInformer.Cluster(woc.cluster()).GetStore().Update(updatedPod)
 			if err != nil {
 				panic(err)
 			}
@@ -351,13 +352,13 @@ func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhas
 }
 
 func deletePods(ctx context.Context, woc *wfOperationCtx) {
-	for _, obj := range woc.controller.podInformer.GetStore().List() {
+	for _, obj := range woc.controller.podInformer.Cluster(woc.cluster()).GetStore().List() {
 		pod := obj.(*apiv1.Pod)
-		err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
+		err := woc.clientset().CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 		if err != nil {
 			panic(err)
 		}
-		err = woc.controller.podInformer.GetStore().Delete(obj)
+		err = woc.controller.podInformer.Cluster(woc.cluster()).GetStore().Delete(obj)
 		if err != nil {
 			panic(err)
 		}
@@ -434,7 +435,7 @@ func TestNamespacedController(t *testing.T) {
 
 	cancel, controller := newController()
 	defer cancel()
-	controller.kubeclientset = kubernetes.Interface(&kubeClient)
+	controller.kubeclientset = mckubernetes.NewSingleton("", &kubeClient)
 	controller.cwftmplInformer = nil
 	controller.createClusterWorkflowTemplateInformer(context.TODO())
 	assert.Nil(t, controller.cwftmplInformer)
@@ -451,7 +452,7 @@ func TestClusterController(t *testing.T) {
 
 	cancel, controller := newController()
 	defer cancel()
-	controller.kubeclientset = kubernetes.Interface(&kubeClient)
+	controller.kubeclientset = mckubernetes.NewSingleton("", &kubeClient)
 	controller.cwftmplInformer = nil
 	controller.createClusterWorkflowTemplateInformer(context.TODO())
 	assert.NotNil(t, controller.cwftmplInformer)

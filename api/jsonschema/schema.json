@@ -423,6 +423,14 @@
       },
       "type": "object"
     },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Filter": {
+      "properties": {
+        "expression": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Flatten": {
       "properties": {
         "abstractStep": {
@@ -632,9 +640,12 @@
     },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Map": {
       "properties": {
+<<<<<<< HEAD
         "abstractStep": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.AbstractStep"
         },
+=======
+>>>>>>> feat: Multi-cloud/cluster/namespace workflows. Fixes #6089, #3523, #2063
         "expression": {
           "type": "string"
         }
@@ -658,6 +669,34 @@
       },
       "type": "object"
     },
+<<<<<<< HEAD
+=======
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Metrics": {
+      "properties": {
+        "errors": {
+          "format": "uint64",
+          "type": "string"
+        },
+        "rate": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.api.resource.Quantity"
+        },
+        "retries": {
+          "format": "uint64",
+          "title": "current rate of messages per second",
+          "type": "string"
+        },
+        "total": {
+          "format": "uint64",
+          "type": "string"
+        },
+        "totalBytes": {
+          "format": "uint64",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+>>>>>>> feat: Multi-cloud/cluster/namespace workflows. Fixes #6089, #3523, #2063
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Pipeline": {
       "properties": {
         "metadata": {
@@ -6568,6 +6607,9 @@
           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.",
           "type": "boolean"
         },
+        "cluster": {
+          "type": "string"
+        },
         "container": {
           "$ref": "#/definitions/io.k8s.api.core.v1.Container",
           "description": "Container is the main container image to run in the pod"
@@ -6636,6 +6678,9 @@
         },
         "name": {
           "description": "Name is the name of the template",
+          "type": "string"
+        },
+        "namespace": {
           "type": "string"
         },
         "nodeSelector": {

@@ -445,7 +445,7 @@ endif
 ifeq ($(AUTH_MODE),sso)
 	grep '127.0.0.1[[:blank:]]*dex' /etc/hosts
 endif
-	grep '127.0.0.1[[:blank:]]*minio' /etc/hosts
+	grep '127.0.0.1[[:blank:]]*minio.argo.svc.cluster.local' /etc/hosts
 	grep '127.0.0.1[[:blank:]]*postgres' /etc/hosts
 	grep '127.0.0.1[[:blank:]]*mysql' /etc/hosts
 	./hack/port-forward.sh

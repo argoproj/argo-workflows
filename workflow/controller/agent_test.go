@@ -102,7 +102,7 @@ status:
 			assert.Equal(t, ts.Namespace, wf.Namespace)
 			assert.Len(t, ts.Spec.Tasks, 1)
 		}
-		pods, err := woc.controller.kubeclientset.CoreV1().Pods("default").List(ctx, v1.ListOptions{})
+		pods, err := woc.clientset().CoreV1().Pods("default").List(ctx, v1.ListOptions{})
 		assert.NoError(t, err)
 		assert.NotEmpty(t, pods.Items)
 		assert.Len(t, pods.Items, 1)
@@ -127,7 +127,7 @@ status:
 			assert.Equal(t, ts.Namespace, wf.Namespace)
 			assert.Len(t, ts.Spec.Tasks, 1)
 		}
-		pods, err := woc.controller.kubeclientset.CoreV1().Pods("default").List(ctx, v1.ListOptions{})
+		pods, err := woc.clientset().CoreV1().Pods("default").List(ctx, v1.ListOptions{})
 		assert.NoError(t, err)
 		assert.NotEmpty(t, pods.Items)
 		assert.Len(t, pods.Items, 1)

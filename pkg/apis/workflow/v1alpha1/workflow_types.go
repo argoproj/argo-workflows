@@ -496,6 +496,9 @@ type Template struct {
 	// Name is the name of the template
 	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
 
+	Cluster   string `json:"cluster,omitempty" protobuf:"bytes,43,opt,name=cluster"`
+	Namespace string `json:"namespace,omitempty" protobuf:"bytes,44,opt,name=namespace"`
+
 	// Inputs describe what inputs parameters and artifacts are supplied to this template
 	Inputs Inputs `json:"inputs,omitempty" protobuf:"bytes,5,opt,name=inputs"`
 
@@ -2419,6 +2422,20 @@ func (tmpl *Template) SaveLogsAsArtifact() bool {
 	return tmpl != nil && tmpl.ArchiveLocation.IsArchiveLogs() && (tmpl.ContainerSet == nil || tmpl.ContainerSet.HasContainerNamed("main"))
 }
 
+func (tmpl Template) NamespaceOr(defaultValue string) string {
+	if tmpl.Namespace != "" {
+		return tmpl.Namespace
+	}
+	return defaultValue
+}
+
+func (tmpl *Template) ClusterOr(defaultValue string) string {
+	if tmpl.Cluster != "" {
+		return tmpl.Cluster
+	}
+	return defaultValue
+}
+
 // DAGTemplate is a template subtype for directed acyclic graph templates
 type DAGTemplate struct {
 	// Target are one or more names of targets to execute in a DAG
@@ -2640,12 +2657,22 @@ func (wf *Workflow) GetWorkflowSpec() WorkflowSpec {
 
 // NodeID creates a deterministic node ID based on a node name
 func (wf *Workflow) NodeID(name string) string {
-	if name == wf.ObjectMeta.Name {
-		return wf.ObjectMeta.Name
+	return UID("", "", wf.Name, name)
+}
+
+func UID(cluster, namespace, workflowName, name string) string {
+	if cluster == "" && namespace == "" && name == workflowName {
+		return workflowName
 	}
 	h := fnv.New32a()
+	if cluster != "" {
+		_, _ = h.Write([]byte(cluster))
+	}
+	if namespace != "" {
+		_, _ = h.Write([]byte(namespace))
+	}
 	_, _ = h.Write([]byte(name))
-	return fmt.Sprintf("%s-%v", wf.ObjectMeta.Name, h.Sum32())
+	return fmt.Sprintf("%s-%v", workflowName, h.Sum32())
 }
 
 // GetStoredTemplate retrieves a template from stored templates of the workflow.

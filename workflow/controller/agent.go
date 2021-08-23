@@ -68,7 +68,7 @@ func assessAgentPodStatus(pod *apiv1.Pod) (wfv1.WorkflowPhase, string) {
 func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, error) {
 	podName := woc.getAgentPodName()
 
-	obj, exists, err := woc.controller.podInformer.GetStore().Get(cache.ExplicitKey(woc.wf.Namespace + "/" + podName))
+	obj, exists, err := woc.controller.podInformer.Cluster(woc.cluster()).GetStore().Get(cache.ExplicitKey(woc.wf.Namespace + "/" + podName))
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pod from informer store: %w", err)
@@ -120,7 +120,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 
 	woc.log.Debugf("Creating Agent Pod: %s", podName)
 
-	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
+	created, err := woc.clientset().CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {
 			woc.log.Infof("Agent Pod %s  creation: already exists", podName)

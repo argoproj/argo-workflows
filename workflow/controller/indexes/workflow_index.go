@@ -3,12 +3,13 @@ package indexes
 import (
 	"os"
 
+	"github.com/argoproj-labs/multi-cluster-kubernetes/api/labels"
+
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
@@ -25,11 +26,11 @@ func MetaWorkflowIndexFunc(obj interface{}) ([]string, error) {
 	if err != nil {
 		return nil, nil
 	}
-	name, ok := m.GetLabels()[common.LabelKeyWorkflow]
-	if !ok {
-		return nil, nil
+	_, namespace, name, err := labels.GetOwnership(m)
+	if err != nil {
+		return nil, err
 	}
-	return []string{WorkflowIndexValue(m.GetNamespace(), name)}, nil
+	return []string{WorkflowIndexValue(namespace, name)}, nil
 }
 
 // MetaNodeIDIndexFunc takes a kubernetes object and returns either the

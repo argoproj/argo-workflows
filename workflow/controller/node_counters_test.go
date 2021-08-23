@@ -8,7 +8,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	v1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 func getWfOperationCtx() *wfOperationCtx {
@@ -46,6 +46,8 @@ metadata:
   labels:
     workflows.argoproj.io/completed: "false"
     workflows.argoproj.io/workflow: steps-tt9wq
+  ownerReferences:
+  - apiVersion: argoproj.io/v1alpha1
   name: 1
   namespace: default
 spec:
@@ -138,6 +140,9 @@ func TestCounters(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	woc.controller = controller
+	woc.execWf = &v1alpha1.Workflow{
+		Spec: v1alpha1.WorkflowSpec{Templates: []v1alpha1.Template{{}}},
+	}
 	syncPodsInformer(context.Background(), woc, pod, *pod1)
 	assert.Equal(t, int64(2), woc.getActivePods("1"))
 	// No BoundaryID requested
