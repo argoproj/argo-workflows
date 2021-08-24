@@ -2,10 +2,6 @@
 
 create a cron workflow
 
-### Synopsis
-
-create a cron workflow
-
 ```
 argo cron create FILE1 FILE2... [flags]
 ```

@@ -2,10 +2,6 @@
 
 suspend zero or more cron workflows
 
-### Synopsis
-
-suspend zero or more cron workflows
-
 ```
 argo cron suspend CRON_WORKFLOW... [flags]
 ```

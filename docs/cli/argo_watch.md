@@ -2,10 +2,6 @@
 
 watch a workflow until it completes
 
-### Synopsis
-
-watch a workflow until it completes
-
 ```
 argo watch WORKFLOW [flags]
 ```
