@@ -541,7 +541,7 @@ func TestApplySubmitOpts(t *testing.T) {
 		file, err := ioutil.TempFile("", "")
 		assert.NoError(t, err)
 		defer func() { _ = os.Remove(file.Name()) }()
-		err = ioutil.WriteFile(file.Name(), []byte(`a: 81861780812`), 0o644)
+		err = ioutil.WriteFile(file.Name(), []byte(`a: 81861780812`), 0o600)
 		assert.NoError(t, err)
 		err = ApplySubmitOpts(wf, &wfv1.SubmitOpts{ParameterFile: file.Name()})
 		assert.NoError(t, err)

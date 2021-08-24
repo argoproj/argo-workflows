@@ -10,7 +10,7 @@ import (
 )
 
 // sub = 1234567890
-const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c" //nolint:gosec
 
 func TestClaimSetFor(t *testing.T) {
 	t.Run("Empty", func(t *testing.T) {
@@ -41,7 +41,7 @@ func TestClaimSetFor(t *testing.T) {
 	// set-up test
 	tmp, err := ioutil.TempFile("", "")
 	assert.NoError(t, err)
-	err = ioutil.WriteFile(tmp.Name(), []byte(token), 0o644)
+	err = ioutil.WriteFile(tmp.Name(), []byte(token), 0o600)
 	assert.NoError(t, err)
 	defer func() { _ = os.Remove(tmp.Name()) }()
 

@@ -580,10 +580,11 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
+// generates an insecure random string
 func randString(n int) string {
 	b := make([]byte, n)
 	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
+		b[i] = letters[rand.Intn(len(letters))] //nolint:gosec
 	}
 	return string(b)
 }
@@ -954,7 +955,7 @@ func ReadFromStdin() ([]byte, error) {
 
 // Reads the content of a url
 func ReadFromUrl(url string) ([]byte, error) {
-	response, err := http.Get(url)
+	response, err := http.Get(url) //nolint:gosec
 	if err != nil {
 		return nil, err
 	}

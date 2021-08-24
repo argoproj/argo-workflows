@@ -37,3 +37,8 @@ linters-settings:
     includes:
       - G304
       - G307
+    excludes:
+      # G402: TLS InsecureSkipVerify set true
+      - G402
+      # G601: Implicit memory aliasing in for loop.
+      - G601

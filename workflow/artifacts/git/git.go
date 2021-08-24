@@ -87,7 +87,7 @@ case "$1" in
 Username*) echo "${GIT_USERNAME}" ;;
 Password*) echo "${GIT_PASSWORD}" ;;
 esac
-`), 0o755)
+`), 0o700)
 			if err != nil {
 				return nil, nil, nil, err
 			}

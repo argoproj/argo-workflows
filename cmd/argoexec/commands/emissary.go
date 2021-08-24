@@ -39,7 +39,7 @@ func NewEmissaryCommand() *cobra.Command {
 			exitCode := 64
 
 			defer func() {
-				err := ioutil.WriteFile(varRunArgo+"/ctr/"+containerName+"/exitcode", []byte(strconv.Itoa(exitCode)), 0o644)
+				err := ioutil.WriteFile(varRunArgo+"/ctr/"+containerName+"/exitcode", []byte(strconv.Itoa(exitCode)), 0o600)
 				if err != nil {
 					logger.Error(fmt.Errorf("failed to write exit code: %w", err))
 				}

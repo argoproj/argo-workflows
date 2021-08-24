@@ -148,7 +148,7 @@ func (e emissary) Kill(ctx context.Context, containerNames []string, termination
 	for _, containerName := range containerNames {
 		// allow write-access by other users, because other containers
 		// should delete the signal after receiving it
-		if err := ioutil.WriteFile("/var/run/argo/ctr/"+containerName+"/signal", []byte(strconv.Itoa(int(syscall.SIGTERM))), 0o666); err != nil {
+		if err := ioutil.WriteFile("/var/run/argo/ctr/"+containerName+"/signal", []byte(strconv.Itoa(int(syscall.SIGTERM))), 0o666); err != nil { //nolint:gosec
 			return err
 		}
 	}
@@ -161,7 +161,7 @@ func (e emissary) Kill(ctx context.Context, containerNames []string, termination
 	for _, containerName := range containerNames {
 		// allow write-access by other users, because other containers
 		// should delete the signal after receiving it
-		if err := ioutil.WriteFile("/var/run/argo/ctr/"+containerName+"/signal", []byte(strconv.Itoa(int(syscall.SIGKILL))), 0o666); err != nil {
+		if err := ioutil.WriteFile("/var/run/argo/ctr/"+containerName+"/signal", []byte(strconv.Itoa(int(syscall.SIGKILL))), 0o666); err != nil { //nolint:gosec
 			return err
 		}
 	}
