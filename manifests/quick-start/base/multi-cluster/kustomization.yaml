@@ -4,4 +4,3 @@ kind: Kustomization
 resources:
   - impersonator-role.yaml
   - impersonator-rolebinding.yaml
-  - configure-cluster-pod.yaml

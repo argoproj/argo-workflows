@@ -430,6 +430,20 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
+  name: impersonator
+rules:
+- apiGroups:
+  - ""
+  resourceNames:
+  - argo
+  resources:
+  - serviceaccounts
+  verbs:
+  - impersonate
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
   name: submit-workflow-template
 rules:
 - apiGroups:
@@ -585,6 +599,18 @@ subjects:
 - kind: ServiceAccount
   name: github.com
   namespace: argo
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: impersonator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: impersonator
+subjects:
+- kind: ServiceAccount
+  name: argo
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding

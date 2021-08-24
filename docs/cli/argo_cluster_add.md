@@ -3,7 +3,7 @@
 
 
 ```
-argo cluster add CLUSTER_NAME CONTEXT_NAME [flags]
+argo cluster add [CLUSTER_NAME [CONTEXT_NAME]] [flags]
 ```
 
 ### Options
