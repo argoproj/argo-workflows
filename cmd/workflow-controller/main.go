@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	_ "net/http/pprof"
 	"os"
 	"time"
 
@@ -26,6 +25,7 @@ import (
 	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
 	"github.com/argoproj/argo-workflows/v3/util/logs"
+	pprofutil "github.com/argoproj/argo-workflows/v3/util/pprof"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
 )
@@ -34,6 +34,10 @@ const (
 	// CLIName is the name of the CLI
 	CLIName = "workflow-controller"
 )
+
+func init() {
+	pprofutil.Init()
+}
 
 // NewRootCommand returns an new instance of the workflow-controller main entrypoint
 func NewRootCommand() *cobra.Command {

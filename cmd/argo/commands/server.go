@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
-	_ "net/http/pprof"
 	"os"
 	"reflect"
 	"strconv"
@@ -31,8 +30,13 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/types"
 	"github.com/argoproj/argo-workflows/v3/util/cmd"
 	"github.com/argoproj/argo-workflows/v3/util/help"
+	pprofutil "github.com/argoproj/argo-workflows/v3/util/pprof"
 	tlsutils "github.com/argoproj/argo-workflows/v3/util/tls"
 )
+
+func init() {
+	pprofutil.Init()
+}
 
 func NewServerCommand() *cobra.Command {
 	var (

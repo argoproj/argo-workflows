@@ -153,7 +153,7 @@ func CopyArchive(ctx context.Context, c KubernetesClientInterface, containerName
 	if err != nil {
 		return err
 	}
-	f, err := os.OpenFile(filepath.Clean(destPath), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o666)
+	f, err := os.OpenFile(filepath.Clean(destPath), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
 	if err != nil {
 		return err
 	}

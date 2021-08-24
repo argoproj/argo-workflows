@@ -103,7 +103,7 @@ func TestReadFromSingleorMultiplePath(t *testing.T) {
 				content := []byte(tc.contents[i])
 				tmpfn := filepath.Join(dir, tc.fileNames[i])
 				filePaths = append(filePaths, tmpfn)
-				err := ioutil.WriteFile(tmpfn, content, 0o666)
+				err := ioutil.WriteFile(tmpfn, content, 0o600)
 				if err != nil {
 					t.Error("Could not write to temporary file")
 				}
@@ -155,7 +155,7 @@ func TestReadFromSingleorMultiplePathErrorHandling(t *testing.T) {
 				tmpfn := filepath.Join(dir, tc.fileNames[i])
 				filePaths = append(filePaths, tmpfn)
 				if tc.exists[i] {
-					err := ioutil.WriteFile(tmpfn, content, 0o666)
+					err := ioutil.WriteFile(tmpfn, content, 0o600)
 					if err != nil {
 						t.Error("Could not write to temporary file")
 					}
