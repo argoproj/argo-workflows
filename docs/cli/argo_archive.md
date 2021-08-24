@@ -2,10 +2,6 @@
 
 manage the workflow archive
 
-### Synopsis
-
-manage the workflow archive
-
 ```
 argo archive [flags]
 ```

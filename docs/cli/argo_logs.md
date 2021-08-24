@@ -2,10 +2,6 @@
 
 view logs of a pod or workflow
 
-### Synopsis
-
-view logs of a pod or workflow
-
 ```
 argo logs WORKFLOW [POD] [flags]
 ```

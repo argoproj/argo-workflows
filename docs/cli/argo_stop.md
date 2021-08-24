@@ -2,10 +2,6 @@
 
 stop zero or more workflows allowing all exit handlers to run
 
-### Synopsis
-
-stop zero or more workflows allowing all exit handlers to run
-
 ```
 argo stop WORKFLOW WORKFLOW2... [flags]
 ```

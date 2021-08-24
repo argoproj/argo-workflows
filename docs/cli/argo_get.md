@@ -2,10 +2,6 @@
 
 display details about a workflow
 
-### Synopsis
-
-display details about a workflow
-
 ```
 argo get WORKFLOW... [flags]
 ```

@@ -2,10 +2,6 @@
 
 list cron workflows
 
-### Synopsis
-
-list cron workflows
-
 ```
 argo cron list [flags]
 ```

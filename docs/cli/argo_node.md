@@ -2,10 +2,6 @@
 
 perform action on a node in a workflow
 
-### Synopsis
-
-perform action on a node in a workflow
-
 ```
 argo node ACTION WORKFLOW FLAGS [flags]
 ```
