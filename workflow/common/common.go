@@ -16,6 +16,7 @@ const (
 	DockerSockVolumeName = "docker-sock"
 
 	// AnnotationKeyNodeName is the pod metadata annotation key containing the workflow node name
+	AnnotationKeyNodeID   = workflow.WorkflowFullName + "/node-id"
 	AnnotationKeyNodeName = workflow.WorkflowFullName + "/node-name"
 	// AnnotationKeyNodeName is the node's type
 	AnnotationKeyNodeType = workflow.WorkflowFullName + "/node-type"

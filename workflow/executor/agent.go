@@ -84,6 +84,7 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 					continue
 				}
 				result := wfv1.NodeResult{}
+				pod := task.Pod
 				switch {
 				case task.HTTP != nil:
 					if outputs, err := ae.executeHTTPTemplate(ctx, task.Template); err != nil {
@@ -93,8 +94,8 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 						result.Phase = wfv1.NodeSucceeded
 						result.Outputs = outputs
 					}
-				case task.Pod != nil:
-					podName := task.Pod.Name
+				case pod != nil:
+					podName := pod.Name
 					clusterName := task.ClusterName
 					namespace := task.Namespace
 					log.WithField("clusterName", clusterName).
@@ -103,7 +104,7 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 						Info("creating workflow pod")
 					_, err := ae.Clients[clusterName].CoreV1().
 						Pods(namespace).
-						Create(ctx, task.Pod, metav1.CreateOptions{})
+						Create(ctx, pod, metav1.CreateOptions{})
 					if err != nil {
 						result.Phase = wfv1.NodeFailed
 						result.Message = err.Error()
@@ -123,7 +124,7 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 	}
 }
 
-func (ae *AgentExecutor) watchPods(ctx context.Context, clusterName string, namespace string ) {
+func (ae *AgentExecutor) watchPods(ctx context.Context, clusterName string, namespace string) {
 	key := clusterName + "/" + namespace
 	if keys[key] {
 		return
@@ -144,20 +145,25 @@ func (ae *AgentExecutor) watchPods(ctx context.Context, clusterName string, name
 			if !ok {
 				return apierr.FromObject(event.Object)
 			}
+			nodeID := pod.Annotations[common.AnnotationKeyNodeID]
+			log.WithField("nodeID", nodeID).
+				WithField("podName", pod.Name).
+				WithField("phase", pod.Status.Phase).
+				Info("pod event")
 			// challenge - we need to run assessNodeStatus
-			node := wfv1.NodeResult{
+			result := wfv1.NodeResult{
 				Phase:   wfv1.NodePhase(pod.Status.Phase),
 				Message: pod.Status.Message,
 			}
-			if node.Phase.Fulfilled() {
+			if result.Phase.Fulfilled() {
 				if outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]; ok {
-					if err := json.Unmarshal([]byte(outputStr), node.Outputs); err != nil {
-						node.Phase = wfv1.NodeError
-						node.Message = err.Error()
+					if err := json.Unmarshal([]byte(outputStr), result.Outputs); err != nil {
+						result.Phase = wfv1.NodeError
+						result.Message = err.Error()
 					}
 				}
 			}
-			if err := ae.updateNodeResult(ctx, pod.Name, node); err != nil {
+			if err := ae.updateNodeResult(ctx, nodeID, result); err != nil {
 				return err
 			}
 		}
@@ -179,7 +185,7 @@ func (ae *AgentExecutor) collectGarbage(ctx context.Context) {
 			Info("deleting workflow pods")
 		err := ae.Clients[clusterName].CoreV1().
 			Pods(namespace).
-			DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + ae.WorkflowName+",!workflows.argoproj.io/agent"})
+			DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + ae.WorkflowName + ",!workflows.argoproj.io/agent"})
 		if err != nil {
 			log.WithError(err).WithField("clusterName", clusterName).WithField("namespace", namespace).Error("failed to delete pods")
 		}

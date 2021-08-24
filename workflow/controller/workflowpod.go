@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -210,9 +211,17 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	if namespace == "" {
 		namespace = woc.wf.Namespace
 	}
+	podName := nodeID
+	if tmpl.IsAgentTemplate() {
+		h := fnv.New32a()
+		_, _ = h.Write([]byte(nodeName))
+		_, _ = h.Write([]byte(tmpl.ClusterName))
+		_, _ = h.Write([]byte(tmpl.Namespace))
+		podName = fmt.Sprintf("%s-%d", woc.wf.Name, h.Sum32())
+	}
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      nodeID,
+			Name:      podName,
 			Namespace: namespace,
 			Labels: map[string]string{
 				common.LabelKeyWorkflow:  woc.wf.ObjectMeta.Name, // Allows filtering by pods related to specific workflow
@@ -220,9 +229,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			},
 			Annotations: map[string]string{
 				common.AnnotationKeyNodeName: nodeName,
-			},
-			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
+				common.AnnotationKeyNodeID:   nodeID,
 			},
 		},
 		Spec: apiv1.PodSpec{
@@ -231,6 +238,12 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			ActiveDeadlineSeconds: activeDeadlineSeconds,
 			ImagePullSecrets:      woc.execWf.Spec.ImagePullSecrets,
 		},
+	}
+
+	if !tmpl.IsAgentTemplate() {
+		pod.SetOwnerReferences([]metav1.OwnerReference{
+			*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
+		})
 	}
 
 	if opts.onExitPod {
