@@ -11,6 +11,7 @@ Note that these environment variables may be removed at any time.
 | `ALL_POD_CHANGES_SIGNIFICANT` | `bool` | `false` | Whether to consider all pod changes as significant during pod reconciliation. |
 | `ALWAYS_OFFLOAD_NODE_STATUS` | `bool` | `false` | Whether to always offload the node status. |
 | `ARCHIVED_WORKFLOW_GC_PERIOD` | `time.Duration` | `24h` | The periodicity for GC of archived workflows. |
+| `ARGO_PPROF` | `bool` | `false` | Enable pprof endpoints |
 | `ARGO_TRACE` | `string` | `"1"` | Whether to enable tracing statements in Argo components. |
 | `CRON_SYNC_PERIOD` | `time.Duration` | `10s` | How often to sync cron workflows. |
 | `DEFAULT_REQUEUE_TIME` | `time.Duration` | `10s` | The requeue time for the rate limiter of the workflow queue. |
