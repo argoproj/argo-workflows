@@ -1252,6 +1252,10 @@ message Template {
   // Name is the name of the template
   optional string name = 1;
 
+  optional string clusterName = 43;
+
+  optional string namespace = 44;
+
   // Inputs describe what inputs parameters and artifacts are supplied to this template
   optional Inputs inputs = 5;
 
@@ -1786,6 +1790,12 @@ message WorkflowStep {
   map<string, LifecycleHook> hooks = 12;
 }
 
+message WorkflowTask {
+  optional Template template = 1;
+
+  optional k8s.io.api.core.v1.Pod pod = 2;
+}
+
 // +genclient
 // +kubebuilder:resource:shortName=wfts
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -1805,7 +1815,7 @@ message WorkflowTaskSetList {
 }
 
 message WorkflowTaskSetSpec {
-  map<string, Template> tasks = 1;
+  map<string, WorkflowTask> tasks = 1;
 }
 
 message WorkflowTaskSetStatus {

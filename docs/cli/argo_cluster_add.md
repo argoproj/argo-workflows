@@ -1,16 +1,15 @@
-## argo cluster-template delete
+## argo cluster add
 
-delete a cluster workflow template
+
 
 ```
-argo cluster-template delete WORKFLOW_TEMPLATE [flags]
+argo cluster add CLUSTER_NAME CONTEXT_NAME [flags]
 ```
 
 ### Options
 
 ```
-      --all    Delete all cluster workflow templates
-  -h, --help   help for delete
+  -h, --help   help for add
 ```
 
 ### Options inherited from parent commands
@@ -46,5 +45,5 @@ argo cluster-template delete WORKFLOW_TEMPLATE [flags]
 
 ### SEE ALSO
 
-* [argo cluster-template](argo_cluster-template.md)	 - manipulate cluster workflow templates
+* [argo cluster](argo_cluster.md)	 - 
 

@@ -2,10 +2,6 @@
 
 start the Argo Server
 
-### Synopsis
-
-start the Argo Server
-
 ```
 argo server [flags]
 ```

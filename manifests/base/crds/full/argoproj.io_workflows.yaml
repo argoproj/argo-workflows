@@ -1576,6 +1576,8 @@ spec:
                     type: object
                   automountServiceAccountToken:
                     type: boolean
+                  clusterName:
+                    type: string
                   container:
                     properties:
                       args:
@@ -4956,6 +4958,8 @@ spec:
                     type: object
                   name:
                     type: string
+                  namespace:
+                    type: string
                   nodeSelector:
                     additionalProperties:
                       type: string
@@ -7848,6 +7852,8 @@ spec:
                       type: object
                     automountServiceAccountToken:
                       type: boolean
+                    clusterName:
+                      type: string
                     container:
                       properties:
                         args:
@@ -11227,6 +11233,8 @@ spec:
                       - prometheus
                       type: object
                     name:
+                      type: string
+                    namespace:
                       type: string
                     nodeSelector:
                       additionalProperties:
@@ -17091,6 +17099,8 @@ spec:
                       type: object
                     automountServiceAccountToken:
                       type: boolean
+                    clusterName:
+                      type: string
                     container:
                       properties:
                         args:
@@ -20470,6 +20480,8 @@ spec:
                       - prometheus
                       type: object
                     name:
+                      type: string
+                    namespace:
                       type: string
                     nodeSelector:
                       additionalProperties:
@@ -24337,6 +24349,8 @@ spec:
                         type: object
                       automountServiceAccountToken:
                         type: boolean
+                      clusterName:
+                        type: string
                       container:
                         properties:
                           args:
@@ -27717,6 +27731,8 @@ spec:
                         type: object
                       name:
                         type: string
+                      namespace:
+                        type: string
                       nodeSelector:
                         additionalProperties:
                           type: string
@@ -30609,6 +30625,8 @@ spec:
                           type: object
                         automountServiceAccountToken:
                           type: boolean
+                        clusterName:
+                          type: string
                         container:
                           properties:
                             args:
@@ -33988,6 +34006,8 @@ spec:
                           - prometheus
                           type: object
                         name:
+                          type: string
+                        namespace:
                           type: string
                         nodeSelector:
                           additionalProperties:

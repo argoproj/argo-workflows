@@ -2,10 +2,6 @@
 
 manipulate workflow templates
 
-### Synopsis
-
-manipulate workflow templates
-
 ```
 argo template [flags]
 ```

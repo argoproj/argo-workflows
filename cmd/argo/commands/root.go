@@ -5,6 +5,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"github.com/argoproj-labs/multi-cluster-kubernetes/cmd/mck/cluster"
+
 	"github.com/argoproj/argo-workflows/v3"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/archive"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/auth"
@@ -100,6 +102,7 @@ If your server is behind an ingress with a path (you'll be running "argo server 
 	command.AddCommand(NewSubmitCommand())
 	command.AddCommand(NewSuspendCommand())
 	command.AddCommand(auth.NewAuthCommand())
+	command.AddCommand(cluster.NewCommand())
 	command.AddCommand(NewWaitCommand())
 	command.AddCommand(NewWatchCommand())
 	command.AddCommand(NewStopCommand())

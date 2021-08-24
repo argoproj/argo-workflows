@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"fmt"
+	"github.com/argoproj-labs/multi-cluster-kubernetes/api"
 	"os"
 
 	log "github.com/sirupsen/logrus"
@@ -44,19 +45,27 @@ func initAgentExecutor() *executor.AgentExecutor {
 	clientSet, err := kubernetes.NewForConfig(config)
 	checkErr(err)
 
-	restClient := clientSet.RESTClient()
-
 	workflowName, ok := os.LookupEnv(common.EnvVarWorkflowName)
 	if !ok {
 		log.Fatalf("Unable to determine workflow name from environment variable %s", common.EnvVarWorkflowName)
 	}
+
+	workflowInterface := workflow.NewForConfigOrDie(config)
+
+	clusters, err := api.LoadClusters(context.Background(), clientSet.CoreV1().Secrets(namespace))
+	checkErr(err)
+	clients := make(map[string]kubernetes.Interface)
+	for clusterName, config := range clusters {
+		clients[clusterName] = kubernetes.NewForConfigOrDie(config)
+	}
 	agentExecutor := executor.AgentExecutor{
-		ClientSet:         clientSet,
-		RESTClient:        restClient,
-		Namespace:         namespace,
-		WorkflowName:      workflowName,
-		WorkflowInterface: workflow.NewForConfigOrDie(config),
-		CompleteTask:      make(map[string]struct{}),
+		ClientSet:                clientSet,
+		Clients:                  clients,
+		Namespace:                namespace,
+		WorkflowName:             workflowName,
+		WorkflowInterface:        workflowInterface,
+		WorkflowTaskSetInterface: workflowInterface.ArgoprojV1alpha1().WorkflowTaskSets(namespace),
+		CompleteTask:             make(map[string]struct{}),
 	}
 	return &agentExecutor
 

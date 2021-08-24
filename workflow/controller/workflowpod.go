@@ -206,10 +206,14 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		}
 	}
 
+	namespace := tmpl.Namespace
+	if namespace == "" {
+		namespace = woc.wf.Namespace
+	}
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      nodeID,
-			Namespace: woc.wf.ObjectMeta.Namespace,
+			Namespace: namespace,
 			Labels: map[string]string{
 				common.LabelKeyWorkflow:  woc.wf.ObjectMeta.Name, // Allows filtering by pods related to specific workflow
 				common.LabelKeyCompleted: "false",                // Allows filtering by incomplete workflow pods
@@ -439,23 +443,28 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
 
-	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
-	if err != nil {
-		if apierr.IsAlreadyExists(err) {
-			// workflow pod names are deterministic. We can get here if the
-			// controller fails to persist the workflow after creating the pod.
-			woc.log.Infof("Failed pod %s (%s) creation: already exists", nodeName, nodeID)
-			return created, nil
+	if !tmpl.IsAgentTemplate() {
+		created, err := woc.controller.kubeclientset.CoreV1().Pods(namespace).Create(ctx, pod, metav1.CreateOptions{})
+		if err != nil {
+			if apierr.IsAlreadyExists(err) {
+				// workflow pod names are deterministic. We can get here if the
+				// controller fails to persist the workflow after creating the pod.
+				woc.log.Infof("Failed pod %s (%s) creation: already exists", nodeName, nodeID)
+				return created, nil
+			}
+			if errorsutil.IsTransientErr(err) {
+				return nil, err
+			}
+			woc.log.Infof("Failed to create pod %s (%s): %v", nodeName, nodeID, err)
+			return nil, errors.InternalWrapError(err)
 		}
-		if errorsutil.IsTransientErr(err) {
-			return nil, err
-		}
-		woc.log.Infof("Failed to create pod %s (%s): %v", nodeName, nodeID, err)
-		return nil, errors.InternalWrapError(err)
+		woc.log.Infof("Created pod: %s (%s)", nodeName, created.Name)
+		woc.activePods++
+		return created, nil
+	} else {
+		woc.taskSet[node.ID] = wfv1.WorkflowTask{Template: woc.taskSet[node.ID].Template, Pod: pod}
+		return nil, nil // the returned pod is only used in tests
 	}
-	woc.log.Infof("Created pod: %s (%s)", nodeName, created.Name)
-	woc.activePods++
-	return created, nil
 }
 
 func (woc *wfOperationCtx) getDeadline(opts *createWorkflowPodOpts) *time.Time {

@@ -496,6 +496,9 @@ type Template struct {
 	// Name is the name of the template
 	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
 
+	ClusterName string `json:"clusterName,omitempty" protobuf:"bytes,43,opt,name=clusterName"`
+	Namespace   string `json:"namespace,omitempty" protobuf:"bytes,44,opt,name=namespace"`
+
 	// Inputs describe what inputs parameters and artifacts are supplied to this template
 	Inputs Inputs `json:"inputs,omitempty" protobuf:"bytes,5,opt,name=inputs"`
 
@@ -2414,6 +2417,10 @@ func (tmpl *Template) HasOutput() bool {
 // if logs should be saved as an artifact
 func (tmpl *Template) SaveLogsAsArtifact() bool {
 	return tmpl != nil && tmpl.ArchiveLocation.IsArchiveLogs() && (tmpl.ContainerSet == nil || tmpl.ContainerSet.HasContainerNamed("main"))
+}
+
+func (tmpl *Template) IsAgentTemplate() bool {
+	return tmpl != nil && (tmpl.HTTP != nil || tmpl.ClusterName != "" || tmpl.Namespace != "")
 }
 
 // DAGTemplate is a template subtype for directed acyclic graph templates
