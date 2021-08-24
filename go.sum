@@ -161,6 +161,10 @@ github.com/argoproj-labs/argo-dataflow v0.0.91 h1:1YWbvGupcWInj4Jtdgsdci48GJEwv0
 github.com/argoproj-labs/argo-dataflow v0.0.91/go.mod h1:HOdmu21+Xx59R28S8+e+wMx+/ApHWNtglPqLvgLRI2E=
 github.com/argoproj-labs/multi-cluster-kubernetes v0.0.0-20210823152952-bec5a5cb72a8 h1:xw3HiuVCcWUSLtqVOxqe8YfvMYBbh6ooUliAMrZeS0A=
 github.com/argoproj-labs/multi-cluster-kubernetes v0.0.0-20210823152952-bec5a5cb72a8/go.mod h1:KKXC/1lcV6a3I+gUKmqeE66mCRMJjBy6Q3cAZIejS4I=
+github.com/argoproj-labs/multi-cluster-kubernetes v0.0.0-20210824181149-895307e260ce h1:k80d4Y8kjzgNvugZLswcTDMdgcdZRXHMWJjAmQgZjIA=
+github.com/argoproj-labs/multi-cluster-kubernetes v0.0.0-20210824181149-895307e260ce/go.mod h1:KKXC/1lcV6a3I+gUKmqeE66mCRMJjBy6Q3cAZIejS4I=
+github.com/argoproj-labs/multi-cluster-kubernetes v0.0.1 h1:ueEj2l+Av1TMIteZc28f27Y7RL65LJePv7xBa2FhxWM=
+github.com/argoproj-labs/multi-cluster-kubernetes v0.0.1/go.mod h1:KKXC/1lcV6a3I+gUKmqeE66mCRMJjBy6Q3cAZIejS4I=
 github.com/argoproj/argo-events v1.4.0 h1:RIzAOomP/4rnv3X6KIDKzXZJ56JKFxSYmksoE98ILWI=
 github.com/argoproj/argo-events v1.4.0/go.mod h1:wI5A0U3Wj9ZvfPn3ioL18Dz29+7aibtlyU9pS0Ry+bg=
 github.com/argoproj/pkg v0.9.0/go.mod h1:ra+bQPmbVAoEL+gYSKesuigt4m49i3Qa3mE/xQcjCiA=

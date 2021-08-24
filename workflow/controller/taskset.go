@@ -31,7 +31,7 @@ func (woc *wfOperationCtx) patchTaskSet(ctx context.Context, patch interface{}, 
 func (woc *wfOperationCtx) getDeleteTaskAndNodePatch() map[string]interface{} {
 	deletedNode := make(map[string]interface{})
 	for _, node := range woc.wf.Status.Nodes {
-		if woc.execWf.GetTemplateByName(node.TemplateName).IsAgentTemplate() && node.Fulfilled() {
+		if node.Type == wfv1.NodeTypeHTTP && node.Fulfilled() {
 			deletedNode[node.ID] = nil
 		}
 	}
@@ -40,7 +40,6 @@ func (woc *wfOperationCtx) getDeleteTaskAndNodePatch() map[string]interface{} {
 	patch := map[string]interface{}{
 		"spec": map[string]interface{}{
 			"tasks": deletedNode,
-			"pods":  deletedNode,
 		},
 		"status": map[string]interface{}{
 			"nodes": deletedNode,

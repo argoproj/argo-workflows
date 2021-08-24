@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -15,13 +14,8 @@ type WorkflowTaskSet struct {
 	Status            WorkflowTaskSetStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
 }
 
-type WorkflowTask struct {
-	Template `json:",inline" protobuf:"bytes,1,opt,name=template"`
-	Pod      *corev1.Pod `json:"pod,omitempty" protobuf:"bytes,2,opt,name=pod"`
-}
-
 type WorkflowTaskSetSpec struct {
-	Tasks map[string]WorkflowTask `json:"tasks,omitempty" protobuf:"bytes,1,rep,name=tasks"`
+	Tasks map[string]Template `json:"tasks,omitempty" protobuf:"bytes,1,rep,name=tasks"`
 }
 
 type WorkflowTaskSetStatus struct {

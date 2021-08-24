@@ -25,7 +25,7 @@ func (woc *wfOperationCtx) isAgentPod(pod *apiv1.Pod) bool {
 }
 
 func (woc *wfOperationCtx) reconcileAgentPod(ctx context.Context) error {
-	woc.log.WithField("numTasks", len(woc.taskSet)).Infof("reconcileAgentPod")
+	woc.log.Infof("reconcileAgentPod")
 	if len(woc.taskSet) == 0 {
 		return nil
 	}
@@ -51,7 +51,7 @@ func (woc *wfOperationCtx) updateAgentPodStatus(ctx context.Context, pod *apiv1.
 func assessAgentPodStatus(pod *apiv1.Pod) (wfv1.WorkflowPhase, string) {
 	var newPhase wfv1.WorkflowPhase
 	var message string
-	log.WithField("phase", pod.Status.Phase).WithField("message", pod.Status.Message).Infof("assessAgentPodStatus")
+	log.Infof("assessAgentPodStatus")
 	switch pod.Status.Phase {
 	case apiv1.PodSucceeded, apiv1.PodRunning, apiv1.PodPending:
 		return "", ""
@@ -89,12 +89,10 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			Labels: map[string]string{
 				common.LabelKeyWorkflow:       woc.wf.Name, // Allows filtering by pods related to specific workflow
 				common.LabelKeyCompleted:      "false",     // Allows filtering by incomplete workflow pods
-				"workflows.argoproj.io/agent": "true",
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
 			},
-			Finalizers: []string{"workflows.argoproj.io/agent"},
 		},
 		Spec: apiv1.PodSpec{
 			RestartPolicy:    apiv1.RestartPolicyOnFailure,
@@ -105,10 +103,8 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 					Command:         []string{"argoexec"},
 					Args:            []string{"agent"},
 					Image:           woc.controller.executorImage(),
-					ImagePullPolicy: woc.controller.executorImagePullPolicy(),
 					Env: []apiv1.EnvVar{
 						{Name: common.EnvVarWorkflowName, Value: woc.wf.Name},
-						{Name: common.EnvVarPodName, Value: podName},
 					},
 				},
 			},

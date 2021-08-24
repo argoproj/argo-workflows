@@ -107,7 +107,7 @@ type wfOperationCtx struct {
 	// 'execWf.Spec' should usually be used instead `wf.Spec`
 	execWf *wfv1.Workflow
 
-	taskSet map[string]wfv1.WorkflowTask
+	taskSet map[string]wfv1.Template
 }
 
 var (
@@ -158,7 +158,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		deadline:               time.Now().UTC().Add(maxOperationTime),
 		eventRecorder:          wfc.eventRecorderManager.Get(wf.Namespace),
 		preExecutionNodePhases: make(map[string]wfv1.NodePhase),
-		taskSet:                make(map[string]wfv1.WorkflowTask),
+		taskSet:                make(map[string]wfv1.Template),
 	}
 
 	if woc.wf.Status.Nodes == nil {
@@ -2050,10 +2050,6 @@ func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wf
 
 	if len(messages) > 0 {
 		node.Message = messages[0]
-	}
-
-	if executeTmpl.IsAgentTemplate() {
-		woc.taskSet[node.ID] = wfv1.WorkflowTask{Template: *executeTmpl}
 	}
 
 	// Update the node

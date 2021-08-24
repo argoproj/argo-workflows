@@ -15,8 +15,11 @@ const (
 	// DockerSockVolumeName is the volume name for the /var/run/docker.sock host path volume
 	DockerSockVolumeName = "docker-sock"
 
-	// AnnotationKeyNodeName is the pod metadata annotation key containing the workflow node name
+	//AnnotationKeyNodeID is the ID of the node. Historically, the pod name was the same as the node ID.
+	// This will only be applied if pod name is not the node ID. Therefore, it this exists, it will never be the same
+	// as the pod name.
 	AnnotationKeyNodeID   = workflow.WorkflowFullName + "/node-id"
+	// AnnotationKeyNodeName is the pod metadata annotation key containing the workflow node name
 	AnnotationKeyNodeName = workflow.WorkflowFullName + "/node-name"
 	// AnnotationKeyNodeName is the node's type
 	AnnotationKeyNodeType = workflow.WorkflowFullName + "/node-type"
@@ -36,6 +39,9 @@ const (
 	// AnnotationKeyWorkflowUID is the uid of the workflow
 	AnnotationKeyWorkflowUID = workflow.WorkflowFullName + "/workflow-uid"
 
+	// LabelKeyClusterName is the name of the cluster that created the pod. This is only applied if the controller
+	// that created it is in another cluster. A pod will never have both this label and ownership references.
+	LabelKeyClusterName = workflow.WorkflowFullName + "/cluster-name"
 	// LabelKeyControllerInstanceID is the label the controller will carry forward to workflows/pod labels
 	// for the purposes of workflow segregation
 	LabelKeyControllerInstanceID = workflow.WorkflowFullName + "/controller-instanceid"

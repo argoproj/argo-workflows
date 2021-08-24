@@ -2419,10 +2419,6 @@ func (tmpl *Template) SaveLogsAsArtifact() bool {
 	return tmpl != nil && tmpl.ArchiveLocation.IsArchiveLogs() && (tmpl.ContainerSet == nil || tmpl.ContainerSet.HasContainerNamed("main"))
 }
 
-func (tmpl *Template) IsAgentTemplate() bool {
-	return tmpl != nil && (tmpl.HTTP != nil || tmpl.ClusterName != "" || tmpl.Namespace != "")
-}
-
 // DAGTemplate is a template subtype for directed acyclic graph templates
 type DAGTemplate struct {
 	// Target are one or more names of targets to execute in a DAG

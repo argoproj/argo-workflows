@@ -4,7 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/argoproj-labs/multi-cluster-kubernetes/api"
 	"hash/fnv"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -212,11 +215,12 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		namespace = woc.wf.Namespace
 	}
 	podName := nodeID
-	if tmpl.IsAgentTemplate() {
+	clusterName := tmpl.ClusterName
+	if clusterName != "" || namespace != "" {
 		h := fnv.New32a()
 		_, _ = h.Write([]byte(nodeName))
-		_, _ = h.Write([]byte(tmpl.ClusterName))
-		_, _ = h.Write([]byte(tmpl.Namespace))
+		_, _ = h.Write([]byte(clusterName))
+		_, _ = h.Write([]byte(namespace))
 		podName = fmt.Sprintf("%s-%d", woc.wf.Name, h.Sum32())
 	}
 	pod := &apiv1.Pod{
@@ -229,7 +233,6 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			},
 			Annotations: map[string]string{
 				common.AnnotationKeyNodeName: nodeName,
-				common.AnnotationKeyNodeID:   nodeID,
 			},
 		},
 		Spec: apiv1.PodSpec{
@@ -240,10 +243,14 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		},
 	}
 
-	if !tmpl.IsAgentTemplate() {
-		pod.SetOwnerReferences([]metav1.OwnerReference{
-			*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
-		})
+	if pod.Name != nodeID {
+		pod.Annotations[common.AnnotationKeyNodeID] = nodeID
+	}
+	if tmpl.ClusterName != "" {
+		pod.Labels[common.LabelKeyClusterName] = woc.controller.Config.ClusterName
+	}
+	if tmpl.ClusterName == "" || tmpl.Namespace == "" {
+		pod.SetOwnerReferences([]metav1.OwnerReference{*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind))})
 	}
 
 	if opts.onExitPod {
@@ -456,28 +463,41 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
 
-	if !tmpl.IsAgentTemplate() {
-		created, err := woc.controller.kubeclientset.CoreV1().Pods(namespace).Create(ctx, pod, metav1.CreateOptions{})
+	clientset := woc.controller.kubeclientset
+
+	if tmpl.ClusterName != "" {
+		userName := fmt.Sprintf("system:serviceaccount:%s:%s", woc.controller.namespace, woc.wf.Namespace)
+		woc.log.WithField("clusterName", clusterName).WithField("userName", userName).Info("getting cluster config using impersonation")
+		restConfig, err := api.LoadCluster(ctx, clientset.CoreV1().Secrets(woc.controller.namespace), tmpl.ClusterName)
 		if err != nil {
-			if apierr.IsAlreadyExists(err) {
-				// workflow pod names are deterministic. We can get here if the
-				// controller fails to persist the workflow after creating the pod.
-				woc.log.Infof("Failed pod %s (%s) creation: already exists", nodeName, nodeID)
-				return created, nil
-			}
-			if errorsutil.IsTransientErr(err) {
-				return nil, err
-			}
-			woc.log.Infof("Failed to create pod %s (%s): %v", nodeName, nodeID, err)
-			return nil, errors.InternalWrapError(err)
+			return nil, err
 		}
-		woc.log.Infof("Created pod: %s (%s)", nodeName, created.Name)
-		woc.activePods++
-		return created, nil
-	} else {
-		woc.taskSet[node.ID] = wfv1.WorkflowTask{Template: woc.taskSet[node.ID].Template, Pod: pod}
-		return nil, nil // the returned pod is only used in tests
+		restConfig.Impersonate = rest.ImpersonationConfig{
+			UserName: userName,
+		}
+		clientset, err = kubernetes.NewForConfig(restConfig)
+		if err != nil {
+			return nil, err
+		}
 	}
+
+	created, err := clientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
+	if err != nil {
+		if apierr.IsAlreadyExists(err) {
+			// workflow pod names are deterministic. We can get here if the
+			// controller fails to persist the workflow after creating the pod.
+			woc.log.Infof("Failed pod %s (%s) creation: already exists", nodeName, nodeID)
+			return created, nil
+		}
+		if errorsutil.IsTransientErr(err) {
+			return nil, err
+		}
+		woc.log.Infof("Failed to create pod %s (%s): %v", nodeName, nodeID, err)
+		return nil, errors.InternalWrapError(err)
+	}
+	woc.log.Infof("Created pod: %s (%s)", nodeName, created.Name)
+	woc.activePods++
+	return created, nil
 }
 
 func (woc *wfOperationCtx) getDeadline(opts *createWorkflowPodOpts) *time.Time {
