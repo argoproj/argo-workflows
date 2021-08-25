@@ -34,10 +34,6 @@ import (
 	tlsutils "github.com/argoproj/argo-workflows/v3/util/tls"
 )
 
-func init() {
-	pprofutil.Init()
-}
-
 func NewServerCommand() *cobra.Command {
 	var (
 		authModes                []string
@@ -65,6 +61,7 @@ See %s`, help.ArgoServer),
 			cmd.SetLogFormatter(logFormat)
 			stats.RegisterStackDumper()
 			stats.StartStatsTicker(5 * time.Minute)
+			pprofutil.Init()
 
 			config, err := client.GetConfig().ClientConfig()
 			if err != nil {
