@@ -250,7 +250,7 @@ func TestSaveS3Artifact(t *testing.T) {
 	defer os.RemoveAll(tempDir) // clean up
 
 	tempFile := filepath.Join(tempDir, "tmpfile")
-	if err := ioutil.WriteFile(tempFile, []byte("temporary file's content"), 0666); err != nil {
+	if err := ioutil.WriteFile(tempFile, []byte("temporary file's content"), 0o600); err != nil {
 		panic(err)
 	}
 

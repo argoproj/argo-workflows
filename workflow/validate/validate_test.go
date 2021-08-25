@@ -1823,6 +1823,7 @@ func TestIncorrectPodGCStrategy(t *testing.T) {
 	}
 }
 
+//nolint:gosec
 var validAutomountServiceAccountTokenUseWfLevel = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -1845,6 +1846,7 @@ spec:
     ServiceAccountName: foo
 `
 
+//nolint:gosec
 var validAutomountServiceAccountTokenUseTmplLevel = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -1861,6 +1863,7 @@ spec:
   automountServiceAccountToken: false
 `
 
+//nolint:gosec
 var invalidAutomountServiceAccountTokenUseWfLevel = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -1875,6 +1878,7 @@ spec:
   automountServiceAccountToken: false
 `
 
+//nolint:gosec
 var invalidAutomountServiceAccountTokenUseTmplLevel = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
