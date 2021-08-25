@@ -136,7 +136,6 @@ nav:
           - workflow-executors.md
           - sidecar-injection.md
           - default-workflow-specs.md
-          - template-defaults.md
           - offloading-large-workflows.md
           - workflow-archive.md
           - metrics.md

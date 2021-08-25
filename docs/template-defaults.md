@@ -1,4 +1,4 @@
-#Template Defaults
+# Template Defaults
 > v3.1 and after
 
 ## Introduction
