@@ -156,3 +156,12 @@ spec:
 ```
 
 [Learn more](https://github.com/argoproj/argo-workflows/issues/3080)
+
+
+## Security
+
+Users should consider the following in their set-up of the Argo Server:
+
+## API Authentication Rate Limiting
+
+Argo Server does not perform authenticatinon directly. It delegates this to either the Kubernetes API Server (when `--auth-mode=client`) and the OAuth provider (when `--auth-mode=sso`). In each case, it is recommended that the the delegate implements any authentication rate limiting you need. 
