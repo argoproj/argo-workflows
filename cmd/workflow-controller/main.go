@@ -35,10 +35,6 @@ const (
 	CLIName = "workflow-controller"
 )
 
-func init() {
-	pprofutil.Init()
-}
-
 // NewRootCommand returns an new instance of the workflow-controller main entrypoint
 func NewRootCommand() *cobra.Command {
 	var (
@@ -72,6 +68,7 @@ func NewRootCommand() *cobra.Command {
 			cmdutil.SetLogFormatter(logFormat)
 			stats.RegisterStackDumper()
 			stats.StartStatsTicker(5 * time.Minute)
+			pprofutil.Init()
 
 			config, err := clientConfig.ClientConfig()
 			if err != nil {
