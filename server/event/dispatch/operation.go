@@ -66,7 +66,7 @@ func (o *Operation) Dispatch(ctx context.Context) {
 		})
 		if err != nil {
 			log.WithError(err).WithFields(log.Fields{"namespace": event.Namespace, "event": event.Name}).Error("failed to dispatch from event")
-			o.eventRecorder.Event(&event, corev1.EventTypeWarning, "WorkflowEventBindingError", "failed to dispatch event: "+err.Error())
+			o.eventRecorder.Event(&event, corev1.EventTypeWarning, "WorkflowEventBindingError", "failed to dispatch event: "+err.Error()) //nolint:gosec
 		}
 	}
 }

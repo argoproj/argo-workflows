@@ -113,7 +113,7 @@ func TerminatePodWithContainerNames(ctx context.Context, c KubernetesClientInter
 		if pod.Spec.RestartPolicy != "Never" {
 			return fmt.Errorf("cannot terminate pod with a %q restart policy", pod.Spec.RestartPolicy)
 		}
-		err := c.KillContainer(pod, &s, sig)
+		err := c.KillContainer(pod, &s, sig) //nolint:gosec
 		if err != nil {
 			return err
 		}

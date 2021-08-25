@@ -114,7 +114,7 @@ See %s`, help.ArgoServer),
 				tlsConfig = &tls.Config{
 					Certificates:       []tls.Certificate{*cer},
 					MinVersion:         uint16(tlsMinVersion),
-					InsecureSkipVerify: true,
+					InsecureSkipVerify: true, //nolint:gosec
 				}
 			} else {
 				log.Warn("You are running in insecure mode. Learn how to enable transport layer security: https://argoproj.github.io/argo-workflows/tls/")

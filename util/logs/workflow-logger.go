@@ -153,7 +153,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 	})
 
 	for _, pod := range list.Items {
-		ensureWeAreStreaming(&pod)
+		ensureWeAreStreaming(&pod) //nolint:gosec
 	}
 
 	if logOptions.Follow {

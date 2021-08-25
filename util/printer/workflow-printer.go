@@ -75,7 +75,7 @@ func printTable(wfList []wfv1.Workflow, out io.Writer, opts PrintOpts) {
 		if wf.Spec.Priority != nil {
 			priority = int(*wf.Spec.Priority)
 		}
-		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d", wf.ObjectMeta.Name, WorkflowStatus(&wf), ageStr, durationStr, priority)
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d", wf.ObjectMeta.Name, WorkflowStatus(&wf), ageStr, durationStr, priority) //nolint:gosec
 		if opts.Output == "wide" {
 			pending, running, completed := countPendingRunningCompletedNodes(&wf)
 			_, _ = fmt.Fprintf(w, "\t%d/%d/%d", pending, running, completed)

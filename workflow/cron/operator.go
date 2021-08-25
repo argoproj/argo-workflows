@@ -267,7 +267,7 @@ func (woc *cronWfOperationCtx) reconcileActiveWfs(ctx context.Context, workflows
 
 		if !woc.cronWf.Status.HasActiveUID(wf.UID) && !wf.Status.Fulfilled() {
 			updated = true
-			woc.cronWf.Status.Active = append(woc.cronWf.Status.Active, getWorkflowObjectReference(&wf, &wf))
+			woc.cronWf.Status.Active = append(woc.cronWf.Status.Active, getWorkflowObjectReference(&wf, &wf)) //nolint:gosec
 		}
 	}
 

@@ -92,7 +92,7 @@ func (h Facade) do(in interface{}, out interface{}, method string, path string) 
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: h.insecureSkipVerify,
+				InsecureSkipVerify: h.insecureSkipVerify, //nolint:gosec
 			},
 		},
 	}

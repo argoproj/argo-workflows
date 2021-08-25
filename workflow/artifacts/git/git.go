@@ -60,7 +60,7 @@ func (g *ArtifactDriver) auth(sshUser string) (func(), transport.AuthMethod, []s
 		}
 		auth := &ssh2.PublicKeys{User: sshUser, Signer: signer}
 		if g.InsecureIgnoreHostKey {
-			auth.HostKeyCallback = ssh.InsecureIgnoreHostKey()
+			auth.HostKeyCallback = ssh.InsecureIgnoreHostKey() //nolint:gosec
 		}
 		args := []string{"ssh", "-i", privateKeyFile.Name()}
 		if g.InsecureIgnoreHostKey {
@@ -70,7 +70,7 @@ func (g *ArtifactDriver) auth(sshUser string) (func(), transport.AuthMethod, []s
 		}
 		env := []string{"GIT_SSH_COMMAND=" + strings.Join(args, " ")}
 		if g.InsecureIgnoreHostKey {
-			auth.HostKeyCallback = ssh.InsecureIgnoreHostKey()
+			auth.HostKeyCallback = ssh.InsecureIgnoreHostKey() //nolint:gosec
 			env = append(env, "GIT_SSL_NO_VERIFY=true")
 		}
 		return func() { _ = os.Remove(privateKeyFile.Name()) },

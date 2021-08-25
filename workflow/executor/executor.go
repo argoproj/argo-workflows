@@ -151,7 +151,7 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 				return errors.Errorf(errors.CodeNotFound, "required artifact '%s' not supplied", art.Name)
 			}
 		}
-		driverArt, err := we.newDriverArt(&art)
+		driverArt, err := we.newDriverArt(&art) //nolint:gosec
 		if err != nil {
 			return fmt.Errorf("failed to load artifact '%s': %w", art.Name, err)
 		}
@@ -271,7 +271,7 @@ func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) error {
 	}
 
 	for i, art := range we.Template.Outputs.Artifacts {
-		err := we.saveArtifact(ctx, common.MainContainerName, &art)
+		err := we.saveArtifact(ctx, common.MainContainerName, &art) //nolint:gosec
 		if err != nil {
 			return err
 		}
