@@ -6,4 +6,5 @@ rules:
   - apiGroups: [ "" ]
     resources: [ serviceaccounts ]
     verbs: [ impersonate ]
+    # the service account name must be the same as the namespace name
     resourceNames: [ argo ]

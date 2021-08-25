@@ -9,7 +9,8 @@ argo cluster add [CLUSTER_NAME [CONTEXT_NAME]] [flags]
 ### Options
 
 ```
-  -h, --help   help for add
+  -h, --help          help for add
+      --host string   (optional) the host, e.g. https://kubernetes.default.svc
 ```
 
 ### Options inherited from parent commands

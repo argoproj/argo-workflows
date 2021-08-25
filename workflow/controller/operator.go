@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	mcrest "github.com/argoproj-labs/multi-cluster-kubernetes/api/rest"
 	"math"
 	"os"
 	"reflect"
@@ -15,6 +14,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	mccache "github.com/argoproj-labs/multi-cluster-kubernetes/api/cache"
+	mcrest "github.com/argoproj-labs/multi-cluster-kubernetes/api/rest"
 
 	"github.com/antonmedv/expr"
 	"github.com/argoproj/pkg/humanize"
@@ -633,8 +635,10 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	// Notice we do not need to label the pod if we will delete it later for GC. Otherwise, that may even result in
 	// errors if we label a pod that was deleted already.
 	for key, podPhase := range woc.completedPods {
-		parts := strings.Split(key, "/")
-		clusterName, namespace, podName := parts[0], parts[1], parts[2]
+		clusterName, namespace, podName, _ := mccache.SplitMetaNamespaceKey(key)
+		if clusterName == "" {
+			clusterName = mcrest.InClusterName
+		}
 		if woc.execWf.Spec.PodGC != nil {
 			switch woc.execWf.Spec.PodGC.Strategy {
 			case wfv1.PodGCOnPodSuccess:

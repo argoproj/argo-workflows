@@ -4406,7 +4406,7 @@ MutexHolding describes the mutex and the object which is holding it.
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`holder`|`string`|Holder is a reference to the object which holds the Mutex. Holding Scenario:  1. Current workflow's NodeID which is holding the lock.     e.g: ${NodeID}Waiting Scenario:  1. Current workflow or other workflow NodeID which is holding the lock.     e.g: ${WorkflowName}/${NodeID}|
+|`holder`|`string`|Holder is a reference to the object which holds the Mutex. Holding Scenario:  1. Current workflow's NodeID which is holding the lock.     e.g: ${NodeID}Waiting Scenario:  1. Current workflow or other workflow UID which is holding the lock.     e.g: ${WorkflowName}/${NodeID}|
 |`mutex`|`string`|Reference for the mutex e.g: ${namespace}/mutex/${mutexName}|
 
 ## SemaphoreHolding

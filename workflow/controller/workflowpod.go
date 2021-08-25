@@ -4,21 +4,20 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/argoproj-labs/multi-cluster-kubernetes/api/labels"
-	mcrest "github.com/argoproj-labs/multi-cluster-kubernetes/api/rest"
 	"os"
 	"path/filepath"
 	"strconv"
 	"time"
 
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-
+	"github.com/argoproj-labs/multi-cluster-kubernetes/api/labels"
+	mcrest "github.com/argoproj-labs/multi-cluster-kubernetes/api/rest"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/utils/pointer"
 
 	"github.com/argoproj/argo-workflows/v3/config"
@@ -141,7 +140,7 @@ type createWorkflowPodOpts struct {
 }
 
 func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName string, mainCtrs []apiv1.Container, tmpl *wfv1.Template, opts *createWorkflowPodOpts) (*apiv1.Pod, error) {
-	nodeID :=  woc.wf.NodeID(nodeName)
+	nodeID := woc.wf.NodeID(nodeName)
 	clusterName := tmpl.ClusterNameOr(mcrest.InClusterName)
 	namespace := tmpl.NamespaceOr(woc.wf.Namespace)
 	podName := wfv1.UID(tmpl.ClusterName, tmpl.Namespace, woc.wf.Name, nodeName)
@@ -470,7 +469,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		if apierr.IsAlreadyExists(err) {
 			// workflow pod names are deterministic. We can get here if the
 			// controller fails to persist the workflow after creating the pod.
-			woc.log.Infof("Failed pod %s (%s) creation: %v", nodeName, nodeID, err)
+			woc.log.Infof("Failed pod %s (%s) creation: already exists", nodeName, nodeID)
 			return created, nil
 		}
 		if errorsutil.IsTransientErr(err) {

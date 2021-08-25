@@ -3,10 +3,11 @@ package controller
 import (
 	"context"
 	"fmt"
-	"github.com/argoproj-labs/multi-cluster-kubernetes/api/labels"
-	mcrest "github.com/argoproj-labs/multi-cluster-kubernetes/api/rest"
 	"sync"
 	"time"
+
+	"github.com/argoproj-labs/multi-cluster-kubernetes/api/labels"
+	mcrest "github.com/argoproj-labs/multi-cluster-kubernetes/api/rest"
 
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -85,11 +86,9 @@ func (woc *wfOperationCtx) killDaemonedChildren(nodeID string) {
 			continue
 		}
 		tmpl := woc.execWf.GetTemplateByName(childNode.TemplateName)
-		namespace := tmpl.Namespace
-		if namespace == "" {
-			namespace = woc.wf.Namespace
-		}
-		woc.controller.queuePodForCleanup(tmpl.ClusterNameOr(mcrest.InClusterName), namespace, childNode.ID, shutdownPod)
+		clusterName := tmpl.ClusterNameOr(mcrest.InClusterName)
+		namespace := tmpl.NamespaceOr(woc.wf.Namespace)
+		woc.controller.queuePodForCleanup(tmpl.ClusterNameOr(clusterName), namespace, childNode.ID, shutdownPod)
 		childNode.Phase = wfv1.NodeSucceeded
 		childNode.Daemoned = nil
 		woc.wf.Status.Nodes[childNode.ID] = childNode

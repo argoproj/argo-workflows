@@ -3,7 +3,6 @@ package controller
 import (
 	"context"
 	"fmt"
-	mcrest "github.com/argoproj-labs/multi-cluster-kubernetes/api/rest"
 
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
@@ -69,7 +68,7 @@ func assessAgentPodStatus(pod *apiv1.Pod) (wfv1.WorkflowPhase, string) {
 func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, error) {
 	podName := woc.getAgentPodName()
 
-	obj, exists, err := woc.controller.podInformer.Cluster(mcrest.InClusterName).GetStore().Get(cache.ExplicitKey(woc.wf.Namespace + "/" + podName))
+	obj, exists, err := woc.controller.podInformer.InCluster().GetStore().Get(cache.ExplicitKey(woc.wf.Namespace + "/" + podName))
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pod from informer store: %w", err)

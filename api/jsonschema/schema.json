@@ -5573,7 +5573,7 @@
       "description": "MutexHolding describes the mutex and the object which is holding it.",
       "properties": {
         "holder": {
-          "description": "Holder is a reference to the object which holds the Mutex. Holding Scenario:\n  1. Current workflow's NodeID which is holding the lock.\n     e.g: ${NodeID}\nWaiting Scenario:\n  1. Current workflow or other workflow NodeID which is holding the lock.\n     e.g: ${WorkflowName}/${NodeID}",
+          "description": "Holder is a reference to the object which holds the Mutex. Holding Scenario:\n  1. Current workflow's NodeID which is holding the lock.\n     e.g: ${NodeID}\nWaiting Scenario:\n  1. Current workflow or other workflow UID which is holding the lock.\n     e.g: ${WorkflowName}/${NodeID}",
           "type": "string"
         },
         "mutex": {

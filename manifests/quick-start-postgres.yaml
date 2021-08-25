@@ -564,6 +564,18 @@ rules:
   - get
 ---
 apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: multi-cluster-argo
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: argo-binding
@@ -663,6 +675,19 @@ subjects:
   name: default
   namespace: argo
 ---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: multi-cluster-argo
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: multi-cluster-argo
+subjects:
+- kind: ServiceAccount
+  name: argo
+  namespace: argo
+---
 apiVersion: v1
 data:
   default-v1: |
@@ -709,6 +734,7 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
+  clusterName: default
   containerRuntimeExecutor: docker
   containerRuntimeExecutors: |
     - name: k8sapi

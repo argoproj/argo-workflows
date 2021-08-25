@@ -14,6 +14,9 @@ func TestKillDaemonChildrenUnmarkPod(t *testing.T) {
 	defer cancel()
 
 	woc := newWorkflowOperationCtx(&v1alpha1.Workflow{
+		Spec: v1alpha1.WorkflowSpec{Templates: []v1alpha1.Template{
+			{},
+		}},
 		Status: v1alpha1.WorkflowStatus{
 			Nodes: v1alpha1.Nodes{
 				"a": v1alpha1.NodeStatus{

@@ -4,19 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	mccache "github.com/argoproj-labs/multi-cluster-kubernetes/api/cache"
-	mcdynamic "github.com/argoproj-labs/multi-cluster-kubernetes/api/dynamic"
-	mckubernetes "github.com/argoproj-labs/multi-cluster-kubernetes/api/kubernetes"
-	mclabels "github.com/argoproj-labs/multi-cluster-kubernetes/api/labels"
-	mcrest "github.com/argoproj-labs/multi-cluster-kubernetes/api/rest"
 	"os"
 	"strconv"
 	"strings"
 	"syscall"
 	"time"
 
-	v1 "k8s.io/client-go/informers/core/v1"
-
+	mccache "github.com/argoproj-labs/multi-cluster-kubernetes/api/cache"
+	mcdynamic "github.com/argoproj-labs/multi-cluster-kubernetes/api/dynamic"
+	mckubernetes "github.com/argoproj-labs/multi-cluster-kubernetes/api/kubernetes"
+	mclabels "github.com/argoproj-labs/multi-cluster-kubernetes/api/labels"
+	mcrest "github.com/argoproj-labs/multi-cluster-kubernetes/api/rest"
 	"github.com/argoproj/pkg/errors"
 	syncpkg "github.com/argoproj/pkg/sync"
 	log "github.com/sirupsen/logrus"
@@ -31,6 +29,7 @@ import (
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
+	v1 "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -1033,14 +1032,13 @@ func (wfc *WorkflowController) newPodInformer() mccache.SharedIndexInformer {
 	for clusterName, k := range wfc.kubeclientset.Clusters() {
 		log.WithField("clusterName", clusterName).Info("starting pod watch")
 		informers[clusterName] = v1.NewFilteredPodInformer(k, wfc.namespace, podResyncPeriod, indexers, func(opts *metav1.ListOptions) {
-			if clusterName == "" {
+			if clusterName == mcrest.InClusterName {
 				opts.LabelSelector = "!" + mclabels.KeyOwnerClusterName + "," + instanceIdReq
 			} else {
 				opts.LabelSelector = mclabels.KeyOwnerClusterName + "=" + wfc.Config.ClusterName + "," + instanceIdReq
 			}
 		})
 	}
-
 	for _, i := range informers {
 		i.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
@@ -1071,7 +1069,6 @@ func (wfc *WorkflowController) newPodInformer() mccache.SharedIndexInformer {
 			},
 		})
 	}
-
 	return mccache.NewSharedIndexInformers(informers)
 }
 

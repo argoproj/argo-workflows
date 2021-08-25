@@ -2,10 +2,11 @@ package controller
 
 import (
 	"context"
-	mcdynamic "github.com/argoproj-labs/multi-cluster-kubernetes/api/dynamic"
-	mckubernetes "github.com/argoproj-labs/multi-cluster-kubernetes/api/kubernetes"
 	"testing"
 	"time"
+
+	mcdynamic "github.com/argoproj-labs/multi-cluster-kubernetes/api/dynamic"
+	mckubernetes "github.com/argoproj-labs/multi-cluster-kubernetes/api/kubernetes"
 
 	"github.com/argoproj/pkg/sync"
 	"github.com/stretchr/testify/assert"

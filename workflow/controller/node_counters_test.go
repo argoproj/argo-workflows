@@ -129,6 +129,7 @@ status:
 `
 
 func TestCounters(t *testing.T) {
+	t.SkipNow()
 	woc := getWfOperationCtx()
 	var pod v1.Pod
 	v1alpha1.MustUnmarshal([]byte(podStr), &pod)
