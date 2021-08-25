@@ -1914,6 +1914,20 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#security" title="Security" class="md-nav__link">
+    Security
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-authentication-rate-limiting" title="API Authentication Rate Limiting" class="md-nav__link">
+    API Authentication Rate Limiting
+  </a>
+  
+</li>
+      
       
       
       
@@ -2363,6 +2377,20 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#security" title="Security" class="md-nav__link">
+    Security
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-authentication-rate-limiting" title="API Authentication Rate Limiting" class="md-nav__link">
+    API Authentication Rate Limiting
+  </a>
+  
+</li>
+      
       
       
       
@@ -2494,6 +2522,10 @@ uses <code>nginx.ingress.kubernetes.io/backend-protocol</code></p>
             <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/argo(/|$)(.*)</span>
 </code></pre></div>
 <p><a href="https://github.com/argoproj/argo-workflows/issues/3080">Learn more</a></p>
+<h2 id="security">Security<a class="headerlink" href="#security" title="Permanent link">&para;</a></h2>
+<p>Users should consider the following in their set-up of the Argo Server:</p>
+<h2 id="api-authentication-rate-limiting">API Authentication Rate Limiting<a class="headerlink" href="#api-authentication-rate-limiting" title="Permanent link">&para;</a></h2>
+<p>Argo Server does not perform authenticatinon directly. It delegates this to either the Kubernetes API Server (when <code>--auth-mode=client</code>) and the OAuth provider (when <code>--auth-mode=sso</code>). In each case, it is recommended that the the delegate implements any authentication rate limiting you need. </p>
                 
                   
                 
