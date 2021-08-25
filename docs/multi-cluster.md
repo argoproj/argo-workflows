@@ -7,7 +7,9 @@ You can run workflows where one or more tasks are run in another cluster or name
 You configure Argo to be aware of other clusters by adding secrets which contain KUBECONFIG.
 
 Argo can be configured to watch for workflows and pods either for the whole cluster, or for a specific managed
-namespace. With multi-cluster, you can also annotate the secret with the namespace it should be restricted to.
+namespace. With multi-cluster:
+
+* The workflow controller will listen to what ever it has been configured to listen to.
 
 ## Configuration
 
