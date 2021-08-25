@@ -3,6 +3,8 @@ package controller
 import (
 	"context"
 	"fmt"
+	"github.com/argoproj-labs/multi-cluster-kubernetes/api/labels"
+	mcrest "github.com/argoproj-labs/multi-cluster-kubernetes/api/rest"
 	"sync"
 	"time"
 
@@ -19,6 +21,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 	if pod == nil {
 		return
 	}
+	clusterName, _, _, _ := labels.GetOwnership(pod)
 	switch pod.Status.Phase {
 	case apiv1.PodSucceeded, apiv1.PodFailed:
 		// Skip any pod which are already completed
@@ -31,7 +34,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 
 			if !woc.GetShutdownStrategy().ShouldExecute(onExitPod) {
 				woc.log.Infof("Deleting Pending pod %s/%s as part of workflow shutdown with strategy: %s", pod.Namespace, pod.Name, woc.GetShutdownStrategy())
-				err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
+				err := woc.controller.kubeclientset.Cluster(clusterName).CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 				if err == nil {
 					wfNodesLock.Lock()
 					node := woc.wf.Status.Nodes[pod.Name]
@@ -50,7 +53,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 			_, onExitPod := pod.Labels[common.LabelKeyOnExit]
 			if !onExitPod {
 				woc.log.Infof("Deleting Pending pod %s/%s which has exceeded workflow deadline %s", pod.Namespace, pod.Name, woc.workflowDeadline)
-				err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
+				err := woc.controller.kubeclientset.Cluster(clusterName).CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 				if err == nil {
 					wfNodesLock.Lock()
 					node := woc.wf.Status.Nodes[pod.Name]
@@ -66,7 +69,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 	if woc.GetShutdownStrategy().Enabled() {
 		if _, onExitPod := pod.Labels[common.LabelKeyOnExit]; !woc.GetShutdownStrategy().ShouldExecute(onExitPod) {
 			woc.log.Infof("Shutting down pod %s", pod.Name)
-			woc.controller.queuePodForCleanup(woc.wf.Namespace, pod.Name, shutdownPod)
+			woc.controller.queuePodForCleanup(clusterName, pod.Namespace, pod.Name, shutdownPod)
 		}
 	}
 }
@@ -81,7 +84,12 @@ func (woc *wfOperationCtx) killDaemonedChildren(nodeID string) {
 		if childNode.Daemoned == nil || !*childNode.Daemoned {
 			continue
 		}
-		woc.controller.queuePodForCleanup(woc.wf.Namespace, childNode.ID, shutdownPod)
+		tmpl := woc.execWf.GetTemplateByName(childNode.TemplateName)
+		namespace := tmpl.Namespace
+		if namespace == "" {
+			namespace = woc.wf.Namespace
+		}
+		woc.controller.queuePodForCleanup(tmpl.ClusterNameOr(mcrest.InClusterName), namespace, childNode.ID, shutdownPod)
 		childNode.Phase = wfv1.NodeSucceeded
 		childNode.Daemoned = nil
 		woc.wf.Status.Nodes[childNode.ID] = childNode

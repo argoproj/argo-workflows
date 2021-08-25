@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	mcrest "github.com/argoproj-labs/multi-cluster-kubernetes/api/rest"
 
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
@@ -68,7 +69,7 @@ func assessAgentPodStatus(pod *apiv1.Pod) (wfv1.WorkflowPhase, string) {
 func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, error) {
 	podName := woc.getAgentPodName()
 
-	obj, exists, err := woc.controller.podInformer.GetStore().Get(cache.ExplicitKey(woc.wf.Namespace + "/" + podName))
+	obj, exists, err := woc.controller.podInformer.Cluster(mcrest.InClusterName).GetStore().Get(cache.ExplicitKey(woc.wf.Namespace + "/" + podName))
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pod from informer store: %w", err)
@@ -87,8 +88,8 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			Name:      podName,
 			Namespace: woc.wf.ObjectMeta.Namespace,
 			Labels: map[string]string{
-				common.LabelKeyWorkflow:       woc.wf.Name, // Allows filtering by pods related to specific workflow
-				common.LabelKeyCompleted:      "false",     // Allows filtering by incomplete workflow pods
+				common.LabelKeyWorkflow:  woc.wf.Name, // Allows filtering by pods related to specific workflow
+				common.LabelKeyCompleted: "false",     // Allows filtering by incomplete workflow pods
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
@@ -99,10 +100,10 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			ImagePullSecrets: woc.execWf.Spec.ImagePullSecrets,
 			Containers: []apiv1.Container{
 				{
-					Name:            "main",
-					Command:         []string{"argoexec"},
-					Args:            []string{"agent"},
-					Image:           woc.controller.executorImage(),
+					Name:    "main",
+					Command: []string{"argoexec"},
+					Args:    []string{"agent"},
+					Image:   woc.controller.executorImage(),
 					Env: []apiv1.EnvVar{
 						{Name: common.EnvVarWorkflowName, Value: woc.wf.Name},
 					},
@@ -120,7 +121,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 
 	woc.log.Debugf("Creating Agent Pod: %s", podName)
 
-	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
+	created, err := woc.controller.kubeclientset.InCluster().CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {
 			woc.log.Infof("Agent Pod %s  creation: already exists", podName)

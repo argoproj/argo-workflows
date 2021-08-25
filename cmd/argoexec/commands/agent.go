@@ -51,12 +51,12 @@ func initAgentExecutor() *executor.AgentExecutor {
 		log.Fatalf("Unable to determine workflow name from environment variable %s", common.EnvVarWorkflowName)
 	}
 	agentExecutor := executor.AgentExecutor{
-		ClientSet:                clientSet,
+		ClientSet:         clientSet,
 		RESTClient:        restClient,
-		Namespace:                namespace,
-		WorkflowName:             workflowName,
+		Namespace:         namespace,
+		WorkflowName:      workflowName,
 		WorkflowInterface: workflow.NewForConfigOrDie(config),
-		CompleteTask:             make(map[string]struct{}),
+		CompleteTask:      make(map[string]struct{}),
 	}
 	return &agentExecutor
 

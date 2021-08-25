@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	mcrest "github.com/argoproj-labs/multi-cluster-kubernetes/api/rest"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
@@ -55,7 +56,10 @@ func (woc *wfOperationCtx) getUnsuccessfulChildren(boundaryID string) int64 {
 }
 
 func (woc *wfOperationCtx) nodePodExist(node wfv1.NodeStatus) bool {
-	_, podExist, _ := woc.controller.podInformer.GetIndexer().GetByKey(fmt.Sprintf("%s/%s", woc.wf.Namespace, node.ID))
+	tmpl := woc.execWf.GetTemplateByName(node.TemplateName)
+	clusterName := tmpl.ClusterNameOr(mcrest.InClusterName)
+	namespace := tmpl.NamespaceOr(woc.wf.Namespace)
+	_, podExist, _ := woc.controller.podInformer.Cluster(clusterName).GetStore().GetByKey(fmt.Sprintf("%s/%s", namespace, node.ID))
 	return podExist
 }
 

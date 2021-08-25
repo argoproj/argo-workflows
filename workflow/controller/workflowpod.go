@@ -4,21 +4,21 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/argoproj-labs/multi-cluster-kubernetes/api"
-	"hash/fnv"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
+	"github.com/argoproj-labs/multi-cluster-kubernetes/api/labels"
+	mcrest "github.com/argoproj-labs/multi-cluster-kubernetes/api/rest"
 	"os"
 	"path/filepath"
 	"strconv"
 	"time"
+
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
-	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
 
 	"github.com/argoproj/argo-workflows/v3/config"
@@ -141,12 +141,14 @@ type createWorkflowPodOpts struct {
 }
 
 func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName string, mainCtrs []apiv1.Container, tmpl *wfv1.Template, opts *createWorkflowPodOpts) (*apiv1.Pod, error) {
-	nodeID := woc.wf.NodeID(nodeName)
-
+	nodeID :=  woc.wf.NodeID(nodeName)
+	clusterName := tmpl.ClusterNameOr(mcrest.InClusterName)
+	namespace := tmpl.NamespaceOr(woc.wf.Namespace)
+	podName := wfv1.UID(tmpl.ClusterName, tmpl.Namespace, woc.wf.Name, nodeName)
 	// we must check to see if the pod exists rather than just optimistically creating the pod and see if we get
 	// an `AlreadyExists` error because we won't get that error if there is not enough resources.
 	// Performance enhancement: Code later in this func is expensive to execute, so return quickly if we can.
-	obj, exists, err := woc.controller.podInformer.GetStore().Get(cache.ExplicitKey(woc.wf.Namespace + "/" + nodeID))
+	obj, exists, err := woc.controller.podInformer.Cluster(clusterName).GetStore().GetByKey(namespace + "/" + podName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pod from informer store: %w", err)
 	}
@@ -210,19 +212,6 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		}
 	}
 
-	namespace := tmpl.Namespace
-	if namespace == "" {
-		namespace = woc.wf.Namespace
-	}
-	podName := nodeID
-	clusterName := tmpl.ClusterName
-	if clusterName != "" || namespace != "" {
-		h := fnv.New32a()
-		_, _ = h.Write([]byte(nodeName))
-		_, _ = h.Write([]byte(clusterName))
-		_, _ = h.Write([]byte(namespace))
-		podName = fmt.Sprintf("%s-%d", woc.wf.Name, h.Sum32())
-	}
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      podName,
@@ -246,12 +235,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	if pod.Name != nodeID {
 		pod.Annotations[common.AnnotationKeyNodeID] = nodeID
 	}
-	if tmpl.ClusterName != "" {
-		pod.Labels[common.LabelKeyClusterName] = woc.controller.Config.ClusterName
-	}
-	if tmpl.ClusterName == "" || tmpl.Namespace == "" {
-		pod.SetOwnerReferences([]metav1.OwnerReference{*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind))})
-	}
+	labels.SetOwnership(pod, woc.controller.Config.ClusterName, woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind))
 
 	if opts.onExitPod {
 		// This pod is part of an onExit handler, label it so
@@ -461,19 +445,16 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		return nil, ErrResourceRateLimitReached
 	}
 
-	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
-
-	clientset := woc.controller.kubeclientset
+	clientset := woc.controller.kubeclientset.InCluster()
 
 	if tmpl.ClusterName != "" {
 		userName := fmt.Sprintf("system:serviceaccount:%s:%s", woc.controller.namespace, woc.wf.Namespace)
 		woc.log.WithField("clusterName", clusterName).WithField("userName", userName).Info("getting cluster config using impersonation")
-		restConfig, err := api.LoadCluster(ctx, clientset.CoreV1().Secrets(woc.controller.namespace), tmpl.ClusterName)
+		restConfig, err := mcrest.NewConfig(ctx, clientset.CoreV1().Secrets(woc.controller.namespace), tmpl.ClusterName, mcrest.WithImpersonate(rest.ImpersonationConfig{
+			UserName: userName,
+		}))
 		if err != nil {
 			return nil, err
-		}
-		restConfig.Impersonate = rest.ImpersonationConfig{
-			UserName: userName,
 		}
 		clientset, err = kubernetes.NewForConfig(restConfig)
 		if err != nil {
@@ -481,12 +462,15 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		}
 	}
 
-	created, err := clientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
+	woc.log.WithField("clusterName", clusterName).
+		WithField("namespace", namespace).
+		Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
+	created, err := clientset.CoreV1().Pods(namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {
 			// workflow pod names are deterministic. We can get here if the
 			// controller fails to persist the workflow after creating the pod.
-			woc.log.Infof("Failed pod %s (%s) creation: already exists", nodeName, nodeID)
+			woc.log.Infof("Failed pod %s (%s) creation: %v", nodeName, nodeID, err)
 			return created, nil
 		}
 		if errorsutil.IsTransientErr(err) {
@@ -1075,7 +1059,7 @@ func (woc *wfOperationCtx) setupServiceAccount(ctx context.Context, pod *apiv1.P
 		executorServiceAccountName = woc.execWf.Spec.Executor.ServiceAccountName
 	}
 	if executorServiceAccountName != "" {
-		tokenName, err := common.GetServiceAccountTokenName(ctx, woc.controller.kubeclientset, pod.Namespace, executorServiceAccountName)
+		tokenName, err := common.GetServiceAccountTokenName(ctx, woc.controller.kubeclientset.InCluster(), pod.Namespace, executorServiceAccountName)
 		if err != nil {
 			return err
 		}

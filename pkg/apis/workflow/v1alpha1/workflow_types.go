@@ -2419,6 +2419,20 @@ func (tmpl *Template) SaveLogsAsArtifact() bool {
 	return tmpl != nil && tmpl.ArchiveLocation.IsArchiveLogs() && (tmpl.ContainerSet == nil || tmpl.ContainerSet.HasContainerNamed("main"))
 }
 
+func (tmpl Template) NamespaceOr(defaultValue string) string {
+	if tmpl.Namespace == "" {
+		return tmpl.Namespace
+	}
+	return defaultValue
+}
+
+func (tmpl *Template) ClusterNameOr(defaultValue string) string {
+	if tmpl.ClusterName == "" {
+		return tmpl.ClusterName
+	}
+	return defaultValue
+}
+
 // DAGTemplate is a template subtype for directed acyclic graph templates
 type DAGTemplate struct {
 	// Target are one or more names of targets to execute in a DAG
@@ -2640,12 +2654,22 @@ func (wf *Workflow) GetWorkflowSpec() WorkflowSpec {
 
 // NodeID creates a deterministic node ID based on a node name
 func (wf *Workflow) NodeID(name string) string {
-	if name == wf.ObjectMeta.Name {
-		return wf.ObjectMeta.Name
+	if name == wf.Name {
+		return wf.Name
 	}
+	return UID("", "", wf.Name, name)
+}
+
+func UID(clusterName, namespace, workflowName, name string) string {
 	h := fnv.New32a()
+	if clusterName != "" {
+		_, _ = h.Write([]byte(clusterName))
+	}
+	if namespace != "" {
+		_, _ = h.Write([]byte(namespace))
+	}
 	_, _ = h.Write([]byte(name))
-	return fmt.Sprintf("%s-%v", wf.ObjectMeta.Name, h.Sum32())
+	return fmt.Sprintf("%s-%v", workflowName, h.Sum32())
 }
 
 // GetStoredTemplate retrieves a template from stored templates of the workflow.
@@ -2996,10 +3020,10 @@ type MutexHolding struct {
 	Mutex string `json:"mutex,omitempty" protobuf:"bytes,1,opt,name=mutex"`
 	// Holder is a reference to the object which holds the Mutex.
 	// Holding Scenario:
-	//   1. Current workflow's NodeID which is holding the lock.
+	//   1. Current workflow's UID which is holding the lock.
 	//      e.g: ${NodeID}
 	// Waiting Scenario:
-	//   1. Current workflow or other workflow NodeID which is holding the lock.
+	//   1. Current workflow or other workflow UID which is holding the lock.
 	//      e.g: ${WorkflowName}/${NodeID}
 	Holder string `json:"holder,omitempty" protobuf:"bytes,2,opt,name=holder"`
 }

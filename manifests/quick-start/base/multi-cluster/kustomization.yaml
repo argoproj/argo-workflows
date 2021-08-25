@@ -4,3 +4,5 @@ kind: Kustomization
 resources:
   - impersonator-role.yaml
   - impersonator-rolebinding.yaml
+  - multi-cluster-argo-clusterrole.yaml
+  - multi-cluster-argo-clusterrolebinding.yaml

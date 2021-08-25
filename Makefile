@@ -449,8 +449,10 @@ $(GOPATH)/bin/goreman:
 .PHONY: start
 ifeq ($(RUN_MODE),local)
 start: install controller cli $(GOPATH)/bin/goreman
+	./dist/argo cluster add other
 else
-start: install
+start: install cli
+	./dist/argo cluster add other --host https://kubernetes.default.svc
 endif
 	@echo "starting STATIC_FILES=$(STATIC_FILES) (DEV_BRANCH=$(DEV_BRANCH), GIT_BRANCH=$(GIT_BRANCH)), AUTH_MODE=$(AUTH_MODE), RUN_MODE=$(RUN_MODE)"
 	# Check dex, minio, postgres and mysql are in hosts file

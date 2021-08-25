@@ -8,7 +8,7 @@ spec:
   entrypoint: main
   templates:
     - name: main
-      clusterName: docker-desktop
-      namespace: default
+      clusterName: other
+      namespace: argo
       container:
         image: docker/whalesay:latest

@@ -4,6 +4,6 @@ metadata:
   name: impersonator
 rules:
   - apiGroups: [ "" ]
-    resources: [ "serviceaccounts" ]
-    verbs: [ "impersonate" ]
-    resourceNames: [ "argo" ]
+    resources: [ serviceaccounts ]
+    verbs: [ impersonate ]
+    resourceNames: [ argo ]
