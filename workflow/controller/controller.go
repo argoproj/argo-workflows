@@ -10,6 +10,8 @@ import (
 	"syscall"
 	"time"
 
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
 	mccache "github.com/argoproj-labs/multi-cluster-kubernetes/api/cache"
 	mcdynamic "github.com/argoproj-labs/multi-cluster-kubernetes/api/dynamic"
 	mckubernetes "github.com/argoproj-labs/multi-cluster-kubernetes/api/kubernetes"
@@ -720,21 +722,32 @@ func (wfc *WorkflowController) finalizeWorkflows(ctx context.Context) error {
 		woc := newWorkflowOperationCtx(wf, wfc)
 		keys := make(map[string]bool)
 		for _, tmpl := range woc.execWf.Spec.Templates {
-			keys[tmpl.ClusterNameOr(mcrest.InClusterName)+"/"+tmpl.NamespaceOr(woc.wf.Namespace)] = true
+			if tmpl.ClusterName != "" || tmpl.Namespace != "" {
+				keys[tmpl.ClusterNameOr(mcrest.InClusterName)+"/"+tmpl.NamespaceOr(woc.wf.Namespace)] = true
+			}
 		}
+		log.WithField("keys", keys).Info("keys")
 		for key := range keys {
 			parts := strings.Split(key, "/")
 			clusterName, namespace := parts[0], parts[1]
+
+			r := util.InstanceIDRequirement(wfc.Config.InstanceID)
+			labelSelector := mclabels.KeyOwnerClusterName + "=" + wfc.Config.ClusterName + "," +
+				mclabels.KeyOwnerNamespace + "=" + woc.wf.Namespace + "," +
+				common.LabelKeyWorkflow + "=" + woc.wf.Name + ", " +
+				r.String()
+			log.WithField("clusterName", clusterName).
+				WithField("namespace", namespace).
+				WithField("labelSelector", labelSelector).
+				Info("deleting pods")
 			err := wfc.kubeclientset.Cluster(clusterName).CoreV1().Pods(namespace).DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{
-				LabelSelector: mclabels.KeyOwnerClusterName + "=" + wfc.Config.ClusterName + "," +
-					mclabels.KeyOwnerNamespace + "=" + woc.wf.Namespace + "," +
-					common.LabelKeyWorkflow + "=" + woc.wf.Name,
+				LabelSelector: labelSelector,
 			})
 			if err != nil {
 				return fmt.Errorf("failed to finalize workflow %s/%s: %w", wf.Namespace, wf.Name, err)
 			}
 		}
-		woc.wf.SetFinalizers(nil)
+		controllerutil.RemoveFinalizer(woc.wf, common.FinalizerName)
 		woc.updated = true
 		woc.persistUpdates(ctx)
 	}
@@ -1030,13 +1043,18 @@ func (wfc *WorkflowController) newPodInformer() mccache.SharedIndexInformer {
 	instanceIdReq := r.String()
 
 	for clusterName, k := range wfc.kubeclientset.Clusters() {
-		log.WithField("clusterName", clusterName).Info("starting pod watch")
-		informers[clusterName] = v1.NewFilteredPodInformer(k, wfc.namespace, podResyncPeriod, indexers, func(opts *metav1.ListOptions) {
-			if clusterName == mcrest.InClusterName {
-				opts.LabelSelector = "!" + mclabels.KeyOwnerClusterName + "," + instanceIdReq
-			} else {
-				opts.LabelSelector = mclabels.KeyOwnerClusterName + "=" + wfc.Config.ClusterName + "," + instanceIdReq
-			}
+		var labelSelector string
+		if clusterName == mcrest.InClusterName {
+			labelSelector = "!" + mclabels.KeyOwnerClusterName + "," + instanceIdReq
+		} else {
+			labelSelector = mclabels.KeyOwnerClusterName + "=" + wfc.Config.ClusterName + "," + instanceIdReq
+		}
+		log.WithField("clusterName", clusterName).
+			WithField("managedNamespace", wfc.managedNamespace).
+			WithField("labelSelector", labelSelector).
+			Info("starting pod informer")
+		informers[clusterName] = v1.NewFilteredPodInformer(k, wfc.managedNamespace, podResyncPeriod, indexers, func(opts *metav1.ListOptions) {
+			opts.LabelSelector = labelSelector
 		})
 	}
 	for _, i := range informers {

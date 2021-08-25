@@ -202,7 +202,7 @@ Workflow is the definition of a workflow resource
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
 
-- [`multi-cluster-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/multi-cluster-workflow.yaml)
+- [`multi-cluster-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/multi-cluster/multi-cluster-workflow.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/nested-workflow.yaml)
 
@@ -609,7 +609,7 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
 
-- [`multi-cluster-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/multi-cluster-workflow.yaml)
+- [`multi-cluster-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/multi-cluster/multi-cluster-workflow.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/nested-workflow.yaml)
 
@@ -1033,7 +1033,7 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
 
-- [`multi-cluster-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/multi-cluster-workflow.yaml)
+- [`multi-cluster-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/multi-cluster/multi-cluster-workflow.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/nested-workflow.yaml)
 
@@ -1414,7 +1414,7 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
 
-- [`multi-cluster-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/multi-cluster-workflow.yaml)
+- [`multi-cluster-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/multi-cluster/multi-cluster-workflow.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/nested-workflow.yaml)
 
@@ -3894,7 +3894,7 @@ MetricLabel is a single label for a prometheus metric
 
 - [`k8s-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch.yaml)
 
-- [`multi-cluster-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/multi-cluster-workflow.yaml)
+- [`multi-cluster-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/multi-cluster/multi-cluster-workflow.yaml)
 
 - [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy-with-label-selector.yaml)
 
@@ -4830,7 +4830,13 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
 
-- [`multi-cluster-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/multi-cluster-workflow.yaml)
+- [`multi-cluster-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/multi-cluster/multi-cluster-workflow.yaml)
+
+- [`my-minio-cred-secret.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/multi-cluster/my-minio-cred-secret.yaml)
+
+- [`workflow-role.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/multi-cluster/workflow-role.yaml)
+
+- [`workflow-rolebinding.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/multi-cluster/workflow-rolebinding.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/nested-workflow.yaml)
 
@@ -5424,7 +5430,7 @@ A single application container that you want to run within a pod.
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
 
-- [`multi-cluster-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/multi-cluster-workflow.yaml)
+- [`multi-cluster-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/multi-cluster/multi-cluster-workflow.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/nested-workflow.yaml)
 
@@ -5724,6 +5730,8 @@ ResourceRequirements describes the compute resource requirements.
 - [`fun-with-gifs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fun-with-gifs.yaml)
 
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
+
+- [`workflow-role.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/multi-cluster/workflow-role.yaml)
 
 - [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-spec-patch-wf-tmpl.yaml)
 
@@ -6119,7 +6127,7 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
 
-- [`multi-cluster-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/multi-cluster-workflow.yaml)
+- [`multi-cluster-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/multi-cluster/multi-cluster-workflow.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/nested-workflow.yaml)
 

@@ -144,6 +144,11 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	clusterName := tmpl.ClusterNameOr(mcrest.InClusterName)
 	namespace := tmpl.NamespaceOr(woc.wf.Namespace)
 	podName := wfv1.UID(tmpl.ClusterName, tmpl.Namespace, woc.wf.Name, nodeName)
+	log.WithField("clusterName", clusterName).
+		WithField("namespace", namespace).
+		WithField("podName", podName).
+		WithField("nodeID", nodeID).
+		Info("creating pod")
 	// we must check to see if the pod exists rather than just optimistically creating the pod and see if we get
 	// an `AlreadyExists` error because we won't get that error if there is not enough resources.
 	// Performance enhancement: Code later in this func is expensive to execute, so return quickly if we can.
@@ -463,7 +468,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	woc.log.WithField("clusterName", clusterName).
 		WithField("namespace", namespace).
-		Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
+		Debugf("Creating Pod: %s (%s)", podName, nodeID)
 	created, err := clientset.CoreV1().Pods(namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {

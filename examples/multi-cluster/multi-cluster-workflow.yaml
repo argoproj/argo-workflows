@@ -9,6 +9,6 @@ spec:
   templates:
     - name: main
       clusterName: other
-      namespace: argo
+      namespace: default
       container:
         image: docker/whalesay:latest

@@ -15,6 +15,8 @@ import (
 	"sync"
 	"time"
 
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
 	mccache "github.com/argoproj-labs/multi-cluster-kubernetes/api/cache"
 	mcrest "github.com/argoproj-labs/multi-cluster-kubernetes/api/rest"
 
@@ -281,7 +283,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, woc.globalParams, realTimeScope, true)
 		}
 		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration()
-		woc.wf.Finalizers = []string{common.FinalizerName}
+		controllerutil.AddFinalizer(woc.wf, common.FinalizerName)
 	} else {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 		err := woc.podReconciliation(ctx)
@@ -947,9 +949,12 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 			woc.updateAgentPodStatus(ctx, pod)
 			return
 		}
-		nodeNameForPod := pod.Annotations[common.AnnotationKeyNodeName]
+		nodeName := pod.Annotations[common.AnnotationKeyNodeName]
+		nodeID, ok := pod.Annotations[common.AnnotationKeyNodeID]
+		if !ok {
+			nodeID = woc.wf.NodeID(nodeName)
+		}
 
-		nodeID := woc.wf.NodeID(nodeNameForPod)
 		seenPodLock.Lock()
 		seenPods[nodeID] = pod
 		seenPodLock.Unlock()
@@ -1040,7 +1045,8 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 
 			// grace-period to allow informer sync
 			recentlyStarted := recentlyStarted(node)
-			woc.log.WithFields(log.Fields{"podName": node.Name, "nodePhase": node.Phase, "recentlyStarted": recentlyStarted}).Info("Workflow pod is missing")
+			woc.log.WithFields(log.Fields{"podName": node.Name, "nodePhase": node.Phase, "recentlyStarted": recentlyStarted}).
+				Info("Workflow pod is missing")
 			metrics.PodMissingMetric.WithLabelValues(strconv.FormatBool(recentlyStarted), string(node.Phase)).Inc()
 
 			// If the node is pending and the pod does not exist, it could be the case that we want to try to submit it
