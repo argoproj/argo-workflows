@@ -7,7 +7,15 @@ import (
 )
 
 func TestValidateExamples(t *testing.T) {
-	failures, err := ValidateArgoYamlRecursively(".", []string{"testvolume.yaml"})
+	failures, err := ValidateArgoYamlRecursively(
+		".",
+		[]string{
+			"testvolume.yaml",
+			"workflow-rolebinding.yaml",
+			"my-minio-cred-secret.yaml",
+			"workflow-role.yaml",
+		},
+	)
 	if err != nil {
 		t.Errorf("There was an error: %s", err)
 	}

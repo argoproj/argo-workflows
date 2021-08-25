@@ -10,6 +10,7 @@ import (
 )
 
 func TestWorkflowIndexFunc(t *testing.T) {
+	// TODO - both cases neede
 	obj := &unstructured.Unstructured{}
 	wfv1.MustUnmarshal(`
 apiVersion: v1
@@ -17,11 +18,13 @@ kind: Pod
 metadata:
   namespace: my-ns
   labels:
-    workflows.argoproj.io/workflow: my-wf
+    multi-cluster.argoproj.io/owner-cluster-name: cn
+    multi-cluster.argoproj.io/owner-namespace: ns
+    multi-cluster.argoproj.io/owner-name: n
 `, obj)
 	v, err := MetaWorkflowIndexFunc(obj)
 	if assert.NoError(t, err) {
-		assert.Equal(t, []string{"my-ns/my-wf"}, v)
+		assert.Equal(t, []string{"cn/ns/n"}, v)
 	}
 }
 
