@@ -33,5 +33,5 @@ spec:
             }
           ]
         }'
-        YOUR_WEBHOOK_URL_HERE
+        YOUR_WEBHOOK_URL_HERE"
       ]
