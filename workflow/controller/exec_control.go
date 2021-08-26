@@ -23,6 +23,9 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 		return
 	}
 	clusterName, _, _, _ := labels.GetOwnership(pod)
+	if clusterName == "" {
+		clusterName = mcrest.InClusterName
+	}
 	switch pod.Status.Phase {
 	case apiv1.PodSucceeded, apiv1.PodFailed:
 		// Skip any pod which are already completed

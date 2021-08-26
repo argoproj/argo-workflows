@@ -1,30 +1,28 @@
 package indexes
 
 import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"testing"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 
 	"github.com/stretchr/testify/assert"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 func TestWorkflowIndexFunc(t *testing.T) {
-	// TODO - both cases neede
-	obj := &unstructured.Unstructured{}
-	wfv1.MustUnmarshal(`
-apiVersion: v1
-kind: Pod
-metadata:
-  namespace: my-ns
-  labels:
-    multi-cluster.argoproj.io/owner-cluster-name: cn
-    multi-cluster.argoproj.io/owner-namespace: ns
-    multi-cluster.argoproj.io/owner-name: n
-`, obj)
+
+	obj := &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{
+			Labels: map[string]string{
+				"multi-cluster.argoproj.io/owner-cluster-name": "cn",
+				"multi-cluster.argoproj.io/owner-namespace":    "ns",
+				"multi-cluster.argoproj.io/owner-name":         "n",
+			},
+		},
+	}
 	v, err := MetaWorkflowIndexFunc(obj)
 	if assert.NoError(t, err) {
-		assert.Equal(t, []string{"cn/ns/n"}, v)
+		assert.Equal(t, []string{"ns/n"}, v)
 	}
 }
 

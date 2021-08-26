@@ -3023,7 +3023,7 @@ type MutexHolding struct {
 	//   1. Current workflow's NodeID which is holding the lock.
 	//      e.g: ${NodeID}
 	// Waiting Scenario:
-	//   1. Current workflow or other workflow UID which is holding the lock.
+	//   1. Current workflow or other workflow NodeID which is holding the lock.
 	//      e.g: ${WorkflowName}/${NodeID}
 	Holder string `json:"holder,omitempty" protobuf:"bytes,2,opt,name=holder"`
 }

@@ -453,10 +453,16 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	if tmpl.ClusterName != "" {
 		userName := fmt.Sprintf("system:serviceaccount:%s:%s", woc.controller.namespace, woc.wf.Namespace)
-		woc.log.WithField("clusterName", clusterName).WithField("userName", userName).Info("getting cluster config using impersonation")
-		restConfig, err := mcrest.NewConfig(ctx, clientset.CoreV1().Secrets(woc.controller.namespace), tmpl.ClusterName, mcrest.WithImpersonate(rest.ImpersonationConfig{
-			UserName: userName,
-		}))
+		woc.log.WithField("clusterName", clusterName).
+			WithField("namespace", woc.wf.Namespace).
+			WithField("userName", userName).
+			Info("getting cluster config using impersonation")
+		restConfig, err := mcrest.NewConfig(
+			ctx,
+			clientset.CoreV1().Secrets(woc.wf.Namespace),
+			tmpl.ClusterName,
+			mcrest.WithImpersonate(rest.ImpersonationConfig{UserName: userName}),
+		)
 		if err != nil {
 			return nil, err
 		}
