@@ -2,9 +2,20 @@ package sync
 
 import (
 	"time"
+
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 type ChainThrottler []Throttler
+
+func (c ChainThrottler) Initialize(wfs []wfv1.Workflow) error {
+	for _, t := range c {
+		if err := t.Initialize(wfs); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
 func (c ChainThrottler) Add(key Key, priority int32, creationTime time.Time) {
 	for _, t := range c {
