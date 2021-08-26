@@ -9,15 +9,15 @@ import (
 	"strconv"
 	"time"
 
+	mcconfig "github.com/argoproj-labs/multi-cluster-kubernetes/api/config"
 	"github.com/argoproj-labs/multi-cluster-kubernetes/api/labels"
-	mcrest "github.com/argoproj-labs/multi-cluster-kubernetes/api/rest"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/utils/pointer"
 
 	"github.com/argoproj/argo-workflows/v3/config"
@@ -141,21 +141,22 @@ type createWorkflowPodOpts struct {
 
 func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName string, mainCtrs []apiv1.Container, tmpl *wfv1.Template, opts *createWorkflowPodOpts) (*apiv1.Pod, error) {
 	nodeID := woc.wf.NodeID(nodeName)
-	clusterName := tmpl.ClusterNameOr(mcrest.InClusterName)
+	clusterName := tmpl.ClusterNameOr(mcconfig.InClusterName)
 	namespace := tmpl.NamespaceOr(woc.wf.Namespace)
 	podName := wfv1.UID(tmpl.ClusterName, tmpl.Namespace, woc.wf.Name, nodeName)
+	// we must check to see if the pod exists rather than just optimistically creating the pod and see if we get
+	// an `AlreadyExists` error because we won't get that error if there is not enough resources.
+	// Performance enhancement: Code later in this func is expensive to execute, so return quickly if we can.
+	obj, exists, err := woc.controller.podInformer.Config(clusterName).GetStore().GetByKey(namespace + "/" + podName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pod from informer store: %w", err)
+	}
 	log.WithField("clusterName", clusterName).
 		WithField("namespace", namespace).
 		WithField("podName", podName).
 		WithField("nodeID", nodeID).
-		Info("creating pod")
-	// we must check to see if the pod exists rather than just optimistically creating the pod and see if we get
-	// an `AlreadyExists` error because we won't get that error if there is not enough resources.
-	// Performance enhancement: Code later in this func is expensive to execute, so return quickly if we can.
-	obj, exists, err := woc.controller.podInformer.Cluster(clusterName).GetStore().GetByKey(namespace + "/" + podName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get pod from informer store: %w", err)
-	}
+		WithField("exists", exists).
+		Info("creating workflow pod")
 	if exists {
 		existing, ok := obj.(*apiv1.Pod)
 		if ok {
@@ -457,12 +458,16 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			WithField("namespace", woc.wf.Namespace).
 			WithField("userName", userName).
 			Info("getting cluster config using impersonation")
-		restConfig, err := mcrest.NewConfig(
+		c, err := mcconfig.NewConfig(
 			ctx,
 			clientset.CoreV1().Secrets(woc.wf.Namespace),
-			tmpl.ClusterName,
-			mcrest.WithImpersonate(rest.ImpersonationConfig{UserName: userName}),
+			clusterName,
+			mcconfig.WithImpersonate(userName),
 		)
+		if err != nil {
+			return nil, err
+		}
+		restConfig, err := clientcmd.NewDefaultClientConfig(*c, &clientcmd.ConfigOverrides{}).ClientConfig()
 		if err != nil {
 			return nil, err
 		}

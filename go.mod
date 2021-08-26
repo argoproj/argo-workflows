@@ -83,3 +83,5 @@ require (
 	sigs.k8s.io/yaml v1.2.0
 	upper.io/db.v3 v3.6.3+incompatible
 )
+
+replace github.com/argoproj-labs/multi-cluster-kubernetes => ../../argoproj-labs/multi-cluster-kubernetes

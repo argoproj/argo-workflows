@@ -18,7 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	mccache "github.com/argoproj-labs/multi-cluster-kubernetes/api/cache"
-	mcrest "github.com/argoproj-labs/multi-cluster-kubernetes/api/rest"
+	mcconfig "github.com/argoproj-labs/multi-cluster-kubernetes/api/config"
 
 	"github.com/antonmedv/expr"
 	"github.com/argoproj/pkg/humanize"
@@ -639,7 +639,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	for key, podPhase := range woc.completedPods {
 		clusterName, namespace, podName, _ := mccache.SplitMetaNamespaceKey(key)
 		if clusterName == "" {
-			clusterName = mcrest.InClusterName
+			clusterName = mcconfig.InClusterName
 		}
 		if woc.execWf.Spec.PodGC != nil {
 			switch woc.execWf.Spec.PodGC.Strategy {
@@ -1285,7 +1285,7 @@ func podHasContainerNeedingTermination(pod *apiv1.Pod, tmpl wfv1.Template) bool 
 
 func (woc *wfOperationCtx) cleanUpPod(pod *apiv1.Pod, tmpl wfv1.Template) {
 	if podHasContainerNeedingTermination(pod, tmpl) {
-		clusterName := tmpl.ClusterNameOr(mcrest.InClusterName)
+		clusterName := tmpl.ClusterNameOr(mcconfig.InClusterName)
 		namespace := tmpl.NamespaceOr(woc.wf.Namespace)
 		woc.controller.queuePodForCleanup(clusterName, namespace, pod.Name, terminateContainers)
 	}
@@ -2186,7 +2186,7 @@ func (woc *wfOperationCtx) getPodByNode(node *wfv1.NodeStatus) (*apiv1.Pod, erro
 		return nil, fmt.Errorf("Expected node type %s, got %s", wfv1.NodeTypePod, node.Type)
 	}
 	tmpl := woc.execWf.GetTemplateByName(node.TemplateName)
-	clusterName := tmpl.ClusterNameOr(mcrest.InClusterName)
+	clusterName := tmpl.ClusterNameOr(mcconfig.InClusterName)
 	namespace := tmpl.NamespaceOr(woc.wf.Namespace)
 	return woc.controller.getPod(clusterName, namespace, node.ID)
 }
