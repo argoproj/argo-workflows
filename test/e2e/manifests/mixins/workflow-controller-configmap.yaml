@@ -4,7 +4,7 @@ metadata:
   name: workflow-controller-configmap
 data:
   resourceRateLimit: |
-    limit: 10
+    limit: 20
     burst: 1
   workflowDefaults: |
     spec:

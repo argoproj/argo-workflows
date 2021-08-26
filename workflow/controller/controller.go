@@ -726,11 +726,9 @@ func (wfc *WorkflowController) finalizeWorkflows(ctx context.Context) error {
 				keys[tmpl.ClusterNameOr(mcrest.InClusterName)+"/"+tmpl.NamespaceOr(woc.wf.Namespace)] = true
 			}
 		}
-		log.WithField("keys", keys).Info("keys")
 		for key := range keys {
 			parts := strings.Split(key, "/")
 			clusterName, namespace := parts[0], parts[1]
-
 			r := util.InstanceIDRequirement(wfc.Config.InstanceID)
 			labelSelector := mclabels.KeyOwnerClusterName + "=" + wfc.Config.ClusterName + "," +
 				mclabels.KeyOwnerNamespace + "=" + woc.wf.Namespace + "," +

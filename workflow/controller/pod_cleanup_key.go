@@ -31,5 +31,5 @@ func parsePodCleanupKey(k podCleanupKey) (clusterName string, namespace string, 
 	if len(parts) != 4 {
 		return "", "", "", ""
 	}
-	return parts[0], parts[1], parts[2], parts[4]
+	return parts[0], parts[1], parts[2], parts[3]
 }
