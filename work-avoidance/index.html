@@ -532,6 +532,18 @@
 
 
   <li class="md-nav__item">
+    <a href="../http-template/" title="HTTP Template" class="md-nav__link">
+      HTTP Template
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
     <a href="../container-set-template/" title="Container Set Template" class="md-nav__link">
       Container Set Template
     </a>
@@ -841,6 +853,18 @@
 
 
   <li class="md-nav__item">
+    <a href="../swagger/" title="Argo Server API" class="md-nav__link">
+      Argo Server API
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
     <a href="../rest-api/" title="REST API" class="md-nav__link">
       REST API
     </a>
@@ -978,7 +1002,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../examples/" title="Examples" class="md-nav__link">
+    <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/README.md" title="Examples" class="md-nav__link">
       Examples
     </a>
   </li>
@@ -2170,7 +2194,7 @@ touch /work/markers/name-of-task
 <div class="highlight"><pre><span></span><code>touch /work/markers/<span class="k">$(</span>date +%Y-%m-%d<span class="k">)</span>-echo-<span class="o">{{</span>inputs.parameters.num<span class="o">}}</span>
 </code></pre></div>
 <p>You need to store the marker files between workflows and this can be achieved using <a href="../fields/#persistentvolumeclaim">a PVC</a> and <a href="../fields/#artifact">optional input artifact</a>. </p>
-<p><a href="../examples/work-avoidance.yaml">This complete work avoidance example</a> has the following:</p>
+<p><a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/work-avoidance.yaml">This complete work avoidance example</a> has the following:</p>
 <ul>
 <li>A PVC to store the markers on.</li>
 <li>A <code>load-markers</code> step that loads the marker files from artifact storage.</li>

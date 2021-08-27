@@ -530,6 +530,18 @@
 
 
   <li class="md-nav__item">
+    <a href="../http-template/" title="HTTP Template" class="md-nav__link">
+      HTTP Template
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
     <a href="../container-set-template/" title="Container Set Template" class="md-nav__link">
       Container Set Template
     </a>
@@ -832,6 +844,18 @@
 
 
   <li class="md-nav__item">
+    <a href="../swagger/" title="Argo Server API" class="md-nav__link">
+      Argo Server API
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
     <a href="../rest-api/" title="REST API" class="md-nav__link">
       REST API
     </a>
@@ -1088,7 +1112,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../examples/" title="Examples" class="md-nav__link">
+    <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/README.md" title="Examples" class="md-nav__link">
       Examples
     </a>
   </li>
@@ -2364,7 +2388,7 @@
 <li>Create/get/delete pods, PVCs, and PDBs.</li>
 <li>List/get template, config maps, service accounts, and secrets.</li>
 </ul>
-<p>See <a href="../manifests/cluster-install/workflow-controller-rbac/workflow-controller-clusterrole.yaml">workflow-controller-clusterrole.yaml</a> or <a href="../manifests/namespace-install/workflow-controller-rbac/workflow-controller-role.yaml">workflow-controller-role.yaml</a></p>
+<p>See <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/cluster-install/workflow-controller-rbac/workflow-controller-clusterrole.yaml">workflow-controller-clusterrole.yaml</a> or <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/namespace-install/workflow-controller-rbac/workflow-controller-role.yaml">workflow-controller-role.yaml</a></p>
 <h3 id="user-permissions">User Permissions<a class="headerlink" href="#user-permissions" title="Permanent link">&para;</a></h3>
 <p>Users minimally need permission to create/read workflows. The controller will then create workflow pods (config maps etc) on behalf of the users, even if the user does not have permission to do this themselves. The controller will only create workflow pods in the workflow's namespace.</p>
 <p>A way to think of this is that, if the user has permission to create a workflow in a namespace, then it is OK to create pods or anything else for them in that namespace.</p>
@@ -2386,7 +2410,7 @@
 <li>Get/watch/patch pods.</li>
 <li>Get/watch pod logs.</li>
 </ul>
-<p>See <a href="../manifests/quick-start/base/workflow-role.yaml">workflow-role.yaml</a>.</p>
+<p>See <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/quick-start/base/workflow-role.yaml">workflow-role.yaml</a>.</p>
 <p>Different service accounts should be used if a workflow pod needs to have elevated permissions, e.g. to create other resources.</p>
 <p>The main container will have the service account token mounted , allowing the main container to patch pods (amongst other permissions). Set <code>automountServiceAccountToken</code> to false to prevent this. See <a href="../fields/">fields</a>.</p>
 <p>By default, workflows pods run as <code>root</code>. To further secure workflow pods, set the <a href="../workflow-pod-security-context/">workflow pod security context</a>.</p>

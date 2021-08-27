@@ -532,6 +532,18 @@
 
 
   <li class="md-nav__item">
+    <a href="../http-template/" title="HTTP Template" class="md-nav__link">
+      HTTP Template
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
     <a href="../container-set-template/" title="Container Set Template" class="md-nav__link">
       Container Set Template
     </a>
@@ -870,6 +882,18 @@
 
 
   <li class="md-nav__item">
+    <a href="../swagger/" title="Argo Server API" class="md-nav__link">
+      Argo Server API
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
     <a href="../rest-api/" title="REST API" class="md-nav__link">
       REST API
     </a>
@@ -1007,7 +1031,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../examples/" title="Examples" class="md-nav__link">
+    <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/README.md" title="Examples" class="md-nav__link">
       Examples
     </a>
   </li>
@@ -2198,7 +2222,7 @@
 </blockquote>
 <p>In Kubernetes, pods are cattle and can be deleted at any time. Deletion could be manually via <code>kubectl delete pod</code>, during a node drain, or for other reasons.</p>
 <p>This can be very inconvenient, your workflow will error, but for reasons outside of your control.</p>
-<p>A <a href="../examples/default-pdb-support.yaml">pod disruption budget</a> can reduce the likelihood of this happening. But, it cannot entirely prevent it.   </p>
+<p>A <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/default-pdb-support.yaml">pod disruption budget</a> can reduce the likelihood of this happening. But, it cannot entirely prevent it.   </p>
 <p>To retry pods that were deleted, set <code>retryStrategy.retryPolicy: OnError</code>.</p>
 <p>This can be set at a workflow-level, template-level, or globally (using <a href="../default-workflow-specs/">workflow defaults</a>)</p>
 <h2 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h2>

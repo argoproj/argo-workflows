@@ -1,7 +1,0 @@
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: argo-server
-  annotations:
-    workflows.argoproj.io/rbac-rule: "'authors' in groups && email == 'kilgore@kilgore.trout'"
-    workflows.argoproj.io/rbac-rule-precedence: "1"

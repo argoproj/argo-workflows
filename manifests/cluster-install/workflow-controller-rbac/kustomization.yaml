@@ -1,9 +1,0 @@
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-
-resources:
-- workflow-aggregate-roles.yaml
-- workflow-controller-clusterrole.yaml
-- workflow-controller-clusterrolebinding.yaml
-- workflow-controller-role.yaml
-- workflow-controller-rolebinding.yaml

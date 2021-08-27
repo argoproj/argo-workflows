@@ -530,6 +530,18 @@
 
 
   <li class="md-nav__item">
+    <a href="../http-template/" title="HTTP Template" class="md-nav__link">
+      HTTP Template
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
     <a href="../container-set-template/" title="Container Set Template" class="md-nav__link">
       Container Set Template
     </a>
@@ -832,6 +844,18 @@
 
 
   <li class="md-nav__item">
+    <a href="../swagger/" title="Argo Server API" class="md-nav__link">
+      Argo Server API
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
     <a href="../rest-api/" title="REST API" class="md-nav__link">
       REST API
     </a>
@@ -1109,7 +1133,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../examples/" title="Examples" class="md-nav__link">
+    <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/README.md" title="Examples" class="md-nav__link">
       Examples
     </a>
   </li>
@@ -2407,7 +2431,7 @@
 <p>You may also wish to read about <a href="../webhooks/">webhooks</a>.</p>
 <h2 id="authentication-and-security">Authentication and Security<a class="headerlink" href="#authentication-and-security" title="Permanent link">&para;</a></h2>
 <p>Clients wanting to send events to the endpoint need an <a href="../access-token/">access token</a>.   </p>
-<p>It is only possible to submit workflow templates your access token has access to: <a href="../manifests/quick-start/base/webhooks/submit-workflow-template-role.yaml">example role</a>.</p>
+<p>It is only possible to submit workflow templates your access token has access to: <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/quick-start/base/webhooks/submit-workflow-template-role.yaml">example role</a>.</p>
 <p>Example (note the trailing slash):</p>
 <div class="highlight"><pre><span></span><code>curl https://localhost:2746/api/v1/events/argo/ <span class="se">\</span>
   -H <span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span> <span class="se">\</span>
