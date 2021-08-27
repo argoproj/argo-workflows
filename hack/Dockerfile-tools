@@ -1,6 +1,6 @@
 FROM golang:1.16-alpine
 
-RUN apk add make bash git protoc
+RUN apk add make bash git protoc protobuf-dev perl
 
 WORKDIR /go/src/github.com/argoproj/argo-workflows
 COPY go.mod .
@@ -17,3 +17,4 @@ RUN go install -mod=vendor ./vendor/github.com/gogo/protobuf/protoc-gen-gogofast
 RUN go install -mod=vendor ./vendor/golang.org/x/tools/cmd/goimports
 RUN go install -mod=vendor ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
 RUN go install -mod=vendor ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
+RUN go install -mod=vendor ./vendor/k8s.io/kube-openapi/cmd/openapi-gen
