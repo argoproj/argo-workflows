@@ -1566,7 +1566,7 @@ spec:
                     type: object
                   automountServiceAccountToken:
                     type: boolean
-                  clusterName:
+                  cluster:
                     type: string
                   container:
                     properties:
@@ -7842,7 +7842,7 @@ spec:
                       type: object
                     automountServiceAccountToken:
                       type: boolean
-                    clusterName:
+                    cluster:
                       type: string
                     container:
                       properties:

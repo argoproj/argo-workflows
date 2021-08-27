@@ -15,12 +15,12 @@ import (
 	"sync"
 	"time"
 
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
-	mccache "github.com/argoproj-labs/multi-cluster-kubernetes/api/cache"
 	mcconfig "github.com/argoproj-labs/multi-cluster-kubernetes/api/config"
 
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
 	"github.com/antonmedv/expr"
+	mccache "github.com/argoproj-labs/multi-cluster-kubernetes/api/cache"
 	"github.com/argoproj/pkg/humanize"
 	argokubeerr "github.com/argoproj/pkg/kube/errors"
 	"github.com/argoproj/pkg/strftime"
@@ -637,24 +637,24 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	// Notice we do not need to label the pod if we will delete it later for GC. Otherwise, that may even result in
 	// errors if we label a pod that was deleted already.
 	for key, podPhase := range woc.completedPods {
-		clusterName, namespace, podName, _ := mccache.SplitMetaNamespaceKey(key)
-		if clusterName == "" {
-			clusterName = mcconfig.InClusterName
+		cluster, namespace, podName, _ := mccache.SplitMetaNamespaceKey(key)
+		if cluster == "" {
+			cluster = mcconfig.InCluster
 		}
 		if woc.execWf.Spec.PodGC != nil {
 			switch woc.execWf.Spec.PodGC.Strategy {
 			case wfv1.PodGCOnPodSuccess:
 				if podPhase == apiv1.PodSucceeded {
 					delay := woc.controller.Config.GetPodGCDeleteDelayDuration()
-					woc.controller.queuePodForCleanupAfter(clusterName, namespace, podName, deletePod, delay)
+					woc.controller.queuePodForCleanupAfter(cluster, namespace, podName, deletePod, delay)
 				}
 			case wfv1.PodGCOnPodCompletion:
 				delay := woc.controller.Config.GetPodGCDeleteDelayDuration()
-				woc.controller.queuePodForCleanupAfter(clusterName, namespace, podName, deletePod, delay)
+				woc.controller.queuePodForCleanupAfter(cluster, namespace, podName, deletePod, delay)
 			}
 		} else {
 			// label pods which will not be deleted
-			woc.controller.queuePodForCleanup(clusterName, namespace, podName, labelPodCompleted)
+			woc.controller.queuePodForCleanup(cluster, namespace, podName, labelPodCompleted)
 		}
 	}
 
@@ -1285,9 +1285,9 @@ func podHasContainerNeedingTermination(pod *apiv1.Pod, tmpl wfv1.Template) bool 
 
 func (woc *wfOperationCtx) cleanUpPod(pod *apiv1.Pod, tmpl wfv1.Template) {
 	if podHasContainerNeedingTermination(pod, tmpl) {
-		clusterName := tmpl.ClusterNameOr(mcconfig.InClusterName)
+		cluster := tmpl.ClusterOr(mcconfig.InCluster)
 		namespace := tmpl.NamespaceOr(woc.wf.Namespace)
-		woc.controller.queuePodForCleanup(clusterName, namespace, pod.Name, terminateContainers)
+		woc.controller.queuePodForCleanup(cluster, namespace, pod.Name, terminateContainers)
 	}
 }
 
@@ -2186,9 +2186,9 @@ func (woc *wfOperationCtx) getPodByNode(node *wfv1.NodeStatus) (*apiv1.Pod, erro
 		return nil, fmt.Errorf("Expected node type %s, got %s", wfv1.NodeTypePod, node.Type)
 	}
 	tmpl := woc.execWf.GetTemplateByName(node.TemplateName)
-	clusterName := tmpl.ClusterNameOr(mcconfig.InClusterName)
+	cluster := tmpl.ClusterOr(mcconfig.InCluster)
 	namespace := tmpl.NamespaceOr(woc.wf.Namespace)
-	return woc.controller.getPod(clusterName, namespace, node.ID)
+	return woc.controller.getPod(cluster, namespace, node.ID)
 }
 
 func (woc *wfOperationCtx) recordNodePhaseEvent(node *wfv1.NodeStatus) {

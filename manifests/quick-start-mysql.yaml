@@ -735,7 +735,7 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
-  clusterName: quick-start
+  cluster: quick-start
   containerRuntimeExecutor: docker
   containerRuntimeExecutors: |
     - name: k8sapi

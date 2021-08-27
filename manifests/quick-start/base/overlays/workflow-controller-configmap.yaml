@@ -5,7 +5,7 @@ data:
       requests:
         cpu: 10m
         memory: 64Mi
-  clusterName: quick-start
+  cluster: quick-start
   containerRuntimeExecutor: docker
   containerRuntimeExecutors: |
     - name: k8sapi

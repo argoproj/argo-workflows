@@ -1967,7 +1967,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`affinity`|[`Affinity`](#affinity)|Affinity sets the pod's scheduling constraints Overrides the affinity set at the workflow level (if any)|
 |`archiveLocation`|[`ArtifactLocation`](#artifactlocation)|Location in which all files related to the step will be stored (logs, artifacts, etc...). Can be overridden by individual items in Outputs. If omitted, will use the default artifact repository location configured in the controller, appended with the <workflowname>/<nodename> in the key.|
 |`automountServiceAccountToken`|`boolean`|AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.|
-|`clusterName`|`string`|_No description available_|
+|`cluster`|`string`|_No description available_|
 |`container`|[`Container`](#container)|Container is the main container image to run in the pod|
 |`containerSet`|[`ContainerSetTemplate`](#containersettemplate)|ContainerSet groups multiple containers within a single pod.|
 |`daemon`|`boolean`|Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness|
@@ -3894,8 +3894,6 @@ MetricLabel is a single label for a prometheus metric
 
 - [`k8s-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch.yaml)
 
-- [`multi-cluster-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/multi-cluster/multi-cluster-workflow.yaml)
-
 - [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy-with-label-selector.yaml)
 
 - [`pod-metadata-wf-field.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-metadata-wf-field.yaml)
@@ -4406,7 +4404,7 @@ MutexHolding describes the mutex and the object which is holding it.
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`holder`|`string`|Holder is a reference to the object which holds the Mutex. Holding Scenario:  1. Current workflow's NodeID which is holding the lock.     e.g: ${NodeID}Waiting Scenario:  1. Current workflow or other workflow UID which is holding the lock.     e.g: ${WorkflowName}/${NodeID}|
+|`holder`|`string`|Holder is a reference to the object which holds the Mutex. Holding Scenario:  1. Current workflow's NodeID which is holding the lock.     e.g: ${NodeID}Waiting Scenario:  1. Current workflow or other workflow NodeID which is holding the lock.     e.g: ${WorkflowName}/${NodeID}|
 |`mutex`|`string`|Reference for the mutex e.g: ${namespace}/mutex/${mutexName}|
 
 ## SemaphoreHolding
@@ -4831,12 +4829,6 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
 
 - [`multi-cluster-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/multi-cluster/multi-cluster-workflow.yaml)
-
-- [`my-minio-cred-secret.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/multi-cluster/my-minio-cred-secret.yaml)
-
-- [`workflow-role.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/multi-cluster/workflow-role.yaml)
-
-- [`workflow-rolebinding.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/multi-cluster/workflow-rolebinding.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/nested-workflow.yaml)
 
@@ -5730,8 +5722,6 @@ ResourceRequirements describes the compute resource requirements.
 - [`fun-with-gifs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fun-with-gifs.yaml)
 
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
-
-- [`workflow-role.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/multi-cluster/workflow-role.yaml)
 
 - [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-spec-patch-wf-tmpl.yaml)
 

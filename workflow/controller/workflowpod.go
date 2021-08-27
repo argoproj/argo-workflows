@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"time"
 
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+
 	mcconfig "github.com/argoproj-labs/multi-cluster-kubernetes/api/config"
 	"github.com/argoproj-labs/multi-cluster-kubernetes/api/labels"
 	log "github.com/sirupsen/logrus"
@@ -141,17 +143,17 @@ type createWorkflowPodOpts struct {
 
 func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName string, mainCtrs []apiv1.Container, tmpl *wfv1.Template, opts *createWorkflowPodOpts) (*apiv1.Pod, error) {
 	nodeID := woc.wf.NodeID(nodeName)
-	clusterName := tmpl.ClusterNameOr(mcconfig.InClusterName)
+	podName := wfv1.UID(tmpl.Cluster, tmpl.Namespace, woc.wf.Name, nodeName)
+	cluster := tmpl.ClusterOr(mcconfig.InCluster)
 	namespace := tmpl.NamespaceOr(woc.wf.Namespace)
-	podName := wfv1.UID(tmpl.ClusterName, tmpl.Namespace, woc.wf.Name, nodeName)
 	// we must check to see if the pod exists rather than just optimistically creating the pod and see if we get
 	// an `AlreadyExists` error because we won't get that error if there is not enough resources.
 	// Performance enhancement: Code later in this func is expensive to execute, so return quickly if we can.
-	obj, exists, err := woc.controller.podInformer.Config(clusterName).GetStore().GetByKey(namespace + "/" + podName)
+	obj, exists, err := woc.controller.podInformer.Config(cluster).GetStore().GetByKey(namespace + "/" + podName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pod from informer store: %w", err)
 	}
-	log.WithField("clusterName", clusterName).
+	log.WithField("cluster", cluster).
 		WithField("namespace", namespace).
 		WithField("podName", podName).
 		WithField("nodeID", nodeID).
@@ -240,7 +242,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	if pod.Name != nodeID {
 		pod.Annotations[common.AnnotationKeyNodeID] = nodeID
 	}
-	labels.SetOwnership(pod, woc.controller.Config.ClusterName, woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind))
+	labels.SetOwnership(pod, woc.controller.Config.Cluster, woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind))
 
 	if opts.onExitPod {
 		// This pod is part of an onExit handler, label it so
@@ -452,22 +454,28 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	clientset := woc.controller.kubeclientset.InCluster()
 
-	if tmpl.ClusterName != "" {
-		userName := fmt.Sprintf("system:serviceaccount:%s:%s", woc.controller.namespace, woc.wf.Namespace)
-		woc.log.WithField("clusterName", clusterName).
-			WithField("namespace", woc.wf.Namespace).
-			WithField("userName", userName).
-			Info("getting cluster config using impersonation")
-		c, err := mcconfig.NewConfig(
-			ctx,
-			clientset.CoreV1().Secrets(woc.wf.Namespace),
-			clusterName,
-			mcconfig.WithImpersonate(userName),
-		)
+	if cluster != mcconfig.InCluster {
+		c, err := mcconfig.New(clientset.CoreV1().Secrets(woc.wf.Namespace)).Get(ctx)
 		if err != nil {
 			return nil, err
 		}
-		restConfig, err := clientcmd.NewDefaultClientConfig(*c, &clientcmd.ConfigOverrides{}).ClientConfig()
+		var user string
+		for _, c := range c.Contexts {
+			if c.Cluster == cluster && (c.Namespace == namespace || c.Namespace == "") {
+				user = c.AuthInfo
+			}
+		}
+		woc.log.WithField("cluster", cluster).
+			WithField("namespace", namespace).
+			WithField("user", user).
+			Info("getting user cluster config")
+
+		restConfig, err := clientcmd.NewDefaultClientConfig(clientcmdapi.Config{
+			Clusters:       map[string]*clientcmdapi.Cluster{"user": woc.controller.configs.Clusters[cluster]},
+			AuthInfos:      map[string]*clientcmdapi.AuthInfo{"user": c.AuthInfos[user]},
+			Contexts:       map[string]*clientcmdapi.Context{"user": {Cluster: "user", AuthInfo: "user"}},
+			CurrentContext: "user",
+		}, &clientcmd.ConfigOverrides{}).ClientConfig()
 		if err != nil {
 			return nil, err
 		}
@@ -477,7 +485,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		}
 	}
 
-	woc.log.WithField("clusterName", clusterName).
+	woc.log.WithField("cluster", cluster).
 		WithField("namespace", namespace).
 		Debugf("Creating Pod: %s (%s)", podName, nodeID)
 	created, err := clientset.CoreV1().Pods(namespace).Create(ctx, pod, metav1.CreateOptions{})

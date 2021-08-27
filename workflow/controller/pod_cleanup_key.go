@@ -22,11 +22,11 @@ const (
 	killContainers      podCleanupAction = "killContainers"
 )
 
-func newPodCleanupKey(clusterName, namespace, podName string, action podCleanupAction) podCleanupKey {
-	return fmt.Sprintf("%s/%s/%s/%v", clusterName, namespace, podName, action)
+func newPodCleanupKey(cluster, namespace, podName string, action podCleanupAction) podCleanupKey {
+	return fmt.Sprintf("%s/%s/%s/%v", cluster, namespace, podName, action)
 }
 
-func parsePodCleanupKey(k podCleanupKey) (clusterName string, namespace string, podName string, action podCleanupAction) {
+func parsePodCleanupKey(k podCleanupKey) (cluster string, namespace string, podName string, action podCleanupAction) {
 	parts := strings.Split(k, "/")
 	if len(parts) != 4 {
 		return "", "", "", ""

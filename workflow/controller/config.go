@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
@@ -23,7 +24,10 @@ func (wfc *WorkflowController) updateConfig(v interface{}) error {
 	if err != nil {
 		return err
 	}
-	log.Info("Configuration:\n" + string(bytes))
+	log.Info("Configuration:")
+	for _, s := range strings.Split(string(bytes), "\n") {
+		log.Info(s)
+	}
 	if wfc.cliExecutorImage == "" && config.ExecutorImage == "" {
 		return errors.Errorf(errors.CodeBadRequest, "ConfigMap does not have executorImage")
 	}

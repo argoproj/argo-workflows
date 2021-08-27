@@ -10,6 +10,8 @@ import (
 	"syscall"
 	"time"
 
+	"sigs.k8s.io/yaml"
+
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 
 	"k8s.io/client-go/tools/clientcmd"
@@ -120,7 +122,7 @@ type WorkflowController struct {
 	archiveLabelSelector  labels.Selector
 	cacheFactory          controllercache.Factory
 	wfTaskSetInformer     wfextvv1alpha1.WorkflowTaskSetInformer
-	configs               mcconfig.Configs
+	configs               *clientcmdapi.Config
 }
 
 const (
@@ -134,22 +136,43 @@ const (
 
 // NewWorkflowController instantiates a new WorkflowController
 func NewWorkflowController(ctx context.Context, clientConfig clientcmd.ClientConfig, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap string) (*WorkflowController, error) {
+	kubeConfig, err := mcconfig.New(kubeclientset.CoreV1().Secrets(namespace)).Get(ctx)
+	if err != nil {
+		return nil, err
+	}
 	rawConfig, err := clientConfig.RawConfig()
 	if err != nil {
 		return nil, err
 	}
-	managedNamespaceConfig := clientcmd.NewDefaultClientConfig(rawConfig, &clientcmd.ConfigOverrides{Context: clientcmdapi.Context{
+	rawContext := rawConfig.Contexts[rawConfig.CurrentContext]
+	kubeConfig.Clusters[mcconfig.InCluster] = rawConfig.Clusters[rawContext.Cluster]
+	kubeConfig.AuthInfos[mcconfig.InCluster] = rawConfig.AuthInfos[rawContext.AuthInfo]
+	kubeConfig.Contexts[mcconfig.InCluster] = &clientcmdapi.Context{
+		Cluster:   mcconfig.InCluster,
+		AuthInfo:  mcconfig.InCluster,
 		Namespace: managedNamespace,
-	}})
-	configs, err := mcconfig.NewConfigs(ctx, kubeclientset.CoreV1().Secrets(namespace), mcconfig.WithInCluster(managedNamespaceConfig))
+	}
+	kubeConfig.CurrentContext = mcconfig.InCluster
+	deepCopy := kubeConfig.DeepCopy()
+	clientcmdapi.ShortenConfig(deepCopy)
+	data, err := yaml.Marshal(deepCopy)
 	if err != nil {
 		return nil, err
 	}
-	kubernetesInterfaces, err := mckubernetes.NewForConfigs(configs)
+	log.Info("Config:")
+	for _, s := range strings.Split(string(data), "\n") {
+		log.Info(s)
+	}
+	clientConfigs := mcconfig.NewClientConfigs(*kubeConfig)
+	restConfigs, err := mcconfig.NewRestConfigs(clientConfigs)
 	if err != nil {
 		return nil, err
 	}
-	dynamicInterfaces, err := mcdynamic.NewForConfigs(configs)
+	kubernetesInterfaces, err := mckubernetes.NewForConfigs(restConfigs)
+	if err != nil {
+		return nil, err
+	}
+	dynamicInterfaces, err := mcdynamic.NewForConfigs(restConfigs)
 	if err != nil {
 		return nil, err
 	}
@@ -159,16 +182,19 @@ func NewWorkflowController(ctx context.Context, clientConfig clientcmd.ClientCon
 	}
 	managedNamespaces := make(map[string]string)
 
-	for clusterName, c := range configs {
+	for cluster, c := range clientConfigs {
 		managedNamespace, _, err := c.Namespace()
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal(fmt.Errorf("failed to get namespace from cluster %q: %w", cluster, err))
 		}
-		managedNamespaces[clusterName] = managedNamespace
+		log.WithField("cluster", cluster).
+			WithField("managedNamespace", managedNamespace).
+			Info("cluster")
+		managedNamespaces[cluster] = managedNamespace
 	}
 
 	wfc := WorkflowController{
-		configs:                    configs,
+		configs:                    kubeConfig,
 		restConfig:                 restConfig,
 		kubeclientset:              kubernetesInterfaces,
 		dynamicInterface:           dynamicInterfaces,
@@ -482,12 +508,12 @@ func (wfc *WorkflowController) UpdateConfig(ctx context.Context) {
 	}
 }
 
-func (wfc *WorkflowController) queuePodForCleanup(clusterName, namespace, podName string, action podCleanupAction) {
-	wfc.podCleanupQueue.AddRateLimited(newPodCleanupKey(clusterName, namespace, podName, action))
+func (wfc *WorkflowController) queuePodForCleanup(cluster, namespace, podName string, action podCleanupAction) {
+	wfc.podCleanupQueue.AddRateLimited(newPodCleanupKey(cluster, namespace, podName, action))
 }
 
-func (wfc *WorkflowController) queuePodForCleanupAfter(clusterName, namespace, podName string, action podCleanupAction, duration time.Duration) {
-	wfc.podCleanupQueue.AddAfter(newPodCleanupKey(clusterName, namespace, podName, action), duration)
+func (wfc *WorkflowController) queuePodForCleanupAfter(cluster, namespace, podName string, action podCleanupAction, duration time.Duration) {
+	wfc.podCleanupQueue.AddAfter(newPodCleanupKey(cluster, namespace, podName, action), duration)
 }
 
 func (wfc *WorkflowController) runPodCleanup(ctx context.Context) {
@@ -503,17 +529,17 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 	}
 	defer wfc.podCleanupQueue.Done(key)
 
-	clusterName, namespace, podName, action := parsePodCleanupKey(key.(podCleanupKey))
+	cluster, namespace, podName, action := parsePodCleanupKey(key.(podCleanupKey))
 	logCtx := log.WithFields(log.Fields{"key": key, "action": action})
 	logCtx.Info("cleaning up pod")
 	err := func() error {
-		pods := wfc.kubeclientset.Config(clusterName).CoreV1().Pods(namespace)
+		pods := wfc.kubeclientset.Config(cluster).CoreV1().Pods(namespace)
 		switch action {
 		case shutdownPod:
 			// to shutdown a pod, we signal the wait container to terminate, the wait container in turn will
 			// kill the main container (using whatever mechanism the executor uses), and will then exit itself
 			// once the main container exited
-			pod, err := wfc.getPod(clusterName, namespace, podName)
+			pod, err := wfc.getPod(cluster, namespace, podName)
 			if pod == nil || err != nil {
 				return err
 			}
@@ -528,13 +554,13 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 			// no wait container found
 			fallthrough
 		case terminateContainers:
-			if terminationGracePeriod, err := wfc.signalContainers(clusterName, namespace, podName, syscall.SIGTERM); err != nil {
+			if terminationGracePeriod, err := wfc.signalContainers(cluster, namespace, podName, syscall.SIGTERM); err != nil {
 				return err
 			} else if terminationGracePeriod > 0 {
-				wfc.queuePodForCleanupAfter(clusterName, namespace, podName, killContainers, terminationGracePeriod)
+				wfc.queuePodForCleanupAfter(cluster, namespace, podName, killContainers, terminationGracePeriod)
 			}
 		case killContainers:
-			if _, err := wfc.signalContainers(clusterName, namespace, podName, syscall.SIGKILL); err != nil {
+			if _, err := wfc.signalContainers(cluster, namespace, podName, syscall.SIGKILL); err != nil {
 				return err
 			}
 		case labelPodCompleted:
@@ -569,8 +595,8 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 	return true
 }
 
-func (wfc *WorkflowController) getPod(clusterName, namespace, podName string) (*apiv1.Pod, error) {
-	obj, exists, err := wfc.podInformer.Config(clusterName).GetStore().GetByKey(namespace + "/" + podName)
+func (wfc *WorkflowController) getPod(cluster, namespace, podName string) (*apiv1.Pod, error) {
+	obj, exists, err := wfc.podInformer.Config(cluster).GetStore().GetByKey(namespace + "/" + podName)
 	if err != nil {
 		return nil, err
 	}
@@ -584,8 +610,8 @@ func (wfc *WorkflowController) getPod(clusterName, namespace, podName string) (*
 	return pod, nil
 }
 
-func (wfc *WorkflowController) signalContainers(clusterName, namespace, podName string, sig syscall.Signal) (time.Duration, error) {
-	pod, err := wfc.getPod(clusterName, namespace, podName)
+func (wfc *WorkflowController) signalContainers(cluster, namespace, podName string, sig syscall.Signal) (time.Duration, error) {
+	pod, err := wfc.getPod(cluster, namespace, podName)
 	if pod == nil || err != nil {
 		return 0, err
 	}
@@ -747,23 +773,23 @@ func (wfc *WorkflowController) finalizeWorkflow(ctx context.Context, wf *wfv1.Wo
 	woc := newWorkflowOperationCtx(wf, wfc)
 	keys := make(map[string]bool)
 	for _, tmpl := range woc.execWf.Spec.Templates {
-		if tmpl.ClusterName != "" || tmpl.Namespace != "" {
-			keys[tmpl.ClusterNameOr(mcconfig.InClusterName)+"/"+tmpl.NamespaceOr(woc.wf.Namespace)] = true
+		if tmpl.Cluster != "" || tmpl.Namespace != "" {
+			keys[tmpl.ClusterOr(mcconfig.InCluster)+"/"+tmpl.NamespaceOr(woc.wf.Namespace)] = true
 		}
 	}
 	for key := range keys {
 		parts := strings.Split(key, "/")
-		clusterName, namespace := parts[0], parts[1]
+		cluster, namespace := parts[0], parts[1]
 		r := util.InstanceIDRequirement(wfc.Config.InstanceID)
-		labelSelector := mclabels.KeyOwnerClusterName + "=" + wfc.Config.ClusterName + "," +
+		labelSelector := mclabels.KeyOwnerCluster + "=" + wfc.Config.Cluster + "," +
 			mclabels.KeyOwnerNamespace + "=" + woc.wf.Namespace + "," +
 			common.LabelKeyWorkflow + "=" + woc.wf.Name + ", " +
 			r.String()
-		log.WithField("clusterName", clusterName).
+		log.WithField("cluster", cluster).
 			WithField("namespace", namespace).
 			WithField("labelSelector", labelSelector).
 			Info("deleting pods")
-		err := wfc.kubeclientset.Config(clusterName).CoreV1().Pods(namespace).DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{
+		err := wfc.kubeclientset.Config(cluster).CoreV1().Pods(namespace).DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{
 			LabelSelector: labelSelector,
 		})
 		if err != nil {
@@ -871,9 +897,9 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		}
 		if doPodGC {
 			for key := range woc.completedPods {
-				clusterName, namespace, podName, _ := mccache.SplitMetaNamespaceKey(key)
+				cluster, namespace, podName, _ := mccache.SplitMetaNamespaceKey(key)
 				delay := woc.controller.Config.GetPodGCDeleteDelayDuration()
-				woc.controller.queuePodForCleanupAfter(clusterName, namespace, podName, deletePod, delay)
+				woc.controller.queuePodForCleanupAfter(cluster, namespace, podName, deletePod, delay)
 			}
 		}
 	}
@@ -1064,19 +1090,19 @@ func (wfc *WorkflowController) newPodInformer() mccache.SharedIndexInformer {
 	r := util.InstanceIDRequirement(wfc.Config.InstanceID)
 	instanceIdReq := r.String()
 
-	for clusterName, k := range wfc.kubeclientset.Configs() {
+	for cluster, k := range wfc.kubeclientset.Configs() {
 		var labelSelector string
-		if clusterName == mcconfig.InClusterName {
-			labelSelector = "!" + mclabels.KeyOwnerClusterName + "," + instanceIdReq
+		if cluster == mcconfig.InCluster {
+			labelSelector = "!" + mclabels.KeyOwnerCluster + "," + instanceIdReq
 		} else {
-			labelSelector = mclabels.KeyOwnerClusterName + "=" + wfc.Config.ClusterName + "," + instanceIdReq
+			labelSelector = mclabels.KeyOwnerCluster + "=" + wfc.Config.Cluster + "," + instanceIdReq
 		}
-		managedNamespace := wfc.managedNamespaces[clusterName]
-		log.WithField("clusterName", clusterName).
+		managedNamespace := wfc.managedNamespaces[cluster]
+		log.WithField("cluster", cluster).
 			WithField("managedNamespace", managedNamespace).
 			WithField("labelSelector", labelSelector).
 			Info("starting pod informer")
-		informers[clusterName] = v1.NewFilteredPodInformer(k, managedNamespace, podResyncPeriod, indexers, func(opts *metav1.ListOptions) {
+		informers[cluster] = v1.NewFilteredPodInformer(k, managedNamespace, podResyncPeriod, indexers, func(opts *metav1.ListOptions) {
 			opts.LabelSelector = labelSelector
 		})
 	}

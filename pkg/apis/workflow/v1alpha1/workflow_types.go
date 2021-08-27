@@ -496,8 +496,8 @@ type Template struct {
 	// Name is the name of the template
 	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
 
-	ClusterName string `json:"clusterName,omitempty" protobuf:"bytes,43,opt,name=clusterName"`
-	Namespace   string `json:"namespace,omitempty" protobuf:"bytes,44,opt,name=namespace"`
+	Cluster   string `json:"cluster,omitempty" protobuf:"bytes,43,opt,name=cluster"`
+	Namespace string `json:"namespace,omitempty" protobuf:"bytes,44,opt,name=namespace"`
 
 	// Inputs describe what inputs parameters and artifacts are supplied to this template
 	Inputs Inputs `json:"inputs,omitempty" protobuf:"bytes,5,opt,name=inputs"`
@@ -2426,9 +2426,9 @@ func (tmpl Template) NamespaceOr(defaultValue string) string {
 	return defaultValue
 }
 
-func (tmpl *Template) ClusterNameOr(defaultValue string) string {
-	if tmpl.ClusterName != "" {
-		return tmpl.ClusterName
+func (tmpl *Template) ClusterOr(defaultValue string) string {
+	if tmpl.Cluster != "" {
+		return tmpl.Cluster
 	}
 	return defaultValue
 }
@@ -2657,13 +2657,13 @@ func (wf *Workflow) NodeID(name string) string {
 	return UID("", "", wf.Name, name)
 }
 
-func UID(clusterName, namespace, workflowName, name string) string {
-	if clusterName == "" && namespace == "" && name == workflowName {
+func UID(cluster, namespace, workflowName, name string) string {
+	if cluster == "" && namespace == "" && name == workflowName {
 		return workflowName
 	}
 	h := fnv.New32a()
-	if clusterName != "" {
-		_, _ = h.Write([]byte(clusterName))
+	if cluster != "" {
+		_, _ = h.Write([]byte(cluster))
 	}
 	if namespace != "" {
 		_, _ = h.Write([]byte(namespace))

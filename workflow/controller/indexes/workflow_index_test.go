@@ -15,9 +15,9 @@ func TestWorkflowIndexFunc(t *testing.T) {
 	obj := &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
-				"multi-cluster.argoproj.io/owner-cluster-name": "cn",
-				"multi-cluster.argoproj.io/owner-namespace":    "ns",
-				"multi-cluster.argoproj.io/owner-name":         "n",
+				"multi-cluster.argoproj.io/owner-cluster":   "cn",
+				"multi-cluster.argoproj.io/owner-namespace": "ns",
+				"multi-cluster.argoproj.io/owner-name":      "n",
 			},
 		},
 	}

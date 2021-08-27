@@ -125,8 +125,8 @@ type Config struct {
 	// https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary
 	Images map[string]Image `json:"images,omitempty"`
 
-	// ClusterName is the name of this cluster.
-	ClusterName string `json:"clusterName,omitempty"`
+	// Cluster is the name of this cluster.
+	Cluster string `json:"cluster,omitempty"`
 }
 
 func (c Config) GetContainerRuntimeExecutor(labels labels.Labels) (string, error) {
@@ -187,7 +187,7 @@ type PersistConfig struct {
 	ArchiveLabelSelector *metav1.LabelSelector `json:"archiveLabelSelector,omitempty"`
 	// in days
 	ArchiveTTL     TTL               `json:"archiveTTL,omitempty"`
-	ClusterName    string            `json:"clusterName,omitempty"`
+	ClusterName    string            `json:"cluster,omitempty"`
 	ConnectionPool *ConnectionPool   `json:"connectionPool,omitempty"`
 	PostgreSQL     *PostgreSQLConfig `json:"postgresql,omitempty"`
 	MySQL          *MySQLConfig      `json:"mysql,omitempty"`

@@ -2,13 +2,13 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: multi-cluster
-  labels:
-    workflows.argoproj.io/test: "true"
+  namespace: local
 spec:
   entrypoint: main
+  serviceAccountName: workflow
   templates:
     - name: main
-      clusterName: other
-      namespace: default
+      cluster: cluster-1
+      namespace: remote
       container:
-        image: docker/whalesay:latest
+        image: docker/whalesay

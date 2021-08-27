@@ -2956,7 +2956,7 @@ func schema_pkg_apis_workflow_v1alpha1_MutexHolding(ref common.ReferenceCallback
 					},
 					"holder": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Holder is a reference to the object which holds the Mutex. Holding Scenario:\n  1. Current workflow's NodeID which is holding the lock.\n     e.g: ${NodeID}\nWaiting Scenario:\n  1. Current workflow or other workflow UID which is holding the lock.\n     e.g: ${WorkflowName}/${NodeID}",
+							Description: "Holder is a reference to the object which holds the Mutex. Holding Scenario:\n  1. Current workflow's NodeID which is holding the lock.\n     e.g: ${NodeID}\nWaiting Scenario:\n  1. Current workflow or other workflow NodeID which is holding the lock.\n     e.g: ${WorkflowName}/${NodeID}",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -4917,7 +4917,7 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							Format:      "",
 						},
 					},
-					"clusterName": {
+					"cluster": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",

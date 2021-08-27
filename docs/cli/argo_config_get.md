@@ -1,15 +1,16 @@
-## argo config
+## argo config get
 
 
 
 ```
-argo config [flags]
+argo config get [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for config
+  -h, --help   help for get
+      --raw    raw
 ```
 
 ### Options inherited from parent commands
@@ -45,7 +46,5 @@ argo config [flags]
 
 ### SEE ALSO
 
-* [argo](argo.md)	 - argo is the command line interface to Argo
-* [argo config add](argo_config_add.md)	 - 
-* [argo config get](argo_config_get.md)	 - 
+* [argo config](argo_config.md)	 - 
 

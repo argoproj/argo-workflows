@@ -595,7 +595,7 @@ spec:
                       type: object
                     automountServiceAccountToken:
                       type: boolean
-                    clusterName:
+                    cluster:
                       type: string
                     container:
                       properties:

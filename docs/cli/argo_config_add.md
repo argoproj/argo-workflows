@@ -3,16 +3,13 @@
 
 
 ```
-argo config add [CONFIG_NAME [CONTEXT_NAME]] [flags]
+argo config add [CONTEXT_NAME] [flags]
 ```
 
 ### Options
 
 ```
-      --config-namespace string   namespace to add config too (default: the context's namespace) (default "-")
-  -h, --help                      help for add
-      --host string               the host, e.g. https://kubernetes.default.svc (default: the context's cluster's host) (default "-")
-  -l, --labels stringArray        labels to add config
+  -h, --help   help for add
 ```
 
 ### Options inherited from parent commands

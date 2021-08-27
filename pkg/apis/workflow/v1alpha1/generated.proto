@@ -1252,7 +1252,7 @@ message Template {
   // Name is the name of the template
   optional string name = 1;
 
-  optional string clusterName = 43;
+  optional string cluster = 43;
 
   optional string namespace = 44;
 
