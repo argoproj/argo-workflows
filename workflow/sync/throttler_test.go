@@ -77,7 +77,13 @@ func TestWithParallelismLimitAndPriority(t *testing.T) {
 	assert.Equal(t, "c", queuedKey)
 }
 
-const runningWorkflow = `
+func TestInitWithWorkflows(t *testing.T) {
+	queuedKey := ""
+	throttler := NewThrottler(1, SingleBucket, func(key string) { queuedKey = key })
+	ctx := context.Background()
+
+	wfclientset := fakewfclientset.NewSimpleClientset(
+		wfv1.MustUnmarshalWorkflow(`
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -96,33 +102,52 @@ spec:
 status:
   phase: Running
   startedAt: "2020-06-19T17:37:05Z"
-`
-
-func TestInitializeWithWorkflows(t *testing.T) {
-	queuedKey := ""
-	throttler := NewThrottler(1, SingleBucket, func(key string) { queuedKey = key })
-	ctx := context.Background()
-
-	wf := wfv1.MustUnmarshalWorkflow(runningWorkflow)
-	wfclientset := fakewfclientset.NewSimpleClientset(wf)
+`),
+		wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  labels:
+    workflows.argoproj.io/phase: Running
+  name: b
+  namespace: default
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+status:
+  phase: Running
+  startedAt: "2020-06-19T17:37:05Z"
+`))
 	wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
-	err = throttler.Initialize(wfList.Items)
+	err = throttler.Init(wfList.Items)
 	assert.NoError(t, err)
 	assert.True(t, throttler.Admit("default/a"))
+	assert.True(t, throttler.Admit("default/b"))
 
-	throttler.Add("default/b", 0, time.Now())
 	throttler.Add("default/c", 0, time.Now())
-	assert.False(t, throttler.Admit("default/b"))
+	throttler.Add("default/d", 0, time.Now())
 	assert.False(t, throttler.Admit("default/c"))
+	assert.False(t, throttler.Admit("default/d"))
 
 	throttler.Remove("default/a")
-	assert.Equal(t, "default/b", queuedKey)
-	assert.True(t, throttler.Admit("default/b"))
+	assert.Equal(t, "", queuedKey)
 	assert.False(t, throttler.Admit("default/c"))
-	queuedKey = ""
+	assert.False(t, throttler.Admit("default/d"))
 
+	queuedKey = ""
 	throttler.Remove("default/b")
 	assert.Equal(t, "default/c", queuedKey)
 	assert.True(t, throttler.Admit("default/c"))
+	assert.False(t, throttler.Admit("default/d"))
+
+	queuedKey = ""
+	throttler.Remove("default/c")
+	assert.Equal(t, "default/d", queuedKey)
+	assert.True(t, throttler.Admit("default/d"))
 }

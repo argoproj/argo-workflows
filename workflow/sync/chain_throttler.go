@@ -8,9 +8,9 @@ import (
 
 type ChainThrottler []Throttler
 
-func (c ChainThrottler) Initialize(wfs []wfv1.Workflow) error {
+func (c ChainThrottler) Init(wfs []wfv1.Workflow) error {
 	for _, t := range c {
-		if err := t.Initialize(wfs); err != nil {
+		if err := t.Init(wfs); err != nil {
 			return err
 		}
 	}

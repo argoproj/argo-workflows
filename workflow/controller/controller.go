@@ -216,12 +216,11 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.updateEstimatorFactory()
 
 	// Create Synchronization Manager
-	err := wfc.createSynchronizationManager(ctx)
-	if err != nil {
+	if err := wfc.createSynchronizationManager(ctx); err != nil {
 		log.Fatal(err)
 	}
-	err = wfc.initialize(ctx)
-	if err != nil {
+	// init managers: throttler and SynchronizationManager
+	if err := wfc.initManagers(ctx); err != nil {
 		log.Fatal(err)
 	}
 
@@ -360,7 +359,7 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 }
 
 // list all running workflows to initialize throttler and syncManager
-func (wfc *WorkflowController) initialize(ctx context.Context) error {
+func (wfc *WorkflowController) initManagers(ctx context.Context) error {
 	labelSelector := labels.NewSelector().Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
 	req, _ := labels.NewRequirement(common.LabelKeyPhase, selection.Equals, []string{string(wfv1.WorkflowRunning)})
 	if req != nil {
@@ -372,8 +371,7 @@ func (wfc *WorkflowController) initialize(ctx context.Context) error {
 		return err
 	}
 
-	err = wfc.throttler.Initialize(wfList.Items)
-	if err != nil {
+	if err := wfc.throttler.Init(wfList.Items); err != nil {
 		return err
 	}
 

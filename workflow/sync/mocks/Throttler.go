@@ -15,8 +15,8 @@ type Throttler struct {
 	mock.Mock
 }
 
-// Initialize provides a mock function with given running workflows
-func (_m *Throttler) Initialize(wfs []wfv1.Workflow) error {
+// Init provides a mock function with given running workflows
+func (_m *Throttler) Init(wfs []wfv1.Workflow) error {
 	_m.Called(wfs)
 	return nil
 }
