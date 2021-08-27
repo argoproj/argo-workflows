@@ -1,0 +1,10 @@
+FROM golang:1.16-alpine
+
+RUN apk add make
+
+WORKDIR /go/src/github.com/argoproj/argo-workflows
+COPY go.mod .
+COPY go.sum .
+RUN go mod download
+
+COPY . .
