@@ -10,6 +10,10 @@ the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summar
 
 Changing from Debian to Alpine reduces the size of the `argoexec` image, resulting is faster starting workflow pods, and it also reduce the risk of security issues. There is not such thing as a free lunch. There maybe other behaviour changes we don't know of yet. 
 
+### [48d7ad3](https://github.com/argoproj/argo-workflows/commit/48d7ad36c14e4a50c50332d6decd543a1b732b69) chore: Remove onExit naming transition scaffolding code (#6297)
+
+When upgrading from `<v2.12` to `>v3.2` workflows that are running at the time of the upgrade and have `onExit` steps _may_ experience the `onExit` step running twice. This is only applicable for workflows that began running before a `workflow-controller` upgrade and are still running after the upgrade is complete. This is only applicable for upgrading from `v2.12` or earlier directly to `v3.2` or later. Even under these conditions, duplicate work may not be experienced.
+
 ## Upgrading to v3.1
 
 ### [3fff791e4](https://github.com/argoproj/argo-workflows/commit/3fff791e4ef5b7e1de82ccb36cae327e8eb726f6) build!: Automatically add manifests to `v*` tags (#5880)
