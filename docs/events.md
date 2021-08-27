@@ -16,7 +16,7 @@ You may also wish to read about [webhooks](webhooks.md).
 
 Clients wanting to send events to the endpoint need an [access token](access-token.md).   
 
-It is only possible to submit workflow templates your access token has access to: [example role](manifests/quick-start/base/webhooks/submit-workflow-template-role.yaml).
+It is only possible to submit workflow templates your access token has access to: [example role](https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/quick-start/base/webhooks/submit-workflow-template-role.yaml).
 
 Example (note the trailing slash):
 
