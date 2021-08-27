@@ -26,7 +26,7 @@ do
     tools-image)
       build_tools_image
     ;;
-    run-cmd)
+    codegen)
       build_tools_image
       run_mounted_command make codegen
       prune_docker_containers

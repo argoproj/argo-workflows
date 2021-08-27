@@ -1,6 +1,6 @@
 FROM golang:1.16-alpine
 
-RUN apk add make
+RUN apk add make bash git
 
 WORKDIR /go/src/github.com/argoproj/argo-workflows
 COPY go.mod .
