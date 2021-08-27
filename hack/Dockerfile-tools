@@ -8,3 +8,12 @@ COPY go.sum .
 RUN go mod download
 
 COPY . .
+
+RUN go mod vendor
+
+RUN go install -mod=vendor ./vendor/k8s.io/code-generator/cmd/go-to-protobuf
+RUN go install -mod=vendor ./vendor/github.com/gogo/protobuf/protoc-gen-gogo
+RUN go install -mod=vendor ./vendor/github.com/gogo/protobuf/protoc-gen-gogofast
+RUN go install -mod=vendor ./vendor/golang.org/x/tools/cmd/goimports
+RUN go install -mod=vendor ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
+RUN go install -mod=vendor ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
