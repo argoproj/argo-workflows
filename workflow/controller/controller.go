@@ -781,10 +781,11 @@ func (wfc *WorkflowController) finalizeWorkflow(ctx context.Context, wf *wfv1.Wo
 		parts := strings.Split(key, "/")
 		cluster, namespace := parts[0], parts[1]
 		r := util.InstanceIDRequirement(wfc.Config.InstanceID)
-		labelSelector := mclabels.KeyOwnerCluster + "=" + wfc.Config.Cluster + "," +
-			mclabels.KeyOwnerNamespace + "=" + woc.wf.Namespace + "," +
-			common.LabelKeyWorkflow + "=" + woc.wf.Name + ", " +
-			r.String()
+		labelSelector :=
+			mclabels.KeyOwnerCluster + "=" + wfc.Config.Cluster + "," +
+				mclabels.KeyOwnerNamespace + "=" + woc.wf.Namespace + "," +
+				common.LabelKeyWorkflow + "=" + woc.wf.Name + ", " +
+				r.String()
 		log.WithField("cluster", cluster).
 			WithField("namespace", namespace).
 			WithField("labelSelector", labelSelector).
@@ -1093,9 +1094,9 @@ func (wfc *WorkflowController) newPodInformer() mccache.SharedIndexInformer {
 	for cluster, k := range wfc.kubeclientset.Configs() {
 		var labelSelector string
 		if cluster == mcconfig.InCluster {
-			labelSelector = "!" + mclabels.KeyOwnerCluster + "," + instanceIdReq
+			labelSelector = common.LabelKeyCompleted + "=false,!" + mclabels.KeyOwnerCluster + "," + instanceIdReq
 		} else {
-			labelSelector = mclabels.KeyOwnerCluster + "=" + wfc.Config.Cluster + "," + instanceIdReq
+			labelSelector = common.LabelKeyCompleted + "=false," + mclabels.KeyOwnerCluster + "=" + wfc.Config.Cluster + "," + instanceIdReq
 		}
 		managedNamespace := wfc.managedNamespaces[cluster]
 		log.WithField("cluster", cluster).
