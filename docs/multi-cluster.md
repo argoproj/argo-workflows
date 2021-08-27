@@ -1,6 +1,55 @@
 # Multi-Cluster
 
-You can run workflows where one or more tasks are run in another cluster or namespace.
+![alpha](assets/alpha.svg)
+
+> Since v3.3
+
+You can run workflows where one or more step are run in another cluster or namespace. This is done by specifying the the
+cluster and namespace in your template:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: multi-cluster
+  namespace: local
+spec:
+  entrypoint: main
+  serviceAccountName: workflow
+  templates:
+    - name: main
+      cluster: cluster-1
+      namespace: remote
+      container:
+        image: docker/whalesay
+```
+
+Clusters are configured in the `argo` namespace in a secret named `kubeconfig` which has one context per cluster,
+allowing the controller to both watch for completed pods, and delete pods once the workflow is completed.
+
+To prevent workflows from being deleted before pods have been delete in other clusters and namespaces, we add a
+finalizer to them.
+
+Prior to multi-cluster support, the security model meant that pods would only be created in the workflow's namespace.
+With multi-cluster, users may create them in any namespace, so long as they have a `kubeconfig` within their namespace
+that allows them to. That must have a user that is allowed by the remote cluster to create pods in the remote namespace.
+That should be a different user to the cluster's `kubeconfig` in the `argo` namespace. This allows the `argo` namespace
+to have different permissions to the user namespace. The controller `kubeconfig` does not need to create pods,
+only `list/watch/delete`, unlike the user `kubeconfig` only needs `create pod` within specific namespace.
+
+## Scaling
+
+The controllers create one Kubernetes API connection per context within `kubeconfig`:
+
+1. If only a few remote namespaces need watching, then create one context entry per namespace.
+1. If multiple namespaces within a cluster need watching, then create one context entry per cluster with cluster role
+   and role-binding.
+
+## Known Issues
+
+* Logs cannot be accessed from the user interface.
+* Cluster and namespace set on DAG and steps templates are ignored; they are not inherited by container or script
+  templates.
 
 ## Configuration
 
@@ -47,6 +96,15 @@ Create a secret named `kubeconfig` that has a single item `value` with that valu
 kubectl -n argo create secret generic kubeconfig --from-file=value=cluster-1-kubeconfig.yaml
 ```
 
+(2) Updated `configaps/workflow-controller-configmap` to add a unique name for your local cluster:
+
+```bash
+kubectl patch cm workflow-controller-configmap -p '{"data":{"cluster":"main"}}'
+```
+
+That must be unique within all clusters running workflows. In practice that usually means unique within your
+organisation.
+
 Restart your workflow controller and make sure you see the new cluster printed in your log, and no errors.
 
 ```
@@ -54,13 +112,13 @@ controller | time="2021-08-27T14:10:56.273Z" level=info msg=cluster cluster=clus
 controller | time="2021-08-27T14:10:56.273Z" level=info msg=cluster cluster=@in-cluster managedNamespace=local
 ```
 
-(2) Create any secrets (e.g. to archive logs or artifacts) you need, for example:
+(3) Create any secrets (e.g. to archive logs or artifacts) you need, for example:
 
 ```bash
 kubectl -n remote apply -f https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/quick-start/base/minio/my-minio-cred-secret.yaml
 ```
 
-(3) If your workflow uses a non-default service account, create that:
+(4) If your workflow uses a non-default service account, create that:
 
 ```bash
 kubectl -n remote apply -f https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/quick-start/base/workflow-role.yaml
@@ -68,7 +126,7 @@ kubectl -n remote create sa workflow
 kubectl -n remote create rolebinding workflow --role=workflow-role --serviceaccount=remote:workflow
 ```
 
-(4) In the **remote cluster**, create a service account with permission to create pods in the namespace you want to run
+(5) In the **remote cluster**, create a service account with permission to create pods in the namespace you want to run
 pods in. For example:
 
 ```
@@ -84,7 +142,7 @@ SECRET=$(kubectl -n default get sa remote -o=jsonpath='{.secrets[0].name}')
 TOKEN=$(kubectl get -n default secret $SECRET -o=jsonpath='{.data.token}' | base64 --decode)
 ```
 
-(5) Create a kubeconfig secret in the namespace where workflows will be created. This only needs to contain users and
+(6) Create a kubeconfig secret in the namespace where workflows will be created. This only needs to contain users and
 context.
 
 There must be a context that:
@@ -112,7 +170,7 @@ END
 kubectl -n local create secret generic kubeconfig --from-file=value=local-kubeconfig.yaml
 ```
 
-(6) Finally, create a multi-cluster workflow:
+(7) Finally, create a multi-cluster workflow:
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -126,7 +184,7 @@ spec:
   templates:
     - name: main
       cluster: cluster-1
-      namespace: default
+      namespace: remote
       container:
         image: docker/whalesay
 ```

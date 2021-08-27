@@ -242,7 +242,11 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	if pod.Name != nodeID {
 		pod.Annotations[common.AnnotationKeyNodeID] = nodeID
 	}
-	labels.SetOwnership(pod, woc.controller.Config.Cluster, woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind))
+	ownershipCluster := ""
+	if tmpl.Cluster != "" {
+		ownershipCluster = woc.controller.Config.Cluster
+	}
+	labels.SetOwnership(pod, ownershipCluster, woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind))
 
 	if opts.onExitPod {
 		// This pod is part of an onExit handler, label it so
