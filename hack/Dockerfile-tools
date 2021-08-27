@@ -1,7 +1,12 @@
 FROM golang:1.16-alpine
 
-RUN apk add make bash git protoc protobuf-dev perl
+RUN apk add make bash git protoc protobuf-dev perl curl
 
+# install kubectl
+RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+RUN chmod u+x kubectl && mv kubectl /bin/kubectl
+
+# cache mod dependencies
 WORKDIR /go/src/github.com/argoproj/argo-workflows
 COPY go.mod .
 COPY go.sum .
@@ -11,6 +16,7 @@ COPY . .
 
 RUN go mod vendor
 
+# install go binaries in dockerfile - faster than at runtime
 RUN go install -mod=vendor ./vendor/k8s.io/code-generator/cmd/go-to-protobuf
 RUN go install -mod=vendor ./vendor/github.com/gogo/protobuf/protoc-gen-gogo
 RUN go install -mod=vendor ./vendor/github.com/gogo/protobuf/protoc-gen-gogofast
@@ -18,3 +24,4 @@ RUN go install -mod=vendor ./vendor/golang.org/x/tools/cmd/goimports
 RUN go install -mod=vendor ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
 RUN go install -mod=vendor ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
 RUN go install -mod=vendor ./vendor/k8s.io/kube-openapi/cmd/openapi-gen
+RUN go install -mod=vendor ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen
