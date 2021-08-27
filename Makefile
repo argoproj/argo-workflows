@@ -235,7 +235,8 @@ scan-%:
 codegen: types swagger docs manifests
 
 .PHONY: codegen-container
-codegen-container: ./hack/makecmd codegen
+codegen-container:
+	./hack/makecmd.sh codegen
 
 .PHONY: types
 types: pkg/apis/workflow/v1alpha1/generated.proto pkg/apis/workflow/v1alpha1/openapi_generated.go pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go
