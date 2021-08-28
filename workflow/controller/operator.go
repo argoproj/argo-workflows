@@ -15,6 +15,8 @@ import (
 	"sync"
 	"time"
 
+	mclabels "github.com/argoproj-labs/multi-cluster-kubernetes/api/labels"
+
 	mcconfig "github.com/argoproj-labs/multi-cluster-kubernetes/api/config"
 
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -638,9 +640,6 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	// errors if we label a pod that was deleted already.
 	for key, podPhase := range woc.completedPods {
 		cluster, namespace, podName, _ := mccache.SplitMetaNamespaceKey(key)
-		if cluster == "" {
-			cluster = mcconfig.InCluster
-		}
 		if woc.execWf.Spec.PodGC != nil {
 			switch woc.execWf.Spec.PodGC.Strategy {
 			case wfv1.PodGCOnPodSuccess:
@@ -954,7 +953,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 		if !ok {
 			nodeID = woc.wf.NodeID(nodeName)
 		}
-		cluster := woc.findTemplate(pod).ClusterOr(mcconfig.InCluster)
+		cluster := woc.findCluster(pod)
 
 		seenPodLock.Lock()
 		seenPods[nodeID] = pod
@@ -1105,7 +1104,7 @@ func (woc *wfOperationCtx) failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
 
 // getAllWorkflowPods returns all pods related to the current workflow
 func (woc *wfOperationCtx) getAllWorkflowPods() ([]*apiv1.Pod, error) {
-	objs, err := woc.controller.podInformer.ByIndex(indexes.WorkflowIndex, indexes.WorkflowIndexValue(woc.wf.Namespace, woc.wf.Name))
+	objs, err := woc.controller.podInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, indexes.WorkflowIndexValue(woc.wf.Namespace, woc.wf.Name))
 	if err != nil {
 		return nil, err
 	}
@@ -2030,6 +2029,14 @@ func (woc *wfOperationCtx) findTemplate(pod *apiv1.Pod) *wfv1.Template {
 		return nil // I don't expect this to happen in production, just in tests
 	}
 	return woc.wf.GetTemplateByName(node.TemplateName)
+}
+
+func (woc *wfOperationCtx) findCluster(pod *apiv1.Pod) string {
+	cluster, _, _, _ := mclabels.GetOwnership(pod)
+	if cluster != "" {
+		return cluster
+	}
+	return mcconfig.InCluster
 }
 
 func (woc *wfOperationCtx) markWorkflowRunning(ctx context.Context) {

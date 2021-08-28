@@ -17,7 +17,7 @@ const (
 
 	FinalizerName = workflow.WorkflowFullName
 
-	//AnnotationKeyNodeID is the ID of the node. Historically, the pod name was the same as the node ID.
+	// AnnotationKeyNodeID is the ID of the node. Historically, the pod name was the same as the node ID.
 	// This will only be applied if pod name is not the node ID. Therefore, it this exists, it will never be the same
 	// as the pod name.
 	AnnotationKeyNodeID = workflow.WorkflowFullName + "/node-id"

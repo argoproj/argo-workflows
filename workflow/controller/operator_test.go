@@ -4916,6 +4916,7 @@ func TestConfigMapCacheLoadOperateMaxAge(t *testing.T) {
 	}
 	wf := wfv1.MustUnmarshalWorkflow(workflowCachedMaxAge)
 	cancel, controller := newController()
+	defer cancel()
 
 	ctx := context.Background()
 	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(ctx, wf, metav1.CreateOptions{})
@@ -4923,10 +4924,9 @@ func TestConfigMapCacheLoadOperateMaxAge(t *testing.T) {
 
 	nonExpiredEntry := getEntryCreatedAtTime(time.Now().Add(-5 * time.Second))
 	client := controller.kubeclientset.InCluster()
-
-	t.SkipNow()
 	_, err = client.CoreV1().ConfigMaps("default").Create(ctx, &nonExpiredEntry, metav1.CreateOptions{})
 	assert.NoError(t, err)
+	t.SkipNow()
 
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)

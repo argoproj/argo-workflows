@@ -431,20 +431,6 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: impersonator
-rules:
-- apiGroups:
-  - ""
-  resourceNames:
-  - argo
-  resources:
-  - serviceaccounts
-  verbs:
-  - impersonate
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
   name: submit-workflow-template
 rules:
 - apiGroups:
@@ -565,18 +551,6 @@ rules:
   - get
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: multi-cluster-argo
-rules:
-- apiGroups:
-  - ""
-  resources:
-  - pods
-  verbs:
-  - create
----
-apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: argo-binding
@@ -612,18 +586,6 @@ subjects:
 - kind: ServiceAccount
   name: github.com
   namespace: argo
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: impersonator
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: impersonator
-subjects:
-- kind: ServiceAccount
-  name: argo
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -674,19 +636,6 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: default
-  namespace: argo
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: multi-cluster-argo
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: multi-cluster-argo
-subjects:
-- kind: ServiceAccount
-  name: argo
   namespace: argo
 ---
 apiVersion: v1

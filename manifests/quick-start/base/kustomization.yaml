@@ -5,7 +5,6 @@ resources:
   - ../../namespace-install
   - minio
   - webhooks
-  - multi-cluster
   - argo-server-sso-secret.yaml
   - workflow-role.yaml
   - kubelet-executor-clusterrole.yaml

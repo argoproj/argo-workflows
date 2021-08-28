@@ -104,7 +104,6 @@ argo [flags]
 * [argo auth](argo_auth.md)	 - manage authentication settings
 * [argo cluster-template](argo_cluster-template.md)	 - manipulate cluster workflow templates
 * [argo completion](argo_completion.md)	 - output shell completion code for the specified shell (bash or zsh)
-* [argo config](argo_config.md)	 - 
 * [argo cron](argo_cron.md)	 - manage cron workflows
 * [argo delete](argo_delete.md)	 - delete workflows
 * [argo get](argo_get.md)	 - display details about a workflow

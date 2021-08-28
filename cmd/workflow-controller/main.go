@@ -48,7 +48,6 @@ func NewRootCommand() *cobra.Command {
 		logFormat                string // --log-format
 		workflowWorkers          int    // --workflow-workers
 		workflowTTLWorkers       int    // --workflow-ttl-workers
-		podWorkers               int    // --pod-workers
 		podCleanupWorkers        int    // --pod-cleanup-workers
 		burst                    int
 		qps                      float32
@@ -105,7 +104,7 @@ func NewRootCommand() *cobra.Command {
 			wfController, err := controller.NewWorkflowController(ctx, clientConfig, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap)
 			errors.CheckError(err)
 
-			go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podWorkers, podCleanupWorkers)
+			go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podCleanupWorkers)
 
 			http.HandleFunc("/healthz", wfController.Healthz)
 
@@ -129,7 +128,6 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().StringVar(&logFormat, "log-format", "text", "The formatter to use for logs. One of: text|json")
 	command.Flags().IntVar(&workflowWorkers, "workflow-workers", 32, "Number of workflow workers")
 	command.Flags().IntVar(&workflowTTLWorkers, "workflow-ttl-workers", 4, "Number of workflow TTL workers")
-	command.Flags().IntVar(&podWorkers, "pod-workers", 32, "Number of pod workers")
 	command.Flags().IntVar(&podCleanupWorkers, "pod-cleanup-workers", 4, "Number of pod cleanup workers")
 	command.Flags().IntVar(&burst, "burst", 30, "Maximum burst for throttle.")
 	command.Flags().Float32Var(&qps, "qps", 20.0, "Queries per second")

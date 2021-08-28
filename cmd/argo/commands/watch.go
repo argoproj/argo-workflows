@@ -53,7 +53,8 @@ func watchWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 	req := &workflowpkg.WatchWorkflowsRequest{
 		Namespace: namespace,
 		ListOptions: &metav1.ListOptions{
-			FieldSelector: util.GenerateFieldSelectorFromWorkflowName(workflow),
+			FieldSelector:   util.GenerateFieldSelectorFromWorkflowName(workflow),
+			ResourceVersion: "0",
 		},
 	}
 	stream, err := serviceClient.WatchWorkflows(ctx, req)

@@ -7,8 +7,6 @@ import (
 	"time"
 
 	mcconfig "github.com/argoproj-labs/multi-cluster-kubernetes/api/config"
-
-	mclabels "github.com/argoproj-labs/multi-cluster-kubernetes/api/labels"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -22,10 +20,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 	if pod == nil {
 		return
 	}
-	cluster, _, _, _ := mclabels.GetOwnership(pod)
-	if cluster == "" {
-		cluster = mcconfig.InCluster
-	}
+	cluster := woc.findCluster(pod)
 	switch pod.Status.Phase {
 	case apiv1.PodSucceeded, apiv1.PodFailed:
 		// Skip any pod which are already completed

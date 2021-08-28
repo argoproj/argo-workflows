@@ -4,18 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/argoproj/argo-workflows/v3/util/logs"
 	"os"
 	"strconv"
 	"strings"
 	"syscall"
 	"time"
-
-	"sigs.k8s.io/yaml"
-
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
-
-	"k8s.io/client-go/tools/clientcmd"
 
 	mccache "github.com/argoproj-labs/multi-cluster-kubernetes/api/cache"
 	mcconfig "github.com/argoproj-labs/multi-cluster-kubernetes/api/config"
@@ -40,11 +33,13 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	apiwatch "k8s.io/client-go/tools/watch"
 	"k8s.io/client-go/util/workqueue"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/yaml"
 	"upper.io/db.v3/lib/sqlbuilder"
 
 	"github.com/argoproj/argo-workflows/v3"
@@ -59,6 +54,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/diff"
 	"github.com/argoproj/argo-workflows/v3/util/env"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/util/logs"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
@@ -265,7 +261,7 @@ var indexers = cache.Indexers{
 }
 
 // Run starts an Workflow resource controller
-func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podWorkers, podCleanupWorkers int) {
+func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podCleanupWorkers int) {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -275,7 +271,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	defer wfc.podCleanupQueue.ShutDown()
 
 	log.WithField("version", argo.GetVersion().Version).Info("Starting Workflow Controller")
-	log.Infof("Workers: workflow: %d, pod: %d, pod cleanup: %d", wfWorkers, podWorkers, podCleanupWorkers)
+	log.Infof("Workers: workflow: %d, pod cleanup: %d", wfWorkers, podCleanupWorkers)
 
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface.InCluster(), wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListOptions, indexers)
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface.InCluster(), workflowTemplateResyncPeriod, wfc.managedNamespace)
@@ -747,65 +743,6 @@ func (wfc *WorkflowController) runWorker() {
 	ctx := context.Background()
 	for wfc.processNextItem(ctx) {
 	}
-}
-
-func (wfc *WorkflowController) newFinalizerController(ctx context.Context) cache.Controller {
-	r := util.InstanceIDRequirement(wfc.Config.InstanceID)
-	controller := cache.New(&cache.Config{
-		Queue: cache.NewFIFO(cache.MetaNamespaceKeyFunc),
-		ListerWatcher: cache.NewFilteredListWatchFromClient(wfc.wfclientset.ArgoprojV1alpha1().RESTClient(), "workflows", wfc.managedNamespace, func(opts *metav1.ListOptions) {
-			opts.LabelSelector = r.String()
-		}),
-		Process: func(obj interface{}) error {
-			wf, ok := obj.(*wfv1.Workflow)
-			if !ok {
-				return fmt.Errorf("unexpected type %T", obj)
-			}
-			return wfc.finalizeWorkflow(ctx, wf)
-		},
-		ObjectType: &wfv1.Workflow{},
-	})
-	return controller
-}
-
-func (wfc *WorkflowController) finalizeWorkflow(ctx context.Context, wf *wfv1.Workflow) error {
-	if wf.GetDeletionTimestamp() == nil {
-		return nil
-	}
-	log.WithField("namespace", wf.Namespace).
-		WithField("workflow", wf.Name).
-		Info("finalizing workflow")
-	woc := newWorkflowOperationCtx(wf, wfc)
-	keys := make(map[string]bool)
-	for _, tmpl := range woc.execWf.Spec.Templates {
-		if tmpl.Cluster != "" || tmpl.Namespace != "" {
-			keys[tmpl.ClusterOr(mcconfig.InCluster)+"/"+tmpl.NamespaceOr(woc.wf.Namespace)] = true
-		}
-	}
-	for key := range keys {
-		parts := strings.Split(key, "/")
-		cluster, namespace := parts[0], parts[1]
-		r := util.InstanceIDRequirement(wfc.Config.InstanceID)
-		labelSelector :=
-			mclabels.KeyOwnerCluster + "=" + wfc.Config.Cluster + "," +
-				mclabels.KeyOwnerNamespace + "=" + woc.wf.Namespace + "," +
-				common.LabelKeyWorkflow + "=" + woc.wf.Name + ", " +
-				r.String()
-		log.WithField("cluster", cluster).
-			WithField("namespace", namespace).
-			WithField("labelSelector", labelSelector).
-			Info("deleting pods")
-		err := wfc.kubeclientset.Config(cluster).CoreV1().Pods(namespace).DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{
-			LabelSelector: labelSelector,
-		})
-		if err != nil {
-			return fmt.Errorf("failed to finalize workflow %s/%s: %w", wf.Namespace, wf.Name, err)
-		}
-	}
-	controllerutil.RemoveFinalizer(woc.wf, common.FinalizerName)
-	woc.updated = true
-	woc.persistUpdates(ctx)
-	return nil
 }
 
 // processNextItem is the worker logic for handling workflow updates
