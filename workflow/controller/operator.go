@@ -15,14 +15,10 @@ import (
 	"sync"
 	"time"
 
-	mclabels "github.com/argoproj-labs/multi-cluster-kubernetes/api/labels"
-
-	mcconfig "github.com/argoproj-labs/multi-cluster-kubernetes/api/config"
-
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
 	"github.com/antonmedv/expr"
 	mccache "github.com/argoproj-labs/multi-cluster-kubernetes/api/cache"
+	mcconfig "github.com/argoproj-labs/multi-cluster-kubernetes/api/config"
+	mclabels "github.com/argoproj-labs/multi-cluster-kubernetes/api/labels"
 	"github.com/argoproj/pkg/humanize"
 	argokubeerr "github.com/argoproj/pkg/kube/errors"
 	"github.com/argoproj/pkg/strftime"
@@ -39,6 +35,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/pointer"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
@@ -1046,8 +1043,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 
 			// grace-period to allow informer sync
 			recentlyStarted := recentlyStarted(node)
-			woc.log.WithFields(log.Fields{"podName": node.Name, "nodePhase": node.Phase, "recentlyStarted": recentlyStarted}).
-				Info("Workflow pod is missing")
+			woc.log.WithFields(log.Fields{"podName": node.Name, "nodePhase": node.Phase, "recentlyStarted": recentlyStarted}).Info("Workflow pod is missing")
 			metrics.PodMissingMetric.WithLabelValues(strconv.FormatBool(recentlyStarted), string(node.Phase)).Inc()
 
 			// If the node is pending and the pod does not exist, it could be the case that we want to try to submit it
@@ -1286,7 +1282,7 @@ func podHasContainerNeedingTermination(pod *apiv1.Pod, tmpl wfv1.Template) bool 
 
 func (woc *wfOperationCtx) cleanUpPod(pod *apiv1.Pod, tmpl wfv1.Template) {
 	if podHasContainerNeedingTermination(pod, tmpl) {
-		cluster := tmpl.ClusterOr(mcconfig.InCluster)
+		cluster := woc.findCluster(pod)
 		woc.controller.queuePodForCleanup(cluster, pod.Namespace, pod.Name, terminateContainers)
 	}
 }
