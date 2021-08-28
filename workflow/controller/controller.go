@@ -216,9 +216,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.updateEstimatorFactory()
 
 	// Create Synchronization Manager
-	if err := wfc.createSynchronizationManager(ctx); err != nil {
-		log.Fatal(err)
-	}
+	wfc.createSynchronizationManager(ctx)
 	// init managers: throttler and SynchronizationManager
 	if err := wfc.initManagers(ctx); err != nil {
 		log.Fatal(err)
@@ -323,7 +321,7 @@ func (wfc *WorkflowController) waitForCacheSync(ctx context.Context) {
 }
 
 // Create and the Synchronization Manager
-func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context) error {
+func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context) {
 	getSyncLimit := func(lockKey string) (int, error) {
 		lockName, err := sync.DecodeLockName(lockKey)
 		if err != nil {
@@ -355,7 +353,6 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 	}
 
 	wfc.syncManager = sync.NewLockManager(getSyncLimit, nextWorkflow, isWFDeleted)
-	return nil
 }
 
 // list all running workflows to initialize throttler and syncManager
