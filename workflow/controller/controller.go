@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/argoproj/argo-workflows/v3/util/logs"
 	"os"
 	"strconv"
 	"strings"
@@ -167,6 +168,10 @@ func NewWorkflowController(ctx context.Context, clientConfig clientcmd.ClientCon
 	restConfigs, err := mcconfig.NewRestConfigs(clientConfigs)
 	if err != nil {
 		return nil, err
+	}
+	for _, r := range restConfigs {
+		logs.AddK8SLogTransportWrapper(r)
+		metrics.AddMetricsTransportWrapper(r)
 	}
 	kubernetesInterfaces, err := mckubernetes.NewForConfigs(restConfigs)
 	if err != nil {

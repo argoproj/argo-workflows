@@ -4898,7 +4898,6 @@ spec:
 `
 
 func TestConfigMapCacheLoadOperateMaxAge(t *testing.T) {
-	t.SkipNow()
 	getEntryCreatedAtTime := func(time time.Time) apiv1.ConfigMap {
 		jsonTime, _ := time.UTC().MarshalJSON()
 		return apiv1.ConfigMap{
@@ -4924,6 +4923,8 @@ func TestConfigMapCacheLoadOperateMaxAge(t *testing.T) {
 
 	nonExpiredEntry := getEntryCreatedAtTime(time.Now().Add(-5 * time.Second))
 	client := controller.kubeclientset.InCluster()
+
+	t.SkipNow()
 	_, err = client.CoreV1().ConfigMaps("default").Create(ctx, &nonExpiredEntry, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
