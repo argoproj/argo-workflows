@@ -954,6 +954,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 		if !ok {
 			nodeID = woc.wf.NodeID(nodeName)
 		}
+		cluster := woc.findTemplate(pod).ClusterOr(mcconfig.InCluster)
 
 		seenPodLock.Lock()
 		seenPods[nodeID] = pod
@@ -997,19 +998,20 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 					woc.updated = true
 				}
 			}
+			key := mccache.JoinMetaNamespaceKey(cluster, pod.Namespace, pod.Name)
 			if node.Fulfilled() && !node.IsDaemoned() {
 				if pod.GetLabels()[common.LabelKeyCompleted] == "true" {
 					return
 				}
 				if match {
-					woc.completedPods[pod.Name] = pod.Status.Phase
+					woc.completedPods[key] = pod.Status.Phase
 				}
 				if woc.shouldPrintPodSpec(node) {
 					printPodSpecLog(pod, woc.wf.Name)
 				}
 			}
 			if node.Succeeded() && match {
-				woc.completedPods[pod.Name] = pod.Status.Phase
+				woc.completedPods[key] = pod.Status.Phase
 			}
 		}
 	}
@@ -1286,8 +1288,7 @@ func podHasContainerNeedingTermination(pod *apiv1.Pod, tmpl wfv1.Template) bool 
 func (woc *wfOperationCtx) cleanUpPod(pod *apiv1.Pod, tmpl wfv1.Template) {
 	if podHasContainerNeedingTermination(pod, tmpl) {
 		cluster := tmpl.ClusterOr(mcconfig.InCluster)
-		namespace := tmpl.NamespaceOr(woc.wf.Namespace)
-		woc.controller.queuePodForCleanup(cluster, namespace, pod.Name, terminateContainers)
+		woc.controller.queuePodForCleanup(cluster, pod.Namespace, pod.Name, terminateContainers)
 	}
 }
 
