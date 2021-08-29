@@ -17,7 +17,7 @@ DEV_BRANCH            := $(shell [ $(GIT_BRANCH) = master ] || [ `echo $(GIT_BRA
 GREP_LOGS             := ""
 
 # docker image publishing options
-IMAGE_NAMESPACE       ?= argoproj
+IMAGE_NAMESPACE       ?= quay.io/argoproj
 DEV_IMAGE             ?= $(shell [ `uname -s` = Darwin ] && echo true || echo false)
 
 # The name of the namespace where Kubernetes resources/RBAC will be installed
@@ -399,26 +399,13 @@ install:
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 	@echo "installing PROFILE=$(PROFILE), E2E_EXECUTOR=$(E2E_EXECUTOR)"
-	kubectl kustomize --load-restrictor=LoadRestrictionsNone test/e2e/manifests/$(PROFILE) | sed 's/argoproj\//$(IMAGE_NAMESPACE)\//' | sed 's/containerRuntimeExecutor: docker/containerRuntimeExecutor: $(E2E_EXECUTOR)/' | sed 's/namespace: argo/namespace: $(KUBE_NAMESPACE)/' | kubectl -n $(KUBE_NAMESPACE) apply --prune -l app.kubernetes.io/part-of=argo -f -
+	kubectl kustomize --load-restrictor=LoadRestrictionsNone test/e2e/manifests/$(PROFILE) | sed 's|quay.io/argoproj/|$(IMAGE_NAMESPACE)/|' | sed 's/containerRuntimeExecutor: docker/containerRuntimeExecutor: $(E2E_EXECUTOR)/' | sed 's/namespace: argo/namespace: $(KUBE_NAMESPACE)/' | kubectl -n $(KUBE_NAMESPACE) apply --prune -l app.kubernetes.io/part-of=argo -f -
 ifeq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml
 endif
 ifeq ($(RUN_MODE),kubernetes)
-	# scale to 2 replicas so we touch upon leader election
-	kubectl -n $(KUBE_NAMESPACE) scale deploy/workflow-controller --replicas 2
+	kubectl -n $(KUBE_NAMESPACE) scale deploy/workflow-controller --replicas 1
 	kubectl -n $(KUBE_NAMESPACE) scale deploy/argo-server --replicas 1
-endif
-
-# nuke is like "clean" but attempts to return you to a state as if it had never been installed at all
-# this only available in "safe" local development
-ifeq (true,$(filter true, $(DOCKER_DESKTOP) $(K3D)))
-nuke:
-	kubectl delete --ignore-not-found workflow,cronworkflow,clusterworkflowtemplate,workflowtemplate,workfloweventbinding --all || true
-	kubectl delete --ignore-not-found ns argo
-	kubectl delete --ignore-not-found -k manifests/base/crds/minimal
-	git clean -fxd
-	docker image rm argoproj/argoexec argoproj/argocli argoproj/workflow-controller || true
-	docker system prune -f
 endif
 
 .PHONY: argosay
