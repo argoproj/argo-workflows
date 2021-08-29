@@ -141,24 +141,29 @@ func NewWorkflowController(ctx context.Context, clientConfig clientcmd.ClientCon
 	if err != nil {
 		return nil, err
 	}
-	rawContext := rawConfig.Contexts[rawConfig.CurrentContext]
-	kubeConfig.Clusters[mcconfig.InCluster] = rawConfig.Clusters[rawContext.Cluster]
-	kubeConfig.AuthInfos[mcconfig.InCluster] = rawConfig.AuthInfos[rawContext.AuthInfo]
+	if cc := rawConfig.CurrentContext; cc != "" {
+		log.Info("building in-cluster config from current context")
+		rawContext := rawConfig.Contexts[cc]
+		kubeConfig.Clusters[mcconfig.InCluster] = rawConfig.Clusters[rawContext.Cluster]
+		kubeConfig.AuthInfos[mcconfig.InCluster] = rawConfig.AuthInfos[rawContext.AuthInfo]
+	} else {
+		log.Info("building in-cluster config from Kubernetes /var/run/secrets")
+		kubeConfig.Clusters[mcconfig.InCluster] = &clientcmdapi.Cluster{
+			Server:               "https://kubernetes.default.svc",
+			CertificateAuthority: "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+		}
+		kubeConfig.AuthInfos[mcconfig.InCluster] = &clientcmdapi.AuthInfo{
+			TokenFile: "/var/run/secrets/kubernetes.io/serviceaccount/token",
+		}
+	}
 	kubeConfig.Contexts[mcconfig.InCluster] = &clientcmdapi.Context{
 		Cluster:   mcconfig.InCluster,
 		AuthInfo:  mcconfig.InCluster,
 		Namespace: managedNamespace,
 	}
 	kubeConfig.CurrentContext = mcconfig.InCluster
-	deepCopy := kubeConfig.DeepCopy()
-	clientcmdapi.ShortenConfig(deepCopy)
-	data, err := yaml.Marshal(deepCopy)
-	if err != nil {
+	if err := logConfig(kubeConfig); err != nil {
 		return nil, err
-	}
-	log.Info("Config:")
-	for _, s := range strings.Split(string(data), "\n") {
-		log.Info(s)
 	}
 	clientConfigs := mcconfig.NewClientConfigs(*kubeConfig)
 	restConfigs, err := mcconfig.NewRestConfigs(clientConfigs)
@@ -222,6 +227,20 @@ func NewWorkflowController(ctx context.Context, clientConfig clientcmd.ClientCon
 	wfc.podCleanupQueue = wfc.metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "pod_cleanup_queue")
 
 	return &wfc, nil
+}
+
+func logConfig(kubeConfig *clientcmdapi.Config) error {
+	deepCopy := kubeConfig.DeepCopy()
+	clientcmdapi.ShortenConfig(deepCopy)
+	data, err := yaml.Marshal(deepCopy)
+	if err != nil {
+		return err
+	}
+	log.Info("Config:")
+	for _, s := range strings.Split(string(data), "\n") {
+		log.Info(s)
+	}
+	return nil
 }
 
 func (wfc *WorkflowController) newThrottler() sync.Throttler {
