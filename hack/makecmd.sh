@@ -20,6 +20,10 @@ prune_docker_containers() {
   docker container prune -f
 }
 
+ensure_vendor() {
+  go mod vendor
+}
+
 for arg in "$@"
 do
   case $arg in
@@ -27,6 +31,7 @@ do
       build_tools_image
     ;;
     codegen)
+      ensure_vendor
       build_tools_image
       run_mounted_command make codegen
       prune_docker_containers
