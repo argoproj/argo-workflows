@@ -1,6 +1,8 @@
 FROM golang:1.16-alpine
 
-RUN apk add make bash git protoc protobuf-dev perl curl
+# upgrade grep fixes alpine busybox error
+RUN apk add make bash git protoc protobuf-dev perl curl \
+    && apk add --no-cache --upgrade grep
 
 # install kubectl
 RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
