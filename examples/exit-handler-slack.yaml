@@ -18,10 +18,10 @@ spec:
 
   - name: exit-handler
     container:
-      image: alpine:latest
+      image: curlimages/curl
       command: [sh, -c]
       args: [
-        "apk add curl && curl -X POST --data-urlencode 'payload={
+        "curl -X POST --data-urlencode 'payload={
           \"text\": \"{{workflow.name}} finished\",
           \"blocks\": [
             {
