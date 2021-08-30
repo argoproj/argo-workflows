@@ -4481,6 +4481,10 @@
         "total": {
           "type": "string",
           "format": "uint64"
+        },
+        "totalBytes": {
+          "type": "string",
+          "format": "uint64"
         }
       }
     },
