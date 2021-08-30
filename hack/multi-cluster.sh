@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
 set -eux -o pipefail
 
-kubectl -n argo delete secret kubeconfig --ignore-not-found
-kubectl config view --raw --minify | sed 's/k3d-k3s-default/cluster-1/'| sed 's/namespace: .*/namespace: remote/' > cluster-1-kubeconfig.yaml
-kubectl -n argo create secret generic kubeconfig --from-file=value=cluster-1-kubeconfig.yaml
+kubectl -n local delete wf --all
+
+kubectl -n argo delete secret argo-kubeconfig --ignore-not-found
+kubectl config view --raw --minify | sed 's/k3d-k3s-default/cluster-1/'| sed 's/namespace: .*/namespace: remote/' > argo-kubeconfig.yaml
+kubectl -n argo create secret generic argo-kubeconfig --from-file=value=argo-kubeconfig.yaml
 
 kubectl delete ns remote --ignore-not-found
 kubectl create ns remote
 kubectl -n remote create role remote --verb=create --resource=pods
 kubectl -n remote create sa remote
-kubectl -n remote create rolebinding remote --role=remote --serviceaccount=default:remote
+kubectl -n remote create rolebinding remote --role=remote --serviceaccount=remote:remote
 kubectl -n remote apply -f https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/quick-start/base/minio/my-minio-cred-secret.yaml
 kubectl -n remote apply -f https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/quick-start/base/workflow-role.yaml
 kubectl -n remote create sa workflow
@@ -20,7 +22,7 @@ kubectl create ns local
 SECRET=$(kubectl -n remote get sa remote -o=jsonpath='{.secrets[0].name}')
 TOKEN=$(kubectl get -n remote secret $SECRET -o=jsonpath='{.data.token}' | base64 --decode)
 
-sed "s/TOKEN/$TOKEN/" > local-kubeconfig.yaml <<END
+sed "s/TOKEN/$TOKEN/" > workflow-kubeconfig.yaml <<END
 apiVersion: v1
 contexts:
   - context:
@@ -37,4 +39,8 @@ users:
       token: TOKEN
 END
 
-kubectl -n local create secret generic kubeconfig --from-file=value=local-kubeconfig.yaml
+kubectl -n local create secret generic workflow-kubeconfig --from-file=value=workflow-kubeconfig.yaml
+
+kubectl -n local apply -f ../examples/multi-cluster/multi-cluster-workflow.yaml
+
+kubectl -n local wait wf/multi-cluster --for=condition=Completed

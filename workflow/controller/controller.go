@@ -133,7 +133,7 @@ const (
 
 // NewWorkflowController instantiates a new WorkflowController
 func NewWorkflowController(ctx context.Context, clientConfig clientcmd.ClientConfig, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap string) (*WorkflowController, error) {
-	kubeConfig, err := mcconfig.New(kubeclientset.CoreV1().Secrets(namespace)).Get(ctx)
+	kubeConfig, err := mcconfig.New(kubeclientset.CoreV1().Secrets(namespace)).Get(ctx, "argo")
 	if err != nil {
 		return nil, err
 	}
@@ -148,13 +148,8 @@ func NewWorkflowController(ctx context.Context, clientConfig clientcmd.ClientCon
 		kubeConfig.AuthInfos[mcconfig.InCluster] = rawConfig.AuthInfos[rawContext.AuthInfo]
 	} else {
 		log.Info("building in-cluster config from Kubernetes /var/run/secrets")
-		kubeConfig.Clusters[mcconfig.InCluster] = &clientcmdapi.Cluster{
-			Server:               "https://kubernetes.default.svc",
-			CertificateAuthority: "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
-		}
-		kubeConfig.AuthInfos[mcconfig.InCluster] = &clientcmdapi.AuthInfo{
-			TokenFile: "/var/run/secrets/kubernetes.io/serviceaccount/token",
-		}
+		kubeConfig.Clusters[mcconfig.InCluster] = mcconfig.InClusterCluster
+		kubeConfig.AuthInfos[mcconfig.InCluster] = mcconfig.InClusterUser
 	}
 	kubeConfig.Contexts[mcconfig.InCluster] = &clientcmdapi.Context{
 		Cluster:   mcconfig.InCluster,
@@ -616,7 +611,11 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 }
 
 func (wfc *WorkflowController) getPod(cluster, namespace, podName string) (*apiv1.Pod, error) {
-	obj, exists, err := wfc.podInformer.Config(cluster).GetStore().GetByKey(namespace + "/" + podName)
+	podInformer := wfc.podInformer.Config(cluster)
+	if podInformer == nil {
+		return nil, fmt.Errorf("cluster %q not found", cluster)
+	}
+	obj, exists, err := podInformer.GetStore().GetByKey(namespace + "/" + podName)
 	if err != nil {
 		return nil, err
 	}

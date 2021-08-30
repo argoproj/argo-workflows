@@ -146,14 +146,20 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	podName := wfv1.UID(tmpl.Cluster, tmpl.Namespace, woc.wf.Name, nodeName)
 	cluster := tmpl.ClusterOr(mcconfig.InCluster)
 	namespace := tmpl.NamespaceOr(woc.wf.Namespace)
+	ownershipCluster := woc.controller.Config.Cluster
 	// we must check to see if the pod exists rather than just optimistically creating the pod and see if we get
 	// an `AlreadyExists` error because we won't get that error if there is not enough resources.
 	// Performance enhancement: Code later in this func is expensive to execute, so return quickly if we can.
-	obj, exists, err := woc.controller.podInformer.Config(cluster).GetStore().GetByKey(namespace + "/" + podName)
+	podInformer := woc.controller.podInformer.Config(cluster)
+	if podInformer == nil {
+		return nil, fmt.Errorf("cluster %q not found", cluster)
+	}
+	obj, exists, err := podInformer.GetStore().GetByKey(namespace + "/" + podName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pod from informer store: %w", err)
 	}
 	log.WithField("cluster", cluster).
+		WithField("ownershipCluster", ownershipCluster).
 		WithField("namespace", namespace).
 		WithField("podName", podName).
 		WithField("nodeID", nodeID).
@@ -242,11 +248,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	if pod.Name != nodeID {
 		pod.Annotations[common.AnnotationKeyNodeID] = nodeID
 	}
-	ownershipCluster := ""
-	if tmpl.Cluster != "" {
-		ownershipCluster = woc.controller.Config.Cluster
-	}
-	labels.SetOwnership(pod, ownershipCluster, woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind))
+	labels.SetOwnership(pod, cluster, woc.wf, ownershipCluster, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind))
 
 	if opts.onExitPod {
 		// This pod is part of an onExit handler, label it so
@@ -459,7 +461,11 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	clientset := woc.controller.kubeclientset.InCluster()
 
 	if cluster != mcconfig.InCluster {
-		c, err := mcconfig.New(clientset.CoreV1().Secrets(woc.wf.Namespace)).Get(ctx)
+		configName := pod.Spec.ServiceAccountName
+		if configName == "" {
+			configName = "default"
+		}
+		c, err := mcconfig.New(clientset.CoreV1().Secrets(woc.wf.Namespace)).Get(ctx, configName)
 		if err != nil {
 			return nil, err
 		}
@@ -470,6 +476,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			}
 		}
 		woc.log.WithField("cluster", cluster).
+			WithField("configName", configName).
 			WithField("namespace", namespace).
 			WithField("user", user).
 			Info("getting user cluster config")

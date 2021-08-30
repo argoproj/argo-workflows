@@ -60,7 +60,11 @@ func (woc *wfOperationCtx) nodePodExist(node wfv1.NodeStatus) bool {
 	tmpl := woc.execWf.GetTemplateByName(node.TemplateName)
 	cluster := tmpl.ClusterOr(mcconfig.InCluster)
 	namespace := tmpl.NamespaceOr(woc.wf.Namespace)
-	_, podExist, _ := woc.controller.podInformer.Config(cluster).GetStore().GetByKey(fmt.Sprintf("%s/%s", namespace, node.ID))
+	podInformer := woc.controller.podInformer.Config(cluster)
+	if podInformer == nil {
+		return false
+	}
+	_, podExist, _ := podInformer.GetStore().GetByKey(fmt.Sprintf("%s/%s", namespace, node.ID))
 	return podExist
 }
 
