@@ -28,12 +28,20 @@ for arg in "$@"
 do
   case $arg in
     tools-image)
+      ensure_vendor
       build_tools_image
     ;;
     codegen)
       ensure_vendor
       build_tools_image
       run_mounted_command make codegen
+      prune_docker_containers
+      prune_docker_images
+    ;;
+    lint)
+      ensure_vendor
+      build_tools_image
+      run_mounted_command make lint
       prune_docker_containers
       prune_docker_images
     ;;
