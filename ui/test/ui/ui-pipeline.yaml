@@ -83,7 +83,8 @@ spec:
           stan:
             subject: output-subject
     - name: filter
-      filter: "true"
+      filter:
+        expression: "true"
       sources:
         - stan:
             subject: event-bus
@@ -98,7 +99,8 @@ spec:
             actions:
               - sql: "select 1"
     - name: map
-      map: "true"
+      map:
+        expression: "true"
       sources:
         - stan:
             subject: event-bus
