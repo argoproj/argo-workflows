@@ -25,4 +25,7 @@ func TestProgress(t *testing.T) {
 	t.Run("Add", func(t *testing.T) {
 		assert.Equal(t, Progress("1/2"), Progress("0/0").Add("1/2"))
 	})
+	t.Run("Complete", func(t *testing.T) {
+		assert.Equal(t, Progress("100/100"), Progress("0/100").Complete())
+	})
 }
