@@ -79,7 +79,7 @@ nav:
           - security.md
           - running-at-massive-scale.md
       - ide-setup.md
-      - Examples: https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/README.md
+      - Examples: https://github.com/argoproj/argo-workflows/blob/master/examples/README.md
       - Field Reference: fields.md
       - CLI Reference:
           - argo: cli/argo.md
