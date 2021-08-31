@@ -219,7 +219,7 @@ func TestTmplServiceAccount(t *testing.T) {
 func TestWFLevelAutomountServiceAccountToken(t *testing.T) {
 	woc := newWoc()
 	ctx := context.Background()
-	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset.InCluster(), "", "foo", "foo-token")
+	_, err := util.CreateServiceAccountWithToken(ctx, woc.clientset(), "", "foo", "foo-token")
 	assert.NoError(t, err)
 
 	falseValue := false
@@ -241,7 +241,7 @@ func TestWFLevelAutomountServiceAccountToken(t *testing.T) {
 func TestTmplLevelAutomountServiceAccountToken(t *testing.T) {
 	woc := newWoc()
 	ctx := context.Background()
-	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset.InCluster(), "", "foo", "foo-token")
+	_, err := util.CreateServiceAccountWithToken(ctx, woc.clientset(), "", "foo", "foo-token")
 	assert.NoError(t, err)
 
 	trueValue := true
@@ -275,7 +275,7 @@ func verifyServiceAccountTokenVolumeMount(t *testing.T, ctr apiv1.Container, vol
 func TestWFLevelExecutorServiceAccountName(t *testing.T) {
 	woc := newWoc()
 	ctx := context.Background()
-	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset.InCluster(), "", "foo", "foo-token")
+	_, err := util.CreateServiceAccountWithToken(ctx, woc.clientset(), "", "foo", "foo-token")
 	assert.NoError(t, err)
 
 	woc.execWf.Spec.Executor = &wfv1.ExecutorConfig{ServiceAccountName: "foo"}
@@ -299,7 +299,7 @@ func TestWFLevelExecutorServiceAccountName(t *testing.T) {
 func TestTmplLevelExecutorServiceAccountName(t *testing.T) {
 	woc := newWoc()
 	ctx := context.Background()
-	client := woc.controller.kubeclientset.InCluster()
+	client := woc.clientset()
 	_, err := util.CreateServiceAccountWithToken(ctx, client, "", "foo", "foo-token")
 	assert.NoError(t, err)
 	_, err = util.CreateServiceAccountWithToken(ctx, client, "", "tmpl", "tmpl-token")
@@ -328,7 +328,7 @@ func TestTmplLevelExecutorSecurityContext(t *testing.T) {
 	var user int64 = 1000
 	ctx := context.Background()
 	woc := newWoc()
-	client := woc.controller.kubeclientset.InCluster()
+	client := woc.clientset()
 	_, err := util.CreateServiceAccountWithToken(ctx, client, "", "foo", "foo-token")
 	assert.NoError(t, err)
 	_, err = util.CreateServiceAccountWithToken(ctx, client, "", "tmpl", "tmpl-token")
@@ -369,7 +369,7 @@ func TestImagePullSecrets(t *testing.T) {
 	ctx := context.Background()
 	_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
 	assert.NoError(t, err)
-	pods, err := woc.controller.kubeclientset.InCluster().CoreV1().Pods("").List(ctx, metav1.ListOptions{})
+	pods, err := woc.clientset().CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]

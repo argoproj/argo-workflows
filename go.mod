@@ -10,7 +10,7 @@ require (
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.8+incompatible
 	github.com/antonmedv/expr v1.8.9
 	github.com/argoproj-labs/argo-dataflow v0.0.96
-	github.com/argoproj-labs/multi-cluster-kubernetes v0.0.10
+	github.com/argoproj-labs/multi-cluster-kubernetes v0.0.11
 	github.com/argoproj/argo-events v1.4.0
 	github.com/argoproj/pkg v0.11.0
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect

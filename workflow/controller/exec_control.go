@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	mcconfig "github.com/argoproj-labs/multi-cluster-kubernetes/api/config"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -33,7 +32,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 
 			if !woc.GetShutdownStrategy().ShouldExecute(onExitPod) {
 				woc.log.Infof("Deleting Pending pod %s/%s as part of workflow shutdown with strategy: %s", pod.Namespace, pod.Name, woc.GetShutdownStrategy())
-				err := woc.controller.kubeclientset.Config(cluster).CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
+				err := woc.clientset().CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 				if err == nil {
 					wfNodesLock.Lock()
 					node := woc.wf.Status.Nodes[pod.Name]
@@ -52,7 +51,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 			_, onExitPod := pod.Labels[common.LabelKeyOnExit]
 			if !onExitPod {
 				woc.log.Infof("Deleting Pending pod %s/%s which has exceeded workflow deadline %s", pod.Namespace, pod.Name, woc.workflowDeadline)
-				err := woc.controller.kubeclientset.Config(cluster).CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
+				err := woc.clientset().CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 				if err == nil {
 					wfNodesLock.Lock()
 					node := woc.wf.Status.Nodes[pod.Name]
@@ -84,7 +83,7 @@ func (woc *wfOperationCtx) killDaemonedChildren(nodeID string) {
 			continue
 		}
 		tmpl := woc.execWf.GetTemplateByName(childNode.TemplateName)
-		cluster := tmpl.ClusterOr(mcconfig.InCluster)
+		cluster := tmpl.ClusterOr(woc.cluster())
 		namespace := tmpl.NamespaceOr(woc.wf.Namespace)
 		woc.controller.queuePodForCleanup(cluster, namespace, childNode.ID, shutdownPod)
 		childNode.Phase = wfv1.NodeSucceeded

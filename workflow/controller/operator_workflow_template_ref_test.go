@@ -525,7 +525,7 @@ func TestWFTWithVol(t *testing.T) {
 	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
-	client := controller.kubeclientset.InCluster()
+	client := controller.kubeclientset.Cluster(controller.cluster())
 	pvc, err := client.CoreV1().PersistentVolumeClaims("default").List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Len(t, pvc.Items, 1)

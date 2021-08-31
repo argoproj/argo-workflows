@@ -144,13 +144,13 @@ type createWorkflowPodOpts struct {
 func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName string, mainCtrs []apiv1.Container, tmpl *wfv1.Template, opts *createWorkflowPodOpts) (*apiv1.Pod, error) {
 	nodeID := woc.wf.NodeID(nodeName)
 	podName := wfv1.UID(tmpl.Cluster, tmpl.Namespace, woc.wf.Name, nodeName)
-	cluster := tmpl.ClusterOr(mcconfig.InCluster)
+	cluster := tmpl.ClusterOr(woc.cluster())
 	namespace := tmpl.NamespaceOr(woc.wf.Namespace)
-	ownershipCluster := woc.controller.Config.Cluster
+	ownershipCluster := woc.cluster()
 	// we must check to see if the pod exists rather than just optimistically creating the pod and see if we get
 	// an `AlreadyExists` error because we won't get that error if there is not enough resources.
 	// Performance enhancement: Code later in this func is expensive to execute, so return quickly if we can.
-	podInformer := woc.controller.podInformer.Config(cluster)
+	podInformer := woc.controller.podInformer.Cluster(cluster)
 	if podInformer == nil {
 		return nil, fmt.Errorf("cluster %q not found", cluster)
 	}
@@ -458,9 +458,9 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		return nil, ErrResourceRateLimitReached
 	}
 
-	clientset := woc.controller.kubeclientset.InCluster()
+	clientset := woc.clientset()
 
-	if cluster != mcconfig.InCluster {
+	if cluster != woc.cluster() {
 		configName := pod.Spec.ServiceAccountName
 		if configName == "" {
 			configName = "default"
@@ -516,6 +516,10 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	woc.log.Infof("Created pod: %s (%s)", nodeName, created.Name)
 	woc.activePods++
 	return created, nil
+}
+
+func (woc *wfOperationCtx) cluster() string {
+	return woc.controller.cluster()
 }
 
 func (woc *wfOperationCtx) getDeadline(opts *createWorkflowPodOpts) *time.Time {
@@ -1093,7 +1097,7 @@ func (woc *wfOperationCtx) setupServiceAccount(ctx context.Context, pod *apiv1.P
 		executorServiceAccountName = woc.execWf.Spec.Executor.ServiceAccountName
 	}
 	if executorServiceAccountName != "" {
-		tokenName, err := common.GetServiceAccountTokenName(ctx, woc.controller.kubeclientset.InCluster(), pod.Namespace, executorServiceAccountName)
+		tokenName, err := common.GetServiceAccountTokenName(ctx, woc.clientset(), pod.Namespace, executorServiceAccountName)
 		if err != nil {
 			return err
 		}
@@ -1109,6 +1113,10 @@ func (woc *wfOperationCtx) setupServiceAccount(ctx context.Context, pod *apiv1.P
 		return errors.Errorf(errors.CodeBadRequest, "executor.serviceAccountName must not be empty if automountServiceAccountToken is false")
 	}
 	return nil
+}
+
+func (woc *wfOperationCtx) clientset() kubernetes.Interface {
+	return woc.controller.clientset()
 }
 
 // addScriptStagingVolume sets up a shared staging volume between the init container

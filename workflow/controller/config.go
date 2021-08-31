@@ -39,7 +39,7 @@ func (wfc *WorkflowController) updateConfig(v interface{}) error {
 		}
 	}
 	wfc.session = nil
-	client := wfc.kubeclientset.InCluster()
+	client := wfc.kubeclientset.Cluster(wfc.cluster())
 	wfc.artifactRepositories = artifactrepositories.New(client, wfc.namespace, &wfc.Config.ArtifactRepository)
 	wfc.offloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo
 	wfc.wfArchive = sqldb.NullWorkflowArchive
@@ -113,4 +113,8 @@ func (wfc *WorkflowController) executorImagePullPolicy() apiv1.PullPolicy {
 	} else {
 		return apiv1.PullPolicy(wfc.Config.ExecutorImagePullPolicy)
 	}
+}
+
+func (wfc *WorkflowController) cluster() string {
+	return wfc.Config.Cluster
 }

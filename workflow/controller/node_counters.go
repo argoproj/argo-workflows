@@ -3,8 +3,6 @@ package controller
 import (
 	"fmt"
 
-	mcconfig "github.com/argoproj-labs/multi-cluster-kubernetes/api/config"
-
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
@@ -58,9 +56,9 @@ func (woc *wfOperationCtx) getUnsuccessfulChildren(boundaryID string) int64 {
 
 func (woc *wfOperationCtx) nodePodExist(node wfv1.NodeStatus) bool {
 	tmpl := woc.execWf.GetTemplateByName(node.TemplateName)
-	cluster := tmpl.ClusterOr(mcconfig.InCluster)
+	cluster := tmpl.ClusterOr(woc.cluster())
 	namespace := tmpl.NamespaceOr(woc.wf.Namespace)
-	podInformer := woc.controller.podInformer.Config(cluster)
+	podInformer := woc.controller.podInformer.Cluster(cluster)
 	if podInformer == nil {
 		return false
 	}

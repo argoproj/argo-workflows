@@ -159,8 +159,8 @@ github.com/ardielle/ardielle-go v1.5.2/go.mod h1:I4hy1n795cUhaVt/ojz83SNVCYIGsAF
 github.com/ardielle/ardielle-tools v1.5.4/go.mod h1:oZN+JRMnqGiIhrzkRN9l26Cej9dEx4jeNG6A+AdkShk=
 github.com/argoproj-labs/argo-dataflow v0.0.96 h1:HjAbvCCxp9aKIxzzZ4wjiOcFUI611BlOHkOVoItypYw=
 github.com/argoproj-labs/argo-dataflow v0.0.96/go.mod h1:HOdmu21+Xx59R28S8+e+wMx+/ApHWNtglPqLvgLRI2E=
-github.com/argoproj-labs/multi-cluster-kubernetes v0.0.10 h1:mJ63dyzEge63hKhGf0o3ptx9fgM7+5dxx+pyJQWZvyE=
-github.com/argoproj-labs/multi-cluster-kubernetes v0.0.10/go.mod h1:0Pd+PTcGGP236L4CU/ACslvKXMw5nlvHlutTB09Bfns=
+github.com/argoproj-labs/multi-cluster-kubernetes v0.0.11 h1:m53Y9LA6MnLu/fitT16VzuJJ+q9kGSBLGg6QohFvgzQ=
+github.com/argoproj-labs/multi-cluster-kubernetes v0.0.11/go.mod h1:0Pd+PTcGGP236L4CU/ACslvKXMw5nlvHlutTB09Bfns=
 github.com/argoproj/argo-events v1.4.0 h1:RIzAOomP/4rnv3X6KIDKzXZJ56JKFxSYmksoE98ILWI=
 github.com/argoproj/argo-events v1.4.0/go.mod h1:wI5A0U3Wj9ZvfPn3ioL18Dz29+7aibtlyU9pS0Ry+bg=
 github.com/argoproj/pkg v0.9.0/go.mod h1:ra+bQPmbVAoEL+gYSKesuigt4m49i3Qa3mE/xQcjCiA=

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	mcconfig "github.com/argoproj-labs/multi-cluster-kubernetes/api/config"
 	mclabels "github.com/argoproj-labs/multi-cluster-kubernetes/api/labels"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -47,7 +46,7 @@ func (wfc *WorkflowController) finalizeWorkflow(ctx context.Context, wf *wfv1.Wo
 	keys := make(map[string]bool)
 	for _, tmpl := range woc.execWf.Spec.Templates {
 		if tmpl.Cluster != "" || tmpl.Namespace != "" {
-			keys[tmpl.ClusterOr(mcconfig.InCluster)+"/"+tmpl.NamespaceOr(woc.wf.Namespace)] = true
+			keys[tmpl.ClusterOr(wfc.cluster())+"/"+tmpl.NamespaceOr(woc.wf.Namespace)] = true
 		}
 	}
 	for key := range keys {
@@ -63,7 +62,7 @@ func (wfc *WorkflowController) finalizeWorkflow(ctx context.Context, wf *wfv1.Wo
 			WithField("namespace", namespace).
 			WithField("labelSelector", labelSelector).
 			Info("deleting pods")
-		err := wfc.kubeclientset.Config(cluster).CoreV1().Pods(namespace).DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{
+		err := wfc.kubeclientset.Cluster(cluster).CoreV1().Pods(namespace).DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{
 			LabelSelector: labelSelector,
 		})
 		if err != nil {

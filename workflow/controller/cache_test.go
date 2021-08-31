@@ -42,10 +42,10 @@ func TestConfigMapCacheLoadHit(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	client := controller.kubeclientset.InCluster().CoreV1()
+	client := controller.kubeclientset.Cluster(controller.cluster()).CoreV1()
 	_, err := client.ConfigMaps("default").Create(ctx, &sampleConfigMapCacheEntry, metav1.CreateOptions{})
 	assert.NoError(t, err)
-	c := cache.NewConfigMapCache("default", controller.kubeclientset.InCluster(), "whalesay-cache")
+	c := cache.NewConfigMapCache("default", controller.kubeclientset.Cluster(controller.cluster()), "whalesay-cache")
 
 	cm, err := client.ConfigMaps("default").Get(ctx, sampleConfigMapCacheEntry.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
@@ -68,9 +68,9 @@ func TestConfigMapCacheLoadMiss(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	_, err := controller.kubeclientset.InCluster().CoreV1().ConfigMaps("default").Create(ctx, &sampleConfigMapEmptyCacheEntry, metav1.CreateOptions{})
+	_, err := controller.kubeclientset.Cluster(controller.cluster()).CoreV1().ConfigMaps("default").Create(ctx, &sampleConfigMapEmptyCacheEntry, metav1.CreateOptions{})
 	assert.NoError(t, err)
-	c := cache.NewConfigMapCache("default", controller.kubeclientset.InCluster(), "whalesay-cache")
+	c := cache.NewConfigMapCache("default", controller.kubeclientset.Cluster(controller.cluster()), "whalesay-cache")
 	entry, err := c.Load(ctx, "hi-there-world")
 	assert.NoError(t, err)
 	assert.Nil(t, entry)
@@ -84,7 +84,7 @@ func TestConfigMapCacheSave(t *testing.T) {
 	}
 	cancel, controller := newController()
 	defer cancel()
-	client := controller.kubeclientset.InCluster()
+	client := controller.kubeclientset.Cluster(controller.cluster())
 	c := cache.NewConfigMapCache("default", client, "whalesay-cache")
 
 	ctx := context.Background()
