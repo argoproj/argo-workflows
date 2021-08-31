@@ -16,11 +16,11 @@ export interface Step {
         container?: {};
         dedupe?: {};
         expand?: {};
-        filter?: string;
+        filter?: {};
         flatten?: {};
         git?: {};
         group?: {};
-        map?: string;
+        map?: {};
         split?: {};
         sources: {
             name?: string;

@@ -157,8 +157,8 @@ github.com/apache/thrift v0.12.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb
 github.com/apache/thrift v0.13.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
 github.com/ardielle/ardielle-go v1.5.2/go.mod h1:I4hy1n795cUhaVt/ojz83SNVCYIGsAFAONtv2Dr7HUI=
 github.com/ardielle/ardielle-tools v1.5.4/go.mod h1:oZN+JRMnqGiIhrzkRN9l26Cej9dEx4jeNG6A+AdkShk=
-github.com/argoproj-labs/argo-dataflow v0.0.91 h1:1YWbvGupcWInj4Jtdgsdci48GJEwv0WP4Bm7CVxXkew=
-github.com/argoproj-labs/argo-dataflow v0.0.91/go.mod h1:HOdmu21+Xx59R28S8+e+wMx+/ApHWNtglPqLvgLRI2E=
+github.com/argoproj-labs/argo-dataflow v0.0.96 h1:HjAbvCCxp9aKIxzzZ4wjiOcFUI611BlOHkOVoItypYw=
+github.com/argoproj-labs/argo-dataflow v0.0.96/go.mod h1:HOdmu21+Xx59R28S8+e+wMx+/ApHWNtglPqLvgLRI2E=
 github.com/argoproj-labs/multi-cluster-kubernetes v0.0.10 h1:mJ63dyzEge63hKhGf0o3ptx9fgM7+5dxx+pyJQWZvyE=
 github.com/argoproj-labs/multi-cluster-kubernetes v0.0.10/go.mod h1:0Pd+PTcGGP236L4CU/ACslvKXMw5nlvHlutTB09Bfns=
 github.com/argoproj/argo-events v1.4.0 h1:RIzAOomP/4rnv3X6KIDKzXZJ56JKFxSYmksoE98ILWI=
