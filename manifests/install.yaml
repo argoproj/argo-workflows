@@ -396,7 +396,7 @@ rules:
   - argoproj.io
   resources:
   - workflows
-  - workflows/finalizersfinalizersz
+  - workflows/finalizers
   - workflowtasksets
   - workflowtasksets/finalizers
   verbs:

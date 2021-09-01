@@ -4062,6 +4062,9 @@
         },
         "secretAccessKey": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "sessionToken": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         }
       }
     },
@@ -4249,6 +4252,14 @@
     },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Expand": {
       "type": "object"
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Filter": {
+      "type": "object",
+      "properties": {
+        "expression": {
+          "type": "string"
+        }
+      }
     },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Flatten": {
       "type": "object"
@@ -4443,6 +4454,14 @@
         "truncate": {
           "type": "string",
           "format": "uint64"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Map": {
+      "type": "object",
+      "properties": {
+        "expression": {
+          "type": "string"
         }
       }
     },
@@ -4828,7 +4847,7 @@
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Expand"
         },
         "filter": {
-          "type": "string"
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Filter"
         },
         "flatten": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Flatten"
@@ -4847,7 +4866,7 @@
           }
         },
         "map": {
-          "type": "string"
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Map"
         },
         "metadata": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Metadata"
