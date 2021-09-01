@@ -621,6 +621,8 @@ kind: Workflow
 metadata:
  name: hello-world
  namespace: default
+ labels:
+   workflows.argoproj.io/completed: false
 spec:
  entrypoint: whalesay
  synchronization:
