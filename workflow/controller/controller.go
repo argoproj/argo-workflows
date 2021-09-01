@@ -9,6 +9,8 @@ import (
 	"syscall"
 	"time"
 
+	v1 "k8s.io/client-go/informers/core/v1"
+
 	"github.com/argoproj/pkg/errors"
 	syncpkg "github.com/argoproj/pkg/sync"
 	log "github.com/sirupsen/logrus"
@@ -94,6 +96,7 @@ type WorkflowController struct {
 	wftmplInformer        wfextvv1alpha1.WorkflowTemplateInformer
 	cwftmplInformer       wfextvv1alpha1.ClusterWorkflowTemplateInformer
 	podInformer           cache.SharedIndexInformer
+	configMapInformer     cache.SharedIndexInformer
 	wfQueue               workqueue.RateLimitingInterface
 	podQueue              workqueue.RateLimitingInterface
 	podCleanupQueue       workqueue.RateLimitingInterface // pods to be deleted or labelled depend on GC strategy
@@ -117,6 +120,7 @@ const (
 	workflowTemplateResyncPeriod        = 20 * time.Minute
 	podResyncPeriod                     = 30 * time.Minute
 	clusterWorkflowTemplateResyncPeriod = 20 * time.Minute
+	configMapResyncPeriod               = 20 * time.Minute
 	workflowExistenceCheckPeriod        = 1 * time.Minute
 	workflowTaskSetResyncPeriod         = 20 * time.Minute
 )
@@ -215,6 +219,8 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.podInformer = wfc.newPodInformer(ctx)
 	wfc.updateEstimatorFactory()
 
+	wfc.configMapInformer = wfc.newConfigMapInformer()
+
 	// Create Synchronization Manager
 	wfc.createSynchronizationManager(ctx)
 	// init managers: throttler and SynchronizationManager
@@ -227,6 +233,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
+	go wfc.configMapInformer.Run(ctx.Done())
 	go wfc.wfTaskSetInformer.Informer().Run(ctx.Done())
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
@@ -306,6 +313,8 @@ func (wfc *WorkflowController) startLeading(ctx context.Context, logCtx *log.Ent
 	for i := 0; i < podWorkers; i++ {
 		go wait.Until(wfc.podWorker, time.Second, ctx.Done())
 	}
+
+	go wait.UntilWithContext(ctx, wfc.syncAllConfigMaps, 10*time.Second)
 }
 
 func (wfc *WorkflowController) waitForCacheSync(ctx context.Context) {
@@ -796,6 +805,23 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	return true
 }
 
+//nolint:unparam
+func (wfc *WorkflowController) syncAllConfigMaps(ctx context.Context) {
+	log.Info("Syncing all ConfigMaps")
+
+	configMaps := wfc.configMapInformer.GetIndexer().List()
+
+	for _, obj := range configMaps {
+		cm, ok := obj.(*apiv1.ConfigMap)
+		if !ok {
+			log.Error("Unable to convert object to configmap when syncing ConfigMaps")
+			continue
+		}
+
+		log.Infof("Syncing ConfigMap: %s", cm.Name)
+	}
+}
+
 func (wfc *WorkflowController) podWorker() {
 	for wfc.processNextPodItem() {
 	}
@@ -1060,6 +1086,15 @@ func (wfc *WorkflowController) newPodInformer(ctx context.Context) cache.SharedI
 		},
 	)
 	return informer
+}
+
+func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer {
+	labelSelector, _ := labels.Parse(indexes.ConfigMapTypeLabel)
+	return v1.NewFilteredConfigMapInformer(wfc.kubeclientset, wfc.GetManagedNamespace(), configMapResyncPeriod, cache.Indexers{
+		indexes.ConfigMapLabelsIndex: indexes.ConfigMapIndexFunc,
+	}, func(opts *metav1.ListOptions) {
+		opts.LabelSelector = labelSelector.String()
+	})
 }
 
 // call this func whenever the configuration changes, or when the workflow informer changes
