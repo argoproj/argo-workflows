@@ -32,6 +32,17 @@ func MetaWorkflowIndexFunc(obj interface{}) ([]string, error) {
 	return []string{WorkflowIndexValue(m.GetNamespace(), name)}, nil
 }
 
+func MetaNodeIDIndexFunc(obj interface{}) ([]string, error) { // TODO test
+	m, err := meta.Accessor(obj)
+	if err != nil {
+		return nil, nil
+	}
+	if nodeID, ok := m.GetAnnotations()[common.AnnotationKeyNodeID]; ok {
+		return []string{m.GetNamespace() + "/" + nodeID}, nil
+	}
+	return []string{m.GetNamespace() + "/" + m.GetName()}, nil
+}
+
 func WorkflowIndexValue(namespace, name string) string {
 	return namespace + "/" + name
 }

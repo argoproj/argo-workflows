@@ -4,17 +4,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"os"
 	"path/filepath"
 	"strconv"
 	"time"
+
+	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
-	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
 
 	"github.com/argoproj/argo-workflows/v3/config"
@@ -136,22 +138,31 @@ type createWorkflowPodOpts struct {
 	executionDeadline   time.Time
 }
 
+// podName return a deterministic pod name
+func podName(workflowName, nodeName, templateName string) string { // TODO - tests
+	if workflowName == nodeName {
+		return workflowName
+	}
+	prefix := fmt.Sprintf("%s-%s", workflowName, templateName)
+	if len(prefix) > 253-10 { // TODO - limit the length of the pod name to whatever max can be, needs test
+		prefix = prefix[0 : 253-10-1] // TODO test this line
+	}
+	h := fnv.New32a()
+	_, _ = h.Write([]byte(nodeName))
+	return fmt.Sprintf("%s-%v", prefix, h.Sum32())
+}
+
 func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName string, mainCtrs []apiv1.Container, tmpl *wfv1.Template, opts *createWorkflowPodOpts) (*apiv1.Pod, error) {
 	nodeID := woc.wf.NodeID(nodeName)
 
 	// we must check to see if the pod exists rather than just optimistically creating the pod and see if we get
 	// an `AlreadyExists` error because we won't get that error if there is not enough resources.
 	// Performance enhancement: Code later in this func is expensive to execute, so return quickly if we can.
-	obj, exists, err := woc.controller.podInformer.GetStore().Get(cache.ExplicitKey(woc.wf.Namespace + "/" + nodeID))
-	if err != nil {
-		return nil, fmt.Errorf("failed to get pod from informer store: %w", err)
-	}
-	if exists {
-		existing, ok := obj.(*apiv1.Pod)
-		if ok {
-			woc.log.WithField("podPhase", existing.Status.Phase).Debugf("Skipped pod %s (%s) creation: already exists", nodeName, nodeID)
-			return existing, nil
-		}
+	if existing, exists, err := woc.podExists(nodeID); err != nil {
+		return nil, err
+	} else if exists {
+		woc.log.WithField("podPhase", existing.Status.Phase).Debugf("Skipped pod %s (%s) creation: already exists", nodeName, nodeID)
+		return existing, nil
 	}
 
 	if !woc.GetShutdownStrategy().ShouldExecute(opts.onExitPod) {
@@ -205,10 +216,9 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			activeDeadlineSeconds = tmplActiveDeadlineSeconds
 		}
 	}
-
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      nodeID,
+			Name:      podName(woc.wf.Name, nodeName, tmpl.Name), // TODO - test
 			Namespace: woc.wf.ObjectMeta.Namespace,
 			Labels: map[string]string{
 				common.LabelKeyWorkflow:  woc.wf.ObjectMeta.Name, // Allows filtering by pods related to specific workflow
@@ -216,6 +226,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			},
 			Annotations: map[string]string{
 				common.AnnotationKeyNodeName: nodeName,
+				common.AnnotationKeyNodeID:   nodeID, // TODO - test annotation is applied
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
@@ -437,25 +448,42 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		return nil, ErrResourceRateLimitReached
 	}
 
-	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
+	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, pod.Name)
 
 	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {
 			// workflow pod names are deterministic. We can get here if the
 			// controller fails to persist the workflow after creating the pod.
-			woc.log.Infof("Failed pod %s (%s) creation: already exists", nodeName, nodeID)
+			woc.log.Infof("Failed pod %s (%s) creation: already exists", nodeName, pod.Name)
 			return created, nil
 		}
 		if errorsutil.IsTransientErr(err) {
 			return nil, err
 		}
-		woc.log.Infof("Failed to create pod %s (%s): %v", nodeName, nodeID, err)
+		woc.log.Infof("Failed to create pod %s (%s): %v", nodeName, pod.Name, err)
 		return nil, errors.InternalWrapError(err)
 	}
 	woc.log.Infof("Created pod: %s (%s)", nodeName, created.Name)
 	woc.activePods++
 	return created, nil
+}
+
+func (woc *wfOperationCtx) podExists(nodeID string) (existing *apiv1.Pod, exists bool, err error) {
+	objs, err := woc.controller.podInformer.GetIndexer().ByIndex(indexes.NodeIDIndex, woc.wf.Namespace+"/"+nodeID)
+	if err != nil {
+		return nil, false, fmt.Errorf("failed to get pod from informer store: %w", err)
+	}
+	switch len(objs) {
+	case 0:
+	case 1:
+		if existing, ok := objs[0].(*apiv1.Pod); ok {
+			return existing, true, nil
+		}
+	default:
+		return nil, false, fmt.Errorf("expected < 2 pods, got %d - this is a bug", len(objs))
+	}
+	return nil, false, nil
 }
 
 func (woc *wfOperationCtx) getDeadline(opts *createWorkflowPodOpts) *time.Time {
