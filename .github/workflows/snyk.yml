@@ -22,6 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
+      - run: yarn --cwd ui install
       - name: Run Snyk to check for vulnerabilities
         uses: snyk/actions/node@master
         env:
