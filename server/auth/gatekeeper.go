@@ -7,6 +7,8 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/argoproj/argo-workflows/v3/server/auth/casbin"
+
 	"github.com/antonmedv/expr"
 	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
 	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
@@ -42,6 +44,10 @@ const (
 	KubeKey        ContextKey = "kubernetes.Interface"
 	ClaimsKey      ContextKey = "types.Claims"
 )
+
+func init() {
+	casbin.GetClaims = GetClaims // prevent circular dependency
+}
 
 //go:generate mockery -name Gatekeeper
 
@@ -98,11 +104,11 @@ func (s *gatekeeper) Context(ctx context.Context) (context.Context, error) {
 	if err != nil {
 		return nil, err
 	}
-	ctx = context.WithValue(ctx, DynamicKey, clients.Dynamic)
-	ctx = context.WithValue(ctx, WfKey, clients.Workflow)
-	ctx = context.WithValue(ctx, EventSourceKey, clients.EventSource)
-	ctx = context.WithValue(ctx, SensorKey, clients.Sensor)
-	ctx = context.WithValue(ctx, KubeKey, clients.Kubernetes)
+	ctx = context.WithValue(ctx, DynamicKey, clients.Dynamic) // TODO - wrap
+	ctx = context.WithValue(ctx, WfKey, casbin.WrapWorkflowInterface(clients.Workflow))
+	ctx = context.WithValue(ctx, EventSourceKey, clients.EventSource) // TODO - wrap
+	ctx = context.WithValue(ctx, SensorKey, clients.Sensor)           // TODO - wrap
+	ctx = context.WithValue(ctx, KubeKey, clients.Kubernetes)         // TODO - wrap
 	ctx = context.WithValue(ctx, ClaimsKey, claims)
 	return ctx, nil
 }
