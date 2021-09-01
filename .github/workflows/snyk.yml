@@ -27,5 +27,5 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --file=ui --severity-threshold=high
+          args: --file=ui/package.json --severity-threshold=high
 
