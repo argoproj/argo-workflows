@@ -120,7 +120,6 @@ const (
 	workflowTemplateResyncPeriod        = 20 * time.Minute
 	podResyncPeriod                     = 30 * time.Minute
 	clusterWorkflowTemplateResyncPeriod = 20 * time.Minute
-	configMapResyncPeriod               = 20 * time.Minute
 	workflowExistenceCheckPeriod        = 1 * time.Minute
 	workflowTaskSetResyncPeriod         = 20 * time.Minute
 )
@@ -313,8 +312,6 @@ func (wfc *WorkflowController) startLeading(ctx context.Context, logCtx *log.Ent
 	for i := 0; i < podWorkers; i++ {
 		go wait.Until(wfc.podWorker, time.Second, ctx.Done())
 	}
-
-	go wait.UntilWithContext(ctx, wfc.syncAllConfigMaps, 10*time.Second)
 }
 
 func (wfc *WorkflowController) waitForCacheSync(ctx context.Context) {
@@ -805,23 +802,6 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	return true
 }
 
-//nolint:unparam
-func (wfc *WorkflowController) syncAllConfigMaps(ctx context.Context) {
-	log.Info("Syncing all ConfigMaps")
-
-	configMaps := wfc.configMapInformer.GetIndexer().List()
-
-	for _, obj := range configMaps {
-		cm, ok := obj.(*apiv1.ConfigMap)
-		if !ok {
-			log.Error("Unable to convert object to configmap when syncing ConfigMaps")
-			continue
-		}
-
-		log.Infof("Syncing ConfigMap: %s", cm.Name)
-	}
-}
-
 func (wfc *WorkflowController) podWorker() {
 	for wfc.processNextPodItem() {
 	}
@@ -1089,11 +1069,10 @@ func (wfc *WorkflowController) newPodInformer(ctx context.Context) cache.SharedI
 }
 
 func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer {
-	labelSelector, _ := labels.Parse(indexes.ConfigMapTypeLabel)
-	return v1.NewFilteredConfigMapInformer(wfc.kubeclientset, wfc.GetManagedNamespace(), configMapResyncPeriod, cache.Indexers{
+	return v1.NewFilteredConfigMapInformer(wfc.kubeclientset, wfc.GetManagedNamespace(), 20*time.Minute, cache.Indexers{
 		indexes.ConfigMapLabelsIndex: indexes.ConfigMapIndexFunc,
 	}, func(opts *metav1.ListOptions) {
-		opts.LabelSelector = labelSelector.String()
+		opts.LabelSelector = indexes.ConfigMapTypeLabel
 	})
 }
 
