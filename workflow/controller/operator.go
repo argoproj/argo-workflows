@@ -493,7 +493,7 @@ func (woc *wfOperationCtx) getWorkflowDeadline() *time.Time {
 }
 
 // setGlobalParameters sets the globalParam map with global parameters
-func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Arguments) {
+func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Arguments) error {
 	woc.globalParams[common.GlobalVarWorkflowName] = woc.wf.ObjectMeta.Name
 	woc.globalParams[common.GlobalVarWorkflowNamespace] = woc.wf.ObjectMeta.Namespace
 	woc.globalParams[common.GlobalVarWorkflowServiceAccountName] = woc.execWf.Spec.ServiceAccountName
@@ -519,7 +519,29 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 		woc.globalParams[common.GlobalVarWorkflowParameters] = string(workflowParameters)
 	}
 	for _, param := range executionParameters.Parameters {
-		woc.globalParams["workflow.parameters."+param.Name] = param.Value.String()
+		if param.Value != nil {
+			woc.globalParams["workflow.parameters."+param.Name] = param.Value.String()
+		} else if param.ValueFrom != nil && param.ValueFrom.ConfigMapKeyRef != nil {
+			cmName := param.ValueFrom.ConfigMapKeyRef.Name
+			cmKey := param.ValueFrom.ConfigMapKeyRef.Key
+			obj, exists, err := woc.controller.configMapInformer.GetIndexer().GetByKey(cmName)
+			if err != nil {
+				return err
+			}
+			if exists {
+				cm, ok := obj.(*apiv1.ConfigMap)
+				if !ok {
+					return fmt.Errorf("unable to convert object %s to configmap when syncing ConfigMaps", cmName)
+				}
+				cmValue, ok := cm.Data[param.ValueFrom.ConfigMapKeyRef.Key]
+				if !ok {
+					return fmt.Errorf("ConfigMap '%s' does not have the key '%s'", cmName, cmKey)
+				}
+				woc.globalParams["workflow.parameters."+param.Name] = cmValue
+			}
+		} else {
+			return fmt.Errorf("failed to set global parameter: %s", param.Name)
+		}
 	}
 	for k, v := range woc.wf.ObjectMeta.Annotations {
 		woc.globalParams["workflow.annotations."+k] = v
@@ -534,6 +556,7 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 			}
 		}
 	}
+	return nil
 }
 
 // persistUpdates will update a workflow with any updates made during workflow operation.
@@ -3373,8 +3396,12 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 			woc.updated = true
 		}
 	}
-	woc.setGlobalParameters(woc.execWf.Spec.Arguments)
-	err := woc.substituteGlobalVariables()
+	err := woc.setGlobalParameters(woc.execWf.Spec.Arguments)
+	if err != nil {
+		woc.markWorkflowFailed(ctx, fmt.Sprintf("failed to set global parameters: %s", err.Error()))
+		return err
+	}
+	err = woc.substituteGlobalVariables()
 	if err != nil {
 		return err
 	}
