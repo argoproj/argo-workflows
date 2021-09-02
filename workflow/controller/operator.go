@@ -522,23 +522,11 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 		if param.Value != nil {
 			woc.globalParams["workflow.parameters."+param.Name] = param.Value.String()
 		} else if param.ValueFrom != nil && param.ValueFrom.ConfigMapKeyRef != nil {
-			cmName := param.ValueFrom.ConfigMapKeyRef.Name
-			cmKey := param.ValueFrom.ConfigMapKeyRef.Key
-			obj, exists, err := woc.controller.configMapInformer.GetIndexer().GetByKey(cmName)
+			cmValue, err := util.GetConfigMapValue(woc.controller.configMapInformer, param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key)
 			if err != nil {
 				return err
 			}
-			if exists {
-				cm, ok := obj.(*apiv1.ConfigMap)
-				if !ok {
-					return fmt.Errorf("unable to convert object %s to configmap when syncing ConfigMaps", cmName)
-				}
-				cmValue, ok := cm.Data[param.ValueFrom.ConfigMapKeyRef.Key]
-				if !ok {
-					return fmt.Errorf("ConfigMap '%s' does not have the key '%s'", cmName, cmKey)
-				}
-				woc.globalParams["workflow.parameters."+param.Name] = cmValue
-			}
+			woc.globalParams["workflow.parameters."+param.Name] = cmValue
 		} else {
 			return fmt.Errorf("failed to set global parameter: %s", param.Name)
 		}
@@ -1633,7 +1621,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	}
 
 	// Inputs has been processed with arguments already, so pass empty arguments.
-	processedTmpl, err := common.ProcessArgs(resolvedTmpl, &args, woc.globalParams, localParams, false)
+	processedTmpl, err := common.ProcessArgs(resolvedTmpl, &args, woc.globalParams, localParams, false, woc.controller.configMapInformer)
 	if err != nil {
 		return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 	}
