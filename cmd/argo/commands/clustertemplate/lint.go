@@ -25,7 +25,7 @@ func NewLintCommand() *cobra.Command {
 				os.Exit(1)
 			}
 
-			ctx, apiClient := client.NewAPIClient()
+			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			opts := lint.LintOptions{
 				Files:            args,
 				DefaultNamespace: client.Namespace(),

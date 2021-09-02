@@ -1,6 +1,7 @@
 package clustertemplate
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/argoproj/pkg/errors"
@@ -27,7 +28,7 @@ func NewDeleteCommand() *cobra.Command {
 }
 
 func apiServerDeleteClusterWorkflowTemplates(allWFs bool, wfTmplNames []string) {
-	ctx, apiClient := client.NewAPIClient()
+	ctx, apiClient := client.NewAPIClient(context.Background())
 	serviceClient, err := apiClient.NewClusterWorkflowTemplateServiceClient()
 	errors.CheckError(err)
 

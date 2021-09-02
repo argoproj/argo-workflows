@@ -1,6 +1,7 @@
 package template
 
 import (
+	"context"
 	"log"
 	"os"
 
@@ -42,7 +43,7 @@ func CreateWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) {
 	if cliOpts == nil {
 		cliOpts = &cliCreateOpts{}
 	}
-	ctx, apiClient := client.NewAPIClient()
+	ctx, apiClient := client.NewAPIClient(context.Background())
 	serviceClient, err := apiClient.NewWorkflowTemplateServiceClient()
 	if err != nil {
 		log.Fatal(err)

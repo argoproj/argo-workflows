@@ -39,7 +39,7 @@ type argoKubeClient struct {
 
 var _ Client = &argoKubeClient{}
 
-func newArgoKubeClient(clientConfig clientcmd.ClientConfig, instanceIDService instanceid.Service) (context.Context, Client, error) {
+func newArgoKubeClient(ctx context.Context, clientConfig clientcmd.ClientConfig, instanceIDService instanceid.Service) (context.Context, Client, error) {
 	restConfig, err := clientConfig.ClientConfig()
 	if err != nil {
 		return nil, nil, err
@@ -75,7 +75,7 @@ func newArgoKubeClient(clientConfig clientcmd.ClientConfig, instanceIDService in
 	if err != nil {
 		return nil, nil, err
 	}
-	ctx, err := gatekeeper.Context(context.Background())
+	ctx, err = gatekeeper.Context(ctx)
 	if err != nil {
 		return nil, nil, err
 	}

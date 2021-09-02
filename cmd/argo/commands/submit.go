@@ -73,7 +73,7 @@ func NewSubmitCommand() *cobra.Command {
 				log.Warn("--status should only be used with --watch")
 			}
 
-			ctx, apiClient := client.NewAPIClient()
+			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 			if from != "" {

@@ -41,7 +41,7 @@ func (o Opts) String() string {
 
 // DEPRECATED: use NewClientFromOpts
 func NewClient(argoServer string, authSupplier func() string, clientConfig clientcmd.ClientConfig) (context.Context, Client, error) {
-	return NewClientFromOpts(Opts{
+	return NewClientFromOpts(context.Background(), Opts{
 		ArgoServerOpts: ArgoServerOpts{URL: argoServer},
 		AuthSupplier:   authSupplier,
 		ClientConfigSupplier: func() clientcmd.ClientConfig {
@@ -50,7 +50,7 @@ func NewClient(argoServer string, authSupplier func() string, clientConfig clien
 	})
 }
 
-func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
+func NewClientFromOpts(ctx context.Context, opts Opts) (context.Context, Client, error) {
 	log.WithField("opts", opts).Debug("Client options")
 	if opts.Offline {
 		return newOfflineClient()
@@ -67,7 +67,7 @@ func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
 			opts.ClientConfig = opts.ClientConfigSupplier()
 		}
 
-		ctx, client, err := newArgoKubeClient(opts.ClientConfig, instanceid.NewService(opts.InstanceID))
+		ctx, client, err := newArgoKubeClient(ctx, opts.ClientConfig, instanceid.NewService(opts.InstanceID))
 		return ctx, client, err
 	}
 }

@@ -35,7 +35,7 @@ func NewLintCommand() *cobra.Command {
   cat manifests.yaml | argo lint --kinds=workflows,cronworkflows -`,
 		Run: func(cmd *cobra.Command, args []string) {
 			client.Offline = offline
-			ctx, apiClient := client.NewAPIClient()
+			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)

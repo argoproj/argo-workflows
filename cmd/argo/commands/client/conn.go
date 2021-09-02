@@ -52,8 +52,9 @@ func AddAPIClientFlagsToCmd(cmd *cobra.Command) {
 	cmd.PersistentFlags().BoolVarP(&argoServerOpts.InsecureSkipVerify, "insecure-skip-verify", "k", os.Getenv("ARGO_INSECURE_SKIP_VERIFY") == "true", "If true, the Argo Server's certificate will not be checked for validity. This will make your HTTPS connections insecure. Defaults to the ARGO_INSECURE_SKIP_VERIFY environment variable.")
 }
 
-func NewAPIClient() (context.Context, apiclient.Client) {
+func NewAPIClient(ctx context.Context) (context.Context, apiclient.Client) {
 	ctx, client, err := apiclient.NewClientFromOpts(
+		ctx,
 		apiclient.Opts{
 			ArgoServerOpts: argoServerOpts,
 			InstanceID:     instanceID,

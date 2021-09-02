@@ -21,7 +21,7 @@ func NewVersionCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.PrintVersion(CLIName, argo.GetVersion(), short)
 			if _, ok := os.LookupEnv("ARGO_SERVER"); ok {
-				ctx, apiClient := client.NewAPIClient()
+				ctx, apiClient := client.NewAPIClient(cmd.Context())
 				serviceClient, err := apiClient.NewInfoServiceClient()
 				errors.CheckError(err)
 				serverVersion, err := serviceClient.GetVersion(ctx, &infopkg.GetVersionRequest{})

@@ -34,7 +34,7 @@ func NewWaitCommand() *cobra.Command {
   argo wait @latest
 `,
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient()
+			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 			waitWorkflows(ctx, serviceClient, namespace, args, ignoreNotFound, false)

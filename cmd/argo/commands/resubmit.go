@@ -74,7 +74,7 @@ func NewResubmitCommand() *cobra.Command {
 				cliSubmitOpts.priority = &resubmitOpts.priority
 			}
 
-			ctx, apiClient := client.NewAPIClient()
+			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			resubmitOpts.namespace = client.Namespace()
 			err := resubmitWorkflows(ctx, serviceClient, resubmitOpts, cliSubmitOpts, args)

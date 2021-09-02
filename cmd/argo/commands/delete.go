@@ -40,7 +40,7 @@ func NewDeleteCommand() *cobra.Command {
 				os.Exit(1)
 			}
 
-			ctx, apiClient := client.NewAPIClient()
+			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			var workflows wfv1.Workflows
 			if !allNamespaces {
