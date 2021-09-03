@@ -294,9 +294,6 @@ func uploadObject(client *storage.Client, bucket, key, localPath string) error {
 }
 
 func (g *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
-<<<<<<< HEAD
-	return nil, fmt.Errorf("ListObjects is currently not supported for this artifact type, but it will be in a future version")
-=======
 	var files []string
 	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
@@ -314,5 +311,4 @@ func (g *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) 
 			return true, nil
 		})
 	return files, err
->>>>>>> 30340c427... fix(gcs): backoff bool should be false if error is transient (#6577)
 }
