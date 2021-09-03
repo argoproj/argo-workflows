@@ -12,6 +12,13 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: arguments-parameters-from-configmap-
+  labels:
+    workflows.argoproj.io/test: "true"
+  annotations:
+    workflows.argoproj.io/description: |
+      This example demonstrates loading parameter values from configmap.
+    workflows.argoproj.io/verify.py: |
+      assert status["phase"] == "Succeeded"
 spec:
   serviceAccountName: argo
   entrypoint: whalesay
