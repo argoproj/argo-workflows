@@ -7,7 +7,7 @@ import (
 )
 
 func TestValidateExamples(t *testing.T) {
-	failures, err := ValidateArgoYamlRecursively(".", []string{"testvolume.yaml"})
+	failures, err := ValidateArgoYamlRecursively(".", []string{"testvolume.yaml", "global-parameters-from-configmap.yaml", "arguments-parameters-from-configmap.yaml"})
 	if err != nil {
 		t.Errorf("There was an error: %s", err)
 	}

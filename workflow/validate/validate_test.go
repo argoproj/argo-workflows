@@ -453,7 +453,32 @@ func TestStepArtReference(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-var unsatisfiedParam = `
+var paramWithValueFromConfigMapRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+        valueFrom:
+          configMapKeyRef:
+            name: simple-config
+            key: msg
+    container:
+      image: docker/whalesay:latest
+`
+
+func TestParamWithValueFromConfigMapRef(t *testing.T) {
+	_, err := validate(paramWithValueFromConfigMapRef)
+	assert.NoError(t, err)
+}
+
+var paramWithoutValue = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -469,8 +494,8 @@ spec:
       image: docker/whalesay:latest
 `
 
-func TestUnsatisfiedParam(t *testing.T) {
-	_, err := validate(unsatisfiedParam)
+func TestParamWithoutValue(t *testing.T) {
+	_, err := validate(paramWithoutValue)
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "not supplied")
 	}

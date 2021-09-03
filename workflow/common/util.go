@@ -141,10 +141,12 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 				}
 				inParam.Value = wfv1.AnyStringPtr(cmValue)
 			}
+		} else {
+			if inParam.Value == nil {
+				return nil, errors.Errorf(errors.CodeBadRequest, "inputs.parameters.%s was not supplied", inParam.Name)
+			}
 		}
-		if inParam.Value == nil && configMapInformer != nil {
-			return nil, errors.Errorf(errors.CodeBadRequest, "inputs.parameters.%s was not supplied", inParam.Name)
-		}
+
 		newTmpl.Inputs.Parameters[i] = inParam
 	}
 
@@ -198,8 +200,9 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 	for _, inParam := range globalReplacedTmpl.Inputs.Parameters {
 		if inParam.Value == nil && inParam.ValueFrom == nil {
 			return nil, errors.InternalErrorf("inputs.parameters.%s had no value", inParam.Name)
+		} else if inParam.Value != nil {
+			replaceMap["inputs.parameters."+inParam.Name] = inParam.Value.String()
 		}
-		replaceMap["inputs.parameters."+inParam.Name] = inParam.Value.String()
 	}
 	// allow {{inputs.parameters}} to fetch the entire input parameters list as JSON
 	jsonInputParametersBytes, err := json.Marshal(globalReplacedTmpl.Inputs.Parameters)
