@@ -17,6 +17,7 @@ import (
 	"github.com/skratchdot/open-golang/open"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	restclient "k8s.io/client-go/rest"
@@ -54,7 +55,7 @@ func NewServerCommand() *cobra.Command {
 		Use:   "server",
 		Short: "start the Argo Server",
 		Example: fmt.Sprintf(`
-See %s`, help.ArgoSever),
+See %s`, help.ArgoServer),
 		RunE: func(c *cobra.Command, args []string) error {
 			cmd.SetLogFormatter(logFormat)
 			stats.RegisterStackDumper()
@@ -71,10 +72,11 @@ See %s`, help.ArgoSever),
 
 			namespace := client.Namespace()
 			clients := &types.Clients{
-				Workflow:    wfclientset.NewForConfigOrDie(config),
+				Dynamic:     dynamic.NewForConfigOrDie(config),
 				EventSource: eventsource.NewForConfigOrDie(config),
-				Sensor:      sensor.NewForConfigOrDie(config),
 				Kubernetes:  kubernetes.NewForConfigOrDie(config),
+				Sensor:      sensor.NewForConfigOrDie(config),
+				Workflow:    wfclientset.NewForConfigOrDie(config),
 			}
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()

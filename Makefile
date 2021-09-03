@@ -97,6 +97,7 @@ SWAGGER_FILES := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/event/event.swagger.json \
 	pkg/apiclient/eventsource/eventsource.swagger.json \
 	pkg/apiclient/info/info.swagger.json \
+	pkg/apiclient/pipeline/pipeline.swagger.json \
 	pkg/apiclient/sensor/sensor.swagger.json \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
@@ -249,6 +250,7 @@ swagger: \
 	pkg/apiclient/eventsource/eventsource.swagger.json \
 	pkg/apiclient/info/info.swagger.json \
 	pkg/apiclient/sensor/sensor.swagger.json \
+	pkg/apiclient/pipeline/pipeline.swagger.json \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json \
@@ -334,6 +336,9 @@ pkg/apiclient/info/info.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/i
 pkg/apiclient/sensor/sensor.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/sensor/sensor.proto
 	$(call protoc,pkg/apiclient/sensor/sensor.proto)
 
+pkg/apiclient/pipeline/pipeline.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/pipeline/pipeline.proto
+	$(call protoc,pkg/apiclient/pipeline/pipeline.proto)
+
 pkg/apiclient/workflow/workflow.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/workflow/workflow.proto
 	$(call protoc,pkg/apiclient/workflow/workflow.proto)
 
@@ -347,14 +352,6 @@ pkg/apiclient/workflowtemplate/workflow-template.swagger.json: $(PROTO_BINARIES)
 manifests/base/crds/full/argoproj.io_workflows.yaml: $(GOPATH)/bin/controller-gen $(TYPES) ./hack/crdgen.sh ./hack/crds.go
 	./hack/crdgen.sh
 
-dist/kustomize:
-	mkdir -p dist
-	rm -f dist/kustomize
-	./hack/recurl.sh dist/install_kustomize.sh https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh
-	chmod +x ./dist/install_kustomize.sh
-	cd dist && ./install_kustomize.sh 3.8.8
-	dist/kustomize version
-
 manifests: \
 	manifests/install.yaml \
 	manifests/namespace-install.yaml \
@@ -367,16 +364,16 @@ manifests: \
 	dist/manifests/quick-start-mysql.yaml \
 	dist/manifests/quick-start-postgres.yaml
 
-manifests/install.yaml: dist/kustomize /dev/null
-	dist/kustomize build --load_restrictor=none manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
-manifests/namespace-install.yaml: dist/kustomize /dev/null
-	dist/kustomize build --load_restrictor=none manifests/namespace-install | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
-manifests/quick-start-minimal.yaml: dist/kustomize /dev/null
-	dist/kustomize build --load_restrictor=none manifests/quick-start/minimal | ./hack/auto-gen-msg.sh > manifests/quick-start-minimal.yaml
-manifests/quick-start-mysql.yaml: dist/kustomize /dev/null
-	dist/kustomize build --load_restrictor=none manifests/quick-start/mysql | ./hack/auto-gen-msg.sh > manifests/quick-start-mysql.yaml
-manifests/quick-start-postgres.yaml: dist/kustomize /dev/null
-	dist/kustomize build --load_restrictor=none manifests/quick-start/postgres | ./hack/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
+manifests/install.yaml: /dev/null
+	kubectl kustomize --load-restrictor=LoadRestrictionsNone manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
+manifests/namespace-install.yaml: /dev/null
+	kubectl kustomize --load-restrictor=LoadRestrictionsNone manifests/namespace-install | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
+manifests/quick-start-minimal.yaml: /dev/null
+	kubectl kustomize --load-restrictor=LoadRestrictionsNone manifests/quick-start/minimal | ./hack/auto-gen-msg.sh > manifests/quick-start-minimal.yaml
+manifests/quick-start-mysql.yaml: /dev/null
+	kubectl kustomize --load-restrictor=LoadRestrictionsNone manifests/quick-start/mysql | ./hack/auto-gen-msg.sh > manifests/quick-start-mysql.yaml
+manifests/quick-start-postgres.yaml: /dev/null
+	kubectl kustomize --load-restrictor=LoadRestrictionsNone manifests/quick-start/postgres | ./hack/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
 
 dist/manifests/%: manifests/%
 	@mkdir -p dist/manifests
@@ -385,7 +382,7 @@ dist/manifests/%: manifests/%
 # lint/test/etc
 
 $(GOPATH)/bin/golangci-lint:
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.36.0
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.37.0
 
 .PHONY: lint
 lint: server/static/files.go $(GOPATH)/bin/golangci-lint
@@ -402,11 +399,11 @@ test: server/static/files.go dist/argosay
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
 
 .PHONY: install
-install: dist/kustomize
+install:
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 	@echo "installing PROFILE=$(PROFILE), E2E_EXECUTOR=$(E2E_EXECUTOR)"
-	dist/kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/argoproj\//$(IMAGE_NAMESPACE)\//' | sed 's/containerRuntimeExecutor: docker/containerRuntimeExecutor: $(E2E_EXECUTOR)/' | kubectl -n $(KUBE_NAMESPACE) apply --prune -l app.kubernetes.io/part-of=argo -f -
+	kubectl kustomize --load-restrictor=LoadRestrictionsNone test/e2e/manifests/$(PROFILE) | sed 's/argoproj\//$(IMAGE_NAMESPACE)\//' | sed 's/containerRuntimeExecutor: docker/containerRuntimeExecutor: $(E2E_EXECUTOR)/' | kubectl -n $(KUBE_NAMESPACE) apply --prune -l app.kubernetes.io/part-of=argo -f -
 ifeq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml
 endif

@@ -1462,7 +1462,7 @@ func (woc *wfOperationCtx) createPVCs(ctx context.Context) error {
 }
 
 func (woc *wfOperationCtx) deletePVCs(ctx context.Context) error {
-	gcStrategy := woc.wf.Spec.GetVolumeClaimGC().GetStrategy()
+	gcStrategy := woc.execWf.Spec.GetVolumeClaimGC().GetStrategy()
 
 	switch gcStrategy {
 	case wfv1.VolumeClaimGCOnSuccess:
@@ -1731,7 +1731,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			}
 		}
 
-		woc.updated = wfUpdated
+		woc.updated = woc.updated || wfUpdated
 	}
 	// If the user has specified retries, node becomes a special retry node.
 	// This node acts as a parent of all retries that will be done for
@@ -2183,6 +2183,10 @@ func (woc *wfOperationCtx) recordNodePhaseEvent(node *wfv1.NodeStatus) {
 		eventType = apiv1.EventTypeNormal
 	}
 	eventConfig := woc.controller.Config.NodeEvents
+	annotations := map[string]string{
+		common.AnnotationKeyNodeType: string(node.Type),
+		common.AnnotationKeyNodeName: node.Name,
+	}
 	var involvedObject runtime.Object = woc.wf
 	if eventConfig.SendAsPod {
 		pod, err := woc.getPodByNode(node)
@@ -2191,14 +2195,13 @@ func (woc *wfOperationCtx) recordNodePhaseEvent(node *wfv1.NodeStatus) {
 		}
 		if pod != nil {
 			involvedObject = pod
+			annotations[common.AnnotationKeyWorkflowName] = woc.wf.Name
+			annotations[common.AnnotationKeyWorkflowUID] = string(woc.wf.GetUID())
 		}
 	}
 	woc.eventRecorder.AnnotatedEventf(
 		involvedObject,
-		map[string]string{
-			common.AnnotationKeyNodeType: string(node.Type),
-			common.AnnotationKeyNodeName: node.Name,
-		},
+		annotations,
 		eventType,
 		fmt.Sprintf("WorkflowNode%s", node.Phase),
 		message,
@@ -3154,12 +3157,28 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 			metricSpec := metricTmpl.DeepCopy()
 
 			// Finally substitute value parameters
-			replacedValue, err := template.Replace(metricSpec.GetValueString(), localScope, false)
+			metricValueString := metricSpec.GetValueString()
+
+			metricValueStringJson, err := json.Marshal(metricValueString)
+			if err != nil {
+				woc.reportMetricEmissionError(fmt.Sprintf("unable to marshal metric to JSON for templating '%s': %s", metricSpec.Name, err))
+				continue
+			}
+
+			replacedValueJson, err := template.Replace(string(metricValueStringJson), localScope, false)
 			if err != nil {
 				woc.reportMetricEmissionError(fmt.Sprintf("unable to substitute parameters for metric '%s': %s", metricSpec.Name, err))
 				continue
 			}
-			metricSpec.SetValueString(replacedValue)
+
+			var replacedStringJson string
+			err = json.Unmarshal([]byte(replacedValueJson), &replacedStringJson)
+			if err != nil {
+				woc.reportMetricEmissionError(fmt.Sprintf("unable to unmarshal templated metric JSON '%s': %s", metricSpec.Name, err))
+				continue
+			}
+
+			metricSpec.SetValueString(replacedStringJson)
 
 			metric := woc.controller.metrics.GetCustomMetric(metricSpec.GetDesc())
 			// It is valid to pass a nil metric to ConstructOrUpdateMetric, in that case the metric will be created for us

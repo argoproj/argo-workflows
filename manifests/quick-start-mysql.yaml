@@ -784,7 +784,7 @@ stringData:
   github.com: |
     type: github
     secret: "shh!"
-  gitlab.com: |
+  gitlab.com: |-
     type: gitlab
     secret: "shh!"
 ---
@@ -875,7 +875,7 @@ spec:
         - server
         - --auth-mode
         - client
-        image: docker.io/argoproj/argocli:latest
+        image: quay.io/argoproj/argocli:latest
         name: argo-server
         ports:
         - containerPort: 2746
@@ -1015,7 +1015,7 @@ spec:
         - --configmap
         - workflow-controller-configmap
         - --executor-image
-        - argoproj/argoexec:latest
+        - quay.io/argoproj/argoexec:latest
         - --namespaced
         command:
         - workflow-controller
@@ -1025,7 +1025,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.name
-        image: docker.io/argoproj/workflow-controller:latest
+        image: quay.io/argoproj/workflow-controller:latest
         livenessProbe:
           failureThreshold: 3
           httpGet:

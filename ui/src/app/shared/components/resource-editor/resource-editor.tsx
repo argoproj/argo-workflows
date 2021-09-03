@@ -21,7 +21,7 @@ interface State<T> {
     error?: Error;
 }
 
-export class ResourceEditor<T extends {metadata: kubernetes.ObjectMeta}> extends React.Component<Props<T>, State<T>> {
+export class ResourceEditor<T extends {metadata?: kubernetes.ObjectMeta}> extends React.Component<Props<T>, State<T>> {
     constructor(props: Readonly<Props<T>>) {
         super(props);
         this.state = {editing: this.props.editing, value: this.props.value};
