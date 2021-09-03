@@ -522,7 +522,7 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 		if param.Value != nil {
 			woc.globalParams["workflow.parameters."+param.Name] = param.Value.String()
 		} else if param.ValueFrom != nil && param.ValueFrom.ConfigMapKeyRef != nil {
-			cmValue, err := util.GetConfigMapValue(woc.controller.configMapInformer, param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key)
+			cmValue, err := util.GetConfigMapValue(woc.controller.configMapInformer, woc.wf.ObjectMeta.Namespace, param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key)
 			if err != nil {
 				return err
 			}
@@ -1621,7 +1621,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	}
 
 	// Inputs has been processed with arguments already, so pass empty arguments.
-	processedTmpl, err := common.ProcessArgs(resolvedTmpl, &args, woc.globalParams, localParams, false, woc.controller.configMapInformer)
+	processedTmpl, err := common.ProcessArgs(resolvedTmpl, &args, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer)
 	if err != nil {
 		return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 	}
