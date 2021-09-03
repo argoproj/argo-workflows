@@ -1,9 +1,11 @@
 package errors
 
 import (
+	"fmt"
 	"net"
 	"net/url"
 	"os"
+	"os/exec"
 	"regexp"
 	"strings"
 
@@ -56,18 +58,23 @@ func isTransientNetworkErr(err error) bool {
 			// For a URL error, where it replies back "connection closed"
 			// retry again.
 			return strings.Contains(err.Error(), "Connection closed by foreign host")
-		default:
-			if strings.Contains(err.Error(), "net/http: TLS handshake timeout") {
-				// If error is - tlsHandshakeTimeoutError, retry.
-				return true
-			} else if strings.Contains(err.Error(), "i/o timeout") {
-				// If error is - tcp timeoutError, retry.
-				return true
-			} else if strings.Contains(err.Error(), "connection timed out") {
-				// If err is a net.Dial timeout, retry.
-				return true
-			}
 		}
 	}
+
+	errorString := err.Error()
+	if exitErr, ok := err.(*exec.ExitError); ok {
+		errorString = fmt.Sprintf("%s %s", errorString, exitErr.Stderr)
+	}
+	if strings.Contains(errorString, "net/http: TLS handshake timeout") {
+		// If error is - tlsHandshakeTimeoutError, retry.
+		return true
+	} else if strings.Contains(errorString, "i/o timeout") {
+		// If error is - tcp timeoutError, retry.
+		return true
+	} else if strings.Contains(errorString, "connection timed out") {
+		// If err is a net.Dial timeout, retry.
+		return true
+	}
+
 	return false
 }

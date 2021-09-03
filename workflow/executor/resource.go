@@ -43,10 +43,12 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, fla
 	if err != nil {
 		if exErr, ok := err.(*exec.ExitError); ok {
 			errMsg := strings.TrimSpace(string(exErr.Stderr))
-			return "", "", "", errors.New(errors.CodeBadRequest, errMsg)
+			err = errors.Wrap(err, errors.CodeBadRequest, errMsg)
 		} else {
-			return "", "", "", errors.New(errors.CodeBadRequest, err.Error())
+			err = errors.Wrap(err, errors.CodeBadRequest, err.Error())
 		}
+		err = errors.Wrap(err, errors.CodeBadRequest, "no more retries "+err.Error())
+		return "", "", "", err
 	}
 	if action == "delete" {
 		return "", "", "", nil
