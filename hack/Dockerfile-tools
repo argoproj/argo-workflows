@@ -2,11 +2,14 @@ FROM golang:1.16-alpine
 
 # upgrade grep fixes alpine busybox error
 RUN apk add make bash git protoc protobuf-dev perl curl \
+  gcc musl-dev git mercurial \
     && apk add --no-cache --upgrade grep
 
 # install kubectl
 RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 RUN chmod u+x kubectl && mv kubectl /bin/kubectl
+
+ENV CGO_ENABLED=0
 
 # cache mod dependencies
 WORKDIR /go/src/github.com/argoproj/argo-workflows
@@ -27,3 +30,4 @@ RUN go install -mod=vendor ./vendor/github.com/grpc-ecosystem/grpc-gateway/proto
 RUN go install -mod=vendor ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
 RUN go install -mod=vendor ./vendor/k8s.io/kube-openapi/cmd/openapi-gen
 RUN go install -mod=vendor ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen
+RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.42.0
