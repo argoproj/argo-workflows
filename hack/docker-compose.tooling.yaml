@@ -1,0 +1,5 @@
+version: '3'
+services:
+  tooling:
+    image: argo-wf-tools
+    command: make codegen

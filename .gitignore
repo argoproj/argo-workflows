@@ -36,3 +36,4 @@ git-ask-pass.sh
 /.brew_home
 /go-diagrams/
 /.run/
+.docker-sync

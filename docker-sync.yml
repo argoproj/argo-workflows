@@ -1,0 +1,7 @@
+version: "2"
+syncs:
+  tooling-sync:
+    src: ./
+
+options:
+  compose-file-path: ./hack/docker-compose.tooling.yaml

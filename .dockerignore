@@ -10,9 +10,7 @@ assets
 community
 coverage.out
 dist
-docs
 examples
-manifests
 sdks
 test/e2e
 ui/dist

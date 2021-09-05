@@ -4,12 +4,16 @@ build_tools_image() {
   docker build -t argo-wf-tools -f ./hack/Dockerfile-tools .
 }
 
-run_mounted_command() {
-  docker run \
-    -it \
-    --mount type=bind,source="$(pwd)",target=/go/src/github.com/argoproj/argo-workflows \
-    argo-wf-tools \
-    "$@"
+start_sync() {
+  docker-sync start
+}
+
+start_sync_stack() {
+  docker-sync-stack start
+}
+
+stop_sync() {
+  docker-sync stop
 }
 
 prune_docker_images() {
@@ -34,14 +38,9 @@ do
     codegen)
       ensure_vendor
       build_tools_image
-      run_mounted_command make codegen
-      prune_docker_containers
-      prune_docker_images
-    ;;
-    lint)
-      ensure_vendor
-      build_tools_image
-      run_mounted_command make lint
+      start_sync
+      start_sync_stack
+      stop_sync
       prune_docker_containers
       prune_docker_images
     ;;
