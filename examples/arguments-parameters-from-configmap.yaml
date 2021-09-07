@@ -4,7 +4,7 @@ metadata:
   name: simple-config
   namespace: argo
   labels:
-    workflows.argoproj.io/configmap-type: parameter
+    workflows.argoproj.io/configmap-type: Parameter
 data:
   msg: 'hello world'
 ---
