@@ -2927,3 +2927,45 @@ spec:
 	}
 	assert.Equal(t, expectedOrder, taskOrderAfterSort)
 }
+
+func TestValidateStartedATVariable(t *testing.T) {
+	wf := `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-timing-
+spec:
+  entrypoint: steps-timing
+  templates:
+    
+    - name: steps-timing
+      steps:
+        - - name: one
+            template: wait
+        - - name: print-processing-time
+            template: printer
+            arguments:
+              parameters:
+                - name: startedat
+                  value: "{{steps.one.startedAt}}"
+                - name: finishedat
+                  value: "{{steps.one.finishedAt}}"
+                - name: id
+                  value: "{{steps.one.id}}"
+    
+    - name: wait
+      container:
+        image: alpine:3.7
+        command: [sleep, "5"]
+    
+    - name: printer
+      inputs:
+        parameters:
+          - name: startedat
+          - name: finishedat
+          - name: id
+      container:
+        image: alpine:3.7
+        command: [echo, "{{inputs.parameters.startedat}}"]`
+	_, err := validate(wf)
+	assert.NoError(t, err)
+}

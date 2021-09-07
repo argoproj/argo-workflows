@@ -17,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/util/retry"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -31,17 +32,23 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, fla
 		return "", "", "", err
 	}
 
-	cmd := exec.Command("kubectl", args...)
-	log.Info(strings.Join(cmd.Args, " "))
+	var out []byte
+	err = retry.OnError(retry.DefaultBackoff, argoerr.IsTransientErr, func() error {
+		cmd := exec.Command("kubectl", args...)
+		log.Info(strings.Join(cmd.Args, " "))
 
-	out, err := cmd.Output()
+		out, err = cmd.Output()
+		return err
+	})
 	if err != nil {
 		if exErr, ok := err.(*exec.ExitError); ok {
 			errMsg := strings.TrimSpace(string(exErr.Stderr))
-			return "", "", "", errors.New(errors.CodeBadRequest, errMsg)
+			err = errors.Wrap(err, errors.CodeBadRequest, errMsg)
 		} else {
-			return "", "", "", errors.New(errors.CodeBadRequest, err.Error())
+			err = errors.Wrap(err, errors.CodeBadRequest, err.Error())
 		}
+		err = errors.Wrap(err, errors.CodeBadRequest, "no more retries "+err.Error())
+		return "", "", "", err
 	}
 	if action == "delete" {
 		return "", "", "", nil

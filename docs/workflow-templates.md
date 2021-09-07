@@ -127,6 +127,79 @@ spec:
       example-label: example-value
 ```
 
+### Working with parameters
+
+When working with parameters in a `WorkflowTemplate`, please note the following:
+
+1. When working with global parameters, you can instantiate your global variables in your `Workflow`
+and then directly reference them in your `WorkflowTemplate`. Below is a working example:
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: hello-world-template-global-arg
+spec:
+  serviceAccountName: argo
+  templates:
+    - name: hello-world
+      container:
+        image: docker/whalesay
+        command: [cowsay]
+        args: ["{{workflow.parameters.global-parameter}}"]
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-wf-global-arg-
+spec:
+  serviceAccountName: argo
+  entrypoint: whalesay
+  arguments:
+    parameters:
+      - name: global
+        value: hello
+  templates:
+    - name: whalesay
+      steps:
+        - - name: hello-world
+            templateRef:
+              name: hello-world-template-global-arg
+              template: hello-world
+```
+2. When working with local parameters, the values of local parameters must be supplied at the template definition inside
+the `WorkflowTemplate`. Below is a working example: 
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: hello-world-template-local-arg
+spec:
+  templates:
+    - name: hello-world
+      inputs:
+        parameters:
+          - name: msg
+            value: "hello world"
+      container:
+        image: docker/whalesay
+        command: [cowsay]
+        args: ["{{inputs.parameters.msg}}"]
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-local-arg-
+spec:
+  entrypoint: whalesay
+  templates:
+    - name: whalesay
+      steps:
+        - - name: hello-world
+            templateRef:
+              name: hello-world-template-local-arg
+              template: hello-world
+```
+
 ## Referencing other `WorkflowTemplates`
 
 You can reference `templates` from another `WorkflowTemplates` (see the [difference between the two](#workflowtemplate-vs-template)) using a `templateRef` field.
