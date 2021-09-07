@@ -85,6 +85,8 @@
         "webpack-dev-server": "^3.7.2"
     },
     "resolutions": {
+        "lodash": "4.17.21",
+        "prismjs": "1.24.0",
         "@types/react": "16.8.5"
     }
 }
