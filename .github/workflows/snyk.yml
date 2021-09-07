@@ -1,8 +1,5 @@
 name: Snyk
 on:
-  push:
-    branches:
-      - snyk
   schedule:
     - cron: "30 2 * * *"
 jobs:
