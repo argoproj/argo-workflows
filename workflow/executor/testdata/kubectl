@@ -1,0 +1,4 @@
+#!/bin/bash
+
+echo "i/o timeout" >&2
+exit 1
