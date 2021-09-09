@@ -55,8 +55,7 @@ and `WorkflowTemplates` on your cluster. To see how, please see [Referencing Oth
 
 > v2.7 and after
 
-`WorkflowTemplates` in v2.7 and after are full `Workflow` definitions. You can take any existing `Workflow` you may have
-and convert it to a `WorkflowTemplate` by substituting `kind: Workflow` to `kind: WorkflowTemplate`.
+In v2.7 and after, all the fields in `WorkflowSpec` (except for `priority` that must be configured in a `WorkflowSpec` itself) are supported for `WorkflowTemplates`. You can take any existing `Workflow` you may have and convert it to a `WorkflowTemplate` by substituting `kind: Workflow` to `kind: WorkflowTemplate`.
 
 > v2.4 – 2.6
 
