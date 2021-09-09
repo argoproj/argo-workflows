@@ -943,3 +943,93 @@ func TestDAGWithDigitNameNoDepends(t *testing.T) {
 	_, err := validate(dagWithDigitNoDepends)
 	assert.NoError(t, err)
 }
+
+var dagOutputsResolveTaskAggregatedOutputs = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: loops-
+spec:
+  serviceAccountName: argo
+  entrypoint: dag
+  templates:
+  - name: dag
+    dag:
+      tasks:
+      - name: fanout
+        template: fanout
+        arguments:
+          parameters:
+          - name: input
+            value: "[1, 2]"
+      - name: dag-process
+        template: sub-dag
+        depends: fanout
+        arguments:
+          parameters:
+          - name: item
+            value: '{{item}}'
+          - name: input
+            value: '{{tasks.fanout.outputs.parameters.output}}'
+        withParam: "{{tasks.fanout.outputs.parameters.output}}"
+
+  - name: sub-dag
+    inputs:
+      parameters:
+      - name: input
+      - name: item
+    outputs:
+      parameters:
+      - name: output
+        valueFrom:
+          parameter: "{{tasks.process.outputs.parameters}}"
+    dag:
+      tasks:
+      - name: fanout
+        template: fanout
+        arguments:
+          parameters:
+          - name: input
+            value: '{{inputs.parameters.input}}'
+      - name: process
+        template: process
+        depends: fanout
+        arguments:
+          parameters:
+          - name: item
+            value: '{{item}}'
+        withParam: "{{tasks.fanout.outputs.parameters.output}}"
+
+  - name: fanout
+    inputs:
+      parameters:
+      - name: input
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["echo {{inputs.parameters.input}} | tee /tmp/output"]
+    outputs:
+      parameters:
+      - name: output
+        valueFrom:
+          path: /tmp/output
+
+  - name: process
+    inputs:
+      parameters:
+      - name: item
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["echo {{inputs.parameters.item}} | tee /tmp/output"]
+    outputs:
+      parameters:
+      - name: output
+        valueFrom:
+          path: /tmp/output
+`
+
+func TestDAGOutputsResolveTaskAggregatedOutputs(t *testing.T) {
+	_, err := validate(dagOutputsResolveTaskAggregatedOutputs)
+	assert.NoError(t, err)
+}

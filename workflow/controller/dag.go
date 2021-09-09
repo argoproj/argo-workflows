@@ -276,7 +276,19 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 			// Can happen when dag.target was specified
 			continue
 		}
-		woc.buildLocalScope(scope, fmt.Sprintf("tasks.%s", task.Name), taskNode)
+
+		prefix := fmt.Sprintf("tasks.%s", task.Name)
+		if taskNode.Type == wfv1.NodeTypeTaskGroup {
+			childNodes := make([]wfv1.NodeStatus, len(taskNode.Children))
+			for i, childID := range taskNode.Children {
+				childNodes[i] = woc.wf.Status.Nodes[childID]
+			}
+			err := woc.processAggregateNodeOutputs(scope, prefix, childNodes)
+			if err != nil {
+				return nil, errors.InternalWrapError(err)
+			}
+		}
+		woc.buildLocalScope(scope, prefix, taskNode)
 		woc.addOutputsToGlobalScope(taskNode.Outputs)
 	}
 	outputs, err := getTemplateOutputsFromScope(tmpl, scope)
