@@ -24,5 +24,5 @@ func GetConfigMapValue(configMapInformer cache.SharedIndexInformer, namespace, n
 		}
 		return cmValue, nil
 	}
-	return "", nil
+	return "", fmt.Errorf("ConfigMap '%s' does not exist", name)
 }

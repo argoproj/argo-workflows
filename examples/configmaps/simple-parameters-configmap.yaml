@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: simple-parameters
+  namespace: argo
+  labels:
+    workflows.argoproj.io/configmap-type: Parameter
+data:
+  msg: 'hello world'
