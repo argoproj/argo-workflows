@@ -2470,8 +2470,7 @@ and <code>WorkflowTemplates</code> on your cluster. To see how, please see <a hr
 <blockquote>
 <p>v2.7 and after</p>
 </blockquote>
-<p><code>WorkflowTemplates</code> in v2.7 and after are full <code>Workflow</code> definitions. You can take any existing <code>Workflow</code> you may have
-and convert it to a <code>WorkflowTemplate</code> by substituting <code>kind: Workflow</code> to <code>kind: WorkflowTemplate</code>.</p>
+<p>In v2.7 and after, all the fields in <code>WorkflowSpec</code> (except for <code>priority</code> that must be configured in a <code>WorkflowSpec</code> itself) are supported for <code>WorkflowTemplates</code>. You can take any existing <code>Workflow</code> you may have and convert it to a <code>WorkflowTemplate</code> by substituting <code>kind: Workflow</code> to <code>kind: WorkflowTemplate</code>.</p>
 <blockquote>
 <p>v2.4 – 2.6</p>
 </blockquote>
