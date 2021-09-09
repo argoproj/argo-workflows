@@ -1291,6 +1291,21 @@ func TestAssessNodeStatus(t *testing.T) {
 			assert.Equal(t, tt.want, got.Phase)
 		})
 	}
+
+	t.Run("Daemon Step finished - Pod running", func(t *testing.T) {
+		cancel, controller := newController()
+		defer cancel()
+		pod := &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Phase: apiv1.PodRunning,
+			},
+		}
+		node := &wfv1.NodeStatus{Phase: wfv1.NodeFailed}
+		woc := newWorkflowOperationCtx(wf, controller)
+		got := woc.assessNodeStatus(pod, node)
+		assert.True(t, got.Daemoned == nil)
+	})
+
 }
 
 func getPodTemplate(pod *apiv1.Pod) (*wfv1.Template, error) {

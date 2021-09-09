@@ -851,6 +851,9 @@ func addItemsToScope(withItems []wfv1.Item, withParam string, withSequence *wfv1
 }
 
 func (ctx *templateValidationCtx) addOutputsToScope(tmpl *wfv1.Template, prefix string, scope map[string]interface{}, aggregate bool, isAncestor bool) {
+	scope[fmt.Sprintf("%s.id", prefix)] = true
+	scope[fmt.Sprintf("%s.startedAt", prefix)] = true
+	scope[fmt.Sprintf("%s.finishedAt", prefix)] = true
 	if tmpl.Daemon != nil && *tmpl.Daemon {
 		scope[fmt.Sprintf("%s.ip", prefix)] = true
 	}

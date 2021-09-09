@@ -56,6 +56,9 @@ jobs:
           - test: test-executor
             containerRuntimeExecutor: docker
             profile: minimal
+          - test: test-examples
+            containerRuntimeExecutor: emissary
+            profile: minimal
           - test: test-executor
             containerRuntimeExecutor: emissary
             profile: minimal
