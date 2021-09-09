@@ -54,7 +54,6 @@ func AddAPIClientFlagsToCmd(cmd *cobra.Command) {
 
 func NewAPIClient(ctx context.Context) (context.Context, apiclient.Client) {
 	ctx, client, err := apiclient.NewClientFromOpts(
-		ctx,
 		apiclient.Opts{
 			ArgoServerOpts: argoServerOpts,
 			InstanceID:     instanceID,
@@ -63,6 +62,7 @@ func NewAPIClient(ctx context.Context) (context.Context, apiclient.Client) {
 			},
 			ClientConfigSupplier: func() clientcmd.ClientConfig { return GetConfig() },
 			Offline:              Offline,
+			Context:              ctx,
 		})
 	if err != nil {
 		log.Fatal(err)
