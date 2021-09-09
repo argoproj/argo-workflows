@@ -11089,6 +11089,10 @@
       "description": "ValueFrom describes a location in which to obtain the value to a parameter",
       "type": "object",
       "properties": {
+        "configMapKeyRef": {
+          "description": "ConfigMapKeyRef is configmap selector for input parameter configuration",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector"
+        },
         "default": {
           "description": "Default specifies a value to be used if retrieving the value from the specified source fails",
           "type": "string"

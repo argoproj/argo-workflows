@@ -772,6 +772,9 @@ type ValueFrom struct {
 	// Supplied value to be filled in directly, either through the CLI, API, etc.
 	Supplied *SuppliedValueFrom `json:"supplied,omitempty" protobuf:"bytes,6,opt,name=supplied"`
 
+	// ConfigMapKeyRef is configmap selector for input parameter configuration
+	ConfigMapKeyRef *apiv1.ConfigMapKeySelector `json:"configMapKeyRef,omitempty" protobuf:"bytes,9,opt,name=configMapKeyRef"`
+
 	// Default specifies a value to be used if retrieving the value from the specified source fails
 	Default *AnyString `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
 
