@@ -190,6 +190,14 @@
  * meijin
  * wanghong230
 
+## v3.1.10 (2021-09-10)
+
+ * [2730a51a2](https://github.com/argoproj/argo-workflows/commit/2730a51a203d6b587db5fe43a0e3de018a35dbd8) fix: Fix `x509: certificate signed by unknown authority` error (#6566)
+
+### Contributors
+
+ * Alex Collins
+
 ## v3.1.9 (2021-09-03)
 
  * [e4f6bcb02](https://github.com/argoproj/argo-workflows/commit/e4f6bcb02f10bea5c76f2f91ff223b8a380b4557) fix the codegen
