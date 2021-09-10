@@ -1570,11 +1570,19 @@ func TestPodMetadataWithWorkflowDefaults(t *testing.T) {
 	cancel()
 }
 
-func TestEnsurePodNamePrefixLength(t *testing.T) {
+func TestPodName(t *testing.T) {
+	nodeName := "nodename"
+
 	// short case
-	expected := fmt.Sprintf("%s-%s", "wfname", "templatename")
+	shortWfName := "wfname"
+	shortTemplateName := "templatename"
+
+	expected := fmt.Sprintf("%s-%s", shortWfName, shortTemplateName)
 	actual := ensurePodNamePrefixLength(expected)
 	assert.Equal(t, expected, actual)
+
+	name := podName(shortWfName, nodeName, shortTemplateName)
+	assert.Equal(t, "wfname-templatename-1454367246", name)
 
 	// long case
 	longWfName := "alongworkflownamethatincludeslotsofdetailsandisessentiallyalargerunonsentencewithpoorstyleandnopunctuationtobehadwhatsoever"
@@ -1587,4 +1595,7 @@ func TestEnsurePodNamePrefixLength(t *testing.T) {
 	actual = ensurePodNamePrefixLength(expected)
 
 	assert.Equal(t, maxK8sResourceNameLength-k8sNamingHashLength-1, len(actual))
+
+	name = podName(longWfName, nodeName, longTemplateName)
+	assert.Equal(t, maxK8sResourceNameLength, len(name))
 }
