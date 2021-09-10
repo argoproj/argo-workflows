@@ -277,7 +277,7 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 	for _, childNodeID := range node.Children {
 		childNode := woc.wf.Status.Nodes[childNodeID]
 		step := nodeSteps[childNode.Name]
-		if childNode.FailedOrError() && !step.ContinuesOn(childNode.Phase) {
+		if childNode.FailedOrError() && !step.ContinuesOn(childNode.Phase, childNode.Outputs.ExitCode) {
 			failMessage := fmt.Sprintf("child '%s' failed", childNodeID)
 			woc.log.Infof("Step group node %s deemed failed: %s", node.ID, failMessage)
 			return woc.markNodePhase(node.Name, wfv1.NodeFailed, failMessage)

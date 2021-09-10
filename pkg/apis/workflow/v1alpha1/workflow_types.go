@@ -8,6 +8,7 @@ import (
 	"path"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -2706,9 +2707,11 @@ type ContinueOn struct {
 	Error bool `json:"error,omitempty" protobuf:"varint,1,opt,name=error"`
 	// +optional
 	Failed bool `json:"failed,omitempty" protobuf:"varint,2,opt,name=failed"`
+	// +optional
+	ExitCode int `json:"exitCode,omitempty" protobuf:"bytes,4,opt,name=exitCode"`
 }
 
-func continues(c *ContinueOn, phase NodePhase) bool {
+func continues(c *ContinueOn, phase NodePhase, exitCode *string) bool {
 	if c == nil {
 		return false
 	}
@@ -2718,17 +2721,24 @@ func continues(c *ContinueOn, phase NodePhase) bool {
 	if c.Failed && phase == NodeFailed {
 		return true
 	}
+	exitCodeInt, err := strconv.Atoi(*exitCode)
+	if err != nil {
+		return false
+	}
+	if c.ExitCode == exitCodeInt {
+		return true
+	}
 	return false
 }
 
 // ContinuesOn returns whether the DAG should be proceeded if the task fails or errors.
-func (t *DAGTask) ContinuesOn(phase NodePhase) bool {
-	return continues(t.ContinueOn, phase)
+func (t *DAGTask) ContinuesOn(phase NodePhase, e *string) bool {
+	return continues(t.ContinueOn, phase, e)
 }
 
 // ContinuesOn returns whether the StepGroup should be proceeded if the task fails or errors.
-func (s *WorkflowStep) ContinuesOn(phase NodePhase) bool {
-	return continues(s.ContinueOn, phase)
+func (s *WorkflowStep) ContinuesOn(phase NodePhase, e *string) bool {
+	return continues(s.ContinueOn, phase, e)
 }
 
 type MetricType string
