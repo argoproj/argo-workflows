@@ -53,7 +53,7 @@ func (woc *wfOperationCtx) getUnsuccessfulChildren(boundaryID string) int64 {
 }
 
 func (woc *wfOperationCtx) nodePodExist(node wfv1.NodeStatus) bool {
-	_, podExist, _ := woc.podExists(node.ID) // TODO - test
+	_, podExist, _ := woc.podExists(node.ID)
 	return podExist
 }
 
