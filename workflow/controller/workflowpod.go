@@ -30,6 +30,11 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
+const (
+	maxK8sResourceNameLength = 253
+	k8sNamingHashLength      = 10
+)
+
 var (
 	volumeVarArgo = apiv1.Volume{
 		Name: "var-run-argo",
@@ -143,13 +148,23 @@ func podName(workflowName, nodeName, templateName string) string { // TODO - tes
 	if workflowName == nodeName {
 		return workflowName
 	}
+
 	prefix := fmt.Sprintf("%s-%s", workflowName, templateName)
-	if len(prefix) > 253-10 { // TODO - limit the length of the pod name to whatever max can be, needs test
-		prefix = prefix[0 : 253-10-1] // TODO test this line
-	}
+	prefix = ensurePodNamePrefixLength(prefix)
+
 	h := fnv.New32a()
 	_, _ = h.Write([]byte(nodeName))
 	return fmt.Sprintf("%s-%v", prefix, h.Sum32())
+}
+
+func ensurePodNamePrefixLength(prefix string) string {
+	maxPrefixLength := maxK8sResourceNameLength - k8sNamingHashLength
+
+	if len(prefix) > maxPrefixLength-1 {
+		return prefix[0 : maxPrefixLength-1]
+	}
+
+	return prefix
 }
 
 func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName string, mainCtrs []apiv1.Container, tmpl *wfv1.Template, opts *createWorkflowPodOpts) (*apiv1.Pod, error) {

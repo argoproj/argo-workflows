@@ -1569,3 +1569,22 @@ func TestPodMetadataWithWorkflowDefaults(t *testing.T) {
 	assert.Equal(t, "label-value", pod.ObjectMeta.Labels["controller-level-pod-label"])
 	cancel()
 }
+
+func TestEnsurePodNamePrefixLength(t *testing.T) {
+	// short case
+	expected := fmt.Sprintf("%s-%s", "wfname", "templatename")
+	actual := ensurePodNamePrefixLength(expected)
+	assert.Equal(t, expected, actual)
+
+	// long case
+	longWfName := "alongworkflownamethatincludeslotsofdetailsandisessentiallyalargerunonsentencewithpoorstyleandnopunctuationtobehadwhatsoever"
+	longTemplateName := "alongtemplatenamethatincludessliightlymoredetailsandiscertainlyalargerunonstnencewithevenworsestylisticconcernsandpreposterouslyeliminatespunctuation"
+
+	sum := len(longWfName) + len(longTemplateName)
+	assert.Greater(t, sum, maxK8sResourceNameLength-k8sNamingHashLength)
+
+	expected = fmt.Sprintf("%s-%s", longWfName, longTemplateName)
+	actual = ensurePodNamePrefixLength(expected)
+
+	assert.Equal(t, maxK8sResourceNameLength-k8sNamingHashLength-1, len(actual))
+}
