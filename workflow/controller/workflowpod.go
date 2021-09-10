@@ -144,7 +144,7 @@ type createWorkflowPodOpts struct {
 }
 
 // podName return a deterministic pod name
-func podName(workflowName, nodeName, templateName string) string { // TODO - tests
+func podName(workflowName, nodeName, templateName string) string {
 	if workflowName == nodeName {
 		return workflowName
 	}
