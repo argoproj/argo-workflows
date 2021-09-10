@@ -10,7 +10,7 @@ export const UploadButton = <T extends any>(props: {onUpload: (value: T) => void
     };
 
     return (
-        <label className='argo-button argo-button--base-o' key='upload-file'>
+        <label style={{marginBottom: 2, marginRight: 2}} className='argo-button argo-button--base-o' key='upload-file'>
             <input type='file' onChange={e => handleFiles(e.target.files)} style={{display: 'none'}} />
             <i className='fa fa-upload' /> Upload file
         </label>
