@@ -233,7 +233,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      podName(woc.wf.Name, nodeName, tmpl.Name), // TODO - test
+			Name:      podName(woc.wf.Name, nodeName, tmpl.Name),
 			Namespace: woc.wf.ObjectMeta.Namespace,
 			Labels: map[string]string{
 				common.LabelKeyWorkflow:  woc.wf.ObjectMeta.Name, // Allows filtering by pods related to specific workflow
@@ -489,15 +489,21 @@ func (woc *wfOperationCtx) podExists(nodeID string) (existing *apiv1.Pod, exists
 	if err != nil {
 		return nil, false, fmt.Errorf("failed to get pod from informer store: %w", err)
 	}
-	switch len(objs) {
-	case 0:
-	case 1:
-		if existing, ok := objs[0].(*apiv1.Pod); ok {
-			return existing, true, nil
-		}
-	default:
+
+	objectCount := len(objs)
+
+	if objectCount == 0 {
+		return nil, false, nil
+	}
+
+	if objectCount > 1 {
 		return nil, false, fmt.Errorf("expected < 2 pods, got %d - this is a bug", len(objs))
 	}
+
+	if existing, ok := objs[0].(*apiv1.Pod); ok {
+		return existing, true, nil
+	}
+
 	return nil, false, nil
 }
 
