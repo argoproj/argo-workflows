@@ -7,6 +7,7 @@ import (
 	"os"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
@@ -194,7 +195,7 @@ See %s`, help.ArgoServer),
 	}
 	auth_modes := []string{"client"}
 	if os.Getenv("AUTH_MODES") != "" {
-		auth_modes = os.Getenv("AUTH_MODES")
+		auth_modes = strings.Split(os.Getenv("AUTH_MODES"), ",")
 	}
 	configmap := os.Getenv("CONFIGMAP")
 	if configmap == "" {
