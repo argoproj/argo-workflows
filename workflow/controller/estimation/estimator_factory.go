@@ -76,7 +76,7 @@ func (f *estimatorFactory) NewEstimator(wf *wfv1.Workflow) (Estimator, error) {
 			if err != nil {
 				return defaultEstimator, fmt.Errorf("failed to parse selector to requirements: %v", err)
 			}
-			workflows, err := f.wfArchive.ListWorkflows(wf.Namespace, time.Time{}, time.Time{}, requirements, 1, 0)
+			workflows, err := f.wfArchive.ListWorkflows(wf.Namespace, "", time.Time{}, time.Time{}, requirements, 1, 0)
 			if err != nil {
 				return defaultEstimator, fmt.Errorf("failed to list archived workflows: %v", err)
 			}

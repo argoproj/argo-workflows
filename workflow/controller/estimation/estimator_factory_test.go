@@ -53,7 +53,7 @@ metadata:
 	wfArchive := &sqldbmocks.WorkflowArchive{}
 	r, err := labels.ParseToRequirements("workflows.argoproj.io/phase=Succeeded,workflows.argoproj.io/workflow-template=my-archived-wftmpl")
 	assert.NoError(t, err)
-	wfArchive.On("ListWorkflows", "my-ns", time.Time{}, time.Time{}, labels.Requirements(r), 1, 0).Return(wfv1.Workflows{
+	wfArchive.On("ListWorkflows", "my-ns", "", time.Time{}, time.Time{}, labels.Requirements(r), 1, 0).Return(wfv1.Workflows{
 		*testutil.MustUnmarshalWorkflow(`
 metadata:
   name: my-archived-wftmpl-baseline`),
