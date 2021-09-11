@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/argoproj/pkg/cli"
@@ -120,21 +121,67 @@ func NewRootCommand() *cobra.Command {
 
 	clientConfig = kubecli.AddKubectlFlagsToCmd(&command)
 	command.AddCommand(cmdutil.NewVersionCmd(CLIName))
-	command.Flags().StringVar(&configMap, "configmap", "workflow-controller-configmap", "Name of K8s configmap to retrieve workflow controller configuration")
+
+	configmap := os.Getenv("CONFIGMAP")
+	if configmap == "" {
+		configmap = "workflow-controller-configmap"
+	}
+	loglevel := os.Getenv("LOGLEVEL")
+	if loglevel == "" {
+		loglevel = "info"
+	}
+	gloglevel := 0
+	if os.Getenv("GLOGLEVEL") != "" {
+		gloglevel, _ = strconv.Atoi(os.Getenv("GLOGLEVEL"))
+	}
+	logformat := os.Getenv("LOGFORMAT")
+	if logformat == "" {
+		logformat = "text"
+	}
+	workflow_workers := 32
+	if os.Getenv("WORKFLOW_WORKERS") != "" {
+		workflow_workers, _ = strconv.Atoi(os.Getenv("WORKFLOW_WORKERS"))
+	}
+	workflow_ttl_workers := 4
+	if os.Getenv("WORKFLOW_TTL_WORKERS") == "" {
+		workflow_ttl_workers, _ = strconv.Atoi(os.Getenv("WORKFLOW_TTL_WORKERS"))
+	}
+	pod_workers := 32
+	if os.Getenv("POD_WORKERS") == "" {
+		pod_workers, _ = strconv.Atoi(os.Getenv("POD_WORKERS"))
+	}
+	pod_cleanup_workers := 4
+	if os.Getenv("POD_CLEANUP_WORKERS") == "" {
+		pod_cleanup_workers, _ = strconv.Atoi(os.Getenv("POD_CLEANUP_WORKERS"))
+	}
+	burst = 30
+	if os.Getenv("BURST") == "" {
+		burst, _ = strconv.Atoi( os.Getenv("BURST"))
+	}
+	qps = float32(20.0)
+	if os.Getenv("QPS") == "" {
+		qps, _ = strconv.ParseFloat(os.Getenv("QPS"), 32)
+	}
+	namespaced = false
+	if os.Getenv("NAMESPACED") == "" {
+		namespaced, _ = strconv.ParseBool(os.Getenv("NAMESPACED"))
+	}
+
+	command.Flags().StringVar(&configMap, "configmap", configmap, "Name of K8s configmap to retrieve workflow controller configuration")
 	command.Flags().StringVar(&executorImage, "executor-image", os.Getenv("EXECUTOR_IMAGE"), "Executor image to use (overrides value in configmap)")
-	command.Flags().StringVar(&executorImagePullPolicy, "executor-image-pull-policy", "", "Executor imagePullPolicy to use (overrides value in configmap)")
-	command.Flags().StringVar(&containerRuntimeExecutor, "container-runtime-executor", "", "Container runtime executor to use (overrides value in configmap)")
-	command.Flags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
-	command.Flags().IntVar(&glogLevel, "gloglevel", 0, "Set the glog logging level")
-	command.Flags().StringVar(&logFormat, "log-format", "text", "The formatter to use for logs. One of: text|json")
-	command.Flags().IntVar(&workflowWorkers, "workflow-workers", 32, "Number of workflow workers")
-	command.Flags().IntVar(&workflowTTLWorkers, "workflow-ttl-workers", 4, "Number of workflow TTL workers")
-	command.Flags().IntVar(&podWorkers, "pod-workers", 32, "Number of pod workers")
-	command.Flags().IntVar(&podCleanupWorkers, "pod-cleanup-workers", 4, "Number of pod cleanup workers")
-	command.Flags().IntVar(&burst, "burst", 30, "Maximum burst for throttle.")
-	command.Flags().Float32Var(&qps, "qps", 20.0, "Queries per second")
-	command.Flags().BoolVar(&namespaced, "namespaced", false, "run workflow-controller as namespaced mode")
-	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that workflow-controller watches, default to the installation namespace")
+	command.Flags().StringVar(&executorImagePullPolicy, "executor-image-pull-policy", os.Getenv("EXECUTOR_IMAGE_PULL_POLICY"), "Executor imagePullPolicy to use (overrides value in configmap)")
+	command.Flags().StringVar(&containerRuntimeExecutor, "container-runtime-executor", os.Getenv("CONTAINER_RUNTIME_EXECUTOR"), "Container runtime executor to use (overrides value in configmap)")
+	command.Flags().StringVar(&logLevel, "loglevel", loglevel, "Set the logging level. One of: debug|info|warn|error")
+	command.Flags().IntVar(&glogLevel, "gloglevel", gloglevel, "Set the glog logging level")
+	command.Flags().StringVar(&logFormat, "log-format", logformat, "The formatter to use for logs. One of: text|json")
+	command.Flags().IntVar(&workflowWorkers, "workflow-workers", workflow_workers, "Number of workflow workers")
+	command.Flags().IntVar(&workflowTTLWorkers, "workflow-ttl-workers", workflow_ttl_workers, "Number of workflow TTL workers")
+	command.Flags().IntVar(&podWorkers, "pod-workers", pod_workers, "Number of pod workers")
+	command.Flags().IntVar(&podCleanupWorkers, "pod-cleanup-workers", pod_cleanup_workers, "Number of pod cleanup workers")
+	command.Flags().IntVar(&burst, "burst", burst, "Maximum burst for throttle.")
+	command.Flags().Float32Var(&qps, "qps", qps, "Queries per second")
+	command.Flags().BoolVar(&namespaced, "namespaced", namespaced, "run workflow-controller as namespaced mode")
+	command.Flags().StringVar(&managedNamespace, "managed-namespace", os.Getenv("MANAGED_NAMESPACE"), "namespace that workflow-controller watches, default to the installation namespace")
 	return &command
 }
 
