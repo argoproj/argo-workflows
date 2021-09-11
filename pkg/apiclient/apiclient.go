@@ -40,6 +40,14 @@ func (o Opts) String() string {
 	return fmt.Sprintf("(argoServerOpts=%v,instanceID=%v)", o.ArgoServerOpts, o.InstanceID)
 }
 
+func (o *Opts) GetContext() context.Context {
+	if o.Context == nil {
+		o.Context = context.Background()
+	}
+
+	return o.Context
+}
+
 // DEPRECATED: use NewClientFromOpts
 func NewClient(argoServer string, authSupplier func() string, clientConfig clientcmd.ClientConfig) (context.Context, Client, error) {
 	return NewClientFromOpts(Opts{
@@ -69,11 +77,7 @@ func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
 			opts.ClientConfig = opts.ClientConfigSupplier()
 		}
 
-		if opts.Context == nil {
-			opts.Context = context.Background()
-		}
-
-		ctx, client, err := newArgoKubeClient(opts.Context, opts.ClientConfig, instanceid.NewService(opts.InstanceID))
+		ctx, client, err := newArgoKubeClient(opts.GetContext(), opts.ClientConfig, instanceid.NewService(opts.InstanceID))
 		return ctx, client, err
 	}
 }
