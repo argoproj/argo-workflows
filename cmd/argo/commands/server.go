@@ -184,19 +184,60 @@ See %s`, help.ArgoServer),
 	if defaultBaseHRef == "" {
 		defaultBaseHRef = "/"
 	}
+	secure = true
+	if os.Getenv("SECURE") != "" {
+		secure, _ = strconv.ParseBool(os.Getenv("SECURE"))
+	}
+	htst = true
+	if os.Getenv("HTTP_SECURE_TRANSPORT_SECURITY_HEADER") != "" {
+		htst, _ = strconv.ParseBool(os.Getenv("HTTP_SECURE_TRANSPORT_SECURITY_HEADER"))
+	}
+	auth_modes := []string{"client"}
+	if os.Getenv("AUTH_MODES") != "" {
+		auth_modes = os.Getenv("AUTH_MODES")
+	}
+	configmap := os.Getenv("CONFIGMAP")
+	if configmap == "" {
+		configmap = "workflow-controller-configmap"
+	}
+	namespaced = false
+	if os.Getenv("NAMESPACED") != "" {
+		namespaced, _ = strconv.ParseBool(os.Getenv("NAMESPACED"))
+	}
+	var enable_open_browser bool = false
+	if os.Getenv("BROWSER_ENABLED") != "" {
+		enable_open_browser, _ = strconv.ParseBool(os.Getenv("BROWSER_ENABLED"))
+	}
+	event_operation_queue_size := 16
+	if os.Getenv("EVENT_OPERATION_QUEUE_SIZE") != "" {
+		event_operation_queue_size, _ = strconv.Atoi(os.Getenv("EVENT_OPERATION_QUEUE_SIZE"))
+	}
+	event_worker_count := 4
+	if os.Getenv("EVENT_WORKER_COUNT") != "" {
+		event_worker_count, _ = strconv.Atoi(os.Getenv("EVENT_WORKER_COUNT"))
+	}
+	x_frame_options := os.Getenv("X_FRAME_OPTIONS")
+	if x_frame_options == "" {
+		x_frame_options = "DENY"
+	}
+	logformat := os.Getenv("LOGFORMAT")
+	if logformat == "" {
+		logformat = "text"
+	}
+
 	command.Flags().StringVar(&baseHRef, "basehref", defaultBaseHRef, "Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /. Defaults to the environment variable BASE_HREF.")
 	// "-e" for encrypt, like zip
-	command.Flags().BoolVarP(&secure, "secure", "e", true, "Whether or not we should listen on TLS.")
-	command.Flags().BoolVar(&htst, "hsts", true, "Whether or not we should add a HTTP Secure Transport Security header. This only has effect if secure is enabled.")
-	command.Flags().StringArrayVar(&authModes, "auth-mode", []string{"client"}, "API server authentication mode. Any 1 or more length permutation of: client,server,sso")
-	command.Flags().StringVar(&configMap, "configmap", "workflow-controller-configmap", "Name of K8s configmap to retrieve workflow controller configuration")
-	command.Flags().BoolVar(&namespaced, "namespaced", false, "run as namespaced mode")
-	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that watches, default to the installation namespace")
-	command.Flags().BoolVarP(&enableOpenBrowser, "browser", "b", false, "enable automatic launching of the browser [local mode]")
-	command.Flags().IntVar(&eventOperationQueueSize, "event-operation-queue-size", 16, "how many events operations that can be queued at once")
-	command.Flags().IntVar(&eventWorkerCount, "event-worker-count", 4, "how many event workers to run")
-	command.Flags().StringVar(&frameOptions, "x-frame-options", "DENY", "Set X-Frame-Options header in HTTP responses.")
-	command.Flags().StringVar(&accessControlAllowOrigin, "access-control-allow-origin", "", "Set Access-Control-Allow-Origin header in HTTP responses.")
-	command.Flags().StringVar(&logFormat, "log-format", "text", "The formatter to use for logs. One of: text|json")
+	command.Flags().BoolVarP(&secure, "secure", "e", secure, "Whether or not we should listen on TLS.")
+	command.Flags().BoolVar(&htst, "hsts", htst, "Whether or not we should add a HTTP Secure Transport Security header. This only has effect if secure is enabled.")
+	command.Flags().StringArrayVar(&authModes, "auth-mode", auth_modes, "API server authentication mode. Any 1 or more length permutation of: client,server,sso")
+	command.Flags().StringVar(&configMap, "configmap", configmap, "Name of K8s configmap to retrieve workflow controller configuration")
+	command.Flags().BoolVar(&namespaced, "namespaced", namespaced, "run as namespaced mode")
+	command.Flags().StringVar(&managedNamespace, os.Getenv("MANAGED_NAMESPACE"), "", "namespace that watches, default to the installation namespace")
+	command.Flags().BoolVarP(&enableOpenBrowser, "browser", "b", enable_open_browser, "enable automatic launching of the browser [local mode]")
+	command.Flags().IntVar(&eventOperationQueueSize, "event-operation-queue-size", event_operation_queue_size, "how many events operations that can be queued at once")
+	command.Flags().IntVar(&eventWorkerCount, "event-worker-count", event_worker_count, "how many event workers to run")
+	command.Flags().StringVar(&frameOptions, "x-frame-options", x_frame_options, "Set X-Frame-Options header in HTTP responses.")
+	command.Flags().StringVar(&accessControlAllowOrigin, "access-control-allow-origin", os.Getenv("ACCESS_CONTROL_ALLOW_ORIGIN"), "Set Access-Control-Allow-Origin header in HTTP responses.")
+	command.Flags().StringVar(&logFormat, "log-format", logformat, "The formatter to use for logs. One of: text|json")
 	return &command
 }
