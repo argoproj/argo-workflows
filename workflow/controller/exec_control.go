@@ -19,6 +19,9 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 	if pod == nil {
 		return
 	}
+
+	nodeID := woc.nodeID(pod)
+
 	switch pod.Status.Phase {
 	case apiv1.PodSucceeded, apiv1.PodFailed:
 		// Skip any pod which are already completed
@@ -34,7 +37,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 				err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 				if err == nil {
 					wfNodesLock.Lock()
-					node := woc.wf.Status.Nodes[woc.nodeID(pod)]
+					node := woc.wf.Status.Nodes[nodeID]
 					wfNodesLock.Unlock()
 					woc.markNodePhase(node.Name, wfv1.NodeFailed, fmt.Sprintf("workflow shutdown with strategy:  %s", woc.GetShutdownStrategy()))
 					return
@@ -53,7 +56,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 				err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 				if err == nil {
 					wfNodesLock.Lock()
-					node := woc.wf.Status.Nodes[woc.nodeID(pod)]
+					node := woc.wf.Status.Nodes[nodeID]
 					wfNodesLock.Unlock()
 					woc.markNodePhase(node.Name, wfv1.NodeFailed, "Step exceeded its deadline")
 					return
