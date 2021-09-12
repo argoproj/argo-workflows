@@ -1599,3 +1599,28 @@ func TestPodName(t *testing.T) {
 	name = podName(longWfName, nodeName, longTemplateName)
 	assert.Equal(t, maxK8sResourceNameLength, len(name))
 }
+
+func TestPodExists(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	err := woc.setExecWorkflow(ctx)
+	assert.NoError(t, err)
+	mainCtr := woc.execWf.Spec.Templates[0].Container
+	pod, err := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	assert.NoError(t, err)
+	assert.NotNil(t, pod)
+
+	pods, err := listPods(woc)
+	assert.NoError(t, err)
+	assert.Len(t, pods.Items, 1)
+
+	existingPod, doesExist, err := woc.podExists(pod.Name)
+	assert.NoError(t, err)
+	assert.NotNil(t, existingPod)
+	assert.True(t, doesExist)
+	assert.EqualValues(t, pod, existingPod)
+}
