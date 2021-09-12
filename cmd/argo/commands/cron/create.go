@@ -1,6 +1,7 @@
 package cron
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -35,7 +36,7 @@ func NewCreateCommand() *cobra.Command {
 				os.Exit(1)
 			}
 
-			CreateCronWorkflows(args, &cliCreateOpts, &submitOpts)
+			CreateCronWorkflows(cmd.Context(), args, &cliCreateOpts, &submitOpts)
 		},
 	}
 
@@ -46,8 +47,8 @@ func NewCreateCommand() *cobra.Command {
 	return command
 }
 
-func CreateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts, submitOpts *wfv1.SubmitOpts) {
-	ctx, apiClient := client.NewAPIClient()
+func CreateCronWorkflows(ctx context.Context, filePaths []string, cliOpts *cliCreateOpts, submitOpts *wfv1.SubmitOpts) {
+	ctx, apiClient := client.NewAPIClient(ctx)
 	serviceClient, err := apiClient.NewCronWorkflowServiceClient()
 	if err != nil {
 		log.Fatal(err)

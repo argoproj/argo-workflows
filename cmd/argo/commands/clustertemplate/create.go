@@ -1,6 +1,7 @@
 package clustertemplate
 
 import (
+	"context"
 	"log"
 	"os"
 
@@ -30,7 +31,7 @@ func NewCreateCommand() *cobra.Command {
 				os.Exit(1)
 			}
 
-			createClusterWorkflowTemplates(args, &cliCreateOpts)
+			createClusterWorkflowTemplates(cmd.Context(), args, &cliCreateOpts)
 		},
 	}
 	command.Flags().StringVarP(&cliCreateOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
@@ -38,11 +39,11 @@ func NewCreateCommand() *cobra.Command {
 	return command
 }
 
-func createClusterWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) {
+func createClusterWorkflowTemplates(ctx context.Context, filePaths []string, cliOpts *cliCreateOpts) {
 	if cliOpts == nil {
 		cliOpts = &cliCreateOpts{}
 	}
-	ctx, apiClient := client.NewAPIClient()
+	ctx, apiClient := client.NewAPIClient(ctx)
 	serviceClient, err := apiClient.NewClusterWorkflowTemplateServiceClient()
 	if err != nil {
 		log.Fatal(err)

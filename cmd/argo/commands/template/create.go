@@ -1,6 +1,7 @@
 package template
 
 import (
+	"context"
 	"log"
 	"os"
 
@@ -30,7 +31,7 @@ func NewCreateCommand() *cobra.Command {
 				os.Exit(1)
 			}
 
-			CreateWorkflowTemplates(args, &cliCreateOpts)
+			CreateWorkflowTemplates(cmd.Context(), args, &cliCreateOpts)
 		},
 	}
 	command.Flags().StringVarP(&cliCreateOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
@@ -38,11 +39,11 @@ func NewCreateCommand() *cobra.Command {
 	return command
 }
 
-func CreateWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) {
+func CreateWorkflowTemplates(ctx context.Context, filePaths []string, cliOpts *cliCreateOpts) {
 	if cliOpts == nil {
 		cliOpts = &cliCreateOpts{}
 	}
-	ctx, apiClient := client.NewAPIClient()
+	ctx, apiClient := client.NewAPIClient(ctx)
 	serviceClient, err := apiClient.NewWorkflowTemplateServiceClient()
 	if err != nil {
 		log.Fatal(err)

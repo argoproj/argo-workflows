@@ -33,10 +33,19 @@ type Opts struct {
 	ClientConfig         clientcmd.ClientConfig
 	ClientConfigSupplier func() clientcmd.ClientConfig
 	Offline              bool
+	Context              context.Context
 }
 
 func (o Opts) String() string {
 	return fmt.Sprintf("(argoServerOpts=%v,instanceID=%v)", o.ArgoServerOpts, o.InstanceID)
+}
+
+func (o *Opts) GetContext() context.Context {
+	if o.Context == nil {
+		o.Context = context.Background()
+	}
+
+	return o.Context
 }
 
 // DEPRECATED: use NewClientFromOpts
@@ -47,6 +56,7 @@ func NewClient(argoServer string, authSupplier func() string, clientConfig clien
 		ClientConfigSupplier: func() clientcmd.ClientConfig {
 			return clientConfig
 		},
+		Context: context.Background(),
 	})
 }
 
@@ -67,7 +77,7 @@ func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
 			opts.ClientConfig = opts.ClientConfigSupplier()
 		}
 
-		ctx, client, err := newArgoKubeClient(opts.ClientConfig, instanceid.NewService(opts.InstanceID))
+		ctx, client, err := newArgoKubeClient(opts.GetContext(), opts.ClientConfig, instanceid.NewService(opts.InstanceID))
 		return ctx, client, err
 	}
 }

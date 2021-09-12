@@ -38,7 +38,7 @@ func NewWatchCommand() *cobra.Command {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			ctx, apiClient := client.NewAPIClient()
+			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 			watchWorkflow(ctx, serviceClient, namespace, args[0], getArgs)
@@ -90,6 +90,9 @@ func watchWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 			wf = newWf
 		case <-ticker.C:
 			// If we don't, refresh the workflow screen every second
+		case <-ctx.Done():
+			// When the context gets canceled
+			return
 		}
 
 		printWorkflowStatus(wf, getArgs)

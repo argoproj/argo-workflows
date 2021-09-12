@@ -68,7 +68,7 @@ func NewTerminateCommand() *cobra.Command {
 				os.Exit(1)
 			}
 
-			ctx, apiClient := client.NewAPIClient()
+			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			t.namespace = client.Namespace()
 
