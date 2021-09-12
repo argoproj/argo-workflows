@@ -139,6 +139,9 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                 params.append('label', label);
             });
         }
+        if (this.state.name) {
+            params.append('name', this.state.name);
+        }
         params.append('minStartedAt', this.state.minStartedAt.toISOString());
         params.append('maxStartedAt', this.state.maxStartedAt.toISOString());
         if (this.state.pagination.offset) {
