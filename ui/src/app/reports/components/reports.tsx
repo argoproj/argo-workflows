@@ -104,7 +104,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
             return;
         }
         (archivedWorkflows
-            ? services.archivedWorkflows.list(namespace, [], labels, null, null, {limit})
+            ? services.archivedWorkflows.list(namespace, '', [], labels, null, null, {limit})
             : services.workflows.list(namespace, [], labels, {limit}, [
                   'items.metadata.name',
                   'items.status.phase',
