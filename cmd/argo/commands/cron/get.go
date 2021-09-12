@@ -29,7 +29,7 @@ func NewGetCommand() *cobra.Command {
 				os.Exit(1)
 			}
 
-			ctx, apiClient := client.NewAPIClient()
+			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient, err := apiClient.NewCronWorkflowServiceClient()
 			errors.CheckError(err)
 			namespace := client.Namespace()

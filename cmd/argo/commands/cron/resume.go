@@ -16,7 +16,7 @@ func NewResumeCommand() *cobra.Command {
 		Use:   "resume [CRON_WORKFLOW...]",
 		Short: "resume zero or more cron workflows",
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient()
+			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient, err := apiClient.NewCronWorkflowServiceClient()
 			errors.CheckError(err)
 			namespace := client.Namespace()

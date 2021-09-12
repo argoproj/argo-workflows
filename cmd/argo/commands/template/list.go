@@ -25,7 +25,7 @@ func NewListCommand() *cobra.Command {
 		Use:   "list",
 		Short: "list workflow templates",
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient()
+			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient, err := apiClient.NewWorkflowTemplateServiceClient()
 			if err != nil {
 				log.Fatal(err)
