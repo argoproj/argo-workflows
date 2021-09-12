@@ -13,24 +13,29 @@ import (
 var d = uint64(1)
 
 func TestGitArtifactDriver_Load(t *testing.T) {
-	_ = os.Remove("git-ask-pass.sh")
-	driver := &ArtifactDriver{}
-	path := "/tmp/git-found"
-	assert.NoError(t, os.RemoveAll(path))
-	assert.NoError(t, os.MkdirAll(path, 0o777))
-	err := driver.Load(&wfv1.Artifact{
-		ArtifactLocation: wfv1.ArtifactLocation{
-			Git: &wfv1.GitArtifact{
-				Repo:     "https://github.com/argoproj/argoproj.git",
-				Fetch:    []string{"+refs/heads/*:refs/remotes/origin/*"},
-				Revision: "HEAD",
-				Depth:    &d,
+	for _, url := range []string{
+		"https://github.com/argoproj/argo-workflows.git",
+		"https://github.com/tczhao/empty-repo.git",
+	} {
+		_ = os.Remove("git-ask-pass.sh")
+		driver := &ArtifactDriver{}
+		path := "/tmp/git-found"
+		assert.NoError(t, os.RemoveAll(path))
+		assert.NoError(t, os.MkdirAll(path, 0o777))
+		err := driver.Load(&wfv1.Artifact{
+			ArtifactLocation: wfv1.ArtifactLocation{
+				Git: &wfv1.GitArtifact{
+					Repo:     url,
+					Fetch:    []string{"+refs/heads/*:refs/remotes/origin/*"},
+					Revision: "HEAD",
+					Depth:    &d,
+				},
 			},
-		},
-	}, path)
-	if assert.NoError(t, err) {
-		_, err := os.Stat(path)
-		assert.NoError(t, err)
+		}, path)
+		if assert.NoError(t, err) {
+			_, err := os.Stat(path)
+			assert.NoError(t, err)
+		}
 	}
 }
 
