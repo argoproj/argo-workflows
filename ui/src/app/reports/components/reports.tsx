@@ -295,10 +295,12 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                     <div className=' columns small-12 xlarge-12'>
                         <p className='wf-filters-container__title'>Phase</p>
                         {[NODE_PHASE.SUCCEEDED, NODE_PHASE.ERROR, NODE_PHASE.FAILED].map(phase => (
-                            <label key={phase} style={{marginRight: 10}}>
-                                <input type='radio' checked={phase === this.phase} onChange={() => (this.phase = phase)} style={{marginRight: 5}} />
-                                {phase}
-                            </label>
+                            <div>
+                                <label key={phase} style={{marginRight: 10}}>
+                                    <input type='radio' checked={phase === this.phase} onChange={() => (this.phase = phase)} style={{marginRight: 5}} />
+                                    {phase}
+                                </label>
+                            </div>
                         ))}
                     </div>
                 </div>
