@@ -143,8 +143,8 @@ type createWorkflowPodOpts struct {
 	executionDeadline   time.Time
 }
 
-// podName return a deterministic pod name
-func podName(workflowName, nodeName, templateName string) string {
+// PodName return a deterministic pod name
+func PodName(workflowName, nodeName, templateName string) string {
 	if workflowName == nodeName {
 		return workflowName
 	}
@@ -236,7 +236,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      podName(woc.wf.Name, nodeName, tmpl.Name),
+			Name:      PodName(woc.wf.Name, nodeName, tmpl.Name),
 			Namespace: woc.wf.ObjectMeta.Namespace,
 			Labels: map[string]string{
 				common.LabelKeyWorkflow:  woc.wf.ObjectMeta.Name, // Allows filtering by pods related to specific workflow
