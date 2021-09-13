@@ -98,7 +98,7 @@ func (c *k8sAPIClient) GetContainerStatuses(ctx context.Context) (*corev1.Pod, [
 
 func (c *k8sAPIClient) KillContainer(pod *corev1.Pod, container *corev1.ContainerStatus, sig syscall.Signal) error {
 	command := []string{"/bin/sh", "-c", fmt.Sprintf("kill -%d 1", sig)}
-	exec, err := common.ExecPodContainer(c.config, c.namespace, c.podName, container.Name, false, true, command...)
+	exec, err := common.ExecPodContainer(c.config, c.namespace, c.podName, container.Name, true, true, command...)
 	if err != nil {
 		return err
 	}
