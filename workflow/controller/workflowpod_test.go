@@ -18,6 +18,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/test/util"
 	armocks "github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories/mocks"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	wfutil "github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 // Deprecated
@@ -1387,6 +1388,54 @@ func TestHybridWfVolumesWindows(t *testing.T) {
 	assert.Equal(t, "\\\\.\\pipe\\docker_engine", pod.Spec.Containers[0].VolumeMounts[0].MountPath)
 	assert.Equal(t, false, pod.Spec.Containers[0].VolumeMounts[0].ReadOnly)
 	assert.Equal(t, (*apiv1.HostPathType)(nil), pod.Spec.Volumes[0].HostPath.Type)
+}
+
+func TestWindowsUNCPathsAreRemoved(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(helloWindowsWf)
+	uncVolume := apiv1.Volume{
+		Name: "unc",
+		VolumeSource: apiv1.VolumeSource{
+			HostPath: &apiv1.HostPathVolumeSource{
+				Path: "\\\\.\\pipe\\test",
+			},
+		},
+	}
+	uncMount := apiv1.VolumeMount{
+		Name:      "unc",
+		MountPath: "\\\\.\\pipe\\test",
+	}
+
+	// Add artifacts so that initContainer volumeMount logic is run
+	inp := wfv1.Artifact{
+		Name: "kubectl",
+		Path: "C:\\kubectl",
+		ArtifactLocation: wfv1.ArtifactLocation{HTTP: &wfv1.HTTPArtifact{
+			URL: "https://dl.k8s.io/release/v1.22.0/bin/windows/amd64/kubectl.exe"},
+		},
+	}
+	wf.Spec.Volumes = append(wf.Spec.Volumes, uncVolume)
+	wf.Spec.Templates[0].Container.VolumeMounts = append(wf.Spec.Templates[0].Container.VolumeMounts, uncMount)
+	wf.Spec.Templates[0].Inputs.Artifacts = append(wf.Spec.Templates[0].Inputs.Artifacts, inp)
+	woc := newWoc(*wf)
+
+	ctx := context.Background()
+	mainCtr := woc.execWf.Spec.Templates[0].Container
+	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	waitCtrIdx, err := wfutil.FindWaitCtrIndex(pod)
+
+	if err != nil {
+		assert.Errorf(t, err, "could not find wait ctr index")
+	}
+	for _, mnt := range pod.Spec.Containers[waitCtrIdx].VolumeMounts {
+		assert.NotEqual(t, mnt.Name, "unc")
+	}
+	for _, initCtr := range pod.Spec.InitContainers {
+		if initCtr.Name == common.InitContainerName {
+			for _, mnt := range initCtr.VolumeMounts {
+				assert.NotEqual(t, mnt.Name, "unc")
+			}
+		}
+	}
 }
 
 func TestHybridWfVolumesLinux(t *testing.T) {
