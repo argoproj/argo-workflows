@@ -51,11 +51,11 @@ func (woc *wfOperationCtx) getVolumeMountDockerSock(tmpl *wfv1.Template) apiv1.V
 }
 
 func getDockerSockReadOnly(tmpl *wfv1.Template) bool {
-	return !hasWindowsOSNodeSelector(tmpl.NodeSelector)
+	return !util.HasWindowsOSNodeSelector(tmpl.NodeSelector)
 }
 
 func getDockerSockPath(tmpl *wfv1.Template) string {
-	if hasWindowsOSNodeSelector(tmpl.NodeSelector) {
+	if util.HasWindowsOSNodeSelector(tmpl.NodeSelector) {
 		return "\\\\.\\pipe\\docker_engine"
 	}
 
@@ -63,23 +63,11 @@ func getDockerSockPath(tmpl *wfv1.Template) string {
 }
 
 func getVolumeHostPathType(tmpl *wfv1.Template) *apiv1.HostPathType {
-	if hasWindowsOSNodeSelector(tmpl.NodeSelector) {
+	if util.HasWindowsOSNodeSelector(tmpl.NodeSelector) {
 		return nil
 	}
 
 	return &hostPathSocket
-}
-
-func hasWindowsOSNodeSelector(nodeSelector map[string]string) bool {
-	if nodeSelector == nil {
-		return false
-	}
-
-	if os, keyExists := nodeSelector["kubernetes.io/os"]; keyExists && os == "windows" {
-		return true
-	}
-
-	return false
 }
 
 func (woc *wfOperationCtx) getVolumeDockerSock(tmpl *wfv1.Template) apiv1.Volume {
@@ -906,6 +894,9 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 			// in case the executor needs to load artifacts to this volume
 			// instead of the artifacts volume
 			for _, mnt := range tmpl.GetVolumeMounts() {
+				if util.IsWindowsUNCPath(mnt.MountPath, tmpl) {
+					continue
+				}
 				mnt.MountPath = filepath.Join(common.ExecutorMainFilesystemDir, mnt.MountPath)
 				initCtr.VolumeMounts = append(initCtr.VolumeMounts, mnt)
 			}
@@ -959,14 +950,8 @@ func addOutputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Template) {
 		return
 	}
 
-	waitCtrIndex := -1
-	for i, ctr := range pod.Spec.Containers {
-		switch ctr.Name {
-		case common.WaitContainerName:
-			waitCtrIndex = i
-		}
-	}
-	if waitCtrIndex == -1 {
+	waitCtrIndex, err := util.FindWaitCtrIndex(pod)
+	if err != nil {
 		log.Info("Could not find wait container in pod spec")
 		return
 	}
@@ -977,6 +962,9 @@ func addOutputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Template) {
 			continue
 		}
 		for _, mnt := range c.VolumeMounts {
+			if util.IsWindowsUNCPath(mnt.MountPath, tmpl) {
+				continue
+			}
 			mnt.MountPath = filepath.Join(common.ExecutorMainFilesystemDir, mnt.MountPath)
 			// ReadOnly is needed to be false for overlapping volume mounts
 			mnt.ReadOnly = false
