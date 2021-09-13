@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	nruntime "runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -1051,4 +1052,45 @@ func GetNodeType(tmpl *wfv1.Template) wfv1.NodeType {
 		return wfv1.NodeTypeSuspend
 	}
 	return ""
+}
+
+// IsWindowsUNCPath checks if path is prefixed with \\
+// This can be used to skip any processing of paths
+// that point to SMB shares, local named pipes and local UNC path
+func IsWindowsUNCPath(path string, tmpl *wfv1.Template) bool {
+	if !HasWindowsOSNodeSelector(tmpl.NodeSelector) && nruntime.GOOS != "windows" {
+		return false
+	}
+	// Check for UNC prefix \\
+	if strings.HasPrefix(path, `\\`) {
+		return true
+	}
+	return false
+}
+
+func HasWindowsOSNodeSelector(nodeSelector map[string]string) bool {
+	if nodeSelector == nil {
+		return false
+	}
+
+	if platform, keyExists := nodeSelector["kubernetes.io/os"]; keyExists && platform == "windows" {
+		return true
+	}
+
+	return false
+}
+
+func FindWaitCtrIndex(pod *apiv1.Pod) (int, error) {
+	waitCtrIndex := -1
+	for i, ctr := range pod.Spec.Containers {
+		switch ctr.Name {
+		case common.WaitContainerName:
+			waitCtrIndex = i
+		}
+	}
+	if waitCtrIndex == -1 {
+		err := errors.Errorf("-1", "Could not find wait container in pod spec")
+		return -1, err
+	}
+	return waitCtrIndex, nil
 }
