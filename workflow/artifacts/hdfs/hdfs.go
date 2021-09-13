@@ -144,6 +144,9 @@ func (driver *ArtifactDriver) Load(_ *wfv1.Artifact, path string) error {
 
 	srcStat, err := hdfscli.Stat(driver.Path)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return errors.New(errors.CodeNotFound, err.Error())
+		}
 		return err
 	}
 	if srcStat.IsDir() {
