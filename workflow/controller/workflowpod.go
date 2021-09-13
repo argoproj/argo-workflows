@@ -214,7 +214,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			},
 			Annotations: map[string]string{
 				common.AnnotationKeyNodeName: nodeName,
-				common.AnnotationKeyNodeID:   nodeID, // TODO - test annotation is applied
+				common.AnnotationKeyNodeID:   nodeID,
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
