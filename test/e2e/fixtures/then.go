@@ -88,7 +88,7 @@ func (t *Then) ExpectWorkflowNode(selector func(status wfv1.NodeStatus) bool, f 
 			if n.Type == wfv1.NodeTypePod {
 				var err error
 				ctx := context.Background()
-				podName := util.PodName(t.wf.Name, n.Name, n.TemplateName)
+				podName := util.PodName(t.wf.Name, n.Name, n.TemplateName, n.ID)
 				p, err = t.kubeClient.CoreV1().Pods(t.wf.Namespace).Get(ctx, podName, metav1.GetOptions{})
 				if err != nil {
 					if !apierr.IsNotFound(err) {
