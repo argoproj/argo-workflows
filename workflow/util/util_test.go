@@ -2,6 +2,7 @@ package util
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -838,4 +839,34 @@ func TestToUnstructured(t *testing.T) {
 		assert.Equal(t, workflow.Group, gv.Group)
 		assert.Equal(t, workflow.Version, gv.Version)
 	}
+}
+
+func TestPodName(t *testing.T) {
+	nodeName := "nodename"
+
+	// short case
+	shortWfName := "wfname"
+	shortTemplateName := "templatename"
+
+	expected := fmt.Sprintf("%s-%s", shortWfName, shortTemplateName)
+	actual := ensurePodNamePrefixLength(expected)
+	assert.Equal(t, expected, actual)
+
+	name := PodName(shortWfName, nodeName, shortTemplateName)
+	assert.Equal(t, "wfname-templatename-1454367246", name)
+
+	// long case
+	longWfName := "alongworkflownamethatincludeslotsofdetailsandisessentiallyalargerunonsentencewithpoorstyleandnopunctuationtobehadwhatsoever"
+	longTemplateName := "alongtemplatenamethatincludessliightlymoredetailsandiscertainlyalargerunonstnencewithevenworsestylisticconcernsandpreposterouslyeliminatespunctuation"
+
+	sum := len(longWfName) + len(longTemplateName)
+	assert.Greater(t, sum, maxK8sResourceNameLength-k8sNamingHashLength)
+
+	expected = fmt.Sprintf("%s-%s", longWfName, longTemplateName)
+	actual = ensurePodNamePrefixLength(expected)
+
+	assert.Equal(t, maxK8sResourceNameLength-k8sNamingHashLength-1, len(actual))
+
+	name = PodName(longWfName, nodeName, longTemplateName)
+	assert.Equal(t, maxK8sResourceNameLength, len(name))
 }

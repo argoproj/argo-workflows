@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"hash/fnv"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -28,11 +27,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/template"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
-)
-
-const (
-	maxK8sResourceNameLength = 253
-	k8sNamingHashLength      = 10
 )
 
 var (
@@ -143,30 +137,6 @@ type createWorkflowPodOpts struct {
 	executionDeadline   time.Time
 }
 
-// PodName return a deterministic pod name
-func PodName(workflowName, nodeName, templateName string) string {
-	if workflowName == nodeName {
-		return workflowName
-	}
-
-	prefix := fmt.Sprintf("%s-%s", workflowName, templateName)
-	prefix = ensurePodNamePrefixLength(prefix)
-
-	h := fnv.New32a()
-	_, _ = h.Write([]byte(nodeName))
-	return fmt.Sprintf("%s-%v", prefix, h.Sum32())
-}
-
-func ensurePodNamePrefixLength(prefix string) string {
-	maxPrefixLength := maxK8sResourceNameLength - k8sNamingHashLength
-
-	if len(prefix) > maxPrefixLength-1 {
-		return prefix[0 : maxPrefixLength-1]
-	}
-
-	return prefix
-}
-
 func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName string, mainCtrs []apiv1.Container, tmpl *wfv1.Template, opts *createWorkflowPodOpts) (*apiv1.Pod, error) {
 	nodeID := woc.wf.NodeID(nodeName)
 
@@ -236,7 +206,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      PodName(woc.wf.Name, nodeName, tmpl.Name),
+			Name:      util.PodName(woc.wf.Name, nodeName, tmpl.Name),
 			Namespace: woc.wf.ObjectMeta.Namespace,
 			Labels: map[string]string{
 				common.LabelKeyWorkflow:  woc.wf.ObjectMeta.Name, // Allows filtering by pods related to specific workflow

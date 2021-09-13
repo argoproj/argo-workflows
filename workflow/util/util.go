@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -50,6 +51,11 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/packer"
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 	"github.com/argoproj/argo-workflows/v3/workflow/validate"
+)
+
+const (
+	maxK8sResourceNameLength = 253
+	k8sNamingHashLength      = 10
 )
 
 // NewWorkflowInformer returns the workflow informer used by the controller. This is actually
@@ -804,7 +810,8 @@ func retryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrato
 		}
 		if node.Type == wfv1.NodeTypePod {
 			log.Infof("Deleting pod: %s", node.ID)
-			err := podIf.Delete(ctx, node.ID, metav1.DeleteOptions{})
+			podName := PodName(wf.Name, node.Name, node.TemplateName)
+			err := podIf.Delete(ctx, podName, metav1.DeleteOptions{})
 			if err != nil && !apierr.IsNotFound(err) {
 				return nil, errors.InternalWrapError(err)
 			}
@@ -1053,4 +1060,28 @@ func GetNodeType(tmpl *wfv1.Template) wfv1.NodeType {
 		return wfv1.NodeTypeSuspend
 	}
 	return ""
+}
+
+// PodName return a deterministic pod name
+func PodName(workflowName, nodeName, templateName string) string {
+	if workflowName == nodeName {
+		return workflowName
+	}
+
+	prefix := fmt.Sprintf("%s-%s", workflowName, templateName)
+	prefix = ensurePodNamePrefixLength(prefix)
+
+	h := fnv.New32a()
+	_, _ = h.Write([]byte(nodeName))
+	return fmt.Sprintf("%s-%v", prefix, h.Sum32())
+}
+
+func ensurePodNamePrefixLength(prefix string) string {
+	maxPrefixLength := maxK8sResourceNameLength - k8sNamingHashLength
+
+	if len(prefix) > maxPrefixLength-1 {
+		return prefix[0 : maxPrefixLength-1]
+	}
+
+	return prefix
 }
