@@ -32,6 +32,7 @@ Note that these environment variables may be removed at any time.
 | `RETRY_BACKOFF_STEPS` | `int` | `5` | The retry backoff steps when retrying API calls. |
 | `RETRY_HOST_NAME_LABEL_KEY` | `string` | `kubernetes.io/hostname` | The label key for host name used when retrying templates. |
 | `TRANSIENT_ERROR_PATTERN` | `string` | `""` | The regular expression that represents additional patterns for transient errors. |
+| `USE_LEGACY_POD_NAMES` | `bool` | `false` | Whether to have pod names contain the template name (false) or be the node id (true). |
 | `WF_DEL_PROPAGATION_POLICY` | `string` | `""` | The deletion propagation policy for workflows. |
 | `WORKFLOW_GC_PERIOD` | `time.Duration` | `5m` | The periodicity for GC of workflows. |
 | `BUBBLE_ENTRY_TEMPLATE_ERR` | `bool` | `true` | Whether to bubble up template errors to workflow. |
