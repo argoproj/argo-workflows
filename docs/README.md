@@ -30,7 +30,7 @@ For set-up information and running your first Workflows, please see our [Getting
 
 ### Examples
 
-For detailed examples about what Argo can do, please see our [documentation by example](https://argoproj.github.io/argo-workflows/examples/) page.
+For detailed examples about what Argo can do, please see our [documentation by example](https://github.com/argoproj/argo-workflows/blob/master/examples/README.md) page.
 
 ### Fields
 
