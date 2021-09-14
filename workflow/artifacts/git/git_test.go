@@ -13,24 +13,30 @@ import (
 var d = uint64(1)
 
 func TestGitArtifactDriver_Load(t *testing.T) {
-	_ = os.Remove("git-ask-pass.sh")
-	driver := &ArtifactDriver{}
-	path := "/tmp/git-found"
-	assert.NoError(t, os.RemoveAll(path))
-	assert.NoError(t, os.MkdirAll(path, 0o777))
-	err := driver.Load(&wfv1.Artifact{
-		ArtifactLocation: wfv1.ArtifactLocation{
-			Git: &wfv1.GitArtifact{
-				Repo:     "https://github.com/argoproj/argoproj.git",
-				Fetch:    []string{"+refs/heads/*:refs/remotes/origin/*"},
-				Revision: "HEAD",
-				Depth:    &d,
+	for _, tt := range []struct {
+		url string
+	}{
+		{"https://github.com/argoproj/argo-workflows.git"},
+	} {
+		_ = os.Remove("git-ask-pass.sh")
+		driver := &ArtifactDriver{}
+		path := "/tmp/git-found"
+		assert.NoError(t, os.RemoveAll(path))
+		assert.NoError(t, os.MkdirAll(path, 0o777))
+		err := driver.Load(&wfv1.Artifact{
+			ArtifactLocation: wfv1.ArtifactLocation{
+				Git: &wfv1.GitArtifact{
+					Repo:     tt.url,
+					Fetch:    []string{"+refs/heads/*:refs/remotes/origin/*"},
+					Revision: "HEAD",
+					Depth:    &d,
+				},
 			},
-		},
-	}, path)
-	if assert.NoError(t, err) {
-		_, err := os.Stat(path)
-		assert.NoError(t, err)
+		}, path)
+		if assert.NoError(t, err) {
+			_, err := os.Stat(path)
+			assert.NoError(t, err)
+		}
 	}
 }
 
@@ -41,35 +47,45 @@ func TestGitArtifactDriver_Save(t *testing.T) {
 }
 
 func TestGitArtifactDriverLoad_HTTPS(t *testing.T) {
-	if os.Getenv("GITHUB_TOKEN") == "" {
-		t.Skip("not running an GITHUB_TOKEN not set")
-	}
-	_ = os.Remove("git-ask-pass.sh")
-	tmp, err := ioutil.TempDir("", "")
-	assert.NoError(t, err)
-	driver := &ArtifactDriver{Username: os.Getenv("GITHUB_TOKEN")}
-	assert.NotEmpty(t, driver.Username)
-	err = driver.Load(&wfv1.Artifact{
-		ArtifactLocation: wfv1.ArtifactLocation{
-			Git: &wfv1.GitArtifact{
-				Repo:     "https://github.com/argoproj/argo-workflows.git",
-				Fetch:    []string{"+refs/heads/*:refs/remotes/origin/*"},
-				Revision: "HEAD",
-				Depth:    &d,
+	for _, tt := range []struct {
+		url string
+	}{
+		{"https://github.com/argoproj/argo-workflows.git"},
+		{"https://github.com/argoproj/empty.git"},
+	} {
+		if os.Getenv("GITHUB_TOKEN") == "" {
+			t.Skip("not running an GITHUB_TOKEN not set")
+		}
+		_ = os.Remove("git-ask-pass.sh")
+		tmp, err := ioutil.TempDir("", "")
+		assert.NoError(t, err)
+		driver := &ArtifactDriver{Username: os.Getenv("GITHUB_TOKEN")}
+		assert.NotEmpty(t, driver.Username)
+		err = driver.Load(&wfv1.Artifact{
+			ArtifactLocation: wfv1.ArtifactLocation{
+				Git: &wfv1.GitArtifact{
+					Repo:     tt.url,
+					Fetch:    []string{"+refs/heads/*:refs/remotes/origin/*"},
+					Revision: "HEAD",
+					Depth:    &d,
+				},
 			},
-		},
-	}, tmp)
-	assert.NoError(t, err)
-	println(tmp)
+		}, tmp)
+		assert.NoError(t, err)
+		println(tmp)
+	}
 }
 
 func TestGitArtifactDriverLoad_SSL(t *testing.T) {
 	for _, tt := range []struct {
 		name     string
 		insecure bool
+		url      string
 	}{
-		{"Insecure", true},
-		{"Secure", false},
+		{"Insecure", true, "https://github.com/argoproj/argo-workflows.git"},
+		{"Secure", false, "https://github.com/argoproj/argo-workflows.git"},
+		{"Insecure", true, "https://github.com/argoproj/empty.git"},
+		{"Secure", false, "https://github.com/argoproj/empty.git"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			_ = os.Remove("git-ask-pass.sh")
@@ -86,7 +102,7 @@ func TestGitArtifactDriverLoad_SSL(t *testing.T) {
 			err = driver.Load(&wfv1.Artifact{
 				ArtifactLocation: wfv1.ArtifactLocation{
 					Git: &wfv1.GitArtifact{
-						Repo:                  "git@github.com:argoproj/argo-workflows.git",
+						Repo:                  tt.url,
 						Fetch:                 []string{"+refs/heads/*:refs/remotes/origin/*"},
 						Revision:              "HEAD",
 						InsecureIgnoreHostKey: tt.insecure,
