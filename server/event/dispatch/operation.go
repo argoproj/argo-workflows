@@ -106,11 +106,6 @@ func (o *Operation) dispatch(ctx context.Context, wfeb wfv1.WorkflowEventBinding
 			return nil, err
 		}
 
-		if wf.Name == "" {
-			// make sure we have a predicable name, so re-creation doesn't create two workflows
-			wf.SetName(wf.GetGenerateName() + nameSuffix)
-		}
-
 		// users will always want to know why a workflow was submitted,
 		// so we label with creator (which is a standard) and the name of the triggering event
 		creator.Label(o.ctx, wf)
