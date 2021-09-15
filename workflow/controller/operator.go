@@ -1201,7 +1201,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			}
 		}
 	}
-	if !node.Fulfilled() {
+	if !node.Completed() {
 		if newDaemonStatus != nil {
 			if !*newDaemonStatus {
 				// if the daemon status switched to false, we prefer to just unset daemoned status field
