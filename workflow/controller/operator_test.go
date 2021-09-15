@@ -1564,36 +1564,25 @@ spec:
 
 // TestWorkflowParallelismLimit verifies parallelism at a workflow level is honored.
 func TestWorkflowParallelismLimit(t *testing.T) {
-	cancel, controller := newController()
+	ctx := context.Background()
+	wf := wfv1.MustUnmarshalWorkflow(workflowParallelismLimit)
+	cancel, controller := newController(wf)
 	defer cancel()
 
-	ctx := context.Background()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
-	wf := wfv1.MustUnmarshalWorkflow(workflowParallelismLimit)
-	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
-	assert.NoError(t, err)
-
-	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
-	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	pods, err := listPods(woc)
 	assert.NoError(t, err)
-	assert.Equal(t, 2, len(pods.Items))
-	// operate again and make sure we don't schedule any more pods
+	assert.Len(t, pods.Items, 2)
+
 	makePodsPhase(ctx, woc, apiv1.PodRunning)
 
-	syncPodsInformer(ctx, woc)
-
-	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
-	assert.NoError(t, err)
-	// wfBytes, _ := json.MarshalIndent(wf, "", "  ")
-	// log.Printf("%s", wfBytes)
-	woc = newWorkflowOperationCtx(wf, controller)
+	// operate again and make sure we don't schedule any more pods
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
 	pods, err = listPods(woc)
 	assert.NoError(t, err)
-	assert.Equal(t, 2, len(pods.Items))
+	assert.Len(t, pods.Items, 2)
 }
 
 var stepsTemplateParallelismLimit = `

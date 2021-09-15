@@ -19,6 +19,9 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 	if pod == nil {
 		return
 	}
+
+	nodeID := woc.nodeID(pod)
+
 	switch pod.Status.Phase {
 	case apiv1.PodSucceeded, apiv1.PodFailed:
 		// Skip any pod which are already completed
@@ -33,10 +36,8 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 				woc.log.Infof("Deleting Pending pod %s/%s as part of workflow shutdown with strategy: %s", pod.Namespace, pod.Name, woc.GetShutdownStrategy())
 				err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 				if err == nil {
-					wfNodesLock.Lock()
-					node := woc.wf.Status.Nodes[pod.Name]
-					wfNodesLock.Unlock()
-					woc.markNodePhase(node.Name, wfv1.NodeFailed, fmt.Sprintf("workflow shutdown with strategy:  %s", woc.GetShutdownStrategy()))
+					msg := fmt.Sprintf("workflow shutdown with strategy:  %s", woc.GetShutdownStrategy())
+					woc.handleExecutionControlError(nodeID, wfNodesLock, msg)
 					return
 				}
 				// If we fail to delete the pod, fall back to setting the annotation
@@ -52,10 +53,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 				woc.log.Infof("Deleting Pending pod %s/%s which has exceeded workflow deadline %s", pod.Namespace, pod.Name, woc.workflowDeadline)
 				err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 				if err == nil {
-					wfNodesLock.Lock()
-					node := woc.wf.Status.Nodes[pod.Name]
-					wfNodesLock.Unlock()
-					woc.markNodePhase(node.Name, wfv1.NodeFailed, "Step exceeded its deadline")
+					woc.handleExecutionControlError(nodeID, wfNodesLock, "Step exceeded its deadline")
 					return
 				}
 				// If we fail to delete the pod, fall back to setting the annotation
@@ -69,6 +67,14 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 			woc.controller.queuePodForCleanup(woc.wf.Namespace, pod.Name, shutdownPod)
 		}
 	}
+}
+
+// handleExecutionControlError marks a node as failed with an error message
+func (woc *wfOperationCtx) handleExecutionControlError(nodeID string, wfNodesLock *sync.RWMutex, errorMsg string) {
+	wfNodesLock.Lock()
+	node := woc.wf.Status.Nodes[nodeID]
+	wfNodesLock.Unlock()
+	woc.markNodePhase(node.Name, wfv1.NodeFailed, errorMsg)
 }
 
 // killDaemonedChildren kill any daemoned pods of a steps or DAG template node.
