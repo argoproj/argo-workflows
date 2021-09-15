@@ -9,6 +9,7 @@ package indexes
 const (
 	ClusterWorkflowTemplateIndex = "clusterworkflowtemplate"
 	CronWorkflowIndex            = "cronworkflow"
+	NodeIDIndex                  = "nodeID"
 	WorkflowIndex                = "workflow"
 	WorkflowTemplateIndex        = "workflowtemplate"
 	WorkflowPhaseIndex           = "workflow.phase"
