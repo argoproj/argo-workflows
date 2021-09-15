@@ -613,5 +613,7 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 	if err != nil {
 		return nil, err
 	}
+
+	println("WE WANT TO SUBMIT")
 	return wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 }

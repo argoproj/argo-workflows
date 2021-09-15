@@ -1,1 +1,23 @@
-p, anonymous, workflows, argo, list
+# Built-in policy which defines two roles: role:read-only and role:admin,
+# additionally assigns the admin user to the role:admin role
+# and the anonymous user to the role:read-only role.
+# Policy formats:
+# p, <user/group>, <resource>, <namespace>, <name>, <action>
+# The following types of resource exist:
+# workflows, workflowtemplate, clusterworkflowtemplates, cronworkflows
+
+p, role:read-only, *, *, *, list
+p, role:read-only, *, *, *, get
+p, role:read-only, *, *, *, watch
+
+p, role:admin, *, *, *, create
+p, role:admin, *, *, *, update
+p, role:admin, *, *, *, patch
+p, role:admin, *, *, *, delete
+p, role:admin, *, *, *, deletecollection
+
+p, role:read-only, workflows, argo, omniscient-octopus*, create
+
+g, role:admin, role:read-only
+g, anonymous, role:read-only
+g, authors, role:read-only

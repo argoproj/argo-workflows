@@ -104,7 +104,7 @@ func (s *gatekeeper) Context(ctx context.Context) (context.Context, error) {
 	if err != nil {
 		return nil, err
 	}
-	ctx = context.WithValue(ctx, DynamicKey, clients.Dynamic) // TODO - wrap
+	ctx = context.WithValue(ctx, DynamicKey, casbin.WrapDynamicInterface(clients.Dynamic))
 	ctx = context.WithValue(ctx, WfKey, casbin.WrapWorkflowInterface(clients.Workflow))
 	ctx = context.WithValue(ctx, EventSourceKey, clients.EventSource) // TODO - wrap
 	ctx = context.WithValue(ctx, SensorKey, clients.Sensor)           // TODO - wrap

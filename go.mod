@@ -17,6 +17,7 @@ require (
 	github.com/casbin/casbin/v2 v2.36.1
 	github.com/colinmarc/hdfs v1.1.4-0.20180805212432-9746310a4d31
 	github.com/coreos/go-oidc v2.2.1+incompatible
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/doublerebel/bellows v0.0.0-20160303004610-f177d92a03d3
 	github.com/emicklei/go-restful v2.15.0+incompatible // indirect
