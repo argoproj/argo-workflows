@@ -235,12 +235,12 @@ spec:
           parameters:
           - name: message
             value: "hello2a"
-      - name: hello2b           # single dash => run in parallel with previous step
-        template: whalesay
-        arguments:
-          parameters:
-          - name: message
-            value: "hello2b"
+    - name: hello2b           # single dash => run in parallel with previous step
+      template: whalesay
+      arguments:
+        parameters:
+        - name: message
+          value: "hello2b"
 
   # This is the same template as from the previous example
   - name: whalesay
