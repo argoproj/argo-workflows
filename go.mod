@@ -38,7 +38,6 @@ require (
 	github.com/klauspost/pgzip v1.2.5
 	github.com/minio/minio-go/v7 v7.0.2
 	github.com/mitchellh/go-ps v0.0.0-20190716172923-621e5597135b
-	github.com/paulbellamy/ratecounter v0.2.0 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.9.0
 	github.com/prometheus/client_model v0.2.0
