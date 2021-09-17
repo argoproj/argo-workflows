@@ -162,7 +162,7 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 	if err != nil {
 		return err
 	}
-	l := ar.ToArtifactLocation()
+	l := ar.ToArtifactLocation(nil)
 	err = art.Relocate(l)
 	if err != nil {
 		return err

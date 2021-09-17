@@ -11,18 +11,42 @@ func TestArtifactRepository(t *testing.T) {
 	t.Run("Nil", func(t *testing.T) {
 		var r *ArtifactRepository
 		assert.Nil(t, r.Get())
-		l := r.ToArtifactLocation()
+		l := r.ToArtifactLocation(nil)
 		assert.Nil(t, l)
 	})
 	t.Run("ArchiveLogs", func(t *testing.T) {
 		r := &ArtifactRepository{Artifactory: &ArtifactoryArtifactRepository{}, ArchiveLogs: pointer.BoolPtr(true)}
-		l := r.ToArtifactLocation()
+		l := r.ToArtifactLocation(nil)
 		assert.Equal(t, pointer.BoolPtr(true), l.ArchiveLogs)
+	})
+	t.Run("ArchiveLogs: ArtifactRepository:true, ArtifactLocation:true", func(t *testing.T) {
+		r := &ArtifactRepository{Artifactory: &ArtifactoryArtifactRepository{}, ArchiveLogs: pointer.BoolPtr(true)}
+		artifactLocation := &ArtifactLocation{ArchiveLogs: pointer.BoolPtr(true)}
+		l := r.ToArtifactLocation(artifactLocation)
+		assert.Equal(t, pointer.BoolPtr(true), l.ArchiveLogs)
+	})
+	t.Run("ArchiveLogs: ArtifactRepository:true, ArtifactLocation:false", func(t *testing.T) {
+		r := &ArtifactRepository{Artifactory: &ArtifactoryArtifactRepository{}, ArchiveLogs: pointer.BoolPtr(true)}
+		artifactLocation := &ArtifactLocation{ArchiveLogs: pointer.BoolPtr(false)}
+		l := r.ToArtifactLocation(artifactLocation)
+		assert.Equal(t, pointer.BoolPtr(false), l.ArchiveLogs)
+	})
+	t.Run("ArchiveLogs: ArtifactRepository:false, ArtifactLocation:true", func(t *testing.T) {
+		r := &ArtifactRepository{Artifactory: &ArtifactoryArtifactRepository{}, ArchiveLogs: pointer.BoolPtr(false)}
+		artifactLocation := &ArtifactLocation{ArchiveLogs: pointer.BoolPtr(true)}
+		l := r.ToArtifactLocation(artifactLocation)
+		assert.Equal(t, pointer.BoolPtr(true), l.ArchiveLogs)
+	})
+	t.Run("ArchiveLogs: ArtifactRepository:false, ArtifactLocation:false", func(t *testing.T) {
+		r := &ArtifactRepository{Artifactory: &ArtifactoryArtifactRepository{}, ArchiveLogs: pointer.BoolPtr(false)}
+		artifactLocation := &ArtifactLocation{ArchiveLogs: pointer.BoolPtr(false)}
+		l := r.ToArtifactLocation(artifactLocation)
+		assert.Equal(t, pointer.BoolPtr(false), l.ArchiveLogs)
 	})
 	t.Run("Artifactory", func(t *testing.T) {
 		r := &ArtifactRepository{Artifactory: &ArtifactoryArtifactRepository{RepoURL: "http://my-repo"}}
 		assert.IsType(t, &ArtifactoryArtifactRepository{}, r.Get())
-		l := r.ToArtifactLocation()
+		l := r.ToArtifactLocation(nil)
 		if assert.NotNil(t, l.Artifactory) {
 			assert.Equal(t, "http://my-repo/{{workflow.name}}/{{pod.name}}", l.Artifactory.URL)
 		}
@@ -30,7 +54,7 @@ func TestArtifactRepository(t *testing.T) {
 	t.Run("GCS", func(t *testing.T) {
 		r := &ArtifactRepository{GCS: &GCSArtifactRepository{}}
 		assert.IsType(t, &GCSArtifactRepository{}, r.Get())
-		l := r.ToArtifactLocation()
+		l := r.ToArtifactLocation(nil)
 		if assert.NotNil(t, l.GCS) {
 			assert.Equal(t, "{{workflow.name}}/{{pod.name}}", l.GCS.Key)
 		}
@@ -38,7 +62,7 @@ func TestArtifactRepository(t *testing.T) {
 	t.Run("HDFS", func(t *testing.T) {
 		r := &ArtifactRepository{HDFS: &HDFSArtifactRepository{}}
 		assert.IsType(t, &HDFSArtifactRepository{}, r.Get())
-		l := r.ToArtifactLocation()
+		l := r.ToArtifactLocation(nil)
 		if assert.NotNil(t, l.HDFS) {
 			assert.Equal(t, "{{workflow.name}}/{{pod.name}}", l.HDFS.Path)
 		}
@@ -46,7 +70,7 @@ func TestArtifactRepository(t *testing.T) {
 	t.Run("OSS", func(t *testing.T) {
 		r := &ArtifactRepository{OSS: &OSSArtifactRepository{}}
 		assert.IsType(t, &OSSArtifactRepository{}, r.Get())
-		l := r.ToArtifactLocation()
+		l := r.ToArtifactLocation(nil)
 		if assert.NotNil(t, l.OSS) {
 			assert.Equal(t, "{{workflow.name}}/{{pod.name}}", l.OSS.Key)
 		}
@@ -54,7 +78,7 @@ func TestArtifactRepository(t *testing.T) {
 	t.Run("S3", func(t *testing.T) {
 		r := &ArtifactRepository{S3: &S3ArtifactRepository{KeyPrefix: "my-key-prefix"}}
 		assert.IsType(t, &S3ArtifactRepository{}, r.Get())
-		l := r.ToArtifactLocation()
+		l := r.ToArtifactLocation(nil)
 		if assert.NotNil(t, l.S3) {
 			assert.Equal(t, "my-key-prefix/{{workflow.name}}/{{pod.name}}", l.S3.Key)
 		}

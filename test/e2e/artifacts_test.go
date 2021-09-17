@@ -137,8 +137,22 @@ func (s *ArtifactsSuite) TestMainLog() {
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
-		ExpectArtifact("-", "main-logs", func(t *testing.T, data []byte) {
-			assert.NotEmpty(t, data)
+		ExpectArtifact("-", "main-logs", func(t *testing.T, statusCode int, data []byte) {
+			assert.Equal(t, 200, statusCode)
+			assert.Equal(t, ":) Hello Argo!\n", string(data[:]))
+		})
+}
+
+func (s *ArtifactsSuite) TestTemplateDisableArchiveLog() {
+	s.Given().
+		Workflow("@testdata/archive-location.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectArtifact("-", "main-logs", func(t *testing.T, statusCode int, data []byte) {
+			assert.Equal(t, 500, statusCode)
+			assert.Equal(t, "artifact not found", string(data[:]))
 		})
 }
 

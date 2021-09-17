@@ -178,7 +178,7 @@ func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, num int, b
 	return t
 }
 
-func (t *Then) ExpectArtifact(nodeName, artifactName string, f func(t *testing.T, data []byte)) {
+func (t *Then) ExpectArtifact(nodeName, artifactName string, f func(t *testing.T, statusCode int, data []byte)) {
 	t.t.Helper()
 	nodeId := nodeIdForName(nodeName, t.wf)
 	url := "http://localhost:2746/artifacts/" + Namespace + "/" + t.wf.Name + "/" + nodeId + "/" + artifactName
@@ -197,10 +197,7 @@ func (t *Then) ExpectArtifact(nodeName, artifactName string, f func(t *testing.T
 	if err != nil {
 		t.t.Fatal(err)
 	}
-	if resp.StatusCode != 200 {
-		t.t.Fatal(fmt.Errorf("HTTP request not OK: %s: %q", resp.Status, data))
-	}
-	f(t.t, data)
+	f(t.t, resp.StatusCode, data)
 }
 
 func nodeIdForName(nodeName string, wf *wfv1.Workflow) string {

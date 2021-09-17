@@ -1006,6 +1006,11 @@ func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) {
 		return
 	}
 	needLocation := woc.artifactRepository.IsArchiveLogs()
+	if tmpl.ArchiveLocation != nil {
+		if tmpl.ArchiveLocation.ArchiveLogs != nil {
+			needLocation = tmpl.ArchiveLocation.IsArchiveLogs()
+		}
+	}
 	for _, art := range append(tmpl.Inputs.Artifacts, tmpl.Outputs.Artifacts...) {
 		if !art.HasLocation() {
 			needLocation = true
@@ -1015,7 +1020,7 @@ func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) {
 	if !needLocation {
 		return
 	}
-	tmpl.ArchiveLocation = woc.artifactRepository.ToArtifactLocation()
+	tmpl.ArchiveLocation = woc.artifactRepository.ToArtifactLocation(tmpl.ArchiveLocation)
 }
 
 // setupServiceAccount sets up service account and token.

@@ -53,11 +53,17 @@ func (a *ArtifactRepository) Get() ArtifactRepositoryType {
 
 // ToArtifactLocation returns the artifact location set with default template key:
 // key = `{{workflow.name}}/{{pod.name}}`
-func (a *ArtifactRepository) ToArtifactLocation() *ArtifactLocation {
+func (a *ArtifactRepository) ToArtifactLocation(artifactLocation *ArtifactLocation) *ArtifactLocation {
 	if a == nil {
 		return nil
 	}
-	l := &ArtifactLocation{ArchiveLogs: a.ArchiveLogs}
+	archiveLogs := a.ArchiveLogs
+	if artifactLocation != nil {
+		if artifactLocation.ArchiveLogs != nil {
+			archiveLogs = artifactLocation.ArchiveLogs
+		}
+	}
+	l := &ArtifactLocation{ArchiveLogs: archiveLogs}
 	v := a.Get()
 	if v != nil {
 		v.IntoArtifactLocation(l)
