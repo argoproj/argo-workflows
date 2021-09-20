@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sync"
 
 	"github.com/antonmedv/expr"
 	"github.com/antonmedv/expr/file"
@@ -17,7 +18,11 @@ func init() {
 	}
 }
 
+var mu = &sync.Mutex{}
+
 func expressionReplace(w io.Writer, expression string, env map[string]interface{}, allowUnresolved bool) (int, error) {
+	mu.Lock()
+	defer mu.Unlock()
 	// The template is JSON-marshaled. This JSON-unmarshals the expression to undo any character escapes.
 	var unmarshalledExpression string
 	err := json.Unmarshal([]byte(fmt.Sprintf(`"%s"`, expression)), &unmarshalledExpression)
