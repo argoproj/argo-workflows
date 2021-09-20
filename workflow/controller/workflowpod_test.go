@@ -1637,7 +1637,7 @@ func TestPodExists(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 
-	existingPod, doesExist, err := woc.podExists(pod.Name)
+	existingPod, doesExist, err := woc.podExists(pod.ObjectMeta.Name)
 	assert.NoError(t, err)
 	assert.NotNil(t, existingPod)
 	assert.True(t, doesExist)
