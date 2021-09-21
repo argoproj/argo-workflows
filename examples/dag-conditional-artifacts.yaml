@@ -62,7 +62,7 @@ spec:
         command: [ python ]
         source: |
           with open("result.txt", "w") as f:
-            f.write("it was heads")
+            f.write("it was tails")
       outputs:
         artifacts:
           - name: result
