@@ -1,7 +1,7 @@
 ---
 name: Reproducible bug report 
 about: Create a reproducible bug report. Not for support requests.
-labels: ['bug', 'needs-triage']
+labels: ['bug', 'triage']
 ---
 ## Summary
 
