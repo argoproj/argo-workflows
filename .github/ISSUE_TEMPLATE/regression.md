@@ -1,23 +1,15 @@
 ---
-name: Reproducible bug report 
-about: Create a reproducible bug report. Not for support requests.
-labels: ['bug', 'triage']
+name: Regression report
+about: Create a regression report. Not for support requests.
+labels: ['bug', 'regression', 'triage']
 ---
-<!--
-Before we start, around 2/3 of issues can be fixed by one of the following:
-
-* Have you double-checked your configuration? Maybe 30% of issues are wrong configuration.
-* Have you tested to see if it is fixed in the latest version? Maybe 20% of issues are fixed by this.
-* Have you tried using the PNS executor instead of Docker? Maybe 50% of artifact related issues are fixed by this.
-
-If this is a regression, please open a regression report instead.
--->
-
 ## Summary
 
 What happened/what you expected to happen?
 
-What version of Argo Workflows are you running?
+What version is it broken in?
+
+What version was it working in?
 
 ## Diagnostics
 
