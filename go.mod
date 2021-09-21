@@ -9,7 +9,7 @@ require (
 	github.com/TwinProduction/go-color v0.0.3
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.8+incompatible
 	github.com/antonmedv/expr v1.8.9
-	github.com/argoproj-labs/argo-dataflow v0.0.98
+	github.com/argoproj-labs/argo-dataflow v0.0.107
 	github.com/argoproj/argo-events v1.4.0
 	github.com/argoproj/pkg v0.11.0
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
@@ -35,6 +35,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/imkira/go-interpol v1.1.0 // indirect
+	github.com/klauspost/compress v1.13.1 // indirect
 	github.com/klauspost/pgzip v1.2.5
 	github.com/minio/minio-go/v7 v7.0.2
 	github.com/mitchellh/go-ps v0.0.0-20190716172923-621e5597135b

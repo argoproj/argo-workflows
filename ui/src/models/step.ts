@@ -1,12 +1,5 @@
 import {ObjectMeta, Time, WatchEvent} from 'argo-ui/src/models/kubernetes';
 
-export interface Metrics {
-    total?: number;
-    errors?: number;
-    retries?: number;
-    rate?: string;
-}
-
 export interface Step {
     metadata: ObjectMeta;
     spec: {
@@ -65,21 +58,6 @@ export interface StepStatus {
     message?: string;
     replicas: number;
     lastScaledAt?: Time;
-    sinkStatuses?: SinkStatuses;
-    sourceStatuses?: SourceStatuses;
-}
-
-interface SourceStatuses {
-    [name: string]: {
-        pending?: number;
-        metrics?: {[name: string]: Metrics};
-    };
-}
-
-interface SinkStatuses {
-    [name: string]: {
-        metrics?: {[replica: string]: Metrics};
-    };
 }
 
 export type StepWatchEvent = WatchEvent<Step>;

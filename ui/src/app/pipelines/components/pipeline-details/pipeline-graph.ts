@@ -1,8 +1,7 @@
 import {Pipeline} from '../../../../models/pipeline';
-import {Metrics, Step} from '../../../../models/step';
+import {Step} from '../../../../models/step';
 import {Graph} from '../../../shared/components/graph/types';
 import {Icon} from '../../../shared/components/icon';
-import {totalRate} from '../total-rate';
 
 type Type = '' | 'cat' | 'code' | 'container' | 'dedupe' | 'expand' | 'filter' | 'flatten' | 'git' | 'group' | 'map' | 'split';
 
@@ -33,19 +32,6 @@ const stepIcon = (type: Type): Icon => {
             return 'square';
     }
 };
-
-const pendingSymbol = '◷';
-
-function formatRates(metrics: Metrics, replicas: number): string {
-    const rates = Object.entries(metrics || {})
-        // the rate will remain after scale-down, so we must filter out, as it'll be wrong
-        .filter(([replica]) => parseInt(replica, 10) < replicas);
-    return rates.length > 0 ? 'Δ' + totalRate(metrics, replicas) : '';
-}
-
-function formatPending(pending: number) {
-    return pending ? ' ' + pendingSymbol + pending.toLocaleString() + ' ' : '';
-}
 
 export const graph = (pipeline: Pipeline, steps: Step[]) => {
     const g = new Graph();
@@ -82,85 +68,81 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
 
         const classNames = status.phase === 'Running' ? 'flow' : '';
         (spec.sources || []).forEach(x => {
-            const ss = (status.sourceStatuses || {})[x.name || ''] || {};
-            const label = formatPending(ss.pending) + formatRates(ss.metrics, step.status.replicas);
             if (x.cron) {
                 const cronId = 'cron/' + stepId + '/sources/' + x.cron.schedule;
                 g.nodes.set(cronId, {genre: 'cron', icon: 'clock', label: x.cron.schedule});
-                g.edges.set({v: cronId, w: stepId}, {classNames, label});
+                g.edges.set({v: cronId, w: stepId}, {classNames});
             } else if (x.db) {
                 const id = 'db/' + +stepId + '/sources/' + x.name;
                 g.nodes.set(id, {genre: 'db', icon: 'database', label: x.name});
-                g.edges.set({v: id, w: stepId}, {classNames, label});
+                g.edges.set({v: id, w: stepId}, {classNames});
             } else if (x.kafka) {
                 const kafkaId = x.kafka.name || x.kafka.url || 'default';
                 const topicId = 'kafka/' + kafkaId + '/' + x.kafka.topic;
                 g.nodes.set(topicId, {genre: 'kafka', icon: 'stream', label: x.kafka.topic});
-                g.edges.set({v: topicId, w: stepId}, {classNames, label});
+                g.edges.set({v: topicId, w: stepId}, {classNames});
             } else if (x.stan) {
                 const stanId = x.stan.name || x.stan.url || 'default';
                 const subjectId = 'stan/' + stanId + '/' + x.stan.subject;
                 g.nodes.set(subjectId, {genre: 'stan', icon: 'stream', label: x.stan.subject});
-                g.edges.set({v: subjectId, w: stepId}, {classNames, label});
+                g.edges.set({v: subjectId, w: stepId}, {classNames});
             } else if (x.http) {
                 const y = new URL('http://' + (x.http.serviceName || pipeline.metadata.name + '-' + step.spec.name) + '/sources/' + x.name);
                 const subjectId = 'http/' + y;
                 g.nodes.set(subjectId, {genre: 'http', icon: 'cloud', label: y.hostname});
-                g.edges.set({v: subjectId, w: stepId}, {classNames, label});
+                g.edges.set({v: subjectId, w: stepId}, {classNames});
             } else if (x.s3) {
                 const bucket = x.s3.bucket;
                 const id = 's3/' + bucket;
                 g.nodes.set(id, {genre: 's3', icon: 'hdd', label: bucket});
-                g.edges.set({v: id, w: stepId}, {classNames, label});
+                g.edges.set({v: id, w: stepId}, {classNames});
             } else if (x.volume) {
                 const id = 'volume/' + stepId + '/sources/' + x.name;
                 g.nodes.set(id, {genre: 'volume', icon: 'hdd', label: x.name});
-                g.edges.set({v: id, w: stepId}, {classNames, label});
+                g.edges.set({v: id, w: stepId}, {classNames});
             } else {
                 const id = 'unknown/' + stepId + '/sources/' + x.name;
                 g.nodes.set(id, {genre: 'unknown', icon: 'square', label: x.name});
-                g.edges.set({v: id, w: stepId}, {classNames, label});
+                g.edges.set({v: id, w: stepId}, {classNames});
             }
         });
         (spec.sinks || []).forEach(x => {
-            const ss = (status.sinkStatuses || {})[x.name || ''] || {};
-            const label = formatRates(ss.metrics, step.status.replicas);
             if (x.db) {
                 const id = 'db/' + stepId + '/sinks/' + x.name;
                 g.nodes.set(id, {genre: 'db', icon: 'database', label: x.name});
-                g.edges.set({v: stepId, w: id}, {classNames, label});
+                g.edges.set({v: stepId, w: id}, {classNames});
             } else if (x.kafka) {
                 const kafkaId = x.kafka.name || x.kafka.url || 'default';
                 const topicId = 'kafka/' + kafkaId + '/' + x.kafka.topic;
                 g.nodes.set(topicId, {genre: 'kafka', icon: 'stream', label: x.kafka.topic});
-                g.edges.set({v: stepId, w: topicId}, {classNames, label});
+                g.edges.set({v: stepId, w: topicId}, {classNames});
             } else if (x.log) {
                 const logId = 'log/' + stepId + '/sinks/' + x.name;
                 g.nodes.set(logId, {genre: 'log', icon: 'file-alt', label: 'log'});
-                g.edges.set({v: stepId, w: logId}, {classNames, label});
+                g.edges.set({v: stepId, w: logId}, {classNames});
             } else if (x.stan) {
                 const stanId = x.stan.name || x.stan.url || 'default';
                 const subjectId = 'stan/' + stanId + '/' + x.stan.subject;
                 g.nodes.set(subjectId, {genre: 'stan', icon: 'stream', label: x.stan.subject});
-                g.edges.set({v: stepId, w: subjectId}, {classNames, label});
+                g.edges.set({v: stepId, w: subjectId}, {classNames});
             } else if (x.http) {
                 const y = new URL(x.http.url);
                 const subjectId = 'http/' + y;
                 g.nodes.set(subjectId, {genre: 'http', icon: 'cloud', label: y.hostname});
-                g.edges.set({v: stepId, w: subjectId}, {classNames, label});
+                g.edges.set({v: stepId, w: subjectId}, {classNames});
             } else if (x.s3) {
                 const bucket = x.s3.bucket;
                 const id = 's3/' + bucket;
                 g.nodes.set(id, {genre: 's3', icon: 'hdd', label: bucket});
-                g.edges.set({v: stepId, w: id}, {classNames, label});
+                g.edges.set({v: stepId, w: id}, {classNames});
             } else if (x.volume) {
                 const id = 'volume/' + stepId + '/sinks/' + x.name;
                 g.nodes.set(id, {genre: 'volume', icon: 'hdd', label: x.name});
-                g.edges.set({v: stepId, w: id}, {classNames, label});
+                g.edges.set({v: stepId, w: id}, {classNames});
             } else {
                 const id = 'unknown/' + stepId + '/sinks/' + x.name;
                 g.nodes.set(id, {genre: 'unknown', icon: 'square', label: x.name});
-                g.edges.set({v: stepId, w: id}, {classNames, label});
+                g.edges.set({v: stepId, w: id}, {classNames});
             }
         });
     });
