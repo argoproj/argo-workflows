@@ -1,7 +1,6 @@
 package template
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,14 +11,9 @@ type SimpleValue struct {
 }
 
 func processTemplate(t *testing.T, tmpl SimpleValue) SimpleValue {
-	tmplBytes, err := json.Marshal(tmpl)
+	err := Replace(&tmpl, map[string]string{}, true)
 	assert.NoError(t, err)
-	r, err := Replace(string(tmplBytes), map[string]string{}, true)
-	assert.NoError(t, err)
-	var newTmpl SimpleValue
-	err = json.Unmarshal([]byte(r), &newTmpl)
-	assert.NoError(t, err)
-	return newTmpl
+	return tmpl
 }
 
 func Test_Template_Replace(t *testing.T) {
