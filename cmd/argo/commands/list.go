@@ -62,7 +62,7 @@ func NewListCommand() *cobra.Command {
 		Use:   "list",
 		Short: "list workflows",
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient()
+			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			if !allNamespaces {
 				listArgs.namespace = client.Namespace()

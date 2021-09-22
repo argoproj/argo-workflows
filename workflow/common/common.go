@@ -15,6 +15,10 @@ const (
 	// DockerSockVolumeName is the volume name for the /var/run/docker.sock host path volume
 	DockerSockVolumeName = "docker-sock"
 
+	// AnnotationKeyNodeID is the ID of the node.
+	// Historically, the pod name was the same as the node ID.
+	// Therefore, if it does not exist, then the node ID is the pod name.
+	AnnotationKeyNodeID = workflow.WorkflowFullName + "/node-id"
 	// AnnotationKeyNodeName is the pod metadata annotation key containing the workflow node name
 	AnnotationKeyNodeName = workflow.WorkflowFullName + "/node-name"
 	// AnnotationKeyNodeName is the node's type
@@ -29,6 +33,11 @@ const (
 	// AnnotationKeyCronWfScheduledTime is the workflow metadata annotation key containing the time when the workflow
 	// was scheduled to run by CronWorkflow.
 	AnnotationKeyCronWfScheduledTime = workflow.WorkflowFullName + "/scheduled-time"
+
+	// AnnotationKeyWorkflowName is the name of the workflow
+	AnnotationKeyWorkflowName = workflow.WorkflowFullName + "/workflow-name"
+	// AnnotationKeyWorkflowUID is the uid of the workflow
+	AnnotationKeyWorkflowUID = workflow.WorkflowFullName + "/workflow-uid"
 
 	// LabelKeyControllerInstanceID is the label the controller will carry forward to workflows/pod labels
 	// for the purposes of workflow segregation
@@ -167,8 +176,8 @@ const (
 
 	KubeConfigDefaultMountPath    = "/kube/config"
 	KubeConfigDefaultVolumeName   = "kubeconfig"
-	ServiceAccountTokenMountPath  = "/var/run/secrets/kubernetes.io/serviceaccount"
-	ServiceAccountTokenVolumeName = "exec-sa-token"
+	ServiceAccountTokenMountPath  = "/var/run/secrets/kubernetes.io/serviceaccount" //nolint:gosec
+	ServiceAccountTokenVolumeName = "exec-sa-token"                                 //nolint:gosec
 	SecretVolMountPath            = "/argo/secret"
 )
 

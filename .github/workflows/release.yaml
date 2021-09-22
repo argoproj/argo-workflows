@@ -15,6 +15,7 @@ defaults:
 jobs:
   build-linux-amd64:
     name: Build & push linux/amd64
+    if: github.repository == 'argoproj/argo-workflows'
     runs-on: ubuntu-20.04
     strategy:
       matrix:
@@ -80,6 +81,7 @@ jobs:
 
   build-linux-arm64:
     name: Build & push linux/arm64
+    if: github.repository == 'argoproj/argo-workflows'
     runs-on: ubuntu-20.04
     strategy:
       matrix:
@@ -150,6 +152,7 @@ jobs:
 
   build-windows:
     name: Build & push windows
+    if: github.repository == 'argoproj/argo-workflows'
     runs-on: windows-2019
     steps:
       - uses: actions/checkout@v2
@@ -187,53 +190,11 @@ jobs:
             docker push quay.io/$image_name
           done
 
-  push-linux-amd64-images:
-    name: Push manifest with linux/amd64
-    runs-on: ubuntu-20.04
-    needs: [ build-linux-amd64 ]
-    steps:
-      - uses: actions/checkout@v2
-      - name: Docker Login
-        uses: Azure/docker-login@v1
-        with:
-          username: ${{ secrets.DOCKERIO_USERNAME }}
-          password: ${{ secrets.DOCKERIO_PASSWORD }}
-
-      - name: Login to Quay
-        uses: Azure/docker-login@v1
-        with:
-          login-server: quay.io
-          username: ${{ secrets.QUAYIO_USERNAME }}
-          password: ${{ secrets.QUAYIO_PASSWORD }}
-
-      - name: Push Multiarch Image
-        env:
-          DOCKERIO_ORG: ${{ secrets.DOCKERIO_ORG }}
-        run: |
-          echo $(jq -c '. + { "experimental": "enabled" }' ${DOCKER_CONFIG}/config.json) > ${DOCKER_CONFIG}/config.json
-
-          docker_org=$DOCKERIO_ORG
-
-          tag=$(basename $GITHUB_REF)
-          if [ $tag = "master" ]; then
-            tag="latest"
-          fi
-
-          targets="workflow-controller argoexec argocli"
-          for target in $targets; do
-            image_name="${docker_org}/${target}:${tag}"
-
-            docker manifest create $image_name ${image_name}-linux-amd64
-            docker manifest create quay.io/$image_name quay.io/${image_name}-linux-amd64
-
-            docker manifest push $image_name
-            docker manifest push quay.io/$image_name
-          done
-
   push-images:
     name: Push manifest with all images
+    if: github.repository == 'argoproj/argo-workflows'
     runs-on: ubuntu-20.04
-    needs: [ build-linux-arm64, build-windows, push-linux-amd64-images ]
+    needs: [ build-linux-amd64, build-linux-arm64, build-windows ]
     steps:
       - uses: actions/checkout@v2
       - name: Docker Login
@@ -277,8 +238,10 @@ jobs:
             docker manifest push $image_name
             docker manifest push quay.io/$image_name
           done
+
   test-images-linux-amd64:
     name: Try pulling linux/amd64
+    if: github.repository == 'argoproj/argo-workflows'
     runs-on: ubuntu-20.04
     needs: [ push-images ]
     strategy:
@@ -316,6 +279,7 @@ jobs:
 
   test-images-windows:
     name: Try pulling windows
+    if: github.repository == 'argoproj/argo-workflows'
     runs-on: windows-2019
     needs: [ push-images ]
     steps:
@@ -350,6 +314,7 @@ jobs:
 
   publish-release:
     runs-on: ubuntu-20.04
+    if: github.repository == 'argoproj/argo-workflows'
     needs: [ push-images, test-images-linux-amd64, test-images-windows ]
     env:
       NODE_OPTIONS: --max-old-space-size=4096
@@ -364,7 +329,7 @@ jobs:
           key: ${{ runner.os }}-node-dep-v1-${{ hashFiles('**/yarn.lock') }}
       - uses: actions/setup-go@v2
         with:
-          go-version: "1.15.7"
+          go-version: "1.16"
       - uses: actions/cache@v2
         with:
           path: /home/runner/.cache/go-build

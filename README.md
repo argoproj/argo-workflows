@@ -69,7 +69,7 @@ Check out our [Java, Golang and Python SDKs](https://github.com/argoproj-labs/ar
 
 ```bash
 kubectl create namespace argo
-kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflows/stable/manifests/install.yaml
+kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/install.yaml
 ```
 
 ## Who uses Argo Workflows?
@@ -79,7 +79,7 @@ kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflo
 ## Documentation
 
 * [Get started here](docs/quick-start.md)
-* [How to write Argo Workflow specs](examples/README.md)
+* [How to write Argo Workflow specs](https://github.com/argoproj/argo-workflows/blob/master/examples/README.md)
 * [How to configure your artifact repository](docs/configure-artifact-repository.md)
 
 ## Features

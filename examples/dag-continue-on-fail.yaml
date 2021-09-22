@@ -13,13 +13,11 @@ spec:
       - name: B
         depends: "A"
         template: intentional-fail
-        continueOn:
-          failed: true
       - name: C
         depends: "A"
         template: whalesay
       - name: D
-        depends: "B && C"
+        depends: "B.Failed && C"
         template: whalesay
       - name: E
         depends: "A"

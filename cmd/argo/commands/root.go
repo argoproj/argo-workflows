@@ -30,7 +30,7 @@ You can use the CLI in the following modes:
 
 # Kubernetes API Mode (default)
 
-Requests are sent directly to the Kubernetes API. No Argo Server is needs. Large workflows and the workflow archive are not supported.
+Requests are sent directly to the Kubernetes API. No Argo Server is needed. Large workflows and the workflow archive are not supported.
 
 Use when you have direct access to the Kubernetes API, and don't need large workflow or workflow archive support.
 

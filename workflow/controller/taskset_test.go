@@ -288,7 +288,7 @@ status:
       phase: Failed
 
     `, &ts)
-	t.Run("", func(t *testing.T) {
+	t.Run("RemoveCompletedTaskSetStatus", func(t *testing.T) {
 		cancel, controller := newController(wf, ts)
 		defer cancel()
 		_, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").Create(ctx, &ts, v1.CreateOptions{})
@@ -309,5 +309,28 @@ status:
 			assert.Len(t, ts.Status.Nodes, 0)
 		}
 
+	})
+}
+
+func TestNonHTTPTemplateScenario(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	woc := newWorkflowOperationCtx(wf, controller)
+	ctx := context.Background()
+	t.Run("taskSetReconciliation", func(t *testing.T) {
+		woc.operate(ctx)
+		err := woc.taskSetReconciliation(ctx)
+		assert.NoError(t, err)
+	})
+	t.Run("completeTaskSet", func(t *testing.T) {
+		woc.operate(ctx)
+		err := woc.completeTaskSet(ctx)
+		assert.NoError(t, err)
+	})
+	t.Run("removeCompletedTaskSetStatus", func(t *testing.T) {
+		woc.operate(ctx)
+		err := woc.removeCompletedTaskSetStatus(ctx)
+		assert.NoError(t, err)
 	})
 }

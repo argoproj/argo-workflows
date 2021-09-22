@@ -8,7 +8,7 @@ data:
     clientSecret:
       name: argo-server-sso
       key: clientSecret
-    redirectUrl: http://localhost:2746/oauth2/callback
+    redirectUrl: http://localhost:8080/oauth2/callback
     scopes:
     - groups
     - email

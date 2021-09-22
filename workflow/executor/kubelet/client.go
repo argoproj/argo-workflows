@@ -60,7 +60,8 @@ func newKubeletClient(namespace, podName string) (*kubeletClient, error) {
 	}
 	bearerToken := string(b)
 
-	tlsConfig := &tls.Config{}
+	// G402: TLS MinVersion too low. (gosec)
+	tlsConfig := &tls.Config{} //nolint:gosec
 	if os.Getenv(common.EnvVarKubeletInsecure) == "true" {
 		log.Warningf("Using a kubelet client with insecure options")
 		tlsConfig.InsecureSkipVerify = true

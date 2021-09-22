@@ -8,9 +8,12 @@ Firstly, you'll need a Kubernetes cluster and `kubectl` set-up
 
 To get started quickly, you can use the quick start manifest which will install Argo Workflow as well as some commonly used components:
 
+!!! note
+    These manifests are intended to help you get started quickly. They are not suitable in production, on test environments, or any environment containing any real data. They contain hard-coded passwords that are publicly available.
+
 ```sh
 kubectl create ns argo
-kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflows/stable/manifests/quick-start-postgres.yaml
+kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/quick-start-postgres.yaml
 ```
 
 !!! note

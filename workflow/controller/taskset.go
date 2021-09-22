@@ -49,11 +49,16 @@ func (woc *wfOperationCtx) getDeleteTaskAndNodePatch() map[string]interface{} {
 }
 
 func (woc *wfOperationCtx) removeCompletedTaskSetStatus(ctx context.Context) error {
-
+	if !woc.wf.Status.Nodes.HasHTTPNodes() {
+		return nil
+	}
 	return woc.patchTaskSet(ctx, woc.getDeleteTaskAndNodePatch(), types.MergePatchType)
 }
 
 func (woc *wfOperationCtx) completeTaskSet(ctx context.Context) error {
+	if !woc.wf.Status.Nodes.HasHTTPNodes() {
+		return nil
+	}
 	patch := woc.getDeleteTaskAndNodePatch()
 	patch["metadata"] = metav1.ObjectMeta{
 		Labels: map[string]string{
@@ -93,10 +98,10 @@ func (woc *wfOperationCtx) taskSetReconciliation(ctx context.Context) error {
 			woc.updated = true
 		}
 	}
-	return woc.CreateTaskSet(ctx)
+	return woc.createTaskSet(ctx)
 }
 
-func (woc *wfOperationCtx) CreateTaskSet(ctx context.Context) error {
+func (woc *wfOperationCtx) createTaskSet(ctx context.Context) error {
 	if len(woc.taskSet) == 0 {
 		return nil
 	}

@@ -135,6 +135,8 @@ func TestResourceDurationMetric(t *testing.T) {
       id: many-items-z26lj-3491220632
       name: many-items-z26lj[0].sleep(4:four)
       outputs:
+        parameters:
+        - name: pipeline_tid
         artifacts:
         - archiveLogs: true
           name: main-logs

@@ -103,7 +103,7 @@ func TestReadFromSingleorMultiplePath(t *testing.T) {
 				content := []byte(tc.contents[i])
 				tmpfn := filepath.Join(dir, tc.fileNames[i])
 				filePaths = append(filePaths, tmpfn)
-				err := ioutil.WriteFile(tmpfn, content, 0o666)
+				err := ioutil.WriteFile(tmpfn, content, 0o600)
 				if err != nil {
 					t.Error("Could not write to temporary file")
 				}
@@ -155,7 +155,7 @@ func TestReadFromSingleorMultiplePathErrorHandling(t *testing.T) {
 				tmpfn := filepath.Join(dir, tc.fileNames[i])
 				filePaths = append(filePaths, tmpfn)
 				if tc.exists[i] {
-					err := ioutil.WriteFile(tmpfn, content, 0o666)
+					err := ioutil.WriteFile(tmpfn, content, 0o600)
 					if err != nil {
 						t.Error("Could not write to temporary file")
 					}
@@ -320,6 +320,31 @@ func TestStopWorkflowByNodeName(t *testing.T) {
 	wf, err = wfIf.Get(ctx, "suspend", metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, wfv1.NodeFailed, wf.Status.Nodes.FindByDisplayName("approve").Phase)
+}
+
+// Regression test for #6478
+func TestAddParamToGlobalScopeValueNil(t *testing.T) {
+	paramValue := wfv1.AnyString("test")
+	wf := wfv1.Workflow{
+		Status: wfv1.WorkflowStatus{
+			Outputs: &wfv1.Outputs{
+				Parameters: []wfv1.Parameter{
+					{
+						Name:       "test",
+						Value:      &paramValue,
+						GlobalName: "global_output_param",
+					},
+				},
+			},
+		},
+	}
+
+	p := AddParamToGlobalScope(&wf, nil, wfv1.Parameter{
+		Name:       "test",
+		Value:      nil,
+		GlobalName: "test",
+	})
+	assert.False(t, p)
 }
 
 var susWorkflow = `
@@ -516,7 +541,7 @@ func TestApplySubmitOpts(t *testing.T) {
 		file, err := ioutil.TempFile("", "")
 		assert.NoError(t, err)
 		defer func() { _ = os.Remove(file.Name()) }()
-		err = ioutil.WriteFile(file.Name(), []byte(`a: 81861780812`), 0o644)
+		err = ioutil.WriteFile(file.Name(), []byte(`a: 81861780812`), 0o600)
 		assert.NoError(t, err)
 		err = ApplySubmitOpts(wf, &wfv1.SubmitOpts{ParameterFile: file.Name()})
 		assert.NoError(t, err)

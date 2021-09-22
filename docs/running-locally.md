@@ -5,7 +5,6 @@
 * [Go](https://golang.org/dl/) (The project currently uses version 1.15)
 * [Yarn](https://classic.yarnpkg.com/en/docs/install/#mac-stable)
 * [Docker](https://docs.docker.com/get-docker/)
-* [Kustomize](https://kubectl.docs.kubernetes.io/installation/kustomize/)
 * [protoc](http://google.github.io/proto-lens/installing-protoc.html) `brew install protobuf`
 * [`jq`](https://stedolan.github.io/jq/download/)
 * A local Kubernetes cluster
@@ -67,7 +66,7 @@ For testing SSO integration, you can start a Argo with sso profile which will de
 a pre-configured dex instance in argo namespace
 
 ```sh
-make start PROFILE=SSO
+make start PROFILE=sso
 ```
 
 ## Troubleshooting Notes

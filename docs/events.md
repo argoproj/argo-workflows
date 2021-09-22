@@ -16,7 +16,7 @@ You may also wish to read about [webhooks](webhooks.md).
 
 Clients wanting to send events to the endpoint need an [access token](access-token.md).   
 
-It is only possible to submit workflow templates your access token has access to: [example role](manifests/quick-start/base/webhooks/submit-workflow-template-role.yaml).
+It is only possible to submit workflow templates your access token has access to: [example role](https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/quick-start/base/webhooks/submit-workflow-template-role.yaml).
 
 Example (note the trailing slash):
 
@@ -67,7 +67,7 @@ spec:
 ## Submitting A Workflow From A Workflow Template
 
 A workflow template will be submitted (i.e. workflow created from it) and that can be created using parameters from the event itself. 
-The following example will be trigger by an event with "message" in the payload. That message will be used as an argument for the created workflow.
+The following example will be triggered by an event with "message" in the payload. That message will be used as an argument for the created workflow.  Note that the name of the metadata header "x-argo-e2e" is lowercase in the selector to match.  Incoming header names are converted to lowercase.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -76,7 +76,8 @@ metadata:
   name: event-consumer
 spec:
   event:
-    selector: payload.message != "" && metadata["X-Argo-E2E"] == ["true"] && discriminator == "my-discriminator"
+    # metadata header name must be lowercase to match in selector
+    selector: payload.message != "" && metadata["x-argo-e2e"] == ["true"] && discriminator == "my-discriminator"
   submit:
     workflowTemplateRef:
       name: my-wf-tmple

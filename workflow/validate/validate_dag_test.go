@@ -140,6 +140,9 @@ spec:
     inputs:
       parameters:
       - name: message
+      - name: startedat
+      - name: finishedat
+      - name: id
     container:
       image: alpine:3.7
       command: [echo, "{{inputs.parameters.message}}"]
@@ -157,6 +160,12 @@ spec:
           parameters:
           - name: message
             value: val
+          - name: startedat
+            value: "test"
+          - name: finishedat
+            value: "test"
+          - name: id
+            value: "1"
       - name: B
         dependencies: [A]
         template: echo
@@ -164,6 +173,12 @@ spec:
           parameters:
           - name: message
             value: "{{tasks.A.outputs.parameters.hosts}}"
+          - name: startedat
+            value: "{{tasks.A.startedAt}}"
+          - name: finishedat
+            value: "{{tasks.A.finishedAt}}"
+          - name: id
+            value: "{{tasks.A.id}}"
       - name: C
         dependencies: [B]
         template: echo
@@ -171,6 +186,12 @@ spec:
           parameters:
           - name: message
             value: "{{tasks.A.outputs.parameters.hosts}}"
+          - name: startedat
+            value: "{{tasks.A.startedAt}}"
+          - name: finishedat
+            value: "{{tasks.A.finishedAt}}"
+          - name: id
+            value: "{{tasks.A.id}}"
 `
 
 var dagResolvedVarNotAncestor = `
@@ -920,5 +941,95 @@ spec:
 
 func TestDAGWithDigitNameNoDepends(t *testing.T) {
 	_, err := validate(dagWithDigitNoDepends)
+	assert.NoError(t, err)
+}
+
+var dagOutputsResolveTaskAggregatedOutputs = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: loops-
+spec:
+  serviceAccountName: argo
+  entrypoint: dag
+  templates:
+  - name: dag
+    dag:
+      tasks:
+      - name: fanout
+        template: fanout
+        arguments:
+          parameters:
+          - name: input
+            value: "[1, 2]"
+      - name: dag-process
+        template: sub-dag
+        depends: fanout
+        arguments:
+          parameters:
+          - name: item
+            value: '{{item}}'
+          - name: input
+            value: '{{tasks.fanout.outputs.parameters.output}}'
+        withParam: "{{tasks.fanout.outputs.parameters.output}}"
+
+  - name: sub-dag
+    inputs:
+      parameters:
+      - name: input
+      - name: item
+    outputs:
+      parameters:
+      - name: output
+        valueFrom:
+          parameter: "{{tasks.process.outputs.parameters}}"
+    dag:
+      tasks:
+      - name: fanout
+        template: fanout
+        arguments:
+          parameters:
+          - name: input
+            value: '{{inputs.parameters.input}}'
+      - name: process
+        template: process
+        depends: fanout
+        arguments:
+          parameters:
+          - name: item
+            value: '{{item}}'
+        withParam: "{{tasks.fanout.outputs.parameters.output}}"
+
+  - name: fanout
+    inputs:
+      parameters:
+      - name: input
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["echo {{inputs.parameters.input}} | tee /tmp/output"]
+    outputs:
+      parameters:
+      - name: output
+        valueFrom:
+          path: /tmp/output
+
+  - name: process
+    inputs:
+      parameters:
+      - name: item
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["echo {{inputs.parameters.item}} | tee /tmp/output"]
+    outputs:
+      parameters:
+      - name: output
+        valueFrom:
+          path: /tmp/output
+`
+
+func TestDAGOutputsResolveTaskAggregatedOutputs(t *testing.T) {
+	_, err := validate(dagOutputsResolveTaskAggregatedOutputs)
 	assert.NoError(t, err)
 }

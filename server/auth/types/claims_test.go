@@ -1,7 +1,11 @@
 package types
 
 import (
+	"bytes"
 	"encoding/json"
+	"io"
+	"io/ioutil"
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -194,5 +198,32 @@ func TestGetCustomGroup(t *testing.T) {
 		}}
 		_, err := claims.GetCustomGroup(("ad_groups"))
 		assert.Error(t, err)
+	})
+}
+
+type HttpClientMock struct {
+	StatusCode int
+	Body       io.ReadCloser
+}
+
+func (c *HttpClientMock) Do(req *http.Request) (*http.Response, error) {
+	return &http.Response{
+		StatusCode: c.StatusCode,
+		Body:       c.Body,
+	}, nil
+}
+
+func TestGetUserInfoGroups(t *testing.T) {
+	t.Run("UserInfoGroupsReturn", func(t *testing.T) {
+		userInfo := UserInfo{Groups: []string{"Everyone"}}
+		userInfoBytes, _ := json.Marshal(userInfo)
+		body := ioutil.NopCloser(bytes.NewReader(userInfoBytes))
+
+		httpClient = &HttpClientMock{StatusCode: 200, Body: body}
+
+		claims := &Claims{}
+		groups, err := claims.GetUserInfoGroups("Bearer fake", "https://fake.okta.com", "/user-info")
+		assert.Equal(t, groups, []string{"Everyone"})
+		assert.Equal(t, nil, err)
 	})
 }

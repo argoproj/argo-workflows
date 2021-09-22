@@ -40,7 +40,10 @@ nav:
           - cluster-workflow-templates.md
           - cron-workflows.md
           - cron-backfill.md
+          - templates.md
+          - http-template.md
           - container-set-template.md
+          - template-defaults.md
           - work-avoidance.md
           - enhanced-depends-logic.md
           - data-sourcing-and-transformation.md
@@ -64,6 +67,7 @@ nav:
           - workflow-events.md
           - kubectl.md
           - access-token.md
+          - swagger.md
           - rest-api.md
           - rest-examples.md
           - events.md
@@ -73,8 +77,9 @@ nav:
           - resuming-workflow-via-automation.md
           - async-pattern.md
           - security.md
+          - running-at-massive-scale.md
       - ide-setup.md
-      - Examples: examples/README.md
+      - Examples: https://github.com/argoproj/argo-workflows/blob/master/examples/README.md
       - Field Reference: fields.md
       - CLI Reference:
           - argo: cli/argo.md
@@ -133,7 +138,6 @@ nav:
           - workflow-executors.md
           - sidecar-injection.md
           - default-workflow-specs.md
-          - template-defaults.md
           - offloading-large-workflows.md
           - workflow-archive.md
           - metrics.md

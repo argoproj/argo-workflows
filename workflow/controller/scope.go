@@ -106,13 +106,14 @@ func (s *wfScope) resolveArtifact(art *wfv1.Artifact) (*wfv1.Artifact, error) {
 	}
 
 	if art.SubPath != "" {
+		// Copy resolved artifact pointer before adding subpath
+		copyArt := valArt.DeepCopy()
+
 		resolvedSubPath := art.SubPath
 		if err := template.Replace(&resolvedSubPath, s.getParameters(), true); err != nil {
 			return nil, err
 		}
 
-		// Copy resolved artifact pointer before adding subpath
-		copyArt := valArt.DeepCopy()
 		return copyArt, copyArt.AppendToKey(resolvedSubPath)
 	}
 

@@ -6,7 +6,7 @@ ARG DOCKER_VERSION=18.09.1
 ARG KUBECTL_VERSION=1.19.6
 ARG JQ_VERSION=1.6
 
-FROM docker.io/library/golang:1.15.7 as builder
+FROM docker.io/library/golang:1.16 as builder
 
 RUN apt-get update && apt-get --no-install-recommends install -y \
     git \
@@ -16,6 +16,7 @@ RUN apt-get update && apt-get --no-install-recommends install -y \
     ca-certificates \
     wget \
     gcc \
+    libcap2-bin \
     zip && \
     apt-get clean \
     && rm -rf \
@@ -74,7 +75,7 @@ RUN JOBS=max yarn --cwd ui install --network-timeout 1000000
 COPY ui ui
 COPY api api
 
-RUN JOBS=max yarn --cwd ui build
+RUN NODE_OPTIONS="--max-old-space-size=2048" JOBS=max yarn --cwd ui build
 
 ####################################################################################################
 
@@ -145,8 +146,6 @@ WORKDIR /home/argo
 COPY hack/ssh_known_hosts /etc/ssh/
 COPY hack/nsswitch.conf /etc/
 COPY --from=argocli-build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-COPY --from=argocli-build --chown=8737 /go/src/github.com/argoproj/argo-workflows/argo-server.crt /home/argo/
-COPY --from=argocli-build --chown=8737 /go/src/github.com/argoproj/argo-workflows/argo-server.key /home/argo/
 COPY --from=argocli-build /go/src/github.com/argoproj/argo-workflows/dist/argo /bin/
 
 ENTRYPOINT [ "argo" ]

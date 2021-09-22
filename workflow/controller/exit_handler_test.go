@@ -491,3 +491,199 @@ func TestDAGOnExit(t *testing.T) {
 	}
 	assert.True(t, onExitNodeIsPresent)
 }
+
+var dagOnExitAndRetryStrategy = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: test-workflow-with-retry-strategy8h899
+spec:
+  entrypoint: WORKFLOW
+  templates:
+  - name: WORKFLOW
+    steps:
+    - - name: Execute
+        template: DAG
+  - container:
+      args:
+      - -c
+      - set -xe && ls -ltr /
+      command:
+      - sh
+      image: alpine:latest
+    inputs:
+      parameters:
+      - name: IMAGE
+    name: LinuxExitHandler
+  - container:
+      args:
+      - -c
+      - set -xe && ls -ltr /
+      command:
+      - sh
+      image: alpine:latest
+    name: LinuxJobBase
+    retryStrategy:
+      limit: "3"
+      retryPolicy: OnError
+  - dag:
+      tasks:
+      - hooks:
+          exit:
+            arguments:
+              parameters:
+              - name: IMAGE
+                value: alpine:latest
+            template: LinuxExitHandler
+        name: Python2Compile
+        template: LinuxJobBase
+      - depends: Python2Compile.Succeeded
+        hooks:
+          exit:
+            arguments:
+              parameters:
+              - name: IMAGE
+                value: alpine:latest
+            template: LinuxExitHandler
+        name: DependencyTesting
+        template: LinuxJobBase
+    name: DAG
+status:
+  nodes:
+    test-workflow-with-retry-strategy8h899:
+      children:
+      - test-workflow-with-retry-strategy8h899-1555287363
+      displayName: test-workflow-with-retry-strategy8h899
+      finishedAt: "2021-07-29T16:16:47Z"
+      id: test-workflow-with-retry-strategy8h899
+      name: test-workflow-with-retry-strategy8h899
+      outboundNodes:
+      - test-workflow-with-retry-strategy8h899-4242067666
+      phase: Running
+      startedAt: "2021-07-29T16:16:07Z"
+      templateName: WORKFLOW
+      templateScope: local/test-workflow-with-retry-strategy8h899
+      type: Steps
+    test-workflow-with-retry-strategy8h899-379180998:
+      boundaryID: test-workflow-with-retry-strategy8h899-3078096906
+      displayName: DependencyTesting(0)
+      finishedAt: "2021-07-29T16:16:23Z"
+      id: test-workflow-with-retry-strategy8h899-379180998
+      name: test-workflow-with-retry-strategy8h899[0].Execute.DependencyTesting(0)
+      phase: Succeeded
+      startedAt: "2021-07-29T16:16:17Z"
+      templateName: LinuxJobBase
+      templateScope: local/test-workflow-with-retry-strategy8h899
+      type: Pod
+    test-workflow-with-retry-strategy8h899-961031240:
+      boundaryID: test-workflow-with-retry-strategy8h899-3078096906
+      children:
+      - test-workflow-with-retry-strategy8h899-3783705931
+      displayName: Python2Compile(0)
+      finishedAt: "2021-07-29T16:16:13Z"
+      id: test-workflow-with-retry-strategy8h899-961031240
+      name: test-workflow-with-retry-strategy8h899[0].Execute.Python2Compile(0)
+      phase: Succeeded
+      startedAt: "2021-07-29T16:16:07Z"
+      templateName: LinuxJobBase
+      templateScope: local/test-workflow-with-retry-strategy8h899
+      type: Pod
+    test-workflow-with-retry-strategy8h899-1555287363:
+      boundaryID: test-workflow-with-retry-strategy8h899
+      children:
+      - test-workflow-with-retry-strategy8h899-3078096906
+      displayName: '[0]'
+      id: test-workflow-with-retry-strategy8h899-1555287363
+      name: test-workflow-with-retry-strategy8h899[0]
+      phase: Running
+      startedAt: "2021-07-29T16:16:07Z"
+      templateScope: local/test-workflow-with-retry-strategy8h899
+      type: StepGroup
+    test-workflow-with-retry-strategy8h899-3078096906:
+      boundaryID: test-workflow-with-retry-strategy8h899
+      children:
+      - test-workflow-with-retry-strategy8h899-3585476721
+      displayName: Execute
+      id: test-workflow-with-retry-strategy8h899-3078096906
+      name: test-workflow-with-retry-strategy8h899[0].Execute
+      outboundNodes:
+      - test-workflow-with-retry-strategy8h899-4242067666
+      phase: Running
+      startedAt: "2021-07-29T16:16:07Z"
+      templateName: DAG
+      templateScope: local/test-workflow-with-retry-strategy8h899
+      type: DAG
+    test-workflow-with-retry-strategy8h899-3585476721:
+      boundaryID: test-workflow-with-retry-strategy8h899-3078096906
+      children:
+      - test-workflow-with-retry-strategy8h899-961031240
+      - test-workflow-with-retry-strategy8h899-3756356520
+      displayName: Python2Compile
+      finishedAt: "2021-07-29T16:16:17Z"
+      id: test-workflow-with-retry-strategy8h899-3585476721
+      name: test-workflow-with-retry-strategy8h899[0].Execute.Python2Compile
+      phase: Succeeded
+      startedAt: "2021-07-29T16:16:07Z"
+      templateName: LinuxJobBase
+      templateScope: local/test-workflow-with-retry-strategy8h899
+      type: Retry
+    test-workflow-with-retry-strategy8h899-3756356520:
+      boundaryID: test-workflow-with-retry-strategy8h899-3078096906
+      displayName: Python2Compile.onExit
+      finishedAt: "2021-07-29T16:16:33Z"
+      id: test-workflow-with-retry-strategy8h899-3756356520
+      inputs:
+        parameters:
+        - name: IMAGE
+          value: alpine:latest
+      name: test-workflow-with-retry-strategy8h899[0].Execute.Python2Compile.onExit
+      phase: Succeeded
+      startedAt: "2021-07-29T16:16:27Z"
+      templateName: LinuxExitHandler
+      templateScope: local/test-workflow-with-retry-strategy8h899
+      type: Pod
+    test-workflow-with-retry-strategy8h899-3783705931:
+      boundaryID: test-workflow-with-retry-strategy8h899-3078096906
+      children:
+      - test-workflow-with-retry-strategy8h899-379180998
+      - test-workflow-with-retry-strategy8h899-4242067666
+      displayName: DependencyTesting
+      finishedAt: "2021-07-29T16:16:27Z"
+      id: test-workflow-with-retry-strategy8h899-3783705931
+      name: test-workflow-with-retry-strategy8h899[0].Execute.DependencyTesting
+      phase: Succeeded
+      startedAt: "2021-07-29T16:16:17Z"
+      templateName: LinuxJobBase
+      templateScope: local/test-workflow-with-retry-strategy8h899
+      type: Retry
+    test-workflow-with-retry-strategy8h899-4242067666:
+      boundaryID: test-workflow-with-retry-strategy8h899-3078096906
+      displayName: DependencyTesting.onExit
+      finishedAt: "2021-07-29T16:16:43Z"
+      id: test-workflow-with-retry-strategy8h899-4242067666
+      inputs:
+        parameters:
+        - name: IMAGE
+          value: alpine:latest
+      name: test-workflow-with-retry-strategy8h899[0].Execute.DependencyTesting.onExit
+      phase: Succeeded
+      startedAt: "2021-07-29T16:16:27Z"
+      templateName: LinuxExitHandler
+      templateScope: local/test-workflow-with-retry-strategy8h899
+      type: Pod
+  phase: Running
+  startedAt: "2021-07-29T16:16:07Z"
+`
+
+func TestDagOnExitAndRetryStrategy(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(dagOnExitAndRetryStrategy)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}

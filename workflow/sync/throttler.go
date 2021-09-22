@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"k8s.io/client-go/tools/cache"
+
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 //go:generate mockery -name Throttler
@@ -15,6 +17,7 @@ import (
 // will be kept pending until the processing is complete.
 // Implementations should be idempotent.
 type Throttler interface {
+	Init(wfs []wfv1.Workflow) error
 	Add(key Key, priority int32, creationTime time.Time)
 	// Admit returns if the item should be processed.
 	Admit(key Key) bool
@@ -57,6 +60,29 @@ func NewThrottler(parallelism int, bucketFunc BucketFunc, queue QueueFunc) Throt
 		lock:        &sync.Mutex{},
 		parallelism: parallelism,
 	}
+}
+
+func (t *throttler) Init(wfs []wfv1.Workflow) error {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+	if t.parallelism == 0 {
+		return nil
+	}
+
+	for _, wf := range wfs {
+		key, err := cache.MetaNamespaceKeyFunc(&wf)
+		if err != nil {
+			return err
+		}
+		if wf.Status.Phase == wfv1.WorkflowRunning {
+			bucketKey := t.bucketFunc(key)
+			if _, ok := t.inProgress[bucketKey]; !ok {
+				t.inProgress[bucketKey] = make(bucket)
+			}
+			t.inProgress[bucketKey][key] = true
+		}
+	}
+	return nil
 }
 
 func (t *throttler) Add(key Key, priority int32, creationTime time.Time) {

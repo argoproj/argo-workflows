@@ -9,6 +9,8 @@ import (
 	"syscall"
 	"time"
 
+	v1 "k8s.io/client-go/informers/core/v1"
+
 	"github.com/argoproj/pkg/errors"
 	syncpkg "github.com/argoproj/pkg/sync"
 	log "github.com/sirupsen/logrus"
@@ -94,6 +96,7 @@ type WorkflowController struct {
 	wftmplInformer        wfextvv1alpha1.WorkflowTemplateInformer
 	cwftmplInformer       wfextvv1alpha1.ClusterWorkflowTemplateInformer
 	podInformer           cache.SharedIndexInformer
+	configMapInformer     cache.SharedIndexInformer
 	wfQueue               workqueue.RateLimitingInterface
 	podQueue              workqueue.RateLimitingInterface
 	podCleanupQueue       workqueue.RateLimitingInterface // pods to be deleted or labelled depend on GC strategy
@@ -215,11 +218,21 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.podInformer = wfc.newPodInformer(ctx)
 	wfc.updateEstimatorFactory()
 
+	wfc.configMapInformer = wfc.newConfigMapInformer()
+
+	// Create Synchronization Manager
+	wfc.createSynchronizationManager(ctx)
+	// init managers: throttler and SynchronizationManager
+	if err := wfc.initManagers(ctx); err != nil {
+		log.Fatal(err)
+	}
+
 	go wfc.runConfigMapWatcher(ctx.Done())
 	go wfc.configController.Run(ctx.Done(), wfc.updateConfig)
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
+	go wfc.configMapInformer.Run(ctx.Done())
 	go wfc.wfTaskSetInformer.Informer().Run(ctx.Done())
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
@@ -228,12 +241,6 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	}
 
 	wfc.createClusterWorkflowTemplateInformer(ctx)
-
-	// Create Synchronization Manager
-	err := wfc.createSynchronizationManager(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	// Start the metrics server
 	go wfc.metrics.RunServer(ctx)
@@ -319,8 +326,8 @@ func (wfc *WorkflowController) waitForCacheSync(ctx context.Context) {
 	}
 }
 
-// Create and initialize the Synchronization Manager
-func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context) error {
+// Create and the Synchronization Manager
+func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context) {
 	getSyncLimit := func(lockKey string) (int, error) {
 		lockName, err := sync.DecodeLockName(lockKey)
 		if err != nil {
@@ -352,16 +359,22 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 	}
 
 	wfc.syncManager = sync.NewLockManager(getSyncLimit, nextWorkflow, isWFDeleted)
+}
 
-	labelSelector := labels.NewSelector()
-	req, _ := labels.NewRequirement(common.LabelKeyPhase, selection.Equals, []string{string(wfv1.NodeRunning)})
+// list all running workflows to initialize throttler and syncManager
+func (wfc *WorkflowController) initManagers(ctx context.Context) error {
+	labelSelector := labels.NewSelector().Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
+	req, _ := labels.NewRequirement(common.LabelKeyPhase, selection.Equals, []string{string(wfv1.WorkflowRunning)})
 	if req != nil {
 		labelSelector = labelSelector.Add(*req)
 	}
-
 	listOpts := metav1.ListOptions{LabelSelector: labelSelector.String()}
 	wfList, err := wfc.wfclientset.ArgoprojV1alpha1().Workflows(wfc.namespace).List(ctx, listOpts)
 	if err != nil {
+		return err
+	}
+
+	if err := wfc.throttler.Init(wfList.Items); err != nil {
 		return err
 	}
 
@@ -1016,6 +1029,7 @@ func (wfc *WorkflowController) newPodInformer(ctx context.Context) cache.SharedI
 	source := wfc.newWorkflowPodWatch(ctx)
 	informer := cache.NewSharedIndexInformer(source, &apiv1.Pod{}, podResyncPeriod, cache.Indexers{
 		indexes.WorkflowIndex: indexes.MetaWorkflowIndexFunc,
+		indexes.NodeIDIndex:   indexes.MetaNodeIDIndexFunc,
 		indexes.PodPhaseIndex: indexes.PodPhaseIndexFunc,
 	})
 	informer.AddEventHandler(
@@ -1053,6 +1067,14 @@ func (wfc *WorkflowController) newPodInformer(ctx context.Context) cache.SharedI
 		},
 	)
 	return informer
+}
+
+func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer {
+	return v1.NewFilteredConfigMapInformer(wfc.kubeclientset, wfc.GetManagedNamespace(), 20*time.Minute, cache.Indexers{
+		indexes.ConfigMapLabelsIndex: indexes.ConfigMapIndexFunc,
+	}, func(opts *metav1.ListOptions) {
+		opts.LabelSelector = indexes.ConfigMapTypeLabel
+	})
 }
 
 // call this func whenever the configuration changes, or when the workflow informer changes

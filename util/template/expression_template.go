@@ -1,6 +1,7 @@
 package template
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -17,12 +18,22 @@ func init() {
 }
 
 func expressionReplace(w io.Writer, expression string, env map[string]interface{}, allowUnresolved bool) (int, error) {
-	if _, ok := env["retries"]; !ok && hasRetries(expression) && allowUnresolved {
+	// The template is JSON-marshaled. This JSON-unmarshals the expression to undo any character escapes.
+	var unmarshalledExpression string
+	err := json.Unmarshal([]byte(fmt.Sprintf(`"%s"`, expression)), &unmarshalledExpression)
+	if err != nil && allowUnresolved {
+		return w.Write([]byte(fmt.Sprintf("{{%s%s}}", kindExpression, expression)))
+	}
+	if err != nil {
+		return 0, fmt.Errorf("failed to unmarshall JSON expression: %w", err)
+	}
+
+	if _, ok := env["retries"]; !ok && hasRetries(unmarshalledExpression) && allowUnresolved {
 		// this is to make sure expressions like `sprig.int(retries)` don't get resolved to 0 when `retries` don't exist in the env
 		// See https://github.com/argoproj/argo-workflows/issues/5388
 		return w.Write([]byte(fmt.Sprintf("{{%s%s}}", kindExpression, expression)))
 	}
-	result, err := expr.Eval(expression, env)
+	result, err := expr.Eval(unmarshalledExpression, env)
 	if (err != nil || result == nil) && allowUnresolved { //  <nil> result is also un-resolved, and any error can be unresolved
 		return w.Write([]byte(fmt.Sprintf("{{%s%s}}", kindExpression, expression)))
 	}
@@ -32,7 +43,19 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 	if result == nil {
 		return 0, fmt.Errorf("failed to evaluate expression %q", expression)
 	}
-	return w.Write([]byte(fmt.Sprintf("%v", result)))
+	resultMarshaled, err := json.Marshal(fmt.Sprintf("%v", result))
+	if (err != nil || resultMarshaled == nil) && allowUnresolved {
+		return w.Write([]byte(fmt.Sprintf("{{%s%s}}", kindExpression, expression)))
+	}
+	if err != nil {
+		return 0, fmt.Errorf("failed to marshal evaluated expression: %w", err)
+	}
+	if resultMarshaled == nil {
+		return 0, fmt.Errorf("failed to marshal evaluated marshaled expression %q", expression)
+	}
+	// Trim leading and trailing quotes. The value is being inserted into something that's already a string.
+	marshaledLength := len(resultMarshaled)
+	return w.Write(resultMarshaled[1 : marshaledLength-1])
 }
 
 func envMap(replaceMap map[string]string) map[string]interface{} {

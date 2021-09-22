@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"google.golang.org/api/googleapi"
+
+	argoErrors "github.com/argoproj/argo-workflows/v3/errors"
 )
 
 type tlsHandshakeTimeoutError struct{}
@@ -21,6 +23,7 @@ func TestIsTransientGCSErr(t *testing.T) {
 		shouldretry bool
 	}{
 		{&googleapi.Error{Code: 0}, false},
+		{argoErrors.New(argoErrors.CodeNotFound, "no results for key: foo/bar"), false},
 		{&googleapi.Error{Code: 429}, true},
 		{&googleapi.Error{Code: 518}, true},
 		{&googleapi.Error{Code: 599}, true},

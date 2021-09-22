@@ -2,10 +2,6 @@
 
 validate files or directories of cluster workflow template manifests
 
-### Synopsis
-
-validate files or directories of cluster workflow template manifests
-
 ```
 argo cluster-template lint FILE... [flags]
 ```

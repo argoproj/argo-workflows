@@ -18,6 +18,7 @@ import (
 	"google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
@@ -34,6 +35,7 @@ import (
 type ContextKey string
 
 const (
+	DynamicKey     ContextKey = "dynamic.Interface"
 	WfKey          ContextKey = "workflow.Interface"
 	SensorKey      ContextKey = "sensor.Interface"
 	EventSourceKey ContextKey = "eventsource.Interface"
@@ -96,12 +98,17 @@ func (s *gatekeeper) Context(ctx context.Context) (context.Context, error) {
 	if err != nil {
 		return nil, err
 	}
+	ctx = context.WithValue(ctx, DynamicKey, clients.Dynamic)
 	ctx = context.WithValue(ctx, WfKey, clients.Workflow)
 	ctx = context.WithValue(ctx, EventSourceKey, clients.EventSource)
 	ctx = context.WithValue(ctx, SensorKey, clients.Sensor)
 	ctx = context.WithValue(ctx, KubeKey, clients.Kubernetes)
 	ctx = context.WithValue(ctx, ClaimsKey, claims)
 	return ctx, nil
+}
+
+func GetDynamicClient(ctx context.Context) dynamic.Interface {
+	return ctx.Value(DynamicKey).(dynamic.Interface)
 }
 
 func GetWfClient(ctx context.Context) workflow.Interface {
@@ -254,6 +261,10 @@ func DefaultClientForAuthorization(authorization string) (*rest.Config, *servert
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create REST config: %w", err)
 	}
+	dynamicClient, err := dynamic.NewForConfig(restConfig)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failure to create dynamic client: %w", err)
+	}
 	wfClient, err := workflow.NewForConfig(restConfig)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failure to create workflow client: %w", err)
@@ -270,5 +281,11 @@ func DefaultClientForAuthorization(authorization string) (*rest.Config, *servert
 	if err != nil {
 		return nil, nil, fmt.Errorf("failure to create kubernetes client: %w", err)
 	}
-	return restConfig, &servertypes.Clients{Workflow: wfClient, EventSource: eventSourceClient, Sensor: sensorClient, Kubernetes: kubeClient}, nil
+	return restConfig, &servertypes.Clients{
+		Dynamic:     dynamicClient,
+		Workflow:    wfClient,
+		Sensor:      sensorClient,
+		EventSource: eventSourceClient,
+		Kubernetes:  kubeClient,
+	}, nil
 }

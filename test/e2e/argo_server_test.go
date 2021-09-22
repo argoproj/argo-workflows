@@ -33,6 +33,7 @@ const baseUrl = "http://localhost:2746"
 // testing behaviour really is a non-goal
 type ArgoServerSuite struct {
 	fixtures.E2ESuite
+	username    string
 	bearerToken string
 }
 
@@ -54,7 +55,9 @@ func (s *ArgoServerSuite) e() *httpexpect.Expect {
 			Client: httpClient,
 		}).
 		Builder(func(req *httpexpect.Request) {
-			if s.bearerToken != "" {
+			if s.username != "" {
+				req.WithBasicAuth(s.username, "garbage")
+			} else if s.bearerToken != "" {
 				req.WithHeader("Authorization", "Bearer "+s.bearerToken)
 			}
 		})
@@ -92,9 +95,17 @@ func (s *ArgoServerSuite) TestVersion() {
 	})
 }
 
-func (s *ArgoServerSuite) TestMetrics() {
-	s.Need(fixtures.CI)
-	s.e().GET("/metrics").
+func (s *ArgoServerSuite) TestMetricsForbidden() {
+	s.bearerToken = ""
+	s.e().
+		GET("/metrics").
+		Expect().
+		Status(403)
+}
+
+func (s *ArgoServerSuite) TestMetricsOK() {
+	s.e().
+		GET("/metrics").
 		Expect().
 		Status(200).
 		Body().
@@ -320,11 +331,20 @@ func (s *ArgoServerSuite) TestOauth() {
 
 func (s *ArgoServerSuite) TestUnauthorized() {
 	token := s.bearerToken
-	defer func() { s.bearerToken = token }()
-	s.bearerToken = "test-token"
-	s.e().GET("/api/v1/workflows/argo").
-		Expect().
-		Status(401)
+	s.T().Run("Bearer", func(t *testing.T) {
+		s.bearerToken = "test-token"
+		defer func() { s.bearerToken = token }()
+		s.e().GET("/api/v1/workflows/argo").
+			Expect().
+			Status(401)
+	})
+	s.T().Run("Basic", func(t *testing.T) {
+		s.username = "garbage"
+		defer func() { s.username = "" }()
+		s.e().GET("/api/v1/workflows/argo").
+			Expect().
+			Status(401)
+	})
 }
 
 func (s *ArgoServerSuite) TestCookieAuth() {
@@ -1625,6 +1645,20 @@ func (s *ArgoServerSuite) TestEventSourcesService() {
 	})
 	s.Run("DeleteEventSource", func() {
 		s.e().DELETE("/api/v1/event-sources/argo/test-event-source").
+			Expect().
+			Status(200)
+	})
+}
+
+func (s *ArgoServerSuite) TestPipelineService() {
+	s.T().SkipNow()
+	s.Run("GetPipeline", func() {
+		s.e().GET("/api/v1/pipelines/argo/not-exists").
+			Expect().
+			Status(404)
+	})
+	s.Run("ListPipelines", func() {
+		s.e().GET("/api/v1/pipelines/argo").
 			Expect().
 			Status(200)
 	})
