@@ -1199,7 +1199,8 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		resolvedTemplates[task.Name] = resolvedTmpl
 
 		prefix := fmt.Sprintf("tasks.%s", task.Name)
-		ctx.addOutputsToScope(resolvedTmpl, prefix, scope, false, false)
+		aggregate := len(task.WithItems) > 0 || task.WithParam != ""
+		ctx.addOutputsToScope(resolvedTmpl, prefix, scope, aggregate, false)
 
 		err = common.ValidateTaskResults(&task)
 		if err != nil {
