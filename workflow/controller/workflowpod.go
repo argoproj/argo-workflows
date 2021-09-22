@@ -1015,7 +1015,16 @@ func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) {
 	if !needLocation {
 		return
 	}
+	archiveLog := tmpl.ArchiveLocation.IsArchiveLogs()
 	tmpl.ArchiveLocation = woc.artifactRepository.ToArtifactLocation()
+	// overwrites archivelogs on/off with priorities:
+	// controller: on,  template: off -> result: on
+	// controller: on,  template: on  -> result: on
+	// controller: off, template: off -> result: off
+	// controller: off, template: on  -> result: on
+	if archiveLog {
+		tmpl.ArchiveLocation.ArchiveLogs = &archiveLog
+	}
 }
 
 // setupServiceAccount sets up service account and token.

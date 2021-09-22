@@ -550,6 +550,49 @@ func TestConditionalArchiveLocation(t *testing.T) {
 	assert.Nil(t, tmpl.ArchiveLocation)
 }
 
+// TestConditionalAddArchiveLocationTemplateArchiveLogs verifies we do  add archive location if it is needed for logs
+func TestConditionalAddArchiveLocationTemplateArchiveLogs(t *testing.T) {
+	tests := []struct {
+		controllerArchiveLog bool
+		templateArchiveLog   bool
+		finalArchiveLog      bool
+	}{
+		{true, true, true},
+		{true, false, true},
+		{false, true, true},
+		{false, false, false},
+	}
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("controllerArchiveLog: %t, templateArchiveLog: %t, finalArchiveLog: %t", tt.controllerArchiveLog, tt.templateArchiveLog, tt.finalArchiveLog), func(t *testing.T) {
+			wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+			wf.Spec.Templates[0].ArchiveLocation = &wfv1.ArtifactLocation{
+				ArchiveLogs: pointer.BoolPtr(tt.templateArchiveLog),
+			}
+			cancel, controller := newController(wf)
+			defer cancel()
+			woc := newWorkflowOperationCtx(wf, controller)
+			setArtifactRepository(woc.controller, &wfv1.ArtifactRepository{
+				ArchiveLogs: pointer.BoolPtr(tt.controllerArchiveLog),
+				S3: &wfv1.S3ArtifactRepository{
+					S3Bucket: wfv1.S3Bucket{
+						Bucket: "foo",
+					},
+					KeyFormat: "path/in/bucket",
+				},
+			})
+			woc.operate(context.Background())
+			pods, err := listPods(woc)
+			assert.NoError(t, err)
+			assert.Len(t, pods.Items, 1)
+			pod := pods.Items[0]
+			tmpl, err := getPodTemplate(&pod)
+			assert.NoError(t, err)
+			assert.NotNil(t, tmpl.ArchiveLocation)
+			assert.Equal(t, tt.finalArchiveLog, tmpl.ArchiveLocation.IsArchiveLogs())
+		})
+	}
+}
+
 func Test_createWorkflowPod_rateLimited(t *testing.T) {
 	for limit, limited := range map[config.ResourceRateLimit]bool{
 		{Limit: 0, Burst: 0}: true,
@@ -1637,7 +1680,9 @@ func TestPodExists(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 
-	existingPod, doesExist, err := woc.podExists(pod.Name)
+	// Sleep 1 second to wait for informer getting pod info
+	time.Sleep(time.Second)
+	existingPod, doesExist, err := woc.podExists(pod.ObjectMeta.Name)
 	assert.NoError(t, err)
 	assert.NotNil(t, existingPod)
 	assert.True(t, doesExist)
