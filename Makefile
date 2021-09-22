@@ -512,7 +512,7 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYP
 pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES)
 	[ -e ./vendor ] || go mod vendor
 	[ -e ./v3 ] || ln -s . v3
-	bash $(GOPATH)/pkg/mod/k8s.io/code-generator@v0.20.4/generate-groups.sh \
+	bash $(GOPATH)/pkg/mod/k8s.io/code-generator@v0.21.5/generate-groups.sh \
 	    "deepcopy,client,informer,lister" \
 	    github.com/argoproj/argo-workflows/v3/pkg/client github.com/argoproj/argo-workflows/v3/pkg/apis \
 	    workflow:v1alpha1 \
