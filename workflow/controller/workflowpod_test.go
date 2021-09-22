@@ -1637,6 +1637,8 @@ func TestPodExists(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 
+	// Sleep 1 second to wait for informer getting pod info
+	time.Sleep(time.Second)
 	existingPod, doesExist, err := woc.podExists(pod.ObjectMeta.Name)
 	assert.NoError(t, err)
 	assert.NotNil(t, existingPod)
