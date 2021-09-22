@@ -14,6 +14,7 @@ import (
 	"golang.org/x/crypto/ssh"
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/config"
+	"gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/src-d/go-git.v4/plumbing/transport"
 	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 	ssh2 "gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
@@ -82,6 +83,7 @@ func (g *ArtifactDriver) auth(sshUser string) (func(), transport.AuthMethod, []s
 		filename := filepath.Join(os.TempDir(), "git-ask-pass.sh")
 		_, err := os.Stat(filename)
 		if os.IsNotExist(err) {
+			//nolint:gosec
 			err := ioutil.WriteFile(filename, []byte(`#!/bin/sh
 case "$1" in
 Username*) echo "${GIT_USERNAME}" ;;
@@ -128,8 +130,28 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 		Auth:              auth,
 		Depth:             inputArtifact.Git.GetDepth(),
 	})
-	if err != nil {
+	switch err {
+	case transport.ErrEmptyRemoteRepository:
+		log.Info("Cloned an empty repository ")
+		r, err := git.PlainInit(path, false)
+		if err != nil {
+			return err
+		}
+		if _, err := r.CreateRemote(&config.RemoteConfig{Name: git.DefaultRemoteName, URLs: []string{inputArtifact.Git.Repo}}); err != nil {
+			return err
+		}
+		branchName := inputArtifact.Git.Revision
+		if branchName == "" {
+			branchName = "master"
+		}
+		if err = r.CreateBranch(&config.Branch{Name: branchName, Remote: git.DefaultRemoteName, Merge: plumbing.Master}); err != nil {
+			return err
+		}
+		return nil
+	default:
 		return err
+	case nil:
+		// fallthrough ...
 	}
 	if inputArtifact.Git.Fetch != nil {
 		refSpecs := make([]config.RefSpec, len(inputArtifact.Git.Fetch))

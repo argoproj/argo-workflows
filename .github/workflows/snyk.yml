@@ -3,7 +3,8 @@ on:
   schedule:
     - cron: "30 2 * * *"
 jobs:
-  security:
+  golang:
+    if: github.repository == 'argoproj/argo-workflows'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
@@ -13,3 +14,16 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           args: --severity-threshold=high
+  node:
+    if: github.repository == 'argoproj/argo-workflows'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - run: yarn --cwd ui install
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --file=ui/package.json --severity-threshold=high
+

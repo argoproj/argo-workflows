@@ -720,7 +720,7 @@ func (s *CLISuite) TestWorkflowLint() {
 		data, err := ioutil.ReadFile("smoke/basic.yaml")
 		s.CheckError(err)
 		// Write data to dst
-		err = ioutil.WriteFile(filepath.Join(tmp, "my-workflow.yaml"), data, 0o644)
+		err = ioutil.WriteFile(filepath.Join(tmp, "my-workflow.yaml"), data, 0o600)
 		s.CheckError(err)
 		s.Given().
 			RunCli([]string{"lint", tmp}, func(t *testing.T, output string, err error) {

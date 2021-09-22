@@ -34,6 +34,9 @@ type PNSExecutor struct {
 	// mu for `containerNameToPID``
 	mu sync.RWMutex
 
+	// mu for `pidFileHandles``
+	pmu sync.RWMutex
+
 	containerNameToPID map[string]int
 
 	// pidFileHandles holds file handles to all root containers
@@ -47,7 +50,7 @@ type PNSExecutor struct {
 
 func NewPNSExecutor(clientset *kubernetes.Clientset, podName, namespace string) (*PNSExecutor, error) {
 	thisPID := os.Getpid()
-	log.Infof("Creating PNS executor (namespace: %s, pod: %s, pid: %d)", namespace, podName, thisPID)
+	log.Infof("Initialized PNS executor (namespace: %s, pod: %s, pid: %d)", namespace, podName, thisPID)
 	if thisPID == 1 {
 		return nil, errors.New(errors.CodeBadRequest, "process namespace sharing is not enabled on pod")
 	}
@@ -57,6 +60,7 @@ func NewPNSExecutor(clientset *kubernetes.Clientset, podName, namespace string) 
 		podName:            podName,
 		namespace:          namespace,
 		mu:                 sync.RWMutex{},
+		pmu:                sync.RWMutex{},
 		containerNameToPID: make(map[string]int),
 		pidFileHandles:     make(map[int]*os.File),
 		thisPID:            thisPID,
@@ -82,6 +86,8 @@ func (p *PNSExecutor) enterChroot(containerName string) error {
 	if pid == 0 {
 		return fmt.Errorf("cannot enter chroot for container named %q: no PID known - maybe short running container", containerName)
 	}
+	p.pmu.RLock()
+	defer p.pmu.RUnlock()
 	if err := p.pidFileHandles[pid].Chdir(); err != nil {
 		return errors.InternalWrapErrorf(err, "failed to chdir to main filesystem: %v", err)
 	}
@@ -320,6 +326,8 @@ func (p *PNSExecutor) secureRootFiles() error {
 				return err
 			}
 
+			p.pmu.Lock()
+			defer p.pmu.Unlock()
 			if p.pidFileHandles[pid] != fs {
 				// the main container may have switched (e.g. gone from busybox to the user's container)
 				if prevInfo, ok := p.pidFileHandles[pid]; ok {

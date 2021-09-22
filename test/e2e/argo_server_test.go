@@ -95,9 +95,17 @@ func (s *ArgoServerSuite) TestVersion() {
 	})
 }
 
-func (s *ArgoServerSuite) TestMetrics() {
-	s.Need(fixtures.CI)
-	s.e().GET("/metrics").
+func (s *ArgoServerSuite) TestMetricsForbidden() {
+	s.bearerToken = ""
+	s.e().
+		GET("/metrics").
+		Expect().
+		Status(403)
+}
+
+func (s *ArgoServerSuite) TestMetricsOK() {
+	s.e().
+		GET("/metrics").
 		Expect().
 		Status(200).
 		Body().

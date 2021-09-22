@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"time"
+
+	"google.golang.org/grpc/metadata"
 
 	"github.com/gorilla/handlers"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -323,7 +326,19 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mux.HandleFunc("/input-artifacts-by-uid/", artifactServer.GetInputArtifactByUID)
 	mux.Handle("/oauth2/redirect", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleRedirect)))
 	mux.Handle("/oauth2/callback", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleCallback)))
-	mux.Handle("/metrics", promhttp.Handler())
+	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+		if os.Getenv("ARGO_SERVER_METRICS_AUTH") != "false" {
+			header := metadata.New(map[string]string{"authorization": r.Header.Get("Authorization")})
+			ctx := metadata.NewIncomingContext(context.Background(), header)
+			if _, err := as.gatekeeper.Context(ctx); err != nil {
+				log.WithError(err).Error("failed to authenticate /metrics endpoint")
+				w.WriteHeader(403)
+				return
+			}
+		}
+		promhttp.Handler().ServeHTTP(w, r)
+
+	})
 	// we only enable HTST if we are secure mode, otherwise you would never be able access the UI
 	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef, as.tlsConfig != nil && as.hsts, as.xframeOptions, as.accessControlAllowOrigin).ServerFiles)
 	return &httpServer

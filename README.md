@@ -79,7 +79,7 @@ kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflo
 ## Documentation
 
 * [Get started here](docs/quick-start.md)
-* [How to write Argo Workflow specs](examples/README.md)
+* [How to write Argo Workflow specs](https://github.com/argoproj/argo-workflows/blob/master/examples/README.md)
 * [How to configure your artifact repository](docs/configure-artifact-repository.md)
 
 ## Features

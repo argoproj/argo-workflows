@@ -2,10 +2,6 @@
 
 delete a cluster workflow template
 
-### Synopsis
-
-delete a cluster workflow template
-
 ```
 argo cluster-template delete WORKFLOW_TEMPLATE [flags]
 ```

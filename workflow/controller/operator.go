@@ -493,7 +493,7 @@ func (woc *wfOperationCtx) getWorkflowDeadline() *time.Time {
 }
 
 // setGlobalParameters sets the globalParam map with global parameters
-func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Arguments) {
+func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Arguments) error {
 	woc.globalParams[common.GlobalVarWorkflowName] = woc.wf.ObjectMeta.Name
 	woc.globalParams[common.GlobalVarWorkflowNamespace] = woc.wf.ObjectMeta.Namespace
 	woc.globalParams[common.GlobalVarWorkflowServiceAccountName] = woc.execWf.Spec.ServiceAccountName
@@ -519,7 +519,20 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 		woc.globalParams[common.GlobalVarWorkflowParameters] = string(workflowParameters)
 	}
 	for _, param := range executionParameters.Parameters {
-		woc.globalParams["workflow.parameters."+param.Name] = param.Value.String()
+		if param.Value != nil {
+			woc.globalParams["workflow.parameters."+param.Name] = param.Value.String()
+		} else if param.ValueFrom != nil {
+			if param.ValueFrom.ConfigMapKeyRef != nil {
+				cmValue, err := util.GetConfigMapValue(woc.controller.configMapInformer, woc.wf.ObjectMeta.Namespace, param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key)
+				if err != nil {
+					return fmt.Errorf("failed to set global parameter %s from configmap with name %s and key %s: %w",
+						param.Name, param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key, err)
+				}
+				woc.globalParams["workflow.parameters."+param.Name] = cmValue
+			}
+		} else {
+			return fmt.Errorf("either value or valueFrom must be specified in order to set global parameter %s", param.Name)
+		}
 	}
 	for k, v := range woc.wf.ObjectMeta.Annotations {
 		woc.globalParams["workflow.annotations."+k] = v
@@ -534,6 +547,7 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 			}
 		}
 	}
+	return nil
 }
 
 // persistUpdates will update a workflow with any updates made during workflow operation.
@@ -939,9 +953,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 			woc.updateAgentPodStatus(ctx, pod)
 			return
 		}
-		nodeNameForPod := pod.Annotations[common.AnnotationKeyNodeName]
-
-		nodeID := woc.wf.NodeID(nodeNameForPod)
+		nodeID := woc.nodeID(pod)
 		seenPodLock.Lock()
 		seenPods[nodeID] = pod
 		seenPodLock.Unlock()
@@ -967,7 +979,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 				}
 				woc.updated = true
 			}
-			node := woc.wf.Status.Nodes[pod.ObjectMeta.Name]
+			node := woc.wf.Status.Nodes[nodeID]
 			match := true
 			if woc.execWf.Spec.PodGC.GetLabelSelector() != nil {
 				var podLabels labels.Set = pod.GetLabels()
@@ -1032,7 +1044,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 
 			// grace-period to allow informer sync
 			recentlyStarted := recentlyStarted(node)
-			woc.log.WithFields(log.Fields{"podName": node.Name, "nodePhase": node.Phase, "recentlyStarted": recentlyStarted}).Info("Workflow pod is missing")
+			woc.log.WithFields(log.Fields{"nodeName": node.Name, "nodePhase": node.Phase, "recentlyStarted": recentlyStarted}).Info("Workflow pod is missing")
 			metrics.PodMissingMetric.WithLabelValues(strconv.FormatBool(recentlyStarted), string(node.Phase)).Inc()
 
 			// If the node is pending and the pod does not exist, it could be the case that we want to try to submit it
@@ -1057,6 +1069,14 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+func (woc *wfOperationCtx) nodeID(pod *apiv1.Pod) string {
+	nodeID, ok := pod.Annotations[common.AnnotationKeyNodeID]
+	if !ok {
+		nodeID = woc.wf.NodeID(pod.Annotations[common.AnnotationKeyNodeName])
+	}
+	return nodeID
 }
 
 func recentlyStarted(node wfv1.NodeStatus) bool {
@@ -1140,7 +1160,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 	case apiv1.PodRunning:
 		newPhase = wfv1.NodeRunning
 		tmpl := woc.findTemplate(pod)
-		if tmpl != nil && tmpl.Daemon != nil && *tmpl.Daemon {
+		if !node.Fulfilled() && tmpl != nil && tmpl.Daemon != nil && *tmpl.Daemon {
 			// pod is running and template is marked daemon. check if everything is ready
 			for _, ctrStatus := range pod.Status.ContainerStatuses {
 				if !ctrStatus.Ready {
@@ -1187,56 +1207,56 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			}
 		}
 	}
-
-	if newDaemonStatus != nil {
-		if !*newDaemonStatus {
-			// if the daemon status switched to false, we prefer to just unset daemoned status field
-			// (as opposed to setting it to false)
-			newDaemonStatus = nil
-		}
-		if (newDaemonStatus != nil && node.Daemoned == nil) || (newDaemonStatus == nil && node.Daemoned != nil) {
-			woc.log.Infof("Setting node %v daemoned: %v -> %v", node.ID, node.Daemoned, newDaemonStatus)
-			node.Daemoned = newDaemonStatus
-			updated = true
-			if pod.Status.PodIP != "" && pod.Status.PodIP != node.PodIP {
-				// only update Pod IP for daemoned nodes to reduce number of updates
-				woc.log.Infof("Updating daemon node %s IP %s -> %s", node.ID, node.PodIP, pod.Status.PodIP)
-				node.PodIP = pod.Status.PodIP
+	if !node.Completed() {
+		if newDaemonStatus != nil {
+			if !*newDaemonStatus {
+				// if the daemon status switched to false, we prefer to just unset daemoned status field
+				// (as opposed to setting it to false)
+				newDaemonStatus = nil
 			}
-		}
-	}
-
-	// we only need to update these values if the container transitions to complete
-	if !node.Phase.Fulfilled() && newPhase.Fulfilled() {
-		// outputs are mixed between the annotation (parameters, artifacts, and result) and the pod's status (exit code)
-		if exitCode := getExitCode(pod); exitCode != nil {
-			woc.log.Infof("Updating node %s exit code %d", node.ID, *exitCode)
-			node.Outputs = &wfv1.Outputs{ExitCode: pointer.StringPtr(fmt.Sprintf("%d", int(*exitCode)))}
-			if outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]; ok {
-				woc.log.Infof("Setting node %v outputs: %s", node.ID, outputStr)
-				if err := json.Unmarshal([]byte(outputStr), node.Outputs); err != nil { // I don't expect an error to ever happen in production
-					node.Phase = wfv1.NodeError
-					node.Message = err.Error()
+			if (newDaemonStatus != nil && node.Daemoned == nil) || (newDaemonStatus == nil && node.Daemoned != nil) {
+				woc.log.Infof("Setting node %v daemoned: %v -> %v", node.ID, node.Daemoned, newDaemonStatus)
+				node.Daemoned = newDaemonStatus
+				updated = true
+				if pod.Status.PodIP != "" && pod.Status.PodIP != node.PodIP {
+					// only update Pod IP for daemoned nodes to reduce number of updates
+					woc.log.Infof("Updating daemon node %s IP %s -> %s", node.ID, node.PodIP, pod.Status.PodIP)
+					node.PodIP = pod.Status.PodIP
 				}
 			}
 		}
-	}
 
-	if node.Phase != newPhase {
-		woc.log.Infof("Updating node %s status %s -> %s", node.ID, node.Phase, newPhase)
-		// if we are transitioning from Pending to a different state, clear out pending message
-		if node.Phase == wfv1.NodePending {
-			node.Message = ""
+		// we only need to update these values if the container transitions to complete
+		if newPhase.Fulfilled() {
+			// outputs are mixed between the annotation (parameters, artifacts, and result) and the pod's status (exit code)
+			if exitCode := getExitCode(pod); exitCode != nil {
+				woc.log.Infof("Updating node %s exit code %d", node.ID, *exitCode)
+				node.Outputs = &wfv1.Outputs{ExitCode: pointer.StringPtr(fmt.Sprintf("%d", int(*exitCode)))}
+				if outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]; ok {
+					woc.log.Infof("Setting node %v outputs: %s", node.ID, outputStr)
+					if err := json.Unmarshal([]byte(outputStr), node.Outputs); err != nil { // I don't expect an error to ever happen in production
+						node.Phase = wfv1.NodeError
+						node.Message = err.Error()
+					}
+				}
+			}
 		}
-		updated = true
-		node.Phase = newPhase
-	}
-	if message != "" && node.Message != message {
-		woc.log.Infof("Updating node %s message: %s", node.ID, message)
-		updated = true
-		node.Message = message
-	}
 
+		if node.Phase != newPhase {
+			woc.log.Infof("Updating node %s status %s -> %s", node.ID, node.Phase, newPhase)
+			// if we are transitioning from Pending to a different state, clear out pending message
+			if node.Phase == wfv1.NodePending {
+				node.Message = ""
+			}
+			updated = true
+			node.Phase = newPhase
+		}
+		if message != "" && node.Message != message {
+			woc.log.Infof("Updating node %s message: %s", node.ID, message)
+			updated = true
+			node.Message = message
+		}
+	}
 	if node.Fulfilled() && node.FinishedAt.IsZero() {
 		updated = true
 		node.FinishedAt = getLatestFinishedAt(pod)
@@ -1610,7 +1630,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	}
 
 	// Inputs has been processed with arguments already, so pass empty arguments.
-	processedTmpl, err := common.ProcessArgs(resolvedTmpl, &args, woc.globalParams, localParams, false)
+	processedTmpl, err := common.ProcessArgs(resolvedTmpl, &args, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer)
 	if err != nil {
 		return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 	}
@@ -2443,6 +2463,9 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 					continue
 				}
 				return nil, fmt.Errorf("unable to resolve outputs from scope: %s", err)
+			}
+			if resolvedArt == nil {
+				continue
 			}
 			resolvedArt.Name = art.Name
 			outputs.Artifacts = append(outputs.Artifacts, *resolvedArt)
@@ -3370,8 +3393,12 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 			woc.updated = true
 		}
 	}
-	woc.setGlobalParameters(woc.execWf.Spec.Arguments)
-	err := woc.substituteGlobalVariables()
+	err := woc.setGlobalParameters(woc.execWf.Spec.Arguments)
+	if err != nil {
+		woc.markWorkflowFailed(ctx, fmt.Sprintf("failed to set global parameters: %s", err.Error()))
+		return err
+	}
+	err = woc.substituteGlobalVariables()
 	if err != nil {
 		return err
 	}

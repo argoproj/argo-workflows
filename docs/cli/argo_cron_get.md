@@ -2,10 +2,6 @@
 
 display details about a cron workflow
 
-### Synopsis
-
-display details about a cron workflow
-
 ```
 argo cron get CRON_WORKFLOW... [flags]
 ```

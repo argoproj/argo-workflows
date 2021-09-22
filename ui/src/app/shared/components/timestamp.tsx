@@ -5,7 +5,7 @@ import {ago} from '../duration';
 export const Timestamp = ({date}: {date: Date | string | number}) => {
     return (
         <span>
-            {date === null ? (
+            {date === null || date === undefined ? (
                 '-'
             ) : (
                 <span title={date.toString()}>

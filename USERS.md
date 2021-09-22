@@ -28,9 +28,11 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [BioBox Analytics](https://biobox.io)
 1. [BlackRock](https://www.blackrock.com/)
 1. [Bloomberg](https://www.bloomberg.com/)
-1. [ByteDance](https://www.bytedance.com/en/)
 1. [bonprix](https://en.bonprix.de/corporate/our-company/)
+1. [Botkeeper](https://www.botkeeper.com/)
+1. [ByteDance](https://www.bytedance.com/en/)
 1. [Canva](https://www.canva.com/)
+1. [Capact](https://capact.io/)
 1. [Capital One](https://www.capitalone.com/tech/)
 1. [Carrefour](https://www.carrefour.com/)
 1. [CarTrack](https://www.cartrack.com/)
@@ -84,6 +86,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Kasa](https://www.kasa.co.kr/)
 1. [KintoHub](https://www.kintohub.com/)
 1. [Localytics](https://www.localytics.com/)
+1. [Lumin Digital](https://lumindigital.com/)
 1. [Maersk](https://www.maersk.com/solutions/digital-solutions)
 1. [Marmalade](https://www.marmalade.co/)
 1. [Max Kelsen](https://maxkelsen.com/)
@@ -128,6 +131,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Stillwater Supercomputing, Inc](http://www.stillwater-sc.com/)
 1. [strongDM](https://www.strongdm.com/)
 1. [Styra](https://www.styra.com/)
+1. [Sutpc](http://www.sutpc.com/)
 1. [Threekit](https://www.threekit.com/)
 1. [Tiger Analytics](https://www.tigeranalytics.com/)
 1. [Tulip](https://tulip.com/)
@@ -141,7 +145,6 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Woolworths Group](https://www.woolworthsgroup.com.au/)
 1. [Workiva](https://www.workiva.com/)
 1. [Zhihu](https://www.zhihu.com/)
-
 
 ### Projects Using Argo
 

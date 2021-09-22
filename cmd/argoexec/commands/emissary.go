@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -192,7 +193,7 @@ func saveArtifact(srcPath string) error {
 		logger.WithError(err).Errorf("cannot save artifact %s", srcPath)
 		return nil
 	}
-	dstPath := varRunArgo + "/outputs/artifacts/" + srcPath + ".tgz"
+	dstPath := filepath.Join(varRunArgo, "/outputs/artifacts/", strings.TrimSuffix(srcPath, "/")+".tgz")
 	logger.Infof("%s -> %s", srcPath, dstPath)
 	z := filepath.Dir(dstPath)
 	if err := os.MkdirAll(z, 0o755); err != nil { // chmod rwxr-xr-x

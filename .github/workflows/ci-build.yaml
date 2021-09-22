@@ -14,7 +14,7 @@ jobs:
     name: Unit Tests
     runs-on: ubuntu-20.04
     # 5m30
-    timeout-minutes: 7
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
@@ -55,6 +55,9 @@ jobs:
             profile: minimal
           - test: test-executor
             containerRuntimeExecutor: docker
+            profile: minimal
+          - test: test-examples
+            containerRuntimeExecutor: emissary
             profile: minimal
           - test: test-executor
             containerRuntimeExecutor: emissary
@@ -168,7 +171,7 @@ jobs:
     name: Lint
     runs-on: ubuntu-20.04
     needs: [ tests, codegen ]
-    timeout-minutes: 5
+    timeout-minutes: 6
     env:
       GOPATH: /home/runner/go
     steps:
@@ -176,23 +179,7 @@ jobs:
       - run: cp server/static/files.go.stub server/static/files.go
       - uses: golangci/golangci-lint-action@v2
         with:
-          version: v1.36.0
-
-  security:
-    name: Security Scan
-    runs-on: ubuntu-20.04
-    needs: [ tests, codegen, lint ]
-    timeout-minutes: 6
-    env:
-      GOPATH: /home/runner/go
-    steps:
-      - name: Checkout Source
-        uses: actions/checkout@v2
-      - run: cp server/static/files.go.stub server/static/files.go
-      - name: Run Gosec Security Scanner
-        uses: securego/gosec@v2.8.1
-        with:
-          args: '-include=G307,G304 ./...'
+          version: v1.40.1
 
   ui:
     name: UI

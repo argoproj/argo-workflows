@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
-	_ "net/http/pprof"
 	"os"
 	"reflect"
 	"strconv"
@@ -31,6 +30,8 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/types"
 	"github.com/argoproj/argo-workflows/v3/util/cmd"
 	"github.com/argoproj/argo-workflows/v3/util/help"
+	pprofutil "github.com/argoproj/argo-workflows/v3/util/pprof"
+	tlsutils "github.com/argoproj/argo-workflows/v3/util/tls"
 )
 
 func NewServerCommand() *cobra.Command {
@@ -60,6 +61,7 @@ See %s`, help.ArgoServer),
 			cmd.SetLogFormatter(logFormat)
 			stats.RegisterStackDumper()
 			stats.StartStatsTicker(5 * time.Minute)
+			pprofutil.Init()
 
 			config, err := client.GetConfig().ClientConfig()
 			if err != nil {
@@ -99,18 +101,20 @@ See %s`, help.ArgoServer),
 
 			var tlsConfig *tls.Config
 			if secure {
-				cer, err := tls.LoadX509KeyPair("argo-server.crt", "argo-server.key")
-				if err != nil {
-					return err
-				}
+				log.Infof("Generating Self Signed TLS Certificates for Secure Mode")
 				tlsMinVersion, err := env.GetInt("TLS_MIN_VERSION", tls.VersionTLS12)
 				if err != nil {
 					return err
 				}
+				var cer *tls.Certificate
+				cer, err = tlsutils.GenerateX509KeyPair()
+				if err != nil {
+					return err
+				}
 				tlsConfig = &tls.Config{
-					Certificates:       []tls.Certificate{cer},
-					InsecureSkipVerify: true,
+					Certificates:       []tls.Certificate{*cer},
 					MinVersion:         uint16(tlsMinVersion),
+					InsecureSkipVerify: true,
 				}
 			} else {
 				log.Warn("You are running in insecure mode. Learn how to enable transport layer security: https://argoproj.github.io/argo-workflows/tls/")
@@ -182,9 +186,7 @@ See %s`, help.ArgoServer),
 	}
 	command.Flags().StringVar(&baseHRef, "basehref", defaultBaseHRef, "Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /. Defaults to the environment variable BASE_HREF.")
 	// "-e" for encrypt, like zip
-	// We default to secure mode if we find certs available, otherwise we default to insecure mode.
-	_, err := os.Stat("argo-server.crt")
-	command.Flags().BoolVarP(&secure, "secure", "e", !os.IsNotExist(err), "Whether or not we should listen on TLS.")
+	command.Flags().BoolVarP(&secure, "secure", "e", true, "Whether or not we should listen on TLS.")
 	command.Flags().BoolVar(&htst, "hsts", true, "Whether or not we should add a HTTP Secure Transport Security header. This only has effect if secure is enabled.")
 	command.Flags().StringArrayVar(&authModes, "auth-mode", []string{"client"}, "API server authentication mode. Any 1 or more length permutation of: client,server,sso")
 	command.Flags().StringVar(&configMap, "configmap", "workflow-controller-configmap", "Name of K8s configmap to retrieve workflow controller configuration")

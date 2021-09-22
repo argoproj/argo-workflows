@@ -140,6 +140,9 @@ spec:
     inputs:
       parameters:
       - name: message
+      - name: startedat
+      - name: finishedat
+      - name: id
     container:
       image: alpine:3.7
       command: [echo, "{{inputs.parameters.message}}"]
@@ -157,6 +160,12 @@ spec:
           parameters:
           - name: message
             value: val
+          - name: startedat
+            value: "test"
+          - name: finishedat
+            value: "test"
+          - name: id
+            value: "1"
       - name: B
         dependencies: [A]
         template: echo
@@ -164,6 +173,12 @@ spec:
           parameters:
           - name: message
             value: "{{tasks.A.outputs.parameters.hosts}}"
+          - name: startedat
+            value: "{{tasks.A.startedAt}}"
+          - name: finishedat
+            value: "{{tasks.A.finishedAt}}"
+          - name: id
+            value: "{{tasks.A.id}}"
       - name: C
         dependencies: [B]
         template: echo
@@ -171,6 +186,12 @@ spec:
           parameters:
           - name: message
             value: "{{tasks.A.outputs.parameters.hosts}}"
+          - name: startedat
+            value: "{{tasks.A.startedAt}}"
+          - name: finishedat
+            value: "{{tasks.A.finishedAt}}"
+          - name: id
+            value: "{{tasks.A.id}}"
 `
 
 var dagResolvedVarNotAncestor = `

@@ -15,6 +15,10 @@ const (
 	// DockerSockVolumeName is the volume name for the /var/run/docker.sock host path volume
 	DockerSockVolumeName = "docker-sock"
 
+	// AnnotationKeyNodeID is the ID of the node.
+	// Historically, the pod name was the same as the node ID.
+	// Therefore, if it does not exist, then the node ID is the pod name.
+	AnnotationKeyNodeID = workflow.WorkflowFullName + "/node-id"
 	// AnnotationKeyNodeName is the pod metadata annotation key containing the workflow node name
 	AnnotationKeyNodeName = workflow.WorkflowFullName + "/node-name"
 	// AnnotationKeyNodeName is the node's type
@@ -172,8 +176,8 @@ const (
 
 	KubeConfigDefaultMountPath    = "/kube/config"
 	KubeConfigDefaultVolumeName   = "kubeconfig"
-	ServiceAccountTokenMountPath  = "/var/run/secrets/kubernetes.io/serviceaccount"
-	ServiceAccountTokenVolumeName = "exec-sa-token"
+	ServiceAccountTokenMountPath  = "/var/run/secrets/kubernetes.io/serviceaccount" //nolint:gosec
+	ServiceAccountTokenVolumeName = "exec-sa-token"                                 //nolint:gosec
 	SecretVolMountPath            = "/argo/secret"
 )
 

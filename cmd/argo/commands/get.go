@@ -70,7 +70,7 @@ func NewGetCommand() *cobra.Command {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			ctx, apiClient := client.NewAPIClient()
+			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 			for _, name := range args {

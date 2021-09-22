@@ -3983,6 +3983,184 @@
           }
         }
       }
+    },
+    "/artifacts-by-uid/{uid}/{podName}/{artifactName}": {
+      "get": {
+        "tags": [
+          "ArtifactService"
+        ],
+        "summary": "Get an output artifact by UID.",
+        "operationId": "ArtifactService_GetOutputArtifactByUID",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "uid",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "podName",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "artifactName",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An artifact file."
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    },
+    "/artifacts/{namespace}/{name}/{podName}/{artifactName}": {
+      "get": {
+        "tags": [
+          "ArtifactService"
+        ],
+        "summary": "Get an output artifact.",
+        "operationId": "ArtifactService_GetOutputArtifact",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "podName",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "artifactName",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An artifact file."
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    },
+    "/input-artifacts-by-uid/{uid}/{podName}/{artifactName}": {
+      "get": {
+        "tags": [
+          "ArtifactService"
+        ],
+        "summary": "Get an input artifact by UID.",
+        "operationId": "ArtifactService_GetInputArtifactByUID",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "podName",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "artifactName",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An artifact file."
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    },
+    "/input-artifacts/{namespace}/{name}/{podName}/{artifactName}": {
+      "get": {
+        "tags": [
+          "ArtifactService"
+        ],
+        "summary": "Get an input artifact.",
+        "operationId": "ArtifactService_GetInputArtifact",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "podName",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "artifactName",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An artifact file."
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
     }
   },
   "definitions": {
@@ -4062,6 +4240,9 @@
         },
         "secretAccessKey": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "sessionToken": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         }
       }
     },
@@ -4070,6 +4251,136 @@
       "properties": {
         "url": {
           "type": "string"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.AbstractStep": {
+      "type": "object",
+      "properties": {
+        "resources": {
+          "title": "+kubebuilder:default={limits: {\"cpu\": \"500m\", \"memory\": \"256Mi\"}, requests: {\"cpu\": \"100m\", \"memory\": \"64Mi\"}}",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.AbstractVolumeSource": {
+      "type": "object",
+      "properties": {
+        "awsElasticBlockStore": {
+          "title": "AWSElasticBlockStore represents an AWS Disk resource that is attached to a\nkubelet's host machine and then exposed to the pod.\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.AWSElasticBlockStoreVolumeSource"
+        },
+        "azureDisk": {
+          "title": "AzureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.AzureDiskVolumeSource"
+        },
+        "azureFile": {
+          "title": "AzureFile represents an Azure File Service mount on the host and bind mount to the pod.\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.AzureFileVolumeSource"
+        },
+        "cephfs": {
+          "title": "CephFS represents a Ceph FS mount on the host that shares a pod's lifetime\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.CephFSVolumeSource"
+        },
+        "cinder": {
+          "title": "Cinder represents a cinder volume attached and mounted on kubelets host machine.\nMore info: https://examples.io.k8s.mysql-cinder-pd/README.md\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.CinderVolumeSource"
+        },
+        "configMap": {
+          "title": "ConfigMap represents a configMap that should populate this volume\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapVolumeSource"
+        },
+        "csi": {
+          "title": "CSI (Container Storage Interface) represents ephemeral storage that is handled by certain external CSI drivers (Beta feature).\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.CSIVolumeSource"
+        },
+        "downwardAPI": {
+          "title": "DownwardAPI represents downward API about the pod that should populate this volume\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.DownwardAPIVolumeSource"
+        },
+        "emptyDir": {
+          "title": "EmptyDir represents a temporary directory that shares a pod's lifetime.\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.EmptyDirVolumeSource"
+        },
+        "ephemeral": {
+          "description": "Ephemeral represents a volume that is handled by a cluster storage driver (Alpha feature).\nThe volume's lifecycle is tied to the pod that defines it - it will be created before the pod starts,\nand deleted when the pod is removed.\n\nUse this if:\na) the volume is only needed while the pod runs,\nb) features of normal volumes like restoring from snapshot or capacity\n   tracking are needed,\nc) the storage driver is specified through a storage class, and\nd) the storage driver supports dynamic volume provisioning through\n   a PersistentVolumeClaim (see EphemeralVolumeSource for more\n   information on the connection between this volume type\n   and PersistentVolumeClaim).\n\nUse PersistentVolumeClaim or one of the vendor-specific\nAPIs for volumes that persist for longer than the lifecycle\nof an individual pod.\n\nUse CSI for light-weight local ephemeral volumes if the CSI driver is meant to\nbe used that way - see the documentation of the driver for\nmore information.\n\nA pod can use both types of ephemeral volumes and\npersistent volumes at the same time.\n\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.EphemeralVolumeSource"
+        },
+        "fc": {
+          "title": "FC represents a Fibre Channel resource that is attached to a kubelet's host machine and then exposed to the pod.\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.FCVolumeSource"
+        },
+        "flexVolume": {
+          "title": "FlexVolume represents a generic volume resource that is\nprovisioned/attached using an exec based plugin.\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.FlexVolumeSource"
+        },
+        "flocker": {
+          "title": "Flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.FlockerVolumeSource"
+        },
+        "gcePersistentDisk": {
+          "title": "GCEPersistentDisk represents a GCE Disk resource that is attached to a\nkubelet's host machine and then exposed to the pod.\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.GCEPersistentDiskVolumeSource"
+        },
+        "gitRepo": {
+          "title": "GitRepo represents a git repository at a particular revision.\nDEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount an\nEmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir\ninto the Pod's container.\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.GitRepoVolumeSource"
+        },
+        "glusterfs": {
+          "title": "Glusterfs represents a Glusterfs mount on the host that shares a pod's lifetime.\nMore info: https://examples.io.k8s.volumes/glusterfs/README.md\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.GlusterfsVolumeSource"
+        },
+        "hostPath": {
+          "title": "HostPath represents a pre-existing file or directory on the host\nmachine that is directly exposed to the container. This is generally\nused for system agents or other privileged things that are allowed\nto see the host machine. Most containers will NOT need this.\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath\n---\nTODO(jonesdl) We need to restrict who can use host directory mounts and who can/can not\nmount host directories as read/write.\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.HostPathVolumeSource"
+        },
+        "iscsi": {
+          "title": "ISCSI represents an ISCSI Disk resource that is attached to a\nkubelet's host machine and then exposed to the pod.\nMore info: https://examples.io.k8s.volumes/iscsi/README.md\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ISCSIVolumeSource"
+        },
+        "nfs": {
+          "title": "NFS represents an NFS mount on the host that shares a pod's lifetime\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#nfs\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.NFSVolumeSource"
+        },
+        "persistentVolumeClaim": {
+          "title": "PersistentVolumeClaimVolumeSource represents a reference to a\nPersistentVolumeClaim in the same namespace.\nMore info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.PersistentVolumeClaimVolumeSource"
+        },
+        "photonPersistentDisk": {
+          "title": "PhotonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine",
+          "$ref": "#/definitions/io.k8s.api.core.v1.PhotonPersistentDiskVolumeSource"
+        },
+        "portworxVolume": {
+          "title": "PortworxVolume represents a portworx volume attached and mounted on kubelets host machine\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.PortworxVolumeSource"
+        },
+        "projected": {
+          "title": "Items for all in one resources secrets, configmaps, and downward API",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ProjectedVolumeSource"
+        },
+        "quobyte": {
+          "title": "Quobyte represents a Quobyte mount on the host that shares a pod's lifetime\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.QuobyteVolumeSource"
+        },
+        "rbd": {
+          "title": "RBD represents a Rados Block Device mount on the host that shares a pod's lifetime.\nMore info: https://examples.io.k8s.volumes/rbd/README.md\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.RBDVolumeSource"
+        },
+        "scaleIO": {
+          "title": "ScaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes.\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ScaleIOVolumeSource"
+        },
+        "secret": {
+          "title": "Secret represents a secret that should populate this volume.\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#secret\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretVolumeSource"
+        },
+        "storageos": {
+          "title": "StorageOS represents a StorageOS volume attached and mounted on Kubernetes nodes.\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.StorageOSVolumeSource"
+        },
+        "vsphereVolume": {
+          "title": "VsphereVolume represents a vSphere volume attached and mounted on kubelets host machine\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.VsphereVirtualDiskVolumeSource"
         }
       }
     },
@@ -4100,7 +4411,12 @@
       }
     },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Cat": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "abstractStep": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.AbstractStep"
+        }
+      }
     },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Code": {
       "type": "object",
@@ -4237,6 +4553,9 @@
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Dedupe": {
       "type": "object",
       "properties": {
+        "abstractStep": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.AbstractStep"
+        },
         "maxSize": {
           "title": "MaxSize is the maximum number of entries to keep in the in-memory database used to store recent UIDs.\nLarger number mean bigger windows of time for dedupe, but greater memory usage.\n+kubebuilder:default=\"1M\"",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.api.resource.Quantity"
@@ -4248,10 +4567,31 @@
       }
     },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Expand": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "abstractStep": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.AbstractStep"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Filter": {
+      "type": "object",
+      "properties": {
+        "abstractStep": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.AbstractStep"
+        },
+        "expression": {
+          "type": "string"
+        }
+      }
     },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Flatten": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "abstractStep": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.AbstractStep"
+        }
+      }
     },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Git": {
       "type": "object",
@@ -4347,6 +4687,9 @@
             "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.HTTPHeader"
           }
         },
+        "insecureSkipVerify": {
+          "type": "boolean"
+        },
         "url": {
           "type": "string"
         }
@@ -4394,6 +4737,9 @@
           "items": {
             "type": "string"
           }
+        },
+        "maxMessageBytes": {
+          "type": "integer"
         },
         "net": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.KafkaNET"
@@ -4446,6 +4792,17 @@
         }
       }
     },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Map": {
+      "type": "object",
+      "properties": {
+        "abstractStep": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.AbstractStep"
+        },
+        "expression": {
+          "type": "string"
+        }
+      }
+    },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Metadata": {
       "type": "object",
       "properties": {
@@ -4460,27 +4817,6 @@
           "additionalProperties": {
             "type": "string"
           }
-        }
-      }
-    },
-    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Metrics": {
-      "type": "object",
-      "properties": {
-        "errors": {
-          "type": "string",
-          "format": "uint64"
-        },
-        "rate": {
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.api.resource.Quantity"
-        },
-        "retries": {
-          "type": "string",
-          "format": "uint64",
-          "title": "current rate of messages per second"
-        },
-        "total": {
-          "type": "string",
-          "format": "uint64"
         }
       }
     },
@@ -4516,6 +4852,10 @@
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.PipelineSpec": {
       "type": "object",
       "properties": {
+        "deletionDelay": {
+          "title": "+kubebuilder:default=\"72h\"",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Duration"
+        },
         "steps": {
           "type": "array",
           "title": "+patchStrategy=merge\n+patchMergeKey=name",
@@ -4577,6 +4917,10 @@
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.S3Source": {
       "type": "object",
       "properties": {
+        "concurrency": {
+          "type": "integer",
+          "title": "+kubebuilder:default=1"
+        },
         "pollPeriod": {
           "title": "+kubebuilder:default=\"1m\"",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Duration"
@@ -4673,15 +5017,17 @@
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Scale": {
       "type": "object",
       "properties": {
-        "maxReplicas": {
-          "type": "integer"
+        "desiredReplicas": {
+          "description": "An expression to determine the number of replicas. Must evaluation to an `int`.",
+          "type": "string"
         },
-        "minReplicas": {
-          "type": "integer"
+        "peekDelay": {
+          "type": "string",
+          "title": "An expression to determine the delay for peeking. Maybe string or duration, e.g. `\"4m\"`\n+kubebuilder:default=\"defaultPeekDelay\""
         },
-        "replicaRatio": {
-          "type": "integer",
-          "title": "takes precedence over min"
+        "scalingDelay": {
+          "type": "string",
+          "title": "An expression to determine the delay for scaling. Maybe string or duration, e.g. `\"1m\"`\n+kubebuilder:default=\"defaultScalingDelay\""
         }
       }
     },
@@ -4718,6 +5064,9 @@
         },
         "stan": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.STAN"
+        },
+        "volume": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.VolumeSink"
         }
       }
     },
@@ -4749,21 +5098,9 @@
         },
         "stan": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.STAN"
-        }
-      }
-    },
-    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.SourceStatus": {
-      "type": "object",
-      "properties": {
-        "metrics": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Metrics"
-          }
         },
-        "pending": {
-          "type": "string",
-          "format": "uint64"
+        "volume": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.VolumeSource"
         }
       }
     },
@@ -4804,7 +5141,7 @@
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Expand"
         },
         "filter": {
-          "type": "string"
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Filter"
         },
         "flatten": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Flatten"
@@ -4823,7 +5160,7 @@
           }
         },
         "map": {
-          "type": "string"
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Map"
         },
         "metadata": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Metadata"
@@ -4847,6 +5184,7 @@
           "title": "+kubebuilder:default=OnFailure"
         },
         "scale": {
+          "title": "+kubebuilder:default={peekDelay: \"defaultPeekDelay\", scalingDelay: \"defaultScalingDelay\", desiredReplicas: \"\"}",
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Scale"
         },
         "serviceAccountName": {
@@ -4909,18 +5247,6 @@
         },
         "selector": {
           "type": "string"
-        },
-        "sinkStatuses": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.SourceStatus"
-          }
-        },
-        "sourceStatuses": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.SourceStatus"
-          }
         }
       }
     },
@@ -4950,6 +5276,33 @@
         "keySecret": {
           "title": "KeySecret refers to the secret that contains the key",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.VolumeSink": {
+      "type": "object",
+      "properties": {
+        "abstractVolumeSource": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.AbstractVolumeSource"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.VolumeSource": {
+      "type": "object",
+      "properties": {
+        "abstractVolumeSource": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.AbstractVolumeSource"
+        },
+        "concurrency": {
+          "type": "integer",
+          "title": "+kubebuilder:default=1"
+        },
+        "pollPeriod": {
+          "title": "+kubebuilder:default=\"1m\"",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Duration"
+        },
+        "readOnly": {
+          "type": "boolean"
         }
       }
     },
@@ -9896,8 +10249,11 @@
           "type": "string"
         },
         "createBucketIfNotPresent": {
-          "description": "CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist",
+          "description": "CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist. Setting Enabled Encryption will apply either SSE-S3 to the bucket if KmsKeyId is not set or SSE-KMS if it is.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CreateS3BucketOptions"
+        },
+        "encryptionOptions": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.S3EncryptionOptions"
         },
         "endpoint": {
           "description": "Endpoint is the hostname of the bucket endpoint",
@@ -9942,8 +10298,11 @@
           "type": "string"
         },
         "createBucketIfNotPresent": {
-          "description": "CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist",
+          "description": "CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist. Setting Enabled Encryption will apply either SSE-S3 to the bucket if KmsKeyId is not set or SSE-KMS if it is.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CreateS3BucketOptions"
+        },
+        "encryptionOptions": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.S3EncryptionOptions"
         },
         "endpoint": {
           "description": "Endpoint is the hostname of the bucket endpoint",
@@ -9976,6 +10335,28 @@
         "useSDKCreds": {
           "description": "UseSDKCreds tells the driver to figure out credentials based on sdk defaults.",
           "type": "boolean"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.S3EncryptionOptions": {
+      "description": "S3EncryptionOptions used to determine encryption options during s3 operations",
+      "type": "object",
+      "properties": {
+        "enableEncryption": {
+          "description": "EnableEncryption tells the driver to encrypt objects if set to true. If kmsKeyId and serverSideCustomerKeySecret are not set, SSE-S3 will be used",
+          "type": "boolean"
+        },
+        "kmsEncryptionContext": {
+          "description": "KmsEncryptionContext is a json blob that contains an encryption context. See https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html#encrypt_context for more information",
+          "type": "string"
+        },
+        "kmsKeyId": {
+          "description": "KMSKeyId tells the driver to encrypt the object using the specified KMS Key.",
+          "type": "string"
+        },
+        "serverSideCustomerKeySecret": {
+          "description": "ServerSideCustomerKeySecret tells the driver to encrypt the output artifacts using SSE-C with the specified secret.",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         }
       }
     },
@@ -10699,6 +11080,10 @@
       "description": "ValueFrom describes a location in which to obtain the value to a parameter",
       "type": "object",
       "properties": {
+        "configMapKeyRef": {
+          "description": "ConfigMapKeyRef is configmap selector for input parameter configuration",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector"
+        },
         "default": {
           "description": "Default specifies a value to be used if retrieving the value from the specified source fails",
           "type": "string"

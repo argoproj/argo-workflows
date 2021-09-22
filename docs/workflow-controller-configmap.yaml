@@ -119,6 +119,26 @@ data:
       # `spec.template.spec.securityContext.fsGroup: 65534` configuration. This is required for IRSA to be able to access 
       # `/var/run/secrets/eks.amazonaws.com/serviceaccount/token` file, and authenticate with AWS.
       useSDKCreds: false
+      
+      encryptionOptions:
+        # If this is set to true, SSE-S3 encryption will be used to store objects
+        # unless kmsKeyId or serverSideCustomerKeySecret is set 
+        enableEncryption: false
+        # A valid kms key id. If this value is set, the object stored in s3 will be encrypted with SSE-KMS
+        # Note: You cannot set both kmsKeyId and serverSideCustomerKeySecret
+        # kmsKeyId: ''
+        # Allows you to set a json blob of simple key value pairs. See 
+        # https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html#encrypt_context
+        # for more information
+        # kmsEncryptionContext: ''
+        # The actual secret object (in this example my-s3-credentials), 
+        # should be created when using a custom secret to encrypt objects in using SSE-C
+        # Note: You cannot set both kmsKeyId and serverSideCustomerKeySecret
+        # serverSideCustomerKeySecret:
+        #  name: my-s3-credentials
+        #  key: secretKey
+
+      
 
   # Specifies the container runtime interface to use (default: docker)
   # must be one of: docker, kubelet, k8sapi, pns, emissary

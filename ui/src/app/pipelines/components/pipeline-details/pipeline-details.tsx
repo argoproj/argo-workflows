@@ -134,7 +134,8 @@ export const PipelineDetails = ({history, match, location}: RouteComponentProps<
                                 map: true,
                                 s3: true,
                                 stan: true,
-                                unknown: true
+                                unknown: true,
+                                volume: true
                             }}
                             defaultIconShape='circle'
                             nodeClassNamesTitle='Status'

@@ -341,7 +341,7 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 		}
 	}
 
-	newTmpl, err := common.ProcessArgs(tmpl, args, ctx.globalParams, localParams, true)
+	newTmpl, err := common.ProcessArgs(tmpl, args, ctx.globalParams, localParams, true, "", nil)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", tmpl.Name, err)
 	}
@@ -705,7 +705,7 @@ func validateArgumentsFieldNames(prefix string, arguments wfv1.Arguments) error 
 // validateArgumentsValues ensures that all arguments have parameter values or artifact locations
 func validateArgumentsValues(prefix string, arguments wfv1.Arguments) error {
 	for _, param := range arguments.Parameters {
-		if param.Value == nil {
+		if param.ValueFrom == nil && param.Value == nil {
 			return errors.Errorf(errors.CodeBadRequest, "%s%s.value is required", prefix, param.Name)
 		}
 		if param.Enum != nil {
@@ -851,6 +851,9 @@ func addItemsToScope(withItems []wfv1.Item, withParam string, withSequence *wfv1
 }
 
 func (ctx *templateValidationCtx) addOutputsToScope(tmpl *wfv1.Template, prefix string, scope map[string]interface{}, aggregate bool, isAncestor bool) {
+	scope[fmt.Sprintf("%s.id", prefix)] = true
+	scope[fmt.Sprintf("%s.startedAt", prefix)] = true
+	scope[fmt.Sprintf("%s.finishedAt", prefix)] = true
 	if tmpl.Daemon != nil && *tmpl.Daemon {
 		scope[fmt.Sprintf("%s.ip", prefix)] = true
 	}

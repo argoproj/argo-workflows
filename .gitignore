@@ -20,8 +20,6 @@ git-ask-pass.sh
 /workflow-controller
 /.scannerwork/
 /test-results/
-/argo-server.crt
-/argo-server.key
 /package-lock.json
 /pkg/apiclient/_.secondary.swagger.json
 /pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json
@@ -38,4 +36,3 @@ git-ask-pass.sh
 /.brew_home
 /go-diagrams/
 /.run/
-pprof

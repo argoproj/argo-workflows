@@ -453,7 +453,32 @@ func TestStepArtReference(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-var unsatisfiedParam = `
+var paramWithValueFromConfigMapRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+        valueFrom:
+          configMapKeyRef:
+            name: simple-config
+            key: msg
+    container:
+      image: docker/whalesay:latest
+`
+
+func TestParamWithValueFromConfigMapRef(t *testing.T) {
+	_, err := validate(paramWithValueFromConfigMapRef)
+	assert.NoError(t, err)
+}
+
+var paramWithoutValue = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -469,8 +494,8 @@ spec:
       image: docker/whalesay:latest
 `
 
-func TestUnsatisfiedParam(t *testing.T) {
-	_, err := validate(unsatisfiedParam)
+func TestParamWithoutValue(t *testing.T) {
+	_, err := validate(paramWithoutValue)
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "not supplied")
 	}
@@ -1823,6 +1848,7 @@ func TestIncorrectPodGCStrategy(t *testing.T) {
 	}
 }
 
+//nolint:gosec
 var validAutomountServiceAccountTokenUseWfLevel = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -1845,6 +1871,7 @@ spec:
     ServiceAccountName: foo
 `
 
+//nolint:gosec
 var validAutomountServiceAccountTokenUseTmplLevel = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -1861,6 +1888,7 @@ spec:
   automountServiceAccountToken: false
 `
 
+//nolint:gosec
 var invalidAutomountServiceAccountTokenUseWfLevel = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -1875,6 +1903,7 @@ spec:
   automountServiceAccountToken: false
 `
 
+//nolint:gosec
 var invalidAutomountServiceAccountTokenUseTmplLevel = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -2922,4 +2951,46 @@ spec:
 		taskOrderAfterSort = append(taskOrderAfterSort, task.Name)
 	}
 	assert.Equal(t, expectedOrder, taskOrderAfterSort)
+}
+
+func TestValidateStartedATVariable(t *testing.T) {
+	wf := `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-timing-
+spec:
+  entrypoint: steps-timing
+  templates:
+    
+    - name: steps-timing
+      steps:
+        - - name: one
+            template: wait
+        - - name: print-processing-time
+            template: printer
+            arguments:
+              parameters:
+                - name: startedat
+                  value: "{{steps.one.startedAt}}"
+                - name: finishedat
+                  value: "{{steps.one.finishedAt}}"
+                - name: id
+                  value: "{{steps.one.id}}"
+    
+    - name: wait
+      container:
+        image: alpine:3.7
+        command: [sleep, "5"]
+    
+    - name: printer
+      inputs:
+        parameters:
+          - name: startedat
+          - name: finishedat
+          - name: id
+      container:
+        image: alpine:3.7
+        command: [echo, "{{inputs.parameters.startedat}}"]`
+	_, err := validate(wf)
+	assert.NoError(t, err)
 }

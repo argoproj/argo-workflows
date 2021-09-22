@@ -188,6 +188,9 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		wfc.wftmplInformer = informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
 		wfc.addWorkflowInformerHandlers(ctx)
 		wfc.podInformer = wfc.newPodInformer(ctx)
+		wfc.createSynchronizationManager(ctx)
+		_ = wfc.initManagers(ctx)
+
 		go wfc.wfInformer.Run(ctx.Done())
 		go wfc.wftmplInformer.Informer().Run(ctx.Done())
 		go wfc.podInformer.Run(ctx.Done())
@@ -613,6 +616,8 @@ kind: Workflow
 metadata:
  name: hello-world
  namespace: default
+ labels:
+   workflows.argoproj.io/completed: false
 spec:
  entrypoint: whalesay
  synchronization:
@@ -656,4 +661,75 @@ func TestNotifySemaphoreConfigUpdate(t *testing.T) {
 	controller.notifySemaphoreConfigUpdate(&cm)
 	time.Sleep(2 * time.Second)
 	assert.Equal(2, controller.wfQueue.Len())
+}
+
+func TestParallelismWithInitializeRunningWorkflows(t *testing.T) {
+	for tt, f := range map[string]func(controller *WorkflowController){
+		"Parallelism": func(x *WorkflowController) {
+			x.Config.Parallelism = 1
+		},
+		"NamespaceParallelism": func(x *WorkflowController) {
+			x.Config.NamespaceParallelism = 1
+		},
+	} {
+		t.Run(tt, func(t *testing.T) {
+			cancel, controller := newController(
+				wfv1.MustUnmarshalWorkflow(`
+metadata:
+  name: my-wf-0
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: my-image
+`),
+				wfv1.MustUnmarshalWorkflow(`
+metadata:
+  name: my-wf-1
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: my-image
+`),
+				wfv1.MustUnmarshalWorkflow(`
+metadata:
+  name: my-wf-2
+  labels:
+    workflows.argoproj.io/phase: Running
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: my-image
+status:
+  phase: Running
+`),
+				f,
+			)
+			defer cancel()
+			ctx := context.Background()
+
+			// process my-wf-0; update status to Pending
+			assert.True(t, controller.processNextItem(ctx))
+			expectWorkflow(ctx, controller, "my-wf-0", func(wf *wfv1.Workflow) {
+				if assert.NotNil(t, wf) {
+					assert.Equal(t, wfv1.WorkflowPending, wf.Status.Phase)
+					assert.Equal(t, "Workflow processing has been postponed because too many workflows are already running", wf.Status.Message)
+				}
+			})
+
+			// process my-wf-1; update status to Pending
+			assert.True(t, controller.processNextItem(ctx))
+			expectWorkflow(ctx, controller, "my-wf-1", func(wf *wfv1.Workflow) {
+				if assert.NotNil(t, wf) {
+					assert.Equal(t, wfv1.WorkflowPending, wf.Status.Phase)
+					assert.Equal(t, "Workflow processing has been postponed because too many workflows are already running", wf.Status.Message)
+				}
+			})
+		})
+	}
 }
