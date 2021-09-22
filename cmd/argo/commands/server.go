@@ -207,7 +207,9 @@ See %s`, help.ArgoServer),
 	command.Flags().VisitAll(func(f *pflag.Flag) {
 		if !f.Changed && viper.IsSet(f.Name) {
 			val := viper.Get(f.Name)
-			command.Flags().Set(f.Name, fmt.Sprintf("%v", val))
+			if err := command.Flags().Set(f.Name, fmt.Sprintf("%v", val)); err != nil {
+				log.Fatal(err)
+			}
 		}
 	})
 
