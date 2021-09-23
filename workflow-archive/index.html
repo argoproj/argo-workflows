@@ -1752,9 +1752,51 @@
       
     
     
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        Workflow Archive
+      </label>
+    
     <a href="./" title="Workflow Archive" class="md-nav__link md-nav__link--active">
       Workflow Archive
     </a>
+    
+      
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#required-database-permissions" title="Required database permissions" class="md-nav__link">
+    Required database permissions
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#postgres" title="Postgres" class="md-nav__link">
+    Postgres
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
+</nav>
     
   </li>
 
@@ -2158,6 +2200,35 @@
     
   
   
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#required-database-permissions" title="Required database permissions" class="md-nav__link">
+    Required database permissions
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#postgres" title="Postgres" class="md-nav__link">
+    Postgres
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -2180,6 +2251,16 @@
 <p>To enable this feature, configure a Postgres or MySQL (&gt;= 5.7.8) database under <code>persistence</code> in <a href="../workflow-controller-configmap.yaml">your configuration</a> and set <code>archive: true</code>.</p>
 <p>Be aware that this feature will only archive the statuses of the workflows (which pods have been executed, what was the result, ...)</p>
 <p>However, the logs of each pod will NOT be archived. If you need to access the logs of the pods, you need to setup <a href="../artifact-repository-ref/">an artifact repository</a> thanks to <a href="../configure-artifact-repository/">this doc</a>.</p>
+<p>In addition the table specified in the configmap above, the following tables are created when enabling archiving:</p>
+<ul>
+<li>argo_archived_workflows</li>
+<li>argo_archived_workflows_labels</li>
+<li>schema_history</li>
+</ul>
+<p>The database migration will only occur successfully if none of the tables exist. If a partial set of the tables exist, the database migration may fail and the Argo workflow-controller pod may fail to start. If this occurs delete all of the tables and try restarting the deployment.</p>
+<h2 id="required-database-permissions">Required database permissions<a class="headerlink" href="#required-database-permissions" title="Permanent link">&para;</a></h2>
+<h3 id="postgres">Postgres<a class="headerlink" href="#postgres" title="Permanent link">&para;</a></h3>
+<p>The database user/role needs to have <code>CREATE</code> and <code>USAGE</code> permissions on the <code>public</code> schema of the database so that the necessary table can be generted during the migration.</p>
                 
                   
                 
