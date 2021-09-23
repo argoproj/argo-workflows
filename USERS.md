@@ -37,6 +37,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Carrefour](https://www.carrefour.com/)
 1. [CarTrack](https://www.cartrack.com/)
 1. [CCRi](https://www.ccri.com/)
+1. [Cisco](https://www.cisco.com/)
 1. [CloudSeeds](https://www.cloudseeds.de/)
 1. [Codec](https://www.codec.ai/)
 1. [Commodus Tech](https://www.commodus.tech)
