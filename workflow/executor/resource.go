@@ -24,7 +24,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util"
 	envutil "github.com/argoproj/argo-workflows/v3/util/env"
 	argoerr "github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
+	os_specific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
 )
 
 // ExecResource will run kubectl action against a manifest
@@ -38,18 +38,6 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, fla
 	log.Info(strings.Join(cmd.Args, " "))
 
 	out, err := cmd.Output()
-	if err != nil && action == "create" {
-		// create支持restart，如果create err（already exists）, try get
-		args, err = we.getKubectlArguments("get", manifestPath, flags)
-		if err != nil {
-			return "", "", "", err
-		}
-
-		cmd = exec.Command("kubectl", args...)
-		log.Info(strings.Join(cmd.Args, " "))
-
-		out, err = cmd.Output()
-	}
 	if err != nil {
 		if exErr, ok := err.(*exec.ExitError); ok {
 			errMsg := strings.TrimSpace(string(exErr.Stderr))
