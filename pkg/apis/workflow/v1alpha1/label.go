@@ -2,7 +2,7 @@ package v1alpha1
 
 // Labels is list of workflow labels
 type Labels struct {
-	Items map[string]string `json:"items,omitempty" protobuf:"bytes,1,opt,name=items"`
+	Items []string `json:"items,omitempty" protobuf:"bytes,1,opt,name=items"`
 }
 
 // LabelKeys is list of keys

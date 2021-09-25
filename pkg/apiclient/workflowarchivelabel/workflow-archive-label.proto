@@ -2,6 +2,7 @@ syntax = "proto3";
 option go_package = "github.com/argoproj/argo-workflows/pkg/apiclient/workflowarchivelabel";
 
 import "google/api/annotations.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
 import "github.com/argoproj/argo-workflows/pkg/apis/workflow/v1alpha1/generated.proto";
 
 package workflowarchivelabel;
@@ -9,14 +10,14 @@ package workflowarchivelabel;
 message ListArchivedWorkflowLabelRequest {
 }
 message GetArchivedWorkflowLabelRequest {
-    string key = 1;
+    k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 1;
 }
 
 service ArchivedWorkflowLabelService {
     rpc ListArchivedWorkflowLabel (ListArchivedWorkflowLabelRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.LabelKeys) {
-        option (google.api.http).get = "/api/v1/archived-workflows-labels";
+        option (google.api.http).get = "/api/v1/archived-workflows-labels/keys";
     }
     rpc GetArchivedWorkflowLabel (GetArchivedWorkflowLabelRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.Labels) {
-        option (google.api.http).get = "/api/v1/archived-workflows-labels/{key}";
+        option (google.api.http).get = "/api/v1/archived-workflows-labels";
     }
 }

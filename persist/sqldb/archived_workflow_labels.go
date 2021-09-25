@@ -16,15 +16,15 @@ func (r *workflowArchive) ListWorkflowsLabelKey() (*wfv1.LabelKeys, error) {
 	var archivedWfLabels []archivedWorkflowLabelRecord
 
 	err := r.session.
-		Select(db.Func("DISTINCT", "Key")).
+		Select(db.Raw("DISTINCT name")).
 		From(archiveLabelsTableName).
 		All(&archivedWfLabels)
 	if err != nil {
 		return nil, err
 	}
 	labelKeys := make([]string, len(archivedWfLabels))
-	for _, md := range archivedWfLabels {
-		labelKeys = append(labelKeys, md.Key)
+	for i, md := range archivedWfLabels {
+		labelKeys[i] = md.Key
 	}
 
 	return &wfv1.LabelKeys{Items: labelKeys}, nil
@@ -33,16 +33,16 @@ func (r *workflowArchive) ListWorkflowsLabelKey() (*wfv1.LabelKeys, error) {
 func (r *workflowArchive) GetWorkflowLabel(key string) (*wfv1.Labels, error) {
 	var archivedWfLabels []archivedWorkflowLabelRecord
 	err := r.session.
-		Select(db.Func("DISTINCT", "Key", "Value")).
+		Select(db.Raw("DISTINCT value")).
 		From(archiveLabelsTableName).
-		Where(db.Cond{"Key": key}).
+		Where(db.Cond{"name": key}).
 		All(&archivedWfLabels)
 	if err != nil {
 		return nil, err
 	}
-	labels := make(map[string]string, len(archivedWfLabels))
-	for _, md := range archivedWfLabels {
-		labels[md.Key] = md.Value
+	labels := make([]string, len(archivedWfLabels))
+	for i, md := range archivedWfLabels {
+		labels[i] = key + "=" + md.Value
 	}
 
 	return &wfv1.Labels{Items: labels}, nil

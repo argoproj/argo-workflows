@@ -643,7 +643,7 @@ message LabelKeys {
 
 // Labels is list of workflow labels
 message Labels {
-  map<string, string> items = 1;
+  repeated string items = 1;
 }
 
 message LifecycleHook {

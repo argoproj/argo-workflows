@@ -551,7 +551,7 @@ func (s *ArgoServerSuite) TestPermission() {
 
 	// Test list archived WF labels with good token
 	s.Run("ListArchivedWFLabelsGoodToken", func() {
-		s.e().GET("/api/v1/archived-workflows-labels").
+		s.e().GET("/api/v1/archived-workflows-labels/keys").
 			Expect().
 			Status(200).
 			JSON().
@@ -561,7 +561,7 @@ func (s *ArgoServerSuite) TestPermission() {
 
 	s.bearerToken = badToken
 	s.Run("ListArchivedWFLabelsBadToken", func() {
-		s.e().GET("/api/v1/archived-workflows-labels").
+		s.e().GET("/api/v1/archived-workflows-labels/keys").
 			Expect().
 			Status(403)
 	})
@@ -569,7 +569,7 @@ func (s *ArgoServerSuite) TestPermission() {
 	// Test get archived WF labels with good token
 	s.bearerToken = goodToken
 	s.Run("GetArchivedWFLabelsGoodToken", func() {
-		s.e().GET("/api/v1/archived-workflows-labels/workflows.argoproj.io%2Ftest").
+		s.e().GET("/api/v1/archived-workflows-labels?listOptions.fieldSelector=key=workflows.argoproj.io/test").
 			Expect().
 			Status(200).
 			JSON().
@@ -579,7 +579,7 @@ func (s *ArgoServerSuite) TestPermission() {
 
 	s.bearerToken = badToken
 	s.Run("GetArchivedWFLabelsBadToken", func() {
-		s.e().GET("/api/v1/archived-workflows-labels/workflows.argoproj.io%2Ftest").
+		s.e().GET("/api/v1/archived-workflows-labels?listOptions.fieldSelector=key=workflows.argoproj.io/test").
 			Expect().
 			Status(403)
 	})

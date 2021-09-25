@@ -1305,10 +1305,8 @@ func (in *Labels) DeepCopyInto(out *Labels) {
 	*out = *in
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
-		*out = make(map[string]string, len(*in))
-		for key, val := range *in {
-			(*out)[key] = val
-		}
+		*out = make([]string, len(*in))
+		copy(*out, *in)
 	}
 	return
 }

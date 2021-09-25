@@ -13,10 +13,10 @@ type ArchivedWorkflowLabelServiceClient = Facade
 
 func (h ArchivedWorkflowLabelServiceClient) ListArchivedWorkflowLabel(_ context.Context, in *workflowarchivelabelpkg.ListArchivedWorkflowLabelRequest, _ ...grpc.CallOption) (*wfv1.LabelKeys, error) {
 	out := &wfv1.LabelKeys{}
-	return out, h.Get(in, out, "/api/v1/archived-workflows-labels")
+	return out, h.Get(in, out, "/api/v1/archived-workflows-labels/keys")
 }
 
 func (h ArchivedWorkflowLabelServiceClient) GetArchivedWorkflowLabel(_ context.Context, in *workflowarchivelabelpkg.GetArchivedWorkflowLabelRequest, _ ...grpc.CallOption) (*wfv1.Labels, error) {
 	out := &wfv1.Labels{}
-	return out, h.Get(in, out, "/api/v1/archived-workflows-labels/{key}")
+	return out, h.Get(in, out, "/api/v1/archived-workflows-labels")
 }

@@ -5445,10 +5445,10 @@
       "description": "Labels is list of workflow labels",
       "properties": {
         "items": {
-          "additionalProperties": {
+          "items": {
             "type": "string"
           },
-          "type": "object"
+          "type": "array"
         }
       },
       "type": "object"

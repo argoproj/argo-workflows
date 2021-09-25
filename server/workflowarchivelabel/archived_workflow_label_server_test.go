@@ -26,7 +26,7 @@ func Test_archivedWorkflowLabelServer(t *testing.T) {
 		Items: []string{"foo", "bar"},
 	}, nil)
 	repo.On("GetWorkflowLabel", "my-key").Return(&wfv1.Labels{
-		Items: map[string]string{"foo": "a", "bar": "b"},
+		Items: []string{"my-key=foo", "my-key=bar"},
 	}, nil)
 	wfClient.AddReactor("create", "workflows", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
 		return true, &wfv1.Workflow{
@@ -41,7 +41,7 @@ func Test_archivedWorkflowLabelServer(t *testing.T) {
 		assert.Len(t, resp.Items, 2)
 	})
 	t.Run("GetArchivedWorkflowLabel", func(t *testing.T) {
-		resp, err := w.GetArchivedWorkflowLabel(ctx, &workflowarchivelabelpkg.GetArchivedWorkflowLabelRequest{Key: "my-key"})
+		resp, err := w.GetArchivedWorkflowLabel(ctx, &workflowarchivelabelpkg.GetArchivedWorkflowLabelRequest{ListOptions: &metav1.ListOptions{FieldSelector: "key=my-key"}})
 		assert.NoError(t, err)
 		assert.Len(t, resp.Items, 2)
 	})
