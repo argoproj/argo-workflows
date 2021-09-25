@@ -81,6 +81,29 @@ func (_m *WorkflowArchive) GetWorkflow(uid string) (*v1alpha1.Workflow, error) {
 	return r0, r1
 }
 
+// GetWorkflowLabel provides a mock function with given fields: key
+func (_m *WorkflowArchive) GetWorkflowLabel(key string) (*v1alpha1.Labels, error) {
+	ret := _m.Called(key)
+
+	var r0 *v1alpha1.Labels
+	if rf, ok := ret.Get(0).(func(string) *v1alpha1.Labels); ok {
+		r0 = rf(key)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*v1alpha1.Labels)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(key)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // IsEnabled provides a mock function with given fields:
 func (_m *WorkflowArchive) IsEnabled() bool {
 	ret := _m.Called()
@@ -111,6 +134,29 @@ func (_m *WorkflowArchive) ListWorkflows(namespace string, name string, minStart
 	var r1 error
 	if rf, ok := ret.Get(1).(func(string, string, time.Time, time.Time, labels.Requirements, int, int) error); ok {
 		r1 = rf(namespace, name, minStartAt, maxStartAt, labelRequirements, limit, offset)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// ListWorkflowsLabelKey provides a mock function with given fields:
+func (_m *WorkflowArchive) ListWorkflowsLabelKey() (*v1alpha1.LabelKeys, error) {
+	ret := _m.Called()
+
+	var r0 *v1alpha1.LabelKeys
+	if rf, ok := ret.Get(0).(func() *v1alpha1.LabelKeys); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*v1alpha1.LabelKeys)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
 	} else {
 		r1 = ret.Error(1)
 	}

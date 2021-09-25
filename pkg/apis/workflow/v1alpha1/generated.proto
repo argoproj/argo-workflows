@@ -636,6 +636,16 @@ message Item {
   optional bytes value = 1;
 }
 
+// LabelKeys is list of keys
+message LabelKeys {
+  repeated string items = 1;
+}
+
+// Labels is list of workflow labels
+message Labels {
+  map<string, string> items = 1;
+}
+
 message LifecycleHook {
   optional string template = 1;
 

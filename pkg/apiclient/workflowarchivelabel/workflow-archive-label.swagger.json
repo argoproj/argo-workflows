@@ -1,0 +1,126 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "pkg/apiclient/workflowarchivelabel/workflow-archive-label.proto",
+    "version": "version not set"
+  },
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/api/v1/archived-workflows-labels": {
+      "get": {
+        "operationId": "ArchivedWorkflowLabelService_ListArchivedWorkflowLabel",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.LabelKeys"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "tags": [
+          "ArchivedWorkflowLabelService"
+        ]
+      }
+    },
+    "/api/v1/archived-workflows-labels/{key}": {
+      "get": {
+        "operationId": "ArchivedWorkflowLabelService_GetArchivedWorkflowLabel",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.Labels"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "ArchivedWorkflowLabelService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.LabelKeys": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "title": "LabelKeys is list of keys"
+    },
+    "github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.Labels": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "title": "Labels is list of workflow labels"
+    },
+    "google.protobuf.Any": {
+      "type": "object",
+      "properties": {
+        "type_url": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "grpc.gateway.runtime.Error": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string"
+        },
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/google.protobuf.Any"
+          }
+        }
+      }
+    }
+  }
+}

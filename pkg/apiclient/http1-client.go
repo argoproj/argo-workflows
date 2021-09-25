@@ -9,6 +9,7 @@ import (
 	infopkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/info"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
+	workflowarchivelabelpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchivelabel"
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
 )
 
@@ -18,6 +19,10 @@ var _ Client = &httpClient{}
 
 func (h httpClient) NewArchivedWorkflowServiceClient() (workflowarchivepkg.ArchivedWorkflowServiceClient, error) {
 	return http1.ArchivedWorkflowsServiceClient(h), nil
+}
+
+func (h httpClient) NewArchivedWorkflowLabelServiceClient() (workflowarchivelabelpkg.ArchivedWorkflowLabelServiceClient, error) {
+	return http1.ArchivedWorkflowLabelServiceClient(h), nil
 }
 
 func (h httpClient) NewWorkflowServiceClient() workflowpkg.WorkflowServiceClient {

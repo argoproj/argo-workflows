@@ -549,7 +549,43 @@ func (s *ArgoServerSuite) TestPermission() {
 	// we've now deleted the workflow, but it is still in the archive, testing the archive
 	// after deleting the workflow makes sure that we are no dependant of the workflow for authorization
 
+	// Test list archived WF labels with good token
+	s.Run("ListArchivedWFLabelsGoodToken", func() {
+		s.e().GET("/api/v1/archived-workflows-labels").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			Array().Length().Gt(0)
+	})
+
+	s.bearerToken = badToken
+	s.Run("ListArchivedWFLabelsBadToken", func() {
+		s.e().GET("/api/v1/archived-workflows-labels").
+			Expect().
+			Status(403)
+	})
+
+	// Test get archived WF labels with good token
+	s.bearerToken = goodToken
+	s.Run("GetArchivedWFLabelsGoodToken", func() {
+		s.e().GET("/api/v1/archived-workflows-labels/workflows.argoproj.io%2Ftest").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			Array().Length().Gt(0)
+	})
+
+	s.bearerToken = badToken
+	s.Run("GetArchivedWFLabelsBadToken", func() {
+		s.e().GET("/api/v1/archived-workflows-labels/workflows.argoproj.io%2Ftest").
+			Expect().
+			Status(403)
+	})
+
 	// Test list archived WFs with good token
+	s.bearerToken = goodToken
 	s.Run("ListArchivedWFsGoodToken", func() {
 		s.e().GET("/api/v1/archived-workflows").
 			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test").

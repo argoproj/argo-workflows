@@ -36,6 +36,7 @@ import (
 	sensorpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sensor"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
+	workflowarchivelabelpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchivelabel"
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/server/artifacts"
@@ -53,6 +54,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/types"
 	"github.com/argoproj/argo-workflows/v3/server/workflow"
 	"github.com/argoproj/argo-workflows/v3/server/workflowarchive"
+	"github.com/argoproj/argo-workflows/v3/server/workflowarchivelabel"
 	"github.com/argoproj/argo-workflows/v3/server/workflowtemplate"
 	grpcutil "github.com/argoproj/argo-workflows/v3/util/grpc"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
@@ -269,6 +271,7 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 	workflowtemplatepkg.RegisterWorkflowTemplateServiceServer(grpcServer, workflowtemplate.NewWorkflowTemplateServer(instanceIDService))
 	cronworkflowpkg.RegisterCronWorkflowServiceServer(grpcServer, cronworkflow.NewCronWorkflowServer(instanceIDService))
 	workflowarchivepkg.RegisterArchivedWorkflowServiceServer(grpcServer, workflowarchive.NewWorkflowArchiveServer(wfArchive))
+	workflowarchivelabelpkg.RegisterArchivedWorkflowLabelServiceServer(grpcServer, workflowarchivelabel.NewWorkflowArchiveLabelServer(wfArchive))
 	clusterwftemplatepkg.RegisterClusterWorkflowTemplateServiceServer(grpcServer, clusterworkflowtemplate.NewClusterWorkflowTemplateServer(instanceIDService))
 	grpc_prometheus.Register(grpcServer)
 	return grpcServer
@@ -316,6 +319,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mustRegisterGWHandler(workflowtemplatepkg.RegisterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(cronworkflowpkg.RegisterCronWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflowarchivepkg.RegisterArchivedWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
+	mustRegisterGWHandler(workflowarchivelabelpkg.RegisterArchivedWorkflowLabelServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(clusterwftemplatepkg.RegisterClusterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) { webhookInterceptor(w, r, gwmux) })

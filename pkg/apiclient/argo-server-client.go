@@ -13,6 +13,7 @@ import (
 	infopkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/info"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
+	workflowarchivelabelpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchivelabel"
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
 )
 
@@ -49,6 +50,10 @@ func (a *argoServerClient) NewWorkflowTemplateServiceClient() (workflowtemplatep
 
 func (a *argoServerClient) NewArchivedWorkflowServiceClient() (workflowarchivepkg.ArchivedWorkflowServiceClient, error) {
 	return workflowarchivepkg.NewArchivedWorkflowServiceClient(a.ClientConn), nil
+}
+
+func (a *argoServerClient) NewArchivedWorkflowLabelServiceClient() (workflowarchivelabelpkg.ArchivedWorkflowLabelServiceClient, error) {
+	return workflowarchivelabelpkg.NewArchivedWorkflowLabelServiceClient(a.ClientConn), nil
 }
 
 func (a *argoServerClient) NewClusterWorkflowTemplateServiceClient() (clusterworkflowtmplpkg.ClusterWorkflowTemplateServiceClient, error) {
