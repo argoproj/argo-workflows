@@ -215,7 +215,7 @@ func nameEqual(name string) db.Cond {
 	if name == "" {
 		return db.Cond{}
 	} else {
-		return db.Cond{"name": name}
+		return db.Cond{"name LIKE ": "%" + name + "%"}
 	}
 }
 
