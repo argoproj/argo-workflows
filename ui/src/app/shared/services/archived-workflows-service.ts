@@ -58,7 +58,7 @@ export class ArchivedWorkflowsService {
             fieldSelector += 'metadata.namespace=' + namespace + ',';
         }
         if (name) {
-            fieldSelector += 'metadata.name=' + name + ',';
+            fieldSelector += 'metadata.name=' + name.replace("%", "%25") + ',';
         }
         if (minStartedAt) {
             fieldSelector += 'spec.startedAt>' + minStartedAt.toISOString() + ',';

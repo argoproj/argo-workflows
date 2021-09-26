@@ -57,6 +57,7 @@ export class ArchivedWorkflowFilters extends React.Component<ArchivedWorkflowFil
                         <InputFilter
                             value={this.props.name}
                             name='wfname'
+                            placeholder='supports %_ matching (sql)'
                             onChange={wfname => {
                                 this.props.onChange(
                                     this.props.namespace,

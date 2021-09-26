@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -214,8 +215,10 @@ func namespaceEqual(namespace string) db.Cond {
 func nameEqual(name string) db.Cond {
 	if name == "" {
 		return db.Cond{}
+	} else if (strings.Contains(name, "%") || strings.Contains(name, "_")) {
+		return db.Cond{"name LIKE ": name}
 	} else {
-		return db.Cond{"name LIKE ": "%" + name + "%"}
+		return db.Cond{"name": name}
 	}
 }
 
