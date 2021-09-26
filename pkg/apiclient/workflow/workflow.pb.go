@@ -3798,7 +3798,10 @@ func (m *WorkflowCreateRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthWorkflow
 			}
 			if (iNdEx + skippy) > l {
@@ -3981,7 +3984,10 @@ func (m *WorkflowGetRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthWorkflow
 			}
 			if (iNdEx + skippy) > l {
@@ -4132,7 +4138,10 @@ func (m *WorkflowListRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthWorkflow
 			}
 			if (iNdEx + skippy) > l {
@@ -4267,7 +4276,10 @@ func (m *WorkflowResubmitRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthWorkflow
 			}
 			if (iNdEx + skippy) > l {
@@ -4434,7 +4446,10 @@ func (m *WorkflowRetryRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthWorkflow
 			}
 			if (iNdEx + skippy) > l {
@@ -4581,7 +4596,10 @@ func (m *WorkflowResumeRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthWorkflow
 			}
 			if (iNdEx + skippy) > l {
@@ -4696,7 +4714,10 @@ func (m *WorkflowTerminateRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthWorkflow
 			}
 			if (iNdEx + skippy) > l {
@@ -4875,7 +4896,10 @@ func (m *WorkflowStopRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthWorkflow
 			}
 			if (iNdEx + skippy) > l {
@@ -5118,7 +5142,10 @@ func (m *WorkflowSetRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthWorkflow
 			}
 			if (iNdEx + skippy) > l {
@@ -5233,7 +5260,10 @@ func (m *WorkflowSuspendRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthWorkflow
 			}
 			if (iNdEx + skippy) > l {
@@ -5448,7 +5478,10 @@ func (m *WorkflowLogRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthWorkflow
 			}
 			if (iNdEx + skippy) > l {
@@ -5599,7 +5632,10 @@ func (m *WorkflowDeleteRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthWorkflow
 			}
 			if (iNdEx + skippy) > l {
@@ -5650,7 +5686,10 @@ func (m *WorkflowDeleteResponse) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthWorkflow
 			}
 			if (iNdEx + skippy) > l {
@@ -5801,7 +5840,10 @@ func (m *WatchWorkflowsRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthWorkflow
 			}
 			if (iNdEx + skippy) > l {
@@ -5920,7 +5962,10 @@ func (m *WorkflowWatchEvent) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthWorkflow
 			}
 			if (iNdEx + skippy) > l {
@@ -6039,7 +6084,10 @@ func (m *WatchEventsRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthWorkflow
 			}
 			if (iNdEx + skippy) > l {
@@ -6154,7 +6202,10 @@ func (m *LogEntry) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthWorkflow
 			}
 			if (iNdEx + skippy) > l {
@@ -6273,7 +6324,10 @@ func (m *WorkflowLintRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthWorkflow
 			}
 			if (iNdEx + skippy) > l {
@@ -6456,7 +6510,10 @@ func (m *WorkflowSubmitRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthWorkflow
 			}
 			if (iNdEx + skippy) > l {

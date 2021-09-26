@@ -2000,7 +2000,10 @@ func (m *ListPipelinesRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthPipeline
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthPipeline
 			}
 			if (iNdEx + skippy) > l {
@@ -2119,7 +2122,10 @@ func (m *PipelineWatchEvent) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthPipeline
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthPipeline
 			}
 			if (iNdEx + skippy) > l {
@@ -2270,7 +2276,10 @@ func (m *GetPipelineRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthPipeline
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthPipeline
 			}
 			if (iNdEx + skippy) > l {
@@ -2385,7 +2394,10 @@ func (m *RestartPipelineRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthPipeline
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthPipeline
 			}
 			if (iNdEx + skippy) > l {
@@ -2436,7 +2448,10 @@ func (m *RestartPipelineResponse) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthPipeline
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthPipeline
 			}
 			if (iNdEx + skippy) > l {
@@ -2587,7 +2602,10 @@ func (m *DeletePipelineRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthPipeline
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthPipeline
 			}
 			if (iNdEx + skippy) > l {
@@ -2638,7 +2656,10 @@ func (m *DeletePipelineResponse) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthPipeline
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthPipeline
 			}
 			if (iNdEx + skippy) > l {
@@ -2757,7 +2778,10 @@ func (m *WatchStepRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthPipeline
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthPipeline
 			}
 			if (iNdEx + skippy) > l {
@@ -2876,7 +2900,10 @@ func (m *StepWatchEvent) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthPipeline
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthPipeline
 			}
 			if (iNdEx + skippy) > l {
@@ -3091,7 +3118,10 @@ func (m *PipelineLogsRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthPipeline
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthPipeline
 			}
 			if (iNdEx + skippy) > l {
@@ -3306,7 +3336,10 @@ func (m *LogEntry) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			if skippy < 0 {
+				return ErrInvalidLengthPipeline
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthPipeline
 			}
 			if (iNdEx + skippy) > l {

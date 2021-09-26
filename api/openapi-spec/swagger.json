@@ -4585,14 +4585,6 @@
         }
       }
     },
-    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Filter": {
-      "type": "object",
-      "properties": {
-        "expression": {
-          "type": "string"
-        }
-      }
-    },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Flatten": {
       "type": "object",
       "properties": {
@@ -4803,12 +4795,9 @@
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Map": {
       "type": "object",
       "properties": {
-<<<<<<< HEAD
         "abstractStep": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.AbstractStep"
         },
-=======
->>>>>>> feat: Multi-cloud/cluster/namespace workflows. Fixes #6089, #3523, #2063
         "expression": {
           "type": "string"
         }
@@ -4831,34 +4820,6 @@
         }
       }
     },
-<<<<<<< HEAD
-=======
-    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Metrics": {
-      "type": "object",
-      "properties": {
-        "errors": {
-          "type": "string",
-          "format": "uint64"
-        },
-        "rate": {
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.api.resource.Quantity"
-        },
-        "retries": {
-          "type": "string",
-          "format": "uint64",
-          "title": "current rate of messages per second"
-        },
-        "total": {
-          "type": "string",
-          "format": "uint64"
-        },
-        "totalBytes": {
-          "type": "string",
-          "format": "uint64"
-        }
-      }
-    },
->>>>>>> feat: Multi-cloud/cluster/namespace workflows. Fixes #6089, #3523, #2063
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Pipeline": {
       "type": "object",
       "title": "+kubebuilder:object:root=true\n+kubebuilder:resource:shortName=pl\n+kubebuilder:subresource:status\n+kubebuilder:printcolumn:name=\"Phase\",type=string,JSONPath=`.status.phase`\n+kubebuilder:printcolumn:name=\"Message\",type=string,JSONPath=`.status.message`",
