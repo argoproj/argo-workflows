@@ -1430,7 +1430,7 @@ func (s *CLISuite) TestArchiveLabel() {
 			RunCli([]string{"archive-label", "list"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					lines := strings.Split(output, "\n")
-					assert.Contains(t, lines[0], "workflows.argoproj.io/test")
+					assert.Contains(t, lines, "workflows.argoproj.io/test")
 				}
 			})
 	})
