@@ -6,19 +6,20 @@ import {Autocomplete, AutocompleteApi, AutocompleteOption} from 'argo-ui';
 interface TagsInputProps {
     tags: string[];
     autocomplete?: (AutocompleteOption | string)[];
+    sublistQuery?: (key: string) => Promise<any>;
     onChange?: (tags: string[]) => void;
     placeholder?: string;
 }
 
 require('./tags-input.scss');
 
-export class TagsInput extends React.Component<TagsInputProps, {tags: string[]; input: string; focused: boolean}> {
+export class TagsInput extends React.Component<TagsInputProps, {tags: string[]; input: string; focused: boolean; subTags: string[]; subTagsActive: boolean; open: boolean}> {
     private inputElement: HTMLInputElement;
     private autocompleteApi: AutocompleteApi;
 
     constructor(props: TagsInputProps) {
         super(props);
-        this.state = {tags: props.tags || [], input: '', focused: false};
+        this.state = {tags: props.tags || [], input: '', focused: false, subTags: [], subTagsActive: false, open: false};
     }
 
     public render() {
@@ -45,16 +46,28 @@ export class TagsInput extends React.Component<TagsInputProps, {tags: string[]; 
                     <span />
                 )}
                 <Autocomplete
+                    open={this.state.open}
                     filterSuggestions={true}
                     autoCompleteRef={api => (this.autocompleteApi = api)}
                     value={this.state.input}
-                    items={this.props.autocomplete}
+                    items={this.state.subTagsActive ? this.state.subTags : this.props.autocomplete}
                     onChange={e => this.setState({input: e.target.value})}
                     onSelect={value => {
-                        if (this.state.tags.indexOf(value) === -1) {
-                            const newTags = this.state.tags.concat(value);
-                            this.setState({input: '', tags: newTags});
-                            this.onTagsChange(newTags);
+                        if (this.props.sublistQuery != null && !this.state.subTagsActive) {
+                            this.setState({subTagsActive: true, open: true});
+                            this.props.sublistQuery(value).then(list => {
+                                this.setState({
+                                    subTags: list.items || []
+                                });
+                            });
+                        } else {
+                            this.setState({open: false});
+                            if (this.state.tags.indexOf(value) === -1) {
+                                const newTags = this.state.tags.concat(value);
+                                this.setState({input: '', tags: newTags, subTags: []});
+                                this.onTagsChange(newTags);
+                            }
+                            this.setState({subTagsActive: false});
                         }
                     }}
                     renderInput={props => (
@@ -71,7 +84,7 @@ export class TagsInput extends React.Component<TagsInputProps, {tags: string[]; 
                                 if (props.onFocus) {
                                     props.onFocus(e);
                                 }
-                                this.setState({focused: true});
+                                this.setState({focused: true, open: true});
                             }}
                             onBlur={e => {
                                 if (props.onBlur) {

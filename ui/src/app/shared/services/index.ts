@@ -1,3 +1,4 @@
+import {ArchivedWorkflowsLabelsService} from './archived-workflows-labels-service';
 import {ArchivedWorkflowsService} from './archived-workflows-service';
 import {ClusterWorkflowTemplateService} from './cluster-workflow-template-service';
 import {CronWorkflowService} from './cron-workflow-service';
@@ -19,6 +20,7 @@ interface Services {
     workflowTemplate: WorkflowTemplateService;
     clusterWorkflowTemplate: ClusterWorkflowTemplateService;
     archivedWorkflows: ArchivedWorkflowsService;
+    archivedWorkflowsLabels: ArchivedWorkflowsLabelsService;
     cronWorkflows: CronWorkflowService;
 }
 
@@ -32,5 +34,6 @@ export const services: Services = {
     sensor: new SensorService(),
     pipeline: new PipelineService(),
     archivedWorkflows: new ArchivedWorkflowsService(),
+    archivedWorkflowsLabels: new ArchivedWorkflowsLabelsService(),
     cronWorkflows: new CronWorkflowService()
 };

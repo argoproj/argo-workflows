@@ -1,5 +1,6 @@
 export * from './events';
 export * from './info';
+export * from './labels';
 export * from './workflows';
 export * from './workflow-templates';
 export * from './cron-workflows';
