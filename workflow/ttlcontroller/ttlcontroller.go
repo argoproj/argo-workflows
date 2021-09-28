@@ -141,15 +141,6 @@ func (c *Controller) deleteWorkflow(ctx context.Context, key string) error {
 	return nil
 }
 
-// if the workflow both has a TTL and is expired
-func (c *Controller) ttlExpired(wf *wfv1.Workflow) bool {
-	expiresIn, ok := c.expiresIn(wf)
-	if !ok {
-		return false
-	}
-	return expiresIn <= 0
-}
-
 // expiresIn - seconds from now the workflow expires in, maybe <= 0
 // ok - if the workflow has a TTL
 func (c *Controller) expiresIn(wf *wfv1.Workflow) (expiresIn time.Duration, ok bool) {
