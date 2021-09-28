@@ -1005,8 +1005,8 @@ func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) {
 		// User explicitly set the location. nothing else to do.
 		return
 	}
-	wfArchiveLogs := woc.execWf.Spec.ArchiveLogs != nil && *woc.execWf.Spec.ArchiveLogs
-	needLocation := woc.artifactRepository.IsArchiveLogs() || wfArchiveLogs
+	archiveLogs := woc.IsArchiveLogs(tmpl)
+	needLocation := archiveLogs
 	for _, art := range append(tmpl.Inputs.Artifacts, tmpl.Outputs.Artifacts...) {
 		if !art.HasLocation() {
 			needLocation = true
@@ -1016,23 +1016,21 @@ func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) {
 	if !needLocation {
 		return
 	}
-	archiveLog := woc.shouldArchiveLogs(tmpl)
 	tmpl.ArchiveLocation = woc.artifactRepository.ToArtifactLocation()
-	// overwrites archivelogs on/off with priorities:
-	// controller(on) > template > workflow > controller(off)
-	if archiveLog {
-		tmpl.ArchiveLocation.ArchiveLogs = &archiveLog
-	}
+	tmpl.ArchiveLocation.ArchiveLogs = &archiveLogs
 }
 
-// shouldArchive determines if container should archive logs
-func (woc *wfOperationCtx) shouldArchiveLogs(tmpl *wfv1.Template) bool {
-	archiveLogs := false
-	if woc.execWf.Spec.ArchiveLogs != nil {
-		archiveLogs = *woc.execWf.Spec.ArchiveLogs
-	}
-	if tmpl.ArchiveLocation != nil && tmpl.ArchiveLocation.ArchiveLogs != nil {
-		archiveLogs = *tmpl.ArchiveLocation.ArchiveLogs
+// IsArchiveLogs determines if container should archive logs
+// priorities: controller(on) > template > workflow > controller(off)
+func (woc *wfOperationCtx) IsArchiveLogs(tmpl *wfv1.Template) bool {
+	archiveLogs := woc.artifactRepository.IsArchiveLogs()
+	if !archiveLogs {
+		if woc.execWf.Spec.ArchiveLogs != nil {
+			archiveLogs = *woc.execWf.Spec.ArchiveLogs
+		}
+		if tmpl.ArchiveLocation != nil && tmpl.ArchiveLocation.ArchiveLogs != nil {
+			archiveLogs = *tmpl.ArchiveLocation.ArchiveLogs
+		}
 	}
 	return archiveLogs
 }
