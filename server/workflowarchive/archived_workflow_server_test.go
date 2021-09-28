@@ -68,6 +68,12 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		}, nil
 	})
 	repo.On("DeleteWorkflow", "my-uid").Return(nil)
+	repo.On("ListWorkflowsLabelKey").Return(&wfv1.LabelKeys{
+		Items: []string{"foo", "bar"},
+	}, nil)
+	repo.On("GetWorkflowLabel", "my-key").Return(&wfv1.Labels{
+		Items: []string{"my-key=foo", "my-key=bar"},
+	}, nil)
 
 	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClient), auth.KubeKey, kubeClient)
 	t.Run("ListArchivedWorkflows", func(t *testing.T) {
@@ -114,5 +120,15 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		allowed = true
 		_, err = w.DeleteArchivedWorkflow(ctx, &workflowarchivepkg.DeleteArchivedWorkflowRequest{Uid: "my-uid"})
 		assert.NoError(t, err)
+	})
+	t.Run("ListArchivedWorkflowLabel", func(t *testing.T) {
+		resp, err := w.ListArchivedWorkflowLabel(ctx, &workflowarchivepkg.ListArchivedWorkflowLabelRequest{})
+		assert.NoError(t, err)
+		assert.Len(t, resp.Items, 2)
+	})
+	t.Run("GetArchivedWorkflowLabel", func(t *testing.T) {
+		resp, err := w.GetArchivedWorkflowLabel(ctx, &workflowarchivepkg.GetArchivedWorkflowLabelRequest{ListOptions: &metav1.ListOptions{FieldSelector: "key=my-key"}})
+		assert.NoError(t, err)
+		assert.Len(t, resp.Items, 2)
 	})
 }

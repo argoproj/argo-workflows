@@ -149,3 +149,36 @@ func (w *archivedWorkflowServer) DeleteArchivedWorkflow(ctx context.Context, req
 	}
 	return &workflowarchivepkg.ArchivedWorkflowDeletedResponse{}, nil
 }
+
+func (w *archivedWorkflowServer) ListArchivedWorkflowLabel(ctx context.Context, req *workflowarchivepkg.ListArchivedWorkflowLabelRequest) (*wfv1.LabelKeys, error) {
+	labelkeys, err := w.wfArchive.ListWorkflowsLabelKey()
+	if err != nil {
+		return nil, err
+	}
+	return labelkeys, nil
+}
+
+func (w *archivedWorkflowServer) GetArchivedWorkflowLabel(ctx context.Context, req *workflowarchivepkg.GetArchivedWorkflowLabelRequest) (*wfv1.Labels, error) {
+	options := req.ListOptions
+
+	key := ""
+	for _, selector := range strings.Split(options.FieldSelector, ",") {
+		if len(selector) == 0 {
+			continue
+		}
+		if strings.HasPrefix(selector, "key=") {
+			key = strings.TrimPrefix(selector, "key=")
+		} else {
+			return nil, fmt.Errorf("unsupported requirement %s", selector)
+		}
+	}
+
+	labels, err := w.wfArchive.GetWorkflowLabel(key)
+	if err != nil {
+		return nil, err
+	}
+	if labels == nil {
+		return nil, status.Error(codes.NotFound, "not found")
+	}
+	return labels, err
+}

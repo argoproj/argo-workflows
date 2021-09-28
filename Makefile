@@ -102,7 +102,6 @@ SWAGGER_FILES := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/sensor/sensor.swagger.json \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
-	pkg/apiclient/workflowarchivelabel/workflow-archive-label.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json
 PROTO_BINARIES := $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/protoc-gen-gogofast $(GOPATH)/bin/goimports $(GOPATH)/bin/protoc-gen-grpc-gateway $(GOPATH)/bin/protoc-gen-swagger
 
@@ -250,7 +249,6 @@ swagger: \
 	pkg/apiclient/pipeline/pipeline.swagger.json \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
-	pkg/apiclient/workflowarchivelabel/workflow-archive-label.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json \
 	manifests/base/crds/full/argoproj.io_workflows.yaml \
 	manifests \
@@ -337,9 +335,6 @@ pkg/apiclient/workflow/workflow.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/api
 
 pkg/apiclient/workflowarchive/workflow-archive.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/workflowarchive/workflow-archive.proto
 	$(call protoc,pkg/apiclient/workflowarchive/workflow-archive.proto)
-
-pkg/apiclient/workflowarchivelabel/workflow-archive-label.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/workflowarchivelabel/workflow-archive-label.proto
-	$(call protoc,pkg/apiclient/workflowarchivelabel/workflow-archive-label.proto)
 
 pkg/apiclient/workflowtemplate/workflow-template.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/workflowtemplate/workflow-template.proto
 	$(call protoc,pkg/apiclient/workflowtemplate/workflow-template.proto)

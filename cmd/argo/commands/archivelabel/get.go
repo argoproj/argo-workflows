@@ -10,7 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	workflowarchivelabelpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchivelabel"
+	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 )
 
 func NewGetCommand() *cobra.Command {
@@ -28,9 +28,9 @@ func NewGetCommand() *cobra.Command {
 			}
 
 			ctx, apiClient := client.NewAPIClient(cmd.Context())
-			serviceClient, err := apiClient.NewArchivedWorkflowLabelServiceClient()
+			serviceClient, err := apiClient.NewArchivedWorkflowServiceClient()
 			errors.CheckError(err)
-			labels, err := serviceClient.GetArchivedWorkflowLabel(ctx, &workflowarchivelabelpkg.GetArchivedWorkflowLabelRequest{ListOptions: listOpts})
+			labels, err := serviceClient.GetArchivedWorkflowLabel(ctx, &workflowarchivepkg.GetArchivedWorkflowLabelRequest{ListOptions: listOpts})
 			errors.CheckError(err)
 
 			for _, str := range labels.Items {

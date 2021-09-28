@@ -99,9 +99,9 @@
     "/api/v1/archived-workflows-labels": {
       "get": {
         "tags": [
-          "ArchivedWorkflowLabelService"
+          "ArchivedWorkflowService"
         ],
-        "operationId": "ArchivedWorkflowLabelService_GetArchivedWorkflowLabel",
+        "operationId": "ArchivedWorkflowService_GetArchivedWorkflowLabel",
         "parameters": [
           {
             "type": "string",
@@ -179,9 +179,9 @@
     "/api/v1/archived-workflows-labels/keys": {
       "get": {
         "tags": [
-          "ArchivedWorkflowLabelService"
+          "ArchivedWorkflowService"
         ],
-        "operationId": "ArchivedWorkflowLabelService_ListArchivedWorkflowLabel",
+        "operationId": "ArchivedWorkflowService_ListArchivedWorkflowLabel",
         "responses": {
           "200": {
             "description": "A successful response.",

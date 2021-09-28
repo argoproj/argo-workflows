@@ -12,14 +12,12 @@ import (
 	infopkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/info"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
-	workflowarchivelabelpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchivelabel"
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 )
 
 type Client interface {
 	NewArchivedWorkflowServiceClient() (workflowarchivepkg.ArchivedWorkflowServiceClient, error)
-	NewArchivedWorkflowLabelServiceClient() (workflowarchivelabelpkg.ArchivedWorkflowLabelServiceClient, error)
 	NewWorkflowServiceClient() workflowpkg.WorkflowServiceClient
 	NewCronWorkflowServiceClient() (cronworkflowpkg.CronWorkflowServiceClient, error)
 	NewWorkflowTemplateServiceClient() (workflowtemplatepkg.WorkflowTemplateServiceClient, error)

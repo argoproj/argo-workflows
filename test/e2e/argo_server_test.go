@@ -549,7 +549,6 @@ func (s *ArgoServerSuite) TestPermission() {
 	// we've now deleted the workflow, but it is still in the archive, testing the archive
 	// after deleting the workflow makes sure that we are no dependant of the workflow for authorization
 
-
 	// Test list archived WFs with good token
 	s.Run("ListArchivedWFsGoodToken", func() {
 		s.e().GET("/api/v1/archived-workflows").
@@ -1322,7 +1321,6 @@ spec:
 			Length().
 			Equal(1)
 	})
-
 
 }
 

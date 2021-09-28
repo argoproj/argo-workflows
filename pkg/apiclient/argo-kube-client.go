@@ -16,7 +16,6 @@ import (
 	infopkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/info"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
-	workflowarchivelabelpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchivelabel"
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
 	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
@@ -96,10 +95,6 @@ func (a *argoKubeClient) NewWorkflowTemplateServiceClient() (workflowtemplate.Wo
 }
 
 func (a *argoKubeClient) NewArchivedWorkflowServiceClient() (workflowarchivepkg.ArchivedWorkflowServiceClient, error) {
-	return nil, NoArgoServerErr
-}
-
-func (a *argoKubeClient) NewArchivedWorkflowLabelServiceClient() (workflowarchivelabelpkg.ArchivedWorkflowLabelServiceClient, error) {
 	return nil, NoArgoServerErr
 }
 
