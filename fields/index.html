@@ -3495,6 +3495,18 @@
 
 
   <li class="md-nav__item">
+    <a href="../configure-archive-logs/" title="Configuring Archive Logs" class="md-nav__link">
+      Configuring Archive Logs
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
     <a href="../workflow-controller-configmap/" title="Workflow Controller Configmap" class="md-nav__link">
       Workflow Controller Configmap
     </a>
@@ -6098,6 +6110,8 @@
 
     <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/steps.yaml">steps.yaml</a>
 
+    <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-archive-logs.yaml">workflow-archive-logs.yaml</a>
+
     <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml">workflow-template-ref-with-entrypoint-arg-passing.yaml</a>
 
     <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-template-ref.yaml">workflow-template-ref.yaml</a>
@@ -6599,6 +6613,8 @@
 
     <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/templates.yaml">templates.yaml</a>
 
+    <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-archive-logs.yaml">workflow-archive-logs.yaml</a>
+
     <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml">workflow-template-ref-with-entrypoint-arg-passing.yaml</a>
 
     <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-template-ref.yaml">workflow-template-ref.yaml</a>
@@ -6624,6 +6640,11 @@
 <td align="center"><code>affinity</code></td>
 <td align="center"><a href="#affinity"><code>Affinity</code></a></td>
 <td>Affinity sets the scheduling constraints for all pods in the io.argoproj.workflow.v1alpha1. Can be overridden by an affinity specified in the template</td>
+</tr>
+<tr>
+<td align="center"><code>archiveLogs</code></td>
+<td align="center"><code>boolean</code></td>
+<td>ArchiveLogs indicates if the container logs should be archived</td>
 </tr>
 <tr>
 <td align="center"><code>arguments</code></td>
@@ -7261,6 +7282,8 @@
 
     <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/templates.yaml">templates.yaml</a>
 
+    <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-archive-logs.yaml">workflow-archive-logs.yaml</a>
+
     <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml">workflow-template-ref-with-entrypoint-arg-passing.yaml</a>
 
     <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-template-ref.yaml">workflow-template-ref.yaml</a>
@@ -7708,6 +7731,8 @@
 
     <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/templates.yaml">templates.yaml</a>
 
+    <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-archive-logs.yaml">workflow-archive-logs.yaml</a>
+
     <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml">workflow-template-ref-with-entrypoint-arg-passing.yaml</a>
 
     <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-template-ref.yaml">workflow-template-ref.yaml</a>
@@ -7733,6 +7758,11 @@
 <td align="center"><code>affinity</code></td>
 <td align="center"><a href="#affinity"><code>Affinity</code></a></td>
 <td>Affinity sets the scheduling constraints for all pods in the io.argoproj.workflow.v1alpha1. Can be overridden by an affinity specified in the template</td>
+</tr>
+<tr>
+<td align="center"><code>archiveLogs</code></td>
+<td align="center"><code>boolean</code></td>
+<td>ArchiveLogs indicates if the container logs should be archived</td>
 </tr>
 <tr>
 <td align="center"><code>arguments</code></td>
@@ -13639,6 +13669,8 @@
 
     <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/templates.yaml">templates.yaml</a>
 
+    <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-archive-logs.yaml">workflow-archive-logs.yaml</a>
+
     <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml">workflow-template-ref-with-entrypoint-arg-passing.yaml</a>
 
     <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-template-ref.yaml">workflow-template-ref.yaml</a>
@@ -14630,6 +14662,8 @@
     <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml">event-consumer-workflowtemplate.yaml</a>
 
     <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/templates.yaml">templates.yaml</a>
+
+    <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-archive-logs.yaml">workflow-archive-logs.yaml</a>
 </ul>
 </details>
 
@@ -15899,6 +15933,8 @@
     <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/steps.yaml">steps.yaml</a>
 
     <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/templates.yaml">templates.yaml</a>
+
+    <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-archive-logs.yaml">workflow-archive-logs.yaml</a>
 
     <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml">workflow-template-ref-with-entrypoint-arg-passing.yaml</a>
 
