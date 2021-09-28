@@ -383,6 +383,8 @@ spec:
                         type: array
                     type: object
                 type: object
+              archiveLogs:
+                type: boolean
               arguments:
                 properties:
                   artifacts:
