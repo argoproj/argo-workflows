@@ -4427,7 +4427,14 @@
         "metadata",
         "spec"
       ],
-      "type": "object"
+      "type": "object",
+      "x-kubernetes-group-version-kind": [
+        {
+          "group": "argoproj.io",
+          "kind": "ClusterWorkflowTemplate",
+          "version": "v1alpha1"
+        }
+      ]
     },
     "io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplateCreateRequest": {
       "properties": {
@@ -4742,7 +4749,14 @@
         "metadata",
         "spec"
       ],
-      "type": "object"
+      "type": "object",
+      "x-kubernetes-group-version-kind": [
+        {
+          "group": "argoproj.io",
+          "kind": "CronWorkflow",
+          "version": "v1alpha1"
+        }
+      ]
     },
     "io.argoproj.workflow.v1alpha1.CronWorkflowDeletedResponse": {
       "type": "object"
@@ -7036,7 +7050,14 @@
         "metadata",
         "spec"
       ],
-      "type": "object"
+      "type": "object",
+      "x-kubernetes-group-version-kind": [
+        {
+          "group": "argoproj.io",
+          "kind": "Workflow",
+          "version": "v1alpha1"
+        }
+      ]
     },
     "io.argoproj.workflow.v1alpha1.WorkflowCreateRequest": {
       "properties": {
@@ -7086,7 +7107,14 @@
         "metadata",
         "spec"
       ],
-      "type": "object"
+      "type": "object",
+      "x-kubernetes-group-version-kind": [
+        {
+          "group": "argoproj.io",
+          "kind": "WorkflowEventBinding",
+          "version": "v1alpha1"
+        }
+      ]
     },
     "io.argoproj.workflow.v1alpha1.WorkflowEventBindingList": {
       "description": "WorkflowEventBindingList is list of event resources",
@@ -7652,7 +7680,14 @@
         "metadata",
         "spec"
       ],
-      "type": "object"
+      "type": "object",
+      "x-kubernetes-group-version-kind": [
+        {
+          "group": "argoproj.io",
+          "kind": "WorkflowTaskSet",
+          "version": "v1alpha1"
+        }
+      ]
     },
     "io.argoproj.workflow.v1alpha1.WorkflowTaskSetSpec": {
       "properties": {
@@ -7700,7 +7735,14 @@
         "metadata",
         "spec"
       ],
-      "type": "object"
+      "type": "object",
+      "x-kubernetes-group-version-kind": [
+        {
+          "group": "argoproj.io",
+          "kind": "WorkflowTemplate",
+          "version": "v1alpha1"
+        }
+      ]
     },
     "io.argoproj.workflow.v1alpha1.WorkflowTemplateCreateRequest": {
       "properties": {
