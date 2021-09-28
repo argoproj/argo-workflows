@@ -134,6 +134,7 @@ nav:
       - Configuration:
           - managed-namespace.md
           - configure-artifact-repository.md
+          - configure-archive-logs.md
           - workflow-controller-configmap.md
           - workflow-executors.md
           - sidecar-injection.md

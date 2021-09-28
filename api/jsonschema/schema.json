@@ -7248,6 +7248,10 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.Affinity",
           "description": "Affinity sets the scheduling constraints for all pods in the io.argoproj.workflow.v1alpha1. Can be overridden by an affinity specified in the template"
         },
+        "archiveLogs": {
+          "description": "ArchiveLogs indicates if the container logs should be archived",
+          "type": "boolean"
+        },
         "arguments": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments",
           "description": "Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{io.argoproj.workflow.v1alpha1.parameters.myparam}}"
@@ -7780,6 +7784,10 @@
         "affinity": {
           "$ref": "#/definitions/io.k8s.api.core.v1.Affinity",
           "description": "Affinity sets the scheduling constraints for all pods in the io.argoproj.workflow.v1alpha1. Can be overridden by an affinity specified in the template"
+        },
+        "archiveLogs": {
+          "description": "ArchiveLogs indicates if the container logs should be archived",
+          "type": "boolean"
         },
         "arguments": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments",

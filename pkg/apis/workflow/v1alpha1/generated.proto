@@ -1686,6 +1686,9 @@ message WorkflowSpec {
 
   // TemplateDefaults holds default template values that will apply to all templates in the Workflow, unless overridden on the template-level
   optional Template templateDefaults = 39;
+
+  // ArchiveLogs indicates if the container logs should be archived
+  optional bool archiveLogs = 40;
 }
 
 // WorkflowStatus contains overall status information about a workflow

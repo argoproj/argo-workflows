@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 
@@ -554,19 +555,39 @@ func TestConditionalArchiveLocation(t *testing.T) {
 func TestConditionalAddArchiveLocationTemplateArchiveLogs(t *testing.T) {
 	tests := []struct {
 		controllerArchiveLog bool
-		templateArchiveLog   bool
+		workflowArchiveLog   string
+		templateArchiveLog   string
 		finalArchiveLog      bool
 	}{
-		{true, true, true},
-		{true, false, true},
-		{false, true, true},
-		{false, false, false},
+		{true, "true", "true", true},
+		{true, "true", "false", true},
+		{true, "false", "true", true},
+		{true, "false", "false", true},
+		{false, "true", "true", true},
+		{false, "true", "false", false},
+		{false, "false", "true", true},
+		{false, "false", "false", false},
+		{true, "true", "", true},
+		{true, "false", "", true},
+		{true, "", "true", true},
+		{true, "", "false", true},
+		{false, "true", "", true},
+		{false, "false", "", false},
+		{false, "", "true", true},
+		{false, "", "false", false},
 	}
 	for _, tt := range tests {
-		t.Run(fmt.Sprintf("controllerArchiveLog: %t, templateArchiveLog: %t, finalArchiveLog: %t", tt.controllerArchiveLog, tt.templateArchiveLog, tt.finalArchiveLog), func(t *testing.T) {
+		t.Run(fmt.Sprintf("controllerArchiveLog: %t, workflowArchiveLog: %s, templateArchiveLog: %s, finalArchiveLog: %t", tt.controllerArchiveLog, tt.workflowArchiveLog, tt.templateArchiveLog, tt.finalArchiveLog), func(t *testing.T) {
 			wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
-			wf.Spec.Templates[0].ArchiveLocation = &wfv1.ArtifactLocation{
-				ArchiveLogs: pointer.BoolPtr(tt.templateArchiveLog),
+			if tt.workflowArchiveLog != "" {
+				workflowArchiveLog, _ := strconv.ParseBool(tt.workflowArchiveLog)
+				wf.Spec.ArchiveLogs = pointer.BoolPtr(workflowArchiveLog)
+			}
+			if tt.templateArchiveLog != "" {
+				templateArchiveLog, _ := strconv.ParseBool(tt.templateArchiveLog)
+				wf.Spec.Templates[0].ArchiveLocation = &wfv1.ArtifactLocation{
+					ArchiveLogs: pointer.BoolPtr(templateArchiveLog),
+				}
 			}
 			cancel, controller := newController(wf)
 			defer cancel()
@@ -587,7 +608,6 @@ func TestConditionalAddArchiveLocationTemplateArchiveLogs(t *testing.T) {
 			pod := pods.Items[0]
 			tmpl, err := getPodTemplate(&pod)
 			assert.NoError(t, err)
-			assert.NotNil(t, tmpl.ArchiveLocation)
 			assert.Equal(t, tt.finalArchiveLog, tmpl.ArchiveLocation.IsArchiveLogs())
 		})
 	}

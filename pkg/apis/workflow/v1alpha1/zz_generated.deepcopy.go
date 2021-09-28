@@ -3042,6 +3042,11 @@ func (in *WorkflowSpec) DeepCopyInto(out *WorkflowSpec) {
 		*out = new(Template)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.ArchiveLogs != nil {
+		in, out := &in.ArchiveLogs, &out.ArchiveLogs
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 

@@ -334,6 +334,8 @@ Workflow is the definition of a workflow resource
 
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/steps.yaml)
 
+- [`workflow-archive-logs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-archive-logs.yaml)
+
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
 - [`workflow-template-ref.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-template-ref.yaml)
@@ -755,6 +757,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/templates.yaml)
 
+- [`workflow-archive-logs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-archive-logs.yaml)
+
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
 - [`workflow-template-ref.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-template-ref.yaml)
@@ -765,6 +769,7 @@ WorkflowSpec is the specification of a Workflow.
 |:----------:|:----------:|---------------|
 |`activeDeadlineSeconds`|`integer`|Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the io.argoproj.workflow.v1alpha1. A value of zero is used to terminate a Running workflow|
 |`affinity`|[`Affinity`](#affinity)|Affinity sets the scheduling constraints for all pods in the io.argoproj.workflow.v1alpha1. Can be overridden by an affinity specified in the template|
+|`archiveLogs`|`boolean`|ArchiveLogs indicates if the container logs should be archived|
 |`arguments`|[`Arguments`](#arguments)|Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{io.argoproj.workflow.v1alpha1.parameters.myparam}}|
 |`artifactRepositoryRef`|[`ArtifactRepositoryRef`](#artifactrepositoryref)|ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config.|
 |`automountServiceAccountToken`|`boolean`|AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.|
@@ -1183,6 +1188,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/templates.yaml)
 
+- [`workflow-archive-logs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-archive-logs.yaml)
+
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
 - [`workflow-template-ref.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-template-ref.yaml)
@@ -1568,6 +1575,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/templates.yaml)
 
+- [`workflow-archive-logs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-archive-logs.yaml)
+
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
 - [`workflow-template-ref.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-template-ref.yaml)
@@ -1578,6 +1587,7 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 |:----------:|:----------:|---------------|
 |`activeDeadlineSeconds`|`integer`|Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the io.argoproj.workflow.v1alpha1. A value of zero is used to terminate a Running workflow|
 |`affinity`|[`Affinity`](#affinity)|Affinity sets the scheduling constraints for all pods in the io.argoproj.workflow.v1alpha1. Can be overridden by an affinity specified in the template|
+|`archiveLogs`|`boolean`|ArchiveLogs indicates if the container logs should be archived|
 |`arguments`|[`Arguments`](#arguments)|Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{io.argoproj.workflow.v1alpha1.parameters.myparam}}|
 |`artifactRepositoryRef`|[`ArtifactRepositoryRef`](#artifactrepositoryref)|ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config.|
 |`automountServiceAccountToken`|`boolean`|AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.|
@@ -5009,6 +5019,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/templates.yaml)
 
+- [`workflow-archive-logs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-archive-logs.yaml)
+
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
 - [`workflow-template-ref.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-template-ref.yaml)
@@ -5576,6 +5588,8 @@ A single application container that you want to run within a pod.
 - [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/templates.yaml)
+
+- [`workflow-archive-logs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-archive-logs.yaml)
 </details>
 
 ### Fields
@@ -6309,6 +6323,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/templates.yaml)
+
+- [`workflow-archive-logs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-archive-logs.yaml)
 
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
