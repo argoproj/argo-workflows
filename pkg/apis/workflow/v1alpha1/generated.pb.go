@@ -4254,6 +4254,16 @@ func (m *Artifact) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	i -= len(m.PathMulti)
+	copy(dAtA[i:], m.PathMulti)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.PathMulti)))
+	i--
+	dAtA[i] = 0x6a
+	i -= len(m.FromMulti)
+	copy(dAtA[i:], m.FromMulti)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.FromMulti)))
+	i--
+	dAtA[i] = 0x62
 	i -= len(m.FromExpression)
 	copy(dAtA[i:], m.FromExpression)
 	i = encodeVarintGenerated(dAtA, i, uint64(len(m.FromExpression)))
@@ -11294,6 +11304,10 @@ func (m *Artifact) Size() (n int) {
 	n += 2
 	l = len(m.FromExpression)
 	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.FromMulti)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.PathMulti)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -13831,6 +13845,8 @@ func (this *Artifact) String() string {
 		`SubPath:` + fmt.Sprintf("%v", this.SubPath) + `,`,
 		`RecurseMode:` + fmt.Sprintf("%v", this.RecurseMode) + `,`,
 		`FromExpression:` + fmt.Sprintf("%v", this.FromExpression) + `,`,
+		`FromMulti:` + fmt.Sprintf("%v", this.FromMulti) + `,`,
+		`PathMulti:` + fmt.Sprintf("%v", this.PathMulti) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -16333,6 +16349,70 @@ func (m *Artifact) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.FromExpression = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 12:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FromMulti", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.FromMulti = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 13:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PathMulti", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PathMulti = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

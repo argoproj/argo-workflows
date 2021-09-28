@@ -438,6 +438,8 @@ spec:
                           type: string
                         fromExpression:
                           type: string
+                        fromMulti:
+                          type: string
                         gcs:
                           properties:
                             bucket:
@@ -640,6 +642,8 @@ spec:
                           - key
                           type: object
                         path:
+                          type: string
+                        pathMulti:
                           type: string
                         raw:
                           properties:
@@ -2964,6 +2968,8 @@ spec:
                                         type: string
                                       fromExpression:
                                         type: string
+                                      fromMulti:
+                                        type: string
                                       gcs:
                                         properties:
                                           bucket:
@@ -3167,6 +3173,8 @@ spec:
                                         type: object
                                       path:
                                         type: string
+                                      pathMulti:
+                                        type: string
                                       raw:
                                         properties:
                                           data:
@@ -3364,6 +3372,8 @@ spec:
                                             from:
                                               type: string
                                             fromExpression:
+                                              type: string
+                                            fromMulti:
                                               type: string
                                             gcs:
                                               properties:
@@ -3567,6 +3577,8 @@ spec:
                                               - key
                                               type: object
                                             path:
+                                              type: string
+                                            pathMulti:
                                               type: string
                                             raw:
                                               properties:
@@ -3808,6 +3820,8 @@ spec:
                                 type: string
                               fromExpression:
                                 type: string
+                              fromMulti:
+                                type: string
                               gcs:
                                 properties:
                                   bucket:
@@ -4010,6 +4024,8 @@ spec:
                                 - key
                                 type: object
                               path:
+                                type: string
+                              pathMulti:
                                 type: string
                               raw:
                                 properties:
@@ -4770,6 +4786,8 @@ spec:
                               type: string
                             fromExpression:
                               type: string
+                            fromMulti:
+                              type: string
                             gcs:
                               properties:
                                 bucket:
@@ -4972,6 +4990,8 @@ spec:
                               - key
                               type: object
                             path:
+                              type: string
+                            pathMulti:
                               type: string
                             raw:
                               properties:
@@ -5259,6 +5279,8 @@ spec:
                               type: string
                             fromExpression:
                               type: string
+                            fromMulti:
+                              type: string
                             gcs:
                               properties:
                                 bucket:
@@ -5461,6 +5483,8 @@ spec:
                               - key
                               type: object
                             path:
+                              type: string
+                            pathMulti:
                               type: string
                             raw:
                               properties:
@@ -9414,6 +9438,8 @@ spec:
                                           type: string
                                         fromExpression:
                                           type: string
+                                        fromMulti:
+                                          type: string
                                         gcs:
                                           properties:
                                             bucket:
@@ -9617,6 +9643,8 @@ spec:
                                           type: object
                                         path:
                                           type: string
+                                        pathMulti:
+                                          type: string
                                         raw:
                                           properties:
                                             data:
@@ -9814,6 +9842,8 @@ spec:
                                               from:
                                                 type: string
                                               fromExpression:
+                                                type: string
+                                              fromMulti:
                                                 type: string
                                               gcs:
                                                 properties:
@@ -10017,6 +10047,8 @@ spec:
                                                 - key
                                                 type: object
                                               path:
+                                                type: string
+                                              pathMulti:
                                                 type: string
                                               raw:
                                                 properties:
@@ -10258,6 +10290,8 @@ spec:
                                   type: string
                                 fromExpression:
                                   type: string
+                                fromMulti:
+                                  type: string
                                 gcs:
                                   properties:
                                     bucket:
@@ -10460,6 +10494,8 @@ spec:
                                   - key
                                   type: object
                                 path:
+                                  type: string
+                                pathMulti:
                                   type: string
                                 raw:
                                   properties:
@@ -11220,6 +11256,8 @@ spec:
                                 type: string
                               fromExpression:
                                 type: string
+                              fromMulti:
+                                type: string
                               gcs:
                                 properties:
                                   bucket:
@@ -11422,6 +11460,8 @@ spec:
                                 - key
                                 type: object
                               path:
+                                type: string
+                              pathMulti:
                                 type: string
                               raw:
                                 properties:
@@ -11709,6 +11749,8 @@ spec:
                                 type: string
                               fromExpression:
                                 type: string
+                              fromMulti:
+                                type: string
                               gcs:
                                 properties:
                                   bucket:
@@ -11911,6 +11953,8 @@ spec:
                                 - key
                                 type: object
                               path:
+                                type: string
+                              pathMulti:
                                 type: string
                               raw:
                                 properties:

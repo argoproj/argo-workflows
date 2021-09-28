@@ -79,6 +79,12 @@ message Artifact {
 
   // FromExpression, if defined, is evaluated to specify the value for the artifact
   optional string fromExpression = 11;
+
+  // FromMulti, if defined, allows an artifact to reference multi artifacts from a previous loop step
+  optional string fromMulti = 12;
+
+  // PathMulti, if defined, is the container path template with {{index}} to the multi artifacts
+  optional string pathMulti = 13;
 }
 
 // ArtifactLocation describes a location for a single or multiple artifacts.

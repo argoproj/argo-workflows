@@ -851,6 +851,12 @@ type Artifact struct {
 
 	// FromExpression, if defined, is evaluated to specify the value for the artifact
 	FromExpression string `json:"fromExpression,omitempty" protobuf:"bytes,11,opt,name=fromExpression"`
+
+	// FromMulti, if defined, allows an artifact to reference multi artifacts from a previous loop step
+	FromMulti string `json:"fromMulti,omitempty" protobuf:"bytes,12,opt,name=fromMulti"`
+
+	// PathMulti, if defined, is the container path template with {{index}} to the multi artifacts
+	PathMulti string `json:"pathMulti,omitempty" protobuf:"bytes,13,opt,name=pathMulti"`
 }
 
 // PodGC describes how to delete completed pods as they complete
