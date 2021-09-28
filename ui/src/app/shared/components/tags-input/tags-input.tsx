@@ -13,13 +13,13 @@ interface TagsInputProps {
 
 require('./tags-input.scss');
 
-export class TagsInput extends React.Component<TagsInputProps, {tags: string[]; input: string; focused: boolean; subTags: string[]; subTagsActive: boolean; open: boolean}> {
+export class TagsInput extends React.Component<TagsInputProps, {tags: string[]; input: string; focused: boolean; subTags: string[]; subTagsActive: boolean}> {
     private inputElement: HTMLInputElement;
     private autocompleteApi: AutocompleteApi;
 
     constructor(props: TagsInputProps) {
         super(props);
-        this.state = {tags: props.tags || [], input: '', focused: false, subTags: [], subTagsActive: false, open: false};
+        this.state = {tags: props.tags || [], input: '', focused: false, subTags: [], subTagsActive: false};
     }
 
     public render() {
@@ -46,7 +46,6 @@ export class TagsInput extends React.Component<TagsInputProps, {tags: string[]; 
                     <span />
                 )}
                 <Autocomplete
-                    open={this.state.open}
                     filterSuggestions={true}
                     autoCompleteRef={api => (this.autocompleteApi = api)}
                     value={this.state.input}
@@ -54,14 +53,13 @@ export class TagsInput extends React.Component<TagsInputProps, {tags: string[]; 
                     onChange={e => this.setState({input: e.target.value})}
                     onSelect={value => {
                         if (this.props.sublistQuery != null && !this.state.subTagsActive) {
-                            this.setState({subTagsActive: true, open: true});
+                            this.setState({subTagsActive: true});
                             this.props.sublistQuery(value).then(list => {
                                 this.setState({
                                     subTags: list.items || []
                                 });
                             });
                         } else {
-                            this.setState({open: false});
                             if (this.state.tags.indexOf(value) === -1) {
                                 const newTags = this.state.tags.concat(value);
                                 this.setState({input: '', tags: newTags, subTags: []});
@@ -84,7 +82,7 @@ export class TagsInput extends React.Component<TagsInputProps, {tags: string[]; 
                                 if (props.onFocus) {
                                     props.onFocus(e);
                                 }
-                                this.setState({focused: true, open: true});
+                                this.setState({focused: true});
                             }}
                             onBlur={e => {
                                 if (props.onBlur) {
