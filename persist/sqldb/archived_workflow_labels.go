@@ -12,7 +12,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
-func (r *workflowArchive) ListWorkflowsLabelKey() (*wfv1.LabelKeys, error) {
+func (r *workflowArchive) ListWorkflowsLabelKeys() (*wfv1.LabelKeys, error) {
 	var archivedWfLabels []archivedWorkflowLabelRecord
 
 	err := r.session.
@@ -30,7 +30,7 @@ func (r *workflowArchive) ListWorkflowsLabelKey() (*wfv1.LabelKeys, error) {
 	return &wfv1.LabelKeys{Items: labelKeys}, nil
 }
 
-func (r *workflowArchive) GetWorkflowLabel(key string) (*wfv1.Labels, error) {
+func (r *workflowArchive) ListWorkflowsLabels(key string) (*wfv1.Labels, error) {
 	var archivedWfLabels []archivedWorkflowLabelRecord
 	err := r.session.
 		Select(db.Raw("DISTINCT value")).

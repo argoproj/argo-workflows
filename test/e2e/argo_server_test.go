@@ -1298,7 +1298,7 @@ spec:
 	})
 
 	s.Run("ListLabelKeys", func() {
-		j := s.e().GET("/api/v1/archived-workflows-labels/keys").
+		j := s.e().GET("/api/v1/archived-workflows-label-keys").
 			Expect().
 			Status(200).
 			JSON()
@@ -1309,7 +1309,7 @@ spec:
 			Gt(0)
 	})
 
-	s.Run("GetLabel", func() {
+	s.Run("ListLabels", func() {
 		j := s.e().GET("/api/v1/archived-workflows-labels").
 			WithQuery("listOptions.fieldSelector", "key=workflows.argoproj.io/test").
 			Expect().

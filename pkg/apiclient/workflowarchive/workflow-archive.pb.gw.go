@@ -177,56 +177,56 @@ func local_request_ArchivedWorkflowService_DeleteArchivedWorkflow_0(ctx context.
 
 }
 
-func request_ArchivedWorkflowService_ListArchivedWorkflowLabel_0(ctx context.Context, marshaler runtime.Marshaler, client ArchivedWorkflowServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ListArchivedWorkflowLabelRequest
+func request_ArchivedWorkflowService_ListArchivedWorkflowLabelKeys_0(ctx context.Context, marshaler runtime.Marshaler, client ArchivedWorkflowServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ListArchivedWorkflowLabelKeysRequest
 	var metadata runtime.ServerMetadata
 
-	msg, err := client.ListArchivedWorkflowLabel(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.ListArchivedWorkflowLabelKeys(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_ArchivedWorkflowService_ListArchivedWorkflowLabel_0(ctx context.Context, marshaler runtime.Marshaler, server ArchivedWorkflowServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ListArchivedWorkflowLabelRequest
+func local_request_ArchivedWorkflowService_ListArchivedWorkflowLabelKeys_0(ctx context.Context, marshaler runtime.Marshaler, server ArchivedWorkflowServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ListArchivedWorkflowLabelKeysRequest
 	var metadata runtime.ServerMetadata
 
-	msg, err := server.ListArchivedWorkflowLabel(ctx, &protoReq)
+	msg, err := server.ListArchivedWorkflowLabelKeys(ctx, &protoReq)
 	return msg, metadata, err
 
 }
 
 var (
-	filter_ArchivedWorkflowService_GetArchivedWorkflowLabel_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
+	filter_ArchivedWorkflowService_ListArchivedWorkflowLabels_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
 )
 
-func request_ArchivedWorkflowService_GetArchivedWorkflowLabel_0(ctx context.Context, marshaler runtime.Marshaler, client ArchivedWorkflowServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetArchivedWorkflowLabelRequest
+func request_ArchivedWorkflowService_ListArchivedWorkflowLabels_0(ctx context.Context, marshaler runtime.Marshaler, client ArchivedWorkflowServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ListArchivedWorkflowLabelsRequest
 	var metadata runtime.ServerMetadata
 
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ArchivedWorkflowService_GetArchivedWorkflowLabel_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ArchivedWorkflowService_ListArchivedWorkflowLabels_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := client.GetArchivedWorkflowLabel(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.ListArchivedWorkflowLabels(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_ArchivedWorkflowService_GetArchivedWorkflowLabel_0(ctx context.Context, marshaler runtime.Marshaler, server ArchivedWorkflowServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetArchivedWorkflowLabelRequest
+func local_request_ArchivedWorkflowService_ListArchivedWorkflowLabels_0(ctx context.Context, marshaler runtime.Marshaler, server ArchivedWorkflowServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ListArchivedWorkflowLabelsRequest
 	var metadata runtime.ServerMetadata
 
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ArchivedWorkflowService_GetArchivedWorkflowLabel_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ArchivedWorkflowService_ListArchivedWorkflowLabels_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := server.GetArchivedWorkflowLabel(ctx, &protoReq)
+	msg, err := server.ListArchivedWorkflowLabels(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -306,7 +306,7 @@ func RegisterArchivedWorkflowServiceHandlerServer(ctx context.Context, mux *runt
 
 	})
 
-	mux.Handle("GET", pattern_ArchivedWorkflowService_ListArchivedWorkflowLabel_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_ArchivedWorkflowService_ListArchivedWorkflowLabelKeys_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -317,7 +317,7 @@ func RegisterArchivedWorkflowServiceHandlerServer(ctx context.Context, mux *runt
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ArchivedWorkflowService_ListArchivedWorkflowLabel_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ArchivedWorkflowService_ListArchivedWorkflowLabelKeys_0(rctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -325,11 +325,11 @@ func RegisterArchivedWorkflowServiceHandlerServer(ctx context.Context, mux *runt
 			return
 		}
 
-		forward_ArchivedWorkflowService_ListArchivedWorkflowLabel_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_ArchivedWorkflowService_ListArchivedWorkflowLabelKeys_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_ArchivedWorkflowService_GetArchivedWorkflowLabel_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_ArchivedWorkflowService_ListArchivedWorkflowLabels_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -340,7 +340,7 @@ func RegisterArchivedWorkflowServiceHandlerServer(ctx context.Context, mux *runt
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ArchivedWorkflowService_GetArchivedWorkflowLabel_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ArchivedWorkflowService_ListArchivedWorkflowLabels_0(rctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -348,7 +348,7 @@ func RegisterArchivedWorkflowServiceHandlerServer(ctx context.Context, mux *runt
 			return
 		}
 
-		forward_ArchivedWorkflowService_GetArchivedWorkflowLabel_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_ArchivedWorkflowService_ListArchivedWorkflowLabels_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -453,7 +453,7 @@ func RegisterArchivedWorkflowServiceHandlerClient(ctx context.Context, mux *runt
 
 	})
 
-	mux.Handle("GET", pattern_ArchivedWorkflowService_ListArchivedWorkflowLabel_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_ArchivedWorkflowService_ListArchivedWorkflowLabelKeys_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -462,18 +462,18 @@ func RegisterArchivedWorkflowServiceHandlerClient(ctx context.Context, mux *runt
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ArchivedWorkflowService_ListArchivedWorkflowLabel_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ArchivedWorkflowService_ListArchivedWorkflowLabelKeys_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_ArchivedWorkflowService_ListArchivedWorkflowLabel_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_ArchivedWorkflowService_ListArchivedWorkflowLabelKeys_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_ArchivedWorkflowService_GetArchivedWorkflowLabel_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_ArchivedWorkflowService_ListArchivedWorkflowLabels_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -482,14 +482,14 @@ func RegisterArchivedWorkflowServiceHandlerClient(ctx context.Context, mux *runt
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ArchivedWorkflowService_GetArchivedWorkflowLabel_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ArchivedWorkflowService_ListArchivedWorkflowLabels_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_ArchivedWorkflowService_GetArchivedWorkflowLabel_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_ArchivedWorkflowService_ListArchivedWorkflowLabels_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -503,9 +503,9 @@ var (
 
 	pattern_ArchivedWorkflowService_DeleteArchivedWorkflow_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "archived-workflows", "uid"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_ArchivedWorkflowService_ListArchivedWorkflowLabel_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "v1", "archived-workflows-labels", "keys"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_ArchivedWorkflowService_ListArchivedWorkflowLabelKeys_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "archived-workflows-label-keys"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_ArchivedWorkflowService_GetArchivedWorkflowLabel_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "archived-workflows-labels"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_ArchivedWorkflowService_ListArchivedWorkflowLabels_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "archived-workflows-labels"}, "", runtime.AssumeColonVerbOpt(true)))
 )
 
 var (
@@ -515,7 +515,7 @@ var (
 
 	forward_ArchivedWorkflowService_DeleteArchivedWorkflow_0 = runtime.ForwardResponseMessage
 
-	forward_ArchivedWorkflowService_ListArchivedWorkflowLabel_0 = runtime.ForwardResponseMessage
+	forward_ArchivedWorkflowService_ListArchivedWorkflowLabelKeys_0 = runtime.ForwardResponseMessage
 
-	forward_ArchivedWorkflowService_GetArchivedWorkflowLabel_0 = runtime.ForwardResponseMessage
+	forward_ArchivedWorkflowService_ListArchivedWorkflowLabels_0 = runtime.ForwardResponseMessage
 )

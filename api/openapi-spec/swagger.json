@@ -96,12 +96,34 @@
         }
       }
     },
+    "/api/v1/archived-workflows-label-keys": {
+      "get": {
+        "tags": [
+          "ArchivedWorkflowService"
+        ],
+        "operationId": "ArchivedWorkflowService_ListArchivedWorkflowLabelKeys",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LabelKeys"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/archived-workflows-labels": {
       "get": {
         "tags": [
           "ArchivedWorkflowService"
         ],
-        "operationId": "ArchivedWorkflowService_GetArchivedWorkflowLabel",
+        "operationId": "ArchivedWorkflowService_ListArchivedWorkflowLabels",
         "parameters": [
           {
             "type": "string",
@@ -165,28 +187,6 @@
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Labels"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/archived-workflows-labels/keys": {
-      "get": {
-        "tags": [
-          "ArchivedWorkflowService"
-        ],
-        "operationId": "ArchivedWorkflowService_ListArchivedWorkflowLabel",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LabelKeys"
             }
           },
           "default": {

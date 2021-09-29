@@ -68,10 +68,10 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		}, nil
 	})
 	repo.On("DeleteWorkflow", "my-uid").Return(nil)
-	repo.On("ListWorkflowsLabelKey").Return(&wfv1.LabelKeys{
+	repo.On("ListWorkflowsLabelKeys").Return(&wfv1.LabelKeys{
 		Items: []string{"foo", "bar"},
 	}, nil)
-	repo.On("GetWorkflowLabel", "my-key").Return(&wfv1.Labels{
+	repo.On("ListWorkflowsLabels", "my-key").Return(&wfv1.Labels{
 		Items: []string{"my-key=foo", "my-key=bar"},
 	}, nil)
 
@@ -122,12 +122,12 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		assert.NoError(t, err)
 	})
 	t.Run("ListArchivedWorkflowLabel", func(t *testing.T) {
-		resp, err := w.ListArchivedWorkflowLabel(ctx, &workflowarchivepkg.ListArchivedWorkflowLabelRequest{})
+		resp, err := w.ListArchivedWorkflowLabelKeys(ctx, &workflowarchivepkg.ListArchivedWorkflowLabelKeysRequest{})
 		assert.NoError(t, err)
 		assert.Len(t, resp.Items, 2)
 	})
 	t.Run("GetArchivedWorkflowLabel", func(t *testing.T) {
-		resp, err := w.GetArchivedWorkflowLabel(ctx, &workflowarchivepkg.GetArchivedWorkflowLabelRequest{ListOptions: &metav1.ListOptions{FieldSelector: "key=my-key"}})
+		resp, err := w.ListArchivedWorkflowLabels(ctx, &workflowarchivepkg.ListArchivedWorkflowLabelsRequest{ListOptions: &metav1.ListOptions{FieldSelector: "key=my-key"}})
 		assert.NoError(t, err)
 		assert.Len(t, resp.Items, 2)
 	})

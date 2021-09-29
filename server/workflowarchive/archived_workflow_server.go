@@ -150,15 +150,15 @@ func (w *archivedWorkflowServer) DeleteArchivedWorkflow(ctx context.Context, req
 	return &workflowarchivepkg.ArchivedWorkflowDeletedResponse{}, nil
 }
 
-func (w *archivedWorkflowServer) ListArchivedWorkflowLabel(ctx context.Context, req *workflowarchivepkg.ListArchivedWorkflowLabelRequest) (*wfv1.LabelKeys, error) {
-	labelkeys, err := w.wfArchive.ListWorkflowsLabelKey()
+func (w *archivedWorkflowServer) ListArchivedWorkflowLabelKeys(ctx context.Context, req *workflowarchivepkg.ListArchivedWorkflowLabelKeysRequest) (*wfv1.LabelKeys, error) {
+	labelkeys, err := w.wfArchive.ListWorkflowsLabelKeys()
 	if err != nil {
 		return nil, err
 	}
 	return labelkeys, nil
 }
 
-func (w *archivedWorkflowServer) GetArchivedWorkflowLabel(ctx context.Context, req *workflowarchivepkg.GetArchivedWorkflowLabelRequest) (*wfv1.Labels, error) {
+func (w *archivedWorkflowServer) ListArchivedWorkflowLabels(ctx context.Context, req *workflowarchivepkg.ListArchivedWorkflowLabelsRequest) (*wfv1.Labels, error) {
 	options := req.ListOptions
 
 	key := ""
@@ -173,7 +173,7 @@ func (w *archivedWorkflowServer) GetArchivedWorkflowLabel(ctx context.Context, r
 		}
 	}
 
-	labels, err := w.wfArchive.GetWorkflowLabel(key)
+	labels, err := w.wfArchive.ListWorkflowsLabels(key)
 	if err != nil {
 		return nil, err
 	}
