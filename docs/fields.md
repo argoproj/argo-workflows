@@ -334,6 +334,8 @@ Workflow is the definition of a workflow resource
 
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/steps.yaml)
 
+- [`workflow-archive-logs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-archive-logs.yaml)
+
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
 - [`workflow-template-ref.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-template-ref.yaml)
@@ -755,6 +757,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/templates.yaml)
 
+- [`workflow-archive-logs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-archive-logs.yaml)
+
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
 - [`workflow-template-ref.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-template-ref.yaml)
@@ -765,6 +769,7 @@ WorkflowSpec is the specification of a Workflow.
 |:----------:|:----------:|---------------|
 |`activeDeadlineSeconds`|`integer`|Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the io.argoproj.workflow.v1alpha1. A value of zero is used to terminate a Running workflow|
 |`affinity`|[`Affinity`](#affinity)|Affinity sets the scheduling constraints for all pods in the io.argoproj.workflow.v1alpha1. Can be overridden by an affinity specified in the template|
+|`archiveLogs`|`boolean`|ArchiveLogs indicates if the container logs should be archived|
 |`arguments`|[`Arguments`](#arguments)|Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{io.argoproj.workflow.v1alpha1.parameters.myparam}}|
 |`artifactRepositoryRef`|[`ArtifactRepositoryRef`](#artifactrepositoryref)|ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config.|
 |`automountServiceAccountToken`|`boolean`|AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.|
@@ -1183,6 +1188,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/templates.yaml)
 
+- [`workflow-archive-logs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-archive-logs.yaml)
+
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
 - [`workflow-template-ref.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-template-ref.yaml)
@@ -1568,6 +1575,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/templates.yaml)
 
+- [`workflow-archive-logs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-archive-logs.yaml)
+
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
 - [`workflow-template-ref.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-template-ref.yaml)
@@ -1578,6 +1587,7 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 |:----------:|:----------:|---------------|
 |`activeDeadlineSeconds`|`integer`|Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the io.argoproj.workflow.v1alpha1. A value of zero is used to terminate a Running workflow|
 |`affinity`|[`Affinity`](#affinity)|Affinity sets the scheduling constraints for all pods in the io.argoproj.workflow.v1alpha1. Can be overridden by an affinity specified in the template|
+|`archiveLogs`|`boolean`|ArchiveLogs indicates if the container logs should be archived|
 |`arguments`|[`Arguments`](#arguments)|Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{io.argoproj.workflow.v1alpha1.parameters.myparam}}|
 |`artifactRepositoryRef`|[`ArtifactRepositoryRef`](#artifactrepositoryref)|ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config.|
 |`automountServiceAccountToken`|`boolean`|AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.|
@@ -2863,7 +2873,7 @@ UserContainer is a container specified by a user.
 |`name`|`string`|Name of the container specified as a DNS_LABEL. Each container in a pod must have a unique name (DNS_LABEL). Cannot be updated.|
 |`ports`|`Array<`[`ContainerPort`](#containerport)`>`|List of ports to expose from the container. Exposing a port here gives the system additional information about the network connections a container uses, but is primarily informational. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default "0.0.0.0" address inside a container will be accessible from the network. Cannot be updated.|
 |`readinessProbe`|[`Probe`](#probe)|Periodic probe of container service readiness. Container will be removed from service endpoints if the probe fails. Cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
-|`resources`|[`ResourceRequirements`](#resourcerequirements)|Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/|
+|`resources`|[`ResourceRequirements`](#resourcerequirements)|Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/|
 |`securityContext`|[`SecurityContext`](#securitycontext)|Security options the pod should run with. More info: https://kubernetes.io/docs/concepts/policy/security-context/ More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/|
 |`startupProbe`|[`Probe`](#probe)|StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
 |`stdin`|`boolean`|Whether this container should allocate a buffer for stdin in the container runtime. If this is not set, reads from stdin in the container will always result in EOF. Default is false.|
@@ -3197,7 +3207,7 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 |`name`|`string`|Name of the container specified as a DNS_LABEL. Each container in a pod must have a unique name (DNS_LABEL). Cannot be updated.|
 |`ports`|`Array<`[`ContainerPort`](#containerport)`>`|List of ports to expose from the container. Exposing a port here gives the system additional information about the network connections a container uses, but is primarily informational. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default "0.0.0.0" address inside a container will be accessible from the network. Cannot be updated.|
 |`readinessProbe`|[`Probe`](#probe)|Periodic probe of container service readiness. Container will be removed from service endpoints if the probe fails. Cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
-|`resources`|[`ResourceRequirements`](#resourcerequirements)|Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/|
+|`resources`|[`ResourceRequirements`](#resourcerequirements)|Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/|
 |`securityContext`|[`SecurityContext`](#securitycontext)|Security options the pod should run with. More info: https://kubernetes.io/docs/concepts/policy/security-context/ More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/|
 |`source`|`string`|Source contains the source code of the script to execute|
 |`startupProbe`|[`Probe`](#probe)|StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
@@ -3998,7 +4008,7 @@ _No description available_
 |`name`|`string`|Name of the container specified as a DNS_LABEL. Each container in a pod must have a unique name (DNS_LABEL). Cannot be updated.|
 |`ports`|`Array<`[`ContainerPort`](#containerport)`>`|List of ports to expose from the container. Exposing a port here gives the system additional information about the network connections a container uses, but is primarily informational. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default "0.0.0.0" address inside a container will be accessible from the network. Cannot be updated.|
 |`readinessProbe`|[`Probe`](#probe)|Periodic probe of container service readiness. Container will be removed from service endpoints if the probe fails. Cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
-|`resources`|[`ResourceRequirements`](#resourcerequirements)|Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/|
+|`resources`|[`ResourceRequirements`](#resourcerequirements)|Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/|
 |`securityContext`|[`SecurityContext`](#securitycontext)|Security options the pod should run with. More info: https://kubernetes.io/docs/concepts/policy/security-context/ More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/|
 |`startupProbe`|[`Probe`](#probe)|StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
 |`stdin`|`boolean`|Whether this container should allocate a buffer for stdin in the container runtime. If this is not set, reads from stdin in the container will always result in EOF. Default is false.|
@@ -5009,6 +5019,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/templates.yaml)
 
+- [`workflow-archive-logs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-archive-logs.yaml)
+
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
 - [`workflow-template-ref.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-template-ref.yaml)
@@ -5576,6 +5588,8 @@ A single application container that you want to run within a pod.
 - [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/templates.yaml)
+
+- [`workflow-archive-logs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-archive-logs.yaml)
 </details>
 
 ### Fields
@@ -6309,6 +6323,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/templates.yaml)
+
+- [`workflow-archive-logs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-archive-logs.yaml)
 
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 

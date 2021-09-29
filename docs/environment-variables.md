@@ -37,7 +37,19 @@ Note that these environment variables may be removed at any time.
 | `WORKFLOW_GC_PERIOD` | `time.Duration` | `5m` | The periodicity for GC of workflows. |
 | `BUBBLE_ENTRY_TEMPLATE_ERR` | `bool` | `true` | Whether to bubble up template errors to workflow. |
 | `INFORMER_WRITE_BACK` | `bool` | `true` | Whether to write back to informer instead of catching up. |
-| `GRPC_MESSAGE_SIZE` | `string` | Use different GRPC Max message size for Argo server deployment (supporting huge workflows) |
+| `GRPC_MESSAGE_SIZE` | `string` | Use different GRPC Max message size for Argo server deployment (supporting huge workflows). |
+
+CLI parameters of the `argo-server` and `workflow-controller` can be specified as environment variables with the `ARGO_` prefix. For example:
+
+```
+workflow-controller --managed-namespace=argo
+```
+
+Can be expressed as:
+
+```
+ARGO_MANAGED_NAMESPACE=argo workflow-controller
+```
 
 You can set environment variable for the argo-server deployment, for example:
 

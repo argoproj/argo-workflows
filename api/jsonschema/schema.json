@@ -4427,7 +4427,14 @@
         "metadata",
         "spec"
       ],
-      "type": "object"
+      "type": "object",
+      "x-kubernetes-group-version-kind": [
+        {
+          "group": "argoproj.io",
+          "kind": "ClusterWorkflowTemplate",
+          "version": "v1alpha1"
+        }
+      ]
     },
     "io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplateCreateRequest": {
       "properties": {
@@ -4588,7 +4595,7 @@
         },
         "resources": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements",
-          "description": "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/"
+          "description": "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/"
         },
         "securityContext": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecurityContext",
@@ -4742,7 +4749,14 @@
         "metadata",
         "spec"
       ],
-      "type": "object"
+      "type": "object",
+      "x-kubernetes-group-version-kind": [
+        {
+          "group": "argoproj.io",
+          "kind": "CronWorkflow",
+          "version": "v1alpha1"
+        }
+      ]
     },
     "io.argoproj.workflow.v1alpha1.CronWorkflowDeletedResponse": {
       "type": "object"
@@ -6275,7 +6289,7 @@
         },
         "resources": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements",
-          "description": "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/"
+          "description": "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/"
         },
         "securityContext": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecurityContext",
@@ -6860,7 +6874,7 @@
         },
         "resources": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements",
-          "description": "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/"
+          "description": "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/"
         },
         "securityContext": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecurityContext",
@@ -7036,7 +7050,14 @@
         "metadata",
         "spec"
       ],
-      "type": "object"
+      "type": "object",
+      "x-kubernetes-group-version-kind": [
+        {
+          "group": "argoproj.io",
+          "kind": "Workflow",
+          "version": "v1alpha1"
+        }
+      ]
     },
     "io.argoproj.workflow.v1alpha1.WorkflowCreateRequest": {
       "properties": {
@@ -7086,7 +7107,14 @@
         "metadata",
         "spec"
       ],
-      "type": "object"
+      "type": "object",
+      "x-kubernetes-group-version-kind": [
+        {
+          "group": "argoproj.io",
+          "kind": "WorkflowEventBinding",
+          "version": "v1alpha1"
+        }
+      ]
     },
     "io.argoproj.workflow.v1alpha1.WorkflowEventBindingList": {
       "description": "WorkflowEventBindingList is list of event resources",
@@ -7247,6 +7275,10 @@
         "affinity": {
           "$ref": "#/definitions/io.k8s.api.core.v1.Affinity",
           "description": "Affinity sets the scheduling constraints for all pods in the io.argoproj.workflow.v1alpha1. Can be overridden by an affinity specified in the template"
+        },
+        "archiveLogs": {
+          "description": "ArchiveLogs indicates if the container logs should be archived",
+          "type": "boolean"
         },
         "arguments": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments",
@@ -7648,7 +7680,14 @@
         "metadata",
         "spec"
       ],
-      "type": "object"
+      "type": "object",
+      "x-kubernetes-group-version-kind": [
+        {
+          "group": "argoproj.io",
+          "kind": "WorkflowTaskSet",
+          "version": "v1alpha1"
+        }
+      ]
     },
     "io.argoproj.workflow.v1alpha1.WorkflowTaskSetSpec": {
       "properties": {
@@ -7696,7 +7735,14 @@
         "metadata",
         "spec"
       ],
-      "type": "object"
+      "type": "object",
+      "x-kubernetes-group-version-kind": [
+        {
+          "group": "argoproj.io",
+          "kind": "WorkflowTemplate",
+          "version": "v1alpha1"
+        }
+      ]
     },
     "io.argoproj.workflow.v1alpha1.WorkflowTemplateCreateRequest": {
       "properties": {
@@ -7780,6 +7826,10 @@
         "affinity": {
           "$ref": "#/definitions/io.k8s.api.core.v1.Affinity",
           "description": "Affinity sets the scheduling constraints for all pods in the io.argoproj.workflow.v1alpha1. Can be overridden by an affinity specified in the template"
+        },
+        "archiveLogs": {
+          "description": "ArchiveLogs indicates if the container logs should be archived",
+          "type": "boolean"
         },
         "arguments": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments",
@@ -8593,10 +8643,6 @@
     "io.k8s.api.core.v1.EphemeralVolumeSource": {
       "description": "Represents an ephemeral volume that is handled by a normal storage driver.",
       "properties": {
-        "readOnly": {
-          "title": "Specifies a read-only configuration for the volume.\nDefaults to false (read/write).\n+optional",
-          "type": "boolean"
-        },
         "volumeClaimTemplate": {
           "$ref": "#/definitions/io.k8s.api.core.v1.PersistentVolumeClaimTemplate",
           "description": "Will be used to create a stand-alone PVC to provision the volume.\nThe pod in which this EphemeralVolumeSource is embedded will be the\nowner of the PVC, i.e. the PVC will be deleted together with the\npod.  The name of the PVC will be `\u003cpod name\u003e-\u003cvolume name\u003e` where\n`\u003cvolume name\u003e` is the name from the `PodSpec.Volumes` array\nentry. Pod validation will reject the pod if the concatenated name\nis not valid for a PVC (for example, too long).\n\nAn existing PVC with that name that is not owned by the pod\nwill *not* be used for the pod to avoid using an unrelated\nvolume by mistake. Starting the pod is then blocked until\nthe unrelated PVC is removed. If such a pre-created PVC is\nmeant to be used by the pod, the PVC has to updated with an\nowner reference to the pod once the pod exists. Normally\nthis should not be necessary, but it may be useful when\nmanually reconstructing a broken cluster.\n\nThis field is read-only and no changes will be made by Kubernetes\nto the PVC after it has been created.\n\nRequired, must not be nil."
