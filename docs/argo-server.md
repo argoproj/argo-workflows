@@ -155,6 +155,20 @@ spec:
             path: /argo(/|$)(.*)
 ```
 
+If ingress doesn't work fine because of UNHEALTHY state in backend service, this is caused by fail in health check. To fix this, you have to apply custom health check with BackendConfig like this:
+
+```
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: argo-backend-config
+spec:
+  healthCheck:
+    port: 2746
+    type: HTTPS
+    requestPath: /argo/
+```
+
 [Learn more](https://github.com/argoproj/argo-workflows/issues/3080)
 
 
