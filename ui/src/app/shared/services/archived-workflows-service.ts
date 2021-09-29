@@ -22,7 +22,7 @@ export class ArchivedWorkflowsService {
     }
 
     public listLabels(key: string) {
-        return requests.get(`api/v1/archived-workflows-labels?listOptions.fieldSelector=key=${key}`).then(res => res.body as models.Labels);
+        return requests.get(`api/v1/archived-workflows-labels?listOptions.labelSelector=${key}`).then(res => res.body as models.Labels);
     }
 
     private queryParams(filter: {

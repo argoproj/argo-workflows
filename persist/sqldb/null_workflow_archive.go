@@ -41,6 +41,6 @@ func (r *nullWorkflowArchive) ListWorkflowsLabelKeys() (*wfv1.LabelKeys, error) 
 	return &wfv1.LabelKeys{}, nil
 }
 
-func (r *nullWorkflowArchive) ListWorkflowsLabels(string) (*wfv1.Labels, error) {
+func (r *nullWorkflowArchive) ListWorkflowsLabels(labels.Requirements) (*wfv1.Labels, error) {
 	return &wfv1.Labels{}, nil
 }

@@ -24,7 +24,7 @@ func NewListLabelCommand() *cobra.Command {
 			}
 			key := args[0]
 			listOpts := &metav1.ListOptions{
-				FieldSelector: "key=" + key,
+				LabelSelector: key,
 			}
 
 			ctx, apiClient := client.NewAPIClient(cmd.Context())

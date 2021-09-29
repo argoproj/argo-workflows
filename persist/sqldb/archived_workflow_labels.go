@@ -30,7 +30,19 @@ func (r *workflowArchive) ListWorkflowsLabelKeys() (*wfv1.LabelKeys, error) {
 	return &wfv1.LabelKeys{Items: labelKeys}, nil
 }
 
-func (r *workflowArchive) ListWorkflowsLabels(key string) (*wfv1.Labels, error) {
+func (r *workflowArchive) ListWorkflowsLabels(labelRequirements labels.Requirements) (*wfv1.Labels, error) {
+	if len(labelRequirements) != 1 {
+		return nil, fmt.Errorf("only allow 1 labelRequirement, found %v", len(labelRequirements))
+	}
+
+	key := ""
+	req := labelRequirements[0]
+	if req.Operator() == selection.Exists {
+		key = req.Key()
+	} else {
+		return nil, fmt.Errorf("operation %v is not supported", req.Operator())
+	}
+
 	var archivedWfLabels []archivedWorkflowLabelRecord
 	err := r.session.
 		Select(db.Raw("DISTINCT value")).

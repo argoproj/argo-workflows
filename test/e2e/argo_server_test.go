@@ -1311,7 +1311,7 @@ spec:
 
 	s.Run("ListLabels", func() {
 		j := s.e().GET("/api/v1/archived-workflows-labels").
-			WithQuery("listOptions.fieldSelector", "key=workflows.argoproj.io/test").
+			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test").
 			Expect().
 			Status(200).
 			JSON()

@@ -161,19 +161,12 @@ func (w *archivedWorkflowServer) ListArchivedWorkflowLabelKeys(ctx context.Conte
 func (w *archivedWorkflowServer) ListArchivedWorkflowLabels(ctx context.Context, req *workflowarchivepkg.ListArchivedWorkflowLabelsRequest) (*wfv1.Labels, error) {
 	options := req.ListOptions
 
-	key := ""
-	for _, selector := range strings.Split(options.FieldSelector, ",") {
-		if len(selector) == 0 {
-			continue
-		}
-		if strings.HasPrefix(selector, "key=") {
-			key = strings.TrimPrefix(selector, "key=")
-		} else {
-			return nil, fmt.Errorf("unsupported requirement %s", selector)
-		}
+	requirements, err := labels.ParseToRequirements(options.LabelSelector)
+	if err != nil {
+		return nil, err
 	}
 
-	labels, err := w.wfArchive.ListWorkflowsLabels(key)
+	labels, err := w.wfArchive.ListWorkflowsLabels(requirements)
 	if err != nil {
 		return nil, err
 	}
