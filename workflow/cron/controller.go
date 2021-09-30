@@ -6,12 +6,6 @@ import (
 	"reflect"
 	"time"
 
-	"k8s.io/apimachinery/pkg/selection"
-
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-
-	"github.com/argoproj/argo-workflows/v3/util/env"
-
 	"github.com/argoproj/pkg/sync"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
@@ -20,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/types"
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -32,6 +27,8 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo-workflows/v3/util/env"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/events"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"

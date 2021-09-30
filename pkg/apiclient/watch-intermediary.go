@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"google.golang.org/grpc/metadata"
-
 	v1 "k8s.io/api/core/v1"
 
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"

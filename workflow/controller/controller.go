@@ -9,8 +9,6 @@ import (
 	"syscall"
 	"time"
 
-	v1 "k8s.io/client-go/informers/core/v1"
-
 	"github.com/argoproj/pkg/errors"
 	syncpkg "github.com/argoproj/pkg/sync"
 	log "github.com/sirupsen/logrus"
@@ -27,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
+	v1 "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"

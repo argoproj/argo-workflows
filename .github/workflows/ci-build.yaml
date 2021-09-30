@@ -179,7 +179,7 @@ jobs:
       - run: cp server/static/files.go.stub server/static/files.go
       - uses: golangci/golangci-lint-action@v2
         with:
-          version: v1.40.1
+          version: v1.42.0
 
   ui:
     name: UI

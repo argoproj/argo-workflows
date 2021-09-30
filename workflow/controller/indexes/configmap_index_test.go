@@ -3,10 +3,9 @@ package indexes
 import (
 	"testing"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestConfigMapIndexFunc(t *testing.T) {

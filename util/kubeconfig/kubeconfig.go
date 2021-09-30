@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"k8s.io/client-go/pkg/apis/clientauthentication"
 	clientauthenticationapi "k8s.io/client-go/pkg/apis/clientauthentication"
 	"k8s.io/client-go/plugin/pkg/client/auth/exec"
 	restclient "k8s.io/client-go/rest"
@@ -149,7 +148,7 @@ func GetBearerToken(in *restclient.Config, explicitKubeConfigPath string) (strin
 			return "", err
 		}
 
-		var cluster *clientauthentication.Cluster
+		var cluster *clientauthenticationapi.Cluster
 		if in.ExecProvider.ProvideClusterInfo {
 			var err error
 			cluster, err = ConfigToExecCluster(in)
@@ -216,7 +215,7 @@ func ConfigToExecCluster(config *restclient.Config) (*clientauthenticationapi.Cl
 		}
 	}
 
-	return &clientauthentication.Cluster{
+	return &clientauthenticationapi.Cluster{
 		Server:                   config.Host,
 		TLSServerName:            config.ServerName,
 		InsecureSkipTLSVerify:    config.Insecure,
