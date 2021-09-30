@@ -6,6 +6,7 @@ import (
 	"os"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 
@@ -14,8 +15,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/logs"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor"
-
-	"github.com/spf13/cobra"
 )
 
 func NewAgentCommand() *cobra.Command {

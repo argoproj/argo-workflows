@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"k8s.io/client-go/pkg/apis/clientauthentication"
+	clientauthenticationapi "k8s.io/client-go/pkg/apis/clientauthentication"
 	clientauthenticationapi "k8s.io/client-go/pkg/apis/clientauthentication"
 	"k8s.io/client-go/plugin/pkg/client/auth/exec"
 	restclient "k8s.io/client-go/rest"

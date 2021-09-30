@@ -17,13 +17,24 @@ run:
     - functional
 linters:
   enable:
+    # TODO
+    # - bodyclose
     - deadcode
     - errcheck
     - goimports
+    # only minor issues
+    # - errorlint
+    # TODO
+    # - exportloopref
+    - gci
     - gosec
     - gosimple
     - govet
+    - ineffassign
     - misspell
+    # TODO
+    # - rowserrcheck
+    # - sqlclosecheck
     - staticcheck
     - structcheck
     - typecheck
