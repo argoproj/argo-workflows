@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	apiv1 "k8s.io/api/core/v1"
-	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -231,7 +230,7 @@ func (s *FunctionalSuite) TestEventOnNodeFailSentAsPod() {
 				return (event.InvolvedObject.Kind == workflow.WorkflowKind && event.InvolvedObject.UID == uid) || (event.InvolvedObject.Kind == "Pod" && event.InvolvedObject.UID == nodeId && strings.HasPrefix(event.Reason, "Workflow"))
 			},
 			4,
-			func(t *testing.T, es []corev1.Event) {
+			func(t *testing.T, es []apiv1.Event) {
 				for _, e := range es {
 					switch e.Reason {
 					case "WorkflowNodeRunning":
@@ -278,7 +277,7 @@ func (s *FunctionalSuite) TestEventOnNodeFail() {
 		ExpectAuditEvents(
 			fixtures.HasInvolvedObject(workflow.WorkflowKind, uid),
 			4,
-			func(t *testing.T, es []corev1.Event) {
+			func(t *testing.T, es []apiv1.Event) {
 				for _, e := range es {
 					switch e.Reason {
 					case "WorkflowNodeRunning":
@@ -313,7 +312,7 @@ func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
 		ExpectAuditEvents(
 			fixtures.HasInvolvedObject(workflow.WorkflowKind, uid),
 			4,
-			func(t *testing.T, es []corev1.Event) {
+			func(t *testing.T, es []apiv1.Event) {
 				for _, e := range es {
 					println(e.Reason, e.Message)
 					switch e.Reason {
@@ -349,7 +348,7 @@ func (s *FunctionalSuite) TestEventOnPVCFail() {
 		ExpectAuditEvents(
 			fixtures.HasInvolvedObject(workflow.WorkflowKind, uid),
 			2,
-			func(t *testing.T, e []corev1.Event) {
+			func(t *testing.T, e []apiv1.Event) {
 				assert.Equal(t, "WorkflowRunning", e[0].Reason)
 
 				assert.Equal(t, "WorkflowFailed", e[1].Reason)
@@ -754,7 +753,7 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow().
 		Then().
-		ExpectWorkflowNode(wfv1.SucceededPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
+		ExpectWorkflowNode(wfv1.SucceededPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
 			assert.Equal(t, *p.Spec.TerminationGracePeriodSeconds, int64(5))
 			for _, c := range p.Spec.Containers {
 				if c.Name == "main" {

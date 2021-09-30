@@ -17,14 +17,14 @@ run:
     - functional
 linters:
   enable:
-    # TODO
+    # TODO https://github.com/argoproj/argo-workflows/issues/6837
     # - bodyclose
     - deadcode
     - errcheck
     - goimports
     # only minor issues
     # - errorlint
-    # TODO
+    # TODO https://github.com/argoproj/argo-workflows/issues/6840
     # - exportloopref
     - gci
     - gosec
@@ -32,7 +32,7 @@ linters:
     - govet
     - ineffassign
     - misspell
-    # TODO
+    # TODO https://github.com/argoproj/argo-workflows/issues/6838
     # - rowserrcheck
     # - sqlclosecheck
     - staticcheck
