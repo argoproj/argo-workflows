@@ -7411,3 +7411,90 @@ func TestBuildRetryStrategyLocalScope(t *testing.T) {
 	assert.Equal(t, string(wfv1.NodeFailed), localScope[common.LocalVarRetriesLastStatus])
 	assert.Equal(t, "6", localScope[common.LocalVarRetriesLastDuration])
 }
+
+var testEmptyTaskGroupOutboundNodePoint2Self = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: empty-taskgroup-outboundnodes-test
+  namespace: argo
+spec:
+  entrypoint: main
+  serviceAccountName: argo
+  templates:
+  - container:
+      args:
+      - -c
+      - exit {{inputs.parameters.code}}
+      command:
+      - /bin/sh
+      image: alpine
+      name: main
+    inputs:
+      parameters:
+      - name: code
+    name: task
+  - dag:
+      tasks:
+      - arguments:
+          parameters:
+          - name: code
+            value: '{{inputs.parameters.code}}'
+        name: task
+        template: task
+    inputs:
+      parameters:
+      - name: code
+    name: task-dag
+  - dag:
+      tasks:
+      - arguments:
+          parameters:
+          - name: code
+            value: "0"
+        name: A
+        template: task
+        withParam: '[]'
+      - arguments:
+          parameters:
+          - name: code
+            value: "0"
+        dependencies:
+        - A
+        name: B
+        template: task-dag
+        withParam: '[{"code": "0"}]'
+      - arguments:
+          parameters:
+          - name: code
+            value: "1"
+        dependencies:
+        - A
+        name: C
+        template: task-dag
+        withParam: '[{"code": "1"}]'
+      - arguments:
+          parameters:
+          - name: code
+            value: "0"
+        dependencies:
+        - B
+        - C
+        name: D
+        template: task
+    name: main`
+
+func TestEmptyTaskGroupOutboundNodePoint2Self(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(testEmptyTaskGroupOutboundNodePoint2Self)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+	node := woc.wf.Status.Nodes.FindByDisplayName("A")
+	assert.Len(t, node.OutboundNodes, 1)
+	assert.Equal(t, node.OutboundNodes, []string{node.ID})
+	assert.Len(t, node.Children, 2)
+}

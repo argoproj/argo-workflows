@@ -2130,6 +2130,7 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 		Phase:             phase,
 		StartedAt:         metav1.Time{Time: time.Now().UTC()},
 		EstimatedDuration: woc.estimateNodeDuration(nodeName),
+		OutboundNodes:     []string{nodeID},
 	}
 
 	if boundaryNode, ok := woc.wf.Status.Nodes[boundaryID]; ok {
@@ -2405,7 +2406,9 @@ func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
 
 		// If this pod comes from a container set, it should be treated as a container or task group
 		fallthrough
-	case wfv1.NodeTypeContainer, wfv1.NodeTypeTaskGroup:
+	case wfv1.NodeTypeTaskGroup:
+		return node.OutboundNodes
+	case wfv1.NodeTypeContainer:
 		if len(node.Children) == 0 {
 			return []string{node.ID}
 		}

@@ -318,6 +318,10 @@ func (woc *wfOperationCtx) updateOutboundNodesForTargetTasks(dagCtx *dagContext,
 		outboundNodeIDs := woc.getOutboundNodes(depNode.ID)
 		outbound = append(outbound, outboundNodeIDs...)
 	}
+	// only overwrite outboundNodes when it has, otherwise it should point to itself
+	if len(outbound) == 0 {
+		return
+	}
 	node := woc.wf.GetNodeByName(nodeName)
 	node.OutboundNodes = outbound
 	woc.wf.Status.Nodes[node.ID] = *node
@@ -493,6 +497,11 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 				groupPhase = node.Phase
 			}
 		}
+		targetTasks := make([]string, 0)
+		for _, t := range expandedTasks {
+			targetTasks = append(targetTasks, t.Name)
+		}
+		woc.updateOutboundNodesForTargetTasks(dagCtx, targetTasks, taskGroupNode.Name)
 		woc.markNodePhase(taskGroupNode.Name, groupPhase)
 	}
 }
