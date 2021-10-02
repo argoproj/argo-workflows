@@ -320,6 +320,14 @@ func (wfc *WorkflowController) startLeading(ctx context.Context, logCtx *log.Ent
 	for i := 0; i < podWorkers; i++ {
 		go wait.Until(wfc.podWorker, time.Second, ctx.Done())
 	}
+	if v, found := os.LookupEnv("CACHE_GC_PERIOD"); found {
+		cacheGCPeriod, err := time.ParseDuration(v)
+		if err != nil {
+			log.WithField("CACHE_GC_PERIOD", v).WithError(err).Panic("failed to parse")
+		} else {
+			go wait.UntilWithContext(ctx, wfc.syncAllCacheForGC, cacheGCPeriod)
+		}
+	}
 }
 
 // Create and the Synchronization Manager
@@ -780,6 +788,75 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	return true
 }
 
+//nolint:unparam
+func (wfc *WorkflowController) syncAllCacheForGC(ctx context.Context) {
+	if v, found := os.LookupEnv("CACHE_GC_AFTER_NOT_HIT_DURATION"); found {
+		gcAfterNotHitDuration, err := time.ParseDuration(v)
+		if err != nil {
+			log.WithField("CACHE_GC_AFTER_NOT_HIT_DURATION", v).WithError(err).Panic("failed to parse")
+		} else {
+			log.Info("Cache GC is enabled. Syncing all cache for GC.")
+			configMaps := wfc.configMapInformer.GetIndexer().List()
+
+			for _, obj := range configMaps {
+				cm, ok := obj.(*apiv1.ConfigMap)
+				if !ok {
+					log.Error("Unable to convert object to configmap when syncing ConfigMaps")
+					continue
+				}
+				err := wfc.cleanupUnusedCache(cm, gcAfterNotHitDuration)
+				if err != nil {
+					wfc.eventRecorderManager.Get(cm.GetNamespace()).Event(cm, apiv1.EventTypeWarning, "SyncFailed", err.Error())
+					log.WithError(err).Errorf("Unable to sync ConfigMap: %s", cm.Name)
+					continue
+				}
+			}
+		}
+	}
+}
+
+func (wfc *WorkflowController) cleanupUnusedCache(cm *apiv1.ConfigMap, gcAfterNotHitDuration time.Duration) error {
+	if cmType := cm.Labels[indexes.LabelKeyConfigMapType]; cmType != indexes.LabelValueCacheTypeConfigMap {
+		return nil
+	}
+	var modified bool
+	for key, rawEntry := range cm.Data {
+		var entry controllercache.Entry
+		err := json.Unmarshal([]byte(rawEntry), &entry)
+		if err != nil {
+			return fmt.Errorf("malformed cache entry: could not unmarshal JSON; unable to parse: %w", err)
+		}
+		if time.Since(entry.LastHitTimestamp.Time) > gcAfterNotHitDuration {
+			log.Infof("Deleting entry with key %s in ConfigMap %s since it's not been hit after %s", key, cm.Name, gcAfterNotHitDuration)
+			delete(cm.Data, key)
+			modified = true
+		}
+	}
+	selfLink := fmt.Sprintf("api/v1/namespaces/%s/configmaps/%s",
+		cm.Namespace, cm.Name)
+	if len(cm.Data) == 0 {
+		log.Infof("Deleting ConfigMap %s since it doesn't contain any cache entries", cm.Name)
+		request := wfc.kubeclientset.CoreV1().RESTClient().Delete().RequestURI(selfLink)
+		stream, err := request.Stream(context.TODO())
+		if err != nil {
+			return fmt.Errorf("failed to delete ConfigMap %s: %w", cm.Name, err)
+		}
+		defer func() { _ = stream.Close() }()
+	} else {
+		if modified {
+			log.Infof("Modified ConfigMap: %s: %v", cm.Name, cm)
+			request := wfc.kubeclientset.CoreV1().RESTClient().Put().RequestURI(selfLink).Body(cm)
+			stream, err := request.Stream(context.TODO())
+			if err != nil {
+				return fmt.Errorf("failed to patch ConfigMap %s: %w", cm.Name, err)
+			}
+			defer func() { _ = stream.Close() }()
+		}
+	}
+
+	return nil
+}
+
 func (wfc *WorkflowController) podWorker() {
 	for wfc.processNextPodItem() {
 	}
@@ -1051,7 +1128,7 @@ func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer 
 	return v1.NewFilteredConfigMapInformer(wfc.kubeclientset, wfc.GetManagedNamespace(), 20*time.Minute, cache.Indexers{
 		indexes.ConfigMapLabelsIndex: indexes.ConfigMapIndexFunc,
 	}, func(opts *metav1.ListOptions) {
-		opts.LabelSelector = indexes.ConfigMapTypeLabel
+		opts.LabelSelector = indexes.LabelKeyConfigMapType
 	})
 }
 

@@ -16,9 +16,9 @@ func TestConfigMapIndexFunc(t *testing.T) {
 	})
 	t.Run("HasLabel", func(t *testing.T) {
 		values, err := ConfigMapIndexFunc(&corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{ConfigMapTypeLabel: "cache"}},
+			ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{LabelKeyConfigMapType: LabelValueCacheTypeConfigMap}},
 		})
 		assert.NoError(t, err)
-		assert.ElementsMatch(t, values, []string{"cache"})
+		assert.ElementsMatch(t, values, []string{LabelValueCacheTypeConfigMap})
 	})
 }

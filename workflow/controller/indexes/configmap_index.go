@@ -4,7 +4,14 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-const ConfigMapTypeLabel = "workflows.argoproj.io/configmap-type"
+const (
+	// LabelKeyConfigMapType is the label key for the type of configmap.
+	LabelKeyConfigMapType = "workflows.argoproj.io/configmap-type"
+	// LabelValueCacheTypeConfigMap is a key for configmaps that are memoization cache.
+	LabelValueCacheTypeConfigMap = "Cache"
+	// LabelValueParameterTypeConfigMap is a key for configmaps that contains parameter values.
+	LabelValueParameterTypeConfigMap = "Parameter"
+)
 
 func ConfigMapIndexFunc(obj interface{}) ([]string, error) {
 	cm, ok := obj.(*corev1.ConfigMap)
@@ -12,5 +19,5 @@ func ConfigMapIndexFunc(obj interface{}) ([]string, error) {
 	if !ok {
 		return nil, nil
 	}
-	return []string{cm.GetLabels()[ConfigMapTypeLabel]}, nil
+	return []string{cm.GetLabels()[LabelKeyConfigMapType]}, nil
 }

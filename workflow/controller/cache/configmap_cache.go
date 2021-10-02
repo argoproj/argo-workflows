@@ -15,6 +15,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 )
 
 type configMapCache struct {
@@ -117,6 +118,7 @@ func (c *configMapCache) Save(ctx context.Context, key string, nodeId string, va
 	}
 
 	creationTime := time.Now()
+	cache.SetLabels(map[string]string{indexes.LabelKeyConfigMapType: indexes.LabelValueCacheTypeConfigMap})
 
 	newEntry := Entry{
 		NodeID:            nodeId,
