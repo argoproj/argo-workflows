@@ -12,7 +12,7 @@ import (
 
 func NewListLabelKeyCommand() *cobra.Command {
 	command := &cobra.Command{
-		Use:   "list-labelkeys",
+		Use:   "list-label-keys",
 		Short: "list workflows label keys in the archive",
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient(cmd.Context())

@@ -14,7 +14,7 @@ import (
 
 func NewListLabelValueCommand() *cobra.Command {
 	command := &cobra.Command{
-		Use:   "list-labelvalues key",
+		Use:   "list-label-values key",
 		Short: "get workflow label values in the archive",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 1 {

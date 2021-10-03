@@ -1,15 +1,15 @@
-## argo archive list-labelkeys
+## argo archive list-label-keys
 
 list workflows label keys in the archive
 
 ```
-argo archive list-labelkeys [flags]
+argo archive list-label-keys [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for list-labelkeys
+  -h, --help   help for list-label-keys
 ```
 
 ### Options inherited from parent commands

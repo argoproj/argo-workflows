@@ -1427,7 +1427,7 @@ func (s *CLISuite) TestArchiveLabel() {
 		})
 	s.Run("List", func() {
 		s.Given().
-			RunCli([]string{"archive", "list-labelkeys"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"archive", "list-label-keys"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					lines := strings.Split(output, "\n")
 					assert.Contains(t, lines, "workflows.argoproj.io/test")
@@ -1436,7 +1436,7 @@ func (s *CLISuite) TestArchiveLabel() {
 	})
 	s.Run("Get", func() {
 		s.Given().
-			RunCli([]string{"archive", "list-labelvalues", "workflows.argoproj.io/test"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"archive", "list-label-values", "workflows.argoproj.io/test"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					lines := strings.Split(output, "\n")
 					assert.Contains(t, lines[0], "true")
