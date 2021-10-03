@@ -12,6 +12,8 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
+// ListWorkflowsLabelKeys returns distinct name from argo_archived_workflows_labels table
+// SELECT DISTINCT name FROM argo_archived_workflows_labels
 func (r *workflowArchive) ListWorkflowsLabelKeys() (*wfv1.LabelKeys, error) {
 	var archivedWfLabels []archivedWorkflowLabelRecord
 
@@ -30,6 +32,8 @@ func (r *workflowArchive) ListWorkflowsLabelKeys() (*wfv1.LabelKeys, error) {
 	return &wfv1.LabelKeys{Items: labelKeys}, nil
 }
 
+// ListWorkflowsLabelValues returns distinct value from argo_archived_workflows_labels table
+// SELECT DISTINCT value FROM argo_archived_workflows_labels WHERE name=labelkey
 func (r *workflowArchive) ListWorkflowsLabelValues(labelRequirements labels.Requirements) (*wfv1.Labels, error) {
 	if len(labelRequirements) != 1 {
 		return nil, fmt.Errorf("only allow 1 labelRequirement, found %v", len(labelRequirements))
