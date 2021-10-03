@@ -15,8 +15,8 @@ import (
 
 func NewListLabelCommand() *cobra.Command {
 	command := &cobra.Command{
-		Use:   "list-labels labelkey",
-		Short: "get workflow label key=value in the archive",
+		Use:   "list-labelvalues key",
+		Short: "get workflow label values in the archive",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 1 {
 				cmd.HelpFunc()(cmd, args)
@@ -30,7 +30,7 @@ func NewListLabelCommand() *cobra.Command {
 			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient, err := apiClient.NewArchivedWorkflowServiceClient()
 			errors.CheckError(err)
-			labels, err := serviceClient.ListArchivedWorkflowLabels(ctx, &workflowarchivepkg.ListArchivedWorkflowLabelsRequest{ListOptions: listOpts})
+			labels, err := serviceClient.ListArchivedWorkflowLabelValues(ctx, &workflowarchivepkg.ListArchivedWorkflowLabelValuesRequest{ListOptions: listOpts})
 			errors.CheckError(err)
 
 			for _, str := range labels.Items {

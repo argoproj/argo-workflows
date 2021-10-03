@@ -72,7 +72,7 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		Items: []string{"foo", "bar"},
 	}, nil)
 	labelRequirements, _ := labels.ParseToRequirements("my-key")
-	repo.On("ListWorkflowsLabels", labels.Requirements(labelRequirements)).Return(&wfv1.Labels{
+	repo.On("ListWorkflowsLabelValues", labels.Requirements(labelRequirements)).Return(&wfv1.Labels{
 		Items: []string{"my-key=foo", "my-key=bar"},
 	}, nil)
 
@@ -127,8 +127,8 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, resp.Items, 2)
 	})
-	t.Run("ListArchivedWorkflowLabels", func(t *testing.T) {
-		resp, err := w.ListArchivedWorkflowLabels(ctx, &workflowarchivepkg.ListArchivedWorkflowLabelsRequest{ListOptions: &metav1.ListOptions{LabelSelector: "my-key"}})
+	t.Run("ListArchivedWorkflowLabelValues", func(t *testing.T) {
+		resp, err := w.ListArchivedWorkflowLabelValues(ctx, &workflowarchivepkg.ListArchivedWorkflowLabelValuesRequest{ListOptions: &metav1.ListOptions{LabelSelector: "my-key"}})
 		assert.NoError(t, err)
 		assert.Len(t, resp.Items, 2)
 	})

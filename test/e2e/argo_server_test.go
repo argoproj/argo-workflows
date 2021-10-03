@@ -1309,8 +1309,8 @@ spec:
 			Gt(0)
 	})
 
-	s.Run("ListLabels", func() {
-		j := s.e().GET("/api/v1/archived-workflows-labels").
+	s.Run("ListLabelValues", func() {
+		j := s.e().GET("/api/v1/archived-workflows-label-values").
 			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test").
 			Expect().
 			Status(200).

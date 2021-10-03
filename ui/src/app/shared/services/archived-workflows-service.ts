@@ -21,8 +21,8 @@ export class ArchivedWorkflowsService {
         return requests.get(`api/v1/archived-workflows-label-keys`).then(res => res.body as models.Labels);
     }
 
-    public listLabels(key: string) {
-        return requests.get(`api/v1/archived-workflows-labels?listOptions.labelSelector=${key}`).then(res => res.body as models.Labels);
+    public listLabelValues(key: string) {
+        return requests.get(`api/v1/archived-workflows-label-values?listOptions.labelSelector=${key}`).then(res => res.body as models.Labels);
     }
 
     private queryParams(filter: {

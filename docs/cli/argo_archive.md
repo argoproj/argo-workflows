@@ -50,5 +50,5 @@ argo archive [flags]
 * [argo archive get](argo_archive_get.md)	 - get a workflow in the archive
 * [argo archive list](argo_archive_list.md)	 - list workflows in the archive
 * [argo archive list-labelkeys](argo_archive_list-labelkeys.md)	 - list workflows label keys in the archive
-* [argo archive list-labels](argo_archive_list-labels.md)	 - get workflow label key=value in the archive
+* [argo archive list-labelvalues](argo_archive_list-labelvalues.md)	 - get workflow label values in the archive
 

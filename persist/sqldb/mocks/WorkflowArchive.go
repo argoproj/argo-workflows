@@ -141,8 +141,8 @@ func (_m *WorkflowArchive) ListWorkflowsLabelKeys() (*v1alpha1.LabelKeys, error)
 	return r0, r1
 }
 
-// ListWorkflowsLabels provides a mock function with given fields: labelRequirements
-func (_m *WorkflowArchive) ListWorkflowsLabels(labelRequirements labels.Requirements) (*v1alpha1.Labels, error) {
+// ListWorkflowsLabelValues provides a mock function with given fields: labelRequirements
+func (_m *WorkflowArchive) ListWorkflowsLabelValues(labelRequirements labels.Requirements) (*v1alpha1.Labels, error) {
 	ret := _m.Called(labelRequirements)
 
 	var r0 *v1alpha1.Labels

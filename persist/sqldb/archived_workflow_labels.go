@@ -30,7 +30,7 @@ func (r *workflowArchive) ListWorkflowsLabelKeys() (*wfv1.LabelKeys, error) {
 	return &wfv1.LabelKeys{Items: labelKeys}, nil
 }
 
-func (r *workflowArchive) ListWorkflowsLabels(labelRequirements labels.Requirements) (*wfv1.Labels, error) {
+func (r *workflowArchive) ListWorkflowsLabelValues(labelRequirements labels.Requirements) (*wfv1.Labels, error) {
 	if len(labelRequirements) != 1 {
 		return nil, fmt.Errorf("only allow 1 labelRequirement, found %v", len(labelRequirements))
 	}
@@ -54,7 +54,7 @@ func (r *workflowArchive) ListWorkflowsLabels(labelRequirements labels.Requireme
 	}
 	labels := make([]string, len(archivedWfLabels))
 	for i, md := range archivedWfLabels {
-		labels[i] = key + "=" + md.Value
+		labels[i] = md.Value
 	}
 
 	return &wfv1.Labels{Items: labels}, nil

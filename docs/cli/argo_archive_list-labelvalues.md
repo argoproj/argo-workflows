@@ -1,15 +1,15 @@
-## argo archive-label get
+## argo archive list-labelvalues
 
-get workflow label key=value in the archive
+get workflow label values in the archive
 
 ```
-argo archive-label get labelkey [flags]
+argo archive list-labelvalues key [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for get
+  -h, --help   help for list-labelvalues
 ```
 
 ### Options inherited from parent commands
@@ -45,5 +45,5 @@ argo archive-label get labelkey [flags]
 
 ### SEE ALSO
 
-* [argo archive-label](argo_archive-label.md)	 - manage the workflow archive label
+* [argo archive](argo_archive.md)	 - manage the workflow archive
 

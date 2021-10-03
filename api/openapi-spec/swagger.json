@@ -118,12 +118,12 @@
         }
       }
     },
-    "/api/v1/archived-workflows-labels": {
+    "/api/v1/archived-workflows-label-values": {
       "get": {
         "tags": [
           "ArchivedWorkflowService"
         ],
-        "operationId": "ArchivedWorkflowService_ListArchivedWorkflowLabels",
+        "operationId": "ArchivedWorkflowService_ListArchivedWorkflowLabelValues",
         "parameters": [
           {
             "type": "string",

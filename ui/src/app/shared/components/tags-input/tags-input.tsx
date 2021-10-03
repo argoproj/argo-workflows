@@ -56,7 +56,7 @@ export class TagsInput extends React.Component<TagsInputProps, {tags: string[]; 
                             this.setState({subTagsActive: true});
                             this.props.sublistQuery(value).then(list => {
                                 this.setState({
-                                    subTags: list.items || []
+                                    subTags: list || []
                                 });
                             });
                         } else {

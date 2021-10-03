@@ -158,7 +158,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflowLabelKeys(ctx context.Conte
 	return labelkeys, nil
 }
 
-func (w *archivedWorkflowServer) ListArchivedWorkflowLabels(ctx context.Context, req *workflowarchivepkg.ListArchivedWorkflowLabelsRequest) (*wfv1.Labels, error) {
+func (w *archivedWorkflowServer) ListArchivedWorkflowLabelValues(ctx context.Context, req *workflowarchivepkg.ListArchivedWorkflowLabelValuesRequest) (*wfv1.Labels, error) {
 	options := req.ListOptions
 
 	requirements, err := labels.ParseToRequirements(options.LabelSelector)
@@ -166,7 +166,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflowLabels(ctx context.Context,
 		return nil, err
 	}
 
-	labels, err := w.wfArchive.ListWorkflowsLabels(requirements)
+	labels, err := w.wfArchive.ListWorkflowsLabelValues(requirements)
 	if err != nil {
 		return nil, err
 	}
