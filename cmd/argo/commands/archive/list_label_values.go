@@ -13,17 +13,19 @@ import (
 )
 
 func NewListLabelValueCommand() *cobra.Command {
+	var (
+		selector string
+	)
 	command := &cobra.Command{
-		Use:   "list-label-values key",
+		Use:   "list-label-values",
 		Short: "get workflow label values in the archive",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 1 {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			key := args[0]
 			listOpts := &metav1.ListOptions{
-				LabelSelector: key,
+				LabelSelector: selector,
 			}
 
 			ctx, apiClient := client.NewAPIClient(cmd.Context())
@@ -37,5 +39,7 @@ func NewListLabelValueCommand() *cobra.Command {
 			}
 		},
 	}
+	command.Flags().StringVarP(&selector, "selector", "l", "", "Selector (label query) to query on, allows 1 value (e.g. -l key1)")
+	command.MarkFlagRequired("selector")
 	return command
 }

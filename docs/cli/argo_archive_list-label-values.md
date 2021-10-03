@@ -3,13 +3,14 @@
 get workflow label values in the archive
 
 ```
-argo archive list-label-values key [flags]
+argo archive list-label-values [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for list-label-values
+  -h, --help              help for list-label-values
+  -l, --selector string   Selector (label query) to query on, allows 1 value (e.g. -l key1)
 ```
 
 ### Options inherited from parent commands
