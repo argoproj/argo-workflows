@@ -2,7 +2,6 @@ package archive
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
