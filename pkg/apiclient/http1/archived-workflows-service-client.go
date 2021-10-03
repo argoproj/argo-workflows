@@ -42,7 +42,7 @@ func (h ArchivedWorkflowsServiceClient) ListArchivedWorkflowLabelKeys(_ context.
 	return out, h.Get(in, out, "/api/v1/archived-workflows-label-keys")
 }
 
-func (h ArchivedWorkflowsServiceClient) ListArchivedWorkflowLabelValues(_ context.Context, in *workflowarchivepkg.ListArchivedWorkflowLabelValuesRequest, _ ...grpc.CallOption) (*wfv1.Labels, error) {
-	out := &wfv1.Labels{}
+func (h ArchivedWorkflowsServiceClient) ListArchivedWorkflowLabelValues(_ context.Context, in *workflowarchivepkg.ListArchivedWorkflowLabelValuesRequest, _ ...grpc.CallOption) (*wfv1.LabelValues, error) {
+	out := &wfv1.LabelValues{}
 	return out, h.Get(in, out, "/api/v1/archived-workflows-label-values")
 }

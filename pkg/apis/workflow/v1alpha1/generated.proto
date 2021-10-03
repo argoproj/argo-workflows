@@ -642,7 +642,7 @@ message LabelKeys {
 }
 
 // Labels is list of workflow labels
-message Labels {
+message LabelValues {
   repeated string items = 1;
 }
 

@@ -12,7 +12,7 @@ import (
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 )
 
-func NewListLabelCommand() *cobra.Command {
+func NewListLabelValueCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "list-labelvalues key",
 		Short: "get workflow label values in the archive",

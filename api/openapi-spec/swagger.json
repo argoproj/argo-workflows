@@ -186,7 +186,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Labels"
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LabelValues"
             }
           },
           "default": {
@@ -9687,7 +9687,7 @@
         }
       }
     },
-    "io.argoproj.workflow.v1alpha1.Labels": {
+    "io.argoproj.workflow.v1alpha1.LabelValues": {
       "description": "Labels is list of workflow labels",
       "type": "object",
       "properties": {

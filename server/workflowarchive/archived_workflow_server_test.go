@@ -72,7 +72,7 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		Items: []string{"foo", "bar"},
 	}, nil)
 	labelRequirements, _ := labels.ParseToRequirements("my-key")
-	repo.On("ListWorkflowsLabelValues", labels.Requirements(labelRequirements)).Return(&wfv1.Labels{
+	repo.On("ListWorkflowsLabelValues", labels.Requirements(labelRequirements)).Return(&wfv1.LabelValues{
 		Items: []string{"my-key=foo", "my-key=bar"},
 	}, nil)
 

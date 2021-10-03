@@ -63,7 +63,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Inputs":                        schema_pkg_apis_workflow_v1alpha1_Inputs(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Item":                          schema_pkg_apis_workflow_v1alpha1_Item(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.LabelKeys":                     schema_pkg_apis_workflow_v1alpha1_LabelKeys(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Labels":                        schema_pkg_apis_workflow_v1alpha1_Labels(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.LabelValues":                   schema_pkg_apis_workflow_v1alpha1_LabelValues(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.LifecycleHook":                 schema_pkg_apis_workflow_v1alpha1_LifecycleHook(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Link":                          schema_pkg_apis_workflow_v1alpha1_Link(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.MemoizationStatus":             schema_pkg_apis_workflow_v1alpha1_MemoizationStatus(ref),
@@ -2701,7 +2701,7 @@ func schema_pkg_apis_workflow_v1alpha1_LabelKeys(ref common.ReferenceCallback) c
 	}
 }
 
-func schema_pkg_apis_workflow_v1alpha1_Labels(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_workflow_v1alpha1_LabelValues(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{

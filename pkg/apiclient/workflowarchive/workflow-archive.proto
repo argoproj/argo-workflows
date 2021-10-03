@@ -37,7 +37,7 @@ service ArchivedWorkflowService {
     rpc ListArchivedWorkflowLabelKeys (ListArchivedWorkflowLabelKeysRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.LabelKeys) {
         option (google.api.http).get = "/api/v1/archived-workflows-label-keys";
     }
-    rpc ListArchivedWorkflowLabelValues (ListArchivedWorkflowLabelValuesRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.Labels) {
+    rpc ListArchivedWorkflowLabelValues (ListArchivedWorkflowLabelValuesRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.LabelValues) {
         option (google.api.http).get = "/api/v1/archived-workflows-label-values";
     }
 }

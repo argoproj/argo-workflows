@@ -5441,7 +5441,7 @@
       },
       "type": "object"
     },
-    "io.argoproj.workflow.v1alpha1.Labels": {
+    "io.argoproj.workflow.v1alpha1.LabelValues": {
       "description": "Labels is list of workflow labels",
       "properties": {
         "items": {

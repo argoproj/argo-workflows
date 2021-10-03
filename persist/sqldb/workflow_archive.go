@@ -57,7 +57,7 @@ type WorkflowArchive interface {
 	DeleteExpiredWorkflows(ttl time.Duration) error
 	IsEnabled() bool
 	ListWorkflowsLabelKeys() (*wfv1.LabelKeys, error)
-	ListWorkflowsLabelValues(labelRequirements labels.Requirements) (*wfv1.Labels, error)
+	ListWorkflowsLabelValues(labelRequirements labels.Requirements) (*wfv1.LabelValues, error)
 }
 
 type workflowArchive struct {

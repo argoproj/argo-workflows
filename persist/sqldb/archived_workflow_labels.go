@@ -34,7 +34,7 @@ func (r *workflowArchive) ListWorkflowsLabelKeys() (*wfv1.LabelKeys, error) {
 
 // ListWorkflowsLabelValues returns distinct value from argo_archived_workflows_labels table
 // SELECT DISTINCT value FROM argo_archived_workflows_labels WHERE name=labelkey
-func (r *workflowArchive) ListWorkflowsLabelValues(labelRequirements labels.Requirements) (*wfv1.Labels, error) {
+func (r *workflowArchive) ListWorkflowsLabelValues(labelRequirements labels.Requirements) (*wfv1.LabelValues, error) {
 	if len(labelRequirements) != 1 {
 		return nil, fmt.Errorf("only allow 1 labelRequirement, found %v", len(labelRequirements))
 	}
@@ -61,7 +61,7 @@ func (r *workflowArchive) ListWorkflowsLabelValues(labelRequirements labels.Requ
 		labels[i] = md.Value
 	}
 
-	return &wfv1.Labels{Items: labels}, nil
+	return &wfv1.LabelValues{Items: labels}, nil
 }
 
 func labelsClause(t dbType, requirements labels.Requirements) (db.Compound, error) {
