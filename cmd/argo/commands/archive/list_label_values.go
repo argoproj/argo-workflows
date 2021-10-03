@@ -20,10 +20,6 @@ func NewListLabelValueCommand() *cobra.Command {
 		Use:   "list-label-values",
 		Short: "get workflow label values in the archive",
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 1 {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
-			}
 			listOpts := &metav1.ListOptions{
 				LabelSelector: selector,
 			}

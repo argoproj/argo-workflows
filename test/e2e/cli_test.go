@@ -1425,7 +1425,7 @@ func (s *CLISuite) TestArchiveLabel() {
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, status.Phase, wfv1.WorkflowSucceeded)
 		})
-	s.Run("List", func() {
+	s.Run("ListKeys", func() {
 		s.Given().
 			RunCli([]string{"archive", "list-label-keys"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
@@ -1434,9 +1434,9 @@ func (s *CLISuite) TestArchiveLabel() {
 				}
 			})
 	})
-	s.Run("Get", func() {
+	s.Run("ListValues", func() {
 		s.Given().
-			RunCli([]string{"archive", "list-label-values", "selector=workflows.argoproj.io/test"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"archive", "list-label-values", "-l", "workflows.argoproj.io/test"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					lines := strings.Split(output, "\n")
 					assert.Contains(t, lines[0], "true")
