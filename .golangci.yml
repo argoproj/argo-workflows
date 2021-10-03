@@ -17,8 +17,7 @@ run:
     - functional
 linters:
   enable:
-    # TODO https://github.com/argoproj/argo-workflows/issues/6837
-    # - bodyclose
+    - bodyclose
     - deadcode
     - errcheck
     - goimports
