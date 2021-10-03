@@ -34,19 +34,7 @@ func (r *workflowArchive) ListWorkflowsLabelKeys() (*wfv1.LabelKeys, error) {
 
 // ListWorkflowsLabelValues returns distinct value from argo_archived_workflows_labels table
 // SELECT DISTINCT value FROM argo_archived_workflows_labels WHERE name=labelkey
-func (r *workflowArchive) ListWorkflowsLabelValues(labelRequirements labels.Requirements) (*wfv1.LabelValues, error) {
-	if len(labelRequirements) != 1 {
-		return nil, fmt.Errorf("only allow 1 labelRequirement, found %v", len(labelRequirements))
-	}
-
-	key := ""
-	req := labelRequirements[0]
-	if req.Operator() == selection.Exists {
-		key = req.Key()
-	} else {
-		return nil, fmt.Errorf("operation %v is not supported", req.Operator())
-	}
-
+func (r *workflowArchive) ListWorkflowsLabelValues(key string) (*wfv1.LabelValues, error) {
 	var archivedWfLabels []archivedWorkflowLabelRecord
 	err := r.session.
 		Select(db.Raw("DISTINCT value")).
