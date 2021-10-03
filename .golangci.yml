@@ -32,9 +32,8 @@ linters:
     - govet
     - ineffassign
     - misspell
-    # TODO https://github.com/argoproj/argo-workflows/issues/6838
-    # - rowserrcheck
-    # - sqlclosecheck
+    - rowserrcheck
+    - sqlclosecheck
     - staticcheck
     - structcheck
     - typecheck
