@@ -859,6 +859,74 @@
     <ul class="md-nav__list" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#overview" title="Overview" class="md-nav__link">
+    Overview
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pre-requisites" title="Pre-requisites" class="md-nav__link">
+    Pre-requisites
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tip-for-tokens-creation" title="Tip for Tokens Creation" class="md-nav__link">
+    Tip for Tokens Creation
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#token-creation" title="Token Creation" class="md-nav__link">
+    Token Creation
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#token-usage-test" title="Token Usage &amp; Test" class="md-nav__link">
+    Token Usage &amp; Test
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#token-usage-docker" title="Token Usage - Docker" class="md-nav__link">
+    Token Usage - Docker
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#set-additional-params-to-initialize-argo-settings" title="Set additional params to initialize Argo settings" class="md-nav__link">
+    Set additional params to initialize Argo settings
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#start-container-with-settings-above" title="Start container with settings above" class="md-nav__link">
+    Start container with settings above
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#token-revocation" title="Token Revocation" class="md-nav__link">
     Token Revocation
   </a>
@@ -2203,6 +2271,74 @@
     <ul class="md-nav__list" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#overview" title="Overview" class="md-nav__link">
+    Overview
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pre-requisites" title="Pre-requisites" class="md-nav__link">
+    Pre-requisites
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tip-for-tokens-creation" title="Tip for Tokens Creation" class="md-nav__link">
+    Tip for Tokens Creation
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#token-creation" title="Token Creation" class="md-nav__link">
+    Token Creation
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#token-usage-test" title="Token Usage &amp; Test" class="md-nav__link">
+    Token Usage &amp; Test
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#token-usage-docker" title="Token Usage - Docker" class="md-nav__link">
+    Token Usage - Docker
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#set-additional-params-to-initialize-argo-settings" title="Set additional params to initialize Argo settings" class="md-nav__link">
+    Set additional params to initialize Argo settings
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#start-container-with-settings-above" title="Start container with settings above" class="md-nav__link">
+    Start container with settings above
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#token-revocation" title="Token Revocation" class="md-nav__link">
     Token Revocation
   </a>
@@ -2229,24 +2365,32 @@
                 
                 
                 <h1 id="access-token">Access Token<a class="headerlink" href="#access-token" title="Permanent link">&para;</a></h1>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p>If you want to automate tasks with the Argo Server API or CLI, you will need an access token. </p>
+<h2 id="pre-requisites">Pre-requisites<a class="headerlink" href="#pre-requisites" title="Permanent link">&para;</a></h2>
 <p>Firstly, create a role with minimal permissions. This example role for jenkins only permission to update and list workflows:</p>
 <div class="highlight"><pre><span></span><code>kubectl create role jenkins --verb<span class="o">=</span>list,update --resource<span class="o">=</span>workflows.argoproj.io 
 </code></pre></div>
 <p>Create a service account for your service:</p>
 <div class="highlight"><pre><span></span><code>kubectl create sa jenkins
 </code></pre></div>
-<p>!! TIP
-    Create a unique service account for each client: (a) you'll be able to correctly secure your workflows and (b) <a href="#token-revocation">revoke the token</a> without impacting other clients. </p>
+<h3 id="tip-for-tokens-creation">Tip for Tokens Creation<a class="headerlink" href="#tip-for-tokens-creation" title="Permanent link">&para;</a></h3>
+<p>Create a unique service account for each client: </p>
+<ul>
+<li>(a) you'll be able to correctly secure your workflows</li>
+<li>(b) <a href="#token-revocation">revoke the token</a> without impacting other clients. </li>
+</ul>
 <p>Bind the service account to the role (in this case in the <code>argo</code> namespace):</p>
 <div class="highlight"><pre><span></span><code>kubectl create rolebinding jenkins --role<span class="o">=</span>jenkins --serviceaccount<span class="o">=</span>argo:jenkins
 </code></pre></div>
+<h2 id="token-creation">Token Creation<a class="headerlink" href="#token-creation" title="Permanent link">&para;</a></h2>
 <p>You now need to get a token:</p>
 <div class="highlight"><pre><span></span><code><span class="nv">SECRET</span><span class="o">=</span><span class="k">$(</span>kubectl get sa jenkins -o<span class="o">=</span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.secrets[0].name}&#39;</span><span class="k">)</span>
 <span class="nv">ARGO_TOKEN</span><span class="o">=</span><span class="s2">&quot;Bearer </span><span class="k">$(</span>kubectl get secret <span class="nv">$SECRET</span> -o<span class="o">=</span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.token}&#39;</span> <span class="p">|</span> base64 --decode<span class="k">)</span><span class="s2">&quot;</span>
 <span class="nb">echo</span> <span class="nv">$ARGO_TOKEN</span>
 Bearer ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkltS...
 </code></pre></div>
+<h2 id="token-usage-test">Token Usage &amp; Test<a class="headerlink" href="#token-usage-test" title="Permanent link">&para;</a></h2>
 <p>To use that token with the CLI you need to set <code>ARGO_SERVER</code> (see <code>argo --help</code>).</p>
 <p>Use that token in your API requests, e.g. to list workflows:</p>
 <div class="highlight"><pre><span></span><code>curl https://localhost:2746/api/v1/workflows/argo -H <span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span>
@@ -2256,6 +2400,27 @@ Bearer ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkltS...
 <div class="highlight"><pre><span></span><code>curl https://localhost:2746/api/v1/workflow-templates/argo -H <span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span>
 <span class="c1"># 403 error</span>
 </code></pre></div>
+<h2 id="token-usage-docker">Token Usage - Docker<a class="headerlink" href="#token-usage-docker" title="Permanent link">&para;</a></h2>
+<h3 id="set-additional-params-to-initialize-argo-settings">Set additional params to initialize Argo settings<a class="headerlink" href="#set-additional-params-to-initialize-argo-settings" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><code>ARGO_SERVER=&quot;<span class="cp">${</span><span class="p">{</span><span class="n">HOST</span><span class="cp">}</span>}:443&quot;
+KUBECONFIG=/dev/null
+ARGO_NAMESPACE=sandbox
+</code></pre></div>
+
+<h3 id="start-container-with-settings-above">Start container with settings above<a class="headerlink" href="#start-container-with-settings-above" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p>Note: Example for  getting list of templates from an existing namespace</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code>docker run --rm -it \
+  -e ARGO_SERVER=$ARGO_SERVER \
+  -e ARGO_TOKEN=$ARGO_TOKEN \
+  -e ARGO_HTTP=false \
+  -e ARGO_HTTP1=true \
+  -e KUBECONFIG=/dev/null \
+  -e ARGO_NAMESPACE=$ARGO_NAMESPACE  \
+  argoproj/argocli:latest template list -v -e -k
+</code></pre></div>
+
 <h2 id="token-revocation">Token Revocation<a class="headerlink" href="#token-revocation" title="Permanent link">&para;</a></h2>
 <p>Token compromised?</p>
 <div class="highlight"><pre><span></span><code>kubectl delete secret <span class="nv">$SECRET</span>
