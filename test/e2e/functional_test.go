@@ -5,10 +5,12 @@ package e2e
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/eapache/go-resiliency/retrier"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	apiv1 "k8s.io/api/core/v1"
@@ -17,6 +19,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
 
@@ -82,6 +85,40 @@ spec:
 		Wait(3 * time.Second). // enough time for TTL controller to delete the workflow
 		Then().
 		ExpectWorkflowDeleted()
+}
+
+func (s *FunctionalSuite) TestWorkflowRetention() {
+	listOptions := metav1.ListOptions{LabelSelector: "workflows.argoproj.io/phase=Failed"}
+	s.Given().
+		Workflow("@testdata/exit-1.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Given().
+		Workflow("@testdata/exit-1.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Given().
+		Workflow("@testdata/exit-1.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Then().
+		ExpectWorkflowListRetryOnError(listOptions, func(t *testing.T, client v1alpha1.WorkflowInterface, listOptions metav1.ListOptions) {
+			err := retrier.New(retrier.ConstantBackoff(30, time.Second), nil).Run(func() error {
+				ctx := context.Background()
+				wfList, err := client.List(ctx, listOptions)
+				if err != nil {
+					return err
+				}
+				if len(wfList.Items) != 2 {
+					return fmt.Errorf("expected 2 workflows, got %d", len(wfList.Items))
+				}
+				return nil
+			})
+			assert.NoError(t, err)
+		})
 }
 
 // in this test we create a poi quota, and then  we create a workflow that needs one more pod than the quota allows

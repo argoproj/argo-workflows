@@ -134,6 +134,14 @@ func (t *Then) ExpectWorkflowList(listOptions metav1.ListOptions, block func(t *
 	return t
 }
 
+func (t *Then) ExpectWorkflowListRetryOnError(listOptions metav1.ListOptions, block func(t *testing.T, client v1alpha1.WorkflowInterface, listOptions metav1.ListOptions)) *Then {
+	t.t.Helper()
+	_, _ = fmt.Println("Checking expectation")
+	block(t.t, t.client, listOptions)
+
+	return t
+}
+
 var HasInvolvedObject = func(kind string, uid types.UID) func(event apiv1.Event) bool {
 	return func(e apiv1.Event) bool {
 		return e.InvolvedObject.Kind == kind && e.InvolvedObject.UID == uid
