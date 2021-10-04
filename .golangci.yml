@@ -23,8 +23,7 @@ linters:
     - goimports
     # only minor issues
     # - errorlint
-    # TODO https://github.com/argoproj/argo-workflows/issues/6840
-    # - exportloopref
+    - exportloopref
     - gci
     - gosec
     - gosimple
