@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -156,7 +155,7 @@ func (r *workflowArchive) ListWorkflows(namespace string, name string, minStarte
 		From(archiveTableName).
 		Where(r.clusterManagedNamespaceAndInstanceID()).
 		And(namespaceEqual(namespace)).
-		And(nameEqual(name)).
+		And(namePrefix(name)).
 		And(startedAtClause(minStartedAt, maxStartedAt)).
 		And(clause).
 		OrderBy("-startedat").
@@ -212,13 +211,11 @@ func namespaceEqual(namespace string) db.Cond {
 	}
 }
 
-func nameEqual(name string) db.Cond {
+func namePrefix(name string) db.Cond {
 	if name == "" {
 		return db.Cond{}
-	} else if strings.Contains(name, "%") || strings.Contains(name, "_") {
-		return db.Cond{"name LIKE ": name}
 	} else {
-		return db.Cond{"name": name}
+		return db.Cond{"name LIKE ": name + "%"}
 	}
 }
 
