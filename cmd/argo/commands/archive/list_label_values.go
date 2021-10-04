@@ -35,6 +35,7 @@ func NewListLabelValueCommand() *cobra.Command {
 		},
 	}
 	command.Flags().StringVarP(&selector, "selector", "l", "", "Selector (label query) to query on, allows 1 value (e.g. -l key1)")
-	command.MarkFlagRequired("selector")
+	err := command.MarkFlagRequired("selector")
+	errors.CheckError(err)
 	return command
 }
