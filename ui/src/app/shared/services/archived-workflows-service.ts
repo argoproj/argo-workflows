@@ -3,9 +3,9 @@ import {Pagination} from '../pagination';
 import requests from './requests';
 
 export class ArchivedWorkflowsService {
-    public list(namespace: string, name: string, phases: string[], labels: string[], minStartedAt: Date, maxStartedAt: Date, pagination: Pagination) {
+    public list(namespace: string, namePrefix: string, phases: string[], labels: string[], minStartedAt: Date, maxStartedAt: Date, pagination: Pagination) {
         return requests
-            .get(`api/v1/archived-workflows?${this.queryParams({namespace, name, phases, labels, minStartedAt, maxStartedAt, pagination}).join('&')}`)
+            .get(`api/v1/archived-workflows?${this.queryParams({namespace, namePrefix, phases, labels, minStartedAt, maxStartedAt, pagination}).join('&')}`)
             .then(res => res.body as models.WorkflowList);
     }
 
@@ -27,7 +27,7 @@ export class ArchivedWorkflowsService {
 
     private queryParams(filter: {
         namespace?: string;
-        name?: string;
+        namePrefix?: string;
         phases?: Array<string>;
         labels?: Array<string>;
         minStartedAt?: Date;
@@ -35,7 +35,7 @@ export class ArchivedWorkflowsService {
         pagination: Pagination;
     }) {
         const queryParams: string[] = [];
-        const fieldSelector = this.fieldSelectorParams(filter.namespace, filter.name, filter.minStartedAt, filter.maxStartedAt);
+        const fieldSelector = this.fieldSelectorParams(filter.namespace, filter.namePrefix, filter.minStartedAt, filter.maxStartedAt);
         if (fieldSelector.length > 0) {
             queryParams.push(`listOptions.fieldSelector=${fieldSelector}`);
         }
@@ -52,13 +52,13 @@ export class ArchivedWorkflowsService {
         return queryParams;
     }
 
-    private fieldSelectorParams(namespace: string, name: string, minStartedAt: Date, maxStartedAt: Date) {
+    private fieldSelectorParams(namespace: string, namePrefix: string, minStartedAt: Date, maxStartedAt: Date) {
         let fieldSelector = '';
         if (namespace) {
             fieldSelector += 'metadata.namespace=' + namespace + ',';
         }
-        if (name) {
-            fieldSelector += 'metadata.name=' + name + ',';
+        if (namePrefix) {
+            fieldSelector += 'metadata.namePrefix=' + namePrefix + ',';
         }
         if (minStartedAt) {
             fieldSelector += 'spec.startedAt>' + minStartedAt.toISOString() + ',';

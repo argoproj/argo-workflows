@@ -49,7 +49,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 	}
 
 	namespace := ""
-	name := ""
+	namePrefix := ""
 	minStartedAt := time.Time{}
 	maxStartedAt := time.Time{}
 	for _, selector := range strings.Split(options.FieldSelector, ",") {
@@ -58,8 +58,8 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 		}
 		if strings.HasPrefix(selector, "metadata.namespace=") {
 			namespace = strings.TrimPrefix(selector, "metadata.namespace=")
-		} else if strings.HasPrefix(selector, "metadata.name=") {
-			name = strings.TrimPrefix(selector, "metadata.name=")
+		} else if strings.HasPrefix(selector, "metadata.namePrefix=") {
+			namePrefix = strings.TrimPrefix(selector, "metadata.namePrefix=")
 		} else if strings.HasPrefix(selector, "spec.startedAt>") {
 			minStartedAt, err = time.Parse(time.RFC3339, strings.TrimPrefix(selector, "spec.startedAt>"))
 			if err != nil {
@@ -98,7 +98,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 		limitWithMore = limit + 1
 	}
 
-	items, err := w.wfArchive.ListWorkflows(namespace, name, minStartedAt, maxStartedAt, requirements, limitWithMore, offset)
+	items, err := w.wfArchive.ListWorkflows(namespace, namePrefix, minStartedAt, maxStartedAt, requirements, limitWithMore, offset)
 	if err != nil {
 		return nil, err
 	}

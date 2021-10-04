@@ -96,7 +96,7 @@ func Test_archivedWorkflowServer(t *testing.T) {
 			assert.Len(t, resp.Items, 1)
 			assert.Empty(t, resp.Continue)
 		}
-		resp, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{FieldSelector: "metadata.name=my-name,spec.startedAt>2020-01-01T00:00:00Z,spec.startedAt<2020-01-02T00:00:00Z", Limit: 1}})
+		resp, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{FieldSelector: "metadata.namePrefix=my-name,spec.startedAt>2020-01-01T00:00:00Z,spec.startedAt<2020-01-02T00:00:00Z", Limit: 1}})
 		if assert.NoError(t, err) {
 			assert.Len(t, resp.Items, 1)
 			assert.Empty(t, resp.Continue)
