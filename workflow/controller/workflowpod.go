@@ -170,6 +170,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		case wfv1.TemplateTypeContainerSet:
 
 		}
+
 		mainCtrs[i] = c
 	}
 
@@ -191,6 +192,16 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			activeDeadlineSeconds = tmplActiveDeadlineSeconds
 		}
 	}
+
+	// If the template is marked for debugging no deadline will be set
+	for _, c := range mainCtrs {
+		for _, env := range c.Env {
+			if env.Name == "ARGO_DEBUG_PAUSE_BEFORE" || env.Name == "ARGO_DEBUG_PAUSE_AFTER" {
+				activeDeadlineSeconds = nil
+			}
+		}
+	}
+
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      util.PodName(woc.wf.Name, nodeName, tmpl.Name, nodeID),
