@@ -1334,6 +1334,7 @@ func (ref *WorkflowTemplateRef) ToTemplateRef(entrypoint string) *TemplateRef {
 type ArgumentsProvider interface {
 	GetParameterByName(name string) *Parameter
 	GetArtifactByName(name string) *Artifact
+	GetArtifactsByNameWithoutIndex(name string) []Artifact
 }
 
 // Arguments to a template
@@ -2565,6 +2566,18 @@ func (in *Inputs) GetParameterByName(name string) *Parameter {
 	return nil
 }
 
+// GetArtifactsByNameWithoutIndex retrieves artifacts by its name
+func (args *Inputs) GetArtifactsByNameWithoutIndex(name string) []Artifact {
+	res := make([]Artifact, 0)
+	for _, art := range args.Artifacts {
+		splitStr := strings.SplitN(art.Name, "_", 2)
+		if len(splitStr) == 2 && name == splitStr[1] {
+			res = append(res, art)
+		}
+	}
+	return res
+}
+
 // HasInputs returns whether or not there are any inputs
 func (in *Inputs) HasInputs() bool {
 	if len(in.Artifacts) > 0 {
@@ -2613,6 +2626,18 @@ func (args *Arguments) GetParameterByName(name string) *Parameter {
 		}
 	}
 	return nil
+}
+
+// GetArtifactsByNameWithoutIndex retrieves artifacts by its name
+func (args *Arguments) GetArtifactsByNameWithoutIndex(name string) []Artifact {
+	res := make([]Artifact, 0)
+	for _, art := range args.Artifacts {
+		splitStr := strings.SplitN(art.Name, "_", 2)
+		if len(splitStr) == 2 && name == splitStr[1] {
+			res = append(res, art)
+		}
+	}
+	return res
 }
 
 func (a *Artifact) GetArchive() *ArchiveStrategy {

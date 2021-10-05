@@ -106,6 +106,10 @@ func (args *FakeArguments) GetArtifactByName(name string) *wfv1.Artifact {
 	return &wfv1.Artifact{Name: name}
 }
 
+func (args *FakeArguments) GetArtifactsByNameWithoutIndex(name string) []wfv1.Artifact {
+	return []wfv1.Artifact{{Name: fmt.Sprintf("0_%s", name)}}
+}
+
 var _ wfv1.ArgumentsProvider = &FakeArguments{}
 
 // ValidateWorkflow accepts a workflow and performs validation against it.
@@ -507,17 +511,31 @@ func validateInputs(tmpl *wfv1.Template) (map[string]interface{}, error) {
 		artRef := fmt.Sprintf("inputs.artifacts.%s", art.Name)
 		scope[artRef] = true
 		if tmpl.IsLeaf() {
-			if art.Path == "" {
-				return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s.%s.path not specified", tmpl.Name, artRef)
+			if art.Path == "" && art.PathMulti == "" {
+				return nil, errors.Errorf(errors.CodeBadRequest, "both templates.%s.%s.path/pathMulti not specified", tmpl.Name, artRef)
 			}
-			scope[fmt.Sprintf("inputs.artifacts.%s.path", art.Name)] = true
+			if art.Path != "" && art.PathMulti != "" {
+				return nil, errors.Errorf(errors.CodeBadRequest, "both templates.%s.%s.path/pathMulti specified", tmpl.Name, artRef)
+			}
+			if art.Path != "" {
+				scope[fmt.Sprintf("inputs.artifacts.%s.path", art.Name)] = true
+			}
+			if art.PathMulti != "" {
+				if !strings.Contains(art.FromMulti, "{{index}}") {
+					return nil, errors.New(errors.CodeBadRequest, "pathMulti should include {{index}}")
+				}
+				scope[fmt.Sprintf("inputs.artifacts.%s.pathMulti", art.Name)] = true
+			}
 		} else {
 			if art.Path != "" {
 				return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s.%s.path only valid in container/script templates", tmpl.Name, artRef)
 			}
+			if art.PathMulti != "" {
+				return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s.%s.pathMulti only valid in container/script templates", tmpl.Name, artRef)
+			}
 		}
-		if art.From != "" {
-			return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s.%s.from not valid in inputs", tmpl.Name, artRef)
+		if art.From != "" || art.FromExpression != "" || art.FromMulti != "" {
+			return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s.%s.from/fromExpression/fromMulti not valid in inputs", tmpl.Name, artRef)
 		}
 		errPrefix := fmt.Sprintf("templates.%s.%s", tmpl.Name, artRef)
 		err = validateArtifactLocation(errPrefix, art.ArtifactLocation)
@@ -737,8 +755,8 @@ func validateArgumentsValues(prefix string, arguments wfv1.Arguments, allowEmpty
 		if art.From == "" && !art.HasLocationOrKey() {
 			return errors.Errorf(errors.CodeBadRequest, "%s%s.from, artifact location, or key is required", prefix, art.Name)
 		}
-		if art.From != "" && art.FromExpression != "" {
-			return errors.Errorf(errors.CodeBadRequest, "%s%s shouldn't have both `from` and `fromExpression` in Artifact", prefix, art.Name)
+		if (art.From != "" && (art.FromExpression != "" || art.FromMulti != "")) || (art.FromExpression != "" && art.FromMulti != "") {
+			return errors.Errorf(errors.CodeBadRequest, "%s%s should only have one of `from`, `fromExpression`, and `fromMulti` in Artifact", prefix, art.Name)
 		}
 	}
 	return nil
@@ -1318,6 +1336,15 @@ func validateDAGTaskArgumentDependency(arguments wfv1.Arguments, ancestry []stri
 			// All parameter values should have been validated, so
 			// index 1 should exist.
 			refTaskName := strings.Split(artifact.From, ".")[1]
+
+			if _, dependencyExists := ancestryMap[refTaskName]; !dependencyExists {
+				return errors.Errorf(errors.CodeBadRequest, "missing dependency '%s' for artifact '%s'", refTaskName, artifact.Name)
+			}
+		}
+		if strings.HasPrefix(artifact.FromMulti, "{{tasks.") {
+			// All parameter values should have been validated, so
+			// index 1 should exist.
+			refTaskName := strings.Split(artifact.FromMulti, ".")[1]
 
 			if _, dependencyExists := ancestryMap[refTaskName]; !dependencyExists {
 				return errors.Errorf(errors.CodeBadRequest, "missing dependency '%s' for artifact '%s'", refTaskName, artifact.Name)

@@ -606,18 +606,25 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 	}
 
 	// replace all artifact references
+	aggregateArts := make(map[int][]wfv1.Artifact)
 	for j, art := range newTask.Arguments.Artifacts {
+		if art.FromMulti != "" {
+			arts, err := resolveAggregateArtifacts(&art)
+			if err != nil {
+				return nil, err
+			}
+			aggregateArts[j] = arts
+			continue
+		}
 		if art.From == "" {
+			continue
+		}
+		// resolve expanded artifacts after processItem, not here
+		if newTask.ShouldExpand() && strings.HasPrefix(art.From, "{{item") {
 			continue
 		}
 		resolvedArt, err := scope.resolveArtifact(&art)
 		if err != nil {
-			// If we got an error, it might be because our "artifact" clause contains a task-expansion parameter
-			// (e.g. {{item}}). Since we don't perform task-expansion until later and task-expansion parameters won't
-			// get resolved here, we continue execution as normal
-			if newTask.ShouldExpand() {
-				continue
-			}
 			if strings.Contains(err.Error(), "Unable to resolve") && art.Optional {
 				woc.log.Warnf("Optional artifact '%s' was not found; it won't be available as an input", art.Name)
 				continue
@@ -627,7 +634,33 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 		resolvedArt.Name = art.Name
 		newTask.Arguments.Artifacts[j] = *resolvedArt
 	}
+	for index, arts := range aggregateArts {
+		newTask.Arguments.Artifacts[index] = arts[0]
+		newTask.Arguments.Artifacts = append(newTask.Arguments.Artifacts, arts[1:]...)
+	}
 	return &newTask, nil
+}
+
+func resolveAggregateArtifacts(art *wfv1.Artifact) ([]wfv1.Artifact, error) {
+	// `fromMulti` has been replaced by list of artifacts in processAggregateNodeOutputs
+	var arts []wfv1.Artifact
+	if err := json.Unmarshal([]byte(art.FromMulti), &arts); err != nil {
+		return nil, errors.InternalWrapError(err)
+	}
+	if len(arts) == 0 {
+		return nil, errors.New(errors.CodeInternal, "no fromMulti artifacts")
+	}
+	for i := range arts {
+		arts[i].Name = fmt.Sprintf("%d_%s", i, art.Name)
+	}
+	if art.SubPath != "" {
+		for i := range arts {
+			if err := arts[i].AppendToKey(art.SubPath); err != nil {
+				return nil, errors.InternalWrapError(err)
+			}
+		}
+	}
+	return arts, nil
 }
 
 func resolveExpandedArtifacts(task *wfv1.DAGTask) error {
@@ -649,6 +682,7 @@ func resolveExpandedArtifacts(task *wfv1.DAGTask) error {
 			}
 		}
 
+		newArt.Name = art.Name
 		task.Arguments.Artifacts[i] = newArt
 	}
 

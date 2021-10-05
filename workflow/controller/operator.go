@@ -2690,9 +2690,9 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(scope *wfScope, prefix st
 	paramList := make([]map[string]string, 0)
 	outputParamValueLists := make(map[string][]string)
 	resultsList := make([]wfv1.Item, 0)
-	artifactList := make([]map[string]wfv1.Artifact, 0) // for "{{task.X.outputs.artifacts}}"
-	outputArtifactLists := make(map[string][]wfv1.Artifact) // for "{{task.X.outputs.artifacts.A}}"
-	outputsList := make([]wfv1.Outputs, 0) // for "{{task.X.outputs}}"
+	artifactList := make([]map[string]wfv1.Artifact, 0) // for "{{tasks.X.outputs.artifacts}}"
+	outputArtifactLists := make(map[string][]wfv1.Artifact) // for "{{tasks.X.outputs.artifacts.A}}"
+	outputsList := make([]wfv1.Outputs, 0) // for "{{tasks.X.outputs}}"
 	for _, node := range childNodes {
 		if node.Outputs == nil {
 			continue

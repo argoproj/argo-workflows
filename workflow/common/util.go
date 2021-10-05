@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -156,9 +157,20 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 
 	// Performs substitutions of input artifacts
 	artifacts := newTmpl.Inputs.Artifacts
+	multiArts := make(map[int][]wfv1.Artifact)
 	for i, inArt := range artifacts {
 		// if artifact has hard-wired location, we prefer that
 		if inArt.HasLocationOrKey() {
+			continue
+		}
+		if inArt.PathMulti != "" {
+			arts := args.GetArtifactsByNameWithoutIndex(inArt.Name)
+			for index := range arts {
+				arts[index].Path = strings.ReplaceAll(inArt.PathMulti, "{{index}}", strconv.Itoa(index))
+				arts[index].Mode = inArt.Mode
+				arts[index].RecurseMode = inArt.RecurseMode
+			}
+			multiArts[i] = arts
 			continue
 		}
 		argArt := args.GetArtifactByName(inArt.Name)
@@ -178,6 +190,11 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 			artifacts[i].RecurseMode = inArt.RecurseMode
 		}
 	}
+	for index, arts := range multiArts {
+		artifacts[index] = arts[0]
+		artifacts = append(artifacts, arts[1:]...)
+	}
+	newTmpl.Inputs.Artifacts = artifacts
 
 	return SubstituteParams(newTmpl, globalParams, localParams)
 }
