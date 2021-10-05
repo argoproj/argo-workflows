@@ -477,6 +477,12 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 				woc.initializeNode(taskNodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeSkipped, skipReason)
 				continue
 			}
+
+			// resolve expanded artifacts
+			if err := resolveExpandedArtifacts(&t); err != nil {
+				woc.initializeNode(taskNodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
+				continue
+			}
 		}
 
 		// Finally execute the template
@@ -606,6 +612,12 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 		}
 		resolvedArt, err := scope.resolveArtifact(&art)
 		if err != nil {
+			// If we got an error, it might be because our "artifact" clause contains a task-expansion parameter
+			// (e.g. {{item}}). Since we don't perform task-expansion until later and task-expansion parameters won't
+			// get resolved here, we continue execution as normal
+			if newTask.ShouldExpand() {
+				continue
+			}
 			if strings.Contains(err.Error(), "Unable to resolve") && art.Optional {
 				woc.log.Warnf("Optional artifact '%s' was not found; it won't be available as an input", art.Name)
 				continue
@@ -616,6 +628,31 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 		newTask.Arguments.Artifacts[j] = *resolvedArt
 	}
 	return &newTask, nil
+}
+
+func resolveExpandedArtifacts(task *wfv1.DAGTask) error {
+	for i, art := range task.Arguments.Artifacts {
+		if art.FromExpression != "" || art.FromMulti != "" {
+			return errors.New(errors.CodeBadRequest, "only support 'from' field for expanded task")
+		}
+		if art.From == "" {
+			continue
+		}
+
+		var newArt wfv1.Artifact
+		if err := json.Unmarshal([]byte(art.From), &newArt); err != nil {
+			return errors.InternalWrapError(err)
+		}
+		if art.SubPath != "" {
+			if err := newArt.AppendToKey(art.SubPath); err != nil {
+				return errors.InternalWrapError(err)
+			}
+		}
+
+		task.Arguments.Artifacts[i] = newArt
+	}
+
+	return nil
 }
 
 // findLeafTaskNames finds the names of all tasks whom no other nodes depend on.

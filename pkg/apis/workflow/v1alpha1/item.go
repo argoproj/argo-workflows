@@ -17,6 +17,8 @@ const (
 	Bool
 	Map
 	List
+	ArtifactType
+	OutputsType
 )
 
 // Item expands a single workflow step into multiple parallel steps
@@ -51,6 +53,14 @@ func (i *Item) GetType() Type {
 	var object map[string]interface{}
 	if err := json.Unmarshal(i.Value, &object); err == nil {
 		return Map
+	}
+	var art Artifact
+	if err := json.Unmarshal(i.Value, &art); err == nil {
+		return ArtifactType
+	}
+	var outputs Outputs
+	if err := json.Unmarshal(i.Value, &outputs); err == nil {
+		return OutputsType
 	}
 	return String
 }
@@ -107,6 +117,20 @@ func (i *Item) GetMapVal() map[string]Item {
 // you MUST assert `GetType() == List` before invocation as this does not return errors
 func (i *Item) GetListVal() []Item {
 	val := make([]Item, 0)
+	_ = json.Unmarshal(i.Value, &val)
+	return val
+}
+
+// you MUST assert `GetType() == ArtifactType` before invocation as this does not return errors
+func (i *Item) GetArtifactVal() Artifact {
+	var val Artifact
+	_ = json.Unmarshal(i.Value, &val)
+	return val
+}
+
+// you MUST assert `GetType() == OutputsType` before invocation as this does not return errors
+func (i *Item) GetOutputsVal() Outputs {
+	var val Outputs
 	_ = json.Unmarshal(i.Value, &val)
 	return val
 }

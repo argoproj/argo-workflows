@@ -2690,6 +2690,9 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(scope *wfScope, prefix st
 	paramList := make([]map[string]string, 0)
 	outputParamValueLists := make(map[string][]string)
 	resultsList := make([]wfv1.Item, 0)
+	artifactList := make([]map[string]wfv1.Artifact, 0) // for "{{task.X.outputs.artifacts}}"
+	outputArtifactLists := make(map[string][]wfv1.Artifact) // for "{{task.X.outputs.artifacts.A}}"
+	outputsList := make([]wfv1.Outputs, 0) // for "{{task.X.outputs}}"
 	for _, node := range childNodes {
 		if node.Outputs == nil {
 			continue
@@ -2713,6 +2716,17 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(scope *wfScope, prefix st
 			}
 			resultsList = append(resultsList, item)
 		}
+		if len(node.Outputs.Artifacts) > 0 {
+			art := make(map[string]wfv1.Artifact)
+			for _, a := range node.Outputs.Artifacts {
+				art[a.Name] = a
+				outputArtifactList := outputArtifactLists[a.Name]
+				outputArtifactList = append(outputArtifactList, a)
+				outputArtifactLists[a.Name] = outputArtifactList
+			}
+			artifactList = append(artifactList, art)
+		}
+		outputsList = append(outputsList, *node.Outputs)
 	}
 	{
 		resultsJSON, err := json.Marshal(resultsList)
@@ -2722,12 +2736,12 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(scope *wfScope, prefix st
 		key := fmt.Sprintf("%s.outputs.result", prefix)
 		scope.addParamToScope(key, string(resultsJSON))
 	}
-	outputsJSON, err := json.Marshal(paramList)
+	outputParamJSON, err := json.Marshal(paramList)
 	if err != nil {
 		return err
 	}
 	key := fmt.Sprintf("%s.outputs.parameters", prefix)
-	scope.addParamToScope(key, string(outputsJSON))
+	scope.addParamToScope(key, string(outputParamJSON))
 	// Adding per-output aggregated value placeholders
 	for outputName, valueList := range outputParamValueLists {
 		key = fmt.Sprintf("%s.outputs.parameters.%s", prefix, outputName)
@@ -2737,6 +2751,27 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(scope *wfScope, prefix st
 		}
 		scope.addParamToScope(key, string(valueListJSON))
 	}
+	outputArtJSON, err := json.Marshal(artifactList)
+	if err != nil {
+		return err
+	}
+	key = fmt.Sprintf("%s.outputs.artifacts", prefix)
+	scope.addParamToScope(key, string(outputArtJSON))
+	// Add pre-output aggregated artifact placeholders
+	for outputName, artList := range outputArtifactLists {
+		key = fmt.Sprintf("%s.outputs.artifacts.%s", prefix, outputName)
+		artListJSON, err := json.Marshal(artList)
+		if err != nil {
+			return err
+		}
+		scope.addParamToScope(key, string(artListJSON))
+	}
+	outputsJSON, err := json.Marshal(outputsList)
+	if err != nil {
+		return err
+	}
+	key = fmt.Sprintf("%s.outputs", prefix)
+	scope.addParamToScope(key, string(outputsJSON))
 	return nil
 }
 
@@ -2959,6 +2994,15 @@ func processItem(tmpl template.Template, name string, index int, item wfv1.Item,
 		vals := make([]string, 0)
 		mapVal := item.GetMapVal()
 		for itemKey, itemVal := range mapVal {
+			if itemVal.GetType() == wfv1.ArtifactType {
+				artifactVal := itemVal.GetArtifactVal()
+				byteVal, err := json.Marshal(artifactVal)
+				if err != nil {
+					return "", errors.InternalWrapError(err)
+				}
+				replaceMap[fmt.Sprintf("item.%s", itemKey)] = string(byteVal)
+				vals = append(vals, fmt.Sprintf("%s:%s", itemKey, artifactVal.Name))
+			}
 			replaceMap[fmt.Sprintf("item.%s", itemKey)] = fmt.Sprintf("%v", itemVal)
 			vals = append(vals, fmt.Sprintf("%s:%v", itemKey, itemVal))
 
@@ -2980,6 +3024,42 @@ func processItem(tmpl template.Template, name string, index int, item wfv1.Item,
 		}
 		replaceMap["item"] = string(byteVal)
 		newName = generateNodeName(name, index, listVal)
+	case wfv1.ArtifactType:
+		artifactVal := item.GetArtifactVal()
+		byteVal, err := json.Marshal(artifactVal)
+		if err != nil {
+			return "", errors.InternalWrapError(err)
+		}
+		replaceMap["item"] = string(byteVal)
+		newName = generateNodeName(name, index, artifactVal.Name)
+	case wfv1.OutputsType:
+		outputsVal := item.GetOutputsVal()
+		replaceMap["item.result"] = ""
+		if outputsVal.Result != nil {
+			replaceMap["item.result"] = *outputsVal.Result
+		}
+		replaceMap["item.exitCode"] = ""
+		if outputsVal.ExitCode != nil {
+			replaceMap["item.exitCode"] = *outputsVal.ExitCode
+		}
+		paramValueMap := make(map[string]string, len(outputsVal.Parameters))
+		for _, param := range outputsVal.Parameters {
+			paramValueMap[param.Name] = param.Value.String()
+			replaceMap[fmt.Sprintf("item.parameters.%s", param.Name)] = param.Value.String()
+		}
+		paramValueByte, err := json.Marshal(paramValueMap)
+		if err != nil {
+			return "", errors.InternalWrapError(err)
+		}
+		replaceMap["item.parameters"] = string(paramValueByte)
+		for _, art := range outputsVal.Artifacts {
+			artByte, err := json.Marshal(art)
+			if err != nil {
+				return "", errors.InternalWrapError(err)
+			}
+			replaceMap[fmt.Sprintf("item.artifacts.%s", art.Name)] = string(artByte)
+		}
+		newName = generateNodeName(name, index, "outputs")
 	default:
 		return "", errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string, number, list, or map. received: %v", index, item)
 	}
