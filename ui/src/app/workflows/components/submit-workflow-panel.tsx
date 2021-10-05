@@ -120,7 +120,7 @@ export class SubmitWorkflowPanel extends React.Component<Props, State> {
         return (
             <Select
                 key={parameter.name}
-                value={parameter.value}
+                value={this.getValue(parameter)}
                 options={parameter.enum.map(value => ({
                     value,
                     title: value
@@ -129,7 +129,7 @@ export class SubmitWorkflowPanel extends React.Component<Props, State> {
                     this.setState({
                         parameters: this.state.parameters.map(p => ({
                             name: p.name,
-                            value: p.name === parameter.name ? event.value : p.value,
+                            value: p.name === parameter.name ? event.value : this.getValue(p),
                             enum: p.enum
                         }))
                     });
@@ -142,12 +142,12 @@ export class SubmitWorkflowPanel extends React.Component<Props, State> {
         return (
             <input
                 className='argo-field'
-                value={parameter.value}
+                value={this.getValue(parameter)}
                 onChange={event => {
                     this.setState({
                         parameters: this.state.parameters.map(p => ({
                             name: p.name,
-                            value: p.name === parameter.name ? event.target.value : p.value,
+                            value: p.name === parameter.name ? event.target.value : this.getValue(p),
                             enum: p.enum
                         }))
                     });
@@ -156,11 +156,19 @@ export class SubmitWorkflowPanel extends React.Component<Props, State> {
         );
     }
 
+    private getValue(p: Parameter) {
+        if (p.value === undefined) {
+            return p.default;
+        } else {
+            return p.value;
+        }
+    }
+
     private submit() {
         services.workflows
             .submit(this.props.kind, this.props.name, this.props.namespace, {
                 entryPoint: this.state.entrypoint === workflowEntrypoint ? null : this.state.entrypoint,
-                parameters: this.state.parameters.map(p => p.name + '=' + p.value),
+                parameters: this.state.parameters.filter(p => this.getValue(p) !== undefined).map(p => p.name + '=' + this.getValue(p)),
                 labels: this.state.labels.join(',')
             })
             .then((submitted: Workflow) => (document.location.href = uiUrl(`workflows/${submitted.metadata.namespace}/${submitted.metadata.name}`)))
