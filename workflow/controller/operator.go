@@ -249,6 +249,13 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.preExecutionNodePhases[node.ID] = node.Phase
 	}
 
+	if woc.execWf.Spec.Metrics != nil {
+		realTimeScope := map[string]func() float64{common.GlobalVarWorkflowDuration: func() float64 {
+			return time.Since(woc.wf.Status.StartedAt.Time).Seconds()
+		}}
+		woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, woc.globalParams, realTimeScope, true)
+	}
+
 	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
 		woc.markWorkflowRunning(ctx)
 		err := woc.createPDBResource(ctx)
@@ -266,12 +273,6 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			woc.requeueAfter(time.Until(*woc.workflowDeadline))
 		}
 
-		if woc.execWf.Spec.Metrics != nil {
-			realTimeScope := map[string]func() float64{common.GlobalVarWorkflowDuration: func() float64 {
-				return time.Since(woc.wf.Status.StartedAt.Time).Seconds()
-			}}
-			woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, woc.globalParams, realTimeScope, true)
-		}
 		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration()
 	} else {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
@@ -1146,56 +1147,56 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			}
 		}
 	}
-
-	if !node.Fulfilled() && newDaemonStatus != nil {
-		if !*newDaemonStatus {
-			// if the daemon status switched to false, we prefer to just unset daemoned status field
-			// (as opposed to setting it to false)
-			newDaemonStatus = nil
-		}
-		if (newDaemonStatus != nil && node.Daemoned == nil) || (newDaemonStatus == nil && node.Daemoned != nil) {
-			woc.log.Infof("Setting node %v daemoned: %v -> %v", node.ID, node.Daemoned, newDaemonStatus)
-			node.Daemoned = newDaemonStatus
-			updated = true
-			if pod.Status.PodIP != "" && pod.Status.PodIP != node.PodIP {
-				// only update Pod IP for daemoned nodes to reduce number of updates
-				woc.log.Infof("Updating daemon node %s IP %s -> %s", node.ID, node.PodIP, pod.Status.PodIP)
-				node.PodIP = pod.Status.PodIP
+	if !node.Completed() {
+		if newDaemonStatus != nil {
+			if !*newDaemonStatus {
+				// if the daemon status switched to false, we prefer to just unset daemoned status field
+				// (as opposed to setting it to false)
+				newDaemonStatus = nil
 			}
-		}
-	}
-
-	// we only need to update these values if the container transitions to complete
-	if !node.Phase.Fulfilled() && newPhase.Fulfilled() {
-		// outputs are mixed between the annotation (parameters, artifacts, and result) and the pod's status (exit code)
-		if exitCode := getExitCode(pod); exitCode != nil {
-			woc.log.Infof("Updating node %s exit code %d", node.ID, *exitCode)
-			node.Outputs = &wfv1.Outputs{ExitCode: pointer.StringPtr(fmt.Sprintf("%d", int(*exitCode)))}
-			if outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]; ok {
-				woc.log.Infof("Setting node %v outputs: %s", node.ID, outputStr)
-				if err := json.Unmarshal([]byte(outputStr), node.Outputs); err != nil { // I don't expect an error to ever happen in production
-					node.Phase = wfv1.NodeError
-					node.Message = err.Error()
+			if (newDaemonStatus != nil && node.Daemoned == nil) || (newDaemonStatus == nil && node.Daemoned != nil) {
+				woc.log.Infof("Setting node %v daemoned: %v -> %v", node.ID, node.Daemoned, newDaemonStatus)
+				node.Daemoned = newDaemonStatus
+				updated = true
+				if pod.Status.PodIP != "" && pod.Status.PodIP != node.PodIP {
+					// only update Pod IP for daemoned nodes to reduce number of updates
+					woc.log.Infof("Updating daemon node %s IP %s -> %s", node.ID, node.PodIP, pod.Status.PodIP)
+					node.PodIP = pod.Status.PodIP
 				}
 			}
 		}
-	}
 
-	if node.Phase != newPhase {
-		woc.log.Infof("Updating node %s status %s -> %s", node.ID, node.Phase, newPhase)
-		// if we are transitioning from Pending to a different state, clear out pending message
-		if node.Phase == wfv1.NodePending {
-			node.Message = ""
+		// we only need to update these values if the container transitions to complete
+		if newPhase.Fulfilled() {
+			// outputs are mixed between the annotation (parameters, artifacts, and result) and the pod's status (exit code)
+			if exitCode := getExitCode(pod); exitCode != nil {
+				woc.log.Infof("Updating node %s exit code %d", node.ID, *exitCode)
+				node.Outputs = &wfv1.Outputs{ExitCode: pointer.StringPtr(fmt.Sprintf("%d", int(*exitCode)))}
+				if outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]; ok {
+					woc.log.Infof("Setting node %v outputs: %s", node.ID, outputStr)
+					if err := json.Unmarshal([]byte(outputStr), node.Outputs); err != nil { // I don't expect an error to ever happen in production
+						node.Phase = wfv1.NodeError
+						node.Message = err.Error()
+					}
+				}
+			}
 		}
-		updated = true
-		node.Phase = newPhase
-	}
-	if message != "" && node.Message != message {
-		woc.log.Infof("Updating node %s message: %s", node.ID, message)
-		updated = true
-		node.Message = message
-	}
 
+		if node.Phase != newPhase {
+			woc.log.Infof("Updating node %s status %s -> %s", node.ID, node.Phase, newPhase)
+			// if we are transitioning from Pending to a different state, clear out pending message
+			if node.Phase == wfv1.NodePending {
+				node.Message = ""
+			}
+			updated = true
+			node.Phase = newPhase
+		}
+		if message != "" && node.Message != message {
+			woc.log.Infof("Updating node %s message: %s", node.ID, message)
+			updated = true
+			node.Message = message
+		}
+	}
 	if node.Fulfilled() && node.FinishedAt.IsZero() {
 		updated = true
 		node.FinishedAt = getLatestFinishedAt(pod)

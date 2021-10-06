@@ -194,8 +194,13 @@ export class WorkflowsService {
         if (archived) {
             return getLogsFromArtifact();
         }
-
-        return this.getContainerLogsFromCluster(workflow, nodeId, container, grep).catch(getLogsFromArtifact);
+        // return archived log if main container is finished and has artifact
+        return Observable.fromPromise(this.isWorkflowNodePendingOrRunning(workflow, nodeId)).switchMap(isPendingOrRunning => {
+            if (!isPendingOrRunning && this.hasArtifactLogs(workflow, nodeId, container) && container === 'main') {
+                return getLogsFromArtifact();
+            }
+            return this.getContainerLogsFromCluster(workflow, nodeId, container, grep).catch(getLogsFromArtifact);
+        });
     }
 
     public getArtifactLogsUrl(workflow: Workflow, nodeId: string, container: string, archived: boolean) {

@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"apps/v1","kind":"StatefulSet","metadata":{"annotations":{},"name":"testapi","namespace":"argo-dataflow-system"},"spec":{"selector":{"matchLabels":{"app":"testapi"}},"serviceName":"testapi","template":{"metadata":{"labels":{"app":"testapi"}},"spec":{"containers":[{"image":"quay.io/argoprojlabs/dataflow-testapi","imagePullPolicy":"IfNotPresent","name":"main","ports":[{"containerPort":8378}],"readinessProbe":{"httpGet":{"path":"/ready","port":8378}}}]}}}}
+  creationTimestamp: "2021-09-10T19:32:15Z"
+  generation: 8
+  name: testapi
+  namespace: argo-dataflow-system
+  resourceVersion: "13322696"
+  uid: ed102571-486e-4ad1-8d0f-3143265ab593
+spec:
+  podManagementPolicy: OrderedReady
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: testapi
+  serviceName: testapi
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: testapi
+    spec:
+      containers:
+      - image: sarabala1979/dataflow-testapi:latest
+        imagePullPolicy: Always
+        name: main
+        ports:
+        - containerPort: 8378
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /ready
+            port: 8378
+            scheme: HTTP
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+  updateStrategy:
+    rollingUpdate:
+      partition: 0
+    type: RollingUpdate
+status:
+  collisionCount: 0
+  currentReplicas: 1
+  currentRevision: testapi-5f4cc7b4df
+  observedGeneration: 8
+  readyReplicas: 1
+  replicas: 1
+  updateRevision: testapi-5f4cc7b4df
+  updatedReplicas: 1

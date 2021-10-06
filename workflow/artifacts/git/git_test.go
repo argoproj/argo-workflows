@@ -13,6 +13,7 @@ import (
 var d = uint64(1)
 
 func TestGitArtifactDriver_Load(t *testing.T) {
+	t.Skipped()
 	_ = os.Remove("git-ask-pass.sh")
 	driver := &ArtifactDriver{}
 	path := "/tmp/git-found"
