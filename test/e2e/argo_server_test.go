@@ -1296,6 +1296,32 @@ spec:
 			Expect().
 			Status(404)
 	})
+
+	s.Run("ListLabelKeys", func() {
+		j := s.e().GET("/api/v1/archived-workflows-label-keys").
+			Expect().
+			Status(200).
+			JSON()
+		j.
+			Path("$.items").
+			Array().
+			Length().
+			Gt(0)
+	})
+
+	s.Run("ListLabelValues", func() {
+		j := s.e().GET("/api/v1/archived-workflows-label-values").
+			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test").
+			Expect().
+			Status(200).
+			JSON()
+		j.
+			Path("$.items").
+			Array().
+			Length().
+			Equal(1)
+	})
+
 }
 
 func (s *ArgoServerSuite) TestWorkflowTemplateService() {

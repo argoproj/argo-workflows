@@ -18,6 +18,11 @@ message DeleteArchivedWorkflowRequest {
 }
 message ArchivedWorkflowDeletedResponse {
 }
+message ListArchivedWorkflowLabelKeysRequest {
+}
+message ListArchivedWorkflowLabelValuesRequest {
+    k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 1;
+}
 
 service ArchivedWorkflowService {
     rpc ListArchivedWorkflows (ListArchivedWorkflowsRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.WorkflowList) {
@@ -28,5 +33,11 @@ service ArchivedWorkflowService {
     }
     rpc DeleteArchivedWorkflow (DeleteArchivedWorkflowRequest) returns (ArchivedWorkflowDeletedResponse) {
         option (google.api.http).delete = "/api/v1/archived-workflows/{uid}";
+    }
+    rpc ListArchivedWorkflowLabelKeys (ListArchivedWorkflowLabelKeysRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.LabelKeys) {
+        option (google.api.http).get = "/api/v1/archived-workflows-label-keys";
+    }
+    rpc ListArchivedWorkflowLabelValues (ListArchivedWorkflowLabelValuesRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.LabelValues) {
+        option (google.api.http).get = "/api/v1/archived-workflows-label-values";
     }
 }

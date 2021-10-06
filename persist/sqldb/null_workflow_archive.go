@@ -36,3 +36,11 @@ func (r *nullWorkflowArchive) DeleteWorkflow(string) error {
 func (r *nullWorkflowArchive) DeleteExpiredWorkflows(time.Duration) error {
 	return nil
 }
+
+func (r *nullWorkflowArchive) ListWorkflowsLabelKeys() (*wfv1.LabelKeys, error) {
+	return &wfv1.LabelKeys{}, nil
+}
+
+func (r *nullWorkflowArchive) ListWorkflowsLabelValues(string) (*wfv1.LabelValues, error) {
+	return &wfv1.LabelValues{}, nil
+}

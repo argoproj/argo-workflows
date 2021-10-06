@@ -17,6 +17,14 @@ export class ArchivedWorkflowsService {
         return requests.delete(`api/v1/archived-workflows/${uid}`);
     }
 
+    public listLabelKeys() {
+        return requests.get(`api/v1/archived-workflows-label-keys`).then(res => res.body as models.Labels);
+    }
+
+    public listLabelValues(key: string) {
+        return requests.get(`api/v1/archived-workflows-label-values?listOptions.labelSelector=${key}`).then(res => res.body as models.Labels);
+    }
+
     private queryParams(filter: {
         namespace?: string;
         name?: string;

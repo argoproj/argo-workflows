@@ -117,3 +117,49 @@ func (_m *WorkflowArchive) ListWorkflows(namespace string, name string, minStart
 
 	return r0, r1
 }
+
+// ListWorkflowsLabelKeys provides a mock function with given fields:
+func (_m *WorkflowArchive) ListWorkflowsLabelKeys() (*v1alpha1.LabelKeys, error) {
+	ret := _m.Called()
+
+	var r0 *v1alpha1.LabelKeys
+	if rf, ok := ret.Get(0).(func() *v1alpha1.LabelKeys); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*v1alpha1.LabelKeys)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// ListWorkflowsLabelValues provides a mock function with given fields: key
+func (_m *WorkflowArchive) ListWorkflowsLabelValues(key string) (*v1alpha1.LabelValues, error) {
+	ret := _m.Called(key)
+
+	var r0 *v1alpha1.LabelValues
+	if rf, ok := ret.Get(0).(func(string) *v1alpha1.LabelValues); ok {
+		r0 = rf(key)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*v1alpha1.LabelValues)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(key)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
