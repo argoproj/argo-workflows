@@ -5277,7 +5277,6 @@
       "properties": {
         "body": {
           "description": "Body is content of the HTTP Request",
-          "format": "byte",
           "type": "string"
         },
         "headers": {
