@@ -266,7 +266,7 @@ docs: \
 	go generate ./persist/sqldb ./pkg/apiclient/workflow ./server/auth ./server/auth/sso ./workflow/executor
 	./hack/check-env-doc.sh
 
-$(GOBIN)/mockery:
+$(GOPATH)/bin/mockery:
 	go install github.com/vektra/mockery/v2@v2.9.4
 
 $(GOPATH)/bin/controller-gen:
