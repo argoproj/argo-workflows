@@ -46,7 +46,7 @@ type archivedWorkflowLabelRecord struct {
 	Value string `db:"value"`
 }
 
-//go:generate mockery -name WorkflowArchive
+//go:generate mockery --name=WorkflowArchive
 
 type WorkflowArchive interface {
 	ArchiveWorkflow(wf *wfv1.Workflow) error
