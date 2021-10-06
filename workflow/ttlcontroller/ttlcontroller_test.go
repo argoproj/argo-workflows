@@ -14,7 +14,6 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
-
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
