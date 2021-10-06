@@ -130,3 +130,19 @@ func TestReplaceStringWithWhiteSpace(t *testing.T) {
 		assert.Equal(t, toJsonString("hello world"), replacement)
 	}
 }
+
+func TestReplaceStringWithExpression(t *testing.T) {
+	replaceMap := map[string]string{"inputs.parameters.message": "hello world"}
+
+	test := toJsonString(`test {{= sprig.trunc(5, inputs.parameters.message) }}`)
+	replacement, err := Replace(test, replaceMap, true)
+	if assert.NoError(t, err) {
+		assert.Equal(t, toJsonString("test hello"), replacement)
+	}
+
+	test = toJsonString(`test {{= sprig.trunc(-5, inputs.parameters.message) }}`)
+	replacement, err = Replace(test, replaceMap, true)
+	if assert.NoError(t, err) {
+		assert.Equal(t, toJsonString("test world"), replacement)
+	}
+}
