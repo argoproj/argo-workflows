@@ -267,12 +267,7 @@ docs: \
 	./hack/check-env-doc.sh
 
 $(GOPATH)/bin/mockery:
-	./hack/recurl.sh dist/mockery.tar.gz https://github.com/vektra/mockery/releases/download/v1.1.1/mockery_1.1.1_$(shell uname -s)_$(shell uname -m).tar.gz
-	tar zxvf dist/mockery.tar.gz mockery
-	chmod +x mockery
-	mkdir -p $(GOPATH)/bin
-	mv mockery $(GOPATH)/bin/mockery
-	mockery -version
+	go install github.com/vektra/mockery/v2@v2.9.4
 
 $(GOPATH)/bin/controller-gen:
 	$(call go_install,sigs.k8s.io/controller-tools/cmd/controller-gen)
