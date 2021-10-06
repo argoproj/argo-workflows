@@ -2841,7 +2841,7 @@ _No description available_
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`body`|`byte`|Body is content of the HTTP Request|
+|`body`|`string`|Body is content of the HTTP Request|
 |`headers`|`Array<`[`HTTPHeader`](#httpheader)`>`|Headers are an optional list of headers to send with HTTP requests|
 |`method`|`string`|Method is HTTP methods for HTTP Request|
 |`timeoutSeconds`|`integer`|TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds|

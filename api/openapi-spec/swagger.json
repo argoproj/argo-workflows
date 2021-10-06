@@ -9425,8 +9425,7 @@
       "properties": {
         "body": {
           "description": "Body is content of the HTTP Request",
-          "type": "string",
-          "format": "byte"
+          "type": "string"
         },
         "headers": {
           "description": "Headers are an optional list of headers to send with HTTP requests",

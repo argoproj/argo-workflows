@@ -1126,11 +1126,6 @@ func (in *HTTP) DeepCopyInto(out *HTTP) {
 		*out = new(int64)
 		**out = **in
 	}
-	if in.Body != nil {
-		in, out := &in.Body, &out.Body
-		*out = make([]byte, len(*in))
-		copy(*out, *in)
-	}
 	return
 }
 
