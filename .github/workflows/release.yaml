@@ -6,6 +6,7 @@ on:
       - v*
     branches:
       - master
+      - release-*
       - dev-*
 
 defaults:
@@ -35,11 +36,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ matrix.platform }}-${{ matrix.target }}-buildx-
 
-      - name: Docker Login
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKERIO_USERNAME }}
-          password: ${{ secrets.DOCKERIO_PASSWORD }}
+      ## Codefresh - remove dockerhub
+      # - name: Docker Login
+      #   uses: docker/login-action@v1
+      #   with:
+      #     username: ${{ secrets.DOCKERIO_USERNAME }}
+      #     password: ${{ secrets.DOCKERIO_PASSWORD }}
 
       - name: Docker Login
         uses: docker/login-action@v1
@@ -105,11 +107,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ matrix.platform }}-${{ matrix.target }}-buildx-
 
-      - name: Docker Login
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKERIO_USERNAME }}
-          password: ${{ secrets.DOCKERIO_PASSWORD }}
+      ## Codefresh - remove dockerhub
+      # - name: Docker Login
+      #   uses: docker/login-action@v1
+      #   with:
+      #     username: ${{ secrets.DOCKERIO_USERNAME }}
+      #     password: ${{ secrets.DOCKERIO_PASSWORD }}
 
       - name: Docker Login
         uses: docker/login-action@v1
@@ -153,11 +156,12 @@ jobs:
     runs-on: windows-2019
     steps:
       - uses: actions/checkout@v2
-      - name: Docker Login
-        uses: Azure/docker-login@v1
-        with:
-          username: ${{ secrets.DOCKERIO_USERNAME }}
-          password: ${{ secrets.DOCKERIO_PASSWORD }}
+      ## Codefresh - remove dockerhub
+      # - name: Docker Login
+      #   uses: Azure/docker-login@v1
+      #   with:
+      #     username: ${{ secrets.DOCKERIO_USERNAME }}
+      #     password: ${{ secrets.DOCKERIO_PASSWORD }}
 
       - name: Login to Quay
         uses: Azure/docker-login@v1
@@ -181,7 +185,8 @@ jobs:
           for target in $targets; do
             image_name="${docker_org}/${target}:${tag}-windows"
             docker build --target $target -t $image_name -f Dockerfile.windows .
-            docker push $image_name
+            ## Codefresh - remove dockerhub
+            # docker push $image_name
 
             docker tag $image_name quay.io/$image_name
             docker push quay.io/$image_name
@@ -193,11 +198,12 @@ jobs:
     needs: [ build-linux-amd64 ]
     steps:
       - uses: actions/checkout@v2
-      - name: Docker Login
-        uses: Azure/docker-login@v1
-        with:
-          username: ${{ secrets.DOCKERIO_USERNAME }}
-          password: ${{ secrets.DOCKERIO_PASSWORD }}
+      ## Codefresh - remove dockerhub
+      # - name: Docker Login
+      #   uses: Azure/docker-login@v1
+      #   with:
+      #     username: ${{ secrets.DOCKERIO_USERNAME }}
+      #     password: ${{ secrets.DOCKERIO_PASSWORD }}
 
       - name: Login to Quay
         uses: Azure/docker-login@v1
@@ -226,7 +232,8 @@ jobs:
             docker manifest create $image_name ${image_name}-linux-amd64
             docker manifest create quay.io/$image_name quay.io/${image_name}-linux-amd64
 
-            docker manifest push $image_name
+            ## Codefresh - remove dockerhub
+            # docker manifest push $image_name
             docker manifest push quay.io/$image_name
           done
 
@@ -236,11 +243,12 @@ jobs:
     needs: [ build-linux-arm64, build-windows, push-linux-amd64-images ]
     steps:
       - uses: actions/checkout@v2
-      - name: Docker Login
-        uses: Azure/docker-login@v1
-        with:
-          username: ${{ secrets.DOCKERIO_USERNAME }}
-          password: ${{ secrets.DOCKERIO_PASSWORD }}
+      ## Codefresh - remove dockerhub
+      # - name: Docker Login
+      #   uses: Azure/docker-login@v1
+      #   with:
+      #     username: ${{ secrets.DOCKERIO_USERNAME }}
+      #     password: ${{ secrets.DOCKERIO_PASSWORD }}
 
       - name: Login to Quay
         uses: Azure/docker-login@v1
@@ -274,7 +282,8 @@ jobs:
               docker manifest create quay.io/$image_name quay.io/${image_name}-linux-arm64 quay.io/${image_name}-linux-amd64
             fi
 
-            docker manifest push $image_name
+            ## Codefresh - remove dockerhub
+            # docker manifest push $image_name
             docker manifest push quay.io/$image_name
           done
   test-images-linux-amd64:
@@ -286,11 +295,12 @@ jobs:
         platform: [ linux/amd64 ]
         target: [ workflow-controller, argocli, argoexec ]
     steps:
-      - name: Docker Login
-        uses: Azure/docker-login@v1
-        with:
-          username: ${{ secrets.DOCKERIO_USERNAME }}
-          password: ${{ secrets.DOCKERIO_PASSWORD }}
+      ## Codefresh - remove dockerhub
+      # - name: Docker Login
+      #   uses: Azure/docker-login@v1
+      #   with:
+      #     username: ${{ secrets.DOCKERIO_USERNAME }}
+      #     password: ${{ secrets.DOCKERIO_PASSWORD }}
 
       - name: Login to Quay
         uses: Azure/docker-login@v1
@@ -311,7 +321,8 @@ jobs:
           fi
 
           image_name="${DOCKERIO_ORG}/${TARGET}:${tag}"
-          docker pull $image_name
+          ## Codefresh - remove dockerhub
+          # docker pull $image_name
           docker pull quay.io/$image_name
 
   test-images-windows:
@@ -319,11 +330,12 @@ jobs:
     runs-on: windows-2019
     needs: [ push-images ]
     steps:
-      - name: Docker Login
-        uses: Azure/docker-login@v1
-        with:
-          username: ${{ secrets.DOCKERIO_USERNAME }}
-          password: ${{ secrets.DOCKERIO_PASSWORD }}
+      ## Codefresh - remove dockerhub
+      # - name: Docker Login
+      #   uses: Azure/docker-login@v1
+      #   with:
+      #     username: ${{ secrets.DOCKERIO_USERNAME }}
+      #     password: ${{ secrets.DOCKERIO_PASSWORD }}
 
       - name: Login to Quay
         uses: Azure/docker-login@v1
@@ -344,7 +356,8 @@ jobs:
           targets="argoexec"
           for target in $targets; do
             image_name="${docker_org}/${target}:${tag}"
-            docker pull $image_name
+            ## Codefresh - remove dockerhub
+            # docker pull $image_name
             docker pull quay.io/$image_name
           done
 
