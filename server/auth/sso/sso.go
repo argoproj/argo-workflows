@@ -33,7 +33,7 @@ const (
 	cookieEncryptionPrivateKeySecretKey = "cookieEncryptionPrivateKey" // the key name for the private key in the secret
 )
 
-//go:generate mockery -name Interface
+//go:generate mockery --name=Interface
 
 type Interface interface {
 	Authorize(authorization string) (*types.Claims, error)
