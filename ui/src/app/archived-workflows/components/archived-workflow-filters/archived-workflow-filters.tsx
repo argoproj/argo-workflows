@@ -5,6 +5,7 @@ import {CheckboxFilter} from '../../../shared/components/checkbox-filter/checkbo
 import {InputFilter} from '../../../shared/components/input-filter';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {TagsInput} from '../../../shared/components/tags-input/tags-input';
+import {services} from '../../../shared/services';
 
 import 'react-datepicker/dist/react-datepicker.css';
 
@@ -22,7 +23,22 @@ interface ArchivedWorkflowFilterProps {
     onChange: (namespace: string, name: string, selectedPhases: string[], labels: string[], minStartedAt: Date, maxStartedAt: Date) => void;
 }
 
-export class ArchivedWorkflowFilters extends React.Component<ArchivedWorkflowFilterProps, {}> {
+interface State {
+    labels: string[];
+}
+
+export class ArchivedWorkflowFilters extends React.Component<ArchivedWorkflowFilterProps, State> {
+    constructor(props: ArchivedWorkflowFilterProps) {
+        super(props);
+        this.state = {
+            labels: []
+        };
+    }
+
+    public componentDidMount(): void {
+        this.fetchArchivedWorkflowsLabelKeys();
+    }
+
     public render() {
         return (
             <div className='wf-filters-container'>
@@ -57,7 +73,8 @@ export class ArchivedWorkflowFilters extends React.Component<ArchivedWorkflowFil
                         <p className='wf-filters-container__title'>Labels</p>
                         <TagsInput
                             placeholder=''
-                            autocomplete={this.getLabelSuggestions(this.props.workflows)}
+                            autocomplete={this.state.labels}
+                            sublistQuery={this.fetchArchivedWorkflowsLabels}
                             tags={this.props.selectedLabels}
                             onChange={tags => {
                                 this.props.onChange(this.props.namespace, this.props.name, this.props.selectedPhases, tags, this.props.minStartedAt, this.props.maxStartedAt);
@@ -114,19 +131,17 @@ export class ArchivedWorkflowFilters extends React.Component<ArchivedWorkflowFil
         return results;
     }
 
-    private getLabelSuggestions(workflows: models.Workflow[]) {
-        const suggestions = new Array<string>();
-        workflows
-            .filter(wf => wf.metadata.labels)
-            .forEach(wf => {
-                Object.keys(wf.metadata.labels).forEach(label => {
-                    const value = wf.metadata.labels[label];
-                    const suggestedLabel = `${label}=${value}`;
-                    if (!suggestions.some(v => v === suggestedLabel)) {
-                        suggestions.push(`${label}=${value}`);
-                    }
-                });
+    private fetchArchivedWorkflowsLabelKeys(): void {
+        services.archivedWorkflows.listLabelKeys().then(list => {
+            this.setState({
+                labels: list.items || []
             });
-        return suggestions.sort((a, b) => a.localeCompare(b));
+        });
+    }
+
+    private fetchArchivedWorkflowsLabels(key: string): Promise<any> {
+        return services.archivedWorkflows.listLabelValues(key).then(list => {
+            return list.items.map(i => key + '=' + i);
+        });
     }
 }

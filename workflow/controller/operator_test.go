@@ -5898,6 +5898,7 @@ spec:
 		return node.Phase == wfv1.NodePending
 	}))
 
+	time.Sleep(time.Second)
 	deletePods(ctx, woc)
 
 	woc = newWorkflowOperationCtx(woc.wf, controller)
@@ -5908,6 +5909,7 @@ spec:
 		return node.Phase == wfv1.NodePending
 	}))
 
+	time.Sleep(time.Second)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 
 	woc = newWorkflowOperationCtx(woc.wf, controller)

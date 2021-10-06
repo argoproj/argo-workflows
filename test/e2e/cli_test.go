@@ -1412,6 +1412,39 @@ func (s *CLISuite) TestArchive() {
 	})
 }
 
+func (s *CLISuite) TestArchiveLabel() {
+	s.Given().
+		WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml").
+		When().
+		CreateWorkflowTemplates().
+		RunCli([]string{"submit", "--from", "workflowtemplate/workflow-template-whalesay-template", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
+			assert.NoError(t, err)
+		}).
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, status.Phase, wfv1.WorkflowSucceeded)
+		})
+	s.Run("ListKeys", func() {
+		s.Given().
+			RunCli([]string{"archive", "list-label-keys"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					lines := strings.Split(output, "\n")
+					assert.Contains(t, lines, "workflows.argoproj.io/test")
+				}
+			})
+	})
+	s.Run("ListValues", func() {
+		s.Given().
+			RunCli([]string{"archive", "list-label-values", "-l", "workflows.argoproj.io/test"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					lines := strings.Split(output, "\n")
+					assert.Contains(t, lines[0], "true")
+				}
+			})
+	})
+}
+
 func (s *CLISuite) TestArgoSetOutputs() {
 	s.Given().
 		Workflow(`
