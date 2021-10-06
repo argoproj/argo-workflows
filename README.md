@@ -53,13 +53,20 @@ Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) hosted pr
 |
 [Couler](https://github.com/couler-proj/couler)
 |
-[OnePanel](https://www.onepanel.ai/)
+[Katib](https://github.com/kubeflow/katib)
+|
+[Kedro](https://kedro.readthedocs.io/en/stable/)
+|
+[Kubeflow Pipelines](https://github.com/kubeflow/pipelines)
+|
+[Onepanel](https://www.onepanel.ai/)
 |
 [Ploomber](https://github.com/ploomber/ploomber)
 |
-[SQLFlow](https://github.com/sql-machine-learning/sqlflow)
+[Seldon](https://github.com/SeldonIO/seldon-core)
 |
-[Kubeflow Pipelines](https://github.com/kubeflow/pipelines)
+[SQLFlow](https://github.com/sql-machine-learning/sqlflow)
+
 
 ## SDKs
 
