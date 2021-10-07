@@ -14,13 +14,14 @@ require('./archived-workflow-filters.scss');
 interface ArchivedWorkflowFilterProps {
     workflows: models.Workflow[];
     namespace: string;
+    name: string;
     namePrefix: string;
     phaseItems: string[];
     selectedPhases: string[];
     selectedLabels: string[];
     minStartedAt?: Date;
     maxStartedAt?: Date;
-    onChange: (namespace: string, namePrefix: string, selectedPhases: string[], labels: string[], minStartedAt: Date, maxStartedAt: Date) => void;
+    onChange: (namespace: string, name: string, namePrefix: string, selectedPhases: string[], labels: string[], minStartedAt: Date, maxStartedAt: Date) => void;
 }
 
 interface State {
@@ -50,6 +51,25 @@ export class ArchivedWorkflowFilters extends React.Component<ArchivedWorkflowFil
                             onChange={ns => {
                                 this.props.onChange(
                                     ns,
+                                    this.props.name,
+                                    this.props.namePrefix,
+                                    this.props.selectedPhases,
+                                    this.props.selectedLabels,
+                                    this.props.minStartedAt,
+                                    this.props.maxStartedAt
+                                );
+                            }}
+                        />
+                    </div>
+                    <div className='columns small-2 xlarge-12'>
+                        <p className='wf-filters-container__title'>Name</p>
+                        <InputFilter
+                            value={this.props.name}
+                            name='wfname'
+                            onChange={wfname => {
+                                this.props.onChange(
+                                    this.props.namespace,
+                                    wfname,
                                     this.props.namePrefix,
                                     this.props.selectedPhases,
                                     this.props.selectedLabels,
@@ -63,11 +83,12 @@ export class ArchivedWorkflowFilters extends React.Component<ArchivedWorkflowFil
                         <p className='wf-filters-container__title'>Name Prefix</p>
                         <InputFilter
                             value={this.props.namePrefix}
-                            name='wfname'
-                            onChange={wfname => {
+                            name='wfnamePrefix'
+                            onChange={wfnamePrefix => {
                                 this.props.onChange(
                                     this.props.namespace,
-                                    wfname,
+                                    this.props.name,
+                                    wfnamePrefix,
                                     this.props.selectedPhases,
                                     this.props.selectedLabels,
                                     this.props.minStartedAt,
@@ -84,7 +105,7 @@ export class ArchivedWorkflowFilters extends React.Component<ArchivedWorkflowFil
                             sublistQuery={this.fetchArchivedWorkflowsLabels}
                             tags={this.props.selectedLabels}
                             onChange={tags => {
-                                this.props.onChange(this.props.namespace, this.props.namePrefix, this.props.selectedPhases, tags, this.props.minStartedAt, this.props.maxStartedAt);
+                                this.props.onChange(this.props.namespace, this.props.name, this.props.namePrefix, this.props.selectedPhases, tags, this.props.minStartedAt, this.props.maxStartedAt);
                             }}
                         />
                     </div>
@@ -95,6 +116,7 @@ export class ArchivedWorkflowFilters extends React.Component<ArchivedWorkflowFil
                             onChange={selected => {
                                 this.props.onChange(
                                     this.props.namespace,
+                                    this.props.name,
                                     this.props.namePrefix,
                                     selected,
                                     this.props.selectedLabels,
@@ -113,6 +135,7 @@ export class ArchivedWorkflowFilters extends React.Component<ArchivedWorkflowFil
                             onChange={date => {
                                 this.props.onChange(
                                     this.props.namespace,
+                                    this.props.name,
                                     this.props.namePrefix,
                                     this.props.selectedPhases,
                                     this.props.selectedLabels,
@@ -130,6 +153,7 @@ export class ArchivedWorkflowFilters extends React.Component<ArchivedWorkflowFil
                             onChange={date => {
                                 this.props.onChange(
                                     this.props.namespace,
+                                    this.props.name,
                                     this.props.namePrefix,
                                     this.props.selectedPhases,
                                     this.props.selectedLabels,

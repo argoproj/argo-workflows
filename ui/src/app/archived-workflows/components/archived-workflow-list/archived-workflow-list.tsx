@@ -21,8 +21,9 @@ import {ArchivedWorkflowFilters} from '../archived-workflow-filters/archived-wor
 
 interface State {
     pagination: Pagination;
-    namePrefix: string;
     namespace: string;
+    name: string
+    namePrefix: string;
     selectedPhases: string[];
     selectedLabels: string[];
     minStartedAt?: Date;
@@ -49,6 +50,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         this.state = {
             pagination: {offset: this.queryParam('offset'), limit: parseLimit(this.queryParam('limit')) || savedOptions.pagination.limit},
             namespace: Utils.getNamespace(this.props.match.params.namespace) || '',
+            name: this.queryParams('name').toString() || '',
             namePrefix: this.queryParams('namePrefix').toString() || '',
             selectedPhases: phaseQueryParam.length > 0 ? phaseQueryParam : savedOptions.selectedPhases,
             selectedLabels: labelQueryParam.length > 0 ? labelQueryParam : savedOptions.selectedLabels,
@@ -60,6 +62,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
     public componentDidMount(): void {
         this.fetchArchivedWorkflows(
             this.state.namespace,
+            this.state.name,
             this.state.namePrefix,
             this.state.selectedPhases,
             this.state.selectedLabels,
@@ -85,14 +88,15 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                             <ArchivedWorkflowFilters
                                 workflows={this.state.workflows || []}
                                 namespace={this.state.namespace}
+                                name={this.state.name}
                                 namePrefix={this.state.namePrefix}
                                 phaseItems={Object.values([models.NODE_PHASE.SUCCEEDED, models.NODE_PHASE.FAILED, models.NODE_PHASE.ERROR])}
                                 selectedPhases={this.state.selectedPhases}
                                 selectedLabels={this.state.selectedLabels}
                                 minStartedAt={this.state.minStartedAt}
                                 maxStartedAt={this.state.maxStartedAt}
-                                onChange={(namespace, namePrefix, selectedPhases, selectedLabels, minStartedAt, maxStartedAt) =>
-                                    this.changeFilters(namespace, namePrefix, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, {limit: this.state.pagination.limit})
+                                onChange={(namespace, name, namePrefix, selectedPhases, selectedLabels, minStartedAt, maxStartedAt) =>
+                                    this.changeFilters(namespace, name, namePrefix, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, {limit: this.state.pagination.limit})
                                 }
                             />
                         </div>
@@ -125,6 +129,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
 
     private changeFilters(
         namespace: string,
+        name: string,
         namePrefix: string,
         selectedPhases: string[],
         selectedLabels: string[],
@@ -132,7 +137,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         maxStartedAt: Date,
         pagination: Pagination
     ) {
-        this.fetchArchivedWorkflows(namespace, namePrefix, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, pagination);
+        this.fetchArchivedWorkflows(namespace, name, namePrefix, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, pagination);
     }
 
     private get filterParams() {
@@ -146,6 +151,9 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
             this.state.selectedLabels.forEach(label => {
                 params.append('label', label);
             });
+        }
+        if (this.state.name) {
+            params.append('name', this.state.name);
         }
         if (this.state.namePrefix) {
             params.append('namePrefix', this.state.namePrefix);
@@ -170,6 +178,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
 
     private fetchArchivedWorkflows(
         namespace: string,
+        name: string,
         namePrefix: string,
         selectedPhases: string[],
         selectedLabels: string[],
@@ -178,12 +187,13 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         pagination: Pagination
     ): void {
         services.archivedWorkflows
-            .list(namespace, namePrefix, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, pagination)
+            .list(namespace, name, namePrefix, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, pagination)
             .then(list => {
                 this.setState(
                     {
                         error: null,
                         namespace,
+                        name,
                         namePrefix,
                         workflows: list.items || [],
                         selectedPhases,
@@ -251,6 +261,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                     onChange={pagination =>
                         this.changeFilters(
                             this.state.namespace,
+                            this.state.name,
                             this.state.namePrefix,
                             this.state.selectedPhases,
                             this.state.selectedLabels,
