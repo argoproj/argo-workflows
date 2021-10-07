@@ -124,7 +124,7 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 	// 3) if no default value, it is an error
 	newTmpl := tmpl.DeepCopy()
 	for i, inParam := range newTmpl.Inputs.Parameters {
-		if inParam.Default != nil {
+		if inParam.Value == nil && inParam.Default != nil {
 			// first set to default value
 			inParam.Value = inParam.Default
 		}
