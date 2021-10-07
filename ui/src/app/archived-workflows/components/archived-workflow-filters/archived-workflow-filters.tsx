@@ -15,12 +15,13 @@ interface ArchivedWorkflowFilterProps {
     workflows: models.Workflow[];
     namespace: string;
     name: string;
+    namePrefix: string;
     phaseItems: string[];
     selectedPhases: string[];
     selectedLabels: string[];
     minStartedAt?: Date;
     maxStartedAt?: Date;
-    onChange: (namespace: string, name: string, selectedPhases: string[], labels: string[], minStartedAt: Date, maxStartedAt: Date) => void;
+    onChange: (namespace: string, name: string, namePrefix: string, selectedPhases: string[], labels: string[], minStartedAt: Date, maxStartedAt: Date) => void;
 }
 
 interface State {
@@ -48,7 +49,15 @@ export class ArchivedWorkflowFilters extends React.Component<ArchivedWorkflowFil
                         <NamespaceFilter
                             value={this.props.namespace}
                             onChange={ns => {
-                                this.props.onChange(ns, this.props.name, this.props.selectedPhases, this.props.selectedLabels, this.props.minStartedAt, this.props.maxStartedAt);
+                                this.props.onChange(
+                                    ns,
+                                    this.props.name,
+                                    this.props.namePrefix,
+                                    this.props.selectedPhases,
+                                    this.props.selectedLabels,
+                                    this.props.minStartedAt,
+                                    this.props.maxStartedAt
+                                );
                             }}
                         />
                     </div>
@@ -61,6 +70,25 @@ export class ArchivedWorkflowFilters extends React.Component<ArchivedWorkflowFil
                                 this.props.onChange(
                                     this.props.namespace,
                                     wfname,
+                                    this.props.namePrefix,
+                                    this.props.selectedPhases,
+                                    this.props.selectedLabels,
+                                    this.props.minStartedAt,
+                                    this.props.maxStartedAt
+                                );
+                            }}
+                        />
+                    </div>
+                    <div className='columns small-2 xlarge-12'>
+                        <p className='wf-filters-container__title'>Name Prefix</p>
+                        <InputFilter
+                            value={this.props.namePrefix}
+                            name='wfnamePrefix'
+                            onChange={wfnamePrefix => {
+                                this.props.onChange(
+                                    this.props.namespace,
+                                    this.props.name,
+                                    wfnamePrefix,
                                     this.props.selectedPhases,
                                     this.props.selectedLabels,
                                     this.props.minStartedAt,
@@ -77,7 +105,15 @@ export class ArchivedWorkflowFilters extends React.Component<ArchivedWorkflowFil
                             sublistQuery={this.fetchArchivedWorkflowsLabels}
                             tags={this.props.selectedLabels}
                             onChange={tags => {
-                                this.props.onChange(this.props.namespace, this.props.name, this.props.selectedPhases, tags, this.props.minStartedAt, this.props.maxStartedAt);
+                                this.props.onChange(
+                                    this.props.namespace,
+                                    this.props.name,
+                                    this.props.namePrefix,
+                                    this.props.selectedPhases,
+                                    tags,
+                                    this.props.minStartedAt,
+                                    this.props.maxStartedAt
+                                );
                             }}
                         />
                     </div>
@@ -86,7 +122,15 @@ export class ArchivedWorkflowFilters extends React.Component<ArchivedWorkflowFil
                         <CheckboxFilter
                             selected={this.props.selectedPhases}
                             onChange={selected => {
-                                this.props.onChange(this.props.namespace, this.props.name, selected, this.props.selectedLabels, this.props.minStartedAt, this.props.maxStartedAt);
+                                this.props.onChange(
+                                    this.props.namespace,
+                                    this.props.name,
+                                    this.props.namePrefix,
+                                    selected,
+                                    this.props.selectedLabels,
+                                    this.props.minStartedAt,
+                                    this.props.maxStartedAt
+                                );
                             }}
                             items={this.getPhaseItems(this.props.workflows)}
                             type='phase'
@@ -97,7 +141,15 @@ export class ArchivedWorkflowFilters extends React.Component<ArchivedWorkflowFil
                         <DatePicker
                             selected={this.props.minStartedAt}
                             onChange={date => {
-                                this.props.onChange(this.props.namespace, this.props.name, this.props.selectedPhases, this.props.selectedLabels, date, this.props.maxStartedAt);
+                                this.props.onChange(
+                                    this.props.namespace,
+                                    this.props.name,
+                                    this.props.namePrefix,
+                                    this.props.selectedPhases,
+                                    this.props.selectedLabels,
+                                    date,
+                                    this.props.maxStartedAt
+                                );
                             }}
                             placeholderText='From'
                             dateFormat='dd MMM yyyy'
@@ -107,7 +159,15 @@ export class ArchivedWorkflowFilters extends React.Component<ArchivedWorkflowFil
                         <DatePicker
                             selected={this.props.maxStartedAt}
                             onChange={date => {
-                                this.props.onChange(this.props.namespace, this.props.name, this.props.selectedPhases, this.props.selectedLabels, this.props.minStartedAt, date);
+                                this.props.onChange(
+                                    this.props.namespace,
+                                    this.props.name,
+                                    this.props.namePrefix,
+                                    this.props.selectedPhases,
+                                    this.props.selectedLabels,
+                                    this.props.minStartedAt,
+                                    date
+                                );
                             }}
                             placeholderText='To'
                             dateFormat='dd MMM yyyy'
