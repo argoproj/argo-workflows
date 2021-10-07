@@ -136,13 +136,14 @@ jobs:
           tag_suffix=$(echo $PLATFORM | sed -r "s/\//-/g")
           image_name="${DOCKERIO_ORG}/${TARGET}:${tag}-${tag_suffix}"
 
-          docker buildx build \
-            --cache-from "type=local,src=/tmp/.buildx-cache" \
-            --cache-to "type=local,dest=/tmp/.buildx-cache" \
-            --output "type=image,push=true" \
-            --platform="${PLATFORM}" \
-            --target $TARGET \
-            --tag $image_name .
+          ## Codefresh - remove dockerhub
+          # docker buildx build \
+          #   --cache-from "type=local,src=/tmp/.buildx-cache" \
+          #   --cache-to "type=local,dest=/tmp/.buildx-cache" \
+          #   --output "type=image,push=true" \
+          #   --platform="${PLATFORM}" \
+          #   --target $TARGET \
+          #   --tag $image_name .
 
           docker buildx build \
             --cache-from "type=local,src=/tmp/.buildx-cache" \
@@ -230,7 +231,8 @@ jobs:
           for target in $targets; do
             image_name="${docker_org}/${target}:${tag}"
 
-            docker manifest create $image_name ${image_name}-linux-amd64
+            ## Codefresh - remove dockerhub
+            # docker manifest create $image_name ${image_name}-linux-amd64
             docker manifest create quay.io/$image_name quay.io/${image_name}-linux-amd64
 
             ## Codefresh - remove dockerhub
@@ -276,10 +278,12 @@ jobs:
             image_name="${docker_org}/${target}:${tag}"
 
             if [ $target = "argoexec" ]; then
-              docker manifest create $image_name ${image_name}-linux-arm64 ${image_name}-linux-amd64 ${image_name}-windows
+              ## Codefresh - remove dockerhub
+              # docker manifest create $image_name ${image_name}-linux-arm64 ${image_name}-linux-amd64 ${image_name}-windows
               docker manifest create quay.io/$image_name quay.io/${image_name}-linux-arm64 quay.io/${image_name}-linux-amd64 quay.io/${image_name}-windows
             else
-              docker manifest create $image_name ${image_name}-linux-arm64 ${image_name}-linux-amd64
+              ## Codefresh - remove dockerhub
+              # docker manifest create $image_name ${image_name}-linux-arm64 ${image_name}-linux-amd64
               docker manifest create quay.io/$image_name quay.io/${image_name}-linux-arm64 quay.io/${image_name}-linux-amd64
             fi
 
