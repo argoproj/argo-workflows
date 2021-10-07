@@ -64,13 +64,14 @@ jobs:
           tag_suffix=$(echo $PLATFORM | sed -r "s/\//-/g")
           image_name="${DOCKERIO_ORG}/${TARGET}:${tag}-${tag_suffix}"
 
-          docker buildx build \
-            --cache-from "type=local,src=/tmp/.buildx-cache" \
-            --cache-to "type=local,dest=/tmp/.buildx-cache" \
-            --output "type=image,push=true" \
-            --platform="${PLATFORM}" \
-            --target $TARGET \
-            --tag $image_name .
+          ## Codefresh - remove dockerhub
+          # docker buildx build \
+          #   --cache-from "type=local,src=/tmp/.buildx-cache" \
+          #   --cache-to "type=local,dest=/tmp/.buildx-cache" \
+          #   --output "type=image,push=true" \
+          #   --platform="${PLATFORM}" \
+          #   --target $TARGET \
+          #   --tag $image_name .
 
           docker buildx build \
             --cache-from "type=local,src=/tmp/.buildx-cache" \
