@@ -700,7 +700,7 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 }
 
 func isResourcesSpecified(ctr *apiv1.Container) bool {
-	return ctr != nil && len(ctr.Resources.Limits) != 0
+	return ctr != nil && (len(ctr.Resources.Limits) != 0 || len(ctr.Resources.Requests) != 0)
 }
 
 // addMetadata applies metadata specified in the template
