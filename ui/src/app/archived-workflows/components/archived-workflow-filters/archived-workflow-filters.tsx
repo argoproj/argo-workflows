@@ -105,7 +105,15 @@ export class ArchivedWorkflowFilters extends React.Component<ArchivedWorkflowFil
                             sublistQuery={this.fetchArchivedWorkflowsLabels}
                             tags={this.props.selectedLabels}
                             onChange={tags => {
-                                this.props.onChange(this.props.namespace, this.props.name, this.props.namePrefix, this.props.selectedPhases, tags, this.props.minStartedAt, this.props.maxStartedAt);
+                                this.props.onChange(
+                                    this.props.namespace,
+                                    this.props.name,
+                                    this.props.namePrefix,
+                                    this.props.selectedPhases,
+                                    tags,
+                                    this.props.minStartedAt,
+                                    this.props.maxStartedAt
+                                );
                             }}
                         />
                     </div>

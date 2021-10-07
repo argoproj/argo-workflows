@@ -22,7 +22,7 @@ import {ArchivedWorkflowFilters} from '../archived-workflow-filters/archived-wor
 interface State {
     pagination: Pagination;
     namespace: string;
-    name: string
+    name: string;
     namePrefix: string;
     selectedPhases: string[];
     selectedLabels: string[];
@@ -96,7 +96,9 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                                 minStartedAt={this.state.minStartedAt}
                                 maxStartedAt={this.state.maxStartedAt}
                                 onChange={(namespace, name, namePrefix, selectedPhases, selectedLabels, minStartedAt, maxStartedAt) =>
-                                    this.changeFilters(namespace, name, namePrefix, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, {limit: this.state.pagination.limit})
+                                    this.changeFilters(namespace, name, namePrefix, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, {
+                                        limit: this.state.pagination.limit
+                                    })
                                 }
                             />
                         </div>
