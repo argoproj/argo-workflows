@@ -282,7 +282,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                             checked={this.state.archivedWorkflows}
                             onChange={checked => {
                                 this.fetchReport(this.state.namespace, this.state.labels, checked);
-                                this.fetchWorkflowsLabels(this.state.archivedWorkflows);
+                                this.fetchWorkflowsLabels(checked);
                             }}
                         />
                     </div>
