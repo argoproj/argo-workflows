@@ -7,6 +7,10 @@ data:
         memory: 64Mi
   containerRuntimeExecutor: emissary
   containerRuntimeExecutors: |
+    - name: emissary
+      selector:
+        matchLabels:
+          workflows.argoproj.io/container-runtime-executor: emissary
     - name: pns
       selector:
         matchLabels:
@@ -15,10 +19,6 @@ data:
       selector:
         matchLabels:
           workflows.argoproj.io/container-runtime-executor: k8sapi
-    - name: kubelet
-      selector:
-        matchLabels:
-          workflows.argoproj.io/container-runtime-executor: kubelet
   images: |
     argoproj/argosay:v1:
       command: [cowsay]

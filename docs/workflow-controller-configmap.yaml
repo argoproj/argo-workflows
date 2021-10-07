@@ -156,6 +156,14 @@ data:
   # The list is in order of precedence; the first matching executor is used.
   # This has precedence over `containerRuntimeExecutor`.
   containerRuntimeExecutors: |
+    - name: emissary
+      selector:
+        matchLabels:
+          workflows.argoproj.io/container-runtime-executor: emissary
+    - name: pns
+      selector:
+        matchLabels:
+          workflows.argoproj.io/container-runtime-executor: pns
     - name: k8sapi
       selector:
         matchLabels:
