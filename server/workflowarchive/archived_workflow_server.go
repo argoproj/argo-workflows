@@ -32,6 +32,7 @@ func NewWorkflowArchiveServer(wfArchive sqldb.WorkflowArchive) workflowarchivepk
 
 func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req *workflowarchivepkg.ListArchivedWorkflowsRequest) (*wfv1.WorkflowList, error) {
 	options := req.ListOptions
+	namePrefix := req.NamePrefix
 	if options == nil {
 		options = &metav1.ListOptions{}
 	}
@@ -98,7 +99,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 		limitWithMore = limit + 1
 	}
 
-	items, err := w.wfArchive.ListWorkflows(namespace, name, minStartedAt, maxStartedAt, requirements, limitWithMore, offset)
+	items, err := w.wfArchive.ListWorkflows(namespace, name, namePrefix, minStartedAt, maxStartedAt, requirements, limitWithMore, offset)
 	if err != nil {
 		return nil, err
 	}
