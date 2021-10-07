@@ -46,7 +46,7 @@ type Config struct {
 	// KubeConfig specifies a kube config file for the wait & init containers
 	KubeConfig *KubeConfig `json:"kubeConfig,omitempty"`
 
-	// ContainerRuntimeExecutor specifies the container runtime interface to use, default is docker
+	// ContainerRuntimeExecutor specifies the container runtime interface to use, default is emissary
 	ContainerRuntimeExecutor string `json:"containerRuntimeExecutor,omitempty"`
 
 	ContainerRuntimeExecutors ContainerRuntimeExecutors `json:"containerRuntimeExecutors,omitempty"`
