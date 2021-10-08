@@ -1,3 +1,4 @@
+//go:build executor
 // +build executor
 
 package e2e
