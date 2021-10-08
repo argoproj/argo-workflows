@@ -2030,73 +2030,11 @@
     Pre-requisites
   </a>
   
-    <nav class="md-nav">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-set-up-a-local-cluster" title="1. Set up a local cluster" class="md-nav__link">
-    1. Set up a local cluster
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-set-up-local-service-aliases" title="2. Set up local service aliases" class="md-nav__link">
-    2. Set up local service aliases
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-install-argo-and-start-the-controller" title="3. Install Argo and start the controller" class="md-nav__link">
-    3. Install Argo and start the controller
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-optional-set-up-a-db-for-the-workflow-archive" title="4. (Optional) Set up a DB for the Workflow archive" class="md-nav__link">
-    4. (Optional) Set up a DB for the Workflow archive
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#5-check-out-the-argo-services-running-locally" title="5. Check out the Argo services running locally" class="md-nav__link">
-    5. Check out the Argo services running locally
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#6-build-argo-images" title="6. Build Argo images" class="md-nav__link">
-    6. Build Argo images
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#7-sso-with-dex" title="7. SSO with Dex" class="md-nav__link">
-    7. SSO with Dex
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
   <a href="#troubleshooting-notes" title="Troubleshooting Notes" class="md-nav__link">
     Troubleshooting Notes
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#clean" title="Clean" class="md-nav__link">
-    Clean
   </a>
   
 </li>
@@ -2274,73 +2212,11 @@
     Pre-requisites
   </a>
   
-    <nav class="md-nav">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-set-up-a-local-cluster" title="1. Set up a local cluster" class="md-nav__link">
-    1. Set up a local cluster
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-set-up-local-service-aliases" title="2. Set up local service aliases" class="md-nav__link">
-    2. Set up local service aliases
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-install-argo-and-start-the-controller" title="3. Install Argo and start the controller" class="md-nav__link">
-    3. Install Argo and start the controller
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-optional-set-up-a-db-for-the-workflow-archive" title="4. (Optional) Set up a DB for the Workflow archive" class="md-nav__link">
-    4. (Optional) Set up a DB for the Workflow archive
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#5-check-out-the-argo-services-running-locally" title="5. Check out the Argo services running locally" class="md-nav__link">
-    5. Check out the Argo services running locally
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#6-build-argo-images" title="6. Build Argo images" class="md-nav__link">
-    6. Build Argo images
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#7-sso-with-dex" title="7. SSO with Dex" class="md-nav__link">
-    7. SSO with Dex
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
   <a href="#troubleshooting-notes" title="Troubleshooting Notes" class="md-nav__link">
     Troubleshooting Notes
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#clean" title="Clean" class="md-nav__link">
-    Clean
   </a>
   
 </li>
@@ -2367,20 +2243,22 @@
                 <h1 id="running-locally">Running Locally<a class="headerlink" href="#running-locally" title="Permanent link">&para;</a></h1>
 <h2 id="pre-requisites">Pre-requisites<a class="headerlink" href="#pre-requisites" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="https://golang.org/dl/">Go</a> (The project currently uses version 1.15)</li>
+<li><a href="https://golang.org/dl/">Go 1.16</a> </li>
 <li><a href="https://classic.yarnpkg.com/en/docs/install/#mac-stable">Yarn</a></li>
 <li><a href="https://docs.docker.com/get-docker/">Docker</a></li>
-<li><a href="http://google.github.io/proto-lens/installing-protoc.html">protoc</a> <code>brew install protobuf</code></li>
+<li><a href="http://google.github.io/proto-lens/installing-protoc.html">protoc</a> </li>
 <li><a href="https://stedolan.github.io/jq/download/"><code>jq</code></a></li>
 <li>A local Kubernetes cluster</li>
 </ul>
-<h3 id="1-set-up-a-local-cluster">1. Set up a local cluster<a class="headerlink" href="#1-set-up-a-local-cluster" title="Permanent link">&para;</a></h3>
-<p>We recommend using <a href="https://k3d.io/">K3D</a> to set up the local Kubernetes cluster since this will allow you to test RBAC set-up and is fast. You can set-up K3D to be part of your default kube config as follows:</p>
+<p>Code must be checked out into <code>$(GOPATH)/src/github.com/argo-workflows</code>.</p>
+<p>We recommend using <a href="https://k3d.io/">K3D</a> to set up the local Kubernetes cluster since this will allow you to test RBAC
+set-up and is fast. You can set-up K3D to be part of your default kube config as follows:</p>
 <div class="codehilite"><pre><span></span><code><span class="nv">k3d</span> <span class="nv">cluster</span> <span class="nv">start</span> <span class="o">--</span><span class="k">wait</span>
 </code></pre></div>
 
-<p>Alternatively, you can use <a href="https://github.com/kubernetes/minikube">Minikube</a> to set up the local Kubernetes cluster. Once a local Kubernetes cluster has started via <code>minikube start</code>, your kube config will use Minikube's context automatically.</p>
-<h3 id="2-set-up-local-service-aliases">2. Set up local service aliases<a class="headerlink" href="#2-set-up-local-service-aliases" title="Permanent link">&para;</a></h3>
+<p>Alternatively, you can use <a href="https://github.com/kubernetes/minikube">Minikube</a> to set up the local Kubernetes cluster.
+Once a local Kubernetes cluster has started via <code>minikube start</code>, your kube config will use Minikube's context
+automatically.</p>
 <p>Add to /etc/hosts:</p>
 <div class="codehilite"><pre><span></span><code><span class="mf">127.0.0.1</span> <span class="n">dex</span>
 <span class="mf">127.0.0.1</span> <span class="n">minio</span>
@@ -2388,54 +2266,57 @@
 <span class="mf">127.0.0.1</span> <span class="n">mysql</span>
 </code></pre></div>
 
-<h3 id="3-install-argo-and-start-the-controller">3. Install Argo and start the controller<a class="headerlink" href="#3-install-argo-and-start-the-controller" title="Permanent link">&para;</a></h3>
 <p>To install into the “argo” namespace of your cluster: Argo and MinIO (for saving artifacts and logs):</p>
 <div class="codehilite"><pre><span></span><code>make start
 </code></pre></div>
 
-<h3 id="4-optional-set-up-a-db-for-the-workflow-archive">4. (Optional) Set up a DB for the Workflow archive<a class="headerlink" href="#4-optional-set-up-a-db-for-the-workflow-archive" title="Permanent link">&para;</a></h3>
+<p>If you want the UI:</p>
+<div class="codehilite"><pre><span></span><code>make start UI=true
+</code></pre></div>
+
 <p>If you want MySQL for the workflow archive:</p>
 <div class="codehilite"><pre><span></span><code>make start PROFILE=mysql
 </code></pre></div>
 
-<h3 id="5-check-out-the-argo-services-running-locally">5. Check out the Argo services running locally<a class="headerlink" href="#5-check-out-the-argo-services-running-locally" title="Permanent link">&para;</a></h3>
-<p>You’ll now have</p>
-<ul>
-<li>Argo Server API on https://localhost:2746</li>
-<li>UI on http://localhost:8080</li>
-<li>MinIO  http://localhost:9000 (use admin/password)</li>
-</ul>
-<p>Either:</p>
-<ul>
-<li>Postgres on  http://localhost:5432, run <code>make postgres-cli</code> to access.</li>
-<li>MySQL on  http://localhost:3306, run <code>make mysql-cli</code> to access.</li>
-</ul>
-<p>At this point you’ll have everything you need to use the CLI and UI.</p>
-<h3 id="6-build-argo-images">6. Build Argo images<a class="headerlink" href="#6-build-argo-images" title="Permanent link">&para;</a></h3>
-<p>Before submitting/running workflows, build all Argo images, so they're available for the workflow.</p>
-<div class="codehilite"><pre><span></span><code>make build
+<p>For testing SSO integration, you can start a Argo with sso profile which will deploy a pre-configured dex instance in
+argo namespace</p>
+<div class="codehilite"><pre><span></span><code>make start PROFILE=sso
 </code></pre></div>
 
-<h3 id="7-sso-with-dex">7. SSO with Dex<a class="headerlink" href="#7-sso-with-dex" title="Permanent link">&para;</a></h3>
-<p>For testing SSO integration, you can start a Argo with sso profile which will deploy
-a pre-configured dex instance in argo namespace</p>
-<div class="highlight"><pre><span></span><code>make start <span class="nv">PROFILE</span><span class="o">=</span>sso
+<p>You’ll now have:</p>
+<ul>
+<li>MinIO on http://localhost:9000 (use admin/password)</li>
+<li>Argo Server API on https://localhost:2746</li>
+<li>UI on http://localhost:8080</li>
+<li>Postgres on http://localhost:5432, run <code>make postgres-cli</code> to access.</li>
+<li>MySQL on http://localhost:3306, run <code>make mysql-cli</code> to access.</li>
+</ul>
+<p>Before submitting/running workflows, build all the executor image:</p>
+<div class="codehilite"><pre><span></span><code>make argoexec-image
 </code></pre></div>
+
+<p>Before you commit, run:</p>
+<div class="codehilite"><pre><span></span><code>make pre-commit -B
+</code></pre></div>
+
+<p>Commits</p>
+<ul>
+<li>Sign-off your commits.</li>
+<li>Use <a href="https://www.conventionalcommits.org/en/v1.0.0/">Conventional Commit messages</a>.</li>
+<li>Suffix the issue number.</li>
+</ul>
+<p>Example:</p>
+<div class="codehilite"><pre><span></span><code>git commit --signoff -m &#39;fix: Fixed broken thing. Fixes #1234&#39;
+</code></pre></div>
+
 <h2 id="troubleshooting-notes">Troubleshooting Notes<a class="headerlink" href="#troubleshooting-notes" title="Permanent link">&para;</a></h2>
 <ul>
-<li>
-<p>If you get a similar error when running one of the make pre-commit tests <code>make: *** [pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json] Error 1</code>, ensure you are working within your $GOPATH (YOUR-GOPATH/src/github.com/argoproj/argo-workflows).</p>
-</li>
-<li>
-<p>If you encounter out of heap issues when building UI through Docker, please validate resources allocated to Docker. Compilation may fail if allocated RAM is less than 4Gi</p>
-</li>
+<li>If you get a similar error when running one of the make pre-commit
+  tests <code>make: *** [pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json] Error 1</code>, ensure you
+  are working within your $GOPATH (YOUR-GOPATH/src/github.com/argoproj/argo-workflows).</li>
+<li>If you encounter out of heap issues when building UI through Docker, please validate resources allocated to Docker.
+  Compilation may fail if allocated RAM is less than 4Gi</li>
 </ul>
-<h2 id="clean">Clean<a class="headerlink" href="#clean" title="Permanent link">&para;</a></h2>
-<p>To clean-up everything:</p>
-<div class="codehilite"><pre><span></span><code>make clean
-kubectl delete ns argo
-docker system prune -af
-</code></pre></div>
                 
                   
                 
