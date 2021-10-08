@@ -86,26 +86,20 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     title: workflowOperation.title.charAt(0).toUpperCase() + workflowOperation.title.slice(1),
                     iconClassName: workflowOperation.iconClassName,
                     action: () => {
-                        popup
-                            .confirm(
-                                'Confirm',
-                                `Are you sure you want to ${workflowOperation.title.toLowerCase()} this workflow
-                        ${workflowOperation.title === 'RESUME' && nodeId ? 'on node ' + nodeId : ''}?`
-                            )
-                            .then(yes => {
-                                if (yes) {
-                                    workflowOperation
-                                        .action(workflow, nodeId ? 'id=' + nodeId : null)
-                                        .then((wf: Workflow) => {
-                                            if (workflowOperation.title === 'DELETE') {
-                                                navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}`));
-                                            } else {
-                                                setName(wf.metadata.name);
-                                            }
-                                        })
-                                        .catch(setError);
-                                }
-                            });
+                        popup.confirm('Confirm', `Are you sure you want to ${workflowOperation.title.toLowerCase()} this workflow?`).then(yes => {
+                            if (yes) {
+                                workflowOperation
+                                    .action(workflow)
+                                    .then((wf: Workflow) => {
+                                        if (workflowOperation.title === 'DELETE') {
+                                            navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}`));
+                                        } else {
+                                            setName(wf.metadata.name);
+                                        }
+                                    })
+                                    .catch(setError);
+                            }
+                        });
                     }
                 };
             });
@@ -230,6 +224,14 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         }
     };
 
+    const renderResumePopup = () => {
+        return popup.confirm('Confirm', `Are you sure you want to resume node: ${nodeId}?`).then(yes => {
+            if (yes) {
+                services.workflows.resume(workflow.metadata.name, workflow.metadata.namespace, 'id=' + nodeId).catch(setError);
+            }
+        });
+    };
+
     const selectedNode = workflow && workflow.status && workflow.status.nodes && workflow.status.nodes[nodeId];
     return (
         <Page
@@ -289,6 +291,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                                         onShowEvents={() => setSidePanel(`events:${nodeId}`)}
                                         onShowYaml={() => setSidePanel(`yaml:${nodeId}`)}
                                         archived={false}
+                                        onResume={() => renderResumePopup()}
                                     />
                                 )}
                             </div>

@@ -16,7 +16,7 @@ export interface WorkflowOperation {
     disabled: (wf: Workflow) => boolean;
 }
 
-export type WorkflowOperationAction = (wf: Workflow, nodeFieldSelector: string) => Promise<Workflow | WorkflowDeleteResponse>;
+export type WorkflowOperationAction = (wf: Workflow) => Promise<Workflow | WorkflowDeleteResponse>;
 
 export interface WorkflowOperations {
     [name: string]: WorkflowOperation;
@@ -48,7 +48,7 @@ export const WorkflowOperationsMap: WorkflowOperations = {
         title: 'RESUME',
         iconClassName: 'fa fa-play',
         disabled: (wf: Workflow) => !Utils.isWorkflowSuspended(wf),
-        action: (wf: Workflow, nodeFieldSelector: string) => services.workflows.resume(wf.metadata.name, wf.metadata.namespace, nodeFieldSelector)
+        action: (wf: Workflow) => services.workflows.resume(wf.metadata.name, wf.metadata.namespace, null)
     },
     STOP: {
         title: 'STOP',
