@@ -105,12 +105,6 @@ SWAGGER_FILES := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json
 PROTO_BINARIES := $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/protoc-gen-gogofast $(GOPATH)/bin/goimports $(GOPATH)/bin/protoc-gen-grpc-gateway $(GOPATH)/bin/protoc-gen-swagger
 
-# go_install,path
-define go_install
-	go mod vendor
-	go install -mod=vendor ./vendor/$(1)
-endef
-
 # protoc,my.proto
 define protoc
 	# protoc $(1)
@@ -268,42 +262,34 @@ docs: \
 
 $(GOPATH)/bin/mockery:
 	go install github.com/vektra/mockery/v2@v2.9.4
-
 $(GOPATH)/bin/controller-gen:
-	$(call go_install,sigs.k8s.io/controller-tools/cmd/controller-gen)
-
+	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1
 $(GOPATH)/bin/go-to-protobuf:
-	$(call go_install,k8s.io/code-generator/cmd/go-to-protobuf)
-
+	go install k8s.io/code-generator/cmd/go-to-protobuf@v0.20.4
+$(GOPATH)/src/github.com/gogo/protobuf:
+	[ -e $(GOPATH)/src/github.com/gogo/protobuf ] || git clone --depth 1 https://github.com/gogo/protobuf.git -b v1.3.2 $(GOPATH)/src/github.com/gogo/protobuf
 $(GOPATH)/bin/protoc-gen-gogo:
-	$(call go_install,github.com/gogo/protobuf/protoc-gen-gogo)
-
+	go install github.com/gogo/protobuf/protoc-gen-gogo@v1.3.2
 $(GOPATH)/bin/protoc-gen-gogofast:
-	$(call go_install,github.com/gogo/protobuf/protoc-gen-gogofast)
-
+	go install github.com/gogo/protobuf/protoc-gen-gogofast@v1.3.2
 $(GOPATH)/bin/protoc-gen-grpc-gateway:
-	$(call go_install,github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway)
-
+	go install github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway@v1.16.0
 $(GOPATH)/bin/protoc-gen-swagger:
-	$(call go_install,github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger)
-
+	go install github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v1.16.0
 $(GOPATH)/bin/openapi-gen:
-	$(call go_install,k8s.io/kube-openapi/cmd/openapi-gen)
-
+	go install k8s.io/kube-openapi/cmd/openapi-gen@v0.0.0-20210305001622-591a79e4bda7
 $(GOPATH)/bin/swagger:
-	$(call go_install,github.com/go-swagger/go-swagger/cmd/swagger)
-
+	go install github.com/go-swagger/go-swagger/cmd/swagger@v0.25.0
 $(GOPATH)/bin/goimports:
-	$(call go_install,golang.org/x/tools/cmd/goimports)
+	go install golang.org/x/tools/cmd/goimports@v0.1.6
 
-pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(PROTO_BINARIES) $(TYPES)
-	[ -e ./vendor ] || go mod vendor
+pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(PROTO_BINARIES) $(TYPES) $(GOPATH)/src/github.com/gogo/protobuf
 	[ -e ./v3 ] || ln -s . v3
 	$(GOPATH)/bin/go-to-protobuf \
 		--go-header-file=./hack/custom-boilerplate.go.txt \
 		--packages=github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
 		--apimachinery-packages=+k8s.io/apimachinery/pkg/util/intstr,+k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime/schema,+k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/api/core/v1,k8s.io/api/policy/v1beta1 \
-		--proto-import $(CURDIR)/vendor
+		--proto-import $(GOPATH)/src
 	touch pkg/apis/workflow/v1alpha1/generated.proto
 	[ -e ./v3 ] && rm -rf v3
 
@@ -563,7 +549,7 @@ validate-examples: api/jsonschema/schema.json
 # pre-push
 
 .PHONY: pre-commit
-pre-commit: codegen lint test start
+pre-commit: codegen lint
 
 ifeq ($(GIT_BRANCH),master)
 LOG_OPTS := '-n10'

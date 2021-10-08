@@ -37,6 +37,23 @@ RUN go mod download
 
 COPY . .
 
+FROM builder AS make
+# python
+RUN apt update
+# kubectl: apt's version does not support --load_restrictor
+RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+RUN cp kubectl /usr/local/bin
+RUN chmod +x /usr/local/bin/kubectl
+# squash warnings
+RUN kubectl config set-context none
+RUN kubectl config use-context none
+# protoc
+RUN apt install -y protobuf-compiler
+# `make pre-commit` will install remaining tools
+ADD . /root/go/src/github.com/argoproj/argo-workflows
+WORKDIR /root/go/src/github.com/argoproj/argo-workflows
+RUN make pre-commit
+
 ####################################################################################################
 
 FROM alpine:3 as argoexec-base
