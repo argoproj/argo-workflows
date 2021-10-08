@@ -9,11 +9,7 @@
 * [`jq`](https://stedolan.github.io/jq/download/)
 * A local Kubernetes cluster
 
-**Checkout**
-
 Code must be checked out into `$(GOPATH)/src/github.com/argo-workflows`.
-
-**Set up a local cluster**
 
 We recommend using [K3D](https://k3d.io/) to set up the local Kubernetes cluster since this will allow you to test RBAC
 set-up and is fast. You can set-up K3D to be part of your default kube config as follows:
@@ -24,8 +20,6 @@ Alternatively, you can use [Minikube](https://github.com/kubernetes/minikube) to
 Once a local Kubernetes cluster has started via `minikube start`, your kube config will use Minikube's context
 automatically.
 
-**Set up local service aliases**
-
 Add to /etc/hosts:
 
     127.0.0.1 dex
@@ -33,11 +27,10 @@ Add to /etc/hosts:
     127.0.0.1 postgres
     127.0.0.1 mysql
 
-**Start**
-
 To install into the “argo” namespace of your cluster: Argo and MinIO (for saving artifacts and logs):
 
     make start
+
 If you want the UI:
 
     make start UI=true
@@ -53,7 +46,7 @@ argo namespace
 
 You’ll now have:
 
-* MinIO  http://localhost:9000 (use admin/password)
+* MinIO on http://localhost:9000 (use admin/password)
 * Argo Server API on https://localhost:2746
 * UI on http://localhost:8080
 * Postgres on http://localhost:5432, run `make postgres-cli` to access.
@@ -63,25 +56,19 @@ Before submitting/running workflows, build all the executor image:
 
     make argoexec-image
 
-**Pre-commit check**
-
-Run this before you commit.
+Before you commit, run:
 
     make pre-commit -B
 
-**Commits**
-
-You must:
+Commits
 
 * Sign-off your commits.
 * Use [Conventional Commit messages](https://www.conventionalcommits.org/en/v1.0.0/).
-* The message must suffix the issue number.
+* Suffix the issue number.
 
 Example:
 
-```bash
-git commit --signoff -m 'fix: Fixed broken thing. Fixes #1234'
-```
+    git commit --signoff -m 'fix: Fixed broken thing. Fixes #1234'
 
 ## Troubleshooting Notes
 

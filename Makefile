@@ -265,7 +265,7 @@ $(GOPATH)/bin/mockery:
 $(GOPATH)/bin/controller-gen:
 	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1
 $(GOPATH)/bin/go-to-protobuf:
-	go install k8s.io/code-generator/cmd/go-to-protobuf@v0.20.4
+	go install k8s.io/code-generator/cmd/go-to-protobuf@v0.21.5
 $(GOPATH)/src/github.com/gogo/protobuf:
 	[ -e $(GOPATH)/src/github.com/gogo/protobuf ] || git clone --depth 1 https://github.com/gogo/protobuf.git -b v1.3.2 $(GOPATH)/src/github.com/gogo/protobuf
 $(GOPATH)/bin/protoc-gen-gogo:
