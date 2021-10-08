@@ -115,7 +115,7 @@ export class WorkflowsService {
     public resume(name: string, namespace: string, nodeFieldSelector: string) {
         return requests
             .put(`api/v1/workflows/${namespace}/${name}/resume`)
-            .send({NodeFieldSelector: nodeFieldSelector})
+            .send({nodeFieldSelector})
             .then(res => res.body as Workflow);
     }
 
