@@ -1,3 +1,4 @@
+//go:build api
 // +build api
 
 package e2e
