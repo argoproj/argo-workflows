@@ -15,10 +15,6 @@ data:
       selector:
         matchLabels:
           workflows.argoproj.io/container-runtime-executor: pns
-    - name: k8sapi
-      selector:
-        matchLabels:
-          workflows.argoproj.io/container-runtime-executor: k8sapi
   images: |
     argoproj/argosay:v1:
       command: [cowsay]

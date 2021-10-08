@@ -164,10 +164,6 @@ data:
       selector:
         matchLabels:
           workflows.argoproj.io/container-runtime-executor: pns
-    - name: k8sapi
-      selector:
-        matchLabels:
-          workflows.argoproj.io/container-runtime-executor: k8sapi
 
   # Specifies the location of docker.sock on the host for docker executor (default: /var/run/docker.sock)
   # (available since Argo v2.4)

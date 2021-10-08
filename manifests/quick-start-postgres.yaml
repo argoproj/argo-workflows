@@ -693,10 +693,6 @@ data:
       selector:
         matchLabels:
           workflows.argoproj.io/container-runtime-executor: pns
-    - name: k8sapi
-      selector:
-        matchLabels:
-          workflows.argoproj.io/container-runtime-executor: k8sapi
   executor: |
     resources:
       requests:
