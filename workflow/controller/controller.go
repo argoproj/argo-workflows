@@ -324,9 +324,9 @@ func (wfc *WorkflowController) startLeading(ctx context.Context, logCtx *log.Ent
 		cacheGCPeriod, err := time.ParseDuration(v)
 		if err != nil {
 			log.WithField("CACHE_GC_PERIOD", v).WithError(err).Panic("failed to parse")
-		} else {
-			go wait.UntilWithContext(ctx, wfc.syncAllCacheForGC, cacheGCPeriod)
-		}
+			return 
+		} 
+		go wait.UntilWithContext(ctx, wfc.syncAllCacheForGC, cacheGCPeriod)
 	}
 }
 
@@ -804,8 +804,7 @@ func (wfc *WorkflowController) syncAllCacheForGC(ctx context.Context) {
 					log.Error("Unable to convert object to configmap when syncing ConfigMaps")
 					continue
 				}
-				err := wfc.cleanupUnusedCache(cm, gcAfterNotHitDuration)
-				if err != nil {
+				if err := wfc.cleanupUnusedCache(cm, gcAfterNotHitDuration); err != nil {
 					wfc.eventRecorderManager.Get(cm.GetNamespace()).Event(cm, apiv1.EventTypeWarning, "SyncFailed", err.Error())
 					log.WithError(err).Errorf("Unable to sync ConfigMap: %s", cm.Name)
 					continue
@@ -822,8 +821,7 @@ func (wfc *WorkflowController) cleanupUnusedCache(cm *apiv1.ConfigMap, gcAfterNo
 	var modified bool
 	for key, rawEntry := range cm.Data {
 		var entry controllercache.Entry
-		err := json.Unmarshal([]byte(rawEntry), &entry)
-		if err != nil {
+		if err := json.Unmarshal([]byte(rawEntry), &entry); err != nil {
 			return fmt.Errorf("malformed cache entry: could not unmarshal JSON; unable to parse: %w", err)
 		}
 		if time.Since(entry.LastHitTimestamp.Time) > gcAfterNotHitDuration {
