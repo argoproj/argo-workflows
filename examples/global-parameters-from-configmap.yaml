@@ -7,6 +7,8 @@ metadata:
   annotations:
     workflows.argoproj.io/description: |
       This example demonstrates loading global parameter values from configmap.
+      Note that the "simple-parameters" ConfigMap (defined in examples/configmaps/simple-parameters-configmap.yaml)
+      needs to be created first before submitting this workflow.
     workflows.argoproj.io/verify.py: |
       assert status["phase"] == "Succeeded"
 spec:
