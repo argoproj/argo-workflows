@@ -3519,7 +3519,6 @@ func getEvents(controller *WorkflowController, num int) []string {
 }
 
 func TestGetPodByNode(t *testing.T) {
-	t.Skip("See https://github.com/argoproj/argo-workflows/issues/6458")
 	workflowText := `
 metadata:
   name: dag-events
