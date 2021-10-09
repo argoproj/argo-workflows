@@ -54,7 +54,7 @@ func (i *Item) GetType() Type {
 	// any Map can be unmarshalled without error, so we must check outputs not empty
 	var outputs Outputs
 	if err := json.Unmarshal(i.Value, &outputs); err == nil && (len(outputs.Parameters) > 0 ||
-		len(outputs.Parameters) > 0 || outputs.Result != nil || outputs.ExitCode != nil){
+		len(outputs.Parameters) > 0 || outputs.Result != nil || outputs.ExitCode != nil) {
 		return OutputsType
 	}
 	var list []interface{}

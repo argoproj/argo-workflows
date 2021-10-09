@@ -18,6 +18,8 @@ func TestItem(t *testing.T) {
 		"\"hell%test%o\"":                 String,
 		"{\"val\":\"123\"}":               Map,
 		"[\"1\",\"2\",\"3\",\"4\",\"5\"]": List,
+		"{\"name\":\"test\",\"path\":\"/tmp/path\"}":                 ArtifactType,
+		"{\"parameters\":[{\"name\":\"test\",\"value\":\"value\"}]}": OutputsType,
 	} {
 		t.Run(fmt.Sprintf("%v", expectedType), func(t *testing.T) {
 			t.Run("Item", func(t *testing.T) {
@@ -62,6 +64,20 @@ func TestItem_GetStrVal(t *testing.T) {
 	MustUnmarshal([]byte(`"foo"`), &item)
 	val := item.GetStrVal()
 	assert.Equal(t, "foo", val)
+}
+
+func TestItem_GetArtifactVal(t *testing.T) {
+	item := Item{}
+	MustUnmarshal([]byte(`{"name": "test", "path": "/tmp/path"}`), &item)
+	val := item.GetArtifactVal()
+	assert.Equal(t, Artifact{Name: "test", Path: "/tmp/path"}, val)
+}
+
+func TestItem_GetOutputsVal(t *testing.T) {
+	item := Item{}
+	MustUnmarshal([]byte(`{"parameters": [{"name": "test", "value":"value"}]}`), &item)
+	val := item.GetOutputsVal()
+	assert.Equal(t, Outputs{Parameters: []Parameter{{Name: "test", Value: AnyStringPtr("value")}}}, val)
 }
 
 var testItemStringTable = []struct {
