@@ -2404,10 +2404,8 @@ func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
 			return []string{node.ID}
 		}
 
-		// If this pod comes from a container set, it should be treated as a container or task group
+		// If this pod comes from a container set, it should be treated as a container
 		fallthrough
-	case wfv1.NodeTypeTaskGroup:
-		return node.OutboundNodes
 	case wfv1.NodeTypeContainer:
 		if len(node.Children) == 0 {
 			return []string{node.ID}
@@ -2417,6 +2415,8 @@ func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
 			outboundNodes = append(outboundNodes, woc.getOutboundNodes(child)...)
 		}
 		return outboundNodes
+	case wfv1.NodeTypeTaskGroup:
+		return node.OutboundNodes
 	case wfv1.NodeTypeRetry:
 		numChildren := len(node.Children)
 		if numChildren > 0 {
