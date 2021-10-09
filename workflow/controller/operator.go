@@ -2469,17 +2469,20 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 	return &outputs, nil
 }
 
-func generateOutputResultRegex(name string, parentTmpl *wfv1.Template) (string, string) {
+func generateOutputResultRegex(name string, parentTmpl *wfv1.Template) (string, string, string) {
 	referenceRegex := fmt.Sprintf(`\.%s\.outputs\.result`, name)
 	expressionRegex := fmt.Sprintf(`\[['\"]%s['\"]\]\.outputs.result`, name)
+	withParamRegex := fmt.Sprintf(`\.%s\.outputs`, name)
 	if parentTmpl.DAG != nil {
 		referenceRegex = "tasks" + referenceRegex
 		expressionRegex = "tasks" + expressionRegex
+		withParamRegex = "tasks" + withParamRegex
 	} else if parentTmpl.Steps != nil {
 		referenceRegex = "steps" + referenceRegex
 		expressionRegex = "steps" + expressionRegex
+		withParamRegex = "steps" + withParamRegex
 	}
-	return referenceRegex, expressionRegex
+	return referenceRegex, expressionRegex, withParamRegex
 }
 
 // hasOutputResultRef will check given template output has any reference
@@ -2491,7 +2494,7 @@ func hasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
 
 	// First consider usual case (e.g.: `value: "{{steps.generate.outputs.result}}"`)
 	// This is most common, so should be done first.
-	referenceRegex, expressionRegex := generateOutputResultRegex(name, parentTmpl)
+	referenceRegex, expressionRegex, withParamRegex := generateOutputResultRegex(name, parentTmpl)
 	contains, err := regexp.MatchString(referenceRegex, string(jsonValue))
 	if err != nil {
 		log.Warnf("Error in regex compilation %q: %v", referenceRegex, err)
@@ -2506,7 +2509,21 @@ func hasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
 	if err != nil {
 		log.Warnf("Error in regex compilation %q: %v", expressionRegex, err)
 	}
-	return contains
+
+	if contains {
+		return true
+	}
+
+	// Then, consider withParam case (e.g.: `withParam: "{{tasks.generate.outputs}}"`)
+	contains, err = regexp.MatchString(withParamRegex, string(jsonValue))
+	if err != nil {
+		log.Warnf("Error in regex compilation %q: %v", withParamRegex, err)
+	}
+
+	if contains && strings.Contains(string(jsonValue), "item.result") {
+		return true
+	}
+	return false
 }
 
 // getStepOrDAGTaskName will extract the node from NodeStatus Name
@@ -3001,11 +3018,12 @@ func processItem(tmpl template.Template, name string, index int, item wfv1.Item,
 					return "", errors.InternalWrapError(err)
 				}
 				replaceMap[fmt.Sprintf("item.%s", itemKey)] = string(byteVal)
-				vals = append(vals, fmt.Sprintf("%s:%s", itemKey, artifactVal.Name))
+				locationKey, _ := artifactVal.GetKey()
+				vals = append(vals, fmt.Sprintf("%s:%s", itemKey, locationKey))
+			} else {
+				replaceMap[fmt.Sprintf("item.%s", itemKey)] = fmt.Sprintf("%v", itemVal)
+				vals = append(vals, fmt.Sprintf("%s:%v", itemKey, itemVal))
 			}
-			replaceMap[fmt.Sprintf("item.%s", itemKey)] = fmt.Sprintf("%v", itemVal)
-			vals = append(vals, fmt.Sprintf("%s:%v", itemKey, itemVal))
-
 		}
 		jsonByteVal, err := json.Marshal(mapVal)
 		if err != nil {
@@ -3031,35 +3049,46 @@ func processItem(tmpl template.Template, name string, index int, item wfv1.Item,
 			return "", errors.InternalWrapError(err)
 		}
 		replaceMap["item"] = string(byteVal)
-		newName = generateNodeName(name, index, artifactVal.Name)
+		locationKey, _ := artifactVal.GetKey()
+		newName = generateNodeName(name, index, locationKey)
 	case wfv1.OutputsType:
 		outputsVal := item.GetOutputsVal()
+		vals := make([]string, 0) // for generateName
 		replaceMap["item.result"] = ""
 		if outputsVal.Result != nil {
 			replaceMap["item.result"] = *outputsVal.Result
+			vals = append(vals, fmt.Sprintf("result:%s", *outputsVal.Result))
 		}
 		replaceMap["item.exitCode"] = ""
 		if outputsVal.ExitCode != nil {
 			replaceMap["item.exitCode"] = *outputsVal.ExitCode
+			vals = append(vals, fmt.Sprintf("exitCode:%s", *outputsVal.ExitCode))
 		}
 		paramValueMap := make(map[string]string, len(outputsVal.Parameters))
+		paramVals := make([]string, 0) // for generateName
 		for _, param := range outputsVal.Parameters {
 			paramValueMap[param.Name] = param.Value.String()
 			replaceMap[fmt.Sprintf("item.parameters.%s", param.Name)] = param.Value.String()
+			paramVals = append(paramVals, fmt.Sprintf("%s:%s", param.Name, param.Value.String()))
 		}
+		vals = append(vals, fmt.Sprintf("parameters:[%s]", strings.Join(paramVals, ",")))
 		paramValueByte, err := json.Marshal(paramValueMap)
 		if err != nil {
 			return "", errors.InternalWrapError(err)
 		}
 		replaceMap["item.parameters"] = string(paramValueByte)
+		artKeyVals := make([]string, 0) // for generateName
 		for _, art := range outputsVal.Artifacts {
 			artByte, err := json.Marshal(art)
 			if err != nil {
 				return "", errors.InternalWrapError(err)
 			}
 			replaceMap[fmt.Sprintf("item.artifacts.%s", art.Name)] = string(artByte)
+			locationKey, _ := art.GetKey()
+			artKeyVals = append(artKeyVals, fmt.Sprintf("%s:%s", art.Name, locationKey))
 		}
-		newName = generateNodeName(name, index, "outputs")
+		vals = append(vals, fmt.Sprintf("artifacts:[%s]", strings.Join(artKeyVals, ",")))
+		newName = generateNodeName(name, index, strings.Join(vals, ","))
 	default:
 		return "", errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string, number, list, or map. received: %v", index, item)
 	}

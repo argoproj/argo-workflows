@@ -477,12 +477,12 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 				woc.initializeNode(taskNodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeSkipped, skipReason)
 				continue
 			}
+		}
 
-			// resolve expanded artifacts
-			if err := resolveExpandedArtifacts(&t); err != nil {
-				woc.initializeNode(taskNodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
-				continue
-			}
+		// resolve expanded artifacts
+		if err := resolveExpandedArtifacts(&t); err != nil {
+			woc.initializeNodeOrMarkError(node, taskNodeName, dagTemplateScope, task, dagCtx.boundaryID, err)
+			continue
 		}
 
 		// Finally execute the template

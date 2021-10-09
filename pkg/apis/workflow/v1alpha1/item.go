@@ -46,6 +46,17 @@ func (i *Item) GetType() Type {
 	if _, err := strconv.ParseBool(strValue); err == nil {
 		return Bool
 	}
+	// any Map can be unmarshalled without error, so we must check art not empty
+	var art Artifact
+	if err := json.Unmarshal(i.Value, &art); err == nil && art.Name != "" {
+		return ArtifactType
+	}
+	// any Map can be unmarshalled without error, so we must check outputs not empty
+	var outputs Outputs
+	if err := json.Unmarshal(i.Value, &outputs); err == nil && (len(outputs.Parameters) > 0 ||
+		len(outputs.Parameters) > 0 || outputs.Result != nil || outputs.ExitCode != nil){
+		return OutputsType
+	}
 	var list []interface{}
 	if err := json.Unmarshal(i.Value, &list); err == nil {
 		return List
@@ -53,14 +64,6 @@ func (i *Item) GetType() Type {
 	var object map[string]interface{}
 	if err := json.Unmarshal(i.Value, &object); err == nil {
 		return Map
-	}
-	var art Artifact
-	if err := json.Unmarshal(i.Value, &art); err == nil {
-		return ArtifactType
-	}
-	var outputs Outputs
-	if err := json.Unmarshal(i.Value, &outputs); err == nil {
-		return OutputsType
 	}
 	return String
 }
