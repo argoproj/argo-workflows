@@ -521,7 +521,7 @@ func validateInputs(tmpl *wfv1.Template) (map[string]interface{}, error) {
 				scope[fmt.Sprintf("inputs.artifacts.%s.path", art.Name)] = true
 			}
 			if art.PathMulti != "" {
-				if !strings.Contains(art.FromMulti, "{{index}}") {
+				if !strings.Contains(art.PathMulti, "{{index}}") {
 					return nil, errors.New(errors.CodeBadRequest, "pathMulti should include {{index}}")
 				}
 				scope[fmt.Sprintf("inputs.artifacts.%s.pathMulti", art.Name)] = true
@@ -752,7 +752,7 @@ func validateArgumentsValues(prefix string, arguments wfv1.Arguments, allowEmpty
 		}
 	}
 	for _, art := range arguments.Artifacts {
-		if art.From == "" && !art.HasLocationOrKey() {
+		if art.From == "" && art.FromMulti == "" && !art.HasLocationOrKey() {
 			return errors.Errorf(errors.CodeBadRequest, "%s%s.from, artifact location, or key is required", prefix, art.Name)
 		}
 		if (art.From != "" && (art.FromExpression != "" || art.FromMulti != "")) || (art.FromExpression != "" && art.FromMulti != "") {

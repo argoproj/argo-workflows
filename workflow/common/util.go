@@ -165,7 +165,16 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 		}
 		if inArt.PathMulti != "" {
 			arts := args.GetArtifactsByNameWithoutIndex(inArt.Name)
+			if !inArt.Optional {
+				if len(arts) == 0 {
+					return nil, errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s was not supplied", inArt.Name)
+				}
+			}
 			for index := range arts {
+				if (arts[index].From == "" || arts[index].FromExpression == "" || arts[index].FromMulti == "") &&
+					!arts[index].HasLocationOrKey() && !validateOnly {
+					return nil, errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s missing location information", inArt.Name)
+				}
 				arts[index].Path = strings.ReplaceAll(inArt.PathMulti, "{{index}}", strconv.Itoa(index))
 				arts[index].Mode = inArt.Mode
 				arts[index].RecurseMode = inArt.RecurseMode
@@ -191,8 +200,10 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 		}
 	}
 	for index, arts := range multiArts {
-		artifacts[index] = arts[0]
-		artifacts = append(artifacts, arts[1:]...)
+		if len(arts) > 0 {
+			artifacts[index] = arts[0]
+			artifacts = append(artifacts, arts[1:]...)
+		}
 	}
 	newTmpl.Inputs.Artifacts = artifacts
 
