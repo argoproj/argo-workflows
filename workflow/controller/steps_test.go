@@ -297,3 +297,254 @@ func TestOptionalArgumentAndParameter(t *testing.T) {
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }
+
+var stepsParamAggregationWithRetryStrategy = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: parameter-aggregation-retry-steps-h8b82-
+  name: parameter-aggregation-retry-steps-h8b82-dpfh7
+  namespace: argon
+spec:
+  arguments: {}
+  entrypoint: parameter-aggregation-retry
+  serviceAccountName: argon-argo-workflow
+  templates:
+  - inputs: {}
+    metadata: {}
+    name: parameter-aggregation-retry
+    outputs: {}
+    steps:
+    - - arguments:
+          parameters:
+          - name: num
+            value: '{{item}}'
+        name: odd-or-even
+        template: odd-or-even
+        withItems:
+        - 1
+        - 2
+    - - arguments:
+          parameters:
+          - name: message
+            value: '{{steps.odd-or-even.outputs.parameters.num}}'
+        name: print-nums
+        template: whalesay
+      - arguments:
+          parameters:
+          - name: message
+            value: '{{steps.odd-or-even.outputs.parameters.evenness}}'
+        name: print-evenness
+        template: whalesay
+  - container:
+      args:
+      - |
+        sleep 1 &&
+        echo {{inputs.parameters.num}} > /tmp/num &&
+        if [ $(({{inputs.parameters.num}}%2)) -eq 0 ]; then
+          echo "even" > /tmp/even;
+        else
+          echo "odd" > /tmp/even;
+        fi
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs:
+      parameters:
+      - name: num
+    metadata: {}
+    name: odd-or-even
+    outputs:
+      parameters:
+      - name: num
+        valueFrom:
+          path: /tmp/num
+      - name: evenness
+        valueFrom:
+          path: /tmp/even
+    retryStrategy:
+      limit: 10
+  - container:
+      args:
+      - '{{inputs.parameters.message}}'
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+      name: ""
+      resources: {}
+    inputs:
+      parameters:
+      - name: message
+    metadata: {}
+    name: whalesay
+    outputs: {}
+status:
+  nodes:
+    parameter-aggregation-retry-steps-h8b82-dpfh7:
+      children:
+      - parameter-aggregation-retry-steps-h8b82-dpfh7-3071098285
+      displayName: parameter-aggregation-retry-steps-h8b82-dpfh7
+      finishedAt: "2021-08-27T05:14:05Z"
+      id: parameter-aggregation-retry-steps-h8b82-dpfh7
+      name: parameter-aggregation-retry-steps-h8b82-dpfh7
+      startedAt: "2021-08-27T05:12:39Z"
+      templateName: parameter-aggregation-retry
+      templateScope: local/parameter-aggregation-retry-steps-h8b82-dpfh7
+      type: Steps
+    parameter-aggregation-retry-steps-h8b82-dpfh7-400240683:
+      boundaryID: parameter-aggregation-retry-steps-h8b82-dpfh7
+      children:
+      - parameter-aggregation-retry-steps-h8b82-dpfh7-3540252070
+      displayName: odd-or-even(1:2)
+      finishedAt: "2021-08-27T05:13:19Z"
+      id: parameter-aggregation-retry-steps-h8b82-dpfh7-400240683
+      inputs:
+        parameters:
+        - name: num
+          value: "2"
+      name: parameter-aggregation-retry-steps-h8b82-dpfh7[0].odd-or-even(1:2)
+      outputs:
+        exitCode: "0"
+        parameters:
+        - name: num
+          value: "2"
+          valueFrom:
+            path: /tmp/num
+        - name: evenness
+          value: even
+          valueFrom:
+            path: /tmp/even
+      phase: Succeeded
+      startedAt: "2021-08-27T05:12:39Z"
+      templateName: odd-or-even
+      templateScope: local/parameter-aggregation-retry-steps-h8b82-dpfh7
+      type: Retry
+    parameter-aggregation-retry-steps-h8b82-dpfh7-1758157232:
+      boundaryID: parameter-aggregation-retry-steps-h8b82-dpfh7
+      children:
+      - parameter-aggregation-retry-steps-h8b82-dpfh7-3004134904
+      displayName: odd-or-even(0:1)(0)
+      finishedAt: "2021-08-27T05:13:10Z"
+      hostNodeName: docker-desktop
+      id: parameter-aggregation-retry-steps-h8b82-dpfh7-1758157232
+      inputs:
+        parameters:
+        - name: num
+          value: "1"
+      name: parameter-aggregation-retry-steps-h8b82-dpfh7[0].odd-or-even(0:1)(0)
+      outputs:
+        exitCode: "0"
+        parameters:
+        - name: num
+          value: "1"
+          valueFrom:
+            path: /tmp/num
+        - name: evenness
+          value: odd
+          valueFrom:
+            path: /tmp/even
+      phase: Succeeded
+      startedAt: "2021-08-27T05:12:39Z"
+      templateName: odd-or-even
+      templateScope: local/parameter-aggregation-retry-steps-h8b82-dpfh7
+      type: Pod
+    parameter-aggregation-retry-steps-h8b82-dpfh7-2783464393:
+      boundaryID: parameter-aggregation-retry-steps-h8b82-dpfh7
+      children:
+      - parameter-aggregation-retry-steps-h8b82-dpfh7-1758157232
+      displayName: odd-or-even(0:1)
+      finishedAt: "2021-08-27T05:13:19Z"
+      id: parameter-aggregation-retry-steps-h8b82-dpfh7-2783464393
+      inputs:
+        parameters:
+        - name: num
+          value: "1"
+      name: parameter-aggregation-retry-steps-h8b82-dpfh7[0].odd-or-even(0:1)
+      outputs:
+        exitCode: "0"
+        parameters:
+        - name: num
+          value: "1"
+          valueFrom:
+            path: /tmp/num
+        - name: evenness
+          value: odd
+          valueFrom:
+            path: /tmp/even
+      phase: Succeeded
+      startedAt: "2021-08-27T05:12:39Z"
+      templateName: odd-or-even
+      templateScope: local/parameter-aggregation-retry-steps-h8b82-dpfh7
+      type: Retry
+    parameter-aggregation-retry-steps-h8b82-dpfh7-3071098285:
+      boundaryID: parameter-aggregation-retry-steps-h8b82-dpfh7
+      children:
+      - parameter-aggregation-retry-steps-h8b82-dpfh7-2783464393
+      - parameter-aggregation-retry-steps-h8b82-dpfh7-400240683
+      displayName: '[0]'
+      finishedAt: "2021-08-27T05:13:19Z"
+      id: parameter-aggregation-retry-steps-h8b82-dpfh7-3071098285
+      name: parameter-aggregation-retry-steps-h8b82-dpfh7[0]
+      phase: Succeeded
+      startedAt: "2021-08-27T05:12:39Z"
+      templateScope: local/parameter-aggregation-retry-steps-h8b82-dpfh7
+      type: StepGroup
+    parameter-aggregation-retry-steps-h8b82-dpfh7-3540252070:
+      boundaryID: parameter-aggregation-retry-steps-h8b82-dpfh7
+      children:
+      - parameter-aggregation-retry-steps-h8b82-dpfh7-3004134904
+      displayName: odd-or-even(1:2)(0)
+      finishedAt: "2021-08-27T05:13:14Z"
+      hostNodeName: docker-desktop
+      id: parameter-aggregation-retry-steps-h8b82-dpfh7-3540252070
+      inputs:
+        parameters:
+        - name: num
+          value: "2"
+      name: parameter-aggregation-retry-steps-h8b82-dpfh7[0].odd-or-even(1:2)(0)
+      outputs:
+        exitCode: "0"
+        parameters:
+        - name: num
+          value: "2"
+          valueFrom:
+            path: /tmp/num
+        - name: evenness
+          value: even
+          valueFrom:
+            path: /tmp/even
+      phase: Succeeded
+      startedAt: "2021-08-27T05:12:39Z"
+      templateName: odd-or-even
+      templateScope: local/parameter-aggregation-retry-steps-h8b82-dpfh7
+      type: Pod
+  phase: Succeeded
+  startedAt: "2021-08-27T05:12:39Z"
+`
+
+func TestStepsParamAggregationWithRetryStrategy(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(stepsParamAggregationWithRetryStrategy)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	evenNode := woc.wf.Status.Nodes.FindByDisplayName("print-evenness")
+	if assert.NotNil(t, evenNode) {
+		if assert.Len(t, evenNode.Inputs.Parameters, 1) {
+			assert.Equal(t, `["odd","even"]`, evenNode.Inputs.Parameters[0].Value.String())
+		}
+	}
+
+	numNode := woc.wf.Status.Nodes.FindByDisplayName("print-nums")
+	if assert.NotNil(t, numNode) {
+		if assert.Len(t, numNode.Inputs.Parameters, 1) {
+			assert.Equal(t, `["1","2"]`, numNode.Inputs.Parameters[0].Value.String())
+		}
+	}
+}

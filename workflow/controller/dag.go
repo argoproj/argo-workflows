@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -511,13 +510,11 @@ func (woc *wfOperationCtx) buildLocalScopeFromTask(dagCtx *dagContext, task *wfv
 		}
 		prefix := fmt.Sprintf("tasks.%s", ancestor)
 		if ancestorNode.Type == wfv1.NodeTypeTaskGroup {
-			var ancestorNodes []wfv1.NodeStatus
-			for _, node := range woc.wf.Status.Nodes {
+			var childNodes = make([]wfv1.NodeStatus, len(ancestorNode.Children))
+			for i, nodeID := range ancestorNode.Children {
+				node := woc.wf.Status.Nodes[nodeID]
 				if node.BoundaryID == dagCtx.boundaryID && strings.HasPrefix(node.Name, ancestorNode.Name+"(") {
-					matched, err := regexp.Match(".*\\([0-9]+\\)$", []byte(node.Name))
-					if err == nil && matched {
-						ancestorNodes = append(ancestorNodes, node)
-					}
+					childNodes[i] = node
 				}
 			}
 			_, _, templateStored, err := dagCtx.tmplCtx.ResolveTemplate(ancestorNode)
@@ -529,7 +526,7 @@ func (woc *wfOperationCtx) buildLocalScopeFromTask(dagCtx *dagContext, task *wfv
 				woc.updated = true
 			}
 
-			err = woc.processAggregateNodeOutputs(scope, prefix, ancestorNodes)
+			err = woc.processAggregateNodeOutputs(scope, prefix, childNodes)
 			if err != nil {
 				return nil, errors.InternalWrapError(err)
 			}
