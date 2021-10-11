@@ -3025,4 +3025,3 @@ func TestTemplateReferenceWorkflowConfigMapRefArgument(t *testing.T) {
 	_, err := validate(templateReferenceWorkflowConfigMapRefArgument)
 	assert.NoError(t, err)
 }
-
