@@ -61,6 +61,7 @@ interface Props {
     onShowYaml?: (nodeId: string) => any;
     onTabSelected?: (tabSelected: string) => void;
     selectedTabKey?: string;
+    onResume?: () => void;
 }
 
 const AttributeRow = (attr: {title: string; value: any}) => (
@@ -149,12 +150,16 @@ const WorkflowNodeSummary = (props: Props) => {
             value: <ResourcesDuration resourcesDuration={props.node.resourcesDuration} />
         });
     }
-
     const showLogs = (x = 'main') => props.onShowContainerLogs(props.node.id, x);
     return (
         <div className='white-box'>
             <div className='white-box__details'>{<AttributeRows attributes={attributes} />}</div>
             <div>
+                {props.node.type === 'Suspend' && props.onResume && (
+                    <Button icon='play' onClick={() => props.onResume()}>
+                        RESUME
+                    </Button>
+                )}{' '}
                 {props.node.type !== 'Container' && props.onShowYaml && <Button onClick={() => props.onShowYaml(props.node.id)}>MANIFEST</Button>}{' '}
                 {props.node.type === 'Pod' && props.onShowContainerLogs && (
                     <DropDownButton

@@ -620,6 +620,7 @@ func Test_createWorkflowPod_rateLimited(t *testing.T) {
 		{Limit: 0, Burst: 1}: false,
 		{Limit: 1, Burst: 1}: false,
 	} {
+		limit := limit
 		t.Run(fmt.Sprintf("%v", limit), func(t *testing.T) {
 			wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 			cancel, controller := newController(wf, func(c *WorkflowController) {
@@ -1398,7 +1399,30 @@ func TestIsResourcesSpecified(t *testing.T) {
 	mainCtr.Resources = apiv1.ResourceRequirements{Limits: apiv1.ResourceList{}}
 	assert.False(t, isResourcesSpecified(mainCtr))
 
+	// only limits
 	mainCtr.Resources = apiv1.ResourceRequirements{
+		Limits: apiv1.ResourceList{
+			apiv1.ResourceCPU:    resource.MustParse("0.900"),
+			apiv1.ResourceMemory: resource.MustParse("512Mi"),
+		},
+	}
+	assert.True(t, isResourcesSpecified(mainCtr))
+
+	// only requests
+	mainCtr.Resources = apiv1.ResourceRequirements{
+		Requests: apiv1.ResourceList{
+			apiv1.ResourceCPU:    resource.MustParse("0.250"),
+			apiv1.ResourceMemory: resource.MustParse("64Mi"),
+		},
+	}
+	assert.True(t, isResourcesSpecified(mainCtr))
+
+	// both requests and limits
+	mainCtr.Resources = apiv1.ResourceRequirements{
+		Requests: apiv1.ResourceList{
+			apiv1.ResourceCPU:    resource.MustParse("0.250"),
+			apiv1.ResourceMemory: resource.MustParse("64Mi"),
+		},
 		Limits: apiv1.ResourceList{
 			apiv1.ResourceCPU:    resource.MustParse("0.900"),
 			apiv1.ResourceMemory: resource.MustParse("512Mi"),

@@ -194,6 +194,8 @@ func (k *kubeletClient) exec(u *url.URL) (*url.URL, error) {
 	if resp == nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusFound {
 		return nil, err
 	}
@@ -208,10 +210,12 @@ func (k *kubeletClient) exec(u *url.URL) (*url.URL, error) {
 }
 
 func (k *kubeletClient) readFileContents(u *url.URL) (*bytes.Buffer, error) {
-	conn, _, err := k.websocketDialer.Dial(u.String(), nil)
+	conn, resp, err := k.websocketDialer.Dial(u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
+
 	timeout := time.NewTimer(readWSResponseTimeout)
 	defer timeout.Stop()
 

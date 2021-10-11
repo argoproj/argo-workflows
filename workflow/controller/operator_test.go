@@ -1820,6 +1820,7 @@ func TestSidecarResourceLimits(t *testing.T) {
 	assert.NoError(t, err)
 	var waitCtr *apiv1.Container
 	for _, ctr := range pod.Spec.Containers {
+		ctr := ctr
 		if ctr.Name == "wait" {
 			waitCtr = &ctr
 			break
@@ -5897,6 +5898,7 @@ spec:
 		return node.Phase == wfv1.NodePending
 	}))
 
+	time.Sleep(time.Second)
 	deletePods(ctx, woc)
 
 	woc = newWorkflowOperationCtx(woc.wf, controller)
@@ -5907,6 +5909,7 @@ spec:
 		return node.Phase == wfv1.NodePending
 	}))
 
+	time.Sleep(time.Second)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 
 	woc = newWorkflowOperationCtx(woc.wf, controller)

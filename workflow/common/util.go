@@ -12,8 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/client-go/tools/cache"
-
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
@@ -23,6 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/remotecommand"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
@@ -125,7 +124,7 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 	// 3) if no default value, it is an error
 	newTmpl := tmpl.DeepCopy()
 	for i, inParam := range newTmpl.Inputs.Parameters {
-		if inParam.Default != nil {
+		if inParam.Value == nil && inParam.Default != nil {
 			// first set to default value
 			inParam.Value = inParam.Default
 		}

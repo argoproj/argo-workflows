@@ -303,6 +303,8 @@ data:
   sso: |
     # This is the root URL of the OIDC provider (required).
     issuer: https://issuer.root.url/
+    # Some OIDC providers have alternate root URLs that can be included. These should be reviewed carefully. (optional)
+    issuerAlias: https://altissuer.root.url
     # This defines how long your login is valid for (in hours). (optional)
     # If omitted, defaults to 10h. Example below is 10 days.
     sessionExpiry: 240h

@@ -11,11 +11,10 @@ import (
 	"syscall"
 	"time"
 
-	envutil "github.com/argoproj/argo-workflows/v3/util/env"
-
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 
+	envutil "github.com/argoproj/argo-workflows/v3/util/env"
 	"github.com/argoproj/argo-workflows/v3/util/slice"
 )
 

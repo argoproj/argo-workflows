@@ -4125,7 +4125,6 @@ spec:
                   http:
                     properties:
                       body:
-                        format: byte
                         type: string
                       headers:
                         items:
@@ -10576,7 +10575,6 @@ spec:
                     http:
                       properties:
                         body:
-                          format: byte
                           type: string
                         headers:
                           items:

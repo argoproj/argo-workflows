@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/selection"
 
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
@@ -31,6 +32,7 @@ func NewWorkflowArchiveServer(wfArchive sqldb.WorkflowArchive) workflowarchivepk
 
 func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req *workflowarchivepkg.ListArchivedWorkflowsRequest) (*wfv1.WorkflowList, error) {
 	options := req.ListOptions
+	namePrefix := req.NamePrefix
 	if options == nil {
 		options = &metav1.ListOptions{}
 	}
@@ -97,7 +99,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 		limitWithMore = limit + 1
 	}
 
-	items, err := w.wfArchive.ListWorkflows(namespace, name, minStartedAt, maxStartedAt, requirements, limitWithMore, offset)
+	items, err := w.wfArchive.ListWorkflows(namespace, name, namePrefix, minStartedAt, maxStartedAt, requirements, limitWithMore, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -148,4 +150,41 @@ func (w *archivedWorkflowServer) DeleteArchivedWorkflow(ctx context.Context, req
 		return nil, err
 	}
 	return &workflowarchivepkg.ArchivedWorkflowDeletedResponse{}, nil
+}
+
+func (w *archivedWorkflowServer) ListArchivedWorkflowLabelKeys(ctx context.Context, req *workflowarchivepkg.ListArchivedWorkflowLabelKeysRequest) (*wfv1.LabelKeys, error) {
+	labelkeys, err := w.wfArchive.ListWorkflowsLabelKeys()
+	if err != nil {
+		return nil, err
+	}
+	return labelkeys, nil
+}
+
+func (w *archivedWorkflowServer) ListArchivedWorkflowLabelValues(ctx context.Context, req *workflowarchivepkg.ListArchivedWorkflowLabelValuesRequest) (*wfv1.LabelValues, error) {
+	options := req.ListOptions
+
+	requirements, err := labels.ParseToRequirements(options.LabelSelector)
+	if err != nil {
+		return nil, err
+	}
+	if len(requirements) != 1 {
+		return nil, fmt.Errorf("only allow 1 labelRequirement, found %v", len(requirements))
+	}
+
+	key := ""
+	requirement := requirements[0]
+	if requirement.Operator() == selection.Exists {
+		key = requirement.Key()
+	} else {
+		return nil, fmt.Errorf("operation %v is not supported", requirement.Operator())
+	}
+
+	labels, err := w.wfArchive.ListWorkflowsLabelValues(key)
+	if err != nil {
+		return nil, err
+	}
+	if labels == nil {
+		return nil, status.Error(codes.NotFound, "not found")
+	}
+	return labels, err
 }

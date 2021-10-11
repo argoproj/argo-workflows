@@ -8,7 +8,49 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 	"upper.io/db.v3"
+
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
+
+// ListWorkflowsLabelKeys returns distinct name from argo_archived_workflows_labels table
+// SELECT DISTINCT name FROM argo_archived_workflows_labels
+func (r *workflowArchive) ListWorkflowsLabelKeys() (*wfv1.LabelKeys, error) {
+	var archivedWfLabels []archivedWorkflowLabelRecord
+
+	err := r.session.
+		Select(db.Raw("DISTINCT name")).
+		From(archiveLabelsTableName).
+		All(&archivedWfLabels)
+	if err != nil {
+		return nil, err
+	}
+	labelKeys := make([]string, len(archivedWfLabels))
+	for i, md := range archivedWfLabels {
+		labelKeys[i] = md.Key
+	}
+
+	return &wfv1.LabelKeys{Items: labelKeys}, nil
+}
+
+// ListWorkflowsLabelValues returns distinct value from argo_archived_workflows_labels table
+// SELECT DISTINCT value FROM argo_archived_workflows_labels WHERE name=labelkey
+func (r *workflowArchive) ListWorkflowsLabelValues(key string) (*wfv1.LabelValues, error) {
+	var archivedWfLabels []archivedWorkflowLabelRecord
+	err := r.session.
+		Select(db.Raw("DISTINCT value")).
+		From(archiveLabelsTableName).
+		Where(db.Cond{"name": key}).
+		All(&archivedWfLabels)
+	if err != nil {
+		return nil, err
+	}
+	labels := make([]string, len(archivedWfLabels))
+	for i, md := range archivedWfLabels {
+		labels[i] = md.Value
+	}
+
+	return &wfv1.LabelValues{Items: labels}, nil
+}
 
 func labelsClause(t dbType, requirements labels.Requirements) (db.Compound, error) {
 	var conds []db.Compound
