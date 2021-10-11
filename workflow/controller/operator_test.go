@@ -6789,14 +6789,16 @@ func TestGetStepOrDAGTaskName(t *testing.T) {
 
 func TestGenerateOutputResultRegex(t *testing.T) {
 	dagTmpl := &wfv1.Template{DAG: &wfv1.DAGTemplate{}}
-	ref, expr := generateOutputResultRegex("template-name", dagTmpl)
+	ref, expr, withParam := generateOutputResultRegex("template-name", dagTmpl)
 	assert.Equal(t, `tasks\.template-name\.outputs\.result`, ref)
 	assert.Equal(t, `tasks\[['\"]template-name['\"]\]\.outputs.result`, expr)
+	assert.Equal(t, `tasks\.template-name\.outputs`, withParam)
 
 	stepsTmpl := &wfv1.Template{Steps: []wfv1.ParallelSteps{}}
-	ref, expr = generateOutputResultRegex("template-name", stepsTmpl)
+	ref, expr, withParam = generateOutputResultRegex("template-name", stepsTmpl)
 	assert.Equal(t, `steps\.template-name\.outputs\.result`, ref)
 	assert.Equal(t, `steps\[['\"]template-name['\"]\]\.outputs.result`, expr)
+	assert.Equal(t, `tasks\.template-name\.outputs`, withParam)
 }
 
 const rootRetryStrategyCompletes = `apiVersion: argoproj.io/v1alpha1
