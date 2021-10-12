@@ -26,7 +26,7 @@ func removeConflicts(m map[string]interface{}) map[string]interface{} {
 	for i := 0; i < len(keys)-1; i++ {
 		k := keys[i]
 		// remove any parent that has a child
-		if strings.HasPrefix(keys[i+1]+".", k) {
+		if strings.HasPrefix(keys[i+1], k+".") {
 			delete(n, k)
 		}
 	}
