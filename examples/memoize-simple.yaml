@@ -1,9 +1,9 @@
 # This example demonstrates the ability to memoize a template.
 # Cache can be configured in configmap. For example, if the cache
 # ConfigMap looks like the following, then you should expect the node output
-# retrieved from the cache to be "changed cache value". Note that you also
-# need to update `creationTimestamp` in `data.test-5` to be within the `memoize.maxAge`
-# that you specify in the workflow spec.
+# retrieved from the cache to be "changed cache value". 
+# Note that you also need to update `creationTimestamp` in
+# `data.test-5` to be within the `memoize.maxAge` if `maxAge` is specified in the workflow spec.
 # 
 # apiVersion: v1
 # data:
