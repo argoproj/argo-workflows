@@ -6798,7 +6798,7 @@ func TestGenerateOutputResultRegex(t *testing.T) {
 	ref, expr, withParam = generateOutputResultRegex("template-name", stepsTmpl)
 	assert.Equal(t, `steps\.template-name\.outputs\.result`, ref)
 	assert.Equal(t, `steps\[['\"]template-name['\"]\]\.outputs.result`, expr)
-	assert.Equal(t, `tasks\.template-name\.outputs`, withParam)
+	assert.Equal(t, `steps\.template-name\.outputs`, withParam)
 }
 
 const rootRetryStrategyCompletes = `apiVersion: argoproj.io/v1alpha1

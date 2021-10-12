@@ -479,10 +479,12 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 			}
 		}
 
-		// resolve expanded artifacts
-		if err := resolveExpandedArtifacts(&t); err != nil {
-			woc.initializeNodeOrMarkError(node, taskNodeName, dagTemplateScope, task, dagCtx.boundaryID, err)
-			continue
+		if task.ShouldExpand() {
+			// resolve expanded artifacts
+			if err := resolveExpandedArtifacts(&t); err != nil {
+				woc.initializeNodeOrMarkError(node, taskNodeName, dagTemplateScope, task, dagCtx.boundaryID, err)
+				continue
+			}
 		}
 
 		// Finally execute the template

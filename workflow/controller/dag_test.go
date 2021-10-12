@@ -3402,3 +3402,415 @@ func TestDagHttpChildrenAssigned(t *testing.T) {
 		}
 	}
 }
+
+var dagReferExpandedOutputsArtifacts = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: expanded-outputs-artifacts-dag-sg2fp
+spec:
+  arguments: {}
+  entrypoint: expanded-outputs-artifacts
+
+          - name: message
+            value: '{{item}}'
+        name: gen
+        template: gen-artifact
+        withItems:
+        - one
+        - two
+        - three
+        - four
+      - arguments:
+          artifacts:
+          - from: '{{item}}'
+            name: path
+        depends: gen.Succeeded
+        name: deal-path1
+        template: deal-one-path
+        withParam: '{{tasks.gen.outputs.artifacts.path1}}'
+      - arguments:
+          artifacts:
+          - from: '{{item.path1}}'
+            name: path1
+          - from: '{{item.path2}}'
+            name: path2
+        depends: gen.Succeeded
+        name: deal-paths
+        template: deal-two-path
+        withParam: '{{tasks.gen.outputs.artifacts}}'
+      - arguments:
+          artifacts:
+          - from: '{{item.artifacts.path1}}'
+            name: path
+          parameters:
+          - name: param
+            value: '{{item.parameters.param1}}'
+          - name: params
+            value: '{{item.parameters}}'
+          - name: exitCode
+            value: '{{item.exitCode}}'
+          - name: result
+            value: '{{item.result}}'
+        depends: gen.Succeeded
+        name: deal-param-path
+        template: deal-param-path
+        when: '"{{item.parameters.param2}}" != "one-2"'
+        withParam: '{{tasks.gen.outputs}}'
+      - arguments:
+          artifacts:
+          - fromMulti: '{{tasks.gen.outputs.artifacts.path1}}'
+            name: paths
+        depends: gen.Succeeded
+        name: collection
+        template: collection
+    inputs: {}
+    metadata: {}
+    name: expanded-outputs-artifacts
+    outputs: {}
+  - container:
+      args:
+      - |
+        export message={{inputs.parameters.message}} && echo ${message}-1 > /tmp/param1
+        && echo ${message}-2 > /tmp/param2 && echo ${message}_11 > /tmp/path1 && echo
+        ${message}_22 > /tmp/path2 && echo \"ppp-${message}\"
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs:
+      parameters:
+      - name: message
+    metadata: {}
+    name: gen-artifact
+    outputs:
+      artifacts:
+      - name: path1
+        path: /tmp/path1
+      - name: path2
+        path: /tmp/path2
+      parameters:
+      - name: param1
+        valueFrom:
+          path: /tmp/param1
+      - name: param2
+        valueFrom:
+          path: /tmp/param2
+  - container:
+      args:
+      - 'echo deal-one-path: && cat /tmp/path'
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs:
+      artifacts:
+      - name: path
+        path: /tmp/path
+    metadata: {}
+    name: deal-one-path
+    outputs: {}
+  - container:
+      args:
+      - 'echo deal-two-path: && cat /tmp/path1 && cat {{inputs.artifacts.path2.path}}'
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs:
+      artifacts:
+      - name: path1
+        path: /tmp/path1
+      - name: path2
+        path: /tmp/path2
+    metadata: {}
+    name: deal-two-path
+    outputs: {}
+  - container:
+      args:
+      - |
+        'echo deal-param-path: && echo param: {{inputs.parameters.param}} && echo
+        params: {{inputs.parameters.params}} && echo exitCode: {{inputs.parameters.exitCode}}
+        && echo result: {{inputs.parameters.result}} && cat /tmp/path'
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs:
+      artifacts:
+      - name: path
+        path: /tmp/path
+      parameters:
+      - name: param
+      - name: params
+      - name: exitCode
+      - name: result
+    metadata: {}
+    name: deal-param-path
+    outputs: {}
+  - container:
+      args:
+      - for file in $(ls /tmp/*_path); do echo $file; cat $file; done
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs:
+      artifacts:
+      - name: paths
+        pathMulti: /tmp/{{index}}_path
+    metadata: {}
+    name: collection
+    outputs: {}
+status:
+  nodes:
+    expanded-outputs-artifacts-dag-sg2fp:
+      children:
+      - expanded-outputs-artifacts-dag-sg2fp-2729917683
+      displayName: expanded-outputs-artifacts-dag-sg2fp
+      id: expanded-outputs-artifacts-dag-sg2fp
+      name: expanded-outputs-artifacts-dag-sg2fp
+      phase: Running
+      startedAt: "2021-10-11T11:47:07Z"
+      templateName: expanded-outputs-artifacts
+      templateScope: local/expanded-outputs-artifacts-dag-sg2fp
+      type: DAG
+    expanded-outputs-artifacts-dag-sg2fp-2729917683:
+      boundaryID: expanded-outputs-artifacts-dag-sg2fp
+      children:
+      - expanded-outputs-artifacts-dag-sg2fp-3334512832
+      - expanded-outputs-artifacts-dag-sg2fp-3359441759
+      - expanded-outputs-artifacts-dag-sg2fp-3728633914
+      - expanded-outputs-artifacts-dag-sg2fp-281941667
+      displayName: gen
+      finishedAt: "2021-10-11T11:47:17Z"
+      id: expanded-outputs-artifacts-dag-sg2fp-2729917683
+      name: expanded-outputs-artifacts-dag-sg2fp.gen
+      phase: Succeeded
+      startedAt: "2021-10-11T11:47:07Z"
+      templateName: gen-artifact
+      templateScope: local/expanded-outputs-artifacts-dag-sg2fp
+      type: TaskGroup
+    expanded-outputs-artifacts-dag-sg2fp-3334512832:
+      boundaryID: expanded-outputs-artifacts-dag-sg2fp
+      displayName: gen(0:one)
+      finishedAt: "2021-10-11T11:47:11Z"
+      id: expanded-outputs-artifacts-dag-sg2fp-3334512832
+      inputs:
+        parameters:
+        - name: message
+          value: one
+      name: expanded-outputs-artifacts-dag-sg2fp.gen(0:one)
+      outputs:
+        artifacts:
+        - name: path1
+          path: /tmp/path1
+          s3:
+            key: expanded-outputs-artifacts-dag-sg2fp/expanded-outputs-artifacts-dag-sg2fp-gen-artifact-3334512832/path1.tgz
+        - name: path2
+          path: /tmp/path2
+          s3:
+            key: expanded-outputs-artifacts-dag-sg2fp/expanded-outputs-artifacts-dag-sg2fp-gen-artifact-3334512832/path2.tgz
+        - name: main-logs
+          s3:
+            key: expanded-outputs-artifacts-dag-sg2fp/expanded-outputs-artifacts-dag-sg2fp-gen-artifact-3334512832/main.log
+        exitCode: "0"
+        parameters:
+        - name: param1
+          value: one-1
+          valueFrom:
+            path: /tmp/param1
+        - name: param2
+          value: one-2
+          valueFrom:
+            path: /tmp/param2
+        result: '"ppp-one"'
+      phase: Succeeded
+      startedAt: "2021-10-11T11:47:07Z"
+      templateName: gen-artifact
+      templateScope: local/expanded-outputs-artifacts-dag-sg2fp
+      type: Pod
+    expanded-outputs-artifacts-dag-sg2fp-3359441759:
+      boundaryID: expanded-outputs-artifacts-dag-sg2fp
+      displayName: gen(1:two)
+      finishedAt: "2021-10-11T11:47:11Z"
+      id: expanded-outputs-artifacts-dag-sg2fp-3359441759
+      inputs:
+        parameters:
+        - name: message
+          value: two
+      name: expanded-outputs-artifacts-dag-sg2fp.gen(1:two)
+      outputs:
+        artifacts:
+        - name: path1
+          path: /tmp/path1
+          s3:
+            key: expanded-outputs-artifacts-dag-sg2fp/expanded-outputs-artifacts-dag-sg2fp-gen-artifact-3359441759/path1.tgz
+        - name: path2
+          path: /tmp/path2
+          s3:
+            key: expanded-outputs-artifacts-dag-sg2fp/expanded-outputs-artifacts-dag-sg2fp-gen-artifact-3359441759/path2.tgz
+        - name: main-logs
+          s3:
+            key: expanded-outputs-artifacts-dag-sg2fp/expanded-outputs-artifacts-dag-sg2fp-gen-artifact-3359441759/main.log
+        exitCode: "0"
+        parameters:
+        - name: param1
+          value: two-1
+          valueFrom:
+            path: /tmp/param1
+        - name: param2
+          value: two-2
+          valueFrom:
+            path: /tmp/param2
+        result: '"ppp-two"'
+      phase: Succeeded
+      startedAt: "2021-10-11T11:47:07Z"
+      templateName: gen-artifact
+      templateScope: local/expanded-outputs-artifacts-dag-sg2fp
+      type: Pod
+    expanded-outputs-artifacts-dag-sg2fp-3728633914:
+      boundaryID: expanded-outputs-artifacts-dag-sg2fp
+      displayName: gen(2:three)
+      finishedAt: "2021-10-11T11:47:11Z"
+      id: expanded-outputs-artifacts-dag-sg2fp-3728633914
+      inputs:
+        parameters:
+        - name: message
+          value: three
+      name: expanded-outputs-artifacts-dag-sg2fp.gen(2:three)
+      outputs:
+        artifacts:
+        - name: path1
+          path: /tmp/path1
+          s3:
+            key: expanded-outputs-artifacts-dag-sg2fp/expanded-outputs-artifacts-dag-sg2fp-gen-artifact-3728633914/path1.tgz
+        - name: path2
+          path: /tmp/path2
+          s3:
+            key: expanded-outputs-artifacts-dag-sg2fp/expanded-outputs-artifacts-dag-sg2fp-gen-artifact-3728633914/path2.tgz
+        - name: main-logs
+          s3:
+            key: expanded-outputs-artifacts-dag-sg2fp/expanded-outputs-artifacts-dag-sg2fp-gen-artifact-3728633914/main.log
+        exitCode: "0"
+        parameters:
+        - name: param1
+          value: three-1
+          valueFrom:
+            path: /tmp/param1
+        - name: param2
+          value: three-2
+          valueFrom:
+            path: /tmp/param2
+        result: '"ppp-three"'
+      phase: Succeeded
+      startedAt: "2021-10-11T11:47:07Z"
+      templateName: gen-artifact
+      templateScope: local/expanded-outputs-artifacts-dag-sg2fp
+      type: Pod
+    expanded-outputs-artifacts-dag-sg2fp-281941667:
+      boundaryID: expanded-outputs-artifacts-dag-sg2fp
+      displayName: gen(3:four)
+      finishedAt: "2021-10-11T11:47:11Z"
+      id: expanded-outputs-artifacts-dag-sg2fp-281941667
+      inputs:
+        parameters:
+        - name: message
+          value: four
+      name: expanded-outputs-artifacts-dag-sg2fp.gen(3:four)
+      outputs:
+        artifacts:
+        - name: path1
+          path: /tmp/path1
+          s3:
+            key: expanded-outputs-artifacts-dag-sg2fp/expanded-outputs-artifacts-dag-sg2fp-gen-artifact-281941667/path1.tgz
+        - name: path2
+          path: /tmp/path2
+          s3:
+            key: expanded-outputs-artifacts-dag-sg2fp/expanded-outputs-artifacts-dag-sg2fp-gen-artifact-281941667/path2.tgz
+        - name: main-logs
+          s3:
+            key: expanded-outputs-artifacts-dag-sg2fp/expanded-outputs-artifacts-dag-sg2fp-gen-artifact-281941667/main.log
+        exitCode: "0"
+        parameters:
+        - name: param1
+          value: four-1
+          valueFrom:
+            path: /tmp/param1
+        - name: param2
+          value: four-2
+          valueFrom:
+            path: /tmp/param2
+        result: '"ppp-four"'
+      phase: Succeeded
+      startedAt: "2021-10-11T11:47:07Z"
+      templateName: gen-artifact
+      templateScope: local/expanded-outputs-artifacts-dag-sg2fp
+      type: Pod
+  phase: Running
+  startedAt: "2021-10-11T11:47:07Z"
+`
+
+func TestDAGReferExpandedOutputsArtifacts(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(dagReferExpandedOutputsArtifacts)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	genChildrenNodes := woc.wf.Status.Nodes.FindByDisplayName("gen").Children
+
+	dealOnePathNode := woc.wf.Status.Nodes.FindByDisplayName("deal-path1")
+	assert.Equal(t, len(dealOnePathNode.Children), 4)
+	for i, child := range dealOnePathNode.Children {
+		childNode := woc.wf.Status.Nodes[child]
+		refGenNode := woc.wf.Status.Nodes[genChildrenNodes[i]]
+		assert.Equal(t, childNode.Inputs.Artifacts.GetArtifactByName("path").ArtifactLocation,
+			refGenNode.Outputs.Artifacts.GetArtifactByName("path1").ArtifactLocation)
+	}
+
+	dealPathsNode := woc.wf.Status.Nodes.FindByDisplayName("deal-paths")
+	assert.Equal(t, len(dealPathsNode.Children), 4)
+	for i, child := range dealPathsNode.Children {
+		childNode := woc.wf.Status.Nodes[child]
+		refGenNode := woc.wf.Status.Nodes[genChildrenNodes[i]]
+		assert.Equal(t, childNode.Inputs.Artifacts.GetArtifactByName("path1").ArtifactLocation,
+			refGenNode.Outputs.Artifacts.GetArtifactByName("path1").ArtifactLocation)
+		assert.Equal(t, childNode.Inputs.Artifacts.GetArtifactByName("path2").ArtifactLocation,
+			refGenNode.Outputs.Artifacts.GetArtifactByName("path2").ArtifactLocation)
+	}
+
+	dealParamPathNode := woc.wf.Status.Nodes.FindByDisplayName("deal-param-path")
+	assert.Equal(t, len(dealParamPathNode.Children), 4)
+	assert.Equal(t, woc.wf.Status.Nodes[dealParamPathNode.Children[0]].Phase, wfv1.NodeSkipped)
+	for i, child := range dealParamPathNode.Children[1:] {
+		childNode := woc.wf.Status.Nodes[child]
+		refGenNode := woc.wf.Status.Nodes[genChildrenNodes[i+1]]
+		assert.Equal(t, childNode.Inputs.Artifacts.GetArtifactByName("path").ArtifactLocation,
+			refGenNode.Outputs.Artifacts.GetArtifactByName("path1").ArtifactLocation)
+		assert.Equal(t, childNode.Inputs.Parameters[0].Value.String(), refGenNode.Outputs.Parameters[0].Value.String()) // param
+		refParams := fmt.Sprintf(`{"param1":"%s","param2":"%s"}`,
+			refGenNode.Outputs.Parameters[0].Value.String(), refGenNode.Outputs.Parameters[1].Value.String())
+		assert.Equal(t, childNode.Inputs.Parameters[1].Value.String(), refParams)                    // params
+		assert.Equal(t, childNode.Inputs.Parameters[2].Value.String(), *refGenNode.Outputs.ExitCode) // exitCode
+		assert.Equal(t, childNode.Inputs.Parameters[3].Value.String(), *refGenNode.Outputs.Result)   // result
+	}
+
+	collectionNode := woc.wf.Status.Nodes.FindByDisplayName("collection")
+	for i, genNode := range genChildrenNodes {
+		assert.Equal(t, collectionNode.Inputs.Artifacts.GetArtifactByName(fmt.Sprintf("%d_paths", i)).ArtifactLocation,
+			woc.wf.Status.Nodes[genNode].Outputs.Artifacts.GetArtifactByName("path1").ArtifactLocation)
+	}
+}

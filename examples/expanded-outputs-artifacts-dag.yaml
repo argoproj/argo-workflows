@@ -1,0 +1,129 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: expanded-outputs-artifacts-dag-
+spec:
+  entrypoint: expanded-outputs-artifacts
+  templates:
+  - name: expanded-outputs-artifacts
+    dag:
+      tasks:
+      - name: gen
+        template: gen-artifact
+        arguments:
+          parameters:
+          - name: message
+            value: "{{item}}"
+        withItems: ["one", "two", "three", "four"]
+      - name: deal-path1
+        template: deal-one-path
+        arguments:
+          artifacts:
+          - name: path
+            from: "{{item}}"
+        withParam: "{{tasks.gen.outputs.artifacts.path1}}"
+        depends: gen.Succeeded
+      - name: deal-paths
+        template: deal-two-path
+        arguments:
+          artifacts:
+          - name: path1
+            from: "{{item.path1}}"
+          - name: path2
+            from: "{{item.path2}}"
+        withParam: "{{tasks.gen.outputs.artifacts}}"
+        depends: gen.Succeeded
+      - name: deal-param-path
+        template: deal-param-path
+        arguments:
+          parameters:
+          - name: param
+            value: "{{item.parameters.param1}}"
+          - name: params
+            value: "{{item.parameters}}"
+          - name: exitCode
+            value: "{{item.exitCode}}"
+          - name: result
+            value: "{{item.result}}"
+          artifacts:
+          - name: path
+            from: "{{item.artifacts.path1}}"
+        withParam: "{{tasks.gen.outputs}}"
+        when: '"{{item.parameters.param2}}" != "one-2"'
+        depends: gen.Succeeded
+      - name: collection
+        template: collection
+        arguments:
+          artifacts:
+          - name: paths
+            fromMulti: "{{tasks.gen.outputs.artifacts.path1}}"
+        depends: gen.Succeeded
+
+  - name: gen-artifact
+    inputs:
+      parameters:
+      - name: message
+    outputs:
+      parameters:
+      - name: param1
+        valueFrom:
+          path: /tmp/param1
+      - name: param2
+        valueFrom:
+          path: /tmp/param2
+      artifacts:
+      - name: path1
+        path: /tmp/path1
+      - name: path2
+        path: /tmp/path2
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["export message={{inputs.parameters.message}} && echo ${message}-1 > /tmp/param1 && echo ${message}-2 > /tmp/param2 && echo ${message}_11 > /tmp/path1 && echo ${message}_22 > /tmp/path2 && echo \\\"ppp-${message}\\\""]
+
+  - name: deal-one-path
+    inputs:
+      artifacts:
+      - name: path
+        path: /tmp/path
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo deal-one-path: && cat /tmp/path"]
+
+  - name: deal-two-path
+    inputs:
+      artifacts:
+      - name: path1
+        path: /tmp/path1
+      - name: path2
+        path: /tmp/path2
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo deal-two-path: && cat /tmp/path1 && cat {{inputs.artifacts.path2.path}}"]
+
+  - name: deal-param-path
+    inputs:
+      parameters:
+      - name: param
+      - name: params
+      - name: exitCode
+      - name: result
+      artifacts:
+      - name: path
+        path: /tmp/path
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo deal-param-path: && echo param: {{inputs.parameters.param}} && echo params: {{inputs.parameters.params}} && echo exitCode: {{inputs.parameters.exitCode}} && echo result: {{inputs.parameters.result}} && cat /tmp/path"]
+
+  - name: collection
+    inputs:
+      artifacts:
+      - name: paths
+        pathMulti: "/tmp/{{index}}_path"
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["for file in $(ls /tmp/*_path); do echo $file; cat $file; done"]
