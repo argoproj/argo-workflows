@@ -3150,3 +3150,128 @@ func TestLeafContinueOn(t *testing.T) {
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
+
+var testLeafContinueOnExitCode = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: build-wf-kpxvm
+spec:
+  
+  entrypoint: test-workflow
+  templates:
+  - 
+    dag:
+      tasks:
+      - 
+        name: A
+        template: fail
+      - 
+        continueOn:
+          exitCode: 1
+        dependencies:
+        - A
+        name: B
+        template: ok
+    inputs: {}
+    metadata: {}
+    name: test-workflow
+    outputs: {}
+  - 
+    container:
+      args:
+      - |
+        exit 0
+      command:
+      - sh
+      - -c
+      image: busybox
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: ok
+    outputs: {}
+  - 
+    container:
+      args:
+      - |
+        exit 1
+      command:
+      - sh
+      - -c
+      image: busybox
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: fail
+    outputs: {}
+status:
+  finishedAt: "2020-11-04T16:17:59Z"
+  nodes:
+    build-wf-kpxvm:
+      children:
+      - build-wf-kpxvm-2225940411
+      displayName: build-wf-kpxvm
+      finishedAt: "2020-11-04T16:17:59Z"
+      id: build-wf-kpxvm
+      name: build-wf-kpxvm
+      outboundNodes:
+      - build-wf-kpxvm-2242718030
+      phase: Running
+      progress: 3/3
+      resourcesDuration:
+        cpu: 13
+        memory: 6
+      startedAt: "2020-11-04T16:17:43Z"
+      templateName: test-workflow
+      templateScope: local/build-wf-kpxvm
+      type: DAG
+    build-wf-kpxvm-2242718030:
+      boundaryID: build-wf-kpxvm
+      children:
+      - build-wf-kpxvm-2225940411
+      displayName: B
+      finishedAt: "2020-11-04T16:17:51Z"
+      hostNodeName: minikube
+      id: build-wf-kpxvm-2242718030
+      message: failed with exit code 1
+      name: build-wf-kpxvm.B
+      phase: Failed
+      startedAt: "2020-11-04T16:17:43Z"
+      templateName: ok
+      templateScope: local/build-wf-kpxvm
+      type: Pod
+    build-wf-kpxvm-2225940411:
+      boundaryID: build-wf-kpxvm
+      displayName: A
+      finishedAt: "2020-11-04T16:17:57Z"
+      hostNodeName: minikube
+      id: build-wf-kpxvm-2225940411
+      name: build-wf-kpxvm.A
+      phase: Succeeded
+      startedAt: "2020-11-04T16:17:53Z"
+      templateName: fail
+      templateScope: local/build-wf-kpxvm
+      type: Pod
+  phase: Running
+  progress: 3/3
+  resourcesDuration:
+    cpu: 13
+    memory: 6
+  startedAt: "2020-11-04T16:17:43Z"
+
+`
+
+func TestLeafContinueOnExitCode(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(testLeafContinueOnExitCode)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	ctx := context.Background()
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
