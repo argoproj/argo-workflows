@@ -4,6 +4,9 @@ import {NODE_PHASE} from '../../models';
 
 const managedNamespaceKey = 'managedNamespace';
 const currentNamespaceKey = 'current_namespace';
+const maxK8sResourceNameLength = 253;
+const k8sNamingHashLength = 10;
+
 export const Utils = {
     statusIconClasses(status: string): string {
         let classes = [];
@@ -117,5 +120,47 @@ export const Utils = {
     // return a namespace, never return null/undefined, defaults to "default"
     getNamespaceWithDefault(namespace: string) {
         return this.managedNamespace || namespace || this.currentNamespace || 'default';
+    },
+
+    ensurePodNamePrefixLength(prefix: string): string {
+        const maxPrefixLength = maxK8sResourceNameLength - k8sNamingHashLength;
+
+        if (prefix.length > maxPrefixLength - 1) {
+            return prefix.substring(0, maxPrefixLength - 1);
+        }
+
+        return prefix;
+    },
+
+    // getPodName returns a deterministic pod name
+    getPodName(workflowName: string, nodeName: string, templateName: string, nodeID: string): string {
+        if (process.env.POD_NAMES === 'v1') {
+            return nodeID;
+        }
+
+        if (workflowName === nodeName) {
+            return workflowName;
+        }
+
+        let prefix = `${workflowName}-${templateName}`;
+        prefix = this.ensurePodNamePrefixLength(prefix);
+
+        const hash = createFNVHash(nodeName);
+        return `${prefix}-${hash}`;
     }
+};
+
+const createFNVHash = (input: string) => {
+    const data = new Buffer(input);
+
+    let hashint = 2166136261;
+
+    /* tslint:disable:no-bitwise */
+    for (const character of data) {
+        hashint = hashint ^ character;
+        hashint += (hashint << 1) + (hashint << 4) + (hashint << 7) + (hashint << 8) + (hashint << 24);
+    }
+
+    // unsigned 32 bit integer.
+    return hashint >>> 0;
 };
