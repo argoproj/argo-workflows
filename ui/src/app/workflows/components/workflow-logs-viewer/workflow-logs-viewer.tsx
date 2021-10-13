@@ -9,6 +9,7 @@ import {ErrorNotice} from '../../../shared/components/error-notice';
 import {InfoIcon, WarningIcon} from '../../../shared/components/fa-icons';
 import {Links} from '../../../shared/components/links';
 import {services} from '../../../shared/services';
+import {Utils} from '../../../shared/utils';
 import {FullHeightLogsViewer} from './full-height-logs-viewer';
 
 interface WorkflowLogsViewerProps {
@@ -60,7 +61,11 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
     const podNames = [{value: '', label: 'All'}].concat(
         Object.values(workflow.status.nodes || {})
             .filter(x => x.type === 'Pod')
-            .map(x => ({value: x.id, label: (x.displayName || x.name) + ' (' + x.id + ')'}))
+            .map(targetNode => {
+                const {name, id, templateName, displayName} = targetNode;
+                const targetPodName = Utils.getPodName(workflow.metadata.name, name, templateName, id);
+                return {value: targetPodName, label: (displayName || name) + ' (' + targetPodName + ')'};
+            })
     );
 
     const node = workflow.status.nodes[nodeId];
