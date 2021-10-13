@@ -16,6 +16,7 @@ import {historyUrl} from '../../../shared/history';
 import {RetryWatch} from '../../../shared/retry-watch';
 import {services} from '../../../shared/services';
 import {useQueryParams} from '../../../shared/use-query-params';
+import {Utils} from '../../../shared/utils';
 import * as Operations from '../../../shared/workflow-operations-map';
 import {WorkflowOperations} from '../../../shared/workflow-operations-map';
 import {WidgetGallery} from '../../../widgets/widget-gallery';
@@ -233,6 +234,11 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     };
 
     const selectedNode = workflow && workflow.status && workflow.status.nodes && workflow.status.nodes[nodeId];
+    let podName = nodeId;
+    if (workflow && selectedNode) {
+        podName = Utils.getPodName(workflow.metadata.name, selectedNode.name, selectedNode.templateName, selectedNode.id);
+    }
+
     return (
         <Page
             title={'Workflow Details'}
@@ -301,7 +307,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
             {workflow && (
                 <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)}>
                     {parsedSidePanel.type === 'logs' && (
-                        <WorkflowLogsViewer workflow={workflow} nodeId={parsedSidePanel.nodeId} container={parsedSidePanel.container} archived={false} />
+                        <WorkflowLogsViewer workflow={workflow} initialPodName={podName} nodeId={parsedSidePanel.nodeId} container={parsedSidePanel.container} archived={false} />
                     )}
                     {parsedSidePanel.type === 'events' && <EventsPanel namespace={namespace} kind='Pod' name={parsedSidePanel.nodeId} />}
                     {parsedSidePanel.type === 'share' && <WidgetGallery namespace={namespace} name={name} />}

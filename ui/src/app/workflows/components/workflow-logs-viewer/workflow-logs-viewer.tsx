@@ -6,7 +6,6 @@ import {Observable} from 'rxjs';
 import * as models from '../../../../models';
 import {execSpec} from '../../../../models';
 import {ErrorNotice} from '../../../shared/components/error-notice';
-// import {Utils} from '../../../shared/utils';
 import {InfoIcon, WarningIcon} from '../../../shared/components/fa-icons';
 import {Links} from '../../../shared/components/links';
 import {services} from '../../../shared/services';
@@ -15,6 +14,7 @@ import {FullHeightLogsViewer} from './full-height-logs-viewer';
 interface WorkflowLogsViewerProps {
     workflow: models.Workflow;
     nodeId?: string;
+    initialPodName: string;
     container: string;
     archived: boolean;
 }
@@ -23,9 +23,8 @@ function identity<T>(value: T) {
     return () => value;
 }
 
-export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: WorkflowLogsViewerProps) => {
-    // const initialPodName = Utils.getPodName(workflow.metadata.name, 'nodeName', 'templateName', nodeID)
-    const [podName, setPodName] = useState(nodeId || '');
+export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container, archived}: WorkflowLogsViewerProps) => {
+    const [podName, setPodName] = useState(initialPodName || '');
     const [selectedContainer, setContainer] = useState(container);
     const [grep, setGrep] = useState('');
     const [error, setError] = useState<Error>();
