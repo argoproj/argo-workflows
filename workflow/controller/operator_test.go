@@ -3543,6 +3543,7 @@ spec:
 	woc := newWorkflowOperationCtx(wf, controller)
 	createRunningPods(ctx, woc)
 	woc.operate(ctx)
+	time.Sleep(time.Second)
 	// Parent dag node has no pod
 	parentNode := woc.wf.GetNodeByName("dag-events")
 	pod, err := woc.getPodByNode(parentNode)
