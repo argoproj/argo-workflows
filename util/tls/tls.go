@@ -273,8 +273,9 @@ func GenerateX509KeyPairTLSConfig(tlsMinVersion uint16) (*tls.Config, error) {
 	}
 
 	return &tls.Config{
-		Certificates: []tls.Certificate{*cer},
-		MinVersion:   uint16(tlsMinVersion),
+		Certificates:       []tls.Certificate{*cer},
+		MinVersion:         uint16(tlsMinVersion),
+		InsecureSkipVerify: true,
 	}, nil
 }
 

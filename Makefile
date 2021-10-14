@@ -24,13 +24,13 @@ DEV_IMAGE             ?= $(shell [ `uname -s` = Darwin ] && echo true || echo fa
 KUBE_NAMESPACE        ?= argo
 MANAGED_NAMESPACE     ?= $(KUBE_NAMESPACE)
 
-VERSION               := latest
+VERSION               := testing-secure
 DOCKER_PUSH           := false
 
 # VERSION is the version to be used for files in manifests and should always be latest unless we are releasing
 # we assume HEAD means you are on a tag
 ifeq ($(RELEASE_TAG),true)
-VERSION               := $(GIT_TAG)
+VERSION               := testing-secure
 endif
 
 # should we build the static files?
@@ -46,7 +46,7 @@ PROFILE               ?= minimal
 # by keeping this short we speed up the tests
 DEFAULT_REQUEUE_TIME  ?= 100ms
 # whether or not to start the Argo Service in TLS mode
-SECURE                := false
+SECURE                := true
 AUTH_MODE             := hybrid
 ifeq ($(PROFILE),sso)
 AUTH_MODE             := sso
@@ -529,7 +529,7 @@ docs/assets/diagram.png: go-diagrams/diagram.dot
 	cd go-diagrams && dot -Tpng diagram.dot -o ../docs/assets/diagram.png
 
 docs/fields.md: api/openapi-spec/swagger.json $(shell find examples -type f) hack/docgen.go
-	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= go run ./hack docgen
+	env ARGO_SECURE=true ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= go run ./hack docgen
 
 # generates several other files
 docs/cli/argo.md: $(CLI_PKGS) go.sum server/static/files.go hack/cli/main.go
