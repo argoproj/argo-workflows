@@ -3239,7 +3239,7 @@ status:
       name: build-wf-kpxvm.B
       phase: Failed
       startedAt: "2020-11-04T16:17:43Z"
-      templateName: ok
+      templateName: fail
       templateScope: local/build-wf-kpxvm
       type: Pod
     build-wf-kpxvm-2225940411:
@@ -3251,10 +3251,10 @@ status:
       name: build-wf-kpxvm.A
       phase: Succeeded
       startedAt: "2020-11-04T16:17:53Z"
-      templateName: fail
+      templateName: ok
       templateScope: local/build-wf-kpxvm
       type: Pod
-  phase: Running
+  phase: Succeeded
   progress: 3/3
   resourcesDuration:
     cpu: 13
