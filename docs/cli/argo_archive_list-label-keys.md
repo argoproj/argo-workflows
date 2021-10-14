@@ -1,15 +1,15 @@
-## argo archive
+## argo archive list-label-keys
 
-manage the workflow archive
+list workflows label keys in the archive
 
 ```
-argo archive [flags]
+argo archive list-label-keys [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for archive
+  -h, --help   help for list-label-keys
 ```
 
 ### Options inherited from parent commands
@@ -45,10 +45,5 @@ argo archive [flags]
 
 ### SEE ALSO
 
-* [argo](argo.md)	 - argo is the command line interface to Argo
-* [argo archive delete](argo_archive_delete.md)	 - delete a workflow in the archive
-* [argo archive get](argo_archive_get.md)	 - get a workflow in the archive
-* [argo archive list](argo_archive_list.md)	 - list workflows in the archive
-* [argo archive list-label-keys](argo_archive_list-label-keys.md)	 - list workflows label keys in the archive
-* [argo archive list-label-values](argo_archive_list-label-values.md)	 - get workflow label values in the archive
+* [argo archive](argo_archive.md)	 - manage the workflow archive
 

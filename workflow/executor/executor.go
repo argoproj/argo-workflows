@@ -83,7 +83,7 @@ type Initializer interface {
 	Init(tmpl wfv1.Template) error
 }
 
-//go:generate mockery -name ContainerRuntimeExecutor
+//go:generate mockery --name=ContainerRuntimeExecutor
 
 // ContainerRuntimeExecutor is the interface for interacting with a container runtime (e.g. docker)
 type ContainerRuntimeExecutor interface {

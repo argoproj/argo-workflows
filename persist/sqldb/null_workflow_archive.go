@@ -21,7 +21,7 @@ func (r *nullWorkflowArchive) ArchiveWorkflow(*wfv1.Workflow) error {
 	return nil
 }
 
-func (r *nullWorkflowArchive) ListWorkflows(string, string, time.Time, time.Time, labels.Requirements, int, int) (wfv1.Workflows, error) {
+func (r *nullWorkflowArchive) ListWorkflows(string, string, string, time.Time, time.Time, labels.Requirements, int, int) (wfv1.Workflows, error) {
 	return wfv1.Workflows{}, nil
 }
 
@@ -35,4 +35,12 @@ func (r *nullWorkflowArchive) DeleteWorkflow(string) error {
 
 func (r *nullWorkflowArchive) DeleteExpiredWorkflows(time.Duration) error {
 	return nil
+}
+
+func (r *nullWorkflowArchive) ListWorkflowsLabelKeys() (*wfv1.LabelKeys, error) {
+	return &wfv1.LabelKeys{}, nil
+}
+
+func (r *nullWorkflowArchive) ListWorkflowsLabelValues(string) (*wfv1.LabelValues, error) {
+	return &wfv1.LabelValues{}, nil
 }

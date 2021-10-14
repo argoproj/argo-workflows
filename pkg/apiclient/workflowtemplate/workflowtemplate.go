@@ -1,3 +1,3 @@
 package workflowtemplate
 
-//go:generate mockery -name WorkflowTemplateServiceClient
+//go:generate mockery --name=WorkflowTemplateServiceClient
