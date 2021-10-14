@@ -2,10 +2,6 @@
 
 display details about a workflow template
 
-### Synopsis
-
-display details about a workflow template
-
 ```
 argo template get WORKFLOW_TEMPLATE... [flags]
 ```

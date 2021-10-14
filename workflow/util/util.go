@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	nruntime "runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -431,6 +432,7 @@ func SelectorMatchesNode(selector fields.Selector, node wfv1.NodeStatus) bool {
 		"templateName": node.TemplateName,
 		"phase":        string(node.Phase),
 		"name":         node.Name,
+		"id":           node.ID,
 	}
 	if node.TemplateRef != nil {
 		nodeFields["templateRef.name"] = node.TemplateRef.Name
@@ -580,10 +582,11 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
+// generates an insecure random string
 func randString(n int) string {
 	b := make([]byte, n)
 	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
+		b[i] = letters[rand.Intn(len(letters))] //nolint:gosec
 	}
 	return string(b)
 }
@@ -803,7 +806,8 @@ func retryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrato
 		}
 		if node.Type == wfv1.NodeTypePod {
 			log.Infof("Deleting pod: %s", node.ID)
-			err := podIf.Delete(ctx, node.ID, metav1.DeleteOptions{})
+			podName := PodName(wf.Name, node.Name, node.TemplateName, node.ID)
+			err := podIf.Delete(ctx, podName, metav1.DeleteOptions{})
 			if err != nil && !apierr.IsNotFound(err) {
 				return nil, errors.InternalWrapError(err)
 			}
@@ -954,7 +958,7 @@ func ReadFromStdin() ([]byte, error) {
 
 // Reads the content of a url
 func ReadFromUrl(url string) ([]byte, error) {
-	response, err := http.Get(url)
+	response, err := http.Get(url) //nolint:gosec
 	if err != nil {
 		return nil, err
 	}
@@ -1052,4 +1056,45 @@ func GetNodeType(tmpl *wfv1.Template) wfv1.NodeType {
 		return wfv1.NodeTypeSuspend
 	}
 	return ""
+}
+
+// IsWindowsUNCPath checks if path is prefixed with \\
+// This can be used to skip any processing of paths
+// that point to SMB shares, local named pipes and local UNC path
+func IsWindowsUNCPath(path string, tmpl *wfv1.Template) bool {
+	if !HasWindowsOSNodeSelector(tmpl.NodeSelector) && nruntime.GOOS != "windows" {
+		return false
+	}
+	// Check for UNC prefix \\
+	if strings.HasPrefix(path, `\\`) {
+		return true
+	}
+	return false
+}
+
+func HasWindowsOSNodeSelector(nodeSelector map[string]string) bool {
+	if nodeSelector == nil {
+		return false
+	}
+
+	if platform, keyExists := nodeSelector["kubernetes.io/os"]; keyExists && platform == "windows" {
+		return true
+	}
+
+	return false
+}
+
+func FindWaitCtrIndex(pod *apiv1.Pod) (int, error) {
+	waitCtrIndex := -1
+	for i, ctr := range pod.Spec.Containers {
+		switch ctr.Name {
+		case common.WaitContainerName:
+			waitCtrIndex = i
+		}
+	}
+	if waitCtrIndex == -1 {
+		err := errors.Errorf("-1", "Could not find wait container in pod spec")
+		return -1, err
+	}
+	return waitCtrIndex, nil
 }

@@ -12,7 +12,7 @@ The controller has permission (via Kubernetes RBAC + its config map) with either
 * Create/get/delete pods, PVCs, and PDBs.
 * List/get template, config maps, service accounts, and secrets.
 
-See [workflow-controller-clusterrole.yaml](manifests/cluster-install/workflow-controller-rbac/workflow-controller-clusterrole.yaml) or [workflow-controller-role.yaml](manifests/namespace-install/workflow-controller-rbac/workflow-controller-role.yaml)
+See [workflow-controller-clusterrole.yaml](https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/cluster-install/workflow-controller-rbac/workflow-controller-clusterrole.yaml) or [workflow-controller-role.yaml](https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/namespace-install/workflow-controller-rbac/workflow-controller-role.yaml)
 
 ### User Permissions
 
@@ -41,7 +41,7 @@ This service account typically needs the following permissions:
 * Get/watch/patch pods.
 * Get/watch pod logs.
 
-See [workflow-role.yaml](manifests/quick-start/base/workflow-role.yaml).
+See [workflow-role.yaml](https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/quick-start/base/workflow-role.yaml).
 
 Different service accounts should be used if a workflow pod needs to have elevated permissions, e.g. to create other resources.
 

@@ -1291,6 +1291,35 @@ func TestAssessNodeStatus(t *testing.T) {
 			assert.Equal(t, tt.want, got.Phase)
 		})
 	}
+
+	t.Run("Daemon Step finished - Pod running", func(t *testing.T) {
+		cancel, controller := newController()
+		defer cancel()
+		pod := &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Phase: apiv1.PodRunning,
+			},
+		}
+		node := &wfv1.NodeStatus{Daemoned: &daemoned, Phase: wfv1.NodeFailed}
+		woc := newWorkflowOperationCtx(wf, controller)
+		got := woc.assessNodeStatus(pod, node)
+		assert.True(t, got.Phase == wfv1.NodeFailed)
+	})
+
+	t.Run("Daemon Step finished - Pod running", func(t *testing.T) {
+		cancel, controller := newController()
+		defer cancel()
+		pod := &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Phase: apiv1.PodRunning,
+			},
+		}
+		node := &wfv1.NodeStatus{Daemoned: &daemoned, Phase: wfv1.NodeSucceeded}
+		woc := newWorkflowOperationCtx(wf, controller)
+		got := woc.assessNodeStatus(pod, node)
+		assert.True(t, got.Phase == wfv1.NodeSucceeded)
+	})
+
 }
 
 func getPodTemplate(pod *apiv1.Pod) (*wfv1.Template, error) {
@@ -1549,36 +1578,25 @@ spec:
 
 // TestWorkflowParallelismLimit verifies parallelism at a workflow level is honored.
 func TestWorkflowParallelismLimit(t *testing.T) {
-	cancel, controller := newController()
+	ctx := context.Background()
+	wf := wfv1.MustUnmarshalWorkflow(workflowParallelismLimit)
+	cancel, controller := newController(wf)
 	defer cancel()
 
-	ctx := context.Background()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
-	wf := wfv1.MustUnmarshalWorkflow(workflowParallelismLimit)
-	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
-	assert.NoError(t, err)
-
-	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
-	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	pods, err := listPods(woc)
 	assert.NoError(t, err)
-	assert.Equal(t, 2, len(pods.Items))
-	// operate again and make sure we don't schedule any more pods
+	assert.Len(t, pods.Items, 2)
+
 	makePodsPhase(ctx, woc, apiv1.PodRunning)
 
-	syncPodsInformer(ctx, woc)
-
-	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
-	assert.NoError(t, err)
-	// wfBytes, _ := json.MarshalIndent(wf, "", "  ")
-	// log.Printf("%s", wfBytes)
-	woc = newWorkflowOperationCtx(wf, controller)
+	// operate again and make sure we don't schedule any more pods
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
 	pods, err = listPods(woc)
 	assert.NoError(t, err)
-	assert.Equal(t, 2, len(pods.Items))
+	assert.Len(t, pods.Items, 2)
 }
 
 var stepsTemplateParallelismLimit = `
@@ -1802,6 +1820,7 @@ func TestSidecarResourceLimits(t *testing.T) {
 	assert.NoError(t, err)
 	var waitCtr *apiv1.Container
 	for _, ctr := range pod.Spec.Containers {
+		ctr := ctr
 		if ctr.Name == "wait" {
 			waitCtr = &ctr
 			break
@@ -3500,6 +3519,7 @@ func getEvents(controller *WorkflowController, num int) []string {
 }
 
 func TestGetPodByNode(t *testing.T) {
+	t.Skip("See https://github.com/argoproj/argo-workflows/issues/6458")
 	workflowText := `
 metadata:
   name: dag-events
@@ -5878,6 +5898,7 @@ spec:
 		return node.Phase == wfv1.NodePending
 	}))
 
+	time.Sleep(time.Second)
 	deletePods(ctx, woc)
 
 	woc = newWorkflowOperationCtx(woc.wf, controller)
@@ -5888,6 +5909,7 @@ spec:
 		return node.Phase == wfv1.NodePending
 	}))
 
+	time.Sleep(time.Second)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 
 	woc = newWorkflowOperationCtx(woc.wf, controller)
@@ -6778,227 +6800,6 @@ func TestRootRetryStrategyCompletes(t *testing.T) {
 	woc.operate(ctx)
 
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
-}
-
-const testOnExitNameBackwardsCompatibility = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world-69h5d
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    steps:
-    - - name: run
-        onExit: pass
-        template: pass
-  - container:
-      args:
-      - exit 0
-      command:
-      - sh
-      - -c
-      image: alpine
-    name: pass
-  ttlStrategy:
-    secondsAfterCompletion: 600
-status:
-  nodes:
-    hello-world-69h5d:
-      children:
-      - hello-world-69h5d-4087924081
-      displayName: hello-world-69h5d
-      finishedAt: "2021-03-24T14:53:32Z"
-      id: hello-world-69h5d
-      name: hello-world-69h5d
-      outboundNodes:
-      - hello-world-69h5d-928074325
-      phase: Running
-      startedAt: "2021-03-24T14:53:18Z"
-      templateName: main
-      templateScope: local/hello-world-69h5d
-      type: Steps
-    hello-world-69h5d-928074325:
-      boundaryID: hello-world-69h5d
-      displayName: run.onExit
-      finishedAt: "2021-03-24T14:53:31Z"
-      hostNodeName: k3d-k3s-default-server-0
-      id: hello-world-69h5d-928074325
-      name: run.onExit
-      phase: Running
-      startedAt: "2021-03-24T14:53:25Z"
-      templateName: pass
-      templateScope: local/hello-world-69h5d
-      type: Pod
-    hello-world-69h5d-2500098386:
-      boundaryID: hello-world-69h5d
-      children:
-      - hello-world-69h5d-928074325
-      displayName: run
-      finishedAt: "2021-03-24T14:53:24Z"
-      hostNodeName: k3d-k3s-default-server-0
-      id: hello-world-69h5d-2500098386
-      name: hello-world-69h5d[0].run
-      phase: Succeeded
-      startedAt: "2021-03-24T14:53:18Z"
-      templateName: pass
-      templateScope: local/hello-world-69h5d
-      type: Pod
-    hello-world-69h5d-4087924081:
-      boundaryID: hello-world-69h5d
-      children:
-      - hello-world-69h5d-2500098386
-      displayName: '[0]'
-      finishedAt: "2021-03-24T14:53:32Z"
-      id: hello-world-69h5d-4087924081
-      name: hello-world-69h5d[0]
-      phase: Running
-      startedAt: "2021-03-24T14:53:18Z"
-      templateScope: local/hello-world-69h5d
-      type: StepGroup
-  phase: Running
-  startedAt: "2021-03-24T14:53:18Z"
-`
-
-// Previously we used `parentNodeDisplayName` to generate all onExit node names. However, as these can be non-unique
-// we transitioned to using `parentNodeName` instead, which are guaranteed to be unique. In order to not disrupt
-// running workflows during upgrade time, we first check if there is an onExit node that currently exists with the
-// legacy name AND said node is a child of the parent node. If it does, we continue execution with the legacy name.
-// If it doesn't, we use the new (and unique) name for all operations henceforth.
-//
-// Here we test to see if this backwards compatibility works. This test workflow contains a running onExit node with the
-// old name. When we call operate on it, we should NOT create another onExit node with the new name and instead respect
-// the old onExit node.
-//
-// TODO: This test should be removed after a couple of "grace period" version upgrades to allow transitions. It was introduced in v3.0.0
-// See more: https://github.com/argoproj/argo-workflows/issues/5502
-func TestOnExitNameBackwardsCompatibility(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(testOnExitNameBackwardsCompatibility)
-	cancel, controller := newController(wf)
-	defer cancel()
-
-	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
-
-	createRunningPods(ctx, woc)
-
-	nodesBeforeOperation := len(woc.wf.Status.Nodes)
-	woc.operate(ctx)
-
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	// Number of nodes should not change (no new name node was created)
-	assert.Equal(t, nodesBeforeOperation, len(woc.wf.Status.Nodes))
-	node := woc.wf.Status.Nodes.FindByDisplayName("run.onExit")
-	if assert.NotNil(t, node) {
-		assert.Equal(t, wfv1.NodeRunning, node.Phase)
-	}
-}
-
-const testOnExitDAGStatusCompatibility = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: dag-diamond-8xw8l
-spec:
-  entrypoint: diamond
-  templates:
-  - dag:
-      tasks:
-      - name: A
-        onExit: echo
-        template: echo
-      - depends: A
-        name: B
-        template: echo
-    name: diamond
-  - container:
-      command:
-      - echo
-      - hi
-      image: alpine:3.7
-    name: echo
-status:
-  nodes:
-    dag-diamond-8xw8l:
-      children:
-      - dag-diamond-8xw8l-1488416551
-      displayName: dag-diamond-8xw8l
-      finishedAt: "2021-03-24T15:37:06Z"
-      id: dag-diamond-8xw8l
-      name: dag-diamond-8xw8l
-      outboundNodes:
-      - dag-diamond-8xw8l-1505194170
-      phase: Running
-      startedAt: "2021-03-24T15:36:47Z"
-      templateName: diamond
-      templateScope: local/dag-diamond-8xw8l
-      type: DAG
-    dag-diamond-8xw8l-1342580575:
-      boundaryID: dag-diamond-8xw8l
-      displayName: A.onExit
-      finishedAt: "2021-03-24T15:36:59Z"
-      hostNodeName: k3d-k3s-default-server-0
-      id: dag-diamond-8xw8l-1342580575
-      name: A.onExit
-      phase: Running
-      startedAt: "2021-03-24T15:36:54Z"
-      templateName: echo
-      templateScope: local/dag-diamond-8xw8l
-      type: Pod
-    dag-diamond-8xw8l-1488416551:
-      boundaryID: dag-diamond-8xw8l
-      children:
-      - dag-diamond-8xw8l-1342580575
-      displayName: A
-      finishedAt: "2021-03-24T15:36:53Z"
-      hostNodeName: k3d-k3s-default-server-0
-      id: dag-diamond-8xw8l-1488416551
-      name: dag-diamond-8xw8l.A
-      phase: Succeeded
-      startedAt: "2021-03-24T15:36:47Z"
-      templateName: echo
-      templateScope: local/dag-diamond-8xw8l
-      type: Pod
-  phase: Running
-  startedAt: "2021-03-24T15:36:47Z"
-`
-
-// Previously we used `parentNodeDisplayName` to generate all onExit node names. However, as these can be non-unique
-// we transitioned to using `parentNodeName` instead, which are guaranteed to be unique. In order to not disrupt
-// running workflows during upgrade time, we first check if there is an onExit node that currently exists with the
-// legacy name AND said node is a child of the parent node. If it does, we continue execution with the legacy name.
-// If it doesn't, we use the new (and unique) name for all operations henceforth.
-//
-// Here we test to see if this backwards compatibility works. This test workflow contains a running onExit node with the
-// old name. When we call operate on it, we should NOT create the subsequent DAG done ("B") until the onExit node name with
-// the old name finishes running.
-//
-// TODO: This test should be removed after a couple of "grace period" version upgrades to allow transitions. It was introduced in v3.0.0
-// See more: https://github.com/argoproj/argo-workflows/issues/5502
-func TestOnExitDAGStatusCompatibility(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(testOnExitDAGStatusCompatibility)
-	cancel, controller := newController(wf)
-	defer cancel()
-
-	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
-
-	createRunningPods(ctx, woc)
-
-	nodesBeforeOperation := len(woc.wf.Status.Nodes)
-	woc.operate(ctx)
-
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	// Number of nodes should not change (no new name node was created)
-	assert.Equal(t, nodesBeforeOperation, len(woc.wf.Status.Nodes))
-	node := woc.wf.Status.Nodes.FindByDisplayName("A.onExit")
-	if assert.NotNil(t, node) {
-		assert.Equal(t, wfv1.NodeRunning, node.Phase)
-	}
-
-	nodeB := woc.wf.Status.Nodes.FindByDisplayName("B")
-	assert.Nil(t, nodeB)
 }
 
 const testGlobalParamSubstitute = `

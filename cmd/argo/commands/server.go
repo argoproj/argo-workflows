@@ -4,10 +4,10 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
-	_ "net/http/pprof"
 	"os"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
@@ -16,7 +16,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/skratchdot/open-golang/open"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 	"golang.org/x/net/context"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	restclient "k8s.io/client-go/rest"
@@ -30,6 +33,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/types"
 	"github.com/argoproj/argo-workflows/v3/util/cmd"
 	"github.com/argoproj/argo-workflows/v3/util/help"
+	pprofutil "github.com/argoproj/argo-workflows/v3/util/pprof"
 	tlsutils "github.com/argoproj/argo-workflows/v3/util/tls"
 )
 
@@ -56,11 +60,12 @@ func NewServerCommand() *cobra.Command {
 		Use:   "server",
 		Short: "start the Argo Server",
 		Example: fmt.Sprintf(`
-See %s`, help.ArgoSever),
+See %s`, help.ArgoServer),
 		RunE: func(c *cobra.Command, args []string) error {
 			cmd.SetLogFormatter(logFormat)
 			stats.RegisterStackDumper()
 			stats.StartStatsTicker(5 * time.Minute)
+			pprofutil.Init()
 
 			config, err := client.GetConfig().ClientConfig()
 			if err != nil {
@@ -73,10 +78,11 @@ See %s`, help.ArgoSever),
 
 			namespace := client.Namespace()
 			clients := &types.Clients{
-				Workflow:    wfclientset.NewForConfigOrDie(config),
+				Dynamic:     dynamic.NewForConfigOrDie(config),
 				EventSource: eventsource.NewForConfigOrDie(config),
-				Sensor:      sensor.NewForConfigOrDie(config),
 				Kubernetes:  kubernetes.NewForConfigOrDie(config),
+				Sensor:      sensor.NewForConfigOrDie(config),
+				Workflow:    wfclientset.NewForConfigOrDie(config),
 			}
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
@@ -100,23 +106,16 @@ See %s`, help.ArgoSever),
 			var tlsConfig *tls.Config
 			if secure {
 				tlsMinVersion, err := env.GetInt("TLS_MIN_VERSION", tls.VersionTLS12)
-				unsignedTlsMinVersion := uint16(tlsMinVersion)
 				if err != nil {
 					return err
 				}
 
 				if tlsCertificateSecretName != "" {
 					log.Infof("Getting contents of Kubernetes secret %s for TLS Certificates", tlsCertificateSecretName)
-					tlsConfig, err = tlsutils.GetServerTLSConfigFromSecret(clients.Kubernetes, tlsCertificateSecretName, unsignedTlsMinVersion, namespace)
+					tlsConfig, err = tlsutils.GetServerTLSConfigFromSecret(clients.Kubernetes, tlsCertificateSecretName, uint16(tlsMinVersion), namespace)
 				} else {
 					log.Infof("Generating Self Signed TLS Certificates for Secure Mode")
-					opts := tlsutils.CertOptions{
-						Hosts:        []string{"localhost"},
-						IsCA:         false,
-						ValidFor:     0,
-						Organization: "ArgoProj",
-					}
-					tlsConfig, err = tlsutils.GenerateX509KeyPairTLSConfig(opts, unsignedTlsMinVersion)
+					tlsConfig, err = tlsutils.GenerateX509KeyPairTLSConfig(uint16(tlsMinVersion))
 				}
 
 				if err != nil {
@@ -187,11 +186,7 @@ See %s`, help.ArgoSever),
 	}
 
 	command.Flags().IntVarP(&port, "port", "p", 2746, "Port to listen on")
-	defaultBaseHRef := os.Getenv("BASE_HREF")
-	if defaultBaseHRef == "" {
-		defaultBaseHRef = "/"
-	}
-	command.Flags().StringVar(&baseHRef, "basehref", defaultBaseHRef, "Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /. Defaults to the environment variable BASE_HREF.")
+	command.Flags().StringVar(&baseHRef, "basehref", "/", "Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /. Defaults to the environment variable BASE_HREF.")
 	// "-e" for encrypt, like zip
 	command.Flags().BoolVarP(&secure, "secure", "e", true, "Whether or not we should listen on TLS.")
 	command.Flags().StringVar(&tlsCertificateSecretName, "tls-certificate-secret-name", "", "The name of a Kubernetes secret that contains the server certificates")
@@ -206,5 +201,21 @@ See %s`, help.ArgoSever),
 	command.Flags().StringVar(&frameOptions, "x-frame-options", "DENY", "Set X-Frame-Options header in HTTP responses.")
 	command.Flags().StringVar(&accessControlAllowOrigin, "access-control-allow-origin", "", "Set Access-Control-Allow-Origin header in HTTP responses.")
 	command.Flags().StringVar(&logFormat, "log-format", "text", "The formatter to use for logs. One of: text|json")
+
+	viper.AutomaticEnv()
+	viper.SetEnvPrefix("ARGO")
+	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
+	if err := viper.BindPFlags(command.Flags()); err != nil {
+		log.Fatal(err)
+	}
+	command.Flags().VisitAll(func(f *pflag.Flag) {
+		if !f.Changed && viper.IsSet(f.Name) {
+			val := viper.Get(f.Name)
+			if err := command.Flags().Set(f.Name, fmt.Sprintf("%v", val)); err != nil {
+				log.Fatal(err)
+			}
+		}
+	})
+
 	return &command
 }

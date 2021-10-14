@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"io"
+	"regexp"
 	"sync"
 
 	log "github.com/sirupsen/logrus"
@@ -16,10 +17,14 @@ import (
 
 type Callback func(pod *corev1.Pod, data []byte) error
 
-func LogPods(ctx context.Context, namespace, labelSelector string, podLogOptions *corev1.PodLogOptions, callback Callback) error {
+func LogPods(ctx context.Context, namespace, labelSelector, grep string, podLogOptions *corev1.PodLogOptions, callback Callback) error {
 	coreV1 := auth.GetKubeClient(ctx).CoreV1()
 	if podLogOptions == nil {
 		podLogOptions = &corev1.PodLogOptions{}
+	}
+	rx, err := regexp.Compile(grep)
+	if err != nil {
+		return err
 	}
 	podInterface := coreV1.Pods(namespace)
 	list, err := podInterface.List(ctx, metav1.ListOptions{LabelSelector: labelSelector})
@@ -52,10 +57,11 @@ func LogPods(ctx context.Context, namespace, labelSelector string, podLogOptions
 							return s.Err()
 						}
 						data := s.Bytes()
-						logCtx.Debugln(string(data))
-						err = callback(pod, data)
-						if err != nil {
-							return err
+						if rx.Match(data) {
+							logCtx.Debugln(string(data))
+							if err := callback(pod, data); err != nil {
+								return err
+							}
 						}
 					}
 				}

@@ -8,7 +8,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -135,6 +134,8 @@ func TestResourceDurationMetric(t *testing.T) {
       id: many-items-z26lj-3491220632
       name: many-items-z26lj[0].sleep(4:four)
       outputs:
+        parameters:
+        - name: pipeline_tid
         artifacts:
         - archiveLogs: true
           name: main-logs

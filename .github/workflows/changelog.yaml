@@ -7,6 +7,7 @@ on:
       - "!v0.0.0"
 jobs:
   generate_changelog:
+    if: github.repository == 'argoproj/argo-workflows'
     runs-on: ubuntu-latest
     name: Generate changelog
     steps:

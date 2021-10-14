@@ -21,6 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/remotecommand"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
@@ -116,14 +117,14 @@ func GetExecutorOutput(exec remotecommand.Executor) (*bytes.Buffer, *bytes.Buffe
 // * parameters in the template from the arguments
 // * global parameters (e.g. {{workflow.parameters.XX}}, {{workflow.name}}, {{workflow.status}})
 // * local parameters (e.g. {{pod.name}})
-func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams, localParams Parameters, validateOnly bool) (*wfv1.Template, error) {
+func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams, localParams Parameters, validateOnly bool, namespace string, configMapInformer cache.SharedIndexInformer) (*wfv1.Template, error) {
 	// For each input parameter:
 	// 1) check if was supplied as argument. if so use the supplied value from arg
 	// 2) if not, use default value.
 	// 3) if no default value, it is an error
 	newTmpl := tmpl.DeepCopy()
 	for i, inParam := range newTmpl.Inputs.Parameters {
-		if inParam.Default != nil {
+		if inParam.Value == nil && inParam.Default != nil {
 			// first set to default value
 			inParam.Value = inParam.Default
 		}
@@ -132,9 +133,20 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 		if argParam != nil && argParam.Value != nil {
 			inParam.Value = argParam.Value
 		}
-		if inParam.Value == nil {
-			return nil, errors.Errorf(errors.CodeBadRequest, "inputs.parameters.%s was not supplied", inParam.Name)
+		if inParam.ValueFrom != nil && inParam.ValueFrom.ConfigMapKeyRef != nil {
+			if configMapInformer != nil {
+				cmValue, err := util.GetConfigMapValue(configMapInformer, namespace, inParam.ValueFrom.ConfigMapKeyRef.Name, inParam.ValueFrom.ConfigMapKeyRef.Key)
+				if err != nil {
+					return nil, errors.Errorf(errors.CodeBadRequest, "unable to retrieve inputs.parameters.%s from ConfigMap: %s", inParam.Name, err)
+				}
+				inParam.Value = wfv1.AnyStringPtr(cmValue)
+			}
+		} else {
+			if inParam.Value == nil {
+				return nil, errors.Errorf(errors.CodeBadRequest, "inputs.parameters.%s was not supplied", inParam.Name)
+			}
 		}
+
 		newTmpl.Inputs.Parameters[i] = inParam
 	}
 
@@ -186,10 +198,11 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 	// Now replace the rest of substitutions (the ones that can be made) in the template
 	replaceMap = make(map[string]string)
 	for _, inParam := range globalReplacedTmpl.Inputs.Parameters {
-		if inParam.Value == nil {
+		if inParam.Value == nil && inParam.ValueFrom == nil {
 			return nil, errors.InternalErrorf("inputs.parameters.%s had no value", inParam.Name)
+		} else if inParam.Value != nil {
+			replaceMap["inputs.parameters."+inParam.Name] = inParam.Value.String()
 		}
-		replaceMap["inputs.parameters."+inParam.Name] = inParam.Value.String()
 	}
 	// allow {{inputs.parameters}} to fetch the entire input parameters list as JSON
 	jsonInputParametersBytes, err := json.Marshal(globalReplacedTmpl.Inputs.Parameters)

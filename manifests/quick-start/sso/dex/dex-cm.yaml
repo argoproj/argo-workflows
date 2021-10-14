@@ -16,6 +16,7 @@ data:
       - id: argo-server
         redirectURIs:
           - http://localhost:2746/oauth2/callback
+          - http://localhost:8080/oauth2/callback
         name: Argo Server
         secret: ZXhhbXBsZS1hcHAtc2VjcmV0
     connectors:

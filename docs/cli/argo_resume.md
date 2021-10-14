@@ -2,10 +2,6 @@
 
 resume zero or more workflows
 
-### Synopsis
-
-resume zero or more workflows
-
 ```
 argo resume WORKFLOW1 WORKFLOW2... [flags]
 ```

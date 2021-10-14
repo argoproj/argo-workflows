@@ -12,6 +12,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/fields"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	"sigs.k8s.io/yaml"
 
@@ -103,7 +104,7 @@ func TestReadFromSingleorMultiplePath(t *testing.T) {
 				content := []byte(tc.contents[i])
 				tmpfn := filepath.Join(dir, tc.fileNames[i])
 				filePaths = append(filePaths, tmpfn)
-				err := ioutil.WriteFile(tmpfn, content, 0o666)
+				err := ioutil.WriteFile(tmpfn, content, 0o600)
 				if err != nil {
 					t.Error("Could not write to temporary file")
 				}
@@ -155,7 +156,7 @@ func TestReadFromSingleorMultiplePathErrorHandling(t *testing.T) {
 				tmpfn := filepath.Join(dir, tc.fileNames[i])
 				filePaths = append(filePaths, tmpfn)
 				if tc.exists[i] {
-					err := ioutil.WriteFile(tmpfn, content, 0o666)
+					err := ioutil.WriteFile(tmpfn, content, 0o600)
 					if err != nil {
 						t.Error("Could not write to temporary file")
 					}
@@ -484,6 +485,66 @@ func TestUpdateSuspendedNode(t *testing.T) {
 	}
 }
 
+func TestSelectorMatchesNode(t *testing.T) {
+	tests := map[string]struct {
+		selector string
+		outcome  bool
+	}{
+		"idFound": {
+			selector: "id=123",
+			outcome:  true,
+		},
+		"idNotFound": {
+			selector: "id=321",
+			outcome:  false,
+		},
+		"nameFound": {
+			selector: "name=failed-node",
+			outcome:  true,
+		},
+		"phaseFound": {
+			selector: "phase=Failed",
+			outcome:  true,
+		},
+		"randomNotFound": {
+			selector: "foo=Failed",
+			outcome:  false,
+		},
+		"templateFound": {
+			selector: "templateRef.name=templateName",
+			outcome:  true,
+		},
+		"inputFound": {
+			selector: "inputs.parameters.myparam.value=abc",
+			outcome:  true,
+		},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			node := wfv1.NodeStatus{ID: "123", Name: "failed-node", Phase: wfv1.NodeFailed, TemplateRef: &wfv1.TemplateRef{
+				Name:     "templateName",
+				Template: "template",
+			},
+				Inputs: &wfv1.Inputs{
+					Parameters: []wfv1.Parameter{
+						{
+							Name:  "myparam",
+							Value: wfv1.AnyStringPtr("abc"),
+						},
+					},
+				},
+			}
+			selector, err := fields.ParseSelector(tc.selector)
+			assert.NoError(t, err)
+			if tc.outcome {
+				assert.True(t, SelectorMatchesNode(selector, node))
+			} else {
+				assert.False(t, SelectorMatchesNode(selector, node))
+			}
+		})
+	}
+}
+
 func TestGetNodeType(t *testing.T) {
 	t.Run("getNodeType", func(t *testing.T) {
 		assert.Equal(t, wfv1.NodeTypePod, GetNodeType(&wfv1.Template{Script: &wfv1.ScriptTemplate{}}))
@@ -541,7 +602,7 @@ func TestApplySubmitOpts(t *testing.T) {
 		file, err := ioutil.TempFile("", "")
 		assert.NoError(t, err)
 		defer func() { _ = os.Remove(file.Name()) }()
-		err = ioutil.WriteFile(file.Name(), []byte(`a: 81861780812`), 0o644)
+		err = ioutil.WriteFile(file.Name(), []byte(`a: 81861780812`), 0o600)
 		assert.NoError(t, err)
 		err = ApplySubmitOpts(wf, &wfv1.SubmitOpts{ParameterFile: file.Name()})
 		assert.NoError(t, err)

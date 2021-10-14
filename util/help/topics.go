@@ -1,10 +1,10 @@
 package help
 
 const (
-	root      = "https://argoproj.github.io/argo-workflows"
-	ArgoSever = root + "/argo-server.md"
-	CLI       = root + "/cli.md"
+	root       = "https://argoproj.github.io/argo-workflows"
+	ArgoServer = root + "/argo-server/"
+	CLI        = root + "/cli/"
 
-	WorkflowTemplates                          = root + "/workflow-templates.md"
+	WorkflowTemplates                          = root + "/workflow-templates/"
 	WorkflowTemplatesReferencingOtherTemplates = WorkflowTemplates + "#referencing-other-workflowtemplates"
 )

@@ -3,9 +3,9 @@ import {Pagination} from '../pagination';
 import requests from './requests';
 
 export class ArchivedWorkflowsService {
-    public list(namespace: string, phases: string[], labels: string[], minStartedAt: Date, maxStartedAt: Date, pagination: Pagination) {
+    public list(namespace: string, name: string, namePrefix: string, phases: string[], labels: string[], minStartedAt: Date, maxStartedAt: Date, pagination: Pagination) {
         return requests
-            .get(`api/v1/archived-workflows?${this.queryParams({namespace, phases, labels, minStartedAt, maxStartedAt, pagination}).join('&')}`)
+            .get(`api/v1/archived-workflows?${this.queryParams({namespace, name, namePrefix, phases, labels, minStartedAt, maxStartedAt, pagination}).join('&')}`)
             .then(res => res.body as models.WorkflowList);
     }
 
@@ -17,9 +17,26 @@ export class ArchivedWorkflowsService {
         return requests.delete(`api/v1/archived-workflows/${uid}`);
     }
 
-    private queryParams(filter: {namespace?: string; phases?: Array<string>; labels?: Array<string>; minStartedAt?: Date; maxStartedAt?: Date; pagination: Pagination}) {
+    public listLabelKeys() {
+        return requests.get(`api/v1/archived-workflows-label-keys`).then(res => res.body as models.Labels);
+    }
+
+    public listLabelValues(key: string) {
+        return requests.get(`api/v1/archived-workflows-label-values?listOptions.labelSelector=${key}`).then(res => res.body as models.Labels);
+    }
+
+    private queryParams(filter: {
+        namespace?: string;
+        name?: string;
+        namePrefix?: string;
+        phases?: Array<string>;
+        labels?: Array<string>;
+        minStartedAt?: Date;
+        maxStartedAt?: Date;
+        pagination: Pagination;
+    }) {
         const queryParams: string[] = [];
-        const fieldSelector = this.fieldSelectorParams(filter.namespace, filter.minStartedAt, filter.maxStartedAt);
+        const fieldSelector = this.fieldSelectorParams(filter.namespace, filter.name, filter.minStartedAt, filter.maxStartedAt);
         if (fieldSelector.length > 0) {
             queryParams.push(`listOptions.fieldSelector=${fieldSelector}`);
         }
@@ -33,13 +50,19 @@ export class ArchivedWorkflowsService {
         if (filter.pagination.limit) {
             queryParams.push(`listOptions.limit=${filter.pagination.limit}`);
         }
+        if (filter.namePrefix) {
+            queryParams.push(`namePrefix=${filter.namePrefix}`);
+        }
         return queryParams;
     }
 
-    private fieldSelectorParams(namespace: string, minStartedAt: Date, maxStartedAt: Date) {
+    private fieldSelectorParams(namespace: string, name: string, minStartedAt: Date, maxStartedAt: Date) {
         let fieldSelector = '';
         if (namespace) {
             fieldSelector += 'metadata.namespace=' + namespace + ',';
+        }
+        if (name) {
+            fieldSelector += 'metadata.name=' + name + ',';
         }
         if (minStartedAt) {
             fieldSelector += 'spec.startedAt>' + minStartedAt.toISOString() + ',';

@@ -2,10 +2,6 @@
 
 create a cluster workflow template
 
-### Synopsis
-
-create a cluster workflow template
-
 ```
 argo cluster-template create FILE1 FILE2... [flags]
 ```

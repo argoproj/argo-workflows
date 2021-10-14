@@ -12,7 +12,7 @@ import (
 	"time"
 
 	pkgrand "github.com/argoproj/pkg/rand"
-	"github.com/coreos/go-oidc"
+	"github.com/coreos/go-oidc/v3/oidc"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 	"gopkg.in/square/go-jose.v2"
@@ -33,7 +33,7 @@ const (
 	cookieEncryptionPrivateKeySecretKey = "cookieEncryptionPrivateKey" // the key name for the private key in the secret
 )
 
-//go:generate mockery -name Interface
+//go:generate mockery --name=Interface
 
 type Interface interface {
 	Authorize(authorization string) (*types.Claims, error)
@@ -46,6 +46,7 @@ var _ Interface = &sso{}
 
 type sso struct {
 	config          *oauth2.Config
+	issuer          string
 	idTokenVerifier *oidc.IDTokenVerifier
 	baseHRef        string
 	secure          bool
@@ -54,6 +55,7 @@ type sso struct {
 	rbacConfig      *rbac.Config
 	expiry          time.Duration
 	customClaimName string
+	userInfoPath    string
 }
 
 func (s *sso) IsRBACEnabled() bool {
@@ -62,6 +64,7 @@ func (s *sso) IsRBACEnabled() bool {
 
 type Config struct {
 	Issuer       string                  `json:"issuer"`
+	IssuerAlias  string                  `json:"issuerAlias,omitempty"`
 	ClientID     apiv1.SecretKeySelector `json:"clientId"`
 	ClientSecret apiv1.SecretKeySelector `json:"clientSecret"`
 	RedirectURL  string                  `json:"redirectUrl"`
@@ -71,6 +74,7 @@ type Config struct {
 	SessionExpiry metav1.Duration `json:"sessionExpiry,omitempty"`
 	// customGroupClaimName will override the groups claim name
 	CustomGroupClaimName string `json:"customGroupClaimName,omitempty"`
+	UserInfoPath         string `json:"userInfoPath,omitempty"`
 }
 
 func (c Config) GetSessionExpiry() time.Duration {
@@ -120,7 +124,14 @@ func newSso(
 	if err != nil {
 		return nil, err
 	}
-	provider, err := factory(context.Background(), c.Issuer)
+	// Some offspec providers like Azure, Oracle IDCS have oidc discovery url different from issuer url which causes issuerValidation to fail
+	// This providerCtx will allow the Verifier to succeed if the alternate/alias URL is in the config
+	var providerCtx context.Context = context.Background()
+	if c.IssuerAlias != "" {
+		providerCtx = oidc.InsecureIssuerURLContext(ctx, c.IssuerAlias)
+	}
+
+	provider, err := factory(providerCtx, c.Issuer)
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +188,12 @@ func newSso(
 	if err != nil {
 		return nil, fmt.Errorf("failed to create JWT encrpytor: %w", err)
 	}
-	log.WithFields(log.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "clientId": c.ClientID, "scopes": config.Scopes}).Info("SSO configuration")
+	lf := log.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "issuerAlias": "DISABLED", "clientId": c.ClientID, "scopes": config.Scopes}
+	if c.IssuerAlias != "" {
+		lf["issuerAlias"] = c.IssuerAlias
+	}
+	log.WithFields(lf).Info("SSO configuration")
+
 	return &sso{
 		config:          config,
 		idTokenVerifier: idTokenVerifier,
@@ -188,6 +204,8 @@ func newSso(
 		rbacConfig:      c.RBAC,
 		expiry:          c.GetSessionExpiry(),
 		customClaimName: c.CustomGroupClaimName,
+		userInfoPath:    c.UserInfoPath,
+		issuer:          c.Issuer,
 	}, nil
 }
 
@@ -256,6 +274,17 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			w.WriteHeader(401)
 			_, _ = w.Write([]byte(fmt.Sprintf("failed to get custom claim: %v", err)))
+			return
+		}
+	}
+
+	// Some SSO implementations (Okta) require a call to
+	// the OIDC user info path to get attributes like groups
+	if s.userInfoPath != "" {
+		groups, err = c.GetUserInfoGroups(oauth2Token.AccessToken, s.issuer, s.userInfoPath)
+		if err != nil {
+			w.WriteHeader(401)
+			_, _ = w.Write([]byte(fmt.Sprintf("failed to get groups claim: %v", err)))
 			return
 		}
 	}

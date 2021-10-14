@@ -36,4 +36,3 @@ git-ask-pass.sh
 /.brew_home
 /go-diagrams/
 /.run/
-pprof

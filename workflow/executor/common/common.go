@@ -11,11 +11,10 @@ import (
 	"syscall"
 	"time"
 
-	envutil "github.com/argoproj/argo-workflows/v3/util/env"
-
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 
+	envutil "github.com/argoproj/argo-workflows/v3/util/env"
 	"github.com/argoproj/argo-workflows/v3/util/slice"
 )
 
@@ -153,7 +152,7 @@ func CopyArchive(ctx context.Context, c KubernetesClientInterface, containerName
 	if err != nil {
 		return err
 	}
-	f, err := os.OpenFile(filepath.Clean(destPath), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o666)
+	f, err := os.OpenFile(filepath.Clean(destPath), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
 	if err != nil {
 		return err
 	}

@@ -17,7 +17,7 @@ export class WorkflowDagRenderOptionsPanel extends React.Component<WorkflowDagRe
                         })
                     }
                     title='Collapse all nodes'>
-                    <i className='fa fa-compress' data-fa-transform='rotate-45' />
+                    <i className='fa fa-compress fa-fw' data-fa-transform='rotate-45' />
                 </a>
                 <a
                     onClick={() =>
@@ -27,7 +27,7 @@ export class WorkflowDagRenderOptionsPanel extends React.Component<WorkflowDagRe
                         })
                     }
                     title='Expand all nodes'>
-                    <i className='fa fa-expand' data-fa-transform='rotate-45' />
+                    <i className='fa fa-expand fa-fw' data-fa-transform='rotate-45' />
                 </a>
             </>
         );

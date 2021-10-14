@@ -38,7 +38,7 @@ func NewNodeCommand() *cobra.Command {
   argo node set my-wf --message "We did it!"" --node-field-selector displayName=approve
 `,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) < 1 {
+			if len(args) < 2 {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
@@ -68,7 +68,7 @@ func NewNodeCommand() *cobra.Command {
 				outputParameters = string(res)
 			}
 
-			ctx, apiClient := client.NewAPIClient()
+			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 

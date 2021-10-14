@@ -1,3 +1,4 @@
+//go:build api
 // +build api
 
 package e2e
@@ -95,9 +96,17 @@ func (s *ArgoServerSuite) TestVersion() {
 	})
 }
 
-func (s *ArgoServerSuite) TestMetrics() {
-	s.Need(fixtures.CI)
-	s.e().GET("/metrics").
+func (s *ArgoServerSuite) TestMetricsForbidden() {
+	s.bearerToken = ""
+	s.e().
+		GET("/metrics").
+		Expect().
+		Status(403)
+}
+
+func (s *ArgoServerSuite) TestMetricsOK() {
+	s.e().
+		GET("/metrics").
 		Expect().
 		Status(200).
 		Body().
@@ -1288,6 +1297,32 @@ spec:
 			Expect().
 			Status(404)
 	})
+
+	s.Run("ListLabelKeys", func() {
+		j := s.e().GET("/api/v1/archived-workflows-label-keys").
+			Expect().
+			Status(200).
+			JSON()
+		j.
+			Path("$.items").
+			Array().
+			Length().
+			Gt(0)
+	})
+
+	s.Run("ListLabelValues", func() {
+		j := s.e().GET("/api/v1/archived-workflows-label-values").
+			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test").
+			Expect().
+			Status(200).
+			JSON()
+		j.
+			Path("$.items").
+			Array().
+			Length().
+			Equal(1)
+	})
+
 }
 
 func (s *ArgoServerSuite) TestWorkflowTemplateService() {
@@ -1637,6 +1672,20 @@ func (s *ArgoServerSuite) TestEventSourcesService() {
 	})
 	s.Run("DeleteEventSource", func() {
 		s.e().DELETE("/api/v1/event-sources/argo/test-event-source").
+			Expect().
+			Status(200)
+	})
+}
+
+func (s *ArgoServerSuite) TestPipelineService() {
+	s.T().SkipNow()
+	s.Run("GetPipeline", func() {
+		s.e().GET("/api/v1/pipelines/argo/not-exists").
+			Expect().
+			Status(404)
+	})
+	s.Run("ListPipelines", func() {
+		s.e().GET("/api/v1/pipelines/argo").
 			Expect().
 			Status(200)
 	})

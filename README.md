@@ -53,13 +53,20 @@ Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) hosted pr
 |
 [Couler](https://github.com/couler-proj/couler)
 |
-[OnePanel](https://www.onepanel.ai/)
+[Katib](https://github.com/kubeflow/katib)
+|
+[Kedro](https://kedro.readthedocs.io/en/stable/)
+|
+[Kubeflow Pipelines](https://github.com/kubeflow/pipelines)
+|
+[Onepanel](https://www.onepanel.ai/)
 |
 [Ploomber](https://github.com/ploomber/ploomber)
 |
-[SQLFlow](https://github.com/sql-machine-learning/sqlflow)
+[Seldon](https://github.com/SeldonIO/seldon-core)
 |
-[Kubeflow Pipelines](https://github.com/kubeflow/pipelines)
+[SQLFlow](https://github.com/sql-machine-learning/sqlflow)
+
 
 ## SDKs
 
@@ -79,7 +86,7 @@ kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflo
 ## Documentation
 
 * [Get started here](docs/quick-start.md)
-* [How to write Argo Workflow specs](examples/README.md)
+* [How to write Argo Workflow specs](https://github.com/argoproj/argo-workflows/blob/master/examples/README.md)
 * [How to configure your artifact repository](docs/configure-artifact-repository.md)
 
 ## Features

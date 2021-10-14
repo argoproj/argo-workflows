@@ -153,68 +153,7 @@ spec:
                                         type: string
                                       type: object
                                   type: object
-                                namespaces:
-                                  items:
-                                    type: string
-                                  type: array
-                                topologyKey:
-                                  type: string
-                              required:
-                              - topologyKey
-                              type: object
-                            weight:
-                              format: int32
-                              type: integer
-                          required:
-                          - podAffinityTerm
-                          - weight
-                          type: object
-                        type: array
-                      requiredDuringSchedulingIgnoredDuringExecution:
-                        items:
-                          properties:
-                            labelSelector:
-                              properties:
-                                matchExpressions:
-                                  items:
-                                    properties:
-                                      key:
-                                        type: string
-                                      operator:
-                                        type: string
-                                      values:
-                                        items:
-                                          type: string
-                                        type: array
-                                    required:
-                                    - key
-                                    - operator
-                                    type: object
-                                  type: array
-                                matchLabels:
-                                  additionalProperties:
-                                    type: string
-                                  type: object
-                              type: object
-                            namespaces:
-                              items:
-                                type: string
-                              type: array
-                            topologyKey:
-                              type: string
-                          required:
-                          - topologyKey
-                          type: object
-                        type: array
-                    type: object
-                  podAntiAffinity:
-                    properties:
-                      preferredDuringSchedulingIgnoredDuringExecution:
-                        items:
-                          properties:
-                            podAffinityTerm:
-                              properties:
-                                labelSelector:
+                                namespaceSelector:
                                   properties:
                                     matchExpressions:
                                       items:
@@ -280,6 +219,159 @@ spec:
                                     type: string
                                   type: object
                               type: object
+                            namespaceSelector:
+                              properties:
+                                matchExpressions:
+                                  items:
+                                    properties:
+                                      key:
+                                        type: string
+                                      operator:
+                                        type: string
+                                      values:
+                                        items:
+                                          type: string
+                                        type: array
+                                    required:
+                                    - key
+                                    - operator
+                                    type: object
+                                  type: array
+                                matchLabels:
+                                  additionalProperties:
+                                    type: string
+                                  type: object
+                              type: object
+                            namespaces:
+                              items:
+                                type: string
+                              type: array
+                            topologyKey:
+                              type: string
+                          required:
+                          - topologyKey
+                          type: object
+                        type: array
+                    type: object
+                  podAntiAffinity:
+                    properties:
+                      preferredDuringSchedulingIgnoredDuringExecution:
+                        items:
+                          properties:
+                            podAffinityTerm:
+                              properties:
+                                labelSelector:
+                                  properties:
+                                    matchExpressions:
+                                      items:
+                                        properties:
+                                          key:
+                                            type: string
+                                          operator:
+                                            type: string
+                                          values:
+                                            items:
+                                              type: string
+                                            type: array
+                                        required:
+                                        - key
+                                        - operator
+                                        type: object
+                                      type: array
+                                    matchLabels:
+                                      additionalProperties:
+                                        type: string
+                                      type: object
+                                  type: object
+                                namespaceSelector:
+                                  properties:
+                                    matchExpressions:
+                                      items:
+                                        properties:
+                                          key:
+                                            type: string
+                                          operator:
+                                            type: string
+                                          values:
+                                            items:
+                                              type: string
+                                            type: array
+                                        required:
+                                        - key
+                                        - operator
+                                        type: object
+                                      type: array
+                                    matchLabels:
+                                      additionalProperties:
+                                        type: string
+                                      type: object
+                                  type: object
+                                namespaces:
+                                  items:
+                                    type: string
+                                  type: array
+                                topologyKey:
+                                  type: string
+                              required:
+                              - topologyKey
+                              type: object
+                            weight:
+                              format: int32
+                              type: integer
+                          required:
+                          - podAffinityTerm
+                          - weight
+                          type: object
+                        type: array
+                      requiredDuringSchedulingIgnoredDuringExecution:
+                        items:
+                          properties:
+                            labelSelector:
+                              properties:
+                                matchExpressions:
+                                  items:
+                                    properties:
+                                      key:
+                                        type: string
+                                      operator:
+                                        type: string
+                                      values:
+                                        items:
+                                          type: string
+                                        type: array
+                                    required:
+                                    - key
+                                    - operator
+                                    type: object
+                                  type: array
+                                matchLabels:
+                                  additionalProperties:
+                                    type: string
+                                  type: object
+                              type: object
+                            namespaceSelector:
+                              properties:
+                                matchExpressions:
+                                  items:
+                                    properties:
+                                      key:
+                                        type: string
+                                      operator:
+                                        type: string
+                                      values:
+                                        items:
+                                          type: string
+                                        type: array
+                                    required:
+                                    - key
+                                    - operator
+                                    type: object
+                                  type: array
+                                matchLabels:
+                                  additionalProperties:
+                                    type: string
+                                  type: object
+                              type: object
                             namespaces:
                               items:
                                 type: string
@@ -292,6 +384,8 @@ spec:
                         type: array
                     type: object
                 type: object
+              archiveLogs:
+                type: boolean
               arguments:
                 properties:
                   artifacts:
@@ -577,6 +671,26 @@ spec:
                                 objectLocking:
                                   type: boolean
                               type: object
+                            encryptionOptions:
+                              properties:
+                                enableEncryption:
+                                  type: boolean
+                                kmsEncryptionContext:
+                                  type: string
+                                kmsKeyId:
+                                  type: string
+                                serverSideCustomerKeySecret:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
+                              type: object
                             endpoint:
                               type: string
                             insecure:
@@ -624,6 +738,17 @@ spec:
                           type: string
                         valueFrom:
                           properties:
+                            configMapKeyRef:
+                              properties:
+                                key:
+                                  type: string
+                                name:
+                                  type: string
+                                optional:
+                                  type: boolean
+                              required:
+                              - key
+                              type: object
                             default:
                               type: string
                             event:
@@ -1109,6 +1234,29 @@ spec:
                                             type: string
                                           type: object
                                       type: object
+                                    namespaceSelector:
+                                      properties:
+                                        matchExpressions:
+                                          items:
+                                            properties:
+                                              key:
+                                                type: string
+                                              operator:
+                                                type: string
+                                              values:
+                                                items:
+                                                  type: string
+                                                type: array
+                                            required:
+                                            - key
+                                            - operator
+                                            type: object
+                                          type: array
+                                        matchLabels:
+                                          additionalProperties:
+                                            type: string
+                                          type: object
+                                      type: object
                                     namespaces:
                                       items:
                                         type: string
@@ -1130,6 +1278,29 @@ spec:
                             items:
                               properties:
                                 labelSelector:
+                                  properties:
+                                    matchExpressions:
+                                      items:
+                                        properties:
+                                          key:
+                                            type: string
+                                          operator:
+                                            type: string
+                                          values:
+                                            items:
+                                              type: string
+                                            type: array
+                                        required:
+                                        - key
+                                        - operator
+                                        type: object
+                                      type: array
+                                    matchLabels:
+                                      additionalProperties:
+                                        type: string
+                                      type: object
+                                  type: object
+                                namespaceSelector:
                                   properties:
                                     matchExpressions:
                                       items:
@@ -1193,6 +1364,29 @@ spec:
                                             type: string
                                           type: object
                                       type: object
+                                    namespaceSelector:
+                                      properties:
+                                        matchExpressions:
+                                          items:
+                                            properties:
+                                              key:
+                                                type: string
+                                              operator:
+                                                type: string
+                                              values:
+                                                items:
+                                                  type: string
+                                                type: array
+                                            required:
+                                            - key
+                                            - operator
+                                            type: object
+                                          type: array
+                                        matchLabels:
+                                          additionalProperties:
+                                            type: string
+                                          type: object
+                                      type: object
                                     namespaces:
                                       items:
                                         type: string
@@ -1214,6 +1408,29 @@ spec:
                             items:
                               properties:
                                 labelSelector:
+                                  properties:
+                                    matchExpressions:
+                                      items:
+                                        properties:
+                                          key:
+                                            type: string
+                                          operator:
+                                            type: string
+                                          values:
+                                            items:
+                                              type: string
+                                            type: array
+                                        required:
+                                        - key
+                                        - operator
+                                        type: object
+                                      type: array
+                                    matchLabels:
+                                      additionalProperties:
+                                        type: string
+                                      type: object
+                                  type: object
+                                namespaceSelector:
                                   properties:
                                     matchExpressions:
                                       items:
@@ -1499,6 +1716,26 @@ spec:
                             properties:
                               objectLocking:
                                 type: boolean
+                            type: object
+                          encryptionOptions:
+                            properties:
+                              enableEncryption:
+                                type: boolean
+                              kmsEncryptionContext:
+                                type: string
+                              kmsKeyId:
+                                type: string
+                              serverSideCustomerKeySecret:
+                                properties:
+                                  key:
+                                    type: string
+                                  name:
+                                    type: string
+                                  optional:
+                                    type: boolean
+                                required:
+                                - key
+                                type: object
                             type: object
                           endpoint:
                             type: string
@@ -1786,6 +2023,9 @@ spec:
                             required:
                             - port
                             type: object
+                          terminationGracePeriodSeconds:
+                            format: int64
+                            type: integer
                           timeoutSeconds:
                             format: int32
                             type: integer
@@ -1877,6 +2117,9 @@ spec:
                             required:
                             - port
                             type: object
+                          terminationGracePeriodSeconds:
+                            format: int64
+                            type: integer
                           timeoutSeconds:
                             format: int32
                             type: integer
@@ -2020,6 +2263,9 @@ spec:
                             required:
                             - port
                             type: object
+                          terminationGracePeriodSeconds:
+                            format: int64
+                            type: integer
                           timeoutSeconds:
                             format: int32
                             type: integer
@@ -2337,6 +2583,9 @@ spec:
                                   required:
                                   - port
                                   type: object
+                                terminationGracePeriodSeconds:
+                                  format: int64
+                                  type: integer
                                 timeoutSeconds:
                                   format: int32
                                   type: integer
@@ -2428,6 +2677,9 @@ spec:
                                   required:
                                   - port
                                   type: object
+                                terminationGracePeriodSeconds:
+                                  format: int64
+                                  type: integer
                                 timeoutSeconds:
                                   format: int32
                                   type: integer
@@ -2571,6 +2823,9 @@ spec:
                                   required:
                                   - port
                                   type: object
+                                terminationGracePeriodSeconds:
+                                  format: int64
+                                  type: integer
                                 timeoutSeconds:
                                   format: int32
                                   type: integer
@@ -2942,6 +3197,26 @@ spec:
                                               objectLocking:
                                                 type: boolean
                                             type: object
+                                          encryptionOptions:
+                                            properties:
+                                              enableEncryption:
+                                                type: boolean
+                                              kmsEncryptionContext:
+                                                type: string
+                                              kmsKeyId:
+                                                type: string
+                                              serverSideCustomerKeySecret:
+                                                properties:
+                                                  key:
+                                                    type: string
+                                                  name:
+                                                    type: string
+                                                  optional:
+                                                    type: boolean
+                                                required:
+                                                - key
+                                                type: object
+                                            type: object
                                           endpoint:
                                             type: string
                                           insecure:
@@ -2989,6 +3264,17 @@ spec:
                                         type: string
                                       valueFrom:
                                         properties:
+                                          configMapKeyRef:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
                                           default:
                                             type: string
                                           event:
@@ -3312,6 +3598,26 @@ spec:
                                                     objectLocking:
                                                       type: boolean
                                                   type: object
+                                                encryptionOptions:
+                                                  properties:
+                                                    enableEncryption:
+                                                      type: boolean
+                                                    kmsEncryptionContext:
+                                                      type: string
+                                                    kmsKeyId:
+                                                      type: string
+                                                    serverSideCustomerKeySecret:
+                                                      properties:
+                                                        key:
+                                                          type: string
+                                                        name:
+                                                          type: string
+                                                        optional:
+                                                          type: boolean
+                                                      required:
+                                                      - key
+                                                      type: object
+                                                  type: object
                                                 endpoint:
                                                   type: string
                                                 insecure:
@@ -3359,6 +3665,17 @@ spec:
                                               type: string
                                             valueFrom:
                                               properties:
+                                                configMapKeyRef:
+                                                  properties:
+                                                    key:
+                                                      type: string
+                                                    name:
+                                                      type: string
+                                                    optional:
+                                                      type: boolean
+                                                  required:
+                                                  - key
+                                                  type: object
                                                 default:
                                                   type: string
                                                 event:
@@ -3724,6 +4041,26 @@ spec:
                                       objectLocking:
                                         type: boolean
                                     type: object
+                                  encryptionOptions:
+                                    properties:
+                                      enableEncryption:
+                                        type: boolean
+                                      kmsEncryptionContext:
+                                        type: string
+                                      kmsKeyId:
+                                        type: string
+                                      serverSideCustomerKeySecret:
+                                        properties:
+                                          key:
+                                            type: string
+                                          name:
+                                            type: string
+                                          optional:
+                                            type: boolean
+                                        required:
+                                        - key
+                                        type: object
+                                    type: object
                                   endpoint:
                                     type: string
                                   insecure:
@@ -3788,7 +4125,6 @@ spec:
                   http:
                     properties:
                       body:
-                        format: byte
                         type: string
                       headers:
                         items:
@@ -4085,6 +4421,9 @@ spec:
                               required:
                               - port
                               type: object
+                            terminationGracePeriodSeconds:
+                              format: int64
+                              type: integer
                             timeoutSeconds:
                               format: int32
                               type: integer
@@ -4178,6 +4517,9 @@ spec:
                               required:
                               - port
                               type: object
+                            terminationGracePeriodSeconds:
+                              format: int64
+                              type: integer
                             timeoutSeconds:
                               format: int32
                               type: integer
@@ -4321,6 +4663,9 @@ spec:
                               required:
                               - port
                               type: object
+                            terminationGracePeriodSeconds:
+                              format: int64
+                              type: integer
                             timeoutSeconds:
                               format: int32
                               type: integer
@@ -4658,6 +5003,26 @@ spec:
                                     objectLocking:
                                       type: boolean
                                   type: object
+                                encryptionOptions:
+                                  properties:
+                                    enableEncryption:
+                                      type: boolean
+                                    kmsEncryptionContext:
+                                      type: string
+                                    kmsKeyId:
+                                      type: string
+                                    serverSideCustomerKeySecret:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                  type: object
                                 endpoint:
                                   type: string
                                 insecure:
@@ -4705,6 +5070,17 @@ spec:
                               type: string
                             valueFrom:
                               properties:
+                                configMapKeyRef:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
                                 default:
                                   type: string
                                 event:
@@ -5116,6 +5492,26 @@ spec:
                                     objectLocking:
                                       type: boolean
                                   type: object
+                                encryptionOptions:
+                                  properties:
+                                    enableEncryption:
+                                      type: boolean
+                                    kmsEncryptionContext:
+                                      type: string
+                                    kmsKeyId:
+                                      type: string
+                                    serverSideCustomerKeySecret:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                  type: object
                                 endpoint:
                                   type: string
                                 insecure:
@@ -5165,6 +5561,17 @@ spec:
                               type: string
                             valueFrom:
                               properties:
+                                configMapKeyRef:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
                                 default:
                                   type: string
                                 event:
@@ -5510,6 +5917,9 @@ spec:
                             required:
                             - port
                             type: object
+                          terminationGracePeriodSeconds:
+                            format: int64
+                            type: integer
                           timeoutSeconds:
                             format: int32
                             type: integer
@@ -5601,6 +6011,9 @@ spec:
                             required:
                             - port
                             type: object
+                          terminationGracePeriodSeconds:
+                            format: int64
+                            type: integer
                           timeoutSeconds:
                             format: int32
                             type: integer
@@ -5746,6 +6159,9 @@ spec:
                             required:
                             - port
                             type: object
+                          terminationGracePeriodSeconds:
+                            format: int64
+                            type: integer
                           timeoutSeconds:
                             format: int32
                             type: integer
@@ -6122,6 +6538,9 @@ spec:
                               required:
                               - port
                               type: object
+                            terminationGracePeriodSeconds:
+                              format: int64
+                              type: integer
                             timeoutSeconds:
                               format: int32
                               type: integer
@@ -6215,6 +6634,9 @@ spec:
                               required:
                               - port
                               type: object
+                            terminationGracePeriodSeconds:
+                              format: int64
+                              type: integer
                             timeoutSeconds:
                               format: int32
                               type: integer
@@ -6358,6 +6780,9 @@ spec:
                               required:
                               - port
                               type: object
+                            terminationGracePeriodSeconds:
+                              format: int64
+                              type: integer
                             timeoutSeconds:
                               format: int32
                               type: integer
@@ -6644,8 +7069,6 @@ spec:
                           type: object
                         ephemeral:
                           properties:
-                            readOnly:
-                              type: boolean
                             volumeClaimTemplate:
                               properties:
                                 metadata:
@@ -7261,6 +7684,29 @@ spec:
                                               type: string
                                             type: object
                                         type: object
+                                      namespaceSelector:
+                                        properties:
+                                          matchExpressions:
+                                            items:
+                                              properties:
+                                                key:
+                                                  type: string
+                                                operator:
+                                                  type: string
+                                                values:
+                                                  items:
+                                                    type: string
+                                                  type: array
+                                              required:
+                                              - key
+                                              - operator
+                                              type: object
+                                            type: array
+                                          matchLabels:
+                                            additionalProperties:
+                                              type: string
+                                            type: object
+                                        type: object
                                       namespaces:
                                         items:
                                           type: string
@@ -7282,6 +7728,29 @@ spec:
                               items:
                                 properties:
                                   labelSelector:
+                                    properties:
+                                      matchExpressions:
+                                        items:
+                                          properties:
+                                            key:
+                                              type: string
+                                            operator:
+                                              type: string
+                                            values:
+                                              items:
+                                                type: string
+                                              type: array
+                                          required:
+                                          - key
+                                          - operator
+                                          type: object
+                                        type: array
+                                      matchLabels:
+                                        additionalProperties:
+                                          type: string
+                                        type: object
+                                    type: object
+                                  namespaceSelector:
                                     properties:
                                       matchExpressions:
                                         items:
@@ -7345,6 +7814,29 @@ spec:
                                               type: string
                                             type: object
                                         type: object
+                                      namespaceSelector:
+                                        properties:
+                                          matchExpressions:
+                                            items:
+                                              properties:
+                                                key:
+                                                  type: string
+                                                operator:
+                                                  type: string
+                                                values:
+                                                  items:
+                                                    type: string
+                                                  type: array
+                                              required:
+                                              - key
+                                              - operator
+                                              type: object
+                                            type: array
+                                          matchLabels:
+                                            additionalProperties:
+                                              type: string
+                                            type: object
+                                        type: object
                                       namespaces:
                                         items:
                                           type: string
@@ -7366,6 +7858,29 @@ spec:
                               items:
                                 properties:
                                   labelSelector:
+                                    properties:
+                                      matchExpressions:
+                                        items:
+                                          properties:
+                                            key:
+                                              type: string
+                                            operator:
+                                              type: string
+                                            values:
+                                              items:
+                                                type: string
+                                              type: array
+                                          required:
+                                          - key
+                                          - operator
+                                          type: object
+                                        type: array
+                                      matchLabels:
+                                        additionalProperties:
+                                          type: string
+                                        type: object
+                                    type: object
+                                  namespaceSelector:
                                     properties:
                                       matchExpressions:
                                         items:
@@ -7651,6 +8166,26 @@ spec:
                               properties:
                                 objectLocking:
                                   type: boolean
+                              type: object
+                            encryptionOptions:
+                              properties:
+                                enableEncryption:
+                                  type: boolean
+                                kmsEncryptionContext:
+                                  type: string
+                                kmsKeyId:
+                                  type: string
+                                serverSideCustomerKeySecret:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
                               type: object
                             endpoint:
                               type: string
@@ -7938,6 +8473,9 @@ spec:
                               required:
                               - port
                               type: object
+                            terminationGracePeriodSeconds:
+                              format: int64
+                              type: integer
                             timeoutSeconds:
                               format: int32
                               type: integer
@@ -8029,6 +8567,9 @@ spec:
                               required:
                               - port
                               type: object
+                            terminationGracePeriodSeconds:
+                              format: int64
+                              type: integer
                             timeoutSeconds:
                               format: int32
                               type: integer
@@ -8172,6 +8713,9 @@ spec:
                               required:
                               - port
                               type: object
+                            terminationGracePeriodSeconds:
+                              format: int64
+                              type: integer
                             timeoutSeconds:
                               format: int32
                               type: integer
@@ -8489,6 +9033,9 @@ spec:
                                     required:
                                     - port
                                     type: object
+                                  terminationGracePeriodSeconds:
+                                    format: int64
+                                    type: integer
                                   timeoutSeconds:
                                     format: int32
                                     type: integer
@@ -8580,6 +9127,9 @@ spec:
                                     required:
                                     - port
                                     type: object
+                                  terminationGracePeriodSeconds:
+                                    format: int64
+                                    type: integer
                                   timeoutSeconds:
                                     format: int32
                                     type: integer
@@ -8723,6 +9273,9 @@ spec:
                                     required:
                                     - port
                                     type: object
+                                  terminationGracePeriodSeconds:
+                                    format: int64
+                                    type: integer
                                   timeoutSeconds:
                                     format: int32
                                     type: integer
@@ -9094,6 +9647,26 @@ spec:
                                                 objectLocking:
                                                   type: boolean
                                               type: object
+                                            encryptionOptions:
+                                              properties:
+                                                enableEncryption:
+                                                  type: boolean
+                                                kmsEncryptionContext:
+                                                  type: string
+                                                kmsKeyId:
+                                                  type: string
+                                                serverSideCustomerKeySecret:
+                                                  properties:
+                                                    key:
+                                                      type: string
+                                                    name:
+                                                      type: string
+                                                    optional:
+                                                      type: boolean
+                                                  required:
+                                                  - key
+                                                  type: object
+                                              type: object
                                             endpoint:
                                               type: string
                                             insecure:
@@ -9141,6 +9714,17 @@ spec:
                                           type: string
                                         valueFrom:
                                           properties:
+                                            configMapKeyRef:
+                                              properties:
+                                                key:
+                                                  type: string
+                                                name:
+                                                  type: string
+                                                optional:
+                                                  type: boolean
+                                              required:
+                                              - key
+                                              type: object
                                             default:
                                               type: string
                                             event:
@@ -9464,6 +10048,26 @@ spec:
                                                       objectLocking:
                                                         type: boolean
                                                     type: object
+                                                  encryptionOptions:
+                                                    properties:
+                                                      enableEncryption:
+                                                        type: boolean
+                                                      kmsEncryptionContext:
+                                                        type: string
+                                                      kmsKeyId:
+                                                        type: string
+                                                      serverSideCustomerKeySecret:
+                                                        properties:
+                                                          key:
+                                                            type: string
+                                                          name:
+                                                            type: string
+                                                          optional:
+                                                            type: boolean
+                                                        required:
+                                                        - key
+                                                        type: object
+                                                    type: object
                                                   endpoint:
                                                     type: string
                                                   insecure:
@@ -9511,6 +10115,17 @@ spec:
                                                 type: string
                                               valueFrom:
                                                 properties:
+                                                  configMapKeyRef:
+                                                    properties:
+                                                      key:
+                                                        type: string
+                                                      name:
+                                                        type: string
+                                                      optional:
+                                                        type: boolean
+                                                    required:
+                                                    - key
+                                                    type: object
                                                   default:
                                                     type: string
                                                   event:
@@ -9876,6 +10491,26 @@ spec:
                                         objectLocking:
                                           type: boolean
                                       type: object
+                                    encryptionOptions:
+                                      properties:
+                                        enableEncryption:
+                                          type: boolean
+                                        kmsEncryptionContext:
+                                          type: string
+                                        kmsKeyId:
+                                          type: string
+                                        serverSideCustomerKeySecret:
+                                          properties:
+                                            key:
+                                              type: string
+                                            name:
+                                              type: string
+                                            optional:
+                                              type: boolean
+                                          required:
+                                          - key
+                                          type: object
+                                      type: object
                                     endpoint:
                                       type: string
                                     insecure:
@@ -9940,7 +10575,6 @@ spec:
                     http:
                       properties:
                         body:
-                          format: byte
                           type: string
                         headers:
                           items:
@@ -10237,6 +10871,9 @@ spec:
                                 required:
                                 - port
                                 type: object
+                              terminationGracePeriodSeconds:
+                                format: int64
+                                type: integer
                               timeoutSeconds:
                                 format: int32
                                 type: integer
@@ -10330,6 +10967,9 @@ spec:
                                 required:
                                 - port
                                 type: object
+                              terminationGracePeriodSeconds:
+                                format: int64
+                                type: integer
                               timeoutSeconds:
                                 format: int32
                                 type: integer
@@ -10473,6 +11113,9 @@ spec:
                                 required:
                                 - port
                                 type: object
+                              terminationGracePeriodSeconds:
+                                format: int64
+                                type: integer
                               timeoutSeconds:
                                 format: int32
                                 type: integer
@@ -10810,6 +11453,26 @@ spec:
                                       objectLocking:
                                         type: boolean
                                     type: object
+                                  encryptionOptions:
+                                    properties:
+                                      enableEncryption:
+                                        type: boolean
+                                      kmsEncryptionContext:
+                                        type: string
+                                      kmsKeyId:
+                                        type: string
+                                      serverSideCustomerKeySecret:
+                                        properties:
+                                          key:
+                                            type: string
+                                          name:
+                                            type: string
+                                          optional:
+                                            type: boolean
+                                        required:
+                                        - key
+                                        type: object
+                                    type: object
                                   endpoint:
                                     type: string
                                   insecure:
@@ -10857,6 +11520,17 @@ spec:
                                 type: string
                               valueFrom:
                                 properties:
+                                  configMapKeyRef:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                      optional:
+                                        type: boolean
+                                    required:
+                                    - key
+                                    type: object
                                   default:
                                     type: string
                                   event:
@@ -11268,6 +11942,26 @@ spec:
                                       objectLocking:
                                         type: boolean
                                     type: object
+                                  encryptionOptions:
+                                    properties:
+                                      enableEncryption:
+                                        type: boolean
+                                      kmsEncryptionContext:
+                                        type: string
+                                      kmsKeyId:
+                                        type: string
+                                      serverSideCustomerKeySecret:
+                                        properties:
+                                          key:
+                                            type: string
+                                          name:
+                                            type: string
+                                          optional:
+                                            type: boolean
+                                        required:
+                                        - key
+                                        type: object
+                                    type: object
                                   endpoint:
                                     type: string
                                   insecure:
@@ -11317,6 +12011,17 @@ spec:
                                 type: string
                               valueFrom:
                                 properties:
+                                  configMapKeyRef:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                      optional:
+                                        type: boolean
+                                    required:
+                                    - key
+                                    type: object
                                   default:
                                     type: string
                                   event:
@@ -11662,6 +12367,9 @@ spec:
                               required:
                               - port
                               type: object
+                            terminationGracePeriodSeconds:
+                              format: int64
+                              type: integer
                             timeoutSeconds:
                               format: int32
                               type: integer
@@ -11753,6 +12461,9 @@ spec:
                               required:
                               - port
                               type: object
+                            terminationGracePeriodSeconds:
+                              format: int64
+                              type: integer
                             timeoutSeconds:
                               format: int32
                               type: integer
@@ -11898,6 +12609,9 @@ spec:
                               required:
                               - port
                               type: object
+                            terminationGracePeriodSeconds:
+                              format: int64
+                              type: integer
                             timeoutSeconds:
                               format: int32
                               type: integer
@@ -12274,6 +12988,9 @@ spec:
                                 required:
                                 - port
                                 type: object
+                              terminationGracePeriodSeconds:
+                                format: int64
+                                type: integer
                               timeoutSeconds:
                                 format: int32
                                 type: integer
@@ -12367,6 +13084,9 @@ spec:
                                 required:
                                 - port
                                 type: object
+                              terminationGracePeriodSeconds:
+                                format: int64
+                                type: integer
                               timeoutSeconds:
                                 format: int32
                                 type: integer
@@ -12510,6 +13230,9 @@ spec:
                                 required:
                                 - port
                                 type: object
+                              terminationGracePeriodSeconds:
+                                format: int64
+                                type: integer
                               timeoutSeconds:
                                 format: int32
                                 type: integer
@@ -12796,8 +13519,6 @@ spec:
                             type: object
                           ephemeral:
                             properties:
-                              readOnly:
-                                type: boolean
                               volumeClaimTemplate:
                                 properties:
                                   metadata:
@@ -13618,8 +14339,6 @@ spec:
                       type: object
                     ephemeral:
                       properties:
-                        readOnly:
-                          type: boolean
                         volumeClaimTemplate:
                           properties:
                             metadata:

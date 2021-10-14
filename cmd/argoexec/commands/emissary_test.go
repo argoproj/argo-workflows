@@ -91,6 +91,23 @@ func TestEmissary(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotEmpty(t, string(data)) // data is tgz format
 	})
+	t.Run("ArtifactWithTrailingAndLeadingSlash", func(t *testing.T) {
+		err = ioutil.WriteFile(varRunArgo+"/template", []byte(`
+{
+	"outputs": {
+		"artifacts": [
+			{"path": "/tmp/artifact/"}
+		]
+	}
+}
+`), 0o600)
+		assert.NoError(t, err)
+		err := run(x, []string{"echo", "hello", "/tmp/artifact"})
+		assert.NoError(t, err)
+		data, err := ioutil.ReadFile(varRunArgo + "/outputs/artifacts/tmp/artifact.tgz")
+		assert.NoError(t, err)
+		assert.NotEmpty(t, string(data)) // data is tgz format
+	})
 	t.Run("Parameter", func(t *testing.T) {
 		err = ioutil.WriteFile(varRunArgo+"/template", []byte(`
 {

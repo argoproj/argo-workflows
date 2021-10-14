@@ -112,8 +112,11 @@ export class WorkflowsService {
         return requests.put(`api/v1/workflows/${namespace}/${name}/suspend`).then(res => res.body as Workflow);
     }
 
-    public resume(name: string, namespace: string) {
-        return requests.put(`api/v1/workflows/${namespace}/${name}/resume`).then(res => res.body as Workflow);
+    public resume(name: string, namespace: string, nodeFieldSelector: string) {
+        return requests
+            .put(`api/v1/workflows/${namespace}/${name}/resume`)
+            .send({nodeFieldSelector})
+            .then(res => res.body as Workflow);
     }
 
     public stop(name: string, namespace: string) {
@@ -194,8 +197,13 @@ export class WorkflowsService {
         if (archived) {
             return getLogsFromArtifact();
         }
-
-        return this.getContainerLogsFromCluster(workflow, nodeId, container, grep).catch(getLogsFromArtifact);
+        // return archived log if main container is finished and has artifact
+        return Observable.fromPromise(this.isWorkflowNodePendingOrRunning(workflow, nodeId)).switchMap(isPendingOrRunning => {
+            if (!isPendingOrRunning && this.hasArtifactLogs(workflow, nodeId, container) && container === 'main') {
+                return getLogsFromArtifact();
+            }
+            return this.getContainerLogsFromCluster(workflow, nodeId, container, grep).catch(getLogsFromArtifact);
+        });
     }
 
     public getArtifactLogsUrl(workflow: Workflow, nodeId: string, container: string, archived: boolean) {

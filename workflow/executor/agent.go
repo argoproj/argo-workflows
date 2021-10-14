@@ -109,14 +109,14 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 
 func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Template) (*wfv1.Outputs, error) {
 	httpTemplate := tmpl.HTTP
-	request, err := http.NewRequest(httpTemplate.Method, httpTemplate.URL, bytes.NewBuffer(httpTemplate.Body))
+	request, err := http.NewRequest(httpTemplate.Method, httpTemplate.URL, bytes.NewBufferString(httpTemplate.Body))
 	if err != nil {
 		return nil, err
 	}
 
 	for _, header := range httpTemplate.Headers {
 		value := header.Value
-		if header.ValueFrom != nil || header.ValueFrom.SecretKeyRef != nil {
+		if header.ValueFrom != nil && header.ValueFrom.SecretKeyRef != nil {
 			secret, err := util.GetSecrets(ctx, ae.ClientSet, ae.Namespace, header.ValueFrom.SecretKeyRef.Name, header.ValueFrom.SecretKeyRef.Key)
 			if err != nil {
 				return nil, err

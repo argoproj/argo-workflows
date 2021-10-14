@@ -249,7 +249,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 			if taskNode.Completed() {
 				// Run the node's onExit node, if any. Since this is a target task, we don't need to consider the status
 				// of the onExit node before continuing. That will be done in assesDAGPhase
-				_, _, err := woc.runOnExitNode(ctx, dagCtx.GetTask(taskName).GetExitHook(woc.execWf.Spec.Arguments), taskName, taskNode.Name, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName, taskNode.Outputs)
+				_, _, err := woc.runOnExitNode(ctx, dagCtx.GetTask(taskName).GetExitHook(woc.execWf.Spec.Arguments), taskNode.Name, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName, taskNode.Outputs)
 				if err != nil {
 					return node, err
 				}
@@ -276,7 +276,19 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 			// Can happen when dag.target was specified
 			continue
 		}
-		woc.buildLocalScope(scope, fmt.Sprintf("tasks.%s", task.Name), taskNode)
+
+		prefix := fmt.Sprintf("tasks.%s", task.Name)
+		if taskNode.Type == wfv1.NodeTypeTaskGroup {
+			childNodes := make([]wfv1.NodeStatus, len(taskNode.Children))
+			for i, childID := range taskNode.Children {
+				childNodes[i] = woc.wf.Status.Nodes[childID]
+			}
+			err := woc.processAggregateNodeOutputs(scope, prefix, childNodes)
+			if err != nil {
+				return nil, errors.InternalWrapError(err)
+			}
+		}
+		woc.buildLocalScope(scope, prefix, taskNode)
 		woc.addOutputsToGlobalScope(taskNode.Outputs)
 	}
 	outputs, err := getTemplateOutputsFromScope(tmpl, scope)
@@ -338,7 +350,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 
 		if node.Completed() {
 			// Run the node's onExit node, if any.
-			hasOnExitNode, onExitNode, err := woc.runOnExitNode(ctx, task.GetExitHook(woc.execWf.Spec.Arguments), task.Name, node.Name, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName, node.Outputs)
+			hasOnExitNode, onExitNode, err := woc.runOnExitNode(ctx, task.GetExitHook(woc.execWf.Spec.Arguments), node.Name, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName, node.Outputs)
 			if hasOnExitNode && (onExitNode == nil || !onExitNode.Fulfilled() || err != nil) {
 				// The onExit node is either not complete or has errored out, return.
 				return
@@ -692,19 +704,6 @@ func (d *dagContext) evaluateDependsLogic(taskName string) (bool, bool, error) {
 
 		// If a task happens to have an onExit node, don't proceed until the onExit node is fulfilled
 		if onExitNode := d.wf.GetNodeByName(common.GenerateOnExitNodeName(depNode.Name)); onExitNode != nil {
-			if !onExitNode.Fulfilled() {
-				return false, false, nil
-			}
-		}
-
-		// Previously we used `depNode.DisplayName` to generate all onExit node names. However, as these can be non-unique
-		// we transitioned to using `depNode.Name` instead, which are guaranteed to be unique. In order to not disrupt
-		// running workflows during upgrade time, we do an additional check to see if there is an onExit node with the old
-		// name (`depNode.DisplayName`).
-		// TODO: This scaffold code should be removed after a couple of "grace period" version upgrades to allow transitions. It was introduced in v3.0.0
-		// See more: https://github.com/argoproj/argo-workflows/issues/5502
-		legacyOnExitNodeName := common.GenerateOnExitNodeName(depNode.DisplayName)
-		if onExitNode := d.wf.GetNodeByName(legacyOnExitNodeName); onExitNode != nil && d.wf.GetNodeByName(depNode.Name).HasChild(onExitNode.ID) {
 			if !onExitNode.Fulfilled() {
 				return false, false, nil
 			}

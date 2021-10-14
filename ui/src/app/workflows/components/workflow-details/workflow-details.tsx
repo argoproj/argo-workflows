@@ -224,6 +224,14 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         }
     };
 
+    const renderResumePopup = () => {
+        return popup.confirm('Confirm', `Are you sure you want to resume node: ${nodeId}?`).then(yes => {
+            if (yes) {
+                services.workflows.resume(workflow.metadata.name, workflow.metadata.namespace, 'id=' + nodeId).catch(setError);
+            }
+        });
+    };
+
     const selectedNode = workflow && workflow.status && workflow.status.nodes && workflow.status.nodes[nodeId];
     return (
         <Page
@@ -283,6 +291,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                                         onShowEvents={() => setSidePanel(`events:${nodeId}`)}
                                         onShowYaml={() => setSidePanel(`yaml:${nodeId}`)}
                                         archived={false}
+                                        onResume={() => renderResumePopup()}
                                     />
                                 )}
                             </div>

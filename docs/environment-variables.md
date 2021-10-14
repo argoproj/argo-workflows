@@ -11,6 +11,7 @@ Note that these environment variables may be removed at any time.
 | `ALL_POD_CHANGES_SIGNIFICANT` | `bool` | `false` | Whether to consider all pod changes as significant during pod reconciliation. |
 | `ALWAYS_OFFLOAD_NODE_STATUS` | `bool` | `false` | Whether to always offload the node status. |
 | `ARCHIVED_WORKFLOW_GC_PERIOD` | `time.Duration` | `24h` | The periodicity for GC of archived workflows. |
+| `ARGO_PPROF` | `bool` | `false` | Enable pprof endpoints |
 | `ARGO_TRACE` | `string` | `"1"` | Whether to enable tracing statements in Argo components. |
 | `CRON_SYNC_PERIOD` | `time.Duration` | `10s` | How often to sync cron workflows. |
 | `DEFAULT_REQUEUE_TIME` | `time.Duration` | `10s` | The requeue time for the rate limiter of the workflow queue. |
@@ -25,6 +26,7 @@ Note that these environment variables may be removed at any time.
 | `LEADER_ELECTION_RETRY_PERIOD` | `time.Duration` | `5s` | The duration that the leader election clients should wait between tries of actions. |
 | `MAX_OPERATION_TIME` | `time.Duration` | `30s` | The maximum time a workflow operation is allowed to run for before requeuing the workflow onto the work queue. |
 | `OFFLOAD_NODE_STATUS_TTL` | `time.Duration` | `5m` | The TTL to delete the offloaded node status. Currently only used for testing. |
+| `POD_NAMES` | `string` | `v2` | Whether to have pod names contain the template name (v2) or be the node id (v1). |
 | `RECENTLY_STARTED_POD_DURATION` | `time.Duration` | `10s` | The duration of a pod before the pod is considered to be recently started. |
 | `RETRY_BACKOFF_DURATION` | `time.Duration` | `10ms` | The retry backoff duration when retrying API calls. |
 | `RETRY_BACKOFF_FACTOR` | `float` | `2.0` | The retry backoff factor when retrying API calls. |
@@ -35,7 +37,19 @@ Note that these environment variables may be removed at any time.
 | `WORKFLOW_GC_PERIOD` | `time.Duration` | `5m` | The periodicity for GC of workflows. |
 | `BUBBLE_ENTRY_TEMPLATE_ERR` | `bool` | `true` | Whether to bubble up template errors to workflow. |
 | `INFORMER_WRITE_BACK` | `bool` | `true` | Whether to write back to informer instead of catching up. |
-| `GRPC_MESSAGE_SIZE` | `string` | Use different GRPC Max message size for Argo server deployment (supporting huge workflows) |
+| `GRPC_MESSAGE_SIZE` | `string` | Use different GRPC Max message size for Argo server deployment (supporting huge workflows). |
+
+CLI parameters of the `argo-server` and `workflow-controller` can be specified as environment variables with the `ARGO_` prefix. For example:
+
+```
+workflow-controller --managed-namespace=argo
+```
+
+Can be expressed as:
+
+```
+ARGO_MANAGED_NAMESPACE=argo workflow-controller
+```
 
 You can set environment variable for the argo-server deployment, for example:
 

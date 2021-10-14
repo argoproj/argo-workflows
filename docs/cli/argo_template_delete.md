@@ -2,10 +2,6 @@
 
 delete a workflow template
 
-### Synopsis
-
-delete a workflow template
-
 ```
 argo template delete WORKFLOW_TEMPLATE [flags]
 ```

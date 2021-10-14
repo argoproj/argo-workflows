@@ -83,7 +83,7 @@ type Initializer interface {
 	Init(tmpl wfv1.Template) error
 }
 
-//go:generate mockery -name ContainerRuntimeExecutor
+//go:generate mockery --name=ContainerRuntimeExecutor
 
 // ContainerRuntimeExecutor is the interface for interacting with a container runtime (e.g. docker)
 type ContainerRuntimeExecutor interface {
@@ -251,7 +251,7 @@ func (we *WorkflowExecutor) StageFiles() error {
 	default:
 		return nil
 	}
-	err := ioutil.WriteFile(filePath, body, 0o644)
+	err := ioutil.WriteFile(filePath, body, 0o600)
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
@@ -806,7 +806,7 @@ func unzip(zipPath string, destPath string) error {
 				}
 			}()
 
-			path := filepath.Join(dest, f.Name)
+			path := filepath.Join(dest, f.Name) //nolint:gosec
 			if !strings.HasPrefix(path, filepath.Clean(dest)+string(os.PathSeparator)) {
 				return fmt.Errorf("%s: Illegal file path", path)
 			}
@@ -829,7 +829,7 @@ func unzip(zipPath string, destPath string) error {
 					}
 				}()
 
-				_, err = io.Copy(f, rc)
+				_, err = io.Copy(f, rc) //nolint:gosec
 				if err != nil {
 					return err
 				}

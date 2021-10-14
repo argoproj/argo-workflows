@@ -41,7 +41,6 @@ type ctr struct {
 }
 
 func NewDockerExecutor(namespace, podName string) (*DockerExecutor, error) {
-	log.Infof("Creating a docker executor")
 	return &DockerExecutor{namespace, podName, make(map[string]ctr)}, nil
 }
 
@@ -256,7 +255,7 @@ func (d *DockerExecutor) validateCompleted(ctx context.Context, containerNames [
 			// docker inspect $(docker run -d --entrypoint invalid argoproj/argosay:v2) | less
 			// In this case, we can distinguish the container by
 			// checking its exit code.
-			code, err := d.GetExitCode(ctx, container.containerID)
+			code, err := d.GetExitCode(ctx, name)
 			if err != nil {
 				return false, err
 			}
