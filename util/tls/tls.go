@@ -1,6 +1,7 @@
 package tls
 
 import (
+	"context"
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
@@ -18,10 +19,10 @@ import (
 	"os"
 	"strings"
 	"time"
-	apierr "k8s.io/apimachinery/pkg/api/errors"
 
-
+	"github.com/argoproj/argo-workflows/v3/util"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/client-go/kubernetes"
 )
 
 const (
@@ -34,9 +35,9 @@ const (
 	// The default maximum TLS version to provide to clients
 	DefaultTLSMaxVersion = "1.3"
 	// The key of the tls.crt within the Kubernetes secret
-	tlsCrtSecretKey := "tls.crt"
+	tlsCrtSecretKey = "tls.crt"
 	// The key of the tls.key within the Kubernetes secret
-	tlsKeySecretKey := "tls.key"
+	tlsKeySecretKey = "tls.key"
 )
 
 var (
@@ -418,7 +419,7 @@ func CreateServerTLSConfig(tlsCertPath, tlsKeyPath string, hosts []string) (*tls
 
 }
 
-func GetServerTLSConfigFromSecret(kubectlConfig kubernetes.Interface, tlsKubernetesSecretName string, tlsMinVersion uint16, namespace string) (tls.Config, error) {
+func GetServerTLSConfigFromSecret(kubectlConfig kubernetes.Interface, tlsKubernetesSecretName string, tlsMinVersion uint16, namespace string) (*tls.Config, error) {
 
 	ctx := context.Background()
 
@@ -438,7 +439,7 @@ func GetServerTLSConfigFromSecret(kubectlConfig kubernetes.Interface, tlsKuberne
 	}
 
 	return &tls.Config{
-		Certificates: []tls.Certificate{*cer},
+		Certificates: []tls.Certificate{cert},
 		MinVersion:   uint16(tlsMinVersion),
 	}, nil
 }

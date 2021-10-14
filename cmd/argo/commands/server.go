@@ -100,24 +100,23 @@ See %s`, help.ArgoSever),
 			var tlsConfig *tls.Config
 			if secure {
 				tlsMinVersion, err := env.GetInt("TLS_MIN_VERSION", tls.VersionTLS12)
+				unsignedTlsMinVersion := uint16(tlsMinVersion)
 				if err != nil {
 					return err
 				}
 
 				if tlsCertificateSecretName != "" {
 					log.Infof("Getting contents of Kubernetes secret %s for TLS Certificates", tlsCertificateSecretName)
-					tlsConfig, err = tlsutils.GetTLSConfigFromSecret(clients.Kubernetes, tlsCertificateSecretName, tlsMinVersion, namespace)
+					tlsConfig, err = tlsutils.GetServerTLSConfigFromSecret(clients.Kubernetes, tlsCertificateSecretName, unsignedTlsMinVersion, namespace)
 				} else {
 					log.Infof("Generating Self Signed TLS Certificates for Secure Mode")
-
-					tlsConfig, err = &tlsutils.GenerateX509KeyPairTLSConfig(
-						tlsutils.CertOptions{
-							Hosts:        []string{"localhost"},
-							IsCA:         false,
-							ValidFor:     0,
-							Organization: "ArgoProj",
-						},
-					)
+					opts := tlsutils.CertOptions{
+						Hosts:        []string{"localhost"},
+						IsCA:         false,
+						ValidFor:     0,
+						Organization: "ArgoProj",
+					}
+					tlsConfig, err = tlsutils.GenerateX509KeyPairTLSConfig(opts, unsignedTlsMinVersion)
 				}
 
 				if err != nil {
@@ -194,9 +193,7 @@ See %s`, help.ArgoSever),
 	}
 	command.Flags().StringVar(&baseHRef, "basehref", defaultBaseHRef, "Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /. Defaults to the environment variable BASE_HREF.")
 	// "-e" for encrypt, like zip
-	// We default to secure mode if we find certs available, otherwise we default to insecure mode.
-	_, err := os.Stat("argo-server.crt")
-	command.Flags().BoolVarP(&secure, "secure", "e", !os.IsNotExist(err), "Whether or not we should listen on TLS.")
+	command.Flags().BoolVarP(&secure, "secure", "e", true, "Whether or not we should listen on TLS.")
 	command.Flags().StringVar(&tlsCertificateSecretName, "tls-certificate-secret-name", "", "The name of a Kubernetes secret that contains the server certificates")
 	command.Flags().BoolVar(&htst, "hsts", true, "Whether or not we should add a HTTP Secure Transport Security header. This only has effect if secure is enabled.")
 	command.Flags().StringArrayVar(&authModes, "auth-mode", []string{"client"}, "API server authentication mode. Any 1 or more length permutation of: client,server,sso")
