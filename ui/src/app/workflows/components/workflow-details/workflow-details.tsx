@@ -3,7 +3,7 @@ import * as classNames from 'classnames';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
-import {execSpec, Link, Workflow} from '../../../../models';
+import {execSpec, Link, NodeStatus, Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {ErrorNotice} from '../../../shared/components/error-notice';
@@ -233,7 +233,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         });
     };
 
-    const getPodName = (wf, node, nodeID) => {
+    const getPodName = (wf: Workflow, node: NodeStatus, nodeID: string): string => {
         if (workflow && node) {
             return Utils.getPodName(wf.metadata.name, node.name, node.templateName, node.id);
         }
