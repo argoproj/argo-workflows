@@ -233,11 +233,16 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         });
     };
 
+    const getPodName = (wf, node, nodeID) => {
+        if (workflow && node) {
+            return Utils.getPodName(wf.metadata.name, node.name, node.templateName, node.id);
+        }
+
+        return nodeID;
+    };
+
     const selectedNode = workflow && workflow.status && workflow.status.nodes && workflow.status.nodes[nodeId];
-    let podName = nodeId;
-    if (workflow && selectedNode) {
-        podName = Utils.getPodName(workflow.metadata.name, selectedNode.name, selectedNode.templateName, selectedNode.id);
-    }
+    const podName = getPodName(workflow, selectedNode, nodeId);
 
     return (
         <Page

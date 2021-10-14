@@ -150,7 +150,7 @@ export const Utils = {
     }
 };
 
-const createFNVHash = (input: string) => {
+const createFNVHash = (input: string): number => {
     const data = new Buffer(input);
 
     let hashint = 2166136261;
@@ -161,6 +161,5 @@ const createFNVHash = (input: string) => {
         hashint += (hashint << 1) + (hashint << 4) + (hashint << 7) + (hashint << 8) + (hashint << 24);
     }
 
-    // unsigned 32 bit integer.
     return hashint >>> 0;
 };
