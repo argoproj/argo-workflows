@@ -3519,6 +3519,7 @@ func getEvents(controller *WorkflowController, num int) []string {
 }
 
 func TestGetPodByNode(t *testing.T) {
+	os.Setenv("POD_NAMES", "v1")
 	workflowText := `
 metadata:
   name: dag-events
