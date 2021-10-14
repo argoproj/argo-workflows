@@ -188,7 +188,13 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 			// For non-leaf tasks, this is done by setting all of its dependents to allow for their failure or error in
 			// their "depends" clause during their respective "dependencies" to "depends" conversion. See "expandDependency"
 			// in ancestry.go
-			if task := d.GetTask(depName); task.ContinuesOn(branchPhase, d.getTaskNode(depName).Outputs.ExitCode) {
+			emptyString := ""
+			exitCode := &emptyString
+			taskOutputs := d.getTaskNode(depName).Outputs
+			if taskOutputs != nil {
+				exitCode = taskOutputs.ExitCode
+			}
+			if task := d.GetTask(depName); task.ContinuesOn(branchPhase, exitCode) {
 				continue
 			}
 
