@@ -1,5 +1,11 @@
 # Changelog
 
+## v3.2.0 (2021-10-05)
+
+
+### Contributors
+
+
 ## v3.2.0-rc6 (2021-10-05)
 
  * [994ff7454](https://github.com/argoproj/argo-workflows/commit/994ff7454b32730a50b13bcbf14196b1f6f404a6) fix(UI): use default params on template submit form (#6858)
