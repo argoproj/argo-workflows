@@ -182,8 +182,13 @@ See %s`, help.ArgoServer),
 		},
 	}
 
+	defaultBaseHRef := os.Getenv("BASE_HREF")
+	if defaultBaseHRef == "" {
+		defaultBaseHRef = "/"
+	}
+
 	command.Flags().IntVarP(&port, "port", "p", 2746, "Port to listen on")
-	command.Flags().StringVar(&baseHRef, "basehref", "/", "Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /. Defaults to the environment variable BASE_HREF.")
+	command.Flags().StringVar(&baseHRef, "basehref", defaultBaseHRef, "Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /. Defaults to the environment variable BASE_HREF.")
 	// "-e" for encrypt, like zip
 	command.Flags().BoolVarP(&secure, "secure", "e", true, "Whether or not we should listen on TLS.")
 	command.Flags().BoolVar(&htst, "hsts", true, "Whether or not we should add a HTTP Secure Transport Security header. This only has effect if secure is enabled.")
