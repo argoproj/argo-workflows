@@ -3519,7 +3519,6 @@ func getEvents(controller *WorkflowController, num int) []string {
 }
 
 func TestGetPodByNode(t *testing.T) {
-	t.Skip("See https://github.com/argoproj/argo-workflows/issues/6458")
 	workflowText := `
 metadata:
   name: dag-events
@@ -3543,6 +3542,7 @@ spec:
 	woc := newWorkflowOperationCtx(wf, controller)
 	createRunningPods(ctx, woc)
 	woc.operate(ctx)
+	time.Sleep(time.Second)
 	// Parent dag node has no pod
 	parentNode := woc.wf.GetNodeByName("dag-events")
 	pod, err := woc.getPodByNode(parentNode)
