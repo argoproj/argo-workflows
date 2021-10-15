@@ -134,10 +134,6 @@ export const Utils = {
 
     // getPodName returns a deterministic pod name
     getPodName(workflowName: string, nodeName: string, templateName: string, nodeID: string): string {
-        if (process.env.POD_NAMES === 'v1') {
-            return nodeID;
-        }
-
         if (workflowName === nodeName) {
             return workflowName;
         }
