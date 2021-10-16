@@ -1,5 +1,5 @@
-const maxK8sResourceNameLength = 253;
-const k8sNamingHashLength = 10;
+export const maxK8sResourceNameLength = 253;
+export const k8sNamingHashLength = 10;
 
 // getPodName returns a deterministic pod name
 export const getPodName = (workflowName: string, nodeName: string, templateName: string, nodeID: string): string => {
@@ -14,7 +14,7 @@ export const getPodName = (workflowName: string, nodeName: string, templateName:
     return `${prefix}-${hash}`;
 };
 
-const ensurePodNamePrefixLength = (prefix: string): string => {
+export const ensurePodNamePrefixLength = (prefix: string): string => {
     const maxPrefixLength = maxK8sResourceNameLength - k8sNamingHashLength;
 
     if (prefix.length > maxPrefixLength - 1) {
@@ -24,7 +24,7 @@ const ensurePodNamePrefixLength = (prefix: string): string => {
     return prefix;
 };
 
-const createFNVHash = (input: string): number => {
+export const createFNVHash = (input: string): number => {
     const data = new Buffer(input);
 
     let hashint = 2166136261;
