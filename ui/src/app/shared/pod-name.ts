@@ -25,7 +25,7 @@ export const ensurePodNamePrefixLength = (prefix: string): string => {
 };
 
 export const createFNVHash = (input: string): number => {
-    const data = new Buffer(input);
+    const data = Buffer.from(input);
 
     let hashint = 2166136261;
 
