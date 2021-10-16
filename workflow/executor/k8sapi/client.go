@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"syscall"
 	"time"
 
@@ -116,6 +117,9 @@ func (c *k8sAPIClient) until(ctx context.Context, f func(pod *corev1.Pod) bool) 
 		done, err := func() (bool, error) {
 			w, err := podInterface.Watch(ctx, metav1.ListOptions{FieldSelector: "metadata.name=" + c.podName})
 			if err != nil {
+				if strings.Contains(err.Error(), "unknown (get pods)") {
+					err = fmt.Errorf("check https://github.com/argoproj/argo-workflows/blob/master/docs/faq.md: %w", err)
+				}
 				return true, fmt.Errorf("failed to establish pod watch: %w", err)
 			}
 			defer w.Stop()
