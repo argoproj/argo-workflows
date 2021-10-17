@@ -297,3 +297,260 @@ func TestOptionalArgumentAndParameter(t *testing.T) {
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }
+
+var testContinueOnExitCode = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  creationTimestamp: "2021-10-17T16:06:58Z"
+  generateName: steps-
+  generation: 13
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Failed
+  name: steps-5jrq5
+  namespace: argo
+  resourceVersion: "10518341"
+  selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/workflows/steps-5jrq5
+  uid: 2e10dcec-5eb6-4aa6-a2dd-faa5ad66d28f
+spec:
+  activeDeadlineSeconds: 300
+  arguments: {}
+  entrypoint: hello-hello-hello
+  podSpecPatch: |
+    terminationGracePeriodSeconds: 3
+  templates:
+  - inputs: {}
+    metadata: {}
+    name: hello-hello-hello
+    outputs: {}
+    steps:
+    - - arguments:
+          parameters:
+          - name: message
+            value: hello1
+        name: hello1
+        template: whalesay
+    - - arguments:
+          parameters:
+          - name: message
+            value: hello2a
+        name: hello2a
+        template: whalesay
+      - arguments:
+          parameters:
+          - name: message
+            value: hello2b
+        continueOn: {}
+        name: hello2b
+        template: intentional-fail
+    - - arguments:
+          parameters:
+          - name: message
+            value: hello3
+        name: hello3
+        template: whalesay
+  - container:
+      args:
+      - '{{inputs.parameters.message}}'
+      command:
+      - cowsay
+      image: docker/whalesay
+      name: ""
+      resources: {}
+    inputs:
+      parameters:
+      - name: message
+    metadata: {}
+    name: whalesay
+    outputs: {}
+  - container:
+      args:
+      - echo intentional failure; exit 9
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: intentional-fail
+    outputs: {}
+  ttlStrategy:
+    secondsAfterCompletion: 600
+status:
+  artifactRepositoryRef:
+    artifactRepository:
+      archiveLogs: true
+      s3:
+        accessKeySecret:
+          key: accesskey
+          name: my-minio-cred
+        bucket: my-bucket
+        endpoint: minio:9000
+        insecure: true
+        secretKeySecret:
+          key: secretkey
+          name: my-minio-cred
+    configMap: artifact-repositories
+    key: default-v1
+    namespace: argo
+  conditions:
+  - status: "False"
+    type: PodRunning
+  - status: "True"
+    type: Completed
+  finishedAt: "2021-10-17T16:07:21Z"
+  message: child 'steps-5jrq5-99117897' failed
+  nodes:
+    steps-5jrq5:
+      children:
+      - steps-5jrq5-3023201322
+      displayName: steps-5jrq5
+      finishedAt: "2021-10-17T16:07:21Z"
+      id: steps-5jrq5
+      message: child 'steps-5jrq5-99117897' failed
+      name: steps-5jrq5
+      outboundNodes:
+      - steps-5jrq5-48785040
+      - steps-5jrq5-99117897
+      phase: Failed
+      progress: 3/3
+      resourcesDuration:
+        cpu: 19
+        memory: 10
+      startedAt: "2021-10-17T16:06:58Z"
+      templateName: hello-hello-hello
+      templateScope: local/steps-5jrq5
+      type: Steps
+    steps-5jrq5-48785040:
+      boundaryID: steps-5jrq5
+      displayName: hello2a
+      finishedAt: "2021-10-17T16:07:20Z"
+      hostNodeName: docker-desktop
+      id: steps-5jrq5-48785040
+      inputs:
+        parameters:
+        - name: message
+          value: hello2a
+      name: steps-5jrq5[1].hello2a
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: steps-5jrq5/steps-5jrq5-whalesay-48785040/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 9
+        memory: 5
+      startedAt: "2021-10-17T16:07:08Z"
+      templateName: whalesay
+      templateScope: local/steps-5jrq5
+      type: Pod
+    steps-5jrq5-99117897:
+      boundaryID: steps-5jrq5
+      displayName: hello2b
+      finishedAt: "2021-10-17T16:07:15Z"
+      hostNodeName: docker-desktop
+      id: steps-5jrq5-99117897
+      message: Error (exit code 9)
+      name: steps-5jrq5[1].hello2b
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: steps-5jrq5/steps-5jrq5-intentional-fail-99117897/main.log
+        exitCode: "9"
+      phase: Failed
+      progress: 1/1
+      resourcesDuration:
+        cpu: 4
+        memory: 2
+      startedAt: "2021-10-17T16:07:08Z"
+      templateName: intentional-fail
+      templateScope: local/steps-5jrq5
+      type: Pod
+    steps-5jrq5-2955943751:
+      boundaryID: steps-5jrq5
+      children:
+      - steps-5jrq5-48785040
+      - steps-5jrq5-99117897
+      displayName: '[1]'
+      finishedAt: "2021-10-17T16:07:21Z"
+      id: steps-5jrq5-2955943751
+      message: child 'steps-5jrq5-99117897' failed
+      name: steps-5jrq5[1]
+      phase: Failed
+      progress: 2/2
+      resourcesDuration:
+        cpu: 13
+        memory: 7
+      startedAt: "2021-10-17T16:07:08Z"
+      templateScope: local/steps-5jrq5
+      type: StepGroup
+    steps-5jrq5-3023201322:
+      boundaryID: steps-5jrq5
+      children:
+      - steps-5jrq5-3383135015
+      displayName: '[0]'
+      finishedAt: "2021-10-17T16:07:08Z"
+      id: steps-5jrq5-3023201322
+      name: steps-5jrq5[0]
+      phase: Succeeded
+      progress: 3/3
+      resourcesDuration:
+        cpu: 19
+        memory: 10
+      startedAt: "2021-10-17T16:06:58Z"
+      templateScope: local/steps-5jrq5
+      type: StepGroup
+    steps-5jrq5-3383135015:
+      boundaryID: steps-5jrq5
+      children:
+      - steps-5jrq5-2955943751
+      displayName: hello1
+      finishedAt: "2021-10-17T16:07:07Z"
+      hostNodeName: docker-desktop
+      id: steps-5jrq5-3383135015
+      inputs:
+        parameters:
+        - name: message
+          value: hello1
+      name: steps-5jrq5[0].hello1
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: steps-5jrq5/steps-5jrq5-whalesay-3383135015/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 6
+        memory: 3
+      startedAt: "2021-10-17T16:06:58Z"
+      templateName: whalesay
+      templateScope: local/steps-5jrq5
+      type: Pod
+  phase: Failed
+  progress: 3/3
+  resourcesDuration:
+    cpu: 19
+    memory: 10
+  startedAt: "2021-10-17T16:06:58Z"
+`
+
+func TestContinueOnExitCode(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(testContinueOnExitCode)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	ctx := context.Background()
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+}
