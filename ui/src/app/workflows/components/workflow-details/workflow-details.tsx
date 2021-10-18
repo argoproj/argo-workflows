@@ -13,10 +13,10 @@ import {SecurityNudge} from '../../../shared/components/security-nudge';
 import {hasWarningConditionBadge} from '../../../shared/conditions-panel';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
+import {getPodName} from '../../../shared/pod-name';
 import {RetryWatch} from '../../../shared/retry-watch';
 import {services} from '../../../shared/services';
 import {useQueryParams} from '../../../shared/use-query-params';
-import {Utils} from '../../../shared/utils';
 import * as Operations from '../../../shared/workflow-operations-map';
 import {WorkflowOperations} from '../../../shared/workflow-operations-map';
 import {WidgetGallery} from '../../../widgets/widget-gallery';
@@ -224,16 +224,16 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
             document.location.href = url;
         }
     };
-    const getPodName = (wf: Workflow, node: NodeStatus, nodeID: string): string => {
+    const ensurePodName = (wf: Workflow, node: NodeStatus, nodeID: string): string => {
         if (workflow && node) {
-            return Utils.getPodName(wf.metadata.name, node.name, node.templateName, node.id);
+            return getPodName(wf.metadata.name, node.name, node.templateName, node.id);
         }
 
         return nodeID;
     };
 
     const selectedNode = workflow && workflow.status && workflow.status.nodes && workflow.status.nodes[nodeId];
-    const podName = getPodName(workflow, selectedNode, nodeId);
+    const podName = ensurePodName(workflow, selectedNode, nodeId);
 
     return (
         <Page
