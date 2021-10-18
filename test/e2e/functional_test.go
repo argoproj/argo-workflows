@@ -401,6 +401,23 @@ func (s *FunctionalSuite) TestLoopEmptyParam() {
 		})
 }
 
+func (s *FunctionalSuite) TestDAGEmptyParam() {
+	s.Given().
+		Workflow("@functional/dag-empty-param.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			if assert.Len(t, status.Nodes, 3) {
+				nodeStatus := status.Nodes.FindByDisplayName("sleep")
+				assert.Equal(t, wfv1.NodeSkipped, nodeStatus.Phase)
+				assert.Equal(t, "Skipped, empty params", nodeStatus.Message)
+			}
+		})
+}
+
 // 128M is for argo executor
 func (s *FunctionalSuite) TestPendingRetryWorkflow() {
 	s.Given().
