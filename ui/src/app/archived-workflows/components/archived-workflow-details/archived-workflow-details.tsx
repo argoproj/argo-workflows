@@ -12,6 +12,7 @@ import {ResourceEditor} from '../../../shared/components/resource-editor/resourc
 import {services} from '../../../shared/services';
 import {WorkflowArtifacts} from '../../../workflows/components/workflow-artifacts';
 
+import {Utils} from '../../../shared/utils';
 import {WorkflowResourcePanel} from '../../../workflows/components/workflow-details/workflow-resource-panel';
 import {WorkflowLogsViewer} from '../../../workflows/components/workflow-logs-viewer/workflow-logs-viewer';
 import {WorkflowNodeInfo} from '../../../workflows/components/workflow-node-info/workflow-node-info';
@@ -217,7 +218,9 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                 )}
                 <SlidingPanel isShown={!!this.sidePanel} onClose={() => (this.sidePanel = null)}>
                     {this.sidePanel === 'yaml' && <WorkflowYamlViewer workflow={this.state.workflow} selectedNode={this.node} />}
-                    {this.sidePanel === 'logs' && <WorkflowLogsViewer workflow={this.state.workflow} nodeId={this.nodeId} container={this.container} archived={true} />}
+                    {this.sidePanel === 'logs' && (
+                        <WorkflowLogsViewer workflow={this.state.workflow} initialPodName={this.podName} nodeId={this.nodeId} container={this.container} archived={true} />
+                    )}
                     {this.sidePanel === 'resubmit' && (
                         <ResourceEditor<Workflow>
                             editing={true}
@@ -244,6 +247,14 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
 
     private get node() {
         return this.nodeId && this.state.workflow.status.nodes[this.nodeId];
+    }
+
+    private get podName() {
+        if (this.nodeId && this.state.workflow) {
+            const workflowName = this.state.workflow.metadata.name;
+            const {name, templateName} = this.node;
+            return Utils.getPodName(workflowName, name, templateName, this.nodeId);
+        }
     }
 
     private deleteArchivedWorkflow() {
