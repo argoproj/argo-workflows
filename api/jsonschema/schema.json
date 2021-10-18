@@ -1281,6 +1281,10 @@
         "url": {
           "title": "URL for rabbitmq service",
           "type": "string"
+        },
+        "urlSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "title": "URLSecret is secret reference for rabbitmq service URL"
         }
       },
       "title": "AMQPEventSource refers to an event-source for AMQP stream events",
@@ -1348,7 +1352,7 @@
       "properties": {
         "accessKey": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
-          "title": "AccessKey refers K8 secret containing aws access key"
+          "title": "AccessKey refers K8s secret containing aws access key"
         },
         "functionName": {
           "description": "FunctionName refers to the name of the function to invoke.",
@@ -1378,7 +1382,7 @@
         },
         "secretKey": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
-          "title": "SecretKey refers K8 secret containing aws secret key"
+          "title": "SecretKey refers K8s secret containing aws secret key"
         }
       },
       "title": "AWSLambdaTrigger refers to specification of the trigger to invoke an AWS Lambda function",
@@ -1396,10 +1400,6 @@
     },
     "io.argoproj.events.v1alpha1.ArgoWorkflowTrigger": {
       "properties": {
-        "groupVersionResource": {
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.GroupVersionResource",
-          "title": "The unambiguous kind of this object - used in order to retrieve the appropriate kubernetes api client for this resource"
-        },
         "operation": {
           "title": "Operation refers to the type of operation performed on the argo workflow resource.\nDefault value is Submit.\n+optional",
           "type": "string"
@@ -1413,7 +1413,7 @@
         },
         "source": {
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.ArtifactLocation",
-          "title": "Source of the K8 resource file(s)"
+          "title": "Source of the K8s resource file(s)"
         }
       },
       "title": "ArgoWorkflowTrigger is the trigger for the Argo Workflow",
@@ -1554,6 +1554,54 @@
       "title": "BasicAuth contains the reference to K8s secrets that holds the username and password",
       "type": "object"
     },
+    "io.argoproj.events.v1alpha1.BitbucketServerEventSource": {
+      "properties": {
+        "accessToken": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "title": "AccessToken is reference to K8s secret which holds the bitbucket api access information"
+        },
+        "bitbucketserverBaseURL": {
+          "title": "BitbucketServerBaseURL is the base URL for API requests to a custom endpoint",
+          "type": "string"
+        },
+        "deleteHookOnFinish": {
+          "title": "DeleteHookOnFinish determines whether to delete the Bitbucket Server hook for the project once the event source is stopped.\n+optional",
+          "type": "boolean"
+        },
+        "events": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Events are bitbucket event to listen to.\nRefer https://confluence.atlassian.com/bitbucketserver/event-payload-938025882.html",
+          "type": "array"
+        },
+        "metadata": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Metadata holds the user defined metadata which will passed along the event payload.\n+optional",
+          "type": "object"
+        },
+        "projectKey": {
+          "title": "ProjectKey is the key of project for which integration needs to setup",
+          "type": "string"
+        },
+        "repositorySlug": {
+          "title": "RepositorySlug is the slug of the repository for which integration needs to setup",
+          "type": "string"
+        },
+        "webhook": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.WebhookContext",
+          "title": "Webhook holds configuration to run a http server"
+        },
+        "webhookSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "title": "WebhookSecret is reference to K8s secret which holds the bitbucket webhook secret (for HMAC validation)"
+        }
+      },
+      "title": "BitbucketServerEventSource refers to event-source related to Bitbucket Server events",
+      "type": "object"
+    },
     "io.argoproj.events.v1alpha1.CalendarEventSource": {
       "properties": {
         "exclusionDates": {
@@ -1583,11 +1631,6 @@
         },
         "timezone": {
           "title": "Timezone in which to run the schedule\n+optional",
-          "type": "string"
-        },
-        "userPayload": {
-          "description": "UserPayload will be sent to sensor as extra data once the event is triggered\n+optional\nDeprecated: will be removed in v1.5. Please use Metadata instead.",
-          "format": "byte",
           "type": "string"
         }
       },
@@ -1649,10 +1692,6 @@
     "io.argoproj.events.v1alpha1.CustomTrigger": {
       "description": "CustomTrigger refers to the specification of the custom trigger.",
       "properties": {
-        "certFilePath": {
-          "title": "DeprecatedCertFilePath is path to the cert file within sensor for secure connection between sensor and custom trigger gRPC server.\nDeprecated: will be removed in v1.5, use CertSecret instead",
-          "type": "string"
-        },
         "certSecret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "description": "CertSecret refers to the secret that contains cert for secure connection between sensor and custom trigger gRPC server."
@@ -1720,23 +1759,6 @@
         }
       },
       "title": "DataFilter describes constraints and filters for event data\nRegular Expressions are purposefully not a feature as they are overkill for our uses here\nSee Rob Pike's Post: https://commandcenter.blogspot.com/2011/08/regular-expressions-in-lexing-and.html",
-      "type": "object"
-    },
-    "io.argoproj.events.v1alpha1.DependencyGroup": {
-      "properties": {
-        "dependencies": {
-          "items": {
-            "type": "string"
-          },
-          "title": "Dependencies of events",
-          "type": "array"
-        },
-        "name": {
-          "title": "Name of the group",
-          "type": "string"
-        }
-      },
-      "title": "DependencyGroup is the group of dependencies",
       "type": "object"
     },
     "io.argoproj.events.v1alpha1.EmitterEventSource": {
@@ -1928,6 +1950,13 @@
           "title": "AzureEventsHub event sources",
           "type": "object"
         },
+        "bitbucketserver": {
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.BitbucketServerEventSource"
+          },
+          "title": "Bitbucket Server event sources",
+          "type": "object"
+        },
         "calendar": {
           "additionalProperties": {
             "$ref": "#/definitions/io.argoproj.events.v1alpha1.CalendarEventSource"
@@ -2036,10 +2065,6 @@
           },
           "title": "Redis event source",
           "type": "object"
-        },
-        "replica": {
-          "title": "DeprecatedReplica is the event source deployment replicas\nDeprecated: use replicas instead, will be removed in v1.5",
-          "type": "integer"
         },
         "replicas": {
           "title": "Replicas is the event source deployment replicas",
@@ -2224,10 +2249,6 @@
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.GitRemoteConfig",
           "title": "Remote to manage set of tracked repositories. Defaults to \"origin\".\nRefer https://git-scm.com/docs/git-remote\n+optional"
         },
-        "sshKeyPath": {
-          "title": "DeprecatedSSHKeyPath is path to your ssh key path. Use this if you don't want to provide username and password.\nssh key path must be mounted in sensor pod.\nDeprecated: will be removed in v1.5, use SSHKeySecret instead.\n+optional",
-          "type": "string"
-        },
         "sshKeySecret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "title": "SSHKeySecret refers to the secret that contains SSH key"
@@ -2351,7 +2372,7 @@
       "properties": {
         "accessToken": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
-          "title": "AccessToken is reference to k8 secret which holds the gitlab api access information"
+          "title": "AccessToken references to k8 secret which holds the gitlab api access information"
         },
         "deleteHookOnFinish": {
           "title": "DeleteHookOnFinish determines whether to delete the GitLab hook for the project once the event source is stopped.\n+optional",
@@ -2380,8 +2401,19 @@
           "type": "object"
         },
         "projectID": {
-          "title": "ProjectID is the id of project for which integration needs to setup",
+          "title": "DeprecatedProjectID is the id of project for which integration needs to setup\nDeprecated: use Projects instead. Will be unsupported in v 1.7",
           "type": "string"
+        },
+        "projects": {
+          "items": {
+            "type": "string"
+          },
+          "title": "List of project IDs or project namespace paths like \"whynowy/test\"",
+          "type": "array"
+        },
+        "secretToken": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "title": "SecretToken references to k8 secret which holds the Secret Token used by webhook config"
         },
         "webhook": {
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.WebhookContext",
@@ -2935,10 +2967,6 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "title": "CredentialSecret references to the secret that contains JSON credentials to access GCP.\nIf it is missing, it implicitly uses Workload Identity to access.\nhttps://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity\n+optional"
         },
-        "credentialsFile": {
-          "title": "CredentialsFile is the file that contains credentials to authenticate for GCP\nDeprecated: will be removed in v1.5, use CredentialSecret instead",
-          "type": "string"
-        },
         "deleteSubscriptionOnFinish": {
           "title": "DeleteSubscriptionOnFinish determines whether to delete the GCP PubSub subscription once the event source is stopped.\n+optional",
           "type": "boolean"
@@ -2975,6 +3003,10 @@
     },
     "io.argoproj.events.v1alpha1.PulsarEventSource": {
       "properties": {
+        "authTokenSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "title": "Authentication token for the pulsar client.\n+optional"
+        },
         "connectionBackoff": {
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.Backoff",
           "title": "Backoff holds parameters applied to connection.\n+optional"
@@ -3023,6 +3055,70 @@
         }
       },
       "title": "PulsarEventSource describes the event source for Apache Pulsar",
+      "type": "object"
+    },
+    "io.argoproj.events.v1alpha1.PulsarTrigger": {
+      "description": "PulsarTrigger refers to the specification of the Pulsar trigger.",
+      "properties": {
+        "authTokenSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "title": "Authentication token for the pulsar client.\n+optional"
+        },
+        "connectionBackoff": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.Backoff",
+          "title": "Backoff holds parameters applied to connection.\n+optional"
+        },
+        "parameters": {
+          "description": "Parameters is the list of parameters that is applied to resolved Kafka trigger object.",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter"
+          },
+          "type": "array"
+        },
+        "payload": {
+          "description": "Payload is the list of key-value extracted from an event payload to construct the request payload.",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter"
+          },
+          "type": "array"
+        },
+        "tls": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.TLSConfig",
+          "title": "TLS configuration for the pulsar client.\n+optional"
+        },
+        "tlsAllowInsecureConnection": {
+          "title": "Whether the Pulsar client accept untrusted TLS certificate from broker.\n+optional",
+          "type": "boolean"
+        },
+        "tlsTrustCertsSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "title": "Trusted TLS certificate secret.\n+optional"
+        },
+        "tlsValidateHostname": {
+          "title": "Whether the Pulsar client verify the validity of the host name from broker.\n+optional",
+          "type": "boolean"
+        },
+        "topic": {
+          "title": "Name of the topic.\nSee https://pulsar.apache.org/docs/en/concepts-messaging/",
+          "type": "string"
+        },
+        "url": {
+          "title": "Configure the service URL for the Pulsar service.\n+required",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.events.v1alpha1.RateLimit": {
+      "properties": {
+        "requestsPerUnit": {
+          "type": "integer"
+        },
+        "unit": {
+          "title": "Defaults to Second",
+          "type": "string"
+        }
+      },
       "type": "object"
     },
     "io.argoproj.events.v1alpha1.RedisEventSource": {
@@ -3135,7 +3231,7 @@
           "type": "string"
         }
       },
-      "title": "ResourceFilter contains K8 ObjectMeta information to further filter resource event objects",
+      "title": "ResourceFilter contains K8s ObjectMeta information to further filter resource event objects",
       "type": "object"
     },
     "io.argoproj.events.v1alpha1.S3Artifact": {
@@ -3223,7 +3319,7 @@
       "properties": {
         "accessKey": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
-          "title": "AccessKey refers K8 secret containing aws access key"
+          "title": "AccessKey refers K8s secret containing aws access key"
         },
         "metadata": {
           "additionalProperties": {
@@ -3242,7 +3338,7 @@
         },
         "secretKey": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
-          "title": "SecretKey refers K8 secret containing aws secret key"
+          "title": "SecretKey refers K8s secret containing aws secret key"
         },
         "topicArn": {
           "title": "TopicArn",
@@ -3264,7 +3360,7 @@
       "properties": {
         "accessKey": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
-          "title": "AccessKey refers K8 secret containing aws access key"
+          "title": "AccessKey refers K8s secret containing aws access key"
         },
         "jsonBody": {
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
@@ -3295,7 +3391,7 @@
         },
         "secretKey": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
-          "title": "SecretKey refers K8 secret containing aws secret key"
+          "title": "SecretKey refers K8s secret containing aws secret key"
         },
         "waitTimeSeconds": {
           "description": "WaitTimeSeconds is The duration (in seconds) for which the call waits for a message to arrive\nin the queue before returning.",
@@ -3369,21 +3465,10 @@
     },
     "io.argoproj.events.v1alpha1.SensorSpec": {
       "properties": {
-        "circuit": {
-          "description": "Circuit is a boolean expression of dependency groups\nDeprecated: will be removed in v1.5, use Switch in triggers instead.",
-          "type": "string"
-        },
         "dependencies": {
           "description": "Dependencies is a list of the events that this sensor is dependent on.",
           "items": {
             "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventDependency"
-          },
-          "type": "array"
-        },
-        "dependencyGroups": {
-          "description": "DependencyGroups is a list of the groups of events.",
-          "items": {
-            "$ref": "#/definitions/io.argoproj.events.v1alpha1.DependencyGroup"
           },
           "type": "array"
         },
@@ -3492,10 +3577,6 @@
     },
     "io.argoproj.events.v1alpha1.StandardK8STrigger": {
       "properties": {
-        "groupVersionResource": {
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.GroupVersionResource",
-          "title": "The unambiguous kind of this object - used in order to retrieve the appropriate kubernetes api client for this resource"
-        },
         "liveObject": {
           "title": "LiveObject specifies whether the resource should be directly fetched from K8s instead\nof being marshaled from the resource artifact. If set to true, the resource artifact\nmust contain the information required to uniquely identify the resource in the cluster,\nthat is, you must specify \"apiVersion\", \"kind\" as well as \"name\" and \"namespace\" meta\ndata.\nOnly valid for operation type `update`\n+optional",
           "type": "boolean"
@@ -3517,7 +3598,7 @@
         },
         "source": {
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.ArtifactLocation",
-          "title": "Source of the K8 resource file(s)"
+          "title": "Source of the K8s resource file(s)"
         }
       },
       "title": "StandardK8STrigger is the standard Kubernetes resource trigger",
@@ -3643,25 +3724,13 @@
     "io.argoproj.events.v1alpha1.TLSConfig": {
       "description": "TLSConfig refers to TLS configuration for a client.",
       "properties": {
-        "caCertPath": {
-          "title": "DeprecatedCACertPath refers the file path that contains the CA cert.\nDeprecated: will be removed in v1.5, use CACertSecret instead",
-          "type": "string"
-        },
         "caCertSecret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "title": "CACertSecret refers to the secret that contains the CA cert"
         },
-        "clientCertPath": {
-          "title": "DeprecatedClientCertPath refers the file path that contains client cert.\nDeprecated: will be removed in v1.5, use ClientCertSecret instead",
-          "type": "string"
-        },
         "clientCertSecret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "title": "ClientCertSecret refers to the secret that contains the client cert"
-        },
-        "clientKeyPath": {
-          "title": "DeprecatedClientKeyPath refers the file path that contains client key.\nDeprecated: will be removed in v1.5, use ClientKeySecret instead",
-          "type": "string"
         },
         "clientKeySecret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
@@ -3759,6 +3828,10 @@
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerPolicy",
           "title": "Policy to configure backoff and execution criteria for the trigger\n+optional"
         },
+        "rateLimit": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.RateLimit",
+          "title": "Rate limit, default unit is Second\n+optional"
+        },
         "retryStrategy": {
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.Backoff",
           "title": "Retry strategy, defaults to no retry\n+optional"
@@ -3833,26 +3906,6 @@
       "title": "TriggerPolicy dictates the policy for the trigger retries",
       "type": "object"
     },
-    "io.argoproj.events.v1alpha1.TriggerSwitch": {
-      "properties": {
-        "all": {
-          "items": {
-            "type": "string"
-          },
-          "title": "All acts as a AND operator between dependencies",
-          "type": "array"
-        },
-        "any": {
-          "items": {
-            "type": "string"
-          },
-          "title": "Any acts as a OR operator between dependencies",
-          "type": "array"
-        }
-      },
-      "title": "TriggerSwitch describes condition which must be satisfied in order to execute a trigger.\nDepending upon condition type, status of dependency groups is used to evaluate the result.\nDeprecated: will be removed in v1.5",
-      "type": "object"
-    },
     "io.argoproj.events.v1alpha1.TriggerTemplate": {
       "description": "TriggerTemplate is the template that describes trigger specification.",
       "properties": {
@@ -3904,13 +3957,13 @@
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.OpenWhiskTrigger",
           "title": "OpenWhisk refers to the trigger designed to invoke OpenWhisk action.\n+optional"
         },
+        "pulsar": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.PulsarTrigger",
+          "title": "Pulsar refers to the trigger designed to place messages on Pulsar topic.\n+optional"
+        },
         "slack": {
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.SlackTrigger",
           "title": "Slack refers to the trigger designed to send slack notification message.\n+optional"
-        },
-        "switch": {
-          "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerSwitch",
-          "title": "DeprecatedSwitch is the condition to execute the trigger.\nDeprecated: will be removed in v1.5, use conditions instead\n+optional"
         }
       },
       "type": "object"
@@ -3983,17 +4036,9 @@
           "description": "Port on which HTTP server is listening for incoming events.",
           "type": "string"
         },
-        "serverCertPath": {
-          "description": "DeprecatedServerCertPath refers the file that contains the cert.",
-          "type": "string"
-        },
         "serverCertSecret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "description": "ServerCertPath refers the file that contains the cert."
-        },
-        "serverKeyPath": {
-          "title": "DeprecatedServerKeyPath refers the file that contains private key",
-          "type": "string"
         },
         "serverKeySecret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
