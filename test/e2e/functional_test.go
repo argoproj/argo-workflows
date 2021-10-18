@@ -809,6 +809,34 @@ func (s *FunctionalSuite) TestDataTransformation() {
 		})
 }
 
+func (s *FunctionalSuite) TestScriptAsNonRoot() {
+	s.Given().
+		Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: script-nonroot-
+spec:
+  entrypoint: whalesay
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    runAsNonRoot: true
+  templates:
+    - name: whalesay
+      script:
+        image: argoproj/argosay:v2
+        command: ["bash"]
+        source: |
+          ls -l /argo/staging
+          cat /argo/stahing/script
+          sleep 10s
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
 func TestFunctionalSuite(t *testing.T) {
 	suite.Run(t, new(FunctionalSuite))
 }
