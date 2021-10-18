@@ -12,10 +12,10 @@ import {InlineTable} from '../../../shared/components/inline-table/inline-table'
 import {Links} from '../../../shared/components/links';
 import {Phase} from '../../../shared/components/phase';
 import {Timestamp} from '../../../shared/components/timestamp';
+import {getPodName} from '../../../shared/pod-name';
 import {ResourcesDuration} from '../../../shared/resources-duration';
 import {services} from '../../../shared/services';
 import {getResolvedTemplates} from '../../../shared/template-resolution';
-import {Utils} from '../../../shared/utils';
 
 require('./workflow-node-info.scss');
 
@@ -82,7 +82,7 @@ const AttributeRows = (props: {attributes: {title: string; value: any}[]}) => (
 const WorkflowNodeSummary = (props: Props) => {
     const {workflow, node} = props;
 
-    const podName = Utils.getPodName(workflow.metadata.name, node.name, node.templateName, node.id);
+    const podName = getPodName(workflow.metadata.name, node.name, node.templateName, node.id);
 
     const attributes = [
         {title: 'NAME', value: <ClipboardText text={props.node.name} />},
