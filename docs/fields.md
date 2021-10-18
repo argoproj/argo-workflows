@@ -2229,8 +2229,6 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-spec-from-previous-step.yaml)
 
-- [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
-
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/suspend-template-outputs.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/work-avoidance.yaml)
@@ -2516,8 +2514,6 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`scripts-javascript.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/scripts-javascript.yaml)
 
 - [`scripts-python.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/scripts-python.yaml)
-
-- [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/step-level-timeout.yaml)
 
@@ -3807,8 +3803,6 @@ ValueFrom describes a location in which to obtain the value to a parameter
 
 - [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/secrets.yaml)
 
-- [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
-
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/suspend-template-outputs.yaml)
 
 - [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
@@ -4645,8 +4639,6 @@ _No description available_
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-spec-from-previous-step.yaml)
 
 - [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/secrets.yaml)
-
-- [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/suspend-template-outputs.yaml)
 
@@ -6796,8 +6788,6 @@ EnvVarSource represents a source for the value of an EnvVar.
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-spec-from-previous-step.yaml)
 
 - [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/secrets.yaml)
-
-- [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/suspend-template-outputs.yaml)
 
