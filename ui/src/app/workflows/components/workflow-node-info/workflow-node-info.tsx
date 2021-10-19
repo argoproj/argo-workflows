@@ -12,6 +12,7 @@ import {InlineTable} from '../../../shared/components/inline-table/inline-table'
 import {Links} from '../../../shared/components/links';
 import {Phase} from '../../../shared/components/phase';
 import {Timestamp} from '../../../shared/components/timestamp';
+import {getPodName} from '../../../shared/pod-name';
 import {ResourcesDuration} from '../../../shared/resources-duration';
 import {services} from '../../../shared/services';
 import {getResolvedTemplates} from '../../../shared/template-resolution';
@@ -61,6 +62,7 @@ interface Props {
     onShowYaml?: (nodeId: string) => any;
     onTabSelected?: (tabSelected: string) => void;
     selectedTabKey?: string;
+    onResume?: () => void;
 }
 
 const AttributeRow = (attr: {title: string; value: any}) => (
@@ -78,6 +80,10 @@ const AttributeRows = (props: {attributes: {title: string; value: any}[]}) => (
 );
 
 const WorkflowNodeSummary = (props: Props) => {
+    const {workflow, node} = props;
+
+    const podName = getPodName(workflow.metadata.name, node.name, node.templateName, node.id);
+
     const attributes = [
         {title: 'NAME', value: <ClipboardText text={props.node.name} />},
         {title: 'TYPE', value: props.node.type},
@@ -130,7 +136,7 @@ const WorkflowNodeSummary = (props: Props) => {
         attributes.splice(
             2,
             0,
-            {title: 'POD NAME', value: <ClipboardText text={props.node.id} />},
+            {title: 'POD NAME', value: <ClipboardText text={podName} />},
             {
                 title: 'HOST NODE NAME',
                 value: <ClipboardText text={props.node.hostNodeName} />
@@ -149,12 +155,16 @@ const WorkflowNodeSummary = (props: Props) => {
             value: <ResourcesDuration resourcesDuration={props.node.resourcesDuration} />
         });
     }
-
     const showLogs = (x = 'main') => props.onShowContainerLogs(props.node.id, x);
     return (
         <div className='white-box'>
             <div className='white-box__details'>{<AttributeRows attributes={attributes} />}</div>
             <div>
+                {props.node.type === 'Suspend' && props.onResume && (
+                    <Button icon='play' onClick={() => props.onResume()}>
+                        RESUME
+                    </Button>
+                )}{' '}
                 {props.node.type !== 'Container' && props.onShowYaml && <Button onClick={() => props.onShowYaml(props.node.id)}>MANIFEST</Button>}{' '}
                 {props.node.type === 'Pod' && props.onShowContainerLogs && (
                     <DropDownButton

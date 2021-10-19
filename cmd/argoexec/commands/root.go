@@ -6,8 +6,6 @@ import (
 	"os"
 	"time"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-
 	"github.com/argoproj/pkg/cli"
 	kubecli "github.com/argoproj/pkg/kube/cli"
 	log "github.com/sirupsen/logrus"
@@ -17,6 +15,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/argoproj/argo-workflows/v3"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/util/cmd"
 	"github.com/argoproj/argo-workflows/v3/util/logs"
@@ -115,10 +114,10 @@ func initExecutor() *executor.WorkflowExecutor {
 		cre, err = kubelet.NewKubeletExecutor(namespace, podName)
 	case common.ContainerRuntimeExecutorPNS:
 		cre, err = pns.NewPNSExecutor(clientset, podName, namespace)
-	case common.ContainerRuntimeExecutorEmissary:
-		cre, err = emissary.New()
-	default:
+	case common.ContainerRuntimeExecutorDocker:
 		cre, err = docker.NewDockerExecutor(namespace, podName)
+	default:
+		cre, err = emissary.New()
 	}
 	checkErr(err)
 

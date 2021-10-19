@@ -1,6 +1,6 @@
 ## Argo Workflows User Community Surveys & Feedback
 
-Please find [here](community/ArgoWorkflows2020SurveySummary.pdf) Argo Workflows user community 2020 survey results.
+Please find [here](https://github.com/argoproj/argoproj/blob/master/community/user_surveys/ArgoWorkflows2020SurveySummary.pdf) Argo Workflows user community 2020 survey results.
 
 ## Who uses Argo Workflows?
 
@@ -37,6 +37,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Carrefour](https://www.carrefour.com/)
 1. [CarTrack](https://www.cartrack.com/)
 1. [CCRi](https://www.ccri.com/)
+1. [Cisco](https://www.cisco.com/)
 1. [CloudSeeds](https://www.cloudseeds.de/)
 1. [Codec](https://www.codec.ai/)
 1. [Commodus Tech](https://www.commodus.tech)
@@ -74,6 +75,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [HOVER](https://hover.to)
 1. [HSBC](https://hsbc.com)
 1. [IBM](https://ibm.com)
+1. [incrmntal](https://incrmntal.com/)
 1. [InsideBoard](https://www.insideboard.com)
 1. [Interline Technologies](https://www.interline.io/blog/scaling-openstreetmap-data-workflows/)
 1. [Intralinks](https://www.intralinks.com/)
@@ -108,6 +110,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Polarpoint.io](https://polarpoint.io)
 1. [Pollination](https://pollination.cloud)
 1. [Preferred Networks](https://www.preferred-networks.jp/en/)
+1. [Promaton](https://www.promaton.com/)
 1. [Prudential](https://www.prudential.com.sg/)
 1. [Quantibio](http://quantibio.com/us/en/)
 1. [Raccoon Digital Marketing](https://raccoon.ag/)

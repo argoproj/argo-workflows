@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 
@@ -550,6 +551,68 @@ func TestConditionalArchiveLocation(t *testing.T) {
 	assert.Nil(t, tmpl.ArchiveLocation)
 }
 
+// TestConditionalAddArchiveLocationTemplateArchiveLogs verifies we do  add archive location if it is needed for logs
+func TestConditionalAddArchiveLocationTemplateArchiveLogs(t *testing.T) {
+	tests := []struct {
+		controllerArchiveLog bool
+		workflowArchiveLog   string
+		templateArchiveLog   string
+		finalArchiveLog      bool
+	}{
+		{true, "true", "true", true},
+		{true, "true", "false", true},
+		{true, "false", "true", true},
+		{true, "false", "false", true},
+		{false, "true", "true", true},
+		{false, "true", "false", false},
+		{false, "false", "true", true},
+		{false, "false", "false", false},
+		{true, "true", "", true},
+		{true, "false", "", true},
+		{true, "", "true", true},
+		{true, "", "false", true},
+		{false, "true", "", true},
+		{false, "false", "", false},
+		{false, "", "true", true},
+		{false, "", "false", false},
+	}
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("controllerArchiveLog: %t, workflowArchiveLog: %s, templateArchiveLog: %s, finalArchiveLog: %t", tt.controllerArchiveLog, tt.workflowArchiveLog, tt.templateArchiveLog, tt.finalArchiveLog), func(t *testing.T) {
+			wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+			if tt.workflowArchiveLog != "" {
+				workflowArchiveLog, _ := strconv.ParseBool(tt.workflowArchiveLog)
+				wf.Spec.ArchiveLogs = pointer.BoolPtr(workflowArchiveLog)
+			}
+			if tt.templateArchiveLog != "" {
+				templateArchiveLog, _ := strconv.ParseBool(tt.templateArchiveLog)
+				wf.Spec.Templates[0].ArchiveLocation = &wfv1.ArtifactLocation{
+					ArchiveLogs: pointer.BoolPtr(templateArchiveLog),
+				}
+			}
+			cancel, controller := newController(wf)
+			defer cancel()
+			woc := newWorkflowOperationCtx(wf, controller)
+			setArtifactRepository(woc.controller, &wfv1.ArtifactRepository{
+				ArchiveLogs: pointer.BoolPtr(tt.controllerArchiveLog),
+				S3: &wfv1.S3ArtifactRepository{
+					S3Bucket: wfv1.S3Bucket{
+						Bucket: "foo",
+					},
+					KeyFormat: "path/in/bucket",
+				},
+			})
+			woc.operate(context.Background())
+			pods, err := listPods(woc)
+			assert.NoError(t, err)
+			assert.Len(t, pods.Items, 1)
+			pod := pods.Items[0]
+			tmpl, err := getPodTemplate(&pod)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.finalArchiveLog, tmpl.ArchiveLocation.IsArchiveLogs())
+		})
+	}
+}
+
 func Test_createWorkflowPod_rateLimited(t *testing.T) {
 	for limit, limited := range map[config.ResourceRateLimit]bool{
 		{Limit: 0, Burst: 0}: true,
@@ -557,6 +620,7 @@ func Test_createWorkflowPod_rateLimited(t *testing.T) {
 		{Limit: 0, Burst: 1}: false,
 		{Limit: 1, Burst: 1}: false,
 	} {
+		limit := limit
 		t.Run(fmt.Sprintf("%v", limit), func(t *testing.T) {
 			wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 			cancel, controller := newController(wf, func(c *WorkflowController) {
@@ -1335,7 +1399,30 @@ func TestIsResourcesSpecified(t *testing.T) {
 	mainCtr.Resources = apiv1.ResourceRequirements{Limits: apiv1.ResourceList{}}
 	assert.False(t, isResourcesSpecified(mainCtr))
 
+	// only limits
 	mainCtr.Resources = apiv1.ResourceRequirements{
+		Limits: apiv1.ResourceList{
+			apiv1.ResourceCPU:    resource.MustParse("0.900"),
+			apiv1.ResourceMemory: resource.MustParse("512Mi"),
+		},
+	}
+	assert.True(t, isResourcesSpecified(mainCtr))
+
+	// only requests
+	mainCtr.Resources = apiv1.ResourceRequirements{
+		Requests: apiv1.ResourceList{
+			apiv1.ResourceCPU:    resource.MustParse("0.250"),
+			apiv1.ResourceMemory: resource.MustParse("64Mi"),
+		},
+	}
+	assert.True(t, isResourcesSpecified(mainCtr))
+
+	// both requests and limits
+	mainCtr.Resources = apiv1.ResourceRequirements{
+		Requests: apiv1.ResourceList{
+			apiv1.ResourceCPU:    resource.MustParse("0.250"),
+			apiv1.ResourceMemory: resource.MustParse("64Mi"),
+		},
 		Limits: apiv1.ResourceList{
 			apiv1.ResourceCPU:    resource.MustParse("0.900"),
 			apiv1.ResourceMemory: resource.MustParse("512Mi"),
@@ -1637,6 +1724,8 @@ func TestPodExists(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 
+	// Sleep 1 second to wait for informer getting pod info
+	time.Sleep(time.Second)
 	existingPod, doesExist, err := woc.podExists(pod.ObjectMeta.Name)
 	assert.NoError(t, err)
 	assert.NotNil(t, existingPod)

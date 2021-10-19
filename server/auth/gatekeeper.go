@@ -43,7 +43,7 @@ const (
 	ClaimsKey      ContextKey = "types.Claims"
 )
 
-//go:generate mockery -name Gatekeeper
+//go:generate mockery --name=Gatekeeper
 
 type Gatekeeper interface {
 	Context(ctx context.Context) (context.Context, error)

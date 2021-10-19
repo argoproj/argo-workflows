@@ -11,6 +11,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/fields"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	"sigs.k8s.io/yaml"
 
@@ -480,6 +481,66 @@ func TestUpdateSuspendedNode(t *testing.T) {
 	if assert.NoError(t, err) {
 		err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template-no-outputs", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
 		assert.EqualError(t, err, "cannot set output parameters because node is not expecting any raw parameters")
+	}
+}
+
+func TestSelectorMatchesNode(t *testing.T) {
+	tests := map[string]struct {
+		selector string
+		outcome  bool
+	}{
+		"idFound": {
+			selector: "id=123",
+			outcome:  true,
+		},
+		"idNotFound": {
+			selector: "id=321",
+			outcome:  false,
+		},
+		"nameFound": {
+			selector: "name=failed-node",
+			outcome:  true,
+		},
+		"phaseFound": {
+			selector: "phase=Failed",
+			outcome:  true,
+		},
+		"randomNotFound": {
+			selector: "foo=Failed",
+			outcome:  false,
+		},
+		"templateFound": {
+			selector: "templateRef.name=templateName",
+			outcome:  true,
+		},
+		"inputFound": {
+			selector: "inputs.parameters.myparam.value=abc",
+			outcome:  true,
+		},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			node := wfv1.NodeStatus{ID: "123", Name: "failed-node", Phase: wfv1.NodeFailed, TemplateRef: &wfv1.TemplateRef{
+				Name:     "templateName",
+				Template: "template",
+			},
+				Inputs: &wfv1.Inputs{
+					Parameters: []wfv1.Parameter{
+						{
+							Name:  "myparam",
+							Value: wfv1.AnyStringPtr("abc"),
+						},
+					},
+				},
+			}
+			selector, err := fields.ParseSelector(tc.selector)
+			assert.NoError(t, err)
+			if tc.outcome {
+				assert.True(t, SelectorMatchesNode(selector, node))
+			} else {
+				assert.False(t, SelectorMatchesNode(selector, node))
+			}
+		})
 	}
 }
 

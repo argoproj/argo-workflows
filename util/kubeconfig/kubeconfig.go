@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"k8s.io/client-go/pkg/apis/clientauthentication"
 	clientauthenticationapi "k8s.io/client-go/pkg/apis/clientauthentication"
 	"k8s.io/client-go/plugin/pkg/client/auth/exec"
 	restclient "k8s.io/client-go/rest"
@@ -148,7 +147,7 @@ func GetBearerToken(in *restclient.Config, explicitKubeConfigPath string) (strin
 			return "", err
 		}
 
-		var cluster *clientauthentication.Cluster
+		var cluster *clientauthenticationapi.Cluster
 		if in.ExecProvider.ProvideClusterInfo {
 			var err error
 			cluster, err = ConfigToExecCluster(in)
@@ -172,7 +171,11 @@ func GetBearerToken(in *restclient.Config, explicitKubeConfigPath string) (strin
 		req := http.Request{Header: map[string][]string{}}
 
 		newT := NewUserAgentRoundTripper("dummy", rt)
-		_, _ = newT.RoundTrip(&req)
+		resp, err := newT.RoundTrip(&req)
+		if err != nil {
+			return "", err
+		}
+		resp.Body.Close()
 
 		token := req.Header.Get("Authorization")
 		return strings.TrimPrefix(token, "Bearer "), nil
@@ -215,7 +218,7 @@ func ConfigToExecCluster(config *restclient.Config) (*clientauthenticationapi.Cl
 		}
 	}
 
-	return &clientauthentication.Cluster{
+	return &clientauthenticationapi.Cluster{
 		Server:                   config.Host,
 		TLSServerName:            config.ServerName,
 		InsecureSkipTLSVerify:    config.Insecure,
@@ -311,6 +314,11 @@ func RefreshAuthToken(in *restclient.Config) error {
 	rt = auth.WrapTransport(rt)
 	req := http.Request{Header: map[string][]string{}}
 
-	_, _ = rt.RoundTrip(&req)
+	resp, err := rt.RoundTrip(&req)
+	if err != nil {
+		return err
+	}
+	resp.Body.Close()
+
 	return nil
 }

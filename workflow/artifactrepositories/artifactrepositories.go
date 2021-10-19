@@ -18,7 +18,7 @@ import (
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 )
 
-//go:generate mockery -name Interface
+//go:generate mockery --name=Interface
 
 type Interface interface {
 	// Resolve Figures out the correct repository to for a workflow.

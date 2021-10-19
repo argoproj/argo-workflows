@@ -59,7 +59,14 @@ func (h Facade) EventStreamReader(in interface{}, path string) (*bufio.Reader, e
 	req.Header.Set("Accept", "text/event-stream")
 	req.Header.Set("Authorization", h.authorization)
 	log.Debugf("curl -H 'Accept: text/event-stream' -H 'Authorization: ******' '%v'", u)
-	resp, err := http.DefaultClient.Do(req)
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: h.insecureSkipVerify,
+			},
+		},
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}

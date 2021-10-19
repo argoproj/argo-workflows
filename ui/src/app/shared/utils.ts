@@ -4,6 +4,7 @@ import {NODE_PHASE} from '../../models';
 
 const managedNamespaceKey = 'managedNamespace';
 const currentNamespaceKey = 'current_namespace';
+
 export const Utils = {
     statusIconClasses(status: string): string {
         let classes = [];

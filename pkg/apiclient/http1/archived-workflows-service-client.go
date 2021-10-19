@@ -36,3 +36,13 @@ func (h ArchivedWorkflowsServiceClient) LintClusterWorkflowTemplate(_ context.Co
 	out := &wfv1.ClusterWorkflowTemplate{}
 	return out, h.Post(in, out, "/api/v1/cluster-workflow-templates/lint")
 }
+
+func (h ArchivedWorkflowsServiceClient) ListArchivedWorkflowLabelKeys(_ context.Context, in *workflowarchivepkg.ListArchivedWorkflowLabelKeysRequest, _ ...grpc.CallOption) (*wfv1.LabelKeys, error) {
+	out := &wfv1.LabelKeys{}
+	return out, h.Get(in, out, "/api/v1/archived-workflows-label-keys")
+}
+
+func (h ArchivedWorkflowsServiceClient) ListArchivedWorkflowLabelValues(_ context.Context, in *workflowarchivepkg.ListArchivedWorkflowLabelValuesRequest, _ ...grpc.CallOption) (*wfv1.LabelValues, error) {
+	out := &wfv1.LabelValues{}
+	return out, h.Get(in, out, "/api/v1/archived-workflows-label-values")
+}

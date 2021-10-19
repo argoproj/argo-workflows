@@ -87,7 +87,7 @@ export interface Parameter {
     /**
      * Default is the default value to use for an input parameter if a value was not supplied
      */
-    _default?: string;
+    default?: string;
     /**
      * Name is the parameter name
      */

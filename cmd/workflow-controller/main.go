@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/argoproj/pkg/cli"
@@ -13,6 +14,8 @@ import (
 	"github.com/argoproj/pkg/stats"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes"
 
@@ -135,6 +138,22 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().Float32Var(&qps, "qps", 20.0, "Queries per second")
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run workflow-controller as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that workflow-controller watches, default to the installation namespace")
+
+	viper.AutomaticEnv()
+	viper.SetEnvPrefix("ARGO")
+	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
+	if err := viper.BindPFlags(command.Flags()); err != nil {
+		log.Fatal(err)
+	}
+	command.Flags().VisitAll(func(f *pflag.Flag) {
+		if !f.Changed && viper.IsSet(f.Name) {
+			val := viper.Get(f.Name)
+			if err := command.Flags().Set(f.Name, fmt.Sprintf("%v", val)); err != nil {
+				log.Fatal(err)
+			}
+		}
+	})
+
 	return &command
 }
 

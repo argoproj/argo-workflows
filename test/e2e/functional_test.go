@@ -1,3 +1,4 @@
+//go:build functional
 // +build functional
 
 package e2e
@@ -11,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	apiv1 "k8s.io/api/core/v1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -231,7 +231,7 @@ func (s *FunctionalSuite) TestEventOnNodeFailSentAsPod() {
 				return (event.InvolvedObject.Kind == workflow.WorkflowKind && event.InvolvedObject.UID == uid) || (event.InvolvedObject.Kind == "Pod" && event.InvolvedObject.UID == nodeId && strings.HasPrefix(event.Reason, "Workflow"))
 			},
 			4,
-			func(t *testing.T, es []corev1.Event) {
+			func(t *testing.T, es []apiv1.Event) {
 				for _, e := range es {
 					switch e.Reason {
 					case "WorkflowNodeRunning":
@@ -278,7 +278,7 @@ func (s *FunctionalSuite) TestEventOnNodeFail() {
 		ExpectAuditEvents(
 			fixtures.HasInvolvedObject(workflow.WorkflowKind, uid),
 			4,
-			func(t *testing.T, es []corev1.Event) {
+			func(t *testing.T, es []apiv1.Event) {
 				for _, e := range es {
 					switch e.Reason {
 					case "WorkflowNodeRunning":
@@ -313,7 +313,7 @@ func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
 		ExpectAuditEvents(
 			fixtures.HasInvolvedObject(workflow.WorkflowKind, uid),
 			4,
-			func(t *testing.T, es []corev1.Event) {
+			func(t *testing.T, es []apiv1.Event) {
 				for _, e := range es {
 					println(e.Reason, e.Message)
 					switch e.Reason {
@@ -349,7 +349,7 @@ func (s *FunctionalSuite) TestEventOnPVCFail() {
 		ExpectAuditEvents(
 			fixtures.HasInvolvedObject(workflow.WorkflowKind, uid),
 			2,
-			func(t *testing.T, e []corev1.Event) {
+			func(t *testing.T, e []apiv1.Event) {
 				assert.Equal(t, "WorkflowRunning", e[0].Reason)
 
 				assert.Equal(t, "WorkflowFailed", e[1].Reason)
@@ -394,6 +394,23 @@ func (s *FunctionalSuite) TestLoopEmptyParam() {
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			if assert.Len(t, status.Nodes, 5) {
+				nodeStatus := status.Nodes.FindByDisplayName("sleep")
+				assert.Equal(t, wfv1.NodeSkipped, nodeStatus.Phase)
+				assert.Equal(t, "Skipped, empty params", nodeStatus.Message)
+			}
+		})
+}
+
+func (s *FunctionalSuite) TestDAGEmptyParam() {
+	s.Given().
+		Workflow("@functional/dag-empty-param.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			if assert.Len(t, status.Nodes, 3) {
 				nodeStatus := status.Nodes.FindByDisplayName("sleep")
 				assert.Equal(t, wfv1.NodeSkipped, nodeStatus.Phase)
 				assert.Equal(t, "Skipped, empty params", nodeStatus.Message)
@@ -754,7 +771,7 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow().
 		Then().
-		ExpectWorkflowNode(wfv1.SucceededPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
+		ExpectWorkflowNode(wfv1.SucceededPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
 			assert.Equal(t, *p.Spec.TerminationGracePeriodSeconds, int64(5))
 			for _, c := range p.Spec.Containers {
 				if c.Name == "main" {
@@ -791,6 +808,34 @@ func (s *FunctionalSuite) TestDataTransformation() {
 			assert.NotNil(t, status.Nodes.FindByDisplayName("process-artifact(0:foo/script.py)"))
 			assert.NotNil(t, status.Nodes.FindByDisplayName("process-artifact(1:script.py)"))
 		})
+}
+
+func (s *FunctionalSuite) TestScriptAsNonRoot() {
+	s.Given().
+		Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: script-nonroot-
+spec:
+  entrypoint: whalesay
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    runAsNonRoot: true
+  templates:
+    - name: whalesay
+      script:
+        image: argoproj/argosay:v2
+        command: ["bash"]
+        source: |
+          ls -l /argo/staging
+          cat /argo/stahing/script
+          sleep 10s
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 
 func TestFunctionalSuite(t *testing.T) {

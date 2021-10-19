@@ -9,8 +9,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
-
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -26,6 +24,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/intstr"
 	"github.com/argoproj/argo-workflows/v3/util/template"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
@@ -701,7 +700,7 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 }
 
 func isResourcesSpecified(ctr *apiv1.Container) bool {
-	return ctr != nil && len(ctr.Resources.Limits) != 0
+	return ctr != nil && (len(ctr.Resources.Limits) != 0 || len(ctr.Resources.Requests) != 0)
 }
 
 // addMetadata applies metadata specified in the template
@@ -1005,7 +1004,8 @@ func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) {
 		// User explicitly set the location. nothing else to do.
 		return
 	}
-	needLocation := woc.artifactRepository.IsArchiveLogs()
+	archiveLogs := woc.IsArchiveLogs(tmpl)
+	needLocation := archiveLogs
 	for _, art := range append(tmpl.Inputs.Artifacts, tmpl.Outputs.Artifacts...) {
 		if !art.HasLocation() {
 			needLocation = true
@@ -1016,6 +1016,22 @@ func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) {
 		return
 	}
 	tmpl.ArchiveLocation = woc.artifactRepository.ToArtifactLocation()
+	tmpl.ArchiveLocation.ArchiveLogs = &archiveLogs
+}
+
+// IsArchiveLogs determines if container should archive logs
+// priorities: controller(on) > template > workflow > controller(off)
+func (woc *wfOperationCtx) IsArchiveLogs(tmpl *wfv1.Template) bool {
+	archiveLogs := woc.artifactRepository.IsArchiveLogs()
+	if !archiveLogs {
+		if woc.execWf.Spec.ArchiveLogs != nil {
+			archiveLogs = *woc.execWf.Spec.ArchiveLogs
+		}
+		if tmpl.ArchiveLocation != nil && tmpl.ArchiveLocation.ArchiveLogs != nil {
+			archiveLogs = *tmpl.ArchiveLocation.ArchiveLogs
+		}
+	}
+	return archiveLogs
 }
 
 // setupServiceAccount sets up service account and token.

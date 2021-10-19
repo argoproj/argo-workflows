@@ -572,7 +572,7 @@ message HTTP {
   optional int64 timeoutSeconds = 4;
 
   // Body is content of the HTTP Request
-  optional bytes body = 5;
+  optional string body = 5;
 }
 
 // HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container
@@ -634,6 +634,16 @@ message Inputs {
 // +kubebuilder:validation:Type=object
 message Item {
   optional bytes value = 1;
+}
+
+// LabelKeys is list of keys
+message LabelKeys {
+  repeated string items = 1;
+}
+
+// Labels is list of workflow labels
+message LabelValues {
+  repeated string items = 1;
 }
 
 message LifecycleHook {
@@ -1686,6 +1696,9 @@ message WorkflowSpec {
 
   // TemplateDefaults holds default template values that will apply to all templates in the Workflow, unless overridden on the template-level
   optional Template templateDefaults = 39;
+
+  // ArchiveLogs indicates if the container logs should be archived
+  optional bool archiveLogs = 40;
 }
 
 // WorkflowStatus contains overall status information about a workflow

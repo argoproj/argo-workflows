@@ -78,6 +78,11 @@
             "description": "The continue option should be set when retrieving more results from the server. Since this value is\nserver defined, clients may only use the continue value from a previous query result with identical\nquery parameters (except for the value of continue) and the server may reject a continue value it\ndoes not recognize. If the specified continue value is no longer valid whether due to expiration\n(generally five to fifteen minutes) or a configuration change on the server, the server will\nrespond with a 410 ResourceExpired error together with a continue token. If the client needs a\nconsistent list, it must restart their list without the continue field. Otherwise, the client may\nsend another list request with the token received with the 410 error, the server will respond with\na list starting from the next key, but from the latest snapshot, which is inconsistent from the\nprevious list results - objects that are created, modified, or deleted after the first list request\nwill be included in the response, as long as their keys are after the \"next key\".\n\nThis field is not supported when watch is true. Clients may start a watch from the last\nresourceVersion value returned by the server and not miss any modifications.",
             "name": "listOptions.continue",
             "in": "query"
+          },
+          {
+            "type": "string",
+            "name": "namePrefix",
+            "in": "query"
           }
         ],
         "responses": {
@@ -85,6 +90,108 @@
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowList"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/archived-workflows-label-keys": {
+      "get": {
+        "tags": [
+          "ArchivedWorkflowService"
+        ],
+        "operationId": "ArchivedWorkflowService_ListArchivedWorkflowLabelKeys",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LabelKeys"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/archived-workflows-label-values": {
+      "get": {
+        "tags": [
+          "ArchivedWorkflowService"
+        ],
+        "operationId": "ArchivedWorkflowService_ListArchivedWorkflowLabelValues",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "A selector to restrict the list of returned objects by their labels.\nDefaults to everything.\n+optional.",
+            "name": "listOptions.labelSelector",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "A selector to restrict the list of returned objects by their fields.\nDefaults to everything.\n+optional.",
+            "name": "listOptions.fieldSelector",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "description": "Watch for changes to the described resources and return them as a stream of\nadd, update, and remove notifications. Specify resourceVersion.\n+optional.",
+            "name": "listOptions.watch",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
+            "name": "listOptions.allowWatchBookmarks",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "resourceVersion sets a constraint on what resource versions a request may be served from.\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
+            "name": "listOptions.resourceVersion",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "resourceVersionMatch determines how resourceVersion is applied to list calls.\nIt is highly recommended that resourceVersionMatch be set for list calls where\nresourceVersion is set\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
+            "name": "listOptions.resourceVersionMatch",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "format": "int64",
+            "description": "Timeout for the list/watch call.\nThis limits the duration of the call, regardless of any activity or inactivity.\n+optional.",
+            "name": "listOptions.timeoutSeconds",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "format": "int64",
+            "description": "limit is a maximum number of responses to return for a list call. If more items exist, the\nserver will set the `continue` field on the list metadata to a value that can be used with the\nsame initial query to retrieve the next set of results. Setting a limit may return fewer than\nthe requested amount of items (up to zero items) in the event all requested objects are\nfiltered out and clients should only use the presence of the continue field to determine whether\nmore results are available. Servers may choose not to support the limit argument and will return\nall of the available results. If limit is specified and the continue field is empty, clients may\nassume that no more results are available. This field is not supported if watch is true.\n\nThe server guarantees that the objects returned when using continue will be identical to issuing\na single list call without a limit - that is, no objects created, modified, or deleted after the\nfirst request is issued will be included in any subsequent continued requests. This is sometimes\nreferred to as a consistent snapshot, and ensures that a client that is using limit to receive\nsmaller chunks of a very large result can ensure they see all possible objects. If objects are\nupdated during a chunked list the version of the object that was present at the time the first list\nresult was calculated is returned.",
+            "name": "listOptions.limit",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "The continue option should be set when retrieving more results from the server. Since this value is\nserver defined, clients may only use the continue value from a previous query result with identical\nquery parameters (except for the value of continue) and the server may reject a continue value it\ndoes not recognize. If the specified continue value is no longer valid whether due to expiration\n(generally five to fifteen minutes) or a configuration change on the server, the server will\nrespond with a 410 ResourceExpired error together with a continue token. If the client needs a\nconsistent list, it must restart their list without the continue field. Otherwise, the client may\nsend another list request with the token received with the 410 error, the server will respond with\na list starting from the next key, but from the latest snapshot, which is inconsistent from the\nprevious list results - objects that are created, modified, or deleted after the first list request\nwill be included in the response, as long as their keys are after the \"next key\".\n\nThis field is not supported when watch is true. Clients may start a watch from the last\nresourceVersion value returned by the server and not miss any modifications.",
+            "name": "listOptions.continue",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LabelValues"
             }
           },
           "default": {
@@ -5445,6 +5552,10 @@
         "url": {
           "type": "string",
           "title": "URL for rabbitmq service"
+        },
+        "urlSecret": {
+          "title": "URLSecret is secret reference for rabbitmq service URL",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         }
       }
     },
@@ -5511,7 +5622,7 @@
       "title": "AWSLambdaTrigger refers to specification of the trigger to invoke an AWS Lambda function",
       "properties": {
         "accessKey": {
-          "title": "AccessKey refers K8 secret containing aws access key",
+          "title": "AccessKey refers K8s secret containing aws access key",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         },
         "functionName": {
@@ -5541,7 +5652,7 @@
           "title": "Region is AWS region"
         },
         "secretKey": {
-          "title": "SecretKey refers K8 secret containing aws secret key",
+          "title": "SecretKey refers K8s secret containing aws secret key",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         }
       }
@@ -5560,10 +5671,6 @@
       "type": "object",
       "title": "ArgoWorkflowTrigger is the trigger for the Argo Workflow",
       "properties": {
-        "groupVersionResource": {
-          "title": "The unambiguous kind of this object - used in order to retrieve the appropriate kubernetes api client for this resource",
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.GroupVersionResource"
-        },
         "operation": {
           "type": "string",
           "title": "Operation refers to the type of operation performed on the argo workflow resource.\nDefault value is Submit.\n+optional"
@@ -5576,7 +5683,7 @@
           }
         },
         "source": {
-          "title": "Source of the K8 resource file(s)",
+          "title": "Source of the K8s resource file(s)",
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.ArtifactLocation"
         }
       }
@@ -5716,6 +5823,54 @@
         }
       }
     },
+    "io.argoproj.events.v1alpha1.BitbucketServerEventSource": {
+      "type": "object",
+      "title": "BitbucketServerEventSource refers to event-source related to Bitbucket Server events",
+      "properties": {
+        "accessToken": {
+          "title": "AccessToken is reference to K8s secret which holds the bitbucket api access information",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "bitbucketserverBaseURL": {
+          "type": "string",
+          "title": "BitbucketServerBaseURL is the base URL for API requests to a custom endpoint"
+        },
+        "deleteHookOnFinish": {
+          "type": "boolean",
+          "title": "DeleteHookOnFinish determines whether to delete the Bitbucket Server hook for the project once the event source is stopped.\n+optional"
+        },
+        "events": {
+          "type": "array",
+          "title": "Events are bitbucket event to listen to.\nRefer https://confluence.atlassian.com/bitbucketserver/event-payload-938025882.html",
+          "items": {
+            "type": "string"
+          }
+        },
+        "metadata": {
+          "type": "object",
+          "title": "Metadata holds the user defined metadata which will passed along the event payload.\n+optional",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "projectKey": {
+          "type": "string",
+          "title": "ProjectKey is the key of project for which integration needs to setup"
+        },
+        "repositorySlug": {
+          "type": "string",
+          "title": "RepositorySlug is the slug of the repository for which integration needs to setup"
+        },
+        "webhook": {
+          "title": "Webhook holds configuration to run a http server",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.WebhookContext"
+        },
+        "webhookSecret": {
+          "title": "WebhookSecret is reference to K8s secret which holds the bitbucket webhook secret (for HMAC validation)",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
+    },
     "io.argoproj.events.v1alpha1.CalendarEventSource": {
       "type": "object",
       "title": "CalendarEventSource describes a time based dependency. One of the fields (schedule, interval, or recurrence) must be passed.\nSchedule takes precedence over interval; interval takes precedence over recurrence",
@@ -5748,11 +5903,6 @@
         "timezone": {
           "type": "string",
           "title": "Timezone in which to run the schedule\n+optional"
-        },
-        "userPayload": {
-          "description": "UserPayload will be sent to sensor as extra data once the event is triggered\n+optional\nDeprecated: will be removed in v1.5. Please use Metadata instead.",
-          "type": "string",
-          "format": "byte"
         }
       }
     },
@@ -5812,10 +5962,6 @@
       "description": "CustomTrigger refers to the specification of the custom trigger.",
       "type": "object",
       "properties": {
-        "certFilePath": {
-          "type": "string",
-          "title": "DeprecatedCertFilePath is path to the cert file within sensor for secure connection between sensor and custom trigger gRPC server.\nDeprecated: will be removed in v1.5, use CertSecret instead"
-        },
         "certSecret": {
           "description": "CertSecret refers to the secret that contains cert for secure connection between sensor and custom trigger gRPC server.",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
@@ -5881,23 +6027,6 @@
           "items": {
             "type": "string"
           }
-        }
-      }
-    },
-    "io.argoproj.events.v1alpha1.DependencyGroup": {
-      "type": "object",
-      "title": "DependencyGroup is the group of dependencies",
-      "properties": {
-        "dependencies": {
-          "type": "array",
-          "title": "Dependencies of events",
-          "items": {
-            "type": "string"
-          }
-        },
-        "name": {
-          "type": "string",
-          "title": "Name of the group"
         }
       }
     },
@@ -6092,6 +6221,13 @@
             "$ref": "#/definitions/io.argoproj.events.v1alpha1.AzureEventsHubEventSource"
           }
         },
+        "bitbucketserver": {
+          "type": "object",
+          "title": "Bitbucket Server event sources",
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.BitbucketServerEventSource"
+          }
+        },
         "calendar": {
           "type": "object",
           "title": "Calendar event sources",
@@ -6200,10 +6336,6 @@
           "additionalProperties": {
             "$ref": "#/definitions/io.argoproj.events.v1alpha1.RedisEventSource"
           }
-        },
-        "replica": {
-          "type": "integer",
-          "title": "DeprecatedReplica is the event source deployment replicas\nDeprecated: use replicas instead, will be removed in v1.5"
         },
         "replicas": {
           "type": "integer",
@@ -6388,10 +6520,6 @@
           "title": "Remote to manage set of tracked repositories. Defaults to \"origin\".\nRefer https://git-scm.com/docs/git-remote\n+optional",
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.GitRemoteConfig"
         },
-        "sshKeyPath": {
-          "type": "string",
-          "title": "DeprecatedSSHKeyPath is path to your ssh key path. Use this if you don't want to provide username and password.\nssh key path must be mounted in sensor pod.\nDeprecated: will be removed in v1.5, use SSHKeySecret instead.\n+optional"
-        },
         "sshKeySecret": {
           "title": "SSHKeySecret refers to the secret that contains SSH key",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
@@ -6514,7 +6642,7 @@
       "title": "GitlabEventSource refers to event-source related to Gitlab events",
       "properties": {
         "accessToken": {
-          "title": "AccessToken is reference to k8 secret which holds the gitlab api access information",
+          "title": "AccessToken references to k8 secret which holds the gitlab api access information",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         },
         "deleteHookOnFinish": {
@@ -6545,7 +6673,18 @@
         },
         "projectID": {
           "type": "string",
-          "title": "ProjectID is the id of project for which integration needs to setup"
+          "title": "DeprecatedProjectID is the id of project for which integration needs to setup\nDeprecated: use Projects instead. Will be unsupported in v 1.7"
+        },
+        "projects": {
+          "type": "array",
+          "title": "List of project IDs or project namespace paths like \"whynowy/test\"",
+          "items": {
+            "type": "string"
+          }
+        },
+        "secretToken": {
+          "title": "SecretToken references to k8 secret which holds the Secret Token used by webhook config",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         },
         "webhook": {
           "title": "Webhook holds configuration to run a http server",
@@ -7098,10 +7237,6 @@
           "title": "CredentialSecret references to the secret that contains JSON credentials to access GCP.\nIf it is missing, it implicitly uses Workload Identity to access.\nhttps://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity\n+optional",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         },
-        "credentialsFile": {
-          "type": "string",
-          "title": "CredentialsFile is the file that contains credentials to authenticate for GCP\nDeprecated: will be removed in v1.5, use CredentialSecret instead"
-        },
         "deleteSubscriptionOnFinish": {
           "type": "boolean",
           "title": "DeleteSubscriptionOnFinish determines whether to delete the GCP PubSub subscription once the event source is stopped.\n+optional"
@@ -7139,6 +7274,10 @@
       "type": "object",
       "title": "PulsarEventSource describes the event source for Apache Pulsar",
       "properties": {
+        "authTokenSecret": {
+          "title": "Authentication token for the pulsar client.\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
         "connectionBackoff": {
           "title": "Backoff holds parameters applied to connection.\n+optional",
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.Backoff"
@@ -7184,6 +7323,70 @@
         "url": {
           "type": "string",
           "title": "Configure the service URL for the Pulsar service.\n+required"
+        }
+      }
+    },
+    "io.argoproj.events.v1alpha1.PulsarTrigger": {
+      "description": "PulsarTrigger refers to the specification of the Pulsar trigger.",
+      "type": "object",
+      "properties": {
+        "authTokenSecret": {
+          "title": "Authentication token for the pulsar client.\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "connectionBackoff": {
+          "title": "Backoff holds parameters applied to connection.\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.Backoff"
+        },
+        "parameters": {
+          "description": "Parameters is the list of parameters that is applied to resolved Kafka trigger object.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter"
+          }
+        },
+        "payload": {
+          "description": "Payload is the list of key-value extracted from an event payload to construct the request payload.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter"
+          }
+        },
+        "tls": {
+          "title": "TLS configuration for the pulsar client.\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.TLSConfig"
+        },
+        "tlsAllowInsecureConnection": {
+          "type": "boolean",
+          "title": "Whether the Pulsar client accept untrusted TLS certificate from broker.\n+optional"
+        },
+        "tlsTrustCertsSecret": {
+          "title": "Trusted TLS certificate secret.\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "tlsValidateHostname": {
+          "type": "boolean",
+          "title": "Whether the Pulsar client verify the validity of the host name from broker.\n+optional"
+        },
+        "topic": {
+          "type": "string",
+          "title": "Name of the topic.\nSee https://pulsar.apache.org/docs/en/concepts-messaging/"
+        },
+        "url": {
+          "type": "string",
+          "title": "Configure the service URL for the Pulsar service.\n+required"
+        }
+      }
+    },
+    "io.argoproj.events.v1alpha1.RateLimit": {
+      "type": "object",
+      "properties": {
+        "requestsPerUnit": {
+          "type": "integer"
+        },
+        "unit": {
+          "type": "string",
+          "title": "Defaults to Second"
         }
       }
     },
@@ -7270,7 +7473,7 @@
     },
     "io.argoproj.events.v1alpha1.ResourceFilter": {
       "type": "object",
-      "title": "ResourceFilter contains K8 ObjectMeta information to further filter resource event objects",
+      "title": "ResourceFilter contains K8s ObjectMeta information to further filter resource event objects",
       "properties": {
         "afterStart": {
           "type": "boolean",
@@ -7386,7 +7589,7 @@
       "title": "SNSEventSource refers to event-source for AWS SNS related events",
       "properties": {
         "accessKey": {
-          "title": "AccessKey refers K8 secret containing aws access key",
+          "title": "AccessKey refers K8s secret containing aws access key",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         },
         "metadata": {
@@ -7405,7 +7608,7 @@
           "title": "RoleARN is the Amazon Resource Name (ARN) of the role to assume.\n+optional"
         },
         "secretKey": {
-          "title": "SecretKey refers K8 secret containing aws secret key",
+          "title": "SecretKey refers K8s secret containing aws secret key",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         },
         "topicArn": {
@@ -7427,7 +7630,7 @@
       "title": "SQSEventSource refers to event-source for AWS SQS related events",
       "properties": {
         "accessKey": {
-          "title": "AccessKey refers K8 secret containing aws access key",
+          "title": "AccessKey refers K8s secret containing aws access key",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         },
         "jsonBody": {
@@ -7458,7 +7661,7 @@
           "title": "RoleARN is the Amazon Resource Name (ARN) of the role to assume.\n+optional"
         },
         "secretKey": {
-          "title": "SecretKey refers K8 secret containing aws secret key",
+          "title": "SecretKey refers K8s secret containing aws secret key",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         },
         "waitTimeSeconds": {
@@ -7533,22 +7736,11 @@
       "type": "object",
       "title": "SensorSpec represents desired sensor state",
       "properties": {
-        "circuit": {
-          "description": "Circuit is a boolean expression of dependency groups\nDeprecated: will be removed in v1.5, use Switch in triggers instead.",
-          "type": "string"
-        },
         "dependencies": {
           "description": "Dependencies is a list of the events that this sensor is dependent on.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventDependency"
-          }
-        },
-        "dependencyGroups": {
-          "description": "DependencyGroups is a list of the groups of events.",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/io.argoproj.events.v1alpha1.DependencyGroup"
           }
         },
         "errorOnFailedRound": {
@@ -7656,10 +7848,6 @@
       "type": "object",
       "title": "StandardK8STrigger is the standard Kubernetes resource trigger",
       "properties": {
-        "groupVersionResource": {
-          "title": "The unambiguous kind of this object - used in order to retrieve the appropriate kubernetes api client for this resource",
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.GroupVersionResource"
-        },
         "liveObject": {
           "type": "boolean",
           "title": "LiveObject specifies whether the resource should be directly fetched from K8s instead\nof being marshaled from the resource artifact. If set to true, the resource artifact\nmust contain the information required to uniquely identify the resource in the cluster,\nthat is, you must specify \"apiVersion\", \"kind\" as well as \"name\" and \"namespace\" meta\ndata.\nOnly valid for operation type `update`\n+optional"
@@ -7680,7 +7868,7 @@
           "title": "PatchStrategy controls the K8s object patching strategy when the trigger operation is specified as patch.\npossible values:\n\"application/json-patch+json\"\n\"application/merge-patch+json\"\n\"application/strategic-merge-patch+json\"\n\"application/apply-patch+yaml\".\nDefaults to \"application/merge-patch+json\"\n+optional"
         },
         "source": {
-          "title": "Source of the K8 resource file(s)",
+          "title": "Source of the K8s resource file(s)",
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.ArtifactLocation"
         }
       }
@@ -7806,25 +7994,13 @@
       "description": "TLSConfig refers to TLS configuration for a client.",
       "type": "object",
       "properties": {
-        "caCertPath": {
-          "type": "string",
-          "title": "DeprecatedCACertPath refers the file path that contains the CA cert.\nDeprecated: will be removed in v1.5, use CACertSecret instead"
-        },
         "caCertSecret": {
           "title": "CACertSecret refers to the secret that contains the CA cert",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         },
-        "clientCertPath": {
-          "type": "string",
-          "title": "DeprecatedClientCertPath refers the file path that contains client cert.\nDeprecated: will be removed in v1.5, use ClientCertSecret instead"
-        },
         "clientCertSecret": {
           "title": "ClientCertSecret refers to the secret that contains the client cert",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
-        },
-        "clientKeyPath": {
-          "type": "string",
-          "title": "DeprecatedClientKeyPath refers the file path that contains client key.\nDeprecated: will be removed in v1.5, use ClientKeySecret instead"
         },
         "clientKeySecret": {
           "title": "ClientKeySecret refers to the secret that contains the client key",
@@ -7923,6 +8099,10 @@
           "title": "Policy to configure backoff and execution criteria for the trigger\n+optional",
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerPolicy"
         },
+        "rateLimit": {
+          "title": "Rate limit, default unit is Second\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.RateLimit"
+        },
         "retryStrategy": {
           "title": "Retry strategy, defaults to no retry\n+optional",
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.Backoff"
@@ -7995,26 +8175,6 @@
         }
       }
     },
-    "io.argoproj.events.v1alpha1.TriggerSwitch": {
-      "type": "object",
-      "title": "TriggerSwitch describes condition which must be satisfied in order to execute a trigger.\nDepending upon condition type, status of dependency groups is used to evaluate the result.\nDeprecated: will be removed in v1.5",
-      "properties": {
-        "all": {
-          "type": "array",
-          "title": "All acts as a AND operator between dependencies",
-          "items": {
-            "type": "string"
-          }
-        },
-        "any": {
-          "type": "array",
-          "title": "Any acts as a OR operator between dependencies",
-          "items": {
-            "type": "string"
-          }
-        }
-      }
-    },
     "io.argoproj.events.v1alpha1.TriggerTemplate": {
       "description": "TriggerTemplate is the template that describes trigger specification.",
       "type": "object",
@@ -8067,13 +8227,13 @@
           "title": "OpenWhisk refers to the trigger designed to invoke OpenWhisk action.\n+optional",
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.OpenWhiskTrigger"
         },
+        "pulsar": {
+          "title": "Pulsar refers to the trigger designed to place messages on Pulsar topic.\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.PulsarTrigger"
+        },
         "slack": {
           "title": "Slack refers to the trigger designed to send slack notification message.\n+optional",
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.SlackTrigger"
-        },
-        "switch": {
-          "title": "DeprecatedSwitch is the condition to execute the trigger.\nDeprecated: will be removed in v1.5, use conditions instead\n+optional",
-          "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerSwitch"
         }
       }
     },
@@ -8147,17 +8307,9 @@
           "description": "Port on which HTTP server is listening for incoming events.",
           "type": "string"
         },
-        "serverCertPath": {
-          "description": "DeprecatedServerCertPath refers the file that contains the cert.",
-          "type": "string"
-        },
         "serverCertSecret": {
           "description": "ServerCertPath refers the file that contains the cert.",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
-        },
-        "serverKeyPath": {
-          "type": "string",
-          "title": "DeprecatedServerKeyPath refers the file that contains private key"
         },
         "serverKeySecret": {
           "title": "ServerKeyPath refers the file that contains private key",
@@ -8751,7 +8903,7 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.Probe"
         },
         "resources": {
-          "description": "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/",
+          "description": "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
           "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
         },
         "securityContext": {
@@ -9425,8 +9577,7 @@
       "properties": {
         "body": {
           "description": "Body is content of the HTTP Request",
-          "type": "string",
-          "format": "byte"
+          "type": "string"
         },
         "headers": {
           "description": "Headers are an optional list of headers to send with HTTP requests",
@@ -9573,6 +9724,30 @@
     },
     "io.argoproj.workflow.v1alpha1.Item": {
       "description": "Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number"
+    },
+    "io.argoproj.workflow.v1alpha1.LabelKeys": {
+      "description": "LabelKeys is list of keys",
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.LabelValues": {
+      "description": "Labels is list of workflow labels",
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
     },
     "io.argoproj.workflow.v1alpha1.LifecycleHook": {
       "type": "object",
@@ -10437,7 +10612,7 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.Probe"
         },
         "resources": {
-          "description": "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/",
+          "description": "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
           "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
         },
         "securityContext": {
@@ -11021,7 +11196,7 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.Probe"
         },
         "resources": {
-          "description": "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/",
+          "description": "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
           "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
         },
         "securityContext": {
@@ -11402,6 +11577,10 @@
         "affinity": {
           "description": "Affinity sets the scheduling constraints for all pods in the io.argoproj.workflow.v1alpha1. Can be overridden by an affinity specified in the template",
           "$ref": "#/definitions/io.k8s.api.core.v1.Affinity"
+        },
+        "archiveLogs": {
+          "description": "ArchiveLogs indicates if the container logs should be archived",
+          "type": "boolean"
         },
         "arguments": {
           "description": "Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{io.argoproj.workflow.v1alpha1.parameters.myparam}}",
@@ -11931,6 +12110,10 @@
         "affinity": {
           "description": "Affinity sets the scheduling constraints for all pods in the io.argoproj.workflow.v1alpha1. Can be overridden by an affinity specified in the template",
           "$ref": "#/definitions/io.k8s.api.core.v1.Affinity"
+        },
+        "archiveLogs": {
+          "description": "ArchiveLogs indicates if the container logs should be archived",
+          "type": "boolean"
         },
         "arguments": {
           "description": "Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{io.argoproj.workflow.v1alpha1.parameters.myparam}}",
@@ -12744,10 +12927,6 @@
       "description": "Represents an ephemeral volume that is handled by a normal storage driver.",
       "type": "object",
       "properties": {
-        "readOnly": {
-          "type": "boolean",
-          "title": "Specifies a read-only configuration for the volume.\nDefaults to false (read/write).\n+optional"
-        },
         "volumeClaimTemplate": {
           "description": "Will be used to create a stand-alone PVC to provision the volume.\nThe pod in which this EphemeralVolumeSource is embedded will be the\nowner of the PVC, i.e. the PVC will be deleted together with the\npod.  The name of the PVC will be `\u003cpod name\u003e-\u003cvolume name\u003e` where\n`\u003cvolume name\u003e` is the name from the `PodSpec.Volumes` array\nentry. Pod validation will reject the pod if the concatenated name\nis not valid for a PVC (for example, too long).\n\nAn existing PVC with that name that is not owned by the pod\nwill *not* be used for the pod to avoid using an unrelated\nvolume by mistake. Starting the pod is then blocked until\nthe unrelated PVC is removed. If such a pre-created PVC is\nmeant to be used by the pod, the PVC has to updated with an\nowner reference to the pod once the pod exists. Normally\nthis should not be necessary, but it may be useful when\nmanually reconstructing a broken cluster.\n\nThis field is read-only and no changes will be made by Kubernetes\nto the PVC after it has been created.\n\nRequired, must not be nil.",
           "$ref": "#/definitions/io.k8s.api.core.v1.PersistentVolumeClaimTemplate"

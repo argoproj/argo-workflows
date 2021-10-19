@@ -254,6 +254,13 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.preExecutionNodePhases[node.ID] = node.Phase
 	}
 
+	if woc.execWf.Spec.Metrics != nil {
+		realTimeScope := map[string]func() float64{common.GlobalVarWorkflowDuration: func() float64 {
+			return time.Since(woc.wf.Status.StartedAt.Time).Seconds()
+		}}
+		woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, woc.globalParams, realTimeScope, true)
+	}
+
 	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
 		woc.markWorkflowRunning(ctx)
 		err := woc.createPDBResource(ctx)
@@ -271,12 +278,6 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			woc.requeueAfter(time.Until(*woc.workflowDeadline))
 		}
 
-		if woc.execWf.Spec.Metrics != nil {
-			realTimeScope := map[string]func() float64{common.GlobalVarWorkflowDuration: func() float64 {
-				return time.Since(woc.wf.Status.StartedAt.Time).Seconds()
-			}}
-			woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, woc.globalParams, realTimeScope, true)
-		}
 		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration()
 	} else {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
@@ -2189,7 +2190,8 @@ func (woc *wfOperationCtx) getPodByNode(node *wfv1.NodeStatus) (*apiv1.Pod, erro
 	if node.Type != wfv1.NodeTypePod {
 		return nil, fmt.Errorf("Expected node type %s, got %s", wfv1.NodeTypePod, node.Type)
 	}
-	return woc.controller.getPod(woc.wf.GetNamespace(), node.ID)
+	podName := wfutil.PodName(woc.wf.Name, node.Name, node.TemplateName, node.ID)
+	return woc.controller.getPod(woc.wf.GetNamespace(), podName)
 }
 
 func (woc *wfOperationCtx) recordNodePhaseEvent(node *wfv1.NodeStatus) {

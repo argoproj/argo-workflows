@@ -1820,6 +1820,7 @@ func TestSidecarResourceLimits(t *testing.T) {
 	assert.NoError(t, err)
 	var waitCtr *apiv1.Container
 	for _, ctr := range pod.Spec.Containers {
+		ctr := ctr
 		if ctr.Name == "wait" {
 			waitCtr = &ctr
 			break
@@ -3518,7 +3519,6 @@ func getEvents(controller *WorkflowController, num int) []string {
 }
 
 func TestGetPodByNode(t *testing.T) {
-	t.Skip("See https://github.com/argoproj/argo-workflows/issues/6458")
 	workflowText := `
 metadata:
   name: dag-events
@@ -3542,6 +3542,7 @@ spec:
 	woc := newWorkflowOperationCtx(wf, controller)
 	createRunningPods(ctx, woc)
 	woc.operate(ctx)
+	time.Sleep(time.Second)
 	// Parent dag node has no pod
 	parentNode := woc.wf.GetNodeByName("dag-events")
 	pod, err := woc.getPodByNode(parentNode)
@@ -5897,6 +5898,7 @@ spec:
 		return node.Phase == wfv1.NodePending
 	}))
 
+	time.Sleep(time.Second)
 	deletePods(ctx, woc)
 
 	woc = newWorkflowOperationCtx(woc.wf, controller)
@@ -5907,6 +5909,7 @@ spec:
 		return node.Phase == wfv1.NodePending
 	}))
 
+	time.Sleep(time.Second)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 
 	woc = newWorkflowOperationCtx(woc.wf, controller)

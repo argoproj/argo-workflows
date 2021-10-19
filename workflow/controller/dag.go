@@ -276,7 +276,19 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 			// Can happen when dag.target was specified
 			continue
 		}
-		woc.buildLocalScope(scope, fmt.Sprintf("tasks.%s", task.Name), taskNode)
+
+		prefix := fmt.Sprintf("tasks.%s", task.Name)
+		if taskNode.Type == wfv1.NodeTypeTaskGroup {
+			childNodes := make([]wfv1.NodeStatus, len(taskNode.Children))
+			for i, childID := range taskNode.Children {
+				childNodes[i] = woc.wf.Status.Nodes[childID]
+			}
+			err := woc.processAggregateNodeOutputs(scope, prefix, childNodes)
+			if err != nil {
+				return nil, errors.InternalWrapError(err)
+			}
+		}
+		woc.buildLocalScope(scope, prefix, taskNode)
 		woc.addOutputsToGlobalScope(taskNode.Outputs)
 	}
 	outputs, err := getTemplateOutputsFromScope(tmpl, scope)
@@ -425,7 +437,12 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 	// For example, if we had task A with withItems of ['foo', 'bar'] which expanded to ['A(0:foo)', 'A(1:bar)'], we still
 	// need to create a node for A.
 	if task.ShouldExpand() {
-		if taskGroupNode == nil {
+		// DAG task with empty withParams list should be skipped
+		if len(expandedTasks) == 0 {
+			skipReason := "Skipped, empty params"
+			woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeSkipped, skipReason)
+			connectDependencies(nodeName)
+		} else if taskGroupNode == nil {
 			connectDependencies(nodeName)
 			taskGroupNode = woc.initializeNode(nodeName, wfv1.NodeTypeTaskGroup, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeRunning, "")
 		}

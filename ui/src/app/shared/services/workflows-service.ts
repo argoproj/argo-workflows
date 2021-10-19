@@ -112,8 +112,11 @@ export class WorkflowsService {
         return requests.put(`api/v1/workflows/${namespace}/${name}/suspend`).then(res => res.body as Workflow);
     }
 
-    public resume(name: string, namespace: string) {
-        return requests.put(`api/v1/workflows/${namespace}/${name}/resume`).then(res => res.body as Workflow);
+    public resume(name: string, namespace: string, nodeFieldSelector: string) {
+        return requests
+            .put(`api/v1/workflows/${namespace}/${name}/resume`)
+            .send({nodeFieldSelector})
+            .then(res => res.body as Workflow);
     }
 
     public stop(name: string, namespace: string) {
