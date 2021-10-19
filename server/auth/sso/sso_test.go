@@ -2,6 +2,7 @@ package sso
 
 import (
 	"context"
+	"crypto/tls"
 	"testing"
 	"time"
 
@@ -28,7 +29,7 @@ func (fakeOidcProvider) Verifier(config *oidc.Config) *oidc.IDTokenVerifier {
 	return nil
 }
 
-func fakeOidcFactory(ctx context.Context, issuer string) (providerInterface, error) {
+func fakeOidcFactory(ctx context.Context, issuer string, tlsConfig *tls.Config) (providerInterface, error) {
 	return fakeOidcProvider{ctx, issuer}, nil
 }
 
