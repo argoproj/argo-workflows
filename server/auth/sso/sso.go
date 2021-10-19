@@ -5,6 +5,7 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/tls"
 	"crypto/x509"
 	"fmt"
 	"net/http"
@@ -75,6 +76,7 @@ type Config struct {
 	// customGroupClaimName will override the groups claim name
 	CustomGroupClaimName string `json:"customGroupClaimName,omitempty"`
 	UserInfoPath         string `json:"userInfoPath,omitempty"`
+	InsecureSkipVerify   bool   `json:"insecureSkipVerify,omitempty"`
 }
 
 func (c Config) GetSessionExpiry() time.Duration {
@@ -93,10 +95,13 @@ type providerInterface interface {
 	Verifier(config *oidc.Config) *oidc.IDTokenVerifier
 }
 
-type providerFactory func(ctx context.Context, issuer string) (providerInterface, error)
+type providerFactory func(ctx context.Context, issuer string, tlsConfig *tls.Config) (providerInterface, error)
 
-func providerFactoryOIDC(ctx context.Context, issuer string) (providerInterface, error) {
-	return oidc.NewProvider(ctx, issuer)
+func providerFactoryOIDC(ctx context.Context, issuer string, tlsConfig *tls.Config) (providerInterface, error) {
+	// Create http client used by oidc provider to allow modification of underlying TLSClientConfig
+	httpClient := &http.Client{Transport: &http.Transport{TLSClientConfig: tlsConfig}}
+	oidcContext := oidc.ClientContext(ctx, httpClient)
+	return oidc.NewProvider(oidcContext, issuer)
 }
 
 func New(c Config, secretsIf corev1.SecretInterface, baseHRef string, secure bool) (Interface, error) {
@@ -131,7 +136,7 @@ func newSso(
 		providerCtx = oidc.InsecureIssuerURLContext(ctx, c.IssuerAlias)
 	}
 
-	provider, err := factory(providerCtx, c.Issuer)
+	provider, err := factory(providerCtx, c.Issuer, &tls.Config{InsecureSkipVerify: c.InsecureSkipVerify})
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +193,7 @@ func newSso(
 	if err != nil {
 		return nil, fmt.Errorf("failed to create JWT encrpytor: %w", err)
 	}
-	lf := log.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "issuerAlias": "DISABLED", "clientId": c.ClientID, "scopes": config.Scopes}
+	lf := log.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "issuerAlias": "DISABLED", "clientId": c.ClientID, "scopes": config.Scopes, "insecureSkipVerify": c.InsecureSkipVerify}
 	if c.IssuerAlias != "" {
 		lf["issuerAlias"] = c.IssuerAlias
 	}
