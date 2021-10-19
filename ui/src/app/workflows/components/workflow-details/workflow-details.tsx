@@ -224,8 +224,6 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
             document.location.href = url;
         }
     };
-
-
     const getPodName = (wf: Workflow, node: NodeStatus, nodeID: string): string => {
         if (workflow && node) {
             return Utils.getPodName(wf.metadata.name, node.name, node.templateName, node.id);
