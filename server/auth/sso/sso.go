@@ -96,10 +96,13 @@ type providerInterface interface {
 	Verifier(config *oidc.Config) *oidc.IDTokenVerifier
 }
 
-type providerFactory func(ctx context.Context, issuer string) (providerInterface, error)
+type providerFactory func(ctx context.Context, issuer string, tlsConfig *tls.Config) (providerInterface, error)
 
-func providerFactoryOIDC(ctx context.Context, issuer string) (providerInterface, error) {
-	return oidc.NewProvider(ctx, issuer)
+func providerFactoryOIDC(ctx context.Context, issuer string, tlsConfig *tls.Config) (providerInterface, error) {
+	// Create http client used by oidc provider to allow modification of underlying TLSClientConfig
+	httpClient := &http.Client{Transport: &http.Transport{TLSClientConfig: tlsConfig}}
+	oidcContext := oidc.ClientContext(ctx, httpClient)
+	return oidc.NewProvider(oidcContext, issuer)
 }
 
 func New(c Config, secretsIf corev1.SecretInterface, baseHRef string, secure bool) (Interface, error) {
@@ -136,7 +139,8 @@ func newSso(
 		oidcContext = oidc.InsecureIssuerURLContext(oidcContext, c.IssuerAlias)
 	}
 
-	provider, err := factory(oidcContext, c.Issuer)
+	provider, err := factory(oidcContext, c.Issuer, &tls.Config{InsecureSkipVerify: c.InsecureSkipVerify})
+
 	if err != nil {
 		return nil, err
 	}
