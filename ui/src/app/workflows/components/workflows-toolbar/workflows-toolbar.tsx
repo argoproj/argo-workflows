@@ -53,7 +53,7 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
 
     private performActionOnSelectedWorkflows(ctx: any, title: string, action: WorkflowOperationAction): Promise<any> {
         if (!confirm(`Are you sure you want to ${title.toLowerCase()} all selected workflows?`)) {
-            return Promise.resolve();
+            return Promise.resolve(false);
         }
         const promises: Promise<any>[] = [];
         this.props.selectedWorkflows.forEach((wf: Workflow) => {
@@ -82,13 +82,15 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
                 groupIsDisabled: disabled[actionName],
                 action,
                 groupAction: () => {
-                    return this.performActionOnSelectedWorkflows(ctx, action.title, action.action).then(() => {
-                        this.props.clearSelection();
-                        this.appContext.apis.notifications.show({
-                            content: `Performed '${action.title}' on selected workflows.`,
-                            type: NotificationType.Success
-                        });
-                        this.props.loadWorkflows();
+                    return this.performActionOnSelectedWorkflows(ctx, action.title, action.action).then(confirmed => {
+                        if (confirmed) {
+                            this.props.clearSelection();
+                            this.appContext.apis.notifications.show({
+                                content: `Performed '${action.title}' on selected workflows.`,
+                                type: NotificationType.Success
+                            });
+                            this.props.loadWorkflows();
+                        }
                     });
                 },
                 className: action.title,
