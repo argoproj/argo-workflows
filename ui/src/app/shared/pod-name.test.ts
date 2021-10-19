@@ -1,4 +1,4 @@
-import {createFNVHash, ensurePodNamePrefixLength, getPodName, k8sNamingHashLength, maxK8sResourceNameLength} from './pod-name';
+import {createFNVHash, ensurePodNamePrefixLength, getPodName, k8sNamingHashLength, maxK8sResourceNameLength, POD_NAME_VERSION_1, POD_NAME_VERSION_2} from './pod-name';
 
 describe('pod names', () => {
     test('createFNVHash', () => {
@@ -27,6 +27,11 @@ describe('pod names', () => {
     });
 
     test('getPodName', () => {
-        expect(getPodName(shortWfName, nodeName, shortTemplateName, nodeID)).toEqual(nodeID);
+        expect(getPodName(shortWfName, nodeName, shortTemplateName, nodeID, POD_NAME_VERSION_2)).toEqual('wfname-templatename-1454367246');
+        expect(getPodName(shortWfName, nodeName, shortTemplateName, nodeID, POD_NAME_VERSION_1)).toEqual(nodeID);
+        expect(getPodName(shortWfName, nodeName, shortTemplateName, nodeID, '')).toEqual(nodeID);
+
+        const name = getPodName(longWfName, nodeName, longTemplateName, nodeID, POD_NAME_VERSION_2);
+        expect(name.length).toEqual(maxK8sResourceNameLength);
     });
 });
