@@ -5,7 +5,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -212,7 +211,7 @@ func NewDocGeneratorContext() *DocGeneratorContext {
 }
 
 func (c *DocGeneratorContext) loadFiles() {
-	bytes, err := ioutil.ReadFile("api/openapi-spec/swagger.json")
+	bytes, err := os.ReadFile("api/openapi-spec/swagger.json")
 	if err != nil {
 		panic(err)
 	}
@@ -228,7 +227,7 @@ func (c *DocGeneratorContext) loadFiles() {
 		panic(err)
 	}
 	for _, fileName := range files {
-		bytes, err := ioutil.ReadFile(filepath.Clean(fileName))
+		bytes, err := os.ReadFile(filepath.Clean(fileName))
 		if err != nil {
 			panic(err)
 		}
@@ -345,7 +344,7 @@ func (c *DocGeneratorContext) generate() string {
 func generateDocs() {
 	println("generating docs/fields.md")
 	c := NewDocGeneratorContext()
-	err := ioutil.WriteFile("docs/fields.md", []byte(c.generate()), 0o600)
+	err := os.WriteFile("docs/fields.md", []byte(c.generate()), 0o600)
 	if err != nil {
 		panic(err)
 	}

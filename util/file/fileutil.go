@@ -7,7 +7,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"strings"
 
 	"github.com/klauspost/pgzip"
@@ -117,5 +116,5 @@ func DecompressContent(content []byte) ([]byte, error) {
 		return nil, fmt.Errorf("failed to decompress: %w", err)
 	}
 	defer close(gzipReader)
-	return ioutil.ReadAll(gzipReader)
+	return io.ReadAll(gzipReader)
 }

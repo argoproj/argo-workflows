@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -15,7 +14,7 @@ import (
 )
 
 func TestEmissary(t *testing.T) {
-	tmp, err := ioutil.TempDir("", "")
+	tmp, err := os.MkdirTemp("", "")
 	assert.NoError(t, err)
 
 	varRunArgo = tmp
@@ -26,34 +25,34 @@ func TestEmissary(t *testing.T) {
 
 	x := filepath.Join(wd, "../../../dist/argosay")
 
-	err = ioutil.WriteFile(varRunArgo+"/template", []byte(`{}`), 0o600)
+	err = os.WriteFile(varRunArgo+"/template", []byte(`{}`), 0o600)
 	assert.NoError(t, err)
 
 	t.Run("Exit0", func(t *testing.T) {
 		err := run(x, []string{"exit"})
 		assert.NoError(t, err)
-		data, err := ioutil.ReadFile(varRunArgo + "/ctr/main/exitcode")
+		data, err := os.ReadFile(varRunArgo + "/ctr/main/exitcode")
 		assert.NoError(t, err)
 		assert.Equal(t, "0", string(data))
 	})
 	t.Run("Exit1", func(t *testing.T) {
 		err := run(x, []string{"exit", "1"})
 		assert.Equal(t, 1, err.(*exec.ExitError).ExitCode())
-		data, err := ioutil.ReadFile(varRunArgo + "/ctr/main/exitcode")
+		data, err := os.ReadFile(varRunArgo + "/ctr/main/exitcode")
 		assert.NoError(t, err)
 		assert.Equal(t, "1", string(data))
 	})
 	t.Run("Stdout", func(t *testing.T) {
 		err := run(x, []string{"echo", "hello", "/dev/stdout"})
 		assert.NoError(t, err)
-		data, err := ioutil.ReadFile(varRunArgo + "/ctr/main/stdout")
+		data, err := os.ReadFile(varRunArgo + "/ctr/main/stdout")
 		assert.NoError(t, err)
 		assert.Contains(t, string(data), "hello")
 	})
 	t.Run("Stderr", func(t *testing.T) {
 		err := run(x, []string{"echo", "hello", "/dev/stderr"})
 		assert.NoError(t, err)
-		data, err := ioutil.ReadFile(varRunArgo + "/ctr/main/stderr")
+		data, err := os.ReadFile(varRunArgo + "/ctr/main/stderr")
 		assert.NoError(t, err)
 		assert.Contains(t, string(data), "hello")
 	})
@@ -62,7 +61,7 @@ func TestEmissary(t *testing.T) {
 			syscall.SIGTERM: "terminated",
 			syscall.SIGKILL: "killed",
 		} {
-			err := ioutil.WriteFile(varRunArgo+"/ctr/main/signal", []byte(strconv.Itoa(int(signal))), 0o600)
+			err := os.WriteFile(varRunArgo+"/ctr/main/signal", []byte(strconv.Itoa(int(signal))), 0o600)
 			assert.NoError(t, err)
 			var wg sync.WaitGroup
 			wg.Add(1)
@@ -75,7 +74,7 @@ func TestEmissary(t *testing.T) {
 		}
 	})
 	t.Run("Artifact", func(t *testing.T) {
-		err = ioutil.WriteFile(varRunArgo+"/template", []byte(`
+		err = os.WriteFile(varRunArgo+"/template", []byte(`
 {
 	"outputs": {
 		"artifacts": [
@@ -87,12 +86,12 @@ func TestEmissary(t *testing.T) {
 		assert.NoError(t, err)
 		err := run(x, []string{"echo", "hello", "/tmp/artifact"})
 		assert.NoError(t, err)
-		data, err := ioutil.ReadFile(varRunArgo + "/outputs/artifacts/tmp/artifact.tgz")
+		data, err := os.ReadFile(varRunArgo + "/outputs/artifacts/tmp/artifact.tgz")
 		assert.NoError(t, err)
 		assert.NotEmpty(t, string(data)) // data is tgz format
 	})
 	t.Run("ArtifactWithTrailingAndLeadingSlash", func(t *testing.T) {
-		err = ioutil.WriteFile(varRunArgo+"/template", []byte(`
+		err = os.WriteFile(varRunArgo+"/template", []byte(`
 {
 	"outputs": {
 		"artifacts": [
@@ -104,12 +103,12 @@ func TestEmissary(t *testing.T) {
 		assert.NoError(t, err)
 		err := run(x, []string{"echo", "hello", "/tmp/artifact"})
 		assert.NoError(t, err)
-		data, err := ioutil.ReadFile(varRunArgo + "/outputs/artifacts/tmp/artifact.tgz")
+		data, err := os.ReadFile(varRunArgo + "/outputs/artifacts/tmp/artifact.tgz")
 		assert.NoError(t, err)
 		assert.NotEmpty(t, string(data)) // data is tgz format
 	})
 	t.Run("Parameter", func(t *testing.T) {
-		err = ioutil.WriteFile(varRunArgo+"/template", []byte(`
+		err = os.WriteFile(varRunArgo+"/template", []byte(`
 {
 	"outputs": {
 		"parameters": [
@@ -123,7 +122,7 @@ func TestEmissary(t *testing.T) {
 		assert.NoError(t, err)
 		err := run(x, []string{"echo", "hello", "/tmp/parameter"})
 		assert.NoError(t, err)
-		data, err := ioutil.ReadFile(varRunArgo + "/outputs/parameters/tmp/parameter")
+		data, err := os.ReadFile(varRunArgo + "/outputs/parameters/tmp/parameter")
 		assert.NoError(t, err)
 		assert.Contains(t, string(data), "hello")
 	})

@@ -4,7 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"encoding/base64"
-	"io/ioutil"
+	"io"
 	"os"
 	"testing"
 
@@ -42,7 +42,7 @@ func TestGetGzipReader(t *testing.T) {
 		bufReader := bytes.NewReader(buf)
 		reader, err := file.GetGzipReader(bufReader)
 		assert.NoError(t, err)
-		res, err := ioutil.ReadAll(reader)
+		res, err := io.ReadAll(reader)
 		assert.NoError(t, err)
 		assert.Equal(t, rawContent, string(res))
 		_ = os.Unsetenv(file.GZipImplEnvVarKey)

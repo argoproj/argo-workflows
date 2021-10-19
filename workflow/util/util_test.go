@@ -2,7 +2,6 @@ package util
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -93,7 +92,7 @@ func TestReadFromSingleorMultiplePath(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			dir, err := ioutil.TempDir("", name)
+			dir, err := os.MkdirTemp("", name)
 			if err != nil {
 				t.Error("Could not create temporary directory")
 			}
@@ -103,7 +102,7 @@ func TestReadFromSingleorMultiplePath(t *testing.T) {
 				content := []byte(tc.contents[i])
 				tmpfn := filepath.Join(dir, tc.fileNames[i])
 				filePaths = append(filePaths, tmpfn)
-				err := ioutil.WriteFile(tmpfn, content, 0o600)
+				err := os.WriteFile(tmpfn, content, 0o600)
 				if err != nil {
 					t.Error("Could not write to temporary file")
 				}
@@ -144,7 +143,7 @@ func TestReadFromSingleorMultiplePathErrorHandling(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			dir, err := ioutil.TempDir("", name)
+			dir, err := os.MkdirTemp("", name)
 			if err != nil {
 				t.Error("Could not create temporary directory")
 			}
@@ -155,7 +154,7 @@ func TestReadFromSingleorMultiplePathErrorHandling(t *testing.T) {
 				tmpfn := filepath.Join(dir, tc.fileNames[i])
 				filePaths = append(filePaths, tmpfn)
 				if tc.exists[i] {
-					err := ioutil.WriteFile(tmpfn, content, 0o600)
+					err := os.WriteFile(tmpfn, content, 0o600)
 					if err != nil {
 						t.Error("Could not write to temporary file")
 					}
@@ -538,10 +537,10 @@ func TestApplySubmitOpts(t *testing.T) {
 	})
 	t.Run("ParameterFile", func(t *testing.T) {
 		wf := &wfv1.Workflow{}
-		file, err := ioutil.TempFile("", "")
+		file, err := os.CreateTemp("", "")
 		assert.NoError(t, err)
 		defer func() { _ = os.Remove(file.Name()) }()
-		err = ioutil.WriteFile(file.Name(), []byte(`a: 81861780812`), 0o600)
+		err = os.WriteFile(file.Name(), []byte(`a: 81861780812`), 0o600)
 		assert.NoError(t, err)
 		err = ApplySubmitOpts(wf, &wfv1.SubmitOpts{ParameterFile: file.Name()})
 		assert.NoError(t, err)

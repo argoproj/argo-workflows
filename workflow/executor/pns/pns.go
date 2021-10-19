@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -73,7 +72,7 @@ func (p *PNSExecutor) GetFileContents(containerName string, sourcePath string) (
 		return "", err
 	}
 	defer func() { _ = p.exitChroot() }()
-	out, err := ioutil.ReadFile(filepath.Clean(sourcePath))
+	out, err := os.ReadFile(filepath.Clean(sourcePath))
 	if err != nil {
 		return "", err
 	}
@@ -296,7 +295,7 @@ func (p *PNSExecutor) getContainerPID(containerName string) int {
 }
 
 func containerNameForPID(pid int) (string, error) {
-	data, err := ioutil.ReadFile(fmt.Sprintf("/proc/%d/environ", pid))
+	data, err := os.ReadFile(fmt.Sprintf("/proc/%d/environ", pid))
 	if err != nil {
 		return "", err
 	}

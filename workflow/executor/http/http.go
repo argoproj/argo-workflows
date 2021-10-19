@@ -2,7 +2,7 @@ package http
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	log "github.com/sirupsen/logrus"
@@ -18,7 +18,7 @@ func SendHttpRequest(request *http.Request) (string, error) {
 	defer out.Body.Close()
 
 	log.WithFields(log.Fields{"url": request.URL, "status": out.Status}).Info("HTTP request made")
-	data, err := ioutil.ReadAll(out.Body)
+	data, err := io.ReadAll(out.Body)
 	if err != nil {
 		return "", err
 	}

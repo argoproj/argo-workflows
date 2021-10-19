@@ -4,7 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -90,7 +91,7 @@ func inferObjectSelfLink(obj unstructured.Unstructured) string {
 }
 
 func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath string, flags []string) ([]string, error) {
-	buff, err := ioutil.ReadFile(filepath.Clean(manifestPath))
+	buff, err := os.ReadFile(filepath.Clean(manifestPath))
 	if err != nil {
 		return []string{}, errors.New(errors.CodeBadRequest, err.Error())
 	}
@@ -224,7 +225,7 @@ func (we *WorkflowExecutor) checkResourceState(ctx context.Context, selfLink str
 	}
 
 	defer func() { _ = stream.Close() }()
-	jsonBytes, err := ioutil.ReadAll(stream)
+	jsonBytes, err := io.ReadAll(stream)
 	if err != nil {
 		return false, err
 	}

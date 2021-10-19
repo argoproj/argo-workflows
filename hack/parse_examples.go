@@ -1,7 +1,7 @@
 package main
 
 import (
-	"io/ioutil"
+	"os"
 	"regexp"
 )
 
@@ -25,7 +25,7 @@ var (
 )
 
 func parseExamples() {
-	file, err := ioutil.ReadFile("site/fields/index.html")
+	file, err := os.ReadFile("site/fields/index.html")
 	if err != nil {
 		panic(err)
 	}
@@ -35,7 +35,7 @@ func parseExamples() {
 	file = linkRegex.ReplaceAll(file, []byte(newLink))
 	file = detailsRegex.ReplaceAll(file, []byte(newDetails))
 
-	err = ioutil.WriteFile("site/fields/index.html", file, 0o600)
+	err = os.WriteFile("site/fields/index.html", file, 0o600)
 	if err != nil {
 		panic(err)
 	}

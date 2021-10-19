@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -54,7 +53,7 @@ func newKubeletClient(namespace, podName string) (*kubeletClient, error) {
 		kubeletPort = 10250
 		log.Infof("Non configured envvar %s, defaulting the kubelet port to %d", common.EnvVarKubeletPort, kubeletPort)
 	}
-	b, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/token")
+	b, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/token")
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
@@ -67,7 +66,7 @@ func newKubeletClient(namespace, podName string) (*kubeletClient, error) {
 		tlsConfig.InsecureSkipVerify = true
 	} else {
 		log.Warningf("Loading service account ca.crt as certificate authority to reach the kubelet api")
-		caCert, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/ca.crt")
+		caCert, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/ca.crt")
 		if err != nil {
 			return nil, errors.InternalWrapError(err)
 		}
@@ -97,7 +96,7 @@ func newKubeletClient(namespace, podName string) (*kubeletClient, error) {
 
 func checkHTTPErr(resp *http.Response) error {
 	if resp.StatusCode != http.StatusOK {
-		b, _ := ioutil.ReadAll(resp.Body)
+		b, _ := io.ReadAll(resp.Body)
 		_ = resp.Body.Close()
 		return errors.InternalWrapError(fmt.Errorf("unexpected non 200 status code: %d, body: %s", resp.StatusCode, string(b)))
 	}

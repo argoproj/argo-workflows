@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -107,7 +106,7 @@ func RunLint(ctx context.Context, client apiclient.Client, kinds []string, outpu
 // Entities of other kinds are ignored.
 func Lint(ctx context.Context, opts *LintOptions) (*LintResults, error) {
 	var fmtr Formatter = defaultFormatter
-	var w io.Writer = ioutil.Discard
+	var w io.Writer = io.Discard
 	if opts.Formatter != nil {
 		fmtr = opts.Formatter
 	}
@@ -147,7 +146,7 @@ func Lint(ctx context.Context, opts *LintOptions) (*LintResults, error) {
 				return nil
 			}
 
-			data, err := ioutil.ReadAll(r)
+			data, err := io.ReadAll(r)
 			if err != nil {
 				return err
 			}

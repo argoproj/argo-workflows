@@ -3,7 +3,6 @@ package kubeconfig
 import (
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -234,7 +233,7 @@ func dataFromSliceOrFile(data []byte, file string) ([]byte, error) {
 	}
 
 	if len(file) > 0 {
-		fileData, err := ioutil.ReadFile(filepath.Clean(file))
+		fileData, err := os.ReadFile(filepath.Clean(file))
 		if err != nil {
 			return []byte{}, err
 		}

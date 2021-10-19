@@ -2,7 +2,7 @@ package openapi_spec
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,7 +12,7 @@ type obj = map[string]interface{}
 
 func TestSwagger(t *testing.T) {
 	swagger := obj{}
-	data, err := ioutil.ReadFile("swagger.json")
+	data, err := os.ReadFile("swagger.json")
 	if err != nil {
 		panic(err)
 	}

@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -46,12 +45,12 @@ func secondarySwaggerGen() {
 		panic(err)
 	}
 
-	read, err := ioutil.ReadFile("pkg/apiclient/_.secondary.swagger.json")
+	read, err := os.ReadFile("pkg/apiclient/_.secondary.swagger.json")
 	if err != nil {
 		panic(err)
 	}
 	newContents := strings.ReplaceAll(string(read), "argoproj.argo-workflows", "argoproj.argo_workflows")
-	err = ioutil.WriteFile("pkg/apiclient/_.secondary.swagger.json", []byte(newContents), 0o600)
+	err = os.WriteFile("pkg/apiclient/_.secondary.swagger.json", []byte(newContents), 0o600)
 	if err != nil {
 		panic(err)
 	}

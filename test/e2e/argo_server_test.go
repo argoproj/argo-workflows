@@ -6,8 +6,8 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -124,7 +124,7 @@ func (s *ArgoServerSuite) TestMetricsOK() {
 func (s *ArgoServerSuite) TestSubmitWorkflowTemplateFromGithubWebhook() {
 	s.bearerToken = ""
 
-	data, err := ioutil.ReadFile("testdata/github-webhook-payload.json")
+	data, err := os.ReadFile("testdata/github-webhook-payload.json")
 	assert.NoError(s.T(), err)
 
 	s.Given().

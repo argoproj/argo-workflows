@@ -1,7 +1,6 @@
 package kubeconfig
 
 import (
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -45,7 +44,7 @@ func Test_BasicAuthString(t *testing.T) {
 			assert.Equal(t, "admin", uname)
 			assert.Equal(t, "admin", pwd)
 		}
-		file, err := ioutil.TempFile("", "config.yaml")
+		file, err := os.CreateTemp("", "config.yaml")
 		assert.NoError(t, err)
 		_, err = file.WriteString(config)
 		assert.NoError(t, err)
