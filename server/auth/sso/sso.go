@@ -98,6 +98,7 @@ type providerInterface interface {
 type providerFactory func(ctx context.Context, issuer string, tlsConfig *tls.Config) (providerInterface, error)
 
 func providerFactoryOIDC(ctx context.Context, issuer string, tlsConfig *tls.Config) (providerInterface, error) {
+	// Create http client used by oidc provider to allow modification of underlying TLSClientConfig
 	httpClient := &http.Client{Transport: &http.Transport{TLSClientConfig: tlsConfig}}
 	oidcContext := oidc.ClientContext(ctx, httpClient)
 	return oidc.NewProvider(oidcContext, issuer)
