@@ -48,7 +48,7 @@ func TestHTTPArtifactDriver_Load(t *testing.T) {
 				assert.NoError(t, err)
 			}
 		})
-		curl := "curl -fsS -L --create-dirs -o /tmp/found-with-request-headers https://github.com/argoproj/argo-workflows -H Accept: application/json -H Authorization: Bearer foo-bar"
+		curl := "curl -fsS -L --create-dirs --proto-default https -o /tmp/found-with-request-headers https://github.com/argoproj/argo-workflows -H Accept: application/json -H Authorization: Bearer foo-bar"
 		assert.Regexp(t, regexp.MustCompile(curl), output)
 	})
 	t.Run("NotFound", func(t *testing.T) {
