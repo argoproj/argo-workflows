@@ -75,7 +75,7 @@ func newArgoKubeClient(ctx context.Context, clientConfig clientcmd.ClientConfig,
 	if err != nil {
 		return nil, nil, err
 	}
-	ctx, err = gatekeeper.Context(ctx)
+	ctx, err = gatekeeper.Context(ctx, nil)
 	if err != nil {
 		return nil, nil, err
 	}

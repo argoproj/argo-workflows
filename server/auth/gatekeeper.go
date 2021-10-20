@@ -46,9 +46,13 @@ const (
 //go:generate mockery --name=Gatekeeper
 
 type Gatekeeper interface {
-	Context(ctx context.Context) (context.Context, error)
+	Context(ctx context.Context, req interface{}) (context.Context, error)
 	UnaryServerInterceptor() grpc.UnaryServerInterceptor
 	StreamServerInterceptor() grpc.StreamServerInterceptor
+}
+
+type NamespacedRequest interface {
+	GetNamespace() string
 }
 
 type ClientForAuthorization func(authorization string) (*rest.Config, *servertypes.Clients, error)
@@ -73,7 +77,7 @@ func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.C
 
 func (s *gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-		ctx, err = s.Context(ctx)
+		ctx, err = s.Context(ctx, req)
 		if err != nil {
 			return nil, err
 		}
@@ -83,7 +87,7 @@ func (s *gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 
 func (s *gatekeeper) StreamServerInterceptor() grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-		ctx, err := s.Context(ss.Context())
+		ctx, err := s.Context(ss.Context(), nil)
 		if err != nil {
 			return err
 		}
@@ -93,8 +97,8 @@ func (s *gatekeeper) StreamServerInterceptor() grpc.StreamServerInterceptor {
 	}
 }
 
-func (s *gatekeeper) Context(ctx context.Context) (context.Context, error) {
-	clients, claims, err := s.getClients(ctx)
+func (s *gatekeeper) Context(ctx context.Context, req interface{}) (context.Context, error) {
+	clients, claims, err := s.getClients(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +154,7 @@ func getAuthHeader(md metadata.MD) string {
 	return ""
 }
 
-func (s gatekeeper) getClients(ctx context.Context) (*servertypes.Clients, *types.Claims, error) {
+func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertypes.Clients, *types.Claims, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	authorization := getAuthHeader(md)
 	mode, valid := s.Modes.GetMode(authorization)
@@ -174,7 +178,7 @@ func (s gatekeeper) getClients(ctx context.Context) (*servertypes.Clients, *type
 			return nil, nil, status.Error(codes.Unauthenticated, err.Error())
 		}
 		if s.ssoIf.IsRBACEnabled() {
-			clients, err := s.rbacAuthorization(ctx, claims)
+			clients, err := s.rbacAuthorization(ctx, claims, req)
 			if err != nil {
 				log.WithError(err).Error("failed to perform RBAC authorization")
 				return nil, nil, status.Error(codes.PermissionDenied, "not allowed")
@@ -190,8 +194,19 @@ func (s gatekeeper) getClients(ctx context.Context) (*servertypes.Clients, *type
 	}
 }
 
-func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *types.Claims) (*servertypes.Clients, error) {
-	list, err := s.clients.Kubernetes.CoreV1().ServiceAccounts(s.namespace).List(ctx, metav1.ListOptions{})
+func getNamespace(req interface{}) string {
+	if req == nil {
+		return ""
+	}
+	namespacedRequest, ok := req.(NamespacedRequest)
+	if !ok {
+		return ""
+	}
+	return namespacedRequest.GetNamespace()
+}
+
+func (s *gatekeeper) getServiceAccount(ctx context.Context, claims *types.Claims, namespace string) (*corev1.ServiceAccount, error) {
+	list, err := s.clients.Kubernetes.CoreV1().ServiceAccounts(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list SSO RBAC service accounts: %w", err)
 	}
@@ -225,31 +240,54 @@ func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *types.Claims
 		if !allow {
 			continue
 		}
-		authorization, err := s.authorizationForServiceAccount(ctx, serviceAccount.Name)
-		if err != nil {
-			return nil, err
-		}
-		_, clients, err := s.clientForAuthorization(authorization)
-		if err != nil {
-			return nil, err
-		}
-		claims.ServiceAccountName = serviceAccount.Name
-		// important! write an audit entry (i.e. log entry) so we know which user performed an operation
-		log.WithFields(log.Fields{"serviceAccount": serviceAccount.Name, "subject": claims.Subject}).Info("selected SSO RBAC service account for user")
-		return clients, nil
+		return &serviceAccount, nil
 	}
 	return nil, fmt.Errorf("no service account rule matches")
 }
 
-func (s *gatekeeper) authorizationForServiceAccount(ctx context.Context, serviceAccountName string) (string, error) {
-	serviceAccount, err := s.clients.Kubernetes.CoreV1().ServiceAccounts(s.namespace).Get(ctx, serviceAccountName, metav1.GetOptions{})
+func (s *gatekeeper) shouldDelegateRBACToRequestNamespace(serviceAccount *corev1.ServiceAccount, req interface{}) bool {
+	value, ok := serviceAccount.Annotations[common.AnnotationKeyEnableNamespaceDelegation]
+	if !ok || value != "true" {
+		return false
+	}
+	namespace := getNamespace(req)
+	return len(namespace) != 0  && s.namespace != namespace
+}
+
+func (s *gatekeeper) getClientsForServiceAccount(ctx context.Context, claims *types.Claims, serviceAccount *corev1.ServiceAccount) (*servertypes.Clients, error) {
+	authorization, err := s.authorizationForServiceAccount(ctx, serviceAccount)
 	if err != nil {
-		return "", fmt.Errorf("failed to get service account: %w", err)
+		return nil, err
 	}
+	_, clients, err := s.clientForAuthorization(authorization)
+	if err != nil {
+		return nil, err
+	}
+	claims.ServiceAccountName = serviceAccount.Name
+	return clients, nil
+}
+
+func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *types.Claims, req interface{}) (*servertypes.Clients, error) {
+	serviceAccount, err := s.getServiceAccount(ctx, claims, s.namespace)
+	if err != nil {
+		return nil, err
+	}
+	if s.shouldDelegateRBACToRequestNamespace(serviceAccount, req) {
+		delegatedAccount, err := s.getServiceAccount(ctx, claims, getNamespace(req))
+		if err == nil {
+			serviceAccount = delegatedAccount
+		}
+	}
+	// important! write an audit entry (i.e. log entry) so we know which user performed an operation
+	log.WithFields(log.Fields{"serviceAccount": serviceAccount.Name, "subject": claims.Subject}).Info("selected SSO RBAC service account for user")
+	return s.getClientsForServiceAccount(ctx, claims, serviceAccount)
+}
+
+func (s *gatekeeper) authorizationForServiceAccount(ctx context.Context, serviceAccount *corev1.ServiceAccount) (string, error) {
 	if len(serviceAccount.Secrets) == 0 {
-		return "", fmt.Errorf("expected at least one secret for SSO RBAC service account: %w", err)
+		return "", fmt.Errorf("expected at least one secret for SSO RBAC service account: %w", serviceAccount.Name)
 	}
-	secret, err := s.clients.Kubernetes.CoreV1().Secrets(s.namespace).Get(ctx, serviceAccount.Secrets[0].Name, metav1.GetOptions{})
+	secret, err := s.clients.Kubernetes.CoreV1().Secrets(serviceAccount.Namespace).Get(ctx, serviceAccount.Secrets[0].Name, metav1.GetOptions{})
 	if err != nil {
 		return "", fmt.Errorf("failed to get service account secret: %w", err)
 	}

@@ -133,7 +133,8 @@ func (a *ArtifactServer) gateKeeping(r *http.Request) (context.Context, error) {
 		}
 	}
 	ctx := metadata.NewIncomingContext(r.Context(), metadata.MD{"authorization": []string{token}})
-	return a.gatekeeper.Context(ctx)
+	// TODO: Pass namespace via the request
+	return a.gatekeeper.Context(ctx, nil)
 }
 
 func (a *ArtifactServer) serverInternalError(err error, w http.ResponseWriter) {
