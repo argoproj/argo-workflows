@@ -401,6 +401,23 @@ func (s *FunctionalSuite) TestLoopEmptyParam() {
 		})
 }
 
+func (s *FunctionalSuite) TestDAGEmptyParam() {
+	s.Given().
+		Workflow("@functional/dag-empty-param.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			if assert.Len(t, status.Nodes, 3) {
+				nodeStatus := status.Nodes.FindByDisplayName("sleep")
+				assert.Equal(t, wfv1.NodeSkipped, nodeStatus.Phase)
+				assert.Equal(t, "Skipped, empty params", nodeStatus.Message)
+			}
+		})
+}
+
 // 128M is for argo executor
 func (s *FunctionalSuite) TestPendingRetryWorkflow() {
 	s.Given().
@@ -791,6 +808,34 @@ func (s *FunctionalSuite) TestDataTransformation() {
 			assert.NotNil(t, status.Nodes.FindByDisplayName("process-artifact(0:foo/script.py)"))
 			assert.NotNil(t, status.Nodes.FindByDisplayName("process-artifact(1:script.py)"))
 		})
+}
+
+func (s *FunctionalSuite) TestScriptAsNonRoot() {
+	s.Given().
+		Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: script-nonroot-
+spec:
+  entrypoint: whalesay
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    runAsNonRoot: true
+  templates:
+    - name: whalesay
+      script:
+        image: argoproj/argosay:v2
+        command: ["bash"]
+        source: |
+          ls -l /argo/staging
+          cat /argo/stahing/script
+          sleep 10s
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 
 func TestFunctionalSuite(t *testing.T) {

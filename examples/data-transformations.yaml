@@ -42,6 +42,10 @@ spec:
 
         transformation:
           - expression: "filter(data, {# endsWith \"main.log\"})"
+      outputs:
+        artifacts:
+          - name: file
+            path: /file
 
     - name: process-logs
       inputs:
