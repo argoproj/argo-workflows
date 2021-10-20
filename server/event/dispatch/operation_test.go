@@ -148,7 +148,8 @@ func TestNewOperation(t *testing.T) {
 		},
 	}, "my-ns", "my-discriminator", &wfv1.Item{Value: json.RawMessage(`{"foo": {"bar": "baz"}}`)})
 	assert.NoError(t, err)
-	operation.Dispatch(ctx)
+	err = operation.Dispatch(ctx)
+	assert.NoError(t, err)
 
 	expectedParamValues := []string{"bar", "bar", `{"bar":"baz"}`}
 	// assert
@@ -317,7 +318,8 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 		&wfv1.Item{Value: json.RawMessage(`{"foo": {"bar": "baz", "numeric": 8675309, "bool": true}, "list": ["one", "two"]}`)})
 
 	assert.NoError(t, err)
-	operation.Dispatch(ctx)
+	err = operation.Dispatch(ctx)
+	assert.NoError(t, err)
 
 	list, err := client.ArgoprojV1alpha1().Workflows("my-ns").List(ctx, metav1.ListOptions{})
 

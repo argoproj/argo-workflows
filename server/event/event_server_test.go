@@ -1,6 +1,7 @@
 package event
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,20 +18,44 @@ import (
 
 func TestController(t *testing.T) {
 	clientset := fake.NewSimpleClientset()
-	s := NewController(instanceid.NewService("my-instanceid"), events.NewEventRecorderManager(fakekube.NewSimpleClientset()), 1, 1)
+	newController := func(asyncDispatch bool) *Controller {
+		return NewController(instanceid.NewService("my-instanceid"), events.NewEventRecorderManager(fakekube.NewSimpleClientset()), 1, 1, asyncDispatch)
+	}
+	t.Run("Async", func(t *testing.T) {
 
-	ctx := context.WithValue(context.TODO(), auth.WfKey, clientset)
-	_, err := s.ReceiveEvent(ctx, &eventpkg.EventRequest{Namespace: "my-ns", Payload: &wfv1.Item{}})
-	assert.NoError(t, err)
+		s := newController(true)
 
-	assert.Len(t, s.operationQueue, 1, "one event to be processed")
+		ctx := context.WithValue(context.TODO(), auth.WfKey, clientset)
+		_, err := s.ReceiveEvent(ctx, &eventpkg.EventRequest{Namespace: "my-ns", Payload: &wfv1.Item{}})
+		assert.NoError(t, err)
 
-	_, err = s.ReceiveEvent(ctx, &eventpkg.EventRequest{})
-	assert.EqualError(t, err, "operation queue full", "backpressure when queue is full")
+		assert.Len(t, s.operationQueue, 1, "one event to be processed")
 
-	stopCh := make(chan struct{}, 1)
-	stopCh <- struct{}{}
-	s.Run(stopCh)
+		_, err = s.ReceiveEvent(ctx, &eventpkg.EventRequest{})
+		assert.EqualError(t, err, "operation queue full", "backpressure when queue is full")
 
-	assert.Len(t, s.operationQueue, 0, "all events were processed")
+		stopCh := make(chan struct{}, 1)
+		stopCh <- struct{}{}
+		s.Run(stopCh)
+
+		assert.Len(t, s.operationQueue, 0, "all events were processed")
+	})
+	t.Run("Sync", func(t *testing.T) {
+
+		s := newController(false)
+
+		ctx := context.WithValue(context.TODO(), auth.WfKey, clientset)
+		_, err := s.ReceiveEvent(ctx, &eventpkg.EventRequest{Namespace: "my-ns", Payload: &wfv1.Item{}})
+		assert.NoError(t, err)
+		_, err = s.ReceiveEvent(ctx, &eventpkg.EventRequest{})
+		assert.NoError(t, err)
+	})
+	t.Run("SyncError", func(t *testing.T) {
+
+		s := newController(false)
+
+		ctx := context.WithValue(context.TODO(), auth.WfKey, clientset)
+		_, err := s.ReceiveEvent(ctx, &eventpkg.EventRequest{Namespace: "my-ns", Payload: &wfv1.Item{Value: json.RawMessage("!")}})
+		assert.EqualError(t, err, "failed to create workflow template expression environment: json: error calling MarshalJSON for type *v1alpha1.Item: invalid character '!' looking for beginning of value")
+	})
 }

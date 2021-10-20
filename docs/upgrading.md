@@ -4,6 +4,19 @@
 Breaking changes  typically (sometimes we don't realise they are breaking) have "!" in the commit message, as per
 the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary).
 
+## Upgrading to v3.3
+
+## feat(server)!: Sync dispatch of webhook events by default
+
+This is not expected to impact users.
+
+Events dispatch in the Argo Server has been change from async to sync by default. This is so that errors are surfaced to
+the client, rather than only appearing as logs or Kubernetes events. It is possible that response times under load are
+too long for your client and you may prefer to revert this behaviour.
+
+To revert this behaviour, restart Argo Server with `ARGO_EVENT_ASYNC_DISPATCH=true`. Make sure that `asyncDispatch=true`
+is logged.
+
 ## Upgrading to v3.2
 
 ### [be63efe89](https://github.com/argoproj/argo-workflows/commit/be63efe89) feat(executor)!: Change `argoexec` base image to alpine. Closes #5720 (#6006)

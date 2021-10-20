@@ -50,6 +50,7 @@ func NewServerCommand() *cobra.Command {
 		enableOpenBrowser        bool
 		eventOperationQueueSize  int
 		eventWorkerCount         int
+		eventAsyncDispatch       bool
 		frameOptions             string
 		accessControlAllowOrigin string
 		logFormat                string // --log-format
@@ -146,6 +147,7 @@ See %s`, help.ArgoServer),
 				ConfigName:               configMap,
 				EventOperationQueueSize:  eventOperationQueueSize,
 				EventWorkerCount:         eventWorkerCount,
+				EventAsyncDispatch:       eventAsyncDispatch,
 				XFrameOptions:            frameOptions,
 				AccessControlAllowOrigin: accessControlAllowOrigin,
 			}
@@ -199,6 +201,7 @@ See %s`, help.ArgoServer),
 	command.Flags().BoolVarP(&enableOpenBrowser, "browser", "b", false, "enable automatic launching of the browser [local mode]")
 	command.Flags().IntVar(&eventOperationQueueSize, "event-operation-queue-size", 16, "how many events operations that can be queued at once")
 	command.Flags().IntVar(&eventWorkerCount, "event-worker-count", 4, "how many event workers to run")
+	command.Flags().BoolVar(&eventAsyncDispatch, "event-async-dispatch", false, "dispatch event async")
 	command.Flags().StringVar(&frameOptions, "x-frame-options", "DENY", "Set X-Frame-Options header in HTTP responses.")
 	command.Flags().StringVar(&accessControlAllowOrigin, "access-control-allow-origin", "", "Set Access-Control-Allow-Origin header in HTTP responses.")
 	command.Flags().StringVar(&logFormat, "log-format", "text", "The formatter to use for logs. One of: text|json")
