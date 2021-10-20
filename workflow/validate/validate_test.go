@@ -2994,3 +2994,34 @@ spec:
 	_, err := validate(wf)
 	assert.NoError(t, err)
 }
+
+var templateReferenceWorkflowConfigMapRefArgument = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: arguments-parameters-from-configmap-
+spec:
+  entrypoint: whalesay
+  serviceAccountName: argo
+  arguments:
+    parameters:
+    - name: message
+      valueFrom:
+        configMapKeyRef:
+          name: simple-parameters
+          key: msg
+  templates:
+    - name: whalesay
+      inputs:
+        parameters:
+          - name: message
+      container:
+        image: docker/whalesay:latest
+        command: [cowsay]
+        args: ["{{inputs.parameters.message}}"]
+`
+
+func TestTemplateReferenceWorkflowConfigMapRefArgument(t *testing.T) {
+	_, err := validate(templateReferenceWorkflowConfigMapRefArgument)
+	assert.NoError(t, err)
+}
