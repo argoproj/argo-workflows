@@ -49,6 +49,7 @@ type sso struct {
 	config          *oauth2.Config
 	issuer          string
 	idTokenVerifier *oidc.IDTokenVerifier
+	httpClient      *http.Client
 	baseHRef        string
 	secure          bool
 	privateKey      crypto.PrivateKey
@@ -95,13 +96,10 @@ type providerInterface interface {
 	Verifier(config *oidc.Config) *oidc.IDTokenVerifier
 }
 
-type providerFactory func(ctx context.Context, issuer string, tlsConfig *tls.Config) (providerInterface, error)
+type providerFactory func(ctx context.Context, issuer string) (providerInterface, error)
 
-func providerFactoryOIDC(ctx context.Context, issuer string, tlsConfig *tls.Config) (providerInterface, error) {
-	// Create http client used by oidc provider to allow modification of underlying TLSClientConfig
-	httpClient := &http.Client{Transport: &http.Transport{TLSClientConfig: tlsConfig}}
-	oidcContext := oidc.ClientContext(ctx, httpClient)
-	return oidc.NewProvider(oidcContext, issuer)
+func providerFactoryOIDC(ctx context.Context, issuer string) (providerInterface, error) {
+	return oidc.NewProvider(ctx, issuer)
 }
 
 func New(c Config, secretsIf corev1.SecretInterface, baseHRef string, secure bool) (Interface, error) {
@@ -129,14 +127,16 @@ func newSso(
 	if err != nil {
 		return nil, err
 	}
+	// Create http client with TLSConfig to allow skipping of CA validation if InsecureSkipVerify is set.
+	httpClient := &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: c.InsecureSkipVerify}}}
+	oidcContext := oidc.ClientContext(ctx, httpClient)
 	// Some offspec providers like Azure, Oracle IDCS have oidc discovery url different from issuer url which causes issuerValidation to fail
 	// This providerCtx will allow the Verifier to succeed if the alternate/alias URL is in the config
-	var providerCtx context.Context = context.Background()
 	if c.IssuerAlias != "" {
-		providerCtx = oidc.InsecureIssuerURLContext(ctx, c.IssuerAlias)
+		oidcContext = oidc.InsecureIssuerURLContext(oidcContext, c.IssuerAlias)
 	}
 
-	provider, err := factory(providerCtx, c.Issuer, &tls.Config{InsecureSkipVerify: c.InsecureSkipVerify})
+	provider, err := factory(oidcContext, c.Issuer)
 	if err != nil {
 		return nil, err
 	}
@@ -203,6 +203,7 @@ func newSso(
 		config:          config,
 		idTokenVerifier: idTokenVerifier,
 		baseHRef:        baseHRef,
+		httpClient:      httpClient,
 		secure:          secure,
 		privateKey:      privateKey,
 		encrypter:       encrypter,
@@ -246,7 +247,9 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	redirectOption := oauth2.SetAuthURLParam("redirect_uri", s.getRedirectUrl(r))
-	oauth2Token, err := s.config.Exchange(ctx, r.URL.Query().Get("code"), redirectOption)
+	// Use sso.httpClient in order to respect TLSOptions
+	oauth2Context := context.WithValue(ctx, oauth2.HTTPClient, s.httpClient)
+	oauth2Token, err := s.config.Exchange(oauth2Context, r.URL.Query().Get("code"), redirectOption)
 	if err != nil {
 		w.WriteHeader(401)
 		_, _ = w.Write([]byte(fmt.Sprintf("failed to exchange token: %v", err)))
