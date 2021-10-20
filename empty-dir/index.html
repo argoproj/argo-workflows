@@ -2185,7 +2185,7 @@
                 
                 <h1 id="empty-dir">Empty Dir<a class="headerlink" href="#empty-dir" title="Permanent link">&para;</a></h1>
 <p>While by default, the Docker and PNS <a href="../workflow-executors/">workflow executors</a> can get output artifacts/parameters from the base layer (e.g. <code>/tmp</code>), neither the Kubelet nor the K8SAPI executors can. It is unlikely you can get output artifacts/parameters from the base layer if you run your workflow pods with a <a href="../workflow-pod-security-context/">security context</a>.</p>
-<p>You can work-around this constraint by mounting volumes onto your pod. The easiest way to do this is to use as <code>emptytDir</code> volume. </p>
+<p>You can work-around this constraint by mounting volumes onto your pod. The easiest way to do this is to use as <code>emptyDir</code> volume. </p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>This is only needed for output artifacts/parameters. Input artifacts/parameters are automatically mounted to an empty-dir if needed</p>
