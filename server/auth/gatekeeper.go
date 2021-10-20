@@ -87,6 +87,7 @@ func (s *gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 
 func (s *gatekeeper) StreamServerInterceptor() grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		// TODO: Figure out how to pass the namespace from here
 		ctx, err := s.Context(ss.Context(), nil)
 		if err != nil {
 			return err
