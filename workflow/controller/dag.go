@@ -334,29 +334,10 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 	node := dagCtx.getTaskNode(taskName)
 	task := dagCtx.GetTask(taskName)
 	if node != nil && node.Fulfilled() {
-		// Collect the completed task metrics
-		_, tmpl, _, _ := dagCtx.tmplCtx.ResolveTemplate(task)
-		if tmpl != nil && tmpl.Metrics != nil {
-			if prevNodeStatus, ok := woc.preExecutionNodePhases[node.ID]; ok && !prevNodeStatus.Fulfilled() {
-				localScope, realTimeScope := woc.prepareMetricScope(node)
-				woc.computeMetrics(tmpl.Metrics.Prometheus, localScope, realTimeScope, false)
-			}
-		}
-
-		// Release acquired lock completed task.
-		if tmpl != nil {
-			woc.controller.syncManager.Release(woc.wf, node.ID, tmpl.Synchronization)
-		}
-
 		if node.Completed() {
 			// Run the node's onExit node, if any.
-			hasOnExitNode, onExitNode, err := woc.runOnExitNode(ctx, task.GetExitHook(woc.execWf.Spec.Arguments), node, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
-			if hasOnExitNode && (onExitNode == nil || !onExitNode.Fulfilled() || err != nil) {
-				// The onExit node is either not complete or has errored out, return.
-				return
-			}
+			_, _, _ = woc.runOnExitNode(ctx, task.GetExitHook(woc.execWf.Spec.Arguments), node, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
 		}
-		return
 	}
 
 	// The template scope of this dag.
@@ -438,13 +419,15 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 	// need to create a node for A.
 	if task.ShouldExpand() {
 		// DAG task with empty withParams list should be skipped
-		if len(expandedTasks) == 0 {
-			skipReason := "Skipped, empty params"
-			woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeSkipped, skipReason)
-			connectDependencies(nodeName)
-		} else if taskGroupNode == nil {
-			connectDependencies(nodeName)
-			taskGroupNode = woc.initializeNode(nodeName, wfv1.NodeTypeTaskGroup, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeRunning, "")
+		if taskGroupNode == nil {
+			if len(expandedTasks) == 0 {
+				skipReason := "Skipped, empty params"
+				woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeSkipped, skipReason)
+				connectDependencies(nodeName)
+			} else {
+				connectDependencies(nodeName)
+				taskGroupNode = woc.initializeNode(nodeName, wfv1.NodeTypeTaskGroup, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeRunning, "")
+			}
 		}
 	}
 
