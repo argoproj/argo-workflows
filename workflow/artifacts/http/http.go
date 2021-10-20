@@ -20,7 +20,7 @@ var _ common.ArtifactDriver = &ArtifactDriver{}
 // Load download artifacts from an HTTP URL
 func (h *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	// Download the file to a local file path
-	args := []string{"-fsS", "-L", "--create-dirs", "-o", path, inputArtifact.HTTP.URL}
+	args := []string{"-fsS", "-L", "--create-dirs", "--proto-default", "https", "-o", path, inputArtifact.HTTP.URL}
 	headers := inputArtifact.HTTP.Headers
 	for _, v := range headers {
 		// Build curl -H string for each key-value header parameter
