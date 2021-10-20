@@ -4,6 +4,14 @@
 Breaking changes  typically (sometimes we don't realise they are breaking) have "!" in the commit message, as per
 the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary).
 
+## Upgrading to v3.3
+
+### [bd49c630328d30206a5c5b78cbc9a00700a28e7d](https://github.com/argoproj/argo-workflows/commit/bd49c630328d30206a5c5b78cbc9a00700a28e7d) fix(artifact)!: default https to any URL missing a scheme. Fixes #6973
+
+HTTPArtifact without a scheme will now defaults to https instead of http
+
+user need to explicitly include a http prefix if they want to retrieve HTTPArtifact through http
+
 ## Upgrading to v3.2
 
 ### [be63efe89](https://github.com/argoproj/argo-workflows/commit/be63efe89) feat(executor)!: Change `argoexec` base image to alpine. Closes #5720 (#6006)
