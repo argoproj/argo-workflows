@@ -5,9 +5,11 @@ A workflow executor is a process that conforms to a specific interface that allo
 The executor to be used in your workflows can be changed in [the configmap](./workflow-controller-configmap.yaml) under the `containerRuntimeExecutor` key.
 
 
-## Docker (docker)
+## Docker (docker) 
 
-**default**
+⚠️Deprecated. 
+
+**default in <= v3.2 **
 
 * Reliability:
     * Most well-tested
@@ -91,6 +93,8 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
 ![alpha](assets/alpha.svg)
 
 > v3.1 and after
+
+**default in >= v3.3 **
 
 This is the most fully featured executor.
 
