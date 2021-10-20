@@ -18,6 +18,12 @@ Is there an RBAC error?
 
 [Learn more about workflow RBAC](workflow-rbac.md)
 
+> Argo Server return "unknown (get pods)" error
+
+It might be an RBAC error. Try checking your role setting.
+
+[Learn more about workflow RBAC](workflow-rbac.md)
+
 > There is an error about /var/run/docker.sock.
 
 Try using a different container runtime executor.
