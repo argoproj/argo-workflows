@@ -1642,6 +1642,26 @@
     <ul class="md-nav__list" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#upgrading-to-v33" title="Upgrading to v3.3" class="md-nav__link">
+    Upgrading to v3.3
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bd49c630328d30206a5c5b78cbc9a00700a28e7d-fixartifact-default-https-to-any-url-missing-a-scheme-fixes-6973" title="bd49c630328d30206a5c5b78cbc9a00700a28e7d fix(artifact)!: default https to any URL missing a scheme. Fixes #6973" class="md-nav__link">
+    bd49c630328d30206a5c5b78cbc9a00700a28e7d fix(artifact)!: default https to any URL missing a scheme. Fixes #6973
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#upgrading-to-v32" title="Upgrading to v3.2" class="md-nav__link">
     Upgrading to v3.2
   </a>
@@ -2303,6 +2323,26 @@
     <ul class="md-nav__list" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#upgrading-to-v33" title="Upgrading to v3.3" class="md-nav__link">
+    Upgrading to v3.3
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bd49c630328d30206a5c5b78cbc9a00700a28e7d-fixartifact-default-https-to-any-url-missing-a-scheme-fixes-6973" title="bd49c630328d30206a5c5b78cbc9a00700a28e7d fix(artifact)!: default https to any URL missing a scheme. Fixes #6973" class="md-nav__link">
+    bd49c630328d30206a5c5b78cbc9a00700a28e7d fix(artifact)!: default https to any URL missing a scheme. Fixes #6973
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#upgrading-to-v32" title="Upgrading to v3.2" class="md-nav__link">
     Upgrading to v3.2
   </a>
@@ -2433,6 +2473,10 @@
                 <h1 id="upgrading">Upgrading<a class="headerlink" href="#upgrading" title="Permanent link">&para;</a></h1>
 <p>Breaking changes  typically (sometimes we don't realise they are breaking) have "!" in the commit message, as per
 the <a href="https://www.conventionalcommits.org/en/v1.0.0/#summary">conventional commits</a>.</p>
+<h2 id="upgrading-to-v33">Upgrading to v3.3<a class="headerlink" href="#upgrading-to-v33" title="Permanent link">&para;</a></h2>
+<h3 id="bd49c630328d30206a5c5b78cbc9a00700a28e7d-fixartifact-default-https-to-any-url-missing-a-scheme-fixes-6973"><a href="https://github.com/argoproj/argo-workflows/commit/bd49c630328d30206a5c5b78cbc9a00700a28e7d">bd49c630328d30206a5c5b78cbc9a00700a28e7d</a> fix(artifact)!: default https to any URL missing a scheme. Fixes #6973<a class="headerlink" href="#bd49c630328d30206a5c5b78cbc9a00700a28e7d-fixartifact-default-https-to-any-url-missing-a-scheme-fixes-6973" title="Permanent link">&para;</a></h3>
+<p>HTTPArtifact without a scheme will now defaults to https instead of http</p>
+<p>user need to explicitly include a http prefix if they want to retrieve HTTPArtifact through http</p>
 <h2 id="upgrading-to-v32">Upgrading to v3.2<a class="headerlink" href="#upgrading-to-v32" title="Permanent link">&para;</a></h2>
 <h2 id="e5b131a33-feat-add-template-node-to-pod-name-fixes-1319-6712"><a href="https://github.com/argoproj/argo-workflows/commit/e5b131a33">e5b131a33</a> feat: Add template node to pod name. Fixes #1319 (#6712)<a class="headerlink" href="#e5b131a33-feat-add-template-node-to-pod-name-fixes-1319-6712" title="Permanent link">&para;</a></h2>
 <p>This add the template name to the pod name, to make it easier to understand which pod ran which step. This behaviour can be reverted by setting <code>POD_NAMES=v1</code> on the workflow controller. </p>
