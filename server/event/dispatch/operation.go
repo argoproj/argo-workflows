@@ -11,7 +11,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
 	corev1 "k8s.io/api/core/v1"
-	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
@@ -130,7 +129,7 @@ func (o *Operation) dispatch(ctx context.Context, wfeb wfv1.WorkflowEventBinding
 			}
 		}
 		wf, err = client.ArgoprojV1alpha1().Workflows(wfeb.Namespace).Create(ctx, wf, metav1.CreateOptions{})
-		if err != nil && !apierr.IsConflict(err) { // ignore conflicts, assume that's just fine
+		if err != nil {
 			return nil, fmt.Errorf("failed to create workflow: %w", err)
 		}
 		return wf, nil
