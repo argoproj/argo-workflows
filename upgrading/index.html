@@ -1646,6 +1646,13 @@
     Upgrading to v3.2
   </a>
   
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#e5b131a33-feat-add-template-node-to-pod-name-fixes-1319-6712" title="e5b131a33 feat: Add template node to pod name. Fixes #1319 (#6712)" class="md-nav__link">
+    e5b131a33 feat: Add template node to pod name. Fixes #1319 (#6712)
+  </a>
+  
     <nav class="md-nav">
       <ul class="md-nav__list">
         
@@ -2300,6 +2307,13 @@
     Upgrading to v3.2
   </a>
   
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#e5b131a33-feat-add-template-node-to-pod-name-fixes-1319-6712" title="e5b131a33 feat: Add template node to pod name. Fixes #1319 (#6712)" class="md-nav__link">
+    e5b131a33 feat: Add template node to pod name. Fixes #1319 (#6712)
+  </a>
+  
     <nav class="md-nav">
       <ul class="md-nav__list">
         
@@ -2420,6 +2434,8 @@
 <p>Breaking changes  typically (sometimes we don't realise they are breaking) have "!" in the commit message, as per
 the <a href="https://www.conventionalcommits.org/en/v1.0.0/#summary">conventional commits</a>.</p>
 <h2 id="upgrading-to-v32">Upgrading to v3.2<a class="headerlink" href="#upgrading-to-v32" title="Permanent link">&para;</a></h2>
+<h2 id="e5b131a33-feat-add-template-node-to-pod-name-fixes-1319-6712"><a href="https://github.com/argoproj/argo-workflows/commit/e5b131a33">e5b131a33</a> feat: Add template node to pod name. Fixes #1319 (#6712)<a class="headerlink" href="#e5b131a33-feat-add-template-node-to-pod-name-fixes-1319-6712" title="Permanent link">&para;</a></h2>
+<p>This add the template name to the pod name, to make it easier to understand which pod ran which step. This behaviour can be reverted by setting <code>POD_NAMES=v1</code> on the workflow controller. </p>
 <h3 id="be63efe89-featexecutor-change-argoexec-base-image-to-alpine-closes-5720-6006"><a href="https://github.com/argoproj/argo-workflows/commit/be63efe89">be63efe89</a> feat(executor)!: Change <code>argoexec</code> base image to alpine. Closes #5720 (#6006)<a class="headerlink" href="#be63efe89-featexecutor-change-argoexec-base-image-to-alpine-closes-5720-6006" title="Permanent link">&para;</a></h3>
 <p>Changing from Debian to Alpine reduces the size of the <code>argoexec</code> image, resulting is faster starting workflow pods, and it also reduce the risk of security issues. There is not such thing as a free lunch. There maybe other behaviour changes we don't know of yet. </p>
 <h3 id="48d7ad3-chore-remove-onexit-naming-transition-scaffolding-code-6297"><a href="https://github.com/argoproj/argo-workflows/commit/48d7ad36c14e4a50c50332d6decd543a1b732b69">48d7ad3</a> chore: Remove onExit naming transition scaffolding code (#6297)<a class="headerlink" href="#48d7ad3-chore-remove-onexit-naming-transition-scaffolding-code-6297" title="Permanent link">&para;</a></h3>
