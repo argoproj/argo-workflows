@@ -350,13 +350,8 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 
 		if node.Completed() {
 			// Run the node's onExit node, if any.
-			hasOnExitNode, onExitNode, err := woc.runOnExitNode(ctx, task.GetExitHook(woc.execWf.Spec.Arguments), node.Name, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName, node.Outputs)
-			if hasOnExitNode && (onExitNode == nil || !onExitNode.Fulfilled() || err != nil) {
-				// The onExit node is either not complete or has errored out, return.
-				return
-			}
+			_, _, _ = woc.runOnExitNode(ctx, task.GetExitHook(woc.execWf.Spec.Arguments), node.Name, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName, node.Outputs)
 		}
-		return
 	}
 
 	// The template scope of this dag.
