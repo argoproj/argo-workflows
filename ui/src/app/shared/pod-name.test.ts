@@ -27,9 +27,6 @@ describe('pod names', () => {
     });
 
     test('getPodName', () => {
-        expect(getPodName(shortWfName, nodeName, shortTemplateName, nodeID)).toEqual('wfname-templatename-1454367246');
-
-        const name = getPodName(longWfName, nodeName, longTemplateName, nodeID);
-        expect(name.length).toEqual(maxK8sResourceNameLength);
+        expect(getPodName(shortWfName, nodeName, shortTemplateName, nodeID)).toEqual(nodeID);
     });
 });
