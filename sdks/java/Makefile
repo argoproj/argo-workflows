@@ -1,17 +1,24 @@
 GIT_TAG               := $(shell git describe --exact-match --tags --abbrev=0 2> /dev/null || echo untagged)
 RELEASE_TAG           := $(shell [[ "$(GIT_TAG)" =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$$ ]] && echo "true" || "false")
-VERSION               := v0.0.0
+# "SNAPSHOT" is "latest" for Java
+VERSION               := 0.0.0-SNAPSHOT
 ifeq ($(RELEASE_TAG),true)
 VERSION               := $(GIT_TAG)
 endif
+# remove the "v" prefix, not allowed
+VERSION               := $(VERSION:v=)
+
+# work dir
 WD                    := $(shell echo "`pwd`/wd")
-build:
-	rm -Rf wd
-	mkdir wd
+
+wd:
+	mkdir -p wd
+
+wd/settings.xml: wd
+	cp settings.xml wd/settings.xml
+
+wd/pom.xml: wd/settings.xml
 	cat ../../api/openapi-spec/swagger.json | \
-		sed 's/io.argoproj.workflow.v1alpha1.//' | \
-		sed 's/io.argoproj.events.v1alpha1.//' | \
-		sed 's/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.//' | \
 		sed 's/io.k8s.api.core.v1.//' | \
 		sed 's/io.k8s.apimachinery.pkg.apis.meta.v1.//' \
 		> wd/swagger.json
@@ -57,10 +64,17 @@ build:
 		--generate-alias-as-model
 	# add the io.kubernetes:java-client to the deps
 	sed 's/<dependencies>/<dependencies><dependency><groupId>io.kubernetes<\/groupId><artifactId>client-java<\/artifactId><version>9.0.2<\/version><\/dependency>/g' wd/pom.xml > tmp && mv tmp wd/pom.xml
+
+clean:
+	rm -Rf wd
+
+generate: wd/pom.xml
+
+build: generate wd/settings.xml
 	docker run -v ~/.m2:/root/.m2 -v $(WD):/wd -w /wd maven:3-openjdk-8 \
-		mvn install -DskipTests -Dmaven.javadoc.skip
+		mvn install -DskipTests -Dmaven.javadoc.skip -s settings.xml
 
 publish: build
 	# https://help.github.com/en/packages/using-github-packages-with-your-projects-ecosystem/configuring-apache-maven-for-use-with-github-packages
-	docker run -v ~/.m2:/root/.m2 -v $(WD):/wd -w /wd maven:3-openjdk-8 \
-		mvn deploy -DskipTests -Dmaven.javadoc.skip -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/argoproj/argo-workflows
+	docker run -v ~/.m2:/root/.m2 $(WD):/wd -w /wd maven:3-openjdk-8 \
+		mvn deploy -DskipTests -Dmaven.javadoc.skip -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/argoproj/argo-workflows -s settings.xml
