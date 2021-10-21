@@ -377,7 +377,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		// Final substitution for workflow level PodSpecPatch
 		localParams := make(map[string]string)
 		if tmpl.IsPodType() {
-			localParams[common.LocalVarPodName] = woc.wf.NodeID(nodeName)
+			localParams[common.LocalVarPodName] = pod.Name
 		}
 		tmpl, err := common.ProcessArgs(tmpl, &wfv1.Arguments{}, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer)
 		if err != nil {
