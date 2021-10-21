@@ -127,11 +127,11 @@ func NewExecutor(clientset kubernetes.Interface, restClient rest.Interface, podN
 // HandleError is a helper to annotate the pod with the error message upon a unexpected executor panic or error
 func (we *WorkflowExecutor) HandleError(ctx context.Context) {
 	if r := recover(); r != nil {
-		util.WriteTeriminateMessage(fmt.Sprintf("%v", r))
+		util.WriteTerminateMessage(fmt.Sprintf("%v", r))
 		log.Fatalf("executor panic: %+v\n%s", r, debug.Stack())
 	} else {
 		if len(we.errors) > 0 {
-			util.WriteTeriminateMessage(we.errors[0].Error())
+			util.WriteTerminateMessage(we.errors[0].Error())
 		}
 	}
 }
@@ -957,7 +957,7 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames 
 		message = "Step terminated"
 	}
 	log.Info(message)
-	util.WriteTeriminateMessage(message)
+	util.WriteTerminateMessage(message)
 	we.killContainers(ctx, containerNames)
 }
 
