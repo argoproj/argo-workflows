@@ -7412,3 +7412,177 @@ func TestBuildRetryStrategyLocalScope(t *testing.T) {
 	assert.Equal(t, string(wfv1.NodeFailed), localScope[common.LocalVarRetriesLastStatus])
 	assert.Equal(t, "6", localScope[common.LocalVarRetriesLastDuration])
 }
+
+var exitHandlerWithRetryNodeParam = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: exit-handler-with-param-xbh52
+  namespace: argo
+spec:
+  arguments: {}
+  entrypoint: main
+  serviceAccountName: argo
+  templates:
+  - inputs: {}
+    metadata: {}
+    name: main
+    outputs: {}
+    steps:
+    - - arguments: {}
+        hooks:
+          exit:
+            arguments:
+              parameters:
+              - name: message
+                value: '{{steps.step-1.outputs.parameters.result}}'
+            template: exit
+        name: step-1
+        template: output
+  - container:
+      args:
+      - echo -n hello world > /tmp/hello_world.txt; exit 1
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: output
+    outputs:
+      parameters:
+      - name: result
+        valueFrom:
+          default: Foobar
+          path: /tmp/hello_world.txt
+    retryStrategy:
+      backoff:
+        duration: 1s
+      limit: "1"
+      retryPolicy: Always
+  - inputs:
+      parameters:
+      - name: message
+        value: GoodValue
+    metadata: {}
+    name: exit
+    outputs: {}
+    script:
+      args:
+      - echo {{inputs.parameters.message}}
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+      source: ""
+status:
+  nodes:
+    exit-handler-with-param-xbh52:
+      children:
+      - exit-handler-with-param-xbh52-3621967439
+      displayName: exit-handler-with-param-xbh52
+      finishedAt: "2021-10-18T03:28:14Z"
+      id: exit-handler-with-param-xbh52
+      name: exit-handler-with-param-xbh52
+      startedAt: "2021-10-18T03:27:44Z"
+      templateName: main
+      templateScope: local/exit-handler-with-param-xbh52
+      type: Steps
+    exit-handler-with-param-xbh52-1429999455:
+      boundaryID: exit-handler-with-param-xbh52
+      displayName: step-1(1)
+      finishedAt: "2021-10-18T03:27:58Z"
+      hostNodeName: smile
+      id: exit-handler-with-param-xbh52-1429999455
+      message: Error (exit code 1)
+      name: exit-handler-with-param-xbh52[0].step-1(1)
+      outputs:
+        exitCode: "1"
+        parameters:
+        - name: result
+          value: hello world
+          valueFrom:
+            default: Foobar
+            path: /tmp/hello_world.txt
+      phase: Failed
+      progress: 1/1
+      resourcesDuration:
+        cpu: 5
+        memory: 5
+      startedAt: "2021-10-18T03:27:54Z"
+      templateName: output
+      templateScope: local/exit-handler-with-param-xbh52
+      type: Pod
+    exit-handler-with-param-xbh52-2034140834:
+      boundaryID: exit-handler-with-param-xbh52
+      displayName: step-1(0)
+      finishedAt: "2021-10-18T03:27:48Z"
+      hostNodeName: smile
+      id: exit-handler-with-param-xbh52-2034140834
+      message: Error (exit code 1)
+      name: exit-handler-with-param-xbh52[0].step-1(0)
+      outputs:
+        exitCode: "1"
+        parameters:
+        - name: result
+          value: hello world
+          valueFrom:
+            default: Foobar
+            path: /tmp/hello_world.txt
+      phase: Failed
+      progress: 1/1
+      resourcesDuration:
+        cpu: 5
+        memory: 5
+      startedAt: "2021-10-18T03:27:44Z"
+      templateName: output
+      templateScope: local/exit-handler-with-param-xbh52
+      type: Pod
+    exit-handler-with-param-xbh52-3203867295:
+      boundaryID: exit-handler-with-param-xbh52
+      children:
+      - exit-handler-with-param-xbh52-2034140834
+      - exit-handler-with-param-xbh52-1429999455
+      displayName: step-1
+      finishedAt: "2021-10-18T03:28:04Z"
+      id: exit-handler-with-param-xbh52-3203867295
+      message: No more retries left
+      name: exit-handler-with-param-xbh52[0].step-1
+      startedAt: "2021-10-18T03:27:44Z"
+      templateName: output
+      templateScope: local/exit-handler-with-param-xbh52
+      type: Retry
+    exit-handler-with-param-xbh52-3621967439:
+      boundaryID: exit-handler-with-param-xbh52
+      children:
+      - exit-handler-with-param-xbh52-3203867295
+      displayName: '[0]'
+      finishedAt: "2021-10-18T03:28:14Z"
+      id: exit-handler-with-param-xbh52-3621967439
+      message: child 'exit-handler-with-param-xbh52-3203867295' failed
+      name: exit-handler-with-param-xbh52[0]
+      startedAt: "2021-10-18T03:27:44Z"
+      templateScope: local/exit-handler-with-param-xbh52
+      type: StepGroup
+  startedAt: "2021-10-18T03:27:44Z"
+`
+
+func TestExitHandlerWithRetryNodeParam(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(exitHandlerWithRetryNodeParam)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+	retryStepNode := woc.wf.GetNodeByName("exit-handler-with-param-xbh52[0].step-1")
+	assert.Equal(t, 1, len(retryStepNode.Outputs.Parameters))
+	assert.Equal(t, "hello world", retryStepNode.Outputs.Parameters[0].Value.String())
+	onExitNode := woc.wf.GetNodeByName("exit-handler-with-param-xbh52[0].step-1.onExit")
+	assert.Equal(t, "hello world", onExitNode.Inputs.Parameters[0].Value.String())
+}
