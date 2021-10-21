@@ -1,12 +1,11 @@
 GIT_TAG               := $(shell git describe --exact-match --tags --abbrev=0 2> /dev/null || echo untagged)
-RELEASE_TAG           := $(shell [[ "$(GIT_TAG)" =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$$ ]] && echo "true" || "false")
+ifeq ($(GIT_TAG),untagged)
 # "SNAPSHOT" is "latest" for Java
 VERSION               := 0.0.0-SNAPSHOT
-ifeq ($(RELEASE_TAG),true)
-VERSION               := $(GIT_TAG)
-endif
+else
 # remove the "v" prefix, not allowed
-VERSION               := $(VERSION:v=)
+VERSION               := $(GIT_TAG:v=)
+endif
 
 # work dir
 WD                    := $(shell echo "`pwd`/wd")
