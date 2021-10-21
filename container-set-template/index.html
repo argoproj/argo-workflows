@@ -577,6 +577,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#resource-requests" title="⚠️ Resource Requests" class="md-nav__link">
+    ⚠️ Resource Requests
+  </a>
+  
+</li>
+      
       
       
       
@@ -2209,6 +2216,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#resource-requests" title="⚠️ Resource Requests" class="md-nav__link">
+    ⚠️ Resource Requests
+  </a>
+  
+</li>
+      
       
       
       
@@ -2272,6 +2286,7 @@ empty-dir volumes instead of persistent volume claims to share data between step
 <ol>
 <li>You must use the <a href="../workflow-executors/#emissary-emissary">Emissary Executor</a>.</li>
 <li>Or all containers must run in parallel - i.e. it is a graph with no dependencies.</li>
+<li>It will use the sum total of all resource requests, maybe costing more than the same DAG template. This will be a problem if your requests already cost a lot. See below.</li>
 </ol>
 <p>The containers can be arranged as a graph by specifying dependencies. This is suitable for running 10s rather than 100s
 of containers.</p>
@@ -2282,6 +2297,45 @@ named <code>main</code>.</p>
 <p>If you want to use base-layer artifacts, <code>main</code> must be last to finish, so it must be the root node in the graph.</p>
 <p>That is may not be practical.</p>
 <p>Instead, have a workspace volume and make sure all artifacts paths are on that volume.</p>
+<h2 id="resource-requests">⚠️ Resource Requests<a class="headerlink" href="#resource-requests" title="Permanent link">&para;</a></h2>
+<p>A container set actually starts all containers, and the Emmissary only starts the main container process when the containers it depends on have completed. This mean that even though the container is doing no useful work, it is still consume resources and you're still getting billed for them.</p>
+<p>If your requests are small, this won't be a problem.</p>
+<p>If your request are large, set the resource requests so the sum total is the most you'll need at once.</p>
+<p>Example A: a simple sequence e.g. <code>a -&gt; b -&gt; c</code></p>
+<ul>
+<li><code>a</code> needs 1Gi memory</li>
+<li><code>b</code> needs 2Gi memory</li>
+<li><code>c</code> needs 1Gi memory</li>
+</ul>
+<p>Then you know you need only a maximum of 2Gi. You could set as follows:</p>
+<ul>
+<li><code>a</code> requests 512Mi memory</li>
+<li><code>b</code> requests 1Gi memory</li>
+<li><code>c</code> requests 512Mi memory</li>
+</ul>
+<p>The total is 2Gi, which is enough for <code>b</code>. We're all good.</p>
+<p>Example B: Diamond DAG e.g. a diamond <code>a -&gt; b -&gt; d and  a -&gt; b -&gt; d</code>, i.e. <code>b</code> and <code>c</code> run at the same time.</p>
+<ul>
+<li><code>a</code> needs 1000 cpu</li>
+<li><code>b</code> needs 2000 cpu</li>
+<li><code>c</code> needs 1000 cpu</li>
+<li><code>d</code> needs 1000 cpu</li>
+</ul>
+<p>I know that <code>b</code> and <code>c</code> will run at the same time. So I need to make sure the total is 3000.</p>
+<ul>
+<li><code>a</code> requests 500 cpu</li>
+<li><code>b</code> requests 1000 cpu</li>
+<li><code>c</code> requests 1000 cpu</li>
+<li><code>d</code> requests 500 cpu</li>
+</ul>
+<p>The total is 3000, which is enough for <code>b + c</code>. We're all good.</p>
+<p>Example B: Lopsided requests, e.g. <code>a -&gt; b</code> where <code>a</code> is cheap and <code>b</code> is expensive</p>
+<ul>
+<li><code>a</code> needs 100 cpu, 1Mi memory, runs for 10h</li>
+<li><code>b</code> needs 8Ki GPU, 100 Gi memory, 200 Ki GPU, runs for 5m</li>
+</ul>
+<p>Can you see the problem here? <code>a</code> only wont small requests, but the container set will use the  total of all requests. So it's as if you're using all that GPU for 10h. This will be expensive.</p>
+<p>Solution: do not use container set when you have lopsided requests.</p>
                 
                   
                 
