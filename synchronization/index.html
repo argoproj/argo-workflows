@@ -2291,7 +2291,9 @@
 <p>Synchronization enables users to limit the parallel execution of certain workflows or 
 templates within a workflow without having to restrict others.</p>
 <p>Users can create multiple synchronization configurations in the <code>ConfigMap</code> that can be referred to 
-from a workflow or template within a workflow.</p>
+from a workflow or template within a workflow. Alternatively, users can
+configure a mutex to prevent concurrent execution of templates or
+workflows using the same mutex.</p>
 <p>For example:
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">v1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ConfigMap</span>
@@ -2305,7 +2307,7 @@ from a workflow or template within a workflow.</p>
 <p>Workflow-level synchronization limits parallel execution of the workflow if workflow have same synchronization reference. 
 In this example, Workflow refers <code>workflow</code> synchronization key which is configured as rate limit 1, 
 so only one workflow instance will be executed at given time even multiple workflows created. </p>
-<p>example:</p>
+<p>Using a semaphore configured by a <code>ConfigMap</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -2324,12 +2326,29 @@ so only one workflow instance will be executed at given time even multiple workf
       <span class="nt">command</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">cowsay</span><span class="p p-Indicator">]</span>
       <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;hello</span><span class="nv"> </span><span class="s">world&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
+<p>Using a mutex:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
+<span class="nt">metadata</span><span class="p">:</span>
+  <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">synchronization-wf-level-</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">entrypoint</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">whalesay</span>
+  <span class="nt">synchronization</span><span class="p">:</span>
+    <span class="nt">mutex</span><span class="p">:</span>
+      <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">workflow</span>
+  <span class="nt">templates</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">whalesay</span>
+    <span class="nt">container</span><span class="p">:</span>
+      <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">docker/whalesay:latest</span>
+      <span class="nt">command</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">cowsay</span><span class="p p-Indicator">]</span>
+      <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;hello</span><span class="nv"> </span><span class="s">world&quot;</span><span class="p p-Indicator">]</span>
+</code></pre></div>
 <h3 id="template-level-synchronization">Template-level Synchronization<a class="headerlink" href="#template-level-synchronization" title="Permanent link">&para;</a></h3>
 <p>Template-level synchronization limits parallel execution of the template across workflows, if template have same synchronization reference. 
 In this example, <code>acquire-lock</code> template has synchronization reference of <code>template</code> key which is configured as rate limit 2, 
 so, two instance of templates will be executed at given time even multiple step/task with in workflow or different workflow refers same template. </p>
-<p>example:</p>
-<p><div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<p>Using a semaphore configured by a <code>ConfigMap</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">synchronization-tmpl-level-</span>
@@ -2357,9 +2376,38 @@ so, two instance of templates will be executed at given time even multiple step/
       <span class="nt">command</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">sh</span><span class="p p-Indicator">,</span> <span class="nv">-c</span><span class="p p-Indicator">]</span>
       <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;sleep</span><span class="nv"> </span><span class="s">10;</span><span class="nv"> </span><span class="s">echo</span><span class="nv"> </span><span class="s">acquired</span><span class="nv"> </span><span class="s">lock&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
-Examples:
-1. <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-wf-level.yaml">Workflow level</a>
-2. <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-tmpl-level.yaml">Step level</a></p>
+<p>Using a mutex:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
+<span class="nt">metadata</span><span class="p">:</span>
+  <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">synchronization-tmpl-level-</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">entrypoint</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">synchronization-tmpl-level-example</span>
+  <span class="nt">templates</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">synchronization-tmpl-level-example</span>
+    <span class="nt">steps</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">synchronization-acquire-lock</span>
+        <span class="nt">template</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">acquire-lock</span>
+        <span class="nt">arguments</span><span class="p">:</span>
+          <span class="nt">parameters</span><span class="p">:</span>
+          <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">seconds</span>
+            <span class="nt">value</span><span class="p">:</span> <span class="s">&quot;{{item}}&quot;</span>
+        <span class="nt">withParam</span><span class="p">:</span> <span class="s">&#39;[&quot;1&quot;,&quot;2&quot;,&quot;3&quot;,&quot;4&quot;,&quot;5&quot;]&#39;</span>
+
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">acquire-lock</span>
+    <span class="nt">synchronization</span><span class="p">:</span>
+      <span class="nt">mutex</span><span class="p">:</span>
+        <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">template</span>
+    <span class="nt">container</span><span class="p">:</span>
+      <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">alpine:latest</span>
+      <span class="nt">command</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">sh</span><span class="p p-Indicator">,</span> <span class="nv">-c</span><span class="p p-Indicator">]</span>
+      <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;sleep</span><span class="nv"> </span><span class="s">10;</span><span class="nv"> </span><span class="s">echo</span><span class="nv"> </span><span class="s">acquired</span><span class="nv"> </span><span class="s">lock&quot;</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<p>Examples:
+1. <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-wf-level.yaml">Workflow level semaphore</a>
+1. <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-mutex-wf-level.yaml">Workflow level mutex</a>
+1. <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-tmpl-level.yaml">Step level semaphore</a>
+1. <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-mutex-tmpl-level.yaml">Step level mutex</a></p>
 <h3 id="other-parallelism-support">Other Parallelism support:<a class="headerlink" href="#other-parallelism-support" title="Permanent link">&para;</a></h3>
 <p>In addition to this synchronization, the workflow controller supports a parallelism setting that applies to all workflows 
 in the system (it is not granular to a class of workflows, or tasks withing them). Furthermore, there is a parallelism setting 
