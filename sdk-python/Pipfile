@@ -1,0 +1,17 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+semantic_version = "*"
+setuptools = "*"
+twine = "*"
+wheel = "*"
+
+[packages]
+kubernetes = ">=10.0"
+mock = "*"
+
+[requires]
+python_version = "3.6"

@@ -1,0 +1,292 @@
+# -*- coding: utf-8; mode: python -*-
+##
+## Format
+##
+##   ACTION: [AUDIENCE:] COMMIT_MSG [!TAG ...]
+##
+## Description
+##
+##   ACTION is one of 'chg', 'fix', 'new'
+##
+##       Is WHAT the change is about.
+##
+##       'chg' is for refactor, small improvement, cosmetic changes...
+##       'fix' is for bug fixes
+##       'new' is for new features, big improvement
+##
+##   AUDIENCE is optional and one of 'dev', 'usr', 'pkg', 'test', 'doc'
+##
+##       Is WHO is concerned by the change.
+##
+##       'dev'  is for developpers (API changes, refactors...)
+##       'usr'  is for final users (UI changes)
+##       'pkg'  is for packagers   (packaging changes)
+##       'test' is for testers     (test only related changes)
+##       'doc'  is for doc guys    (doc only changes)
+##
+##   COMMIT_MSG is ... well ... the commit message itself.
+##
+##   TAGs are additionnal adjective as 'refactor' 'minor' 'cosmetic'
+##
+##       They are preceded with a '!' or a '@' (prefer the former, as the
+##       latter is wrongly interpreted in github.) Commonly used tags are:
+##
+##       'refactor' is obviously for refactoring code only
+##       'minor' is for a very meaningless change (a typo, adding a comment)
+##       'cosmetic' is for cosmetic driven change (re-indentation, 80-col...)
+##       'wip' is for partial functionality but complete subfunctionality.
+##
+## Example:
+##
+##   new: usr: support of bazaar implemented
+##   chg: re-indentend some lines !cosmetic
+##   new: dev: updated code to be compatible with last version of killer lib.
+##   fix: pkg: updated year of licence coverage.
+##   new: test: added a bunch of test around user usability of feature X.
+##   fix: typo in spelling my name in comment. !minor
+##
+##   Please note that multi-line commit message are supported, and only the
+##   first line will be considered as the "summary" of the commit message. So
+##   tags, and other rules only applies to the summary.  The body of the commit
+##   message will be displayed in the changelog without reformatting.
+
+
+##
+## ``ignore_regexps`` is a line of regexps
+##
+## Any commit having its full commit message matching any regexp listed here
+## will be ignored and won't be reported in the changelog.
+##
+ignore_regexps = [
+    r'@ignore', r'!ignore',
+    r'@minor', r'!minor',
+    r'@cosmetic', r'!cosmetic',
+    r'@refactor', r'!refactor',
+    r'@wip', r'!wip',
+    r'^([cC]hg|[fF]ix|[nN]ew)\s*:\s*[p|P]kg:',
+    r'^(.{3,3}\s*:)?\s*([fF]irst|[Ii]nitial) commit.?\s*$',
+    r'^Merge',       ## ignore merge commits
+    r'^$',           ## ignore commits with empty messages
+]
+
+
+## ``section_regexps`` is a list of 2-tuples associating a string label and a
+## list of regexp
+##
+## Commit messages will be classified in sections thanks to this. Section
+## titles are the label, and a commit is classified under this section if any
+## of the regexps associated is matching.
+##
+## Please note that ``section_regexps`` will only classify commits and won't
+## make any changes to the contents. So you'll probably want to go check
+## ``subject_process`` (or ``body_process``) to do some changes to the subject,
+## whenever you are tweaking this variable.
+##
+section_regexps = [
+    ('New', [
+        r'^[nN]ew\s*:\s*((dev|use?r|pkg|test|doc)\s*:\s*)?([^\n]*)$',
+     ]),
+    ('Changes', [
+        r'^[cC]hg\s*:\s*((dev|use?r|pkg|test|doc)\s*:\s*)?([^\n]*)$',
+     ]),
+    ('Fix', [
+        r'^[fF]ix\s*:\s*((dev|use?r|pkg|test|doc)\s*:\s*)?([^\n]*)$',
+     ]),
+
+    ('Other', None ## Match all lines
+     ),
+
+]
+
+
+## ``body_process`` is a callable
+##
+## This callable will be given the original body and result will
+## be used in the changelog.
+##
+## Available constructs are:
+##
+##   - any python callable that take one txt argument and return txt argument.
+##
+##   - ReSub(pattern, replacement): will apply regexp substitution.
+##
+##   - Indent(chars="  "): will indent the text with the prefix
+##     Please remember that template engines gets also to modify the text and
+##     will usually indent themselves the text if needed.
+##
+##   - Wrap(regexp=r"\n\n"): re-wrap text in separate paragraph to fill 80-Columns
+##
+##   - noop: do nothing
+##
+##   - ucfirst: ensure the first letter is uppercase.
+##     (usually used in the ``subject_process`` pipeline)
+##
+##   - final_dot: ensure text finishes with a dot
+##     (usually used in the ``subject_process`` pipeline)
+##
+##   - strip: remove any spaces before or after the content of the string
+##
+##   - SetIfEmpty(msg="No commit message."): will set the text to
+##     whatever given ``msg`` if the current text is empty.
+##
+## Additionally, you can `pipe` the provided filters, for instance:
+#body_process = Wrap(regexp=r'\n(?=\w+\s*:)') | Indent(chars="  ")
+#body_process = Wrap(regexp=r'\n(?=\w+\s*:)')
+#body_process = noop
+body_process = ReSub(r'((^|\n)[A-Z]\w+(-\w+)*: .*(\n\s+.*)*)+$', r'') | strip
+
+
+## ``subject_process`` is a callable
+##
+## This callable will be given the original subject and result will
+## be used in the changelog.
+##
+## Available constructs are those listed in ``body_process`` doc.
+subject_process = (strip |
+    ReSub(r'^([cC]hg|[fF]ix|[nN]ew)\s*:\s*((dev|use?r|pkg|test|doc)\s*:\s*)?([^\n@]*)(@[a-z]+\s+)*$', r'\4') |
+    SetIfEmpty("No commit message.") | ucfirst | final_dot)
+
+
+## ``tag_filter_regexp`` is a regexp
+##
+## Tags that will be used for the changelog must match this regexp.
+##
+tag_filter_regexp = r'^v?(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:[-]?(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$'
+
+
+## ``unreleased_version_label`` is a string or a callable that outputs a string
+##
+## This label will be used as the changelog Title of the last set of changes
+## between last valid tag and HEAD if any.
+import os
+unreleased_version_label = os.environ.get("RELEASE_VERSION", "HEAD")
+
+
+
+## ``output_engine`` is a callable
+##
+## This will change the output format of the generated changelog file
+##
+## Available choices are:
+##
+##   - rest_py
+##
+##        Legacy pure python engine, outputs ReSTructured text.
+##        This is the default.
+##
+##   - mustache(<template_name>)
+##
+##        Template name could be any of the available templates in
+##        ``templates/mustache/*.tpl``.
+##        Requires python package ``pystache``.
+##        Examples:
+##           - mustache("markdown")
+##           - mustache("restructuredtext")
+##
+##   - makotemplate(<template_name>)
+##
+##        Template name could be any of the available templates in
+##        ``templates/mako/*.tpl``.
+##        Requires python package ``mako``.
+##        Examples:
+##           - makotemplate("restructuredtext")
+##
+output_engine = rest_py
+#output_engine = mustache("restructuredtext")
+#output_engine = mustache("markdown")
+#output_engine = makotemplate("restructuredtext")
+
+
+## ``include_merge`` is a boolean
+##
+## This option tells git-log whether to include merge commits in the log.
+## The default is to include them.
+include_merge = True
+
+
+## ``log_encoding`` is a string identifier
+##
+## This option tells gitchangelog what encoding is outputed by ``git log``.
+## The default is to be clever about it: it checks ``git config`` for
+## ``i18n.logOutputEncoding``, and if not found will default to git's own
+## default: ``utf-8``.
+#log_encoding = 'utf-8'
+
+
+## ``publish`` is a callable
+##
+## Sets what ``gitchangelog`` should do with the output generated by
+## the output engine. ``publish`` is a callable taking one argument
+## that is an interator on lines from the output engine.
+##
+## Some helper callable are provided:
+##
+## Available choices are:
+##
+##   - stdout
+##
+##        Outputs directly to standard output
+##        (This is the default)
+##
+##   - FileInsertAtFirstRegexMatch(file, pattern, idx=lamda m: m.start(), flags)
+##
+##        Creates a callable that will parse given file for the given
+##        regex pattern and will insert the output in the file.
+##        ``idx`` is a callable that receive the matching object and
+##        must return a integer index point where to insert the
+##        the output in the file. Default is to return the position of
+##        the start of the matched string.
+##
+##   - FileRegexSubst(file, pattern, replace, flags)
+##
+##        Apply a replace inplace in the given file. Your regex pattern must
+##        take care of everything and might be more complex. Check the README
+##        for a complete copy-pastable example.
+##
+# publish = FileInsertIntoFirstRegexMatch(
+#     "CHANGELOG.rst",
+#     r'/(?P<rev>[0-9]+\.[0-9]+(\.[0-9]+)?)\s+\([0-9]+-[0-9]{2}-[0-9]{2}\)\n--+\n/',
+#     idx=lambda m: m.start(1)
+# )
+#publish = stdout
+
+
+## ``revs`` is a list of callable or a list of string
+##
+## callable will be called to resolve as strings and allow dynamical
+## computation of these. The result will be used as revisions for
+## gitchangelog (as if directly stated on the command line). This allows
+## to filter exaclty which commits will be read by gitchangelog.
+##
+## To get a full documentation on the format of these strings, please
+## refer to the ``git rev-list`` arguments. There are many examples.
+##
+## Using callables is especially useful, for instance, if you
+## are using gitchangelog to generate incrementally your changelog.
+##
+## Some helpers are provided, you can use them::
+##
+##   - FileFirstRegexMatch(file, pattern): will return a callable that will
+##     return the first string match for the given pattern in the given file.
+##     If you use named sub-patterns in your regex pattern, it'll output only
+##     the string matching the regex pattern named "rev".
+##
+##   - Caret(rev): will return the rev prefixed by a "^", which is a
+##     way to remove the given revision and all its ancestor.
+##
+## Please note that if you provide a rev-list on the command line, it'll
+## replace this value (which will then be ignored).
+##
+## If empty, then ``gitchangelog`` will act as it had to generate a full
+## changelog.
+##
+## The default is to use all commits to make the changelog.
+#revs = ["^1.0.3", ]
+#revs = [
+#    Caret(
+#        FileFirstRegexMatch(
+#            "CHANGELOG.rst",
+#            r"(?P<rev>[0-9]+\.[0-9]+(\.[0-9]+)?)\s+\([0-9]+-[0-9]{2}-[0-9]{2}\)\n--+\n")),
+#    "HEAD"
+#]
+revs = []
