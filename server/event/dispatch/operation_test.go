@@ -149,9 +149,13 @@ func TestNewOperation(t *testing.T) {
 	}, "my-ns", "my-discriminator", &wfv1.Item{Value: json.RawMessage(`{"foo": {"bar": "baz"}}`)})
 	assert.NoError(t, err)
 	err = operation.Dispatch(ctx)
-	assert.NoError(t, err)
+	assert.Error(t, err)
 
-	expectedParamValues := []string{"bar", "bar", `{"bar":"baz"}`}
+	expectedParamValues := []string{
+		"bar",
+		`{"bar":"baz"}`,
+		"bar",
+	}
 	// assert
 	list, err := client.ArgoprojV1alpha1().Workflows("my-ns").List(ctx, metav1.ListOptions{})
 	if assert.NoError(t, err) && assert.Len(t, list.Items, 3) {

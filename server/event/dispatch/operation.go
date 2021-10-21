@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
+
 	"github.com/antonmedv/expr"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
@@ -25,6 +27,7 @@ import (
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/creator"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 type Operation struct {
@@ -106,6 +109,10 @@ func (o *Operation) dispatch(ctx context.Context, wfeb wfv1.WorkflowEventBinding
 		err = o.populateWorkflowMetadata(wf, &submit.ObjectMeta)
 		if err != nil {
 			return nil, err
+		}
+
+		if wf.Name == "" {
+			wf.SetName(wf.GetGenerateName() + util.RandSuffix())
 		}
 
 		// users will always want to know why a workflow was submitted,

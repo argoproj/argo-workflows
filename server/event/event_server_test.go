@@ -19,8 +19,10 @@ import (
 func TestController(t *testing.T) {
 	clientset := fake.NewSimpleClientset()
 	ctx := context.WithValue(context.TODO(), auth.WfKey, clientset)
+	instanceIDService := instanceid.NewService("my-instanceid")
+	eventRecorderManager := events.NewEventRecorderManager(fakekube.NewSimpleClientset())
 	newController := func(asyncDispatch bool) *Controller {
-		return NewController(instanceid.NewService("my-instanceid"), events.NewEventRecorderManager(fakekube.NewSimpleClientset()), 1, 1, asyncDispatch)
+		return NewController(instanceIDService, eventRecorderManager, 1, 1, asyncDispatch)
 	}
 	e1 := &eventpkg.EventRequest{Namespace: "my-ns", Payload: &wfv1.Item{}}
 	e2 := &eventpkg.EventRequest{}
