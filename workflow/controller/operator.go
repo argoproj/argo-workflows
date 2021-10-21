@@ -1789,6 +1789,11 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			if processedTmpl.Synchronization != nil {
 				woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
 			}
+			lastChildNode := getChildNodeIndex(retryParentNode, woc.wf.Status.Nodes, -1)
+			if lastChildNode != nil {
+				retryParentNode.Outputs = lastChildNode.Outputs.DeepCopy()
+				woc.wf.Status.Nodes[node.ID] = *retryParentNode
+			}
 			return retryParentNode, nil
 		}
 		lastChildNode := getChildNodeIndex(retryParentNode, woc.wf.Status.Nodes, -1)
