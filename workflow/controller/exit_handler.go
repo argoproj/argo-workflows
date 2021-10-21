@@ -11,11 +11,17 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 )
 
-func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitHook *wfv1.LifecycleHook, parentNodeName, boundaryID string, tmplCtx *templateresolution.Context, prefix string, outputs *wfv1.Outputs) (bool, *wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitHook *wfv1.LifecycleHook, parentNode *wfv1.NodeStatus, boundaryID string, tmplCtx *templateresolution.Context, prefix string) (bool, *wfv1.NodeStatus, error) {
+	outputs := parentNode.Outputs
+	if parentNode.Type == wfv1.NodeTypeRetry {
+		lastChildNode := getChildNodeIndex(parentNode, woc.wf.Status.Nodes, -1)
+		outputs = lastChildNode.Outputs
+	}
+
 	if exitHook != nil && woc.GetShutdownStrategy().ShouldExecute(true) {
 		woc.log.WithField("lifeCycleHook", exitHook).Infof("Running OnExit handler")
 
-		onExitNodeName := common.GenerateOnExitNodeName(parentNodeName)
+		onExitNodeName := common.GenerateOnExitNodeName(parentNode.Name)
 		resolvedArgs := exitHook.Arguments
 		var err error
 		if !resolvedArgs.IsEmpty() && outputs != nil {
@@ -30,7 +36,7 @@ func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitHook *wfv1.Lif
 			boundaryID:     boundaryID,
 			onExitTemplate: true,
 		})
-		woc.addChildNode(parentNodeName, onExitNodeName)
+		woc.addChildNode(parentNode.Name, onExitNodeName)
 		return true, onExitNode, err
 	}
 	return false, nil, nil
