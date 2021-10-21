@@ -20,7 +20,7 @@ func TestPodName(t *testing.T) {
 	assert.Equal(t, expected, actual)
 
 	name := PodName(shortWfName, nodeName, shortTemplateName, nodeID)
-	assert.Equal(t, "wfname-templatename-1454367246", name)
+	assert.Equal(t, nodeID, name)
 
 	// long case
 	longWfName := "alongworkflownamethatincludeslotsofdetailsandisessentiallyalargerunonsentencewithpoorstyleandnopunctuationtobehadwhatsoever"
@@ -35,5 +35,5 @@ func TestPodName(t *testing.T) {
 	assert.Equal(t, maxK8sResourceNameLength-k8sNamingHashLength-1, len(actual))
 
 	name = PodName(longWfName, nodeName, longTemplateName, nodeID)
-	assert.Equal(t, maxK8sResourceNameLength, len(name))
+	assert.Equal(t, nodeID, name)
 }
