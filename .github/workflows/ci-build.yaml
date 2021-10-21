@@ -181,6 +181,21 @@ jobs:
         with:
           version: v1.42.0
 
+  sdk:
+    name: SDK
+    runs-on: ubuntu-20.04
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        name:
+        - python
+    steps:
+      - uses: actions/checkout@v2
+      - run: |
+          cd sdk-${{matrix.name}}
+          make builder_image
+          make builder_make
+
   ui:
     name: UI
     runs-on: ubuntu-20.04
