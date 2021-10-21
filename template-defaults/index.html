@@ -2261,7 +2261,7 @@
 <p>v3.1 and after</p>
 </blockquote>
 <h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">&para;</a></h2>
-<p><code>TemplateDefaults</code> feature enables the user to configure the default template values in workflow spec level that will apply to all the templates in the workflow. If the template has a value that also has a default value in <code>templateDefault</code>, the Template's value will take precedence. These values will be applied during the runtime.</p>
+<p><code>TemplateDefaults</code> feature enables the user to configure the default template values in workflow spec level that will apply to all the templates in the workflow. If the template has a value that also has a default value in <code>templateDefault</code>, the Template's value will take precedence. These values will be applied during the runtime. Template values and default values are merged using Kubernetes strategic merge patch. To check whether and how list values are merged, inspect the <code>patchStrategy</code> and <code>patchMergeKey</code> tags in the <a href="https://github.com/argoproj/argo-workflows/blob/master/pkg/apis/workflow/v1alpha1/workflow_types.go">workflow definition</a>.</p>
 <h2 id="configuring-templatedefaults-in-workflowspec">Configuring <code>templateDefaults</code> in WorkflowSpec<a class="headerlink" href="#configuring-templatedefaults-in-workflowspec" title="Permanent link">&para;</a></h2>
 <p>For example:
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
