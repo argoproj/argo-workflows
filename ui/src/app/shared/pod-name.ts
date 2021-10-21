@@ -3,15 +3,7 @@ export const k8sNamingHashLength = 10;
 
 // getPodName returns a deterministic pod name
 export const getPodName = (workflowName: string, nodeName: string, templateName: string, nodeID: string): string => {
-    if (workflowName === nodeName) {
-        return workflowName;
-    }
-
-    let prefix = `${workflowName}-${templateName}`;
-    prefix = ensurePodNamePrefixLength(prefix);
-
-    const hash = createFNVHash(nodeName);
-    return `${prefix}-${hash}`;
+    return nodeID;
 };
 
 export const ensurePodNamePrefixLength = (prefix: string): string => {
