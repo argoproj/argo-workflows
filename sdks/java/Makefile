@@ -75,5 +75,5 @@ build: generate wd/settings.xml
 
 publish: build
 	# https://help.github.com/en/packages/using-github-packages-with-your-projects-ecosystem/configuring-apache-maven-for-use-with-github-packages
-	docker run -v ~/.m2:/root/.m2 $(WD):/wd -w /wd maven:3-openjdk-8 \
+	docker run -v ~/.m2:/root/.m2 -v $(WD):/wd -w /wd maven:3-openjdk-8 \
 		mvn deploy -DskipTests -Dmaven.javadoc.skip -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/argoproj/argo-workflows -s settings.xml
