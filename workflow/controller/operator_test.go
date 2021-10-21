@@ -2788,20 +2788,30 @@ spec:
 `
 
 func TestResolvePodNameInRetries(t *testing.T) {
-	ctx := context.Background()
-	wf := wfv1.MustUnmarshalWorkflow(podNameInRetries)
-	woc := newWoc(*wf)
-	woc.operate(ctx)
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(ctx, metav1.ListOptions{})
-	assert.NoError(t, err)
-	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
+	tests := []struct {
+		podNameVersion string
+		wantPodName    string
+	}{
+		{"v1", "output-value-placeholders-wf-3033990984"},
+		{"v2", "output-value-placeholders-wf-tell-pod-name-3033990984"},
+	}
+	for _, tt := range tests {
+		os.Setenv("POD_NAMES", tt.podNameVersion)
+		ctx := context.Background()
+		wf := wfv1.MustUnmarshalWorkflow(podNameInRetries)
+		woc := newWoc(*wf)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+		pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(ctx, metav1.ListOptions{})
+		assert.NoError(t, err)
+		assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
 
-	template, err := getPodTemplate(&pods.Items[0])
-	assert.NoError(t, err)
-	parameterValue := template.Outputs.Parameters[0].Value
-	assert.NotNil(t, parameterValue)
-	assert.Equal(t, "output-value-placeholders-wf-3033990984", parameterValue.String())
+		template, err := getPodTemplate(&pods.Items[0])
+		assert.NoError(t, err)
+		parameterValue := template.Outputs.Parameters[0].Value
+		assert.NotNil(t, parameterValue)
+		assert.Equal(t, tt.wantPodName, parameterValue.String())
+	}
 }
 
 var outputStatuses = `

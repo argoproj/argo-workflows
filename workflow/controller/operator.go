@@ -1621,7 +1621,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	// Inject the pod name. If the pod has a retry strategy, the pod name will be changed and will be injected when it
 	// is determined
 	if resolvedTmpl.IsPodType() && woc.retryStrategy(resolvedTmpl) == nil {
-		localParams[common.LocalVarPodName] = woc.wf.NodeID(nodeName)
+		localParams[common.LocalVarPodName] = wfutil.PodName(woc.wf.Name, nodeName, resolvedTmpl.Name, woc.wf.NodeID(nodeName))
 	}
 
 	// Merge Template defaults to template
@@ -1805,7 +1805,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			localParams := make(map[string]string)
 			// Change the `pod.name` variable to the new retry node name
 			if processedTmpl.IsPodType() {
-				localParams[common.LocalVarPodName] = woc.wf.NodeID(nodeName)
+				localParams[common.LocalVarPodName] = wfutil.PodName(woc.wf.Name, nodeName, processedTmpl.Name, woc.wf.NodeID(nodeName))
 			}
 			// Inject the retryAttempt number
 			localParams[common.LocalVarRetries] = strconv.Itoa(len(retryParentNode.Children))
