@@ -1,5 +1,14 @@
 # Changelog
 
+## v3.2.2 (2021-10-21)
+
+ * [8897fff15](https://github.com/argoproj/argo-workflows/commit/8897fff15776f31fbd7f65bbee4f93b2101110f7) fix: Restore default pod name version to v1 (#6998)
+ * [99d110985](https://github.com/argoproj/argo-workflows/commit/99d1109858ddcedfc9c5c85df53e1bd422887794) chore(ui): Move pod name functions and add tests. Fixes #6946 (#6954)
+
+### Contributors
+
+ * J.P. Zivalich
+
 ## v3.2.1 (2021-10-19)
 
  * [74182fb90](https://github.com/argoproj/argo-workflows/commit/74182fb9017e0f05c0fa6afd32196a1988423deb) lint
