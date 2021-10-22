@@ -10,6 +10,7 @@
     "http",
     "https"
   ],
+  "host": "localhost:2746",
   "info": {
     "title": "Argo Server API",
     "description": "You can get examples of requests and responses by using the CLI with `--gloglevel=9`, e.g. `argo list --gloglevel=9`",
@@ -197,7 +198,7 @@
           },
           {
             "type": "string",
-            "name": "name",
+            "name": "uid",
             "in": "path",
             "required": true
           },
