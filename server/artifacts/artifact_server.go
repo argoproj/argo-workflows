@@ -92,11 +92,11 @@ func (a *ArtifactServer) GetInputArtifactByUID(w http.ResponseWriter, r *http.Re
 }
 
 func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request, isInput bool) {
-	path := strings.SplitN(r.URL.Path, "/", 6)
+	requestPath := strings.SplitN(r.URL.Path, "/", 6)
 
-	uid := path[2]
-	nodeId := path[3]
-	artifactName := path[4]
+	uid := requestPath[2]
+	nodeId := requestPath[3]
+	artifactName := requestPath[4]
 
 	// We need to know the namespace before we can do gate keeping
 	wf, err := a.wfArchive.GetWorkflow(uid)
