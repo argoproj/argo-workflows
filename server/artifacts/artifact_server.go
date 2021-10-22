@@ -3,6 +3,7 @@ package artifacts
 import (
 	"context"
 	"fmt"
+	"github.com/argoproj/argo-workflows/v3/server/types"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -53,18 +54,18 @@ func (a *ArtifactServer) GetInputArtifact(w http.ResponseWriter, r *http.Request
 }
 
 func (a *ArtifactServer) getArtifact(w http.ResponseWriter, r *http.Request, isInput bool) {
-	ctx, err := a.gateKeeping(r)
+	path := strings.SplitN(r.URL.Path, "/", 6)
+	namespace := path[2]
+	workflowName := path[3]
+	nodeId := path[4]
+	artifactName := path[5]
+
+	ctx, err := a.gateKeeping(r, types.NewNamespaceContainer(namespace))
 	if err != nil {
 		w.WriteHeader(401)
 		_, _ = w.Write([]byte(err.Error()))
 		return
 	}
-	path := strings.SplitN(r.URL.Path, "/", 6)
-
-	namespace := path[2]
-	workflowName := path[3]
-	nodeId := path[4]
-	artifactName := path[5]
 
 	log.WithFields(log.Fields{"namespace": namespace, "workflowName": workflowName, "nodeId": nodeId, "artifactName": artifactName, "isInput": isInput}).Info("Download artifact")
 
@@ -91,27 +92,36 @@ func (a *ArtifactServer) GetInputArtifactByUID(w http.ResponseWriter, r *http.Re
 }
 
 func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request, isInput bool) {
-	ctx, err := a.gateKeeping(r)
-	if err != nil {
-		w.WriteHeader(401)
-		_, _ = w.Write([]byte(err.Error()))
-		return
-	}
-
 	path := strings.SplitN(r.URL.Path, "/", 6)
 
 	uid := path[2]
 	nodeId := path[3]
 	artifactName := path[4]
 
-	log.WithFields(log.Fields{"uid": uid, "nodeId": nodeId, "artifactName": artifactName, "isInput": isInput}).Info("Download artifact")
-
-	wf, err := a.getWorkflowByUID(ctx, uid)
+	// We need to know the namespace before we can do gate keeping
+	wf, err := a.wfArchive.GetWorkflow(uid)
 	if err != nil {
 		a.serverInternalError(err, w)
 		return
 	}
 
+
+	ctx, err := a.gateKeeping(r, types.NewNamespaceContainer(wf.GetNamespace()))
+	if err != nil {
+		w.WriteHeader(401)
+		_, _ = w.Write([]byte(err.Error()))
+		return
+	}
+
+	// return 401 if the client does not have permission to get wf
+	err = a.validateAccess(ctx, wf)
+	if err != nil {
+		w.WriteHeader(401)
+		_, _ = w.Write([]byte(err.Error()))
+		return
+	}
+
+	log.WithFields(log.Fields{"uid": uid, "nodeId": nodeId, "artifactName": artifactName, "isInput": isInput}).Info("Download artifact")
 	err = a.returnArtifact(ctx, w, r, wf, nodeId, artifactName, isInput)
 
 	if err != nil {
@@ -120,7 +130,7 @@ func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request
 	}
 }
 
-func (a *ArtifactServer) gateKeeping(r *http.Request) (context.Context, error) {
+func (a *ArtifactServer) gateKeeping(r *http.Request, ns *types.NamespaceContainer) (context.Context, error) {
 	token := r.Header.Get("Authorization")
 	if token == "" {
 		cookie, err := r.Cookie("authorization")
@@ -134,7 +144,7 @@ func (a *ArtifactServer) gateKeeping(r *http.Request) (context.Context, error) {
 	}
 	ctx := metadata.NewIncomingContext(r.Context(), metadata.MD{"authorization": []string{token}})
 	// TODO: Pass namespace via the request
-	return a.gatekeeper.Context(ctx, nil)
+	return a.gatekeeper.Context(ctx, ns)
 }
 
 func (a *ArtifactServer) serverInternalError(err error, w http.ResponseWriter) {
@@ -230,17 +240,13 @@ func (a *ArtifactServer) getWorkflowAndValidate(ctx context.Context, namespace s
 	return wf, nil
 }
 
-func (a *ArtifactServer) getWorkflowByUID(ctx context.Context, uid string) (*wfv1.Workflow, error) {
-	wf, err := a.wfArchive.GetWorkflow(uid)
-	if err != nil {
-		return nil, err
-	}
+func (a *ArtifactServer) validateAccess(ctx context.Context, wf *wfv1.Workflow) error {
 	allowed, err := auth.CanI(ctx, "get", "workflows", wf.Namespace, wf.Name)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if !allowed {
-		return nil, status.Error(codes.PermissionDenied, "permission denied")
+		return status.Error(codes.PermissionDenied, "permission denied")
 	}
-	return wf, nil
+	return nil
 }

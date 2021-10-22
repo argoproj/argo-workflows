@@ -50,10 +50,6 @@ type Gatekeeper interface {
 	StreamServerInterceptor() grpc.StreamServerInterceptor
 }
 
-type NamespacedRequest interface {
-	GetNamespace() string
-}
-
 type ClientForAuthorization func(authorization string) (*rest.Config, *servertypes.Clients, error)
 
 type gatekeeper struct {
@@ -191,7 +187,7 @@ func getNamespace(req interface{}) string {
 	if req == nil {
 		return ""
 	}
-	namespacedRequest, ok := req.(NamespacedRequest)
+	namespacedRequest, ok := req.(servertypes.NamespacedRequest)
 	if !ok {
 		return ""
 	}
