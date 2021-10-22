@@ -15,6 +15,7 @@
     "title": "Argo Server API",
     "version": "VERSION"
   },
+  "host": "localhost:2746",
   "paths": {
     "/api/v1/archived-workflows": {
       "get": {
@@ -4193,7 +4194,7 @@
           },
           {
             "type": "string",
-            "name": "name",
+            "name": "uid",
             "in": "path",
             "required": true
           },
@@ -11955,32 +11956,6 @@
         }
       }
     },
-    "io.argoproj.workflow.v1alpha1.WorkflowTaskSet": {
-      "type": "object",
-      "required": [
-        "metadata",
-        "spec"
-      ],
-      "properties": {
-        "apiVersion": {
-          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#resources",
-          "type": "string"
-        },
-        "kind": {
-          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-          "type": "string"
-        },
-        "metadata": {
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
-        },
-        "spec": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTaskSetSpec"
-        },
-        "status": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTaskSetStatus"
-        }
-      }
-    },
     "io.argoproj.workflow.v1alpha1.WorkflowTaskSetSpec": {
       "type": "object",
       "properties": {
@@ -15075,39 +15050,6 @@
         },
         "reason": {
           "description": "A machine-readable description of the cause of the error. If this value is empty there is no information available.",
-          "type": "string"
-        }
-      }
-    },
-    "io.k8s.apimachinery.pkg.apis.meta.v1.StatusDetails": {
-      "description": "StatusDetails is a set of additional properties that MAY be set by the server to provide additional information about a response. The Reason field of a Status object defines what attributes will be set. Clients must ignore fields that do not match the defined type of each attribute, and should assume that any attribute may be empty, invalid, or under defined.",
-      "type": "object",
-      "properties": {
-        "causes": {
-          "description": "The Causes array includes more details associated with the StatusReason failure. Not all StatusReasons may provide detailed causes.",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.StatusCause"
-          }
-        },
-        "group": {
-          "description": "The group attribute of the resource associated with the status StatusReason.",
-          "type": "string"
-        },
-        "kind": {
-          "description": "The kind attribute of the resource associated with the status StatusReason. On some operations may differ from the requested resource Kind. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-          "type": "string"
-        },
-        "name": {
-          "description": "The name attribute of the resource associated with the status StatusReason (when there is a single name which can be described).",
-          "type": "string"
-        },
-        "retryAfterSeconds": {
-          "description": "If specified, the time in seconds before the operation should be retried. Some errors may indicate the client must take an alternate action - for those errors this field may indicate how long to wait before taking the alternate action.",
-          "type": "integer"
-        },
-        "uid": {
-          "description": "UID of the resource. (when there is a single resource which can be described). More info: http://kubernetes.io/docs/user-guide/identifiers#uids",
           "type": "string"
         }
       }
