@@ -8,13 +8,22 @@ Please [raise an issue in Github](https://github.com/argoproj/argo-workflows/iss
 
 See [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/master/code-of-conduct.md).
 
+## Community Meetings
+
+A weekly opportunity for committers and maintainers of Workflows, Events, and Dataflow to discuss their current work and talk
+about what’s next. Feel free to join us! For Community Meeting information, minutes and recordings
+please [see here](https://bit.ly/argo-data-weekly).
+
+Participation in the Argo Workflows project is governed by
+the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/master/code-of-conduct.md)
+
 ## How To Contribute
 
 We're always looking for contributors.
 
 * Documentation - something missing or unclear? Please submit a pull request!
 * Code contribution - investigate a [help wanted issue](https://github.com/argoproj/argo-workflows/issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22+label%3A%22good+first+issue%22), or anything labelled with "good first issue"?
-* Join the #argo-devs channel on [our Slack](https://argoproj.github.io/community/join-slack).
+* Join the `#argo-contributors` channel on [our Slack](https://argoproj.github.io/community/join-slack).
 
 ### Running Locally
 
