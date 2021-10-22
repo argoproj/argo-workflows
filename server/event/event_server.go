@@ -22,12 +22,13 @@ type Controller struct {
 	// a channel for operations to be executed async on
 	operationQueue chan dispatch.Operation
 	workerCount    int
+	asyncDispatch  bool
 }
 
 var _ eventpkg.EventServiceServer = &Controller{}
 
-func NewController(instanceIDService instanceid.Service, eventRecorderManager events.EventRecorderManager, operationQueueSize, workerCount int) *Controller {
-	log.WithFields(log.Fields{"workerCount": workerCount, "operationQueueSize": operationQueueSize}).Info("Creating event controller")
+func NewController(instanceIDService instanceid.Service, eventRecorderManager events.EventRecorderManager, operationQueueSize, workerCount int, asyncDispatch bool) *Controller {
+	log.WithFields(log.Fields{"workerCount": workerCount, "operationQueueSize": operationQueueSize, "asyncDispatch": asyncDispatch}).Info("Creating event controller")
 
 	return &Controller{
 		instanceIDService:    instanceIDService,
@@ -35,6 +36,7 @@ func NewController(instanceIDService instanceid.Service, eventRecorderManager ev
 		//  so we can have `operationQueueSize` operations outstanding before we start putting back pressure on the senders
 		operationQueue: make(chan dispatch.Operation, operationQueueSize),
 		workerCount:    workerCount,
+		asyncDispatch:  asyncDispatch,
 	}
 }
 
@@ -46,8 +48,7 @@ func (s *Controller) Run(stopCh <-chan struct{}) {
 		go func() {
 			defer wg.Done()
 			for operation := range s.operationQueue {
-				ctx := context.Background()
-				operation.Dispatch(ctx)
+				_ = operation.Dispatch(context.Background())
 			}
 		}()
 		wg.Add(1)
@@ -76,6 +77,13 @@ func (s *Controller) ReceiveEvent(ctx context.Context, req *eventpkg.EventReques
 	operation, err := dispatch.NewOperation(ctx, s.instanceIDService, s.eventRecorderManager.Get(req.Namespace), list.Items, req.Namespace, req.Discriminator, req.Payload)
 	if err != nil {
 		return nil, err
+	}
+
+	if !s.asyncDispatch {
+		if err := operation.Dispatch(ctx); err != nil {
+			return nil, err
+		}
+		return &eventpkg.EventResponse{}, nil
 	}
 
 	select {
