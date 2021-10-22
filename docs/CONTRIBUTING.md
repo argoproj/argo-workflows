@@ -14,9 +14,6 @@ A weekly opportunity for committers and maintainers of Workflows, Events, and Da
 about what’s next. Feel free to join us! For Community Meeting information, minutes and recordings
 please [see here](https://bit.ly/argo-data-weekly).
 
-Participation in the Argo Workflows project is governed by
-the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/master/code-of-conduct.md)
-
 ## How To Contribute
 
 We're always looking for contributors.
