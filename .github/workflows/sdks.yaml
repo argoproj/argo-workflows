@@ -18,9 +18,8 @@ jobs:
         - java
     steps:
       - uses: actions/checkout@v2
-      - run: |
-          cd sdks/${{matrix.name}}
-          make publish -B
+      - run: make --directory sdks/${{matrix.name}} build -B
+      - run: make --directory sdks/${{matrix.name}} publish -B
       - uses: peter-evans/create-pull-request@v3
         with:
           title: 'chore: updated ${{matrix.name}} SDK'
