@@ -7,6 +7,5 @@ Yes please!
 * Committed code should be stable, should not change based on Git tags.
 * Provide a `Makefile` with the following:
     * A `generate` target to generate the code using `openapi-generator`.
-    * A `lint` target to lint the generated code using `prettier` so that is opinionated.
     * A `build` target to build and test any generated code to make sure it complies.
     * A `publish` target to publish the generate code for use.

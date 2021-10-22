@@ -19,18 +19,10 @@ build: generate $(WD)/settings.xml
 	docker run -v ~/.m2:/root/.m2 -v $(WD):/wd -w /wd maven:3-openjdk-8 \
 		mvn install -s settings.xml
 
-generate: $(WD)/.openapi-generator $(WD)/pom.xml lint
-
-lint:
-	docker run -v $(WD):/wd -w /wd node:alpine3.14 npm install -D prettier prettier-plugin-java
-	docker run -v $(WD):/wd -w /wd node:alpine3.14 npx prettier --write src/main/java/**/*.java
+generate: $(WD)/pom.xml
 
 $(WD):
 	mkdir -p $(WD)
-
-$(WD)/pom.xml: pom.xml $(WD)
-	# replace the generated pom.xml that has too many dependencies
-	sed 's/0.0.0-VERSION/$(VERSION)/' pom.xml > $(WD)/pom.xml
 
 $(WD)/settings.xml: settings.xml $(WD)
 	cp settings.xml $(WD)/settings.xml
@@ -41,7 +33,7 @@ $(WD)/swagger.json: ../../api/openapi-spec/swagger.json $(WD)
 		sed 's/io.k8s.apimachinery.pkg.apis.meta.v1.//' \
 		> $(WD)/swagger.json
 
-$(WD)/.openapi-generator: $(WD)/swagger.json
+$(WD)/pom.xml: $(WD)/swagger.json
 	docker run --rm -v $(WD):/wd openapitools/openapi-generator-cli:v5.2.1 \
 		generate \
 		-i /wd/swagger.json \
@@ -83,5 +75,8 @@ $(WD)/.openapi-generator: $(WD)/swagger.json
 		--generate-alias-as-model
 	# maybe needed for ci
 	chmod -R +w $(WD)
+	# replace the generated pom.xml that has too many dependencies
+	sed 's/0.0.0-VERSION/$(VERSION)/' pom.xml > $(WD)/pom.xml
+
 clean:
 	rm -Rf $(WD)

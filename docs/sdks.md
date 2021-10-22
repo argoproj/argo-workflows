@@ -17,8 +17,8 @@ The following client libraries are officially maintained by the Argo team.
 | Language | Client Library | Examples/Docs |
 |----------|----------------|---------------|
 | Golang   | [apiclient.go](https://github.com/argoproj/argo-workflows/blob/master/pkg/apiclient/apiclient.go) | [Example](https://github.com/argoproj/argo-workflows/blob/master/cmd/argo/commands/submit.go)
-| Java     | [java](java) | Open API generated |
-| Python   | [python](python) | Open API generated | 
+| Java     | [java](java) | [Examples/Docs](https://github.com/argoproj/argo-workflows/blob/master/pkg/apiclient/apiclient.go) | [Example](https://github.com/argoproj/argo-workflows/blob/master/sdks/java/generated/docs) |
+| Python   | [python](python) | TBC | 
 
 ## Community-maintained client libraries
 
@@ -26,4 +26,5 @@ The following client libraries are provided and maintained by their authors, not
 
 | Language | Client Library | Examples/Docs |
 |----------|----------------|---------------|
-| Python   | [Couler](https://github.com/couler-proj/couler) | High-level |
+| Python | [Couler](https://github.com/couler-proj/couler) | Multi-workflow engine support |
+| Python | Hera | TBC |
