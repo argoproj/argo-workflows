@@ -1114,6 +1114,7 @@ func (wfc *WorkflowController) GetContainerRuntimeExecutor(labels labels.Labels)
 
 func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, metrics.ServerConfig) {
 	// Metrics config
+	log.Infof("SIMON: metrics config %+v", wfc.Config.MetricsConfig)
 	path := wfc.Config.MetricsConfig.Path
 	if path == "" {
 		path = metrics.DefaultMetricsServerPath
@@ -1122,12 +1123,17 @@ func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, m
 	if port == 0 {
 		port = metrics.DefaultMetricsServerPort
 	}
+	secure := false
+	if  wfc.Config.MetricsConfig.Secure != nil {
+		secure =  *wfc.Config.MetricsConfig.Secure
+	}
 	metricsConfig := metrics.ServerConfig{
 		Enabled:      wfc.Config.MetricsConfig.Enabled == nil || *wfc.Config.MetricsConfig.Enabled,
 		Path:         path,
 		Port:         port,
 		TTL:          time.Duration(wfc.Config.MetricsConfig.MetricsTTL),
 		IgnoreErrors: wfc.Config.MetricsConfig.IgnoreErrors,
+		Secure:       secure,
 	}
 
 	// Telemetry config
@@ -1140,11 +1146,18 @@ func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, m
 	if wfc.Config.TelemetryConfig.Port > 0 {
 		port = wfc.Config.TelemetryConfig.Port
 	}
+
+	secure = metricsConfig.Secure
+	if wfc.Config.TelemetryConfig.Secure != nil {
+		secure = *wfc.Config.TelemetryConfig.Secure
+	}
+
 	telemetryConfig := metrics.ServerConfig{
 		Enabled:      wfc.Config.TelemetryConfig.Enabled == nil || *wfc.Config.TelemetryConfig.Enabled,
 		Path:         path,
 		Port:         port,
 		IgnoreErrors: wfc.Config.TelemetryConfig.IgnoreErrors,
+		Secure:       secure,
 	}
 	return metricsConfig, telemetryConfig
 }

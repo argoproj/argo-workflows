@@ -3,6 +3,7 @@ package metrics
 import (
 	"context"
 	"fmt"
+	tlsutils "github.com/argoproj/argo-workflows/v3/util/tls"
 	"net/http"
 	"time"
 
@@ -51,12 +52,29 @@ func runServer(config ServerConfig, registry *prometheus.Registry, ctx context.C
 	mux.Handle(config.Path, promhttp.HandlerFor(registry, handlerOpts))
 	srv := &http.Server{Addr: fmt.Sprintf(":%v", config.Port), Handler: mux}
 
-	go func() {
-		log.Infof("Starting prometheus metrics server at localhost:%v%s", config.Port, config.Path)
-		if err := srv.ListenAndServe(); err != nil {
+	if config.Secure {
+		log.Infof("Generating Self Signed TLS Certificates for Telemetry Servers")
+		tlsConfig, err := tlsutils.GenerateTLSConfig()
+		if err != nil {
 			panic(err)
 		}
-	}()
+		srv.TLSConfig = tlsConfig
+		go func() {
+			log.Infof("Starting prometheus metrics server at localhost:%v%s", config.Port, config.Path)
+			if err := srv.ListenAndServeTLS("", ""); err != nil {
+				panic(err)
+			}
+		}()
+	} else {
+		go func() {
+			log.Infof("Starting prometheus metrics server at localhost:%v%s", config.Port, config.Path)
+			if err := srv.ListenAndServe(); err != nil {
+				panic(err)
+			}
+		}()
+	}
+
+
 
 	// Waiting for stop signal
 	<-ctx.Done()
