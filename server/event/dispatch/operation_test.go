@@ -323,7 +323,7 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 
 	assert.NoError(t, err)
 	err = operation.Dispatch(ctx)
-	assert.NoError(t, err)
+	assert.Error(t, err)
 
 	list, err := client.ArgoprojV1alpha1().Workflows("my-ns").List(ctx, metav1.ListOptions{})
 
