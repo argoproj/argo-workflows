@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
-
 	"github.com/antonmedv/expr"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
