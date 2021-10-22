@@ -8,10 +8,10 @@ Please [raise an issue in Github](https://github.com/argoproj/argo-workflows/iss
 
 See [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/master/code-of-conduct.md).
 
-## Community Meetings
+## Contributor Meetings
 
 A weekly opportunity for committers and maintainers of Workflows, Events, and Dataflow to discuss their current work and talk
-about what’s next. Feel free to join us! For Community Meeting information, minutes and recordings
+about what’s next. Feel free to join us! For Contributor Meeting information, minutes and recordings
 please [see here](https://bit.ly/argo-data-weekly).
 
 ## How To Contribute
