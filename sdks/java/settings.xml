@@ -30,7 +30,7 @@
     <server>
       <id>github</id>
       <username>alexec</username>
-      <password>${env.GITHUB_TOKEN}</password>
+      <password>${env.JAVA_SDK_MAVEN_PASSWORD}</password>
     </server>
   </servers>
 </settings>
