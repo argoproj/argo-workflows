@@ -81,6 +81,7 @@ $(WD)/.openapi-generator: $(WD)/swagger.json
 		--import-mappings VolumeDevice=io.kubernetes.client.openapi.models.V1VolumeDevice \
 		--import-mappings VolumeMount=io.kubernetes.client.openapi.models.V1VolumeMount \
 		--generate-alias-as-model
-
+	# maybe needed for ci
+	chmod -R +w $(WD)
 clean:
 	rm -Rf $(WD)
