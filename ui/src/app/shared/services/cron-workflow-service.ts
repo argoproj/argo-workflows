@@ -9,9 +9,9 @@ export class CronWorkflowService {
             .then(res => res.body as CronWorkflow);
     }
 
-    public list(namespace: string) {
+    public list(namespace: string, labels: string[] = []) {
         return requests
-            .get(`api/v1/cron-workflows/${namespace}`)
+            .get(`api/v1/cron-workflows/${namespace}?${this.queryParams({labels}).join('&')}`)
             .then(res => res.body as CronWorkflowList)
             .then(list => list.items || []);
     }
@@ -37,5 +37,26 @@ export class CronWorkflowService {
 
     public resume(name: string, namespace: string) {
         return requests.put(`api/v1/cron-workflows/${namespace}/${name}/resume`).then(res => res.body as CronWorkflow);
+    }
+
+    private queryParams(filter: {labels?: Array<string>}) {
+        const queryParams: string[] = [];
+        const labelSelector = this.labelSelectorParams(filter.labels);
+        if (labelSelector.length > 0) {
+            queryParams.push(`listOptions.labelSelector=${labelSelector}`);
+        }
+
+        return queryParams;
+    }
+
+    private labelSelectorParams(labels?: Array<string>) {
+        let labelSelector = '';
+        if (labels && labels.length > 0) {
+            if (labelSelector.length > 0) {
+                labelSelector += ',';
+            }
+            labelSelector += labels.join(',');
+        }
+        return labelSelector;
     }
 }
