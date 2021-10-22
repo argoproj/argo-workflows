@@ -6,7 +6,7 @@ ARG DOCKER_VERSION=18.09.1
 ARG KUBECTL_VERSION=1.19.6
 ARG JQ_VERSION=1.6
 
-FROM docker.io/library/golang:1.16 as builder
+FROM docker.io/library/golang:1.17 as builder
 
 RUN apt-get update && apt-get --no-install-recommends install -y \
     git \
