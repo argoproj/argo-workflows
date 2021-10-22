@@ -74,7 +74,7 @@ $(WD)/pom.xml: $(WD)/swagger.json
 		--import-mappings VolumeMount=io.kubernetes.client.openapi.models.V1VolumeMount \
 		--generate-alias-as-model
 	# maybe needed for ci
-	chmod -R +w $(WD)
+	chown -R $(shell whoami) $(WD)
 	# replace the generated pom.xml that has too many dependencies
 	sed 's/0.0.0-VERSION/$(VERSION)/' pom.xml > $(WD)/pom.xml
 
