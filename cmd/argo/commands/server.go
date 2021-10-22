@@ -12,16 +12,6 @@ import (
 
 	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
 	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
-	"github.com/argoproj/argo-workflows/v3"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo-workflows/v3/server/apiserver"
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	"github.com/argoproj/argo-workflows/v3/server/types"
-	"github.com/argoproj/argo-workflows/v3/util/cmd"
-	"github.com/argoproj/argo-workflows/v3/util/help"
-	pprofutil "github.com/argoproj/argo-workflows/v3/util/pprof"
-	tlsutils "github.com/argoproj/argo-workflows/v3/util/tls"
 	"github.com/argoproj/pkg/stats"
 	log "github.com/sirupsen/logrus"
 	"github.com/skratchdot/open-golang/open"
@@ -33,6 +23,17 @@ import (
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	restclient "k8s.io/client-go/rest"
+
+	"github.com/argoproj/argo-workflows/v3"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo-workflows/v3/server/apiserver"
+	"github.com/argoproj/argo-workflows/v3/server/auth"
+	"github.com/argoproj/argo-workflows/v3/server/types"
+	"github.com/argoproj/argo-workflows/v3/util/cmd"
+	"github.com/argoproj/argo-workflows/v3/util/help"
+	pprofutil "github.com/argoproj/argo-workflows/v3/util/pprof"
+	tlsutils "github.com/argoproj/argo-workflows/v3/util/tls"
 )
 
 func NewServerCommand() *cobra.Command {
