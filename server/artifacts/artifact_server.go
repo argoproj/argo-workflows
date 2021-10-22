@@ -54,11 +54,11 @@ func (a *ArtifactServer) GetInputArtifact(w http.ResponseWriter, r *http.Request
 }
 
 func (a *ArtifactServer) getArtifact(w http.ResponseWriter, r *http.Request, isInput bool) {
-	path := strings.SplitN(r.URL.Path, "/", 6)
-	namespace := path[2]
-	workflowName := path[3]
-	nodeId := path[4]
-	artifactName := path[5]
+	requestPath := strings.SplitN(r.URL.Path, "/", 6)
+	namespace := requestPath[2]
+	workflowName := requestPath[3]
+	nodeId := requestPath[4]
+	artifactName := requestPath[5]
 
 	ctx, err := a.gateKeeping(r, types.NewNamespaceContainer(namespace))
 	if err != nil {
