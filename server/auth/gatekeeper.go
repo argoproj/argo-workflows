@@ -10,7 +10,6 @@ import (
 	"github.com/antonmedv/expr"
 	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
 	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -87,14 +86,7 @@ func (s *gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 
 func (s *gatekeeper) StreamServerInterceptor() grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-		// TODO: Figure out how to pass the namespace from here
-		ctx, err := s.Context(ss.Context(), nil)
-		if err != nil {
-			return err
-		}
-		wrapped := grpc_middleware.WrapServerStream(ss)
-		wrapped.WrappedContext = ctx
-		return handler(srv, wrapped)
+		return handler(srv, NewAuthorizingServerStream(ss, s))
 	}
 }
 
