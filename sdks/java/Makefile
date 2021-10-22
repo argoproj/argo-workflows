@@ -10,14 +10,16 @@ endif
 # work dir
 WD                    := $(shell echo "`pwd`/generated")
 
+# https://vsupalov.com/docker-shared-permissions/#set-the-docker-user-when-running-your-container
+DOCKER = docker run --rm -v $(HOME)/.m2:/root/.m2 -v $(WD):/wd --workdir /wd  --user "$(id -u):$(id -g)" -it
+MVN = $(DOCKER) maven:3-openjdk-8 mvn -s settings.xml
+
 publish: build
 	# https://help.github.com/en/packages/using-github-packages-with-your-projects-ecosystem/configuring-apache-maven-for-use-with-github-packages
-	docker run -v ~/.m2:/root/.m2 -v $(WD):/wd -w /wd maven:3-openjdk-8 \
-		mvn deploy -DskipTests -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/argoproj/argo-workflows -s settings.xml
+	$(MVN) deploy -DskipTests -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/argoproj/argo-workflows
 
 build: generate $(WD)/settings.xml
-	docker run -v ~/.m2:/root/.m2 -v $(WD):/wd -w /wd maven:3-openjdk-8 \
-		mvn install -s settings.xml
+	$(MVN) install
 
 generate: $(WD)/pom.xml
 
@@ -34,7 +36,7 @@ $(WD)/swagger.json: ../../api/openapi-spec/swagger.json $(WD)
 		> $(WD)/swagger.json
 
 $(WD)/pom.xml: $(WD)/swagger.json
-	docker run --rm -v $(WD):/wd openapitools/openapi-generator-cli:v5.2.1 \
+	$(DOCKER) openapitools/openapi-generator-cli:v5.2.1 \
 		generate \
 		-i /wd/swagger.json \
 		-g java \
@@ -73,8 +75,6 @@ $(WD)/pom.xml: $(WD)/swagger.json
 		--import-mappings VolumeDevice=io.kubernetes.client.openapi.models.V1VolumeDevice \
 		--import-mappings VolumeMount=io.kubernetes.client.openapi.models.V1VolumeMount \
 		--generate-alias-as-model
-	# maybe needed for ci
-	chown -R $(shell whoami) $(WD)
 	# replace the generated pom.xml that has too many dependencies
 	sed 's/0.0.0-VERSION/$(VERSION)/' pom.xml > $(WD)/pom.xml
 
