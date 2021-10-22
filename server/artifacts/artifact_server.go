@@ -143,7 +143,6 @@ func (a *ArtifactServer) gateKeeping(r *http.Request, ns *types.NamespaceContain
 		}
 	}
 	ctx := metadata.NewIncomingContext(r.Context(), metadata.MD{"authorization": []string{token}})
-	// TODO: Pass namespace via the request
 	return a.gatekeeper.Context(ctx, ns)
 }
 
