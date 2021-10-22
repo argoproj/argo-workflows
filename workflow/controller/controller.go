@@ -1114,7 +1114,6 @@ func (wfc *WorkflowController) GetContainerRuntimeExecutor(labels labels.Labels)
 
 func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, metrics.ServerConfig) {
 	// Metrics config
-	log.Infof("SIMON: metrics config %+v", wfc.Config.MetricsConfig)
 	path := wfc.Config.MetricsConfig.Path
 	if path == "" {
 		path = metrics.DefaultMetricsServerPath
