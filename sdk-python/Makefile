@@ -170,7 +170,7 @@ preprocess:
 
 
 	# Patch DAGTask template requirement
-  # No longer needed
+	# No longer needed
 	# This is an unpleasant workaround, since OpenAPI 2.0 does not allow `oneOf`
 	# jq -r '.definitions."v1alpha1.DAGTask".required = ["name"]' ${OPENAPI_SPEC} |\
 	# sponge ${OPENAPI_SPEC}
@@ -197,7 +197,7 @@ builder_image:
 	docker build -f builder_image/Dockerfile -t ${BUILDER_IMAGE} .
 
 builder_make:
-	docker run -w `pwd` -it --entrypoint make --rm -v `pwd`:`pwd` -v /var/run/docker.sock:/var/run/docker.sock ${BUILDER_IMAGE}
+	docker run -w `pwd` --entrypoint make --rm -v `pwd`:`pwd` -v /var/run/docker.sock:/var/run/docker.sock ${BUILDER_IMAGE}
 
 builder_release:
 	docker run -w `pwd` -it --entrypoint make --rm -v `pwd`:`pwd` -v /var/run/docker.sock:/var/run/docker.sock ${BUILDER_IMAGE} release
