@@ -1670,6 +1670,13 @@
     Upgrading to v3.3
   </a>
   
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#featserver-sync-dispatch-of-webhook-events-by-default" title="feat(server)!: Sync dispatch of webhook events by default" class="md-nav__link">
+    feat(server)!: Sync dispatch of webhook events by default
+  </a>
+  
     <nav class="md-nav">
       <ul class="md-nav__list">
         
@@ -2351,6 +2358,13 @@
     Upgrading to v3.3
   </a>
   
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#featserver-sync-dispatch-of-webhook-events-by-default" title="feat(server)!: Sync dispatch of webhook events by default" class="md-nav__link">
+    feat(server)!: Sync dispatch of webhook events by default
+  </a>
+  
     <nav class="md-nav">
       <ul class="md-nav__list">
         
@@ -2498,6 +2512,13 @@
 <p>Breaking changes  typically (sometimes we don't realise they are breaking) have "!" in the commit message, as per
 the <a href="https://www.conventionalcommits.org/en/v1.0.0/#summary">conventional commits</a>.</p>
 <h2 id="upgrading-to-v33">Upgrading to v3.3<a class="headerlink" href="#upgrading-to-v33" title="Permanent link">&para;</a></h2>
+<h2 id="featserver-sync-dispatch-of-webhook-events-by-default">feat(server)!: Sync dispatch of webhook events by default<a class="headerlink" href="#featserver-sync-dispatch-of-webhook-events-by-default" title="Permanent link">&para;</a></h2>
+<p>This is not expected to impact users.</p>
+<p>Events dispatch in the Argo Server has been change from async to sync by default. This is so that errors are surfaced to
+the client, rather than only appearing as logs or Kubernetes events. It is possible that response times under load are
+too long for your client and you may prefer to revert this behaviour.</p>
+<p>To revert this behaviour, restart Argo Server with <code>ARGO_EVENT_ASYNC_DISPATCH=true</code>. Make sure that <code>asyncDispatch=true</code>
+is logged.</p>
 <h3 id="bd49c630328d30206a5c5b78cbc9a00700a28e7d-fixartifact-default-https-to-any-url-missing-a-scheme-fixes-6973"><a href="https://github.com/argoproj/argo-workflows/commit/bd49c630328d30206a5c5b78cbc9a00700a28e7d">bd49c630328d30206a5c5b78cbc9a00700a28e7d</a> fix(artifact)!: default https to any URL missing a scheme. Fixes #6973<a class="headerlink" href="#bd49c630328d30206a5c5b78cbc9a00700a28e7d-fixartifact-default-https-to-any-url-missing-a-scheme-fixes-6973" title="Permanent link">&para;</a></h3>
 <p>HTTPArtifact without a scheme will now defaults to https instead of http</p>
 <p>user need to explicitly include a http prefix if they want to retrieve HTTPArtifact through http</p>
