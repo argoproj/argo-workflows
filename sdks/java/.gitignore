@@ -1,1 +1,8 @@
-/wd
+/generated/.openapi-generator/
+/generated/api/
+/generated/src/
+/generated/gradle/
+/generated/.gitignore
+/generated/.openapi-generator-ignore
+/generated/gradlew
+/generated/*.*

@@ -8,34 +8,54 @@ VERSION               := $(GIT_TAG:v=)
 endif
 
 # work dir
-WD                    := $(shell echo "`pwd`/wd")
+WD                    := $(shell echo "`pwd`/generated")
 
-wd:
-	mkdir -p wd
+publish: build
+	# https://help.github.com/en/packages/using-github-packages-with-your-projects-ecosystem/configuring-apache-maven-for-use-with-github-packages
+	docker run -v ~/.m2:/root/.m2 -v $(WD):/wd -w /wd maven:3-openjdk-8 \
+		mvn deploy -DskipTests -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/argoproj/argo-workflows -s settings.xml
 
-wd/settings.xml: wd
-	cp settings.xml wd/settings.xml
+build: generate $(WD)/settings.xml
+	docker run -v ~/.m2:/root/.m2 -v $(WD):/wd -w /wd maven:3-openjdk-8 \
+		mvn install -s settings.xml
 
-wd/pom.xml: wd/settings.xml
+generate: $(WD)/.openapi-generator $(WD)/pom.xml lint
+
+lint:
+	docker run -v $(WD):/wd -w /wd node:alpine3.14 npm install -D prettier prettier-plugin-java
+	docker run -v $(WD):/wd -w /wd node:alpine3.14 npx prettier --write src/main/java/**/*.java
+
+$(WD):
+	mkdir -p $(WD)
+
+$(WD)/pom.xml: pom.xml $(WD)
+	# replace the generated pom.xml that has too many dependencies
+	sed 's/0.0.0-VERSION/$(VERSION)/' pom.xml > $(WD)/pom.xml
+
+$(WD)/settings.xml: settings.xml $(WD)
+	cp settings.xml $(WD)/settings.xml
+
+$(WD)/swagger.json: ../../api/openapi-spec/swagger.json $(WD)
 	cat ../../api/openapi-spec/swagger.json | \
 		sed 's/io.k8s.api.core.v1.//' | \
 		sed 's/io.k8s.apimachinery.pkg.apis.meta.v1.//' \
-		> wd/swagger.json
-	docker run --rm -v $(WD):/wd openapitools/openapi-generator-cli:v4.3.1 \
+		> $(WD)/swagger.json
+
+$(WD)/.openapi-generator: $(WD)/swagger.json
+	docker run --rm -v $(WD):/wd openapitools/openapi-generator-cli:v5.2.1 \
 		generate \
 		-i /wd/swagger.json \
 		-g java \
 		-o /wd \
 		-p hideGenerationTimestamp=true \
-		-p dateLibrary=joda \
+		-p dateLibrary=java8 \
 		--api-package io.argoproj.workflow.apis \
 		--invoker-package io.argoproj.workflow \
 		--model-package io.argoproj.workflow.models \
 		--skip-validate-spec \
 		--group-id io.argoproj.workflow \
 		--artifact-id argo-client-java \
-		--artifact-version $(VERSION) \
-		--import-mappings Time=org.joda.time.DateTime \
+		--import-mappings Time=java.time.Instant \
 		--import-mappings Affinity=io.kubernetes.client.openapi.models.V1Affinity \
 		--import-mappings ConfigMapKeySelector=io.kubernetes.client.openapi.models.V1ConfigMapKeySelector \
 		--import-mappings Container=io.kubernetes.client.openapi.models.V1Container \
@@ -61,19 +81,6 @@ wd/pom.xml: wd/settings.xml
 		--import-mappings VolumeDevice=io.kubernetes.client.openapi.models.V1VolumeDevice \
 		--import-mappings VolumeMount=io.kubernetes.client.openapi.models.V1VolumeMount \
 		--generate-alias-as-model
-	# add the io.kubernetes:java-client to the deps
-	sed 's/<dependencies>/<dependencies><dependency><groupId>io.kubernetes<\/groupId><artifactId>client-java<\/artifactId><version>9.0.2<\/version><\/dependency>/g' wd/pom.xml > tmp && mv tmp wd/pom.xml
 
 clean:
-	rm -Rf wd
-
-generate: wd/pom.xml
-
-build: generate wd/settings.xml
-	docker run -v ~/.m2:/root/.m2 -v $(WD):/wd -w /wd maven:3-openjdk-8 \
-		mvn install -DskipTests -Dmaven.javadoc.skip -s settings.xml
-
-publish: build
-	# https://help.github.com/en/packages/using-github-packages-with-your-projects-ecosystem/configuring-apache-maven-for-use-with-github-packages
-	docker run -v ~/.m2:/root/.m2 -v $(WD):/wd -w /wd maven:3-openjdk-8 \
-		mvn deploy -DskipTests -Dmaven.javadoc.skip -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/argoproj/argo-workflows -s settings.xml
+	rm -Rf $(WD)

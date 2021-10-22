@@ -42,6 +42,7 @@ nav:
           - cron-backfill.md
           - templates.md
           - http-template.md
+          - sdks.md
           - container-set-template.md
           - template-defaults.md
           - work-avoidance.md

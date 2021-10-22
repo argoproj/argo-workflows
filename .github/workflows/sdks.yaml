@@ -1,0 +1,29 @@
+name: SDKs
+on:
+  push:
+    tags:
+      - v*
+      - 'v3.2.*'
+      - 'v3.1.*'
+    branches:
+      - dev-*
+jobs:
+  sdk:
+    if: github.repository == 'argoproj/argo-workflows'
+    runs-on: ubuntu-latest
+    name: Publish SDK
+    strategy:
+      matrix:
+        name:
+        - java
+    steps:
+      - uses: actions/checkout@v2
+      - run: |
+          cd sdks/${{matrix.name}}
+          make publish -B
+      - uses: peter-evans/create-pull-request@v3
+        with:
+          title: 'chore: updated ${{matrix.name}} SDK'
+          commit-message: 'chore: updated ${{matrix.name}} SDK'
+          branch: create-pull-request/sdk/${{matrix.name}}
+          signoff: true

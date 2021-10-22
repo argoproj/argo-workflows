@@ -227,7 +227,11 @@ scan-%:
 # generation
 
 .PHONY: codegen
-codegen: types swagger docs manifests
+codegen: types swagger docs manifests sdks
+
+.PHONY: sdks
+sdks: swagger
+	cd sdks/java && make generate
 
 .PHONY: types
 types: pkg/apis/workflow/v1alpha1/generated.proto pkg/apis/workflow/v1alpha1/openapi_generated.go pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go

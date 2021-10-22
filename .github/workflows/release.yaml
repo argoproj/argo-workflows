@@ -366,16 +366,3 @@ jobs:
             dist/manifests/*.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  publish-sdk:
-    runs-on: ubuntu-20.04
-    name: Publish SDK
-    timeout-minutes: 10
-    strategy:
-      matrix:
-        name:
-          - java
-    steps:
-      - uses: actions/checkout@v2
-      - run: |
-          cd sdks/${{matrix.name}}
-          make publish
