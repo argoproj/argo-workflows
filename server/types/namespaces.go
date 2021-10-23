@@ -1,19 +1,19 @@
 package types
 
 type NamespacedRequest interface {
-    GetNamespace() string
+	GetNamespace() string
 }
 
 type NamespaceContainer struct {
-    namespace string
+	namespace string
 }
 
 func NewNamespaceContainer(namepsace string) *NamespaceContainer {
-    return &NamespaceContainer{
-        namespace: namepsace,
-    }
+	return &NamespaceContainer{
+		namespace: namepsace,
+	}
 }
 
 func (n *NamespaceContainer) GetNamespace() string {
-    return n.namespace
+	return n.namespace
 }

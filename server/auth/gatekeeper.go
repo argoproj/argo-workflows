@@ -3,14 +3,16 @@ package auth
 import (
 	"context"
 	"fmt"
-	"github.com/argoproj/pkg/env"
 	"net/http"
 	"sort"
 	"strconv"
 
+	"github.com/argoproj/pkg/env"
+
 	"github.com/antonmedv/expr"
 	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
 	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
+	"github.com/argoproj/pkg/env"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

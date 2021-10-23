@@ -3,7 +3,6 @@ package artifacts
 import (
 	"context"
 	"fmt"
-	"github.com/argoproj/argo-workflows/v3/server/types"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -12,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/argoproj/argo-workflows/v3/server/types"
 
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
@@ -22,6 +23,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
+	"github.com/argoproj/argo-workflows/v3/server/types"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
 	artifact "github.com/argoproj/argo-workflows/v3/workflow/artifacts"
@@ -104,7 +106,6 @@ func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request
 		a.serverInternalError(err, w)
 		return
 	}
-
 
 	ctx, err := a.gateKeeping(r, types.NewNamespaceContainer(wf.GetNamespace()))
 	if err != nil {

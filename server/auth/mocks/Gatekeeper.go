@@ -15,13 +15,13 @@ type Gatekeeper struct {
 	mock.Mock
 }
 
-// Context provides a mock function with given fields: ctx
-func (_m *Gatekeeper) Context(ctx context.Context) (context.Context, error) {
-	ret := _m.Called(ctx)
+// Context provides a mock function with given fields: ctx, req
+func (_m *Gatekeeper) Context(ctx context.Context, req interface{}) (context.Context, error) {
+	ret := _m.Called(ctx, req)
 
 	var r0 context.Context
-	if rf, ok := ret.Get(0).(func(context.Context) context.Context); ok {
-		r0 = rf(ctx)
+	if rf, ok := ret.Get(0).(func(context.Context, interface{}) context.Context); ok {
+		r0 = rf(ctx, req)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(context.Context)
@@ -29,8 +29,8 @@ func (_m *Gatekeeper) Context(ctx context.Context) (context.Context, error) {
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = rf(ctx)
+	if rf, ok := ret.Get(1).(func(context.Context, interface{}) error); ok {
+		r1 = rf(ctx, req)
 	} else {
 		r1 = ret.Error(1)
 	}
