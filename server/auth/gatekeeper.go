@@ -7,8 +7,6 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/argoproj/pkg/env"
-
 	"github.com/antonmedv/expr"
 	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
 	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"

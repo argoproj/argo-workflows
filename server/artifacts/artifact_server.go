@@ -11,9 +11,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/argoproj/argo-workflows/v3/server/types"
-
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
