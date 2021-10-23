@@ -190,7 +190,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf.On("IsRBACEnabled").Return(true)
 		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns")
 		if assert.NoError(t, err) {
-			ctx, err := g.Context(x("Bearer v2:whatever"), servertypes.NewNamespaceContainer("user1-ns"))
+			ctx, err := g.Context(x("Bearer v2:whatever"), servertypes.NewNamespaceHolder("user1-ns"))
 			if assert.NoError(t, err) {
 				assert.NotEqual(t, clients, GetWfClient(ctx))
 				assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
@@ -209,7 +209,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf.On("IsRBACEnabled").Return(true)
 		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns")
 		if assert.NoError(t, err) {
-			ctx, err := g.Context(x("Bearer v2:whatever"), servertypes.NewNamespaceContainer("user1-ns"))
+			ctx, err := g.Context(x("Bearer v2:whatever"), servertypes.NewNamespaceHolder("user1-ns"))
 			if assert.NoError(t, err) {
 				assert.NotEqual(t, clients, GetWfClient(ctx))
 				assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
@@ -228,7 +228,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf.On("IsRBACEnabled").Return(true)
 		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns")
 		if assert.NoError(t, err) {
-			ctx, err := g.Context(x("Bearer v2:whatever"), servertypes.NewNamespaceContainer("user2-ns"))
+			ctx, err := g.Context(x("Bearer v2:whatever"), servertypes.NewNamespaceHolder("user2-ns"))
 			if assert.NoError(t, err) {
 				assert.NotEqual(t, clients, GetWfClient(ctx))
 				assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
@@ -248,7 +248,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf.On("IsRBACEnabled").Return(true)
 		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns")
 		if assert.NoError(t, err) {
-			ctx, err := g.Context(x("Bearer v2:whatever"), servertypes.NewNamespaceContainer("user3-ns"))
+			ctx, err := g.Context(x("Bearer v2:whatever"), servertypes.NewNamespaceHolder("user3-ns"))
 			if assert.NoError(t, err) {
 				assert.NotEqual(t, clients, GetWfClient(ctx))
 				assert.NotEqual(t, kubeClient, GetKubeClient(ctx))

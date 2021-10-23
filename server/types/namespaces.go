@@ -4,16 +4,16 @@ type NamespacedRequest interface {
 	GetNamespace() string
 }
 
-type NamespaceContainer struct {
+type NamespaceHolder struct {
 	namespace string
 }
 
-func NewNamespaceContainer(namepsace string) *NamespaceContainer {
-	return &NamespaceContainer{
+func NewNamespaceHolder(namepsace string) *NamespaceHolder {
+	return &NamespaceHolder{
 		namespace: namepsace,
 	}
 }
 
-func (n *NamespaceContainer) GetNamespace() string {
+func (n *NamespaceHolder) GetNamespace() string {
 	return n.namespace
 }
