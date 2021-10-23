@@ -894,6 +894,7 @@ func (ctx *templateValidationCtx) addOutputsToScope(tmpl *wfv1.Template, prefix 
 		case wfv1.TemplateTypeScript, wfv1.TemplateTypeContainerSet:
 			scope[fmt.Sprintf("%s.outputs.result", prefix)] = true
 			scope[fmt.Sprintf("%s.exitCode", prefix)] = true
+			scope[fmt.Sprintf("%s.outputs.parameters", prefix)] = true
 		default:
 			scope[fmt.Sprintf("%s.outputs.parameters", prefix)] = true
 		}
