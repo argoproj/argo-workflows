@@ -229,5 +229,5 @@ func TestArtifactServer_GetOutputArtifactByUID(t *testing.T) {
 	r.URL = mustParse("/artifacts/my-uuid/my-node/my-artifact")
 	w := &testhttp.TestResponseWriter{}
 	s.GetOutputArtifactByUID(w, r)
-	assert.Equal(t, 500, w.StatusCode)
+	assert.Equal(t, 401, w.StatusCode)
 }
