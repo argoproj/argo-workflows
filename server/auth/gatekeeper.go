@@ -70,8 +70,12 @@ type gatekeeper struct {
 }
 
 func getFeatureFlags() *featureFlags {
+	getBooleanFlagFromEnv := func(key string, defaultValue bool) bool {
+		val, _ := strconv.ParseBool(env.LookupEnvStringOr(key, strconv.FormatBool(defaultValue)))
+		return val
+	}
 	return &featureFlags{
-		delegateSsoRbacToNamespace: env.LookupEnvStringOr("SSO_DELEGATE_RBAC_TO_NAMESPACE", "false") == "true",
+		delegateSsoRbacToNamespace: getBooleanFlagFromEnv("SSO_DELEGATE_RBAC_TO_NAMESPACE", false),
 	}
 }
 
