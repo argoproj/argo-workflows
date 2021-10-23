@@ -292,7 +292,7 @@ func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *types.Claims
 
 func (s *gatekeeper) authorizationForServiceAccount(ctx context.Context, serviceAccount *corev1.ServiceAccount) (string, error) {
 	if len(serviceAccount.Secrets) == 0 {
-		return "", fmt.Errorf("expected at least one secret for SSO RBAC service account: %w", serviceAccount.Name)
+		return "", fmt.Errorf("expected at least one secret for SSO RBAC service account: %s", serviceAccount.GetName())
 	}
 	secret, err := s.clients.Kubernetes.CoreV1().Secrets(serviceAccount.Namespace).Get(ctx, serviceAccount.Secrets[0].Name, metav1.GetOptions{})
 	if err != nil {
