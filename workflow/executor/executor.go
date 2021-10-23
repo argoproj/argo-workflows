@@ -251,7 +251,7 @@ func (we *WorkflowExecutor) StageFiles() error {
 	default:
 		return nil
 	}
-	err := ioutil.WriteFile(filePath, body, 0o600)
+	err := ioutil.WriteFile(filePath, body, 0o644)
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}

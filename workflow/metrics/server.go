@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
@@ -26,11 +27,11 @@ func (m *Metrics) RunServer(ctx context.Context) {
 
 	if m.metricsConfig.SameServerAs(m.telemetryConfig) {
 		// If the metrics and telemetry servers are the same, run both of them in the same instance
-		metricsRegistry.MustRegister(prometheus.NewGoCollector())
+		metricsRegistry.MustRegister(collectors.NewGoCollector())
 	} else if m.telemetryConfig.Enabled {
 		// If the telemetry server is different -- and it's enabled -- run each on its own instance
 		telemetryRegistry := prometheus.NewRegistry()
-		telemetryRegistry.MustRegister(prometheus.NewGoCollector())
+		telemetryRegistry.MustRegister(collectors.NewGoCollector())
 		go runServer(m.telemetryConfig, telemetryRegistry, ctx)
 	}
 

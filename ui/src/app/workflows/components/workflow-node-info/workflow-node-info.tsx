@@ -12,6 +12,7 @@ import {InlineTable} from '../../../shared/components/inline-table/inline-table'
 import {Links} from '../../../shared/components/links';
 import {Phase} from '../../../shared/components/phase';
 import {Timestamp} from '../../../shared/components/timestamp';
+import {getPodName} from '../../../shared/pod-name';
 import {ResourcesDuration} from '../../../shared/resources-duration';
 import {services} from '../../../shared/services';
 import {getResolvedTemplates} from '../../../shared/template-resolution';
@@ -79,6 +80,10 @@ const AttributeRows = (props: {attributes: {title: string; value: any}[]}) => (
 );
 
 const WorkflowNodeSummary = (props: Props) => {
+    const {workflow, node} = props;
+
+    const podName = getPodName(workflow.metadata.name, node.name, node.templateName, node.id);
+
     const attributes = [
         {title: 'NAME', value: <ClipboardText text={props.node.name} />},
         {title: 'TYPE', value: props.node.type},
@@ -131,7 +136,7 @@ const WorkflowNodeSummary = (props: Props) => {
         attributes.splice(
             2,
             0,
-            {title: 'POD NAME', value: <ClipboardText text={props.node.id} />},
+            {title: 'POD NAME', value: <ClipboardText text={podName} />},
             {
                 title: 'HOST NODE NAME',
                 value: <ClipboardText text={props.node.hostNodeName} />

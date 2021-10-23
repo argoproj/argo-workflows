@@ -260,7 +260,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
         if (isArchivedWorkflows) {
             services.archivedWorkflows.listLabelKeys().then(list => {
                 this.setState({
-                    autocompleteLabels: list.items || []
+                    autocompleteLabels: list.items.sort((a, b) => a.localeCompare(b)) || []
                 });
             });
         }
@@ -268,7 +268,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
 
     private fetchArchivedWorkflowsLabels(key: string): Promise<any> {
         return services.archivedWorkflows.listLabelValues(key).then(list => {
-            return list.items.map(i => key + '=' + i);
+            return list.items.map(i => key + '=' + i).sort((a, b) => a.localeCompare(b));
         });
     }
 
@@ -308,7 +308,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                     <div className=' columns small-12 xlarge-12'>
                         <p className='wf-filters-container__title'>Workflow Template</p>
                         <DataLoaderDropdown
-                            load={() => services.workflowTemplate.list(this.state.namespace).then(list => list.map(x => x.metadata.name))}
+                            load={() => services.workflowTemplate.list(this.state.namespace, []).then(list => list.map(x => x.metadata.name))}
                             onChange={value => (this.workflowTemplate = value)}
                         />
                     </div>

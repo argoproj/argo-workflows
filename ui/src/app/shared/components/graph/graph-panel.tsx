@@ -205,6 +205,7 @@ export const GraphPanel = (props: Props) => {
                                         <title>{n}</title>
                                         <g
                                             className={`node ${label.classNames || ''} ${props.selectedNode === n ? ' selected' : ''}`}
+                                            style={{strokeWidth: nodeSize / 15}}
                                             onClick={() => props.onNodeSelect && props.onNodeSelect(n)}>
                                             {((props.iconShapes || {})[label.genre] || props.defaultIconShape) === 'circle' ? (
                                                 <circle r={nodeSize / 2} className='bg' />

@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strconv"
 	"testing"
@@ -1223,6 +1224,10 @@ spec:
       image: docker/whalesay:latest
       command: [cowsay]
       args: ["hello world"]
+    outputs:
+      parameters:
+      - name: pod-name
+        value: "{{pod.name}}"
 `
 
 var helloWorldWfWithWFPatch = `
@@ -1306,6 +1311,59 @@ func TestPodSpecPatch(t *testing.T) {
 	mainCtr = woc.execWf.Spec.Templates[0].Container
 	_, err := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	assert.EqualError(t, err, "Failed to merge the workflow PodSpecPatch with the template PodSpecPatch due to invalid format")
+}
+
+var helloWorldStepWfWithPatch = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: hello
+  templates:
+  - name: hello
+    steps:
+    - - name: hello
+        template: whalesay
+  - name: whalesay
+    podSpecPatch: '{"containers":[{"name":"main", "resources":{"limits":{"cpu": "800m"}}}]}'
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+    outputs:
+      parameters:
+      - name: pod-name
+        value: "{{pod.name}}"
+`
+
+func TestPodSpecPatchPodName(t *testing.T) {
+	tests := []struct {
+		podNameVersion string
+		wantPodName    string
+		workflowYaml   string
+	}{
+		{"v1", "hello-world", helloWorldWfWithPatch},
+		{"v2", "hello-world", helloWorldWfWithPatch},
+		{"v1", "hello-world-3731220306", helloWorldStepWfWithPatch},
+		{"v2", "hello-world-whalesay-3731220306", helloWorldStepWfWithPatch},
+	}
+	for _, tt := range tests {
+		os.Setenv("POD_NAMES", tt.podNameVersion)
+		ctx := context.Background()
+		wf := wfv1.MustUnmarshalWorkflow(tt.workflowYaml)
+		woc := newWoc(*wf)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+		pods, err := listPods(woc)
+		assert.NoError(t, err)
+		assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
+		template, err := getPodTemplate(&pods.Items[0])
+		assert.NoError(t, err)
+		parameterValue := template.Outputs.Parameters[0].Value
+		assert.NotNil(t, parameterValue)
+		assert.Equal(t, tt.wantPodName, parameterValue.String())
+	}
 }
 
 func TestMainContainerCustomization(t *testing.T) {

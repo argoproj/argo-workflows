@@ -13,20 +13,20 @@ const (
 
 // PodName return a deterministic pod name
 func PodName(workflowName, nodeName, templateName, nodeID string) string {
-	if os.Getenv("POD_NAMES") == "v1" {
-		return nodeID
+	if os.Getenv("POD_NAMES") == "v2" {
+		if workflowName == nodeName {
+			return workflowName
+		}
+
+		prefix := fmt.Sprintf("%s-%s", workflowName, templateName)
+		prefix = ensurePodNamePrefixLength(prefix)
+
+		h := fnv.New32a()
+		_, _ = h.Write([]byte(nodeName))
+		return fmt.Sprintf("%s-%v", prefix, h.Sum32())
 	}
 
-	if workflowName == nodeName {
-		return workflowName
-	}
-
-	prefix := fmt.Sprintf("%s-%s", workflowName, templateName)
-	prefix = ensurePodNamePrefixLength(prefix)
-
-	h := fnv.New32a()
-	_, _ = h.Write([]byte(nodeName))
-	return fmt.Sprintf("%s-%v", prefix, h.Sum32())
+	return nodeID
 }
 
 func ensurePodNamePrefixLength(prefix string) string {

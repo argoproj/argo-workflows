@@ -78,6 +78,7 @@ type argoServer struct {
 	stopCh                   chan struct{}
 	eventQueueSize           int
 	eventWorkerCount         int
+	eventAsyncDispatch       bool
 	xframeOptions            string
 	accessControlAllowOrigin string
 }
@@ -95,6 +96,7 @@ type ArgoServerOpts struct {
 	HSTS                     bool
 	EventOperationQueueSize  int
 	EventWorkerCount         int
+	EventAsyncDispatch       bool
 	XFrameOptions            string
 	AccessControlAllowOrigin string
 }
@@ -140,6 +142,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		stopCh:                   make(chan struct{}),
 		eventQueueSize:           opts.EventOperationQueueSize,
 		eventWorkerCount:         opts.EventWorkerCount,
+		eventAsyncDispatch:       opts.EventAsyncDispatch,
 		xframeOptions:            opts.XFrameOptions,
 		accessControlAllowOrigin: opts.AccessControlAllowOrigin,
 	}, nil
@@ -181,7 +184,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	eventRecorderManager := events.NewEventRecorderManager(as.clients.Kubernetes)
 	artifactRepositories := artifactrepositories.New(as.clients.Kubernetes, as.managedNamespace, &config.ArtifactRepository)
 	artifactServer := artifacts.NewArtifactServer(as.gatekeeper, hydrator.New(offloadRepo), wfArchive, instanceIDService, artifactRepositories)
-	eventServer := event.NewController(instanceIDService, eventRecorderManager, as.eventQueueSize, as.eventWorkerCount)
+	eventServer := event.NewController(instanceIDService, eventRecorderManager, as.eventQueueSize, as.eventWorkerCount, as.eventAsyncDispatch)
 	grpcServer := as.newGRPCServer(instanceIDService, offloadRepo, wfArchive, eventServer, config.Links)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 

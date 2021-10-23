@@ -87,6 +87,8 @@ nav:
           - argo archive delete: cli/argo_archive_delete.md
           - argo archive get: cli/argo_archive_get.md
           - argo archive list: cli/argo_archive_list.md
+          - argo archive list-label-keys: cli/argo_archive_list-label-keys.md
+          - argo archive list-label-values: cli/argo_archive_list-label-values.md
           - argo auth: cli/argo_auth.md
           - argo auth token: cli/argo_auth_token.md
           - argo cluster-template: cli/argo_cluster-template.md

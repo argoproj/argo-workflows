@@ -4,7 +4,30 @@
 Breaking changes  typically (sometimes we don't realise they are breaking) have "!" in the commit message, as per
 the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary).
 
+## Upgrading to v3.3
+
+## feat(server)!: Sync dispatch of webhook events by default
+
+This is not expected to impact users.
+
+Events dispatch in the Argo Server has been change from async to sync by default. This is so that errors are surfaced to
+the client, rather than only appearing as logs or Kubernetes events. It is possible that response times under load are
+too long for your client and you may prefer to revert this behaviour.
+
+To revert this behaviour, restart Argo Server with `ARGO_EVENT_ASYNC_DISPATCH=true`. Make sure that `asyncDispatch=true`
+is logged.
+
+### [bd49c630328d30206a5c5b78cbc9a00700a28e7d](https://github.com/argoproj/argo-workflows/commit/bd49c630328d30206a5c5b78cbc9a00700a28e7d) fix(artifact)!: default https to any URL missing a scheme. Fixes #6973
+
+HTTPArtifact without a scheme will now defaults to https instead of http
+
+user need to explicitly include a http prefix if they want to retrieve HTTPArtifact through http
+
 ## Upgrading to v3.2
+
+## [e5b131a33](https://github.com/argoproj/argo-workflows/commit/e5b131a33) feat: Add template node to pod name. Fixes #1319 (#6712)
+
+This add the template name to the pod name, to make it easier to understand which pod ran which step. This behaviour can be reverted by setting `POD_NAMES=v1` on the workflow controller. 
 
 ### [be63efe89](https://github.com/argoproj/argo-workflows/commit/be63efe89) feat(executor)!: Change `argoexec` base image to alpine. Closes #5720 (#6006)
 

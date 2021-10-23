@@ -1,11 +1,17 @@
 # This example demonstrates the ability to memoize a template.
-# Cache can be configured in configmap. Eg.:
+# Cache can be configured in configmap. For example, if the cache
+# ConfigMap looks like the following, then you should expect the node output
+# retrieved from the cache to be "changed cache value". 
+# Note that you also need to update `creationTimestamp` in
+# `data.test-5` to be within the `memoize.maxAge` if `maxAge` is specified in the workflow spec.
+# 
 # apiVersion: v1
+# data:
+#   test-5: '{"nodeID":"memoized-hdckj","outputs":{"parameters":[{"name":"hello","value":"changed cache value","valueFrom":{"path":"/tmp/hello_world.txt"}}],"exitCode":"0"},"creationTimestamp":"2021-10-12T15:14:04Z","lastHitTimestamp":"2021-10-12T15:14:04Z"}'
 # kind: ConfigMap
 # metadata:
+#   creationTimestamp: "2021-10-12T15:14:04Z"
 #   name: my-config
-# data:
-#   whalesay-cache: "whalesay-cache"
 #---
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -28,7 +34,6 @@ spec:
       cache:
         configMap:
           name: my-config
-          key: whalesay-cache
     container:
       image: docker/whalesay:latest
       command: [sh, -c]

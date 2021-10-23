@@ -591,6 +591,11 @@ func randString(n int) string {
 	return string(b)
 }
 
+// RandSuffix generates a random suffix suitable for suffixing resource name.
+func RandSuffix() string {
+	return randString(5)
+}
+
 // FormulateResubmitWorkflow formulate a new workflow from a previous workflow, optionally re-using successful nodes
 func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow, error) {
 	newWF := wfv1.Workflow{}
@@ -611,7 +616,7 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 		default:
 			return nil, errors.Errorf(errors.CodeBadRequest, "workflow must be Failed/Error to resubmit in memoized mode")
 		}
-		newWF.ObjectMeta.Name = newWF.ObjectMeta.GenerateName + randString(5)
+		newWF.ObjectMeta.Name = newWF.ObjectMeta.GenerateName + RandSuffix()
 	}
 
 	// carry over the unmodified spec

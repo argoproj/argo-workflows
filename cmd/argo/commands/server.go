@@ -50,6 +50,7 @@ func NewServerCommand() *cobra.Command {
 		enableOpenBrowser        bool
 		eventOperationQueueSize  int
 		eventWorkerCount         int
+		eventAsyncDispatch       bool
 		frameOptions             string
 		accessControlAllowOrigin string
 		logFormat                string // --log-format
@@ -146,6 +147,7 @@ See %s`, help.ArgoServer),
 				ConfigName:               configMap,
 				EventOperationQueueSize:  eventOperationQueueSize,
 				EventWorkerCount:         eventWorkerCount,
+				EventAsyncDispatch:       eventAsyncDispatch,
 				XFrameOptions:            frameOptions,
 				AccessControlAllowOrigin: accessControlAllowOrigin,
 			}
@@ -182,8 +184,13 @@ See %s`, help.ArgoServer),
 		},
 	}
 
+	defaultBaseHRef := os.Getenv("BASE_HREF")
+	if defaultBaseHRef == "" {
+		defaultBaseHRef = "/"
+	}
+
 	command.Flags().IntVarP(&port, "port", "p", 2746, "Port to listen on")
-	command.Flags().StringVar(&baseHRef, "basehref", "/", "Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /. Defaults to the environment variable BASE_HREF.")
+	command.Flags().StringVar(&baseHRef, "basehref", defaultBaseHRef, "Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /. Defaults to the environment variable BASE_HREF.")
 	// "-e" for encrypt, like zip
 	command.Flags().BoolVarP(&secure, "secure", "e", true, "Whether or not we should listen on TLS.")
 	command.Flags().BoolVar(&htst, "hsts", true, "Whether or not we should add a HTTP Secure Transport Security header. This only has effect if secure is enabled.")
@@ -194,6 +201,7 @@ See %s`, help.ArgoServer),
 	command.Flags().BoolVarP(&enableOpenBrowser, "browser", "b", false, "enable automatic launching of the browser [local mode]")
 	command.Flags().IntVar(&eventOperationQueueSize, "event-operation-queue-size", 16, "how many events operations that can be queued at once")
 	command.Flags().IntVar(&eventWorkerCount, "event-worker-count", 4, "how many event workers to run")
+	command.Flags().BoolVar(&eventAsyncDispatch, "event-async-dispatch", false, "dispatch event async")
 	command.Flags().StringVar(&frameOptions, "x-frame-options", "DENY", "Set X-Frame-Options header in HTTP responses.")
 	command.Flags().StringVar(&accessControlAllowOrigin, "access-control-allow-origin", "", "Set Access-Control-Allow-Origin header in HTTP responses.")
 	command.Flags().StringVar(&logFormat, "log-format", "text", "The formatter to use for logs. One of: text|json")
