@@ -67,21 +67,21 @@ func TestServer_GetWFClient(t *testing.T) {
 	t.Run("Invalid", func(t *testing.T) {
 		g, err := NewGatekeeper(Modes{Client: true}, clients, nil, nil, clientForAuthorization, "")
 		if assert.NoError(t, err) {
-			_, err := g.Context(x("invalid"))
+			_, err := g.Context(x("invalid"), nil)
 			assert.Error(t, err)
 		}
 	})
 	t.Run("NotAllowed", func(t *testing.T) {
 		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, nil, clientForAuthorization, "")
 		if assert.NoError(t, err) {
-			_, err := g.Context(x("Bearer "))
+			_, err := g.Context(x("Bearer "), nil)
 			assert.Error(t, err)
 		}
 	})
 	t.Run("Client", func(t *testing.T) {
 		g, err := NewGatekeeper(Modes{Client: true}, clients, &rest.Config{Username: "my-username"}, nil, clientForAuthorization, "")
 		assert.NoError(t, err)
-		ctx, err := g.Context(x("Bearer "))
+		ctx, err := g.Context(x("Bearer "), nil)
 		if assert.NoError(t, err) {
 			assert.NotEqual(t, wfClient, GetWfClient(ctx))
 			assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
@@ -91,7 +91,7 @@ func TestServer_GetWFClient(t *testing.T) {
 	t.Run("Server", func(t *testing.T) {
 		g, err := NewGatekeeper(Modes{Server: true}, clients, &rest.Config{Username: "my-username"}, nil, clientForAuthorization, "")
 		assert.NoError(t, err)
-		ctx, err := g.Context(x(""))
+		ctx, err := g.Context(x(""), nil)
 		if assert.NoError(t, err) {
 			assert.Equal(t, wfClient, GetWfClient(ctx))
 			assert.Equal(t, kubeClient, GetKubeClient(ctx))
@@ -104,7 +104,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf.On("IsRBACEnabled").Return(false)
 		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns")
 		if assert.NoError(t, err) {
-			ctx, err := g.Context(x("Bearer v2:whatever"))
+			ctx, err := g.Context(x("Bearer v2:whatever"), nil)
 			if assert.NoError(t, err) {
 				assert.Equal(t, wfClient, GetWfClient(ctx))
 				assert.Equal(t, kubeClient, GetKubeClient(ctx))
@@ -123,7 +123,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf.On("IsRBACEnabled").Return(true)
 		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns")
 		if assert.NoError(t, err) {
-			ctx, err := g.Context(x("Bearer v2:whatever"))
+			ctx, err := g.Context(x("Bearer v2:whatever"), nil)
 			if assert.NoError(t, err) {
 				assert.NotEqual(t, clients, GetWfClient(ctx))
 				assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
@@ -141,7 +141,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf.On("IsRBACEnabled").Return(true)
 		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns")
 		if assert.NoError(t, err) {
-			ctx, err := g.Context(x("Bearer v2:whatever"))
+			ctx, err := g.Context(x("Bearer v2:whatever"), nil)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "my-other-sa", hook.LastEntry().Data["serviceAccount"])
 				assert.Equal(t, "my-other-sa", GetClaims(ctx).ServiceAccountName)
@@ -154,7 +154,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf.On("IsRBACEnabled").Return(true)
 		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns")
 		if assert.NoError(t, err) {
-			_, err := g.Context(x("Bearer v2:whatever"))
+			_, err := g.Context(x("Bearer v2:whatever"), nil)
 			assert.EqualError(t, err, "rpc error: code = PermissionDenied desc = not allowed")
 		}
 	})
