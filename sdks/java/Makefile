@@ -75,7 +75,7 @@ $(WD)/pom.xml: $(WD)/swagger.json
 		--import-mappings VolumeMount=io.kubernetes.client.openapi.models.V1VolumeMount \
 		--generate-alias-as-model
 	# https://vsupalov.com/docker-shared-permissions/#set-the-docker-user-when-running-your-container
-	CHOWN=chown -R $(shell ui -u):$(shell ui -g)
+	CHOWN=chown -R $(shell id -u):$(shell id -g)
 	$(CHOWN) $(WD) || sudo $(CHOWN) $(WD)
 	# replace the generated pom.xml that has too many dependencies
 	sed 's/0.0.0-VERSION/$(VERSION)/' pom.xml > $(WD)/pom.xml
