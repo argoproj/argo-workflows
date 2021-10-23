@@ -49,8 +49,56 @@ func TestServer_GetWFClient(t *testing.T) {
 			},
 			Secrets: []corev1.ObjectReference{{Name: "my-secret"}},
 		},
+		&corev1.ServiceAccount{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "user1-sa", Namespace: "user1-ns",
+				Annotations: map[string]string{
+					common.AnnotationKeyRBACRule:           "'my-group' in groups",
+					common.AnnotationKeyRBACRulePrecedence: "2",
+				},
+			},
+			Secrets: []corev1.ObjectReference{{Name: "user-secret"}},
+		},
+		&corev1.ServiceAccount{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "user2-sa", Namespace: "user2-ns",
+				Annotations: map[string]string{
+					common.AnnotationKeyRBACRule:           "'my-group' in groups",
+					common.AnnotationKeyRBACRulePrecedence: "0",
+				},
+			},
+			Secrets: []corev1.ObjectReference{{Name: "user-secret"}},
+		},
+		&corev1.ServiceAccount{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "user3-sa", Namespace: "user3-ns",
+				Annotations: map[string]string{
+					common.AnnotationKeyRBACRule:           "'my-group' in groups",
+					common.AnnotationKeyRBACRulePrecedence: "1",
+				},
+			},
+			Secrets: []corev1.ObjectReference{{Name: "user-secret"}},
+		},
 		&corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-secret", Namespace: "my-ns"},
+			Data: map[string][]byte{
+				"token": {},
+			},
+		},
+		&corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: "user-secret", Namespace: "user1-ns"},
+			Data: map[string][]byte{
+				"token": {},
+			},
+		},
+		&corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: "user-secret", Namespace: "user2-ns"},
+			Data: map[string][]byte{
+				"token": {},
+			},
+		},
+		&corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: "user-secret", Namespace: "user3-ns"},
 			Data: map[string][]byte{
 				"token": {},
 			},
@@ -134,6 +182,84 @@ func TestServer_GetWFClient(t *testing.T) {
 				assert.Equal(t, "my-sa", hook.LastEntry().Data["serviceAccount"])
 			}
 		}
+	})
+	t.Run("SSO+RBAC, Namespace delegation ON, precedence=2, Delagated", func(t *testing.T) {
+		os.Setenv("SSO_DELEGATE_RBAC_TO_NAMESPACE", "true")
+		ssoIf := &ssomocks.Interface{}
+		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Groups: []string{"my-group", "other-group"}}, nil)
+		ssoIf.On("IsRBACEnabled").Return(true)
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns")
+		if assert.NoError(t, err) {
+			ctx, err := g.Context(x("Bearer v2:whatever"), servertypes.NewNamespaceContainer("user1-ns"))
+			if assert.NoError(t, err) {
+				assert.NotEqual(t, clients, GetWfClient(ctx))
+				assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
+				if assert.NotNil(t, GetClaims(ctx)) {
+					assert.Equal(t, []string{"my-group", "other-group"}, GetClaims(ctx).Groups)
+					assert.Equal(t, "user1-sa", GetClaims(ctx).ServiceAccountName)
+				}
+				assert.Equal(t, "user1-sa", hook.LastEntry().Data["serviceAccount"])
+			}
+		}
+		os.Unsetenv("SSO_DELEGATE_RBAC_TO_NAMESPACE")
+	})
+	t.Run("SSO+RBAC, Namespace delegation OFF, precedence=2, Delagated", func(t *testing.T) {
+		ssoIf := &ssomocks.Interface{}
+		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Groups: []string{"my-group", "other-group"}}, nil)
+		ssoIf.On("IsRBACEnabled").Return(true)
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns")
+		if assert.NoError(t, err) {
+			ctx, err := g.Context(x("Bearer v2:whatever"), servertypes.NewNamespaceContainer("user1-ns"))
+			if assert.NoError(t, err) {
+				assert.NotEqual(t, clients, GetWfClient(ctx))
+				assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
+				if assert.NotNil(t, GetClaims(ctx)) {
+					assert.Equal(t, []string{"my-group", "other-group"}, GetClaims(ctx).Groups)
+					assert.Equal(t, "my-sa", GetClaims(ctx).ServiceAccountName)
+				}
+				assert.Equal(t, "my-sa", hook.LastEntry().Data["serviceAccount"])
+			}
+		}
+	})
+	t.Run("SSO+RBAC, Namespace delegation ON, precedence=0, Not delegated", func(t *testing.T) {
+		os.Setenv("SSO_DELEGATE_RBAC_TO_NAMESPACE", "true")
+		ssoIf := &ssomocks.Interface{}
+		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Groups: []string{"my-group", "other-group"}}, nil)
+		ssoIf.On("IsRBACEnabled").Return(true)
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns")
+		if assert.NoError(t, err) {
+			ctx, err := g.Context(x("Bearer v2:whatever"), servertypes.NewNamespaceContainer("user2-ns"))
+			if assert.NoError(t, err) {
+				assert.NotEqual(t, clients, GetWfClient(ctx))
+				assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
+				if assert.NotNil(t, GetClaims(ctx)) {
+					assert.Equal(t, []string{"my-group", "other-group"}, GetClaims(ctx).Groups)
+					assert.Equal(t, "my-sa", GetClaims(ctx).ServiceAccountName)
+				}
+				assert.Equal(t, "my-sa", hook.LastEntry().Data["serviceAccount"])
+			}
+		}
+		os.Unsetenv("SSO_DELEGATE_RBAC_TO_NAMESPACE")
+	})
+	t.Run("SSO+RBAC, Namespace delegation ON, precedence=1, Not delegated", func(t *testing.T) {
+		os.Setenv("SSO_DELEGATE_RBAC_TO_NAMESPACE", "true")
+		ssoIf := &ssomocks.Interface{}
+		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Groups: []string{"my-group", "other-group"}}, nil)
+		ssoIf.On("IsRBACEnabled").Return(true)
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns")
+		if assert.NoError(t, err) {
+			ctx, err := g.Context(x("Bearer v2:whatever"), servertypes.NewNamespaceContainer("user3-ns"))
+			if assert.NoError(t, err) {
+				assert.NotEqual(t, clients, GetWfClient(ctx))
+				assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
+				if assert.NotNil(t, GetClaims(ctx)) {
+					assert.Equal(t, []string{"my-group", "other-group"}, GetClaims(ctx).Groups)
+					assert.Equal(t, "my-sa", GetClaims(ctx).ServiceAccountName)
+				}
+				assert.Equal(t, "my-sa", hook.LastEntry().Data["serviceAccount"])
+			}
+		}
+		os.Unsetenv("SSO_DELEGATE_RBAC_TO_NAMESPACE")
 	})
 	t.Run("SSO+RBAC,precedence=0", func(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
