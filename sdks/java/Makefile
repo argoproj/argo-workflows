@@ -8,7 +8,7 @@ VERSION               := $(GIT_TAG:v=)
 endif
 
 # work dir
-WD                    := $(shell echo "`pwd`/generated")
+WD                    := $(shell echo "`pwd`/api")
 
 # https://vsupalov.com/docker-shared-permissions/#set-the-docker-user-when-running-your-container
 DOCKER = docker run --rm -v $(HOME)/.m2:/root/.m2 -v $(WD):/wd --workdir /wd  --user "$(id -u):$(id -g)"
