@@ -11,7 +11,7 @@ endif
 WD                    := $(shell echo "`pwd`/generated")
 
 # https://vsupalov.com/docker-shared-permissions/#set-the-docker-user-when-running-your-container
-DOCKER = docker run --rm -v $(HOME)/.m2:/root/.m2 -v $(WD):/wd --workdir /wd  --user "$(id -u):$(id -g)" -it
+DOCKER = docker run --rm -v $(HOME)/.m2:/root/.m2 -v $(WD):/wd --workdir /wd  --user "$(id -u):$(id -g)"
 MVN = $(DOCKER) maven:3-openjdk-8 mvn -s settings.xml
 
 publish: build
