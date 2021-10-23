@@ -28,9 +28,6 @@ const (
 	AnnotationKeyRBACRule           = workflow.WorkflowFullName + "/rbac-rule"
 	AnnotationKeyRBACRulePrecedence = workflow.WorkflowFullName + "/rbac-rule-precedence"
 
-	// AnnotationKeyEnableNamespaceDelegation is a flag which tells if rbac can be deleted to namespace
-	AnnotationKeyEnableNamespaceDelegation           = workflow.WorkflowFullName + "/rbac-enable-namespace-delegation"
-
 	// AnnotationKeyOutputs is the pod metadata annotation key containing the container outputs
 	AnnotationKeyOutputs = workflow.WorkflowFullName + "/outputs"
 	// AnnotationKeyCronWfScheduledTime is the workflow metadata annotation key containing the time when the workflow

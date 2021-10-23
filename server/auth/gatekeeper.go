@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"fmt"
+	"github.com/argoproj/pkg/env"
 	"net/http"
 	"sort"
 	"strconv"
@@ -52,6 +53,10 @@ type Gatekeeper interface {
 
 type ClientForAuthorization func(authorization string) (*rest.Config, *servertypes.Clients, error)
 
+type featureFlags struct {
+	delegateSsoRbacToNamespace bool
+}
+
 type gatekeeper struct {
 	Modes Modes
 	// global clients, not to be used if there are better ones
@@ -61,13 +66,29 @@ type gatekeeper struct {
 	clientForAuthorization ClientForAuthorization
 	// The namespace the server is installed in.
 	namespace string
+	*featureFlags
+}
+
+func getFeatureFlags() *featureFlags {
+	return &featureFlags{
+		delegateSsoRbacToNamespace: env.LookupEnvStringOr("SSO_DELEGATE_RBAC_TO_NAMESPACE", "false") == "true",
+	}
 }
 
 func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.Config, ssoIf sso.Interface, clientForAuthorization ClientForAuthorization, namespace string) (Gatekeeper, error) {
 	if len(modes) == 0 {
 		return nil, fmt.Errorf("must specify at least one auth mode")
 	}
-	return &gatekeeper{modes, clients, restConfig, ssoIf, clientForAuthorization, namespace}, nil
+	return &gatekeeper{
+		modes,
+		clients,
+		restConfig,
+		ssoIf,
+		clientForAuthorization,
+		namespace,
+		getFeatureFlags(),
+	}, nil
+
 }
 
 func (s *gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
@@ -194,6 +215,11 @@ func getNamespace(req interface{}) string {
 	return namespacedRequest.GetNamespace()
 }
 
+func precedence(serviceAccount *corev1.ServiceAccount) int {
+	i, _ := strconv.Atoi(serviceAccount.Annotations[common.AnnotationKeyRBACRulePrecedence])
+	return i
+}
+
 func (s *gatekeeper) getServiceAccount(ctx context.Context, claims *types.Claims, namespace string) (*corev1.ServiceAccount, error) {
 	list, err := s.clients.Kubernetes.CoreV1().ServiceAccounts(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
@@ -207,11 +233,7 @@ func (s *gatekeeper) getServiceAccount(ctx context.Context, claims *types.Claims
 		}
 		serviceAccounts = append(serviceAccounts, serviceAccount)
 	}
-	precedence := func(serviceAccount corev1.ServiceAccount) int {
-		i, _ := strconv.Atoi(serviceAccount.Annotations[common.AnnotationKeyRBACRulePrecedence])
-		return i
-	}
-	sort.Slice(serviceAccounts, func(i, j int) bool { return precedence(serviceAccounts[i]) > precedence(serviceAccounts[j]) })
+	sort.Slice(serviceAccounts, func(i, j int) bool { return precedence(&serviceAccounts[i]) > precedence(&serviceAccounts[j]) })
 	for _, serviceAccount := range serviceAccounts {
 		rule := serviceAccount.Annotations[common.AnnotationKeyRBACRule]
 		v, err := jsonutil.Jsonify(claims)
@@ -234,13 +256,9 @@ func (s *gatekeeper) getServiceAccount(ctx context.Context, claims *types.Claims
 	return nil, fmt.Errorf("no service account rule matches")
 }
 
-func (s *gatekeeper) shouldDelegateRBACToRequestNamespace(serviceAccount *corev1.ServiceAccount, req interface{}) bool {
-	value, ok := serviceAccount.Annotations[common.AnnotationKeyEnableNamespaceDelegation]
-	if !ok || value != "true" {
-		return false
-	}
+func (s *gatekeeper) canDelegateRBACToRequestNamespace(req interface{}) bool {
 	namespace := getNamespace(req)
-	return len(namespace) != 0  && s.namespace != namespace
+	return s.featureFlags.delegateSsoRbacToNamespace && len(namespace) != 0 && s.namespace != namespace
 }
 
 func (s *gatekeeper) getClientsForServiceAccount(ctx context.Context, claims *types.Claims, serviceAccount *corev1.ServiceAccount) (*servertypes.Clients, error) {
@@ -261,9 +279,9 @@ func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *types.Claims
 	if err != nil {
 		return nil, err
 	}
-	if s.shouldDelegateRBACToRequestNamespace(serviceAccount, req) {
+	if s.canDelegateRBACToRequestNamespace(req) {
 		delegatedAccount, err := s.getServiceAccount(ctx, claims, getNamespace(req))
-		if err == nil {
+		if err == nil && precedence(delegatedAccount) > precedence(serviceAccount) {
 			serviceAccount = delegatedAccount
 		}
 	}
