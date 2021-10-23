@@ -3,7 +3,6 @@ package metrics
 import (
 	"context"
 	"fmt"
-	tlsutils "github.com/argoproj/argo-workflows/v3/util/tls"
 	"net/http"
 	"time"
 
@@ -12,6 +11,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
+
+	tlsutils "github.com/argoproj/argo-workflows/v3/util/tls"
 )
 
 // RunServer starts a metrics server
@@ -73,8 +74,6 @@ func runServer(config ServerConfig, registry *prometheus.Registry, ctx context.C
 			}
 		}()
 	}
-
-
 
 	// Waiting for stop signal
 	<-ctx.Done()

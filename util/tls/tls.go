@@ -10,12 +10,13 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
-	"k8s.io/utils/env"
 	"log"
 	"math/big"
 	"net"
 	"os"
 	"time"
+
+	"k8s.io/utils/env"
 )
 
 func pemBlockForKey(priv interface{}) *pem.Block {

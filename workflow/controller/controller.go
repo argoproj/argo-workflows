@@ -1123,8 +1123,8 @@ func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, m
 		port = metrics.DefaultMetricsServerPort
 	}
 	secure := false
-	if  wfc.Config.MetricsConfig.Secure != nil {
-		secure =  *wfc.Config.MetricsConfig.Secure
+	if wfc.Config.MetricsConfig.Secure != nil {
+		secure = *wfc.Config.MetricsConfig.Secure
 	}
 	metricsConfig := metrics.ServerConfig{
 		Enabled:      wfc.Config.MetricsConfig.Enabled == nil || *wfc.Config.MetricsConfig.Enabled,
