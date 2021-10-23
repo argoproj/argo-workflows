@@ -315,6 +315,7 @@ func TestGlobalParams(t *testing.T) {
 		assert.Contains(t, woc.globalParams, fmt.Sprintf("%s.%s", "workflow.creationTimestamp", string(char)))
 	}
 	assert.Contains(t, woc.globalParams, "workflow.creationTimestamp.s")
+	assert.Contains(t, woc.globalParams, "workflow.creationTimestamp.RFC3339")
 
 	assert.Contains(t, woc.globalParams, "workflow.duration")
 	assert.Contains(t, woc.globalParams, "workflow.name")
