@@ -8,9 +8,9 @@ type NamespaceHolder struct {
 	namespace string
 }
 
-func NewNamespaceHolder(namepsace string) *NamespaceHolder {
+func NewNamespaceHolder(namespace string) *NamespaceHolder {
 	return &NamespaceHolder{
-		namespace: namepsace,
+		namespace: namespace,
 	}
 }
 
