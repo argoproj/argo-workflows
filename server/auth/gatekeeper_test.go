@@ -203,7 +203,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		}
 		os.Unsetenv("SSO_DELEGATE_RBAC_TO_NAMESPACE")
 	})
-	t.Run("SSO+RBAC, Namespace delegation OFF, precedence=2, Delagated", func(t *testing.T) {
+	t.Run("SSO+RBAC, Namespace delegation OFF, precedence=2, Not Delegated", func(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Groups: []string{"my-group", "other-group"}}, nil)
 		ssoIf.On("IsRBACEnabled").Return(true)
