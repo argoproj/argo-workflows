@@ -10,8 +10,7 @@ endif
 # work dir
 WD                    := $(shell echo "`pwd`/api")
 
-# https://vsupalov.com/docker-shared-permissions/#set-the-docker-user-when-running-your-container
-DOCKER = docker run --rm -v $(HOME)/.m2:/root/.m2 -v $(WD):/wd --workdir /wd  --user "$(id -u):$(id -g)"
+DOCKER = docker run --rm -v $(HOME)/.m2:/root/.m2 -v $(WD):/wd --workdir /wd
 MVN = $(DOCKER) maven:3-openjdk-8 mvn -s settings.xml
 
 publish: build
@@ -75,6 +74,9 @@ $(WD)/pom.xml: $(WD)/swagger.json
 		--import-mappings VolumeDevice=io.kubernetes.client.openapi.models.V1VolumeDevice \
 		--import-mappings VolumeMount=io.kubernetes.client.openapi.models.V1VolumeMount \
 		--generate-alias-as-model
+	# https://vsupalov.com/docker-shared-permissions/#set-the-docker-user-when-running-your-container
+	CHOWN=chown -R $(shell ui -u):$(shell ui -g)
+	$(CHOWN) $(WD) || sudo $(CHOWN) $(WD)
 	# replace the generated pom.xml that has too many dependencies
 	sed 's/0.0.0-VERSION/$(VERSION)/' pom.xml > $(WD)/pom.xml
 
