@@ -8,8 +8,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/server/utils/k8s_utils"
-
 	"github.com/gorilla/handlers"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_logrus "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
@@ -53,6 +51,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/sensor"
 	"github.com/argoproj/argo-workflows/v3/server/static"
 	"github.com/argoproj/argo-workflows/v3/server/types"
+	"github.com/argoproj/argo-workflows/v3/server/utils/k8s_utils"
 	"github.com/argoproj/argo-workflows/v3/server/workflow"
 	"github.com/argoproj/argo-workflows/v3/server/workflowarchive"
 	"github.com/argoproj/argo-workflows/v3/server/workflowtemplate"
