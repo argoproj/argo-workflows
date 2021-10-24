@@ -329,7 +329,7 @@ jobs:
           key: ${{ runner.os }}-node-dep-v1-${{ hashFiles('**/yarn.lock') }}
       - uses: actions/setup-go@v2
         with:
-          go-version: "1.16"
+          go-version: "1.17"
       - uses: actions/cache@v2
         with:
           path: /home/runner/.cache/go-build
