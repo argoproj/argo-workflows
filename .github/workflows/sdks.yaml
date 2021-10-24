@@ -20,6 +20,8 @@ jobs:
       - uses: actions/checkout@v2
       - run: make --directory sdks/${{matrix.name}} build -B
       - run: make --directory sdks/${{matrix.name}} publish -B
+        env:
+          JAVA_SDK_MAVEN_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
       - uses: peter-evans/create-pull-request@v3
         with:
           title: 'chore: updated ${{matrix.name}} SDK'
