@@ -4,7 +4,7 @@
 
 The Java SDK provides model and APIs for accessing the Argo Server API rather.
 
-If you wish to access the Kubernetes APIs, you can use the models to do this.
+If you wish to access the Kubernetes APIs, you can use the models to do this. You'll need to write your own code to speak to the API.
 
 ## Download
 
