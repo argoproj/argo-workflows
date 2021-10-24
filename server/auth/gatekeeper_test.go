@@ -2,7 +2,9 @@ package auth
 
 import (
 	"context"
-	"github.com/argoproj/argo-workflows/v3/server/utils/k8s_utils"
+	"os"
+	"testing"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
@@ -13,13 +15,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
-	"os"
-	"testing"
 
 	fakewfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
 	ssomocks "github.com/argoproj/argo-workflows/v3/server/auth/sso/mocks"
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
 	servertypes "github.com/argoproj/argo-workflows/v3/server/types"
+	"github.com/argoproj/argo-workflows/v3/server/utils/k8s_utils"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 

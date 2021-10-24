@@ -3,11 +3,13 @@ package auth
 import (
 	"context"
 	"fmt"
-	"github.com/argoproj/argo-workflows/v3/server/utils/k8s_utils"
-	"k8s.io/apimachinery/pkg/labels"
 	"net/http"
 	"sort"
 	"strconv"
+
+	"k8s.io/apimachinery/pkg/labels"
+
+	"github.com/argoproj/argo-workflows/v3/server/utils/k8s_utils"
 
 	"github.com/antonmedv/expr"
 	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
@@ -20,6 +22,7 @@ import (
 	"google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -29,6 +32,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/auth/sso"
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
 	servertypes "github.com/argoproj/argo-workflows/v3/server/types"
+	"github.com/argoproj/argo-workflows/v3/server/utils/k8s_utils"
 	jsonutil "github.com/argoproj/argo-workflows/v3/util/json"
 	"github.com/argoproj/argo-workflows/v3/util/kubeconfig"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"

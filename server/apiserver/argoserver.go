@@ -3,11 +3,12 @@ package apiserver
 import (
 	"crypto/tls"
 	"fmt"
-	"github.com/argoproj/argo-workflows/v3/server/utils/k8s_utils"
 	"net"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/argoproj/argo-workflows/v3/server/utils/k8s_utils"
 
 	"github.com/gorilla/handlers"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -82,7 +83,7 @@ type argoServer struct {
 	eventAsyncDispatch       bool
 	xframeOptions            string
 	accessControlAllowOrigin string
-	cache *k8s_utils.K8sCache
+	cache                    *k8s_utils.K8sCache
 }
 
 type ArgoServerOpts struct {
@@ -148,7 +149,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		eventAsyncDispatch:       opts.EventAsyncDispatch,
 		xframeOptions:            opts.XFrameOptions,
 		accessControlAllowOrigin: opts.AccessControlAllowOrigin,
-		cache:          cache,
+		cache:                    cache,
 	}, nil
 }
 
