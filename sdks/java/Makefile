@@ -11,7 +11,7 @@ endif
 WD                    := $(shell echo "`pwd`/api")
 
 DOCKER = docker run --rm -v $(HOME)/.m2:/root/.m2 -v $(WD):/wd --workdir /wd
-MVN = $(DOCKER) maven:3-openjdk-8 mvn -s settings.xml
+MVN = $(DOCKER) -e JAVA_SDK_MAVEN_PASSWORD=${JAVA_SDK_MAVEN_PASSWORD} maven:3-openjdk-8 mvn -s settings.xml
 CHOWN = chown -R $(shell id -u):$(shell id -g)
 
 publish: build
