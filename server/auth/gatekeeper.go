@@ -7,10 +7,6 @@ import (
 	"sort"
 	"strconv"
 
-	"k8s.io/apimachinery/pkg/labels"
-
-	"github.com/argoproj/argo-workflows/v3/server/utils/k8s_utils"
-
 	"github.com/antonmedv/expr"
 	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
 	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
