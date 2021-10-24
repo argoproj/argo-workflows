@@ -2402,13 +2402,13 @@
 <blockquote>
 <p>Suitable if you have a workflow that passes a lot of artifacts within itself.</p>
 </blockquote>
-<p>Copying artifacts to and from storage outside of a cluster can be expensive. The correct choice is dependent on your artifact storage provider is vs. what volume they are using. For example, we believe it may be more expensive to allocate and delete new EBS volumes every workflow using the PVC feature, than it is to upload and download some small files to S3.</p>
-<p>On the other hand if they are using a NFS volume shared between all their workflows with large artifacts, that might be cheaper than the data transfer and storage costs of S3.</p>
+<p>Copying artifacts to and from storage outside of a cluster can be expensive. The correct choice is dependent on your artifact storage provider is vs. what volume they are using. For example, we believe it may be more expensive to allocate and delete a new block storage volume (AWS EBS, GCP persistent disk) every workflow using the PVC feature, than it is to upload and download some small files to object storage (AWS S3, GCP cloud storage).</p>
+<p>On the other hand if they are using a NFS volume shared between all their workflows with large artifacts, that might be cheaper than the data transfer and storage costs of object storage.</p>
 <p>Consider:</p>
 <ul>
 <li>Data transfer costs (upload/download vs. copying)</li>
-<li>Data storage costs (s3 vs. volume)</li>
-<li>Requirement for parallel access to data (NFS vs. EBS vs. artifact)</li>
+<li>Data storage costs (object storage vs. volume)</li>
+<li>Requirement for parallel access to data (NFS vs. block storage vs. artifact)</li>
 </ul>
 <h3 id="limit-the-total-number-of-workflows-and-pods">Limit The Total Number Of Workflows And Pods<a class="headerlink" href="#limit-the-total-number-of-workflows-and-pods" title="Permanent link">&para;</a></h3>
 <blockquote>
