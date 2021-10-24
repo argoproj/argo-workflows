@@ -3,6 +3,8 @@ package auth
 import (
 	"context"
 	"fmt"
+	"github.com/argoproj/argo-workflows/v3/server/utils/k8s_utils"
+	"k8s.io/apimachinery/pkg/labels"
 	"net/http"
 	"sort"
 	"strconv"
@@ -66,6 +68,7 @@ type gatekeeper struct {
 	clientForAuthorization ClientForAuthorization
 	// The namespace the server is installed in.
 	namespace string
+	cache     *k8s_utils.K8sCache
 	*featureFlags
 }
 
@@ -79,7 +82,7 @@ func getFeatureFlags() *featureFlags {
 	}
 }
 
-func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.Config, ssoIf sso.Interface, clientForAuthorization ClientForAuthorization, namespace string) (Gatekeeper, error) {
+func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.Config, ssoIf sso.Interface, clientForAuthorization ClientForAuthorization, namespace string, cache *k8s_utils.K8sCache) (Gatekeeper, error) {
 	if len(modes) == 0 {
 		return nil, fmt.Errorf("must specify at least one auth mode")
 	}
@@ -90,6 +93,7 @@ func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.C
 		ssoIf,
 		clientForAuthorization,
 		namespace,
+		cache,
 		getFeatureFlags(),
 	}, nil
 
@@ -224,20 +228,20 @@ func precedence(serviceAccount *corev1.ServiceAccount) int {
 	return i
 }
 
-func (s *gatekeeper) getServiceAccount(ctx context.Context, claims *types.Claims, namespace string) (*corev1.ServiceAccount, error) {
-	list, err := s.clients.Kubernetes.CoreV1().ServiceAccounts(namespace).List(ctx, metav1.ListOptions{})
+func (s *gatekeeper) getServiceAccount(claims *types.Claims, namespace string) (*corev1.ServiceAccount, error) {
+	list, err := s.cache.ServiceAccountLister.ServiceAccounts(namespace).List(labels.Everything())
 	if err != nil {
 		return nil, fmt.Errorf("failed to list SSO RBAC service accounts: %w", err)
 	}
-	var serviceAccounts []corev1.ServiceAccount
-	for _, serviceAccount := range list.Items {
+	var serviceAccounts []*corev1.ServiceAccount
+	for _, serviceAccount := range list {
 		_, ok := serviceAccount.Annotations[common.AnnotationKeyRBACRule]
 		if !ok {
 			continue
 		}
 		serviceAccounts = append(serviceAccounts, serviceAccount)
 	}
-	sort.Slice(serviceAccounts, func(i, j int) bool { return precedence(&serviceAccounts[i]) > precedence(&serviceAccounts[j]) })
+	sort.Slice(serviceAccounts, func(i, j int) bool { return precedence(serviceAccounts[i]) > precedence(serviceAccounts[j]) })
 	for _, serviceAccount := range serviceAccounts {
 		rule := serviceAccount.Annotations[common.AnnotationKeyRBACRule]
 		v, err := jsonutil.Jsonify(claims)
@@ -255,7 +259,7 @@ func (s *gatekeeper) getServiceAccount(ctx context.Context, claims *types.Claims
 		if !allow {
 			continue
 		}
-		return &serviceAccount, nil
+		return serviceAccount, nil
 	}
 	return nil, fmt.Errorf("no service account rule matches")
 }
@@ -279,12 +283,12 @@ func (s *gatekeeper) getClientsForServiceAccount(ctx context.Context, claims *ty
 }
 
 func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *types.Claims, req interface{}) (*servertypes.Clients, error) {
-	serviceAccount, err := s.getServiceAccount(ctx, claims, s.namespace)
+	serviceAccount, err := s.getServiceAccount(claims, s.namespace)
 	if err != nil {
 		return nil, err
 	}
 	if s.canDelegateRBACToRequestNamespace(req) {
-		delegatedAccount, err := s.getServiceAccount(ctx, claims, getNamespace(req))
+		delegatedAccount, err := s.getServiceAccount(claims, getNamespace(req))
 		if err == nil && precedence(delegatedAccount) > precedence(serviceAccount) {
 			serviceAccount = delegatedAccount
 		}

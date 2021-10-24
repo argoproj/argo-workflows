@@ -2,9 +2,7 @@ package auth
 
 import (
 	"context"
-	"os"
-	"testing"
-
+	"github.com/argoproj/argo-workflows/v3/server/utils/k8s_utils"
 	log "github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
@@ -15,6 +13,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
+	"os"
+	"testing"
 
 	fakewfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
 	ssomocks "github.com/argoproj/argo-workflows/v3/server/auth/sso/mocks"
@@ -104,30 +104,31 @@ func TestServer_GetWFClient(t *testing.T) {
 			},
 		},
 	)
+	cache := k8s_utils.NewK8sCache(kubeClient)
 	var clientForAuthorization ClientForAuthorization = func(authorization string) (*rest.Config, *servertypes.Clients, error) {
 		return &rest.Config{}, &servertypes.Clients{Workflow: &fakewfclientset.Clientset{}, Kubernetes: &kubefake.Clientset{}}, nil
 	}
 	clients := &servertypes.Clients{Workflow: wfClient, Kubernetes: kubeClient}
 	t.Run("None", func(t *testing.T) {
-		_, err := NewGatekeeper(Modes{}, clients, nil, nil, clientForAuthorization, "")
+		_, err := NewGatekeeper(Modes{}, clients, nil, nil, clientForAuthorization, "", cache)
 		assert.Error(t, err)
 	})
 	t.Run("Invalid", func(t *testing.T) {
-		g, err := NewGatekeeper(Modes{Client: true}, clients, nil, nil, clientForAuthorization, "")
+		g, err := NewGatekeeper(Modes{Client: true}, clients, nil, nil, clientForAuthorization, "", cache)
 		if assert.NoError(t, err) {
 			_, err := g.Context(x("invalid"), nil)
 			assert.Error(t, err)
 		}
 	})
 	t.Run("NotAllowed", func(t *testing.T) {
-		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, nil, clientForAuthorization, "")
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, nil, clientForAuthorization, "", cache)
 		if assert.NoError(t, err) {
 			_, err := g.Context(x("Bearer "), nil)
 			assert.Error(t, err)
 		}
 	})
 	t.Run("Client", func(t *testing.T) {
-		g, err := NewGatekeeper(Modes{Client: true}, clients, &rest.Config{Username: "my-username"}, nil, clientForAuthorization, "")
+		g, err := NewGatekeeper(Modes{Client: true}, clients, &rest.Config{Username: "my-username"}, nil, clientForAuthorization, "", cache)
 		assert.NoError(t, err)
 		ctx, err := g.Context(x("Bearer "), nil)
 		if assert.NoError(t, err) {
@@ -137,7 +138,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		}
 	})
 	t.Run("Server", func(t *testing.T) {
-		g, err := NewGatekeeper(Modes{Server: true}, clients, &rest.Config{Username: "my-username"}, nil, clientForAuthorization, "")
+		g, err := NewGatekeeper(Modes{Server: true}, clients, &rest.Config{Username: "my-username"}, nil, clientForAuthorization, "", cache)
 		assert.NoError(t, err)
 		ctx, err := g.Context(x(""), nil)
 		if assert.NoError(t, err) {
@@ -150,7 +151,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Claims: jwt.Claims{Subject: "my-sub"}}, nil)
 		ssoIf.On("IsRBACEnabled").Return(false)
-		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns")
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns", cache)
 		if assert.NoError(t, err) {
 			ctx, err := g.Context(x("Bearer v2:whatever"), nil)
 			if assert.NoError(t, err) {
@@ -169,7 +170,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Groups: []string{"my-group", "other-group"}}, nil)
 		ssoIf.On("IsRBACEnabled").Return(true)
-		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns")
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns", cache)
 		if assert.NoError(t, err) {
 			ctx, err := g.Context(x("Bearer v2:whatever"), nil)
 			if assert.NoError(t, err) {
@@ -188,7 +189,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Groups: []string{"my-group", "other-group"}}, nil)
 		ssoIf.On("IsRBACEnabled").Return(true)
-		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns")
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns", cache)
 		if assert.NoError(t, err) {
 			ctx, err := g.Context(x("Bearer v2:whatever"), servertypes.NewNamespaceHolder("user1-ns"))
 			if assert.NoError(t, err) {
@@ -207,7 +208,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Groups: []string{"my-group", "other-group"}}, nil)
 		ssoIf.On("IsRBACEnabled").Return(true)
-		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns")
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns", cache)
 		if assert.NoError(t, err) {
 			ctx, err := g.Context(x("Bearer v2:whatever"), servertypes.NewNamespaceHolder("user1-ns"))
 			if assert.NoError(t, err) {
@@ -226,7 +227,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Groups: []string{"my-group", "other-group"}}, nil)
 		ssoIf.On("IsRBACEnabled").Return(true)
-		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns")
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns", cache)
 		if assert.NoError(t, err) {
 			ctx, err := g.Context(x("Bearer v2:whatever"), servertypes.NewNamespaceHolder("user2-ns"))
 			if assert.NoError(t, err) {
@@ -246,7 +247,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Groups: []string{"my-group", "other-group"}}, nil)
 		ssoIf.On("IsRBACEnabled").Return(true)
-		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns")
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns", cache)
 		if assert.NoError(t, err) {
 			ctx, err := g.Context(x("Bearer v2:whatever"), servertypes.NewNamespaceHolder("user3-ns"))
 			if assert.NoError(t, err) {
@@ -265,7 +266,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Groups: []string{"other-group"}}, nil)
 		ssoIf.On("IsRBACEnabled").Return(true)
-		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns")
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns", cache)
 		if assert.NoError(t, err) {
 			ctx, err := g.Context(x("Bearer v2:whatever"), nil)
 			if assert.NoError(t, err) {
@@ -278,7 +279,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{}, nil)
 		ssoIf.On("IsRBACEnabled").Return(true)
-		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns")
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns", cache)
 		if assert.NoError(t, err) {
 			_, err := g.Context(x("Bearer v2:whatever"), nil)
 			assert.EqualError(t, err, "rpc error: code = PermissionDenied desc = not allowed")

@@ -3,6 +3,7 @@ package apiserver
 import (
 	"crypto/tls"
 	"fmt"
+	"github.com/argoproj/argo-workflows/v3/server/utils/k8s_utils"
 	"net"
 	"net/http"
 	"os"
@@ -81,6 +82,7 @@ type argoServer struct {
 	eventAsyncDispatch       bool
 	xframeOptions            string
 	accessControlAllowOrigin string
+	cache *k8s_utils.K8sCache
 }
 
 type ArgoServerOpts struct {
@@ -111,6 +113,7 @@ func init() {
 
 func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error) {
 	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.Clients.Kubernetes, emptyConfigFunc)
+	cache := k8s_utils.NewK8sCache(opts.Clients.Kubernetes)
 	ssoIf := sso.NullSSO
 	if opts.AuthModes[auth.SSO] {
 		c, err := configController.Get(ctx)
@@ -125,7 +128,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 	} else {
 		log.Info("SSO disabled")
 	}
-	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Clients, opts.RestConfig, ssoIf, auth.DefaultClientForAuthorization, opts.Namespace)
+	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Clients, opts.RestConfig, ssoIf, auth.DefaultClientForAuthorization, opts.Namespace, cache)
 	if err != nil {
 		return nil, err
 	}
@@ -145,6 +148,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		eventAsyncDispatch:       opts.EventAsyncDispatch,
 		xframeOptions:            opts.XFrameOptions,
 		accessControlAllowOrigin: opts.AccessControlAllowOrigin,
+		cache:          cache,
 	}, nil
 }
 
