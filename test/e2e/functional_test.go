@@ -870,7 +870,7 @@ spec:
         maxAge: "10s"
         cache:
           configMap:
-            name: my-config
+            name: my-config-memo-step
       steps:
       - - name: cache
           template: whalesay
@@ -935,7 +935,7 @@ spec:
         maxAge: "10s"
         cache:
           configMap:
-            name: my-config
+            name: my-config-memo-dag
       dag:
         tasks:
         - name: cache
