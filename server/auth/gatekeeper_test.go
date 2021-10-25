@@ -105,7 +105,7 @@ func TestServer_GetWFClient(t *testing.T) {
 			},
 		},
 	)
-	cache := k8s_utils.NewK8sCache(kubeClient)
+	cache := k8s_utils.NewK8sCache(kubeClient, context.TODO())
 	var clientForAuthorization ClientForAuthorization = func(authorization string) (*rest.Config, *servertypes.Clients, error) {
 		return &rest.Config{}, &servertypes.Clients{Workflow: &fakewfclientset.Clientset{}, Kubernetes: &kubefake.Clientset{}}, nil
 	}
@@ -192,7 +192,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf.On("IsRBACEnabled").Return(true)
 		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns", cache)
 		if assert.NoError(t, err) {
-			ctx, err := g.Context(x("Bearer v2:whatever"), servertypes.NewNamespaceHolder("user1-ns"))
+			ctx, err := g.Context(x("Bearer v2:whatever"), servertypes.NamespaceHolder("user1-ns"))
 			if assert.NoError(t, err) {
 				assert.NotEqual(t, clients, GetWfClient(ctx))
 				assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
@@ -211,7 +211,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf.On("IsRBACEnabled").Return(true)
 		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns", cache)
 		if assert.NoError(t, err) {
-			ctx, err := g.Context(x("Bearer v2:whatever"), servertypes.NewNamespaceHolder("user1-ns"))
+			ctx, err := g.Context(x("Bearer v2:whatever"), servertypes.NamespaceHolder("user1-ns"))
 			if assert.NoError(t, err) {
 				assert.NotEqual(t, clients, GetWfClient(ctx))
 				assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
@@ -230,7 +230,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf.On("IsRBACEnabled").Return(true)
 		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns", cache)
 		if assert.NoError(t, err) {
-			ctx, err := g.Context(x("Bearer v2:whatever"), servertypes.NewNamespaceHolder("user2-ns"))
+			ctx, err := g.Context(x("Bearer v2:whatever"), servertypes.NamespaceHolder("user2-ns"))
 			if assert.NoError(t, err) {
 				assert.NotEqual(t, clients, GetWfClient(ctx))
 				assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
@@ -250,7 +250,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf.On("IsRBACEnabled").Return(true)
 		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns", cache)
 		if assert.NoError(t, err) {
-			ctx, err := g.Context(x("Bearer v2:whatever"), servertypes.NewNamespaceHolder("user3-ns"))
+			ctx, err := g.Context(x("Bearer v2:whatever"), servertypes.NamespaceHolder("user3-ns"))
 			if assert.NoError(t, err) {
 				assert.NotEqual(t, clients, GetWfClient(ctx))
 				assert.NotEqual(t, kubeClient, GetKubeClient(ctx))

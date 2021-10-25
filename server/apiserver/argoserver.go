@@ -113,7 +113,7 @@ func init() {
 
 func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error) {
 	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.Clients.Kubernetes, emptyConfigFunc)
-	cache := k8s_utils.NewK8sCache(opts.Clients.Kubernetes)
+	cache := k8s_utils.NewK8sCache(opts.Clients.Kubernetes, ctx)
 	ssoIf := sso.NullSSO
 	if opts.AuthModes[auth.SSO] {
 		c, err := configController.Get(ctx)

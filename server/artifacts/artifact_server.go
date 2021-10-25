@@ -60,7 +60,7 @@ func (a *ArtifactServer) getArtifact(w http.ResponseWriter, r *http.Request, isI
 	nodeId := requestPath[4]
 	artifactName := requestPath[5]
 
-	ctx, err := a.gateKeeping(r, types.NewNamespaceHolder(namespace))
+	ctx, err := a.gateKeeping(r, types.NamespaceHolder(namespace))
 	if err != nil {
 		a.unauthorizedError(err, w)
 		return
@@ -104,7 +104,7 @@ func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	ctx, err := a.gateKeeping(r, types.NewNamespaceHolder(wf.GetNamespace()))
+	ctx, err := a.gateKeeping(r, types.NamespaceHolder(wf.GetNamespace()))
 	if err != nil {
 		a.unauthorizedError(err, w)
 		return
@@ -126,7 +126,7 @@ func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request
 	}
 }
 
-func (a *ArtifactServer) gateKeeping(r *http.Request, ns *types.NamespaceHolder) (context.Context, error) {
+func (a *ArtifactServer) gateKeeping(r *http.Request, ns types.NamespacedRequest) (context.Context, error) {
 	token := r.Header.Get("Authorization")
 	if token == "" {
 		cookie, err := r.Cookie("authorization")

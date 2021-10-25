@@ -1,6 +1,7 @@
 package k8s_utils
 
 import (
+	"context"
 	"os"
 	"testing"
 
@@ -56,7 +57,7 @@ func TestServer_K8sUtilsCache(t *testing.T) {
 			},
 			Secrets: []v1.ObjectReference{{Name: "user-secret"}},
 		})
-	cache := NewK8sCache(kubeClient)
+	cache := NewK8sCache(kubeClient, context.TODO())
 
 	t.Run("List Service Accounts in different namespaces", func(t *testing.T) {
 		sa, _ := cache.ServiceAccountLister.ServiceAccounts("ns1").List(labels.Everything())
