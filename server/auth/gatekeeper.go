@@ -266,19 +266,25 @@ func (s *gatekeeper) getClientsForServiceAccount(claims *types.Claims, serviceAc
 }
 
 func (s *gatekeeper) rbacAuthorization(claims *types.Claims, req interface{}) (*servertypes.Clients, error) {
-	serviceAccount, err := s.getServiceAccount(claims, s.namespace)
+	ssoDelegationAllowed, ssoDelegated := false, false
+	loginAccount, err := s.getServiceAccount(claims, s.namespace)
 	if err != nil {
 		return nil, err
 	}
+	delegatedAccount := loginAccount
 	if s.canDelegateRBACToRequestNamespace(req) {
-		delegatedAccount, err := s.getServiceAccount(claims, getNamespace(req))
-		if err == nil && precedence(delegatedAccount) > precedence(serviceAccount) {
-			serviceAccount = delegatedAccount
+		ssoDelegationAllowed = true
+		namespaceAccount, err := s.getServiceAccount(claims, getNamespace(req))
+		if err != nil {
+			log.Info("Error while SSO Delegation: ", err)
+		} else if precedence(namespaceAccount) > precedence(loginAccount) {
+			delegatedAccount = namespaceAccount
+			ssoDelegated = true
 		}
 	}
 	// important! write an audit entry (i.e. log entry) so we know which user performed an operation
-	log.WithFields(log.Fields{"serviceAccount": serviceAccount.Name, "subject": claims.Subject}).Info("selected SSO RBAC service account for user")
-	return s.getClientsForServiceAccount(claims, serviceAccount)
+	log.WithFields(log.Fields{"serviceAccount": loginAccount.Name, "delegatedServiceAccount": delegatedAccount.Name, "subject": claims.Subject, "ssoDelegationAllowed": ssoDelegationAllowed, "ssoDelegated": ssoDelegated}).Info("selected SSO RBAC service account for user")
+	return s.getClientsForServiceAccount(claims, loginAccount)
 }
 
 func (s *gatekeeper) authorizationForServiceAccount(serviceAccount *corev1.ServiceAccount) (string, error) {
