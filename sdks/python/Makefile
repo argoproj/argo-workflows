@@ -103,8 +103,10 @@ spec:
 	curl -sSL https://raw.githubusercontent.com/kubernetes/kubernetes/${KUBERNETES_BRANCH}/api/openapi-spec/swagger.json \
 		-o ${KUBERNETES_OPENAPI_SPEC}
 
-	@echo "Collecting API spec for Argo ${ARGO_VERSION}"
-	curl -sSL https://raw.githubusercontent.com/argoproj/argo-workflows/v${ARGO_VERSION}/api/openapi-spec/swagger.json \
+	@echo "Collecting API spec for Argo Workflows ${ARGO_VERSION}"
+	# TODO: Use a particular version instead of master
+	# "master" is used here to incorporate fix in https://github.com/argoproj/argo-workflows/commit/ba472e1319d1a393107947aa6d5980906d1cb711
+	curl -sSL https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/openapi-spec/swagger.json \
 		-o ${ARGO_OPENAPI_SPEC}
 
 	# @echo "Extracting definitions"
