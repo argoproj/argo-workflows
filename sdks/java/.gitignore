@@ -1,8 +1,8 @@
-/api/.openapi-generator/
-/api/api/
-/api/src/
-/api/gradle/
-/api/.gitignore
-/api/.openapi-generator-ignore
-/api/gradlew
-/api/*.*
+/client/.openapi-generator/
+/client/api/
+/client/src/
+/client/gradle/
+/client/.gitignore
+/client/.openapi-generator-ignore
+/client/gradlew
+/client/*.*

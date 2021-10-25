@@ -10,32 +10,22 @@ endif
 # work dir
 WD                    := $(shell echo "`pwd`/client")
 
-DOCKER = docker run --rm -v $(HOME)/.m2:/root/.m2 -v $(WD):/wd --workdir /wd
-MVN = $(DOCKER) -e JAVA_SDK_MAVEN_PASSWORD=${JAVA_SDK_MAVEN_PASSWORD} maven:3-openjdk-8 mvn -s settings.xml
+DOCKER = docker run --rm -v $(WD):/wd --workdir /wd
+MVN = $(DOCKER) -v $(HOME)/.m2:/root/.m2 -e JAVA_SDK_MAVEN_PASSWORD=${JAVA_SDK_MAVEN_PASSWORD} maven:3-openjdk-8 mvn -s settings.xml
 CHOWN = chown -R $(shell id -u):$(shell id -g)
 
 publish: build
 	# https://help.github.com/en/packages/using-github-packages-with-your-projects-ecosystem/configuring-apache-maven-for-use-with-github-packages
 	$(MVN) deploy -DskipTests -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/argoproj/argo-workflows
 
-build: generate $(WD)/settings.xml
-	$(MVN) install
-
-generate: $(WD)/pom.xml
-
-$(WD):
+generate:
+	rm -Rf $(WD)
 	mkdir -p $(WD)
-
-$(WD)/settings.xml: settings.xml $(WD)
 	cp settings.xml $(WD)/settings.xml
-
-$(WD)/swagger.json: ../../api/openapi-spec/swagger.json $(WD)
 	cat ../../api/openapi-spec/swagger.json | \
 		sed 's/io.k8s.api.core.v1.//' | \
 		sed 's/io.k8s.apimachinery.pkg.apis.meta.v1.//' \
 		> $(WD)/swagger.json
-
-$(WD)/pom.xml: $(WD)/swagger.json
 	$(DOCKER) openapitools/openapi-generator-cli:v5.2.1 \
 		generate \
 		-i /wd/swagger.json \
@@ -77,8 +67,6 @@ $(WD)/pom.xml: $(WD)/swagger.json
 		--generate-alias-as-model
 	# https://vsupalov.com/docker-shared-permissions/#set-the-docker-user-when-running-your-container
 	$(CHOWN) $(WD) || sudo $(CHOWN) $(WD)
-	# replace the generated pom.xml that has too many dependencies
+	# replace the generated pom.xml, because that has too many dependencies
 	sed 's/0.0.0-VERSION/$(VERSION)/' pom.xml > $(WD)/pom.xml
 
-clean:
-	rm -Rf $(WD)
