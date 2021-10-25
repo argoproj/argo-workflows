@@ -179,7 +179,6 @@ changelog:
 
 .PHONY:builder_image
 builder_image:
-	cp ../../api/openapi-spec/swagger.json openapi/specs/argo-3.2.2.json
 	docker build -f builder_image/Dockerfile -t ${BUILDER_IMAGE} .
 
 builder_make:
