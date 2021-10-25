@@ -42,7 +42,6 @@ nav:
           - cron-backfill.md
           - templates.md
           - http-template.md
-          - sdks.md
           - container-set-template.md
           - template-defaults.md
           - work-avoidance.md
@@ -71,6 +70,7 @@ nav:
           - swagger.md
           - rest-api.md
           - rest-examples.md
+          - client-libraries.md
           - events.md
           - webhooks.md
           - submit-workflow-via-automation.md

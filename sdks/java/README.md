@@ -1,12 +1,12 @@
 # Java SDK
 
-## Overview
+## Download
 
-The Java SDK provides model and APIs for accessing the Argo Server API rather.
+## Client Library
+
+This provides model and APIs for accessing the Argo Server API rather.
 
 If you wish to access the Kubernetes APIs, you can use the models to do this. You'll need to write your own code to speak to the API.
-
-## Download
 
 ⚠️ The Java SDK is published to Github packages, not Maven Central. You must update your Maven settings.xml
 file: [how to do that](https://github.com/argoproj/argo-workflows/packages).
@@ -31,11 +31,15 @@ The very latest version:
 </dependency>
 ```
 
+## Examples
+
+* [Example.java](examples/client)
+
 ## Docs
 
-* [Event service](api/docs/EventServiceApi.md)
-* [Sensor service](api/docs/SensorServiceApi.md)
-* [Event source service](api/docs/EventSourceServiceApi.md)
-* [Info service](api/docs/InfoServiceApi.md )
-* [Pipeline service](api/docs/PipelineServiceApi.md)
-* [Workflow service](api/docs/WorkflowServiceApi.md)
+* [Event service](client/docs/EventServiceApi.md)
+* [Sensor service](client/docs/SensorServiceApi.md)
+* [Event source service](client/docs/EventSourceServiceApi.md)
+* [Info service](client/docs/InfoServiceApi.md )
+* [Pipeline service](client/docs/PipelineServiceApi.md)
+* [Workflow service](client/docs/WorkflowServiceApi.md)
