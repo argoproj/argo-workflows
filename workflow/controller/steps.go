@@ -8,11 +8,13 @@ import (
 	"time"
 
 	"github.com/Knetic/govaluate"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/template"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 )
 
@@ -152,7 +154,16 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 		node.Outputs = outputs
 		woc.addOutputsToGlobalScope(node.Outputs)
 		woc.wf.Status.Nodes[node.ID] = *node
+		if node.MemoizationStatus != nil {
+			c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
+			err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
+			if err != nil {
+				woc.log.WithFields(log.Fields{"nodeID": node.ID}).WithError(err).Error("Failed to save node outputs to cache")
+				node.Phase = wfv1.NodeError
+			}
+		}
 	}
+
 	return woc.markNodePhase(nodeName, wfv1.NodeSucceeded), nil
 }
 
