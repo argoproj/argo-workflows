@@ -1,7 +1,0 @@
-{
-  "info": {
-    "title": "Argo Python SDK",
-    "description": "Python client for Argo Workflows",
-    "version": "3.2.2"
-  }
-}

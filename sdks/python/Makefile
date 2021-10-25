@@ -1,191 +1,41 @@
-SHELL := /bin/bash
+GIT_TAG               := $(shell git describe --exact-match --tags --abbrev=0 2> /dev/null || echo untagged)
+ifeq ($(GIT_TAG),untagged)
+VERSION               := 0.0.0-latest
+else
+# remove the "v" prefix, not allowed
+VERSION               := $(GIT_TAG:v=)
+endif
 
-BUILDER_IMAGE				= argo-builder
-PACKAGE_NAME        = workflows.client
-PACKAGE_DESCRIPTION = Python client for Argo Workflows
+# work dir
+WD                    := $(shell echo "`pwd`/client")
 
-CURRENT_DIR ?= $(shell pwd)
-OUTPUT_DIR  ?= .
+DOCKER = docker run --rm -v $(WD):/wd --workdir /wd
+CHOWN = chown -R $(shell id -u):$(shell id -g)
 
-define get_branch
-$(shell git branch | sed -n '/\* /s///p')
-endef
+publish: generate
+	echo "TODO: Publish the package to PyPI"
 
-define get_tree_state
-$(shell \
-	if [ -z "`git status --porcelain`" ]; then \
-		echo "clean" \
-	else \
-		echo "dirty" \
-	fi
-)
-endef
-
-GIT_COMMIT     = $(shell git rev-parse HEAD)
-
-GIT_BRANCH     = $(call get_branch)
-GIT_TREE_STATE = $(call get_tree_state)
-
-CLIENT_VERSION    ?= $(shell b="${GIT_BRANCH}"; v="$${b/release-/}.0"; echo "$${v:0:5}")
-
-ARGO_VERSION      ?= $(shell cat ARGO_VERSION)
-ARGO_API_GROUP    ?= argoproj.io
-ARGO_API_VERSION  ?= v1alpha1
-ARGO_OPENAPI_SPEC  = openapi/specs/argo-${ARGO_VERSION}.json
-
-KUBERNETES_BRANCH      ?= release-1.16
-KUBERNETES_OPENAPI_SPEC = openapi/specs/kubernetes-${KUBERNETES_BRANCH}.json
-
-OPENAPI_SPEC   = openapi/swagger.json
-OPENAPI_CONFIG = openapi/custom/config.json
-
-PYPI_REPOSITORY ?= https://upload.pypi.org/legacy/
-
-.PHONY: all
-all: clean spec preprocess client
-# all: clean validate spec preprocess client
-
-.PHONY: clean
-clean:
-	-find  ${OUTPUT_DIR}/argo/workflows/client/* -maxdepth 1 -not -name "__*__.py" -exec rm -r {} \;
-	-rm -r ${OUTPUT_DIR}/docs/
-	-rm -r ${OUTPUT_DIR}/workflows/
-	-rm -r ${OUTPUT_DIR}/${PACKAGE_NAME}/
-
-	pushd openapi/ ; git clean -d --force ; popd
-
-.PHONY: patch
-patch: SHELL:=/bin/bash
-patch:
-
-
-
-	sed -i "s/__version__ = \(.*\)/__version__ = \"${CLIENT_VERSION}\"/g" argo/workflows/client/__about__.py
-
-	python setup.py sdist bdist_wheel
-	twine check dist/* || (echo "Twine check did not pass. Aborting."; exit 1)
-
-	git commit -a -m ":wrench: Patch ${CLIENT_VERSION}" --signoff
-	git tag -a "v${CLIENT_VERSION}" -m "Patch ${CLIENT_VERSION}"
-
-.PHONY: release
-release: SHELL:=/bin/bash
-release:
-	- rm -rf build/ dist/
-	- git tag --delete "v${CLIENT_VERSION}"
-
-	$(MAKE) changelog
-
-	sed -i "s/__version__ = \(.*\)/__version__ = \"${CLIENT_VERSION}\"/g" argo/workflows/client/__about__.py
-
-	python setup.py sdist bdist_wheel
-	twine check dist/* || (echo "Twine check did not pass. Aborting."; exit 1)
-
-	v=${CLIENT_VERSION}; git commit -a -m ":tada: Release $${v:0:3}" --signoff
-	v=${CLIENT_VERSION}; git tag -a "v${CLIENT_VERSION}" -m "Release $${v:0:3}"
-
-validate:
-	@echo "Validating version '${CLIENT_VERSION}' on branch '{GIT_BRANCH}'"
-
-	if [ "$(shell python -c \
-		"from semantic_version import validate; print( validate('${CLIENT_VERSION}') )" \
-	)" != "True" ]; then \
-		echo "Invalid version. Aborting."; \
-		exit 1; \
-	fi
-
-spec:
-	# Make sure the folders exist
-	mkdir -p openapi/specs/
-	mkdir -p openapi/definitions/
-
-	@echo "Collecting API spec for Kubernetes ${ARGO_VERSION}"
-	curl -sSL https://raw.githubusercontent.com/kubernetes/kubernetes/${KUBERNETES_BRANCH}/api/openapi-spec/swagger.json \
-		-o ${KUBERNETES_OPENAPI_SPEC}
-
-	@echo "Collecting API spec for Argo Workflows ${ARGO_VERSION}"
-	# TODO: Use a particular version instead of master
-	# "master" is used here to incorporate fix in https://github.com/argoproj/argo-workflows/commit/ba472e1319d1a393107947aa6d5980906d1cb711
-	curl -sSL https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/openapi-spec/swagger.json \
-		-o ${ARGO_OPENAPI_SPEC}
-
-	# @echo "Extracting definitions"
-	# jq -r '{ definitions: .definitions }' ${ARGO_OPENAPI_SPEC} \
-	# 	> openapi/definitions/argo.json
-
-	# @echo "Merging API definitions"
-	# jq -sS '.[0] * .[1]' \
-	# 	openapi/definitions/argo.json \
-	# 	openapi/definitions/V1Time.json \
-	# 	> openapi/definitions.json
-
-	@echo "Creating OpenAPI info"
-	echo '{"info": {"title": "Argo Python SDK", "description": "${PACKAGE_DESCRIPTION}", "version": "${ARGO_VERSION}"}}' | jq -r '.' \
-		> openapi/info.json
-
-	# @echo "Process OpenAPI paths"
-	# jinja2 openapi/custom/paths.json --format=json --strict \
-	# 	-Dargo_api_group=${ARGO_API_GROUP} \
-	# 	-Dargo_api_version=${ARGO_API_VERSION} \
-	# 	> openapi/paths.json
-
-	@echo "Creating OpenAPI spec"
-	jq -s '.[0]' \
-	 	openapi/info.json \
-	 	> ${OPENAPI_SPEC}
-	# @echo "Creating OpenAPI spec"
-	# jq -s '.[0] + .[1] + .[2] + .[3] + .[4]' \
-	# 	openapi/custom/version.json \
-	#  	openapi/info.json \
-	#  	openapi/custom/security.json \
-	#  	openapi/paths.json \
-	#  	openapi/definitions.json \
-	#  	> ${OPENAPI_SPEC}
-
-
-preprocess:
-	@echo "Preprocessing API specs"
-	python3 scripts/preprocess.py -i ${ARGO_OPENAPI_SPEC} \
-		-d 'io.argoproj.workflow' \
-		-d 'cronio.argoproj.workflow' \
-		-d 'io.k8s.api.core' \
-		-d 'io.k8s.apimachinery.pkg.apis.meta' \
-		-o ${OPENAPI_SPEC} >/dev/null
-
-	# Replace empty references
-	sed -i -e '/"$$ref"/ s/io.argoproj.workflow.//' ${OPENAPI_SPEC}
-
-
-	# Patch DAGTask template requirement
-	# No longer needed
-	# This is an unpleasant workaround, since OpenAPI 2.0 does not allow `oneOf`
-	# jq -r '.definitions."v1alpha1.DAGTask".required = ["name"]' ${OPENAPI_SPEC} |\
-	# sponge ${OPENAPI_SPEC}
-
-.PHONY:client
-client: clean
-	-find  ${OUTPUT_DIR}/argo/workflows/client/* -maxdepth 1 -not -name "__*__.py" -exec rm -r {} \;
-	-rm -r ${OUTPUT_DIR}/docs/
-	-rm -r ${OUTPUT_DIR}/workflows/
-	-rm -r ${OUTPUT_DIR}/${PACKAGE_NAME}/
-
-	@echo "Generating Argo ${ARGO_VERSION} client"
-
-	CLIENT_VERSION=${CLIENT_VERSION} \
-	KUBERNETES_BRANCH=${KUBERNETES_BRANCH} \
-	PACKAGE_NAME=${PACKAGE_NAME} \
-		./scripts/generate_client.sh ${OUTPUT_DIR} ${OPENAPI_SPEC} ${OPENAPI_CONFIG}
-
-changelog:
-	RELEASE_VERSION=${CLIENT_VERSION} ./scripts/generate_changelog.sh
-
-.PHONY:builder_image
-builder_image:
-	docker build -f builder_image/Dockerfile -t ${BUILDER_IMAGE} .
-
-builder_make:
-	docker run -w `pwd` --entrypoint make --rm -v `pwd`:`pwd` -v /var/run/docker.sock:/var/run/docker.sock ${BUILDER_IMAGE}
-
-publish: builder_image builder_make
-	echo "TODO: Publishing the package to PyPI..."
-	# docker run -w `pwd` -it --entrypoint make --rm -v `pwd`:`pwd` -v /var/run/docker.sock:/var/run/docker.sock ${BUILDER_IMAGE} release
+generate:
+	rm -Rf $(WD)
+	mkdir -p $(WD)
+# 	cp settings.xml $(WD)/settings.xml
+	cat ../../api/openapi-spec/swagger.json | \
+		sed 's/io.k8s.api.core.v1.//' | \
+		sed 's/io.k8s.apimachinery.pkg.apis.meta.v1.//' \
+		> $(WD)/swagger.json
+	$(DOCKER) openapitools/openapi-generator-cli:v5.2.1 \
+		generate \
+		-i /wd/swagger.json \
+		-g python \
+		-o /wd \
+		-p hideGenerationTimestamp=true \
+		--api-package io.argoproj.workflow.apis \
+		--invoker-package io.argoproj.workflow \
+		--skip-validate-spec \
+		--artifact-id argo-client-python \
+		--global-property modelTests=false \
+ 		--global-property packageName=workflows.client \
+ 		--global-property packageVersion=${CLIENT_VERSION}
+		--generate-alias-as-model
+	# https://vsupalov.com/docker-shared-permissions/#set-the-docker-user-when-running-your-container
+	$(CHOWN) $(WD) || sudo $(CHOWN) $(WD)
