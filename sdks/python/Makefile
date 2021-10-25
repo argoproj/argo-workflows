@@ -194,10 +194,12 @@ changelog:
 
 .PHONY:builder_image
 builder_image:
+	cp ../api/openapi-spec/swagger.json openapi/specs/argo-3.2.2.json
 	docker build -f builder_image/Dockerfile -t ${BUILDER_IMAGE} .
 
 builder_make:
 	docker run -w `pwd` --entrypoint make --rm -v `pwd`:`pwd` -v /var/run/docker.sock:/var/run/docker.sock ${BUILDER_IMAGE}
 
-builder_release:
-	docker run -w `pwd` -it --entrypoint make --rm -v `pwd`:`pwd` -v /var/run/docker.sock:/var/run/docker.sock ${BUILDER_IMAGE} release
+publish: builder_image builder_make
+	echo "TODO: Publishing the package to PyPI..."
+	# docker run -w `pwd` -it --entrypoint make --rm -v `pwd`:`pwd` -v /var/run/docker.sock:/var/run/docker.sock ${BUILDER_IMAGE} release

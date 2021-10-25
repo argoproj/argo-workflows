@@ -181,22 +181,6 @@ jobs:
         with:
           version: v1.42.0
 
-  sdk:
-    name: SDK
-    runs-on: ubuntu-20.04
-    timeout-minutes: 10
-    strategy:
-      matrix:
-        name:
-        - python
-    steps:
-      - uses: actions/checkout@v2
-      - run: |
-          cd sdk-${{matrix.name}}
-          cp ../api/openapi-spec/swagger.json openapi/specs/argo-3.2.2.json
-          make builder_image
-          make builder_make
-
   ui:
     name: UI
     runs-on: ubuntu-20.04
