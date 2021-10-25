@@ -18,7 +18,6 @@ jobs:
         - java
     steps:
       - uses: actions/checkout@v2
-      - run: make --directory sdks/${{matrix.name}} build -B
       - run: make --directory sdks/${{matrix.name}} publish -B
         env:
           JAVA_SDK_MAVEN_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
