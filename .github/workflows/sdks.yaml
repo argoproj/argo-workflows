@@ -7,16 +7,15 @@ on:
       - 'v3.1.*'
     branches:
       - dev-*
-      - python-sdk
 jobs:
   sdk:
-    if: github.repository == 'terrytangyuan/argo-workflows'
+    if: github.repository == 'argoproj/argo-workflows'
     runs-on: ubuntu-latest
     name: Publish SDK
     strategy:
       matrix:
         name:
-        # - java
+        - java
         - python
     steps:
       - uses: actions/checkout@v2
