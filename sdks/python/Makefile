@@ -18,7 +18,6 @@ publish: generate
 generate:
 	rm -Rf $(WD)
 	mkdir -p $(WD)
-# 	cp settings.xml $(WD)/settings.xml
 	cat ../../api/openapi-spec/swagger.json | \
 		sed 's/io.k8s.api.core.v1.//' | \
 		sed 's/io.k8s.apimachinery.pkg.apis.meta.v1.//' \
