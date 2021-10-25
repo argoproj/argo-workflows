@@ -840,3 +840,134 @@ spec:
 func TestFunctionalSuite(t *testing.T) {
 	suite.Run(t, new(FunctionalSuite))
 }
+
+func (s *FunctionalSuite) TestStepLevelMemozie() {
+	s.Given().
+		Workflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-memozie-
+spec:
+  entrypoint: hello-hello-hello
+  templates:
+    - name: hello-hello-hello
+      steps:
+        - - name: hello1
+            template: memostep
+            arguments:
+              parameters: [{name: message, value: "hello1"}]
+        - - name: hello2a
+            template: memostep
+            arguments:
+              parameters: [{name: message, value: "hello1"}]
+    - name: memostep
+      inputs:
+        parameters:
+        - name: message
+      memoize:
+        key: "{{inputs.parameters.message}}"
+        maxAge: "10s"
+        cache:
+          configMap:
+            name: my-config-memo-step
+      steps:
+      - - name: cache
+          template: whalesay
+          arguments:
+            parameters: [{name: message, value: "{{inputs.parameters.message}}"}]
+      outputs:
+        parameters:
+        - name: output
+          valueFrom:
+            Parameter: "{{steps.cache.outputs.result}}"
+    - name: whalesay
+      inputs:
+        parameters:
+        - name: message
+      container:
+        image: argoproj/argosay:v2
+        command: [echo]
+        args: ["{{inputs.parameters.message}}"]
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			memoHit := false
+			for _, node := range status.Nodes {
+				if node.MemoizationStatus != nil && node.MemoizationStatus.Hit {
+					memoHit = true
+				}
+			}
+			assert.True(t, memoHit)
+
+		})
+
+}
+
+func (s *FunctionalSuite) TestDAGLevelMemozie() {
+	s.Given().
+		Workflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-memozie-
+spec:
+  entrypoint: hello-hello-hello
+  templates:
+    - name: hello-hello-hello
+      steps:
+        - - name: hello1
+            template: memostep
+            arguments:
+              parameters: [{name: message, value: "hello1"}]
+        - - name: hello2a
+            template: memostep
+            arguments:
+              parameters: [{name: message, value: "hello1"}]
+    - name: memostep
+      inputs:
+        parameters:
+        - name: message
+      memoize:
+        key: "{{inputs.parameters.message}}"
+        maxAge: "10s"
+        cache:
+          configMap:
+            name: my-config-memo-dag
+      dag:
+        tasks:
+        - name: cache
+          template: whalesay
+          arguments:
+            parameters: [{name: message, value: "{{inputs.parameters.message}}"}]
+      outputs:
+        parameters:
+        - name: output
+          valueFrom:
+            Parameter: "{{tasks.cache.outputs.result}}"
+    - name: whalesay
+      inputs:
+        parameters:
+        - name: message
+      container:
+        image: argoproj/argosay:v2
+        command: [echo]
+        args: ["{{inputs.parameters.message}}"]
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			memoHit := false
+			for _, node := range status.Nodes {
+				if node.MemoizationStatus != nil && node.MemoizationStatus.Hit {
+					memoHit = true
+				}
+			}
+			assert.True(t, memoHit)
+
+		})
+
+}
