@@ -61,9 +61,9 @@ Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) hosted pr
 |
 [Kubeflow Pipelines](https://github.com/kubeflow/pipelines)
 
-## SDKs
+## Client Libraries
 
-Check out our [Java, Golang and Python SDKs](https://github.com/argoproj-labs/argo-client-gen).
+Check out our [Java, Golang and Python clients](docs/client-libraries.md).
 
 ## Quickstart
 
