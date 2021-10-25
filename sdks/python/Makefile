@@ -11,16 +11,6 @@ define get_branch
 $(shell git branch | sed -n '/\* /s///p')
 endef
 
-define get_tag
-$(shell \
-	if [ -z "`git status --porcelain`" ]; then \
-		git describe \
-			--exact-match \
-			--tags HEAD 2>/dev/null || (>&2 echo "Tag has not been created.") \
-	fi \
-)
-endef
-
 define get_tree_state
 $(shell \
 	if [ -z "`git status --porcelain`" ]; then \
@@ -34,12 +24,7 @@ endef
 GIT_COMMIT     = $(shell git rev-parse HEAD)
 
 GIT_BRANCH     = $(call get_branch)
-GIT_TAG        = $(call get_tag)
 GIT_TREE_STATE = $(call get_tree_state)
-
-ifeq (${GIT_TAG},)
-GIT_TAG = $(shell git rev-parse --abbrev-ref HEAD)
-endif
 
 CLIENT_VERSION    ?= $(shell b="${GIT_BRANCH}"; v="$${b/release-/}.0"; echo "$${v:0:5}")
 
@@ -119,7 +104,7 @@ spec:
 		-o ${KUBERNETES_OPENAPI_SPEC}
 
 	@echo "Collecting API spec for Argo ${ARGO_VERSION}"
-	curl -sSL https://raw.githubusercontent.com/argoproj/argo/v${ARGO_VERSION}/api/openapi-spec/swagger.json \
+	curl -sSL https://raw.githubusercontent.com/argoproj/argo-workflows/v${ARGO_VERSION}/api/openapi-spec/swagger.json \
 		-o ${ARGO_OPENAPI_SPEC}
 
 	# @echo "Extracting definitions"
