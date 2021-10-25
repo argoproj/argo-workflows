@@ -36,7 +36,7 @@
     
     
       
-        <title>IDE Set-Up - Argo Workflows - The workflow engine for Kubernetes</title>
+        <title>Client Libraries - Argo Workflows - The workflow engine for Kubernetes</title>
       
     
     
@@ -127,7 +127,7 @@
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
     <label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
     
-      <a href="#ide-set-up" tabindex="1" class="md-skip">
+      <a href="#client-libraries" tabindex="1" class="md-skip">
         Skip to content
       </a>
     
@@ -152,7 +152,7 @@
               Argo Workflows - The workflow engine for Kubernetes
             </span>
             <span class="md-header-nav__topic">
-              IDE Set-Up
+              Client Libraries
             </span>
           
         </div>
@@ -761,10 +761,12 @@
           
           
 
+  
 
-  <li class="md-nav__item md-nav__item--nested">
+
+  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-5-3" type="checkbox" id="nav-5-3">
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-5-3" type="checkbox" id="nav-5-3" checked>
     
     <label class="md-nav__link" for="nav-5-3">
       Advanced
@@ -876,11 +878,56 @@
           
           
 
+  
 
-  <li class="md-nav__item">
-    <a href="../client-libraries/" title="Client Libraries" class="md-nav__link">
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        Client Libraries
+      </label>
+    
+    <a href="./" title="Client Libraries" class="md-nav__link md-nav__link--active">
       Client Libraries
     </a>
+    
+      
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#officially-supported-client-libraries" title="Officially-supported client libraries" class="md-nav__link">
+    Officially-supported client libraries
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#community-maintained-client-libraries" title="Community-maintained client libraries" class="md-nav__link">
+    Community-maintained client libraries
+  </a>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
+</nav>
+    
   </li>
 
         
@@ -989,69 +1036,11 @@
           
           
 
-  
 
-
-  <li class="md-nav__item md-nav__item--active">
-    
-    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-    
-      
-    
-    
-      <label class="md-nav__link md-nav__link--active" for="__toc">
-        IDE Set-Up
-      </label>
-    
-    <a href="./" title="IDE Set-Up" class="md-nav__link md-nav__link--active">
+  <li class="md-nav__item">
+    <a href="../ide-setup/" title="IDE Set-Up" class="md-nav__link">
       IDE Set-Up
     </a>
-    
-      
-<nav class="md-nav md-nav--secondary">
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">Table of contents</label>
-    <ul class="md-nav__list" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#validating-argo-yaml-against-the-json-schema" title="Validating Argo YAML against the JSON Schema" class="md-nav__link">
-    Validating Argo YAML against the JSON Schema
-  </a>
-  
-    <nav class="md-nav">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#intellij-idea-community-utimate-editions" title="IntelliJ IDEA (Community &amp; Utimate Editions)" class="md-nav__link">
-    IntelliJ IDEA (Community &amp; Utimate Editions)
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#vscode" title="VSCode" class="md-nav__link">
-    VSCode
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-      
-      
-      
-      
-    </ul>
-  
-</nav>
-    
   </li>
 
         
@@ -2257,29 +2246,16 @@
     <ul class="md-nav__list" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#validating-argo-yaml-against-the-json-schema" title="Validating Argo YAML against the JSON Schema" class="md-nav__link">
-    Validating Argo YAML against the JSON Schema
-  </a>
-  
-    <nav class="md-nav">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#intellij-idea-community-utimate-editions" title="IntelliJ IDEA (Community &amp; Utimate Editions)" class="md-nav__link">
-    IntelliJ IDEA (Community &amp; Utimate Editions)
+  <a href="#officially-supported-client-libraries" title="Officially-supported client libraries" class="md-nav__link">
+    Officially-supported client libraries
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#vscode" title="VSCode" class="md-nav__link">
-    VSCode
+      
+        <li class="md-nav__item">
+  <a href="#community-maintained-client-libraries" title="Community-maintained client libraries" class="md-nav__link">
+    Community-maintained client libraries
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -2299,36 +2275,65 @@
             <article class="md-content__inner md-typeset">
               
                 
-                  <a href="https://github.com/argoproj/argo-workflows/edit/master/docs/ide-setup.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
+                  <a href="https://github.com/argoproj/argo-workflows/edit/master/docs/client-libraries.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
                 
                 
-                <h1 id="ide-set-up">IDE Set-Up<a class="headerlink" href="#ide-set-up" title="Permanent link">&para;</a></h1>
-<h2 id="validating-argo-yaml-against-the-json-schema">Validating Argo YAML against the JSON Schema<a class="headerlink" href="#validating-argo-yaml-against-the-json-schema" title="Permanent link">&para;</a></h2>
-<p>Argo provides a <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/jsonschema/schema.json">JSON Schema</a> that enables validation of YAML resources in your IDE.</p>
-<h3 id="intellij-idea-community-utimate-editions">IntelliJ IDEA (Community &amp; Utimate Editions)<a class="headerlink" href="#intellij-idea-community-utimate-editions" title="Permanent link">&para;</a></h3>
-<p>YAML validation is supported natively in IDEA.</p>
-<p>Configure your IDE to reference the Argo schema and map it to your Argo YAML files:</p>
-<p><img alt="IDEA Configure Schema" src="../assets/intellij-ide-step-1-config.png" />
-- The schema is located at <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/jsonschema/schema.json">https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/jsonschema/schema.json</a>.
-- Specify a file glob pattern that locates <strong>your</strong> Argo files. The example glob here is for the Argo Github project!
-- Note that you may need to restart IDEA to pick up the changes.</p>
-<p>That's it. Open an Argo YAML file and you should see smarter behaviour, including type errors and context-sensitive autocomplete.</p>
-<p><img alt="IDEA Example Functionality" src="../assets/intellij-ide-step-1-example-functionality.png" /></p>
-<h3 id="vscode">VSCode<a class="headerlink" href="#vscode" title="Permanent link">&para;</a></h3>
-<p>The <a href="https://github.com/redhat-developer/vscode-yaml">Red Hat YAML</a> plugin will provide error highlighting and autocompletion for Argo resources.</p>
-<p>Install the Red Hat YAML plugin in VSCode and open extension settings:</p>
-<p><img alt="VSCode Install Plugin" src="../assets/vscode-ide-step-1-install-plugin.png" /></p>
-<p>Open the YAML schemas settings:</p>
-<p><img alt="VSCode YAML Schema Settings" src="../assets/vscode-ide-step-2-schema-settings.png" /></p>
-<p>Add the Argo schema setting <code>yaml.schemas</code>:</p>
-<p><img alt="VSCode Specify Argo Schema" src="../assets/vscode-ide-step-3-spec-schema.png" /></p>
-<ul>
-<li>The schema is located at <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/jsonschema/schema.json">https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/jsonschema/schema.json</a>.</li>
-<li>Specify a file glob pattern that locates <strong>your</strong> Argo files. The example glob here is for the Argo Github project!</li>
-<li>Note that other defined schemas with overlapping glob patterns may cause errors.</li>
-</ul>
-<p>That's it. Open an Argo YAML file and you should see smarter behaviour, including type errors and context-sensitive autocomplete.</p>
-<p><img alt="VScode Example Functionality" src="../assets/vscode-ide-step-4-example-functionality.png" /></p>
+                <h1 id="client-libraries">Client Libraries<a class="headerlink" href="#client-libraries" title="Permanent link">&para;</a></h1>
+<p>This page contains an overview of the client libraries for using the Argo API from various programming languages.</p>
+<p>To write applications using the REST API, you do not need to implement the API calls and request/response types
+yourself. You can use a client library for the programming language you are using.</p>
+<p>Client libraries often handle common tasks such as authentication for you.</p>
+<h2 id="officially-supported-client-libraries">Officially-supported client libraries<a class="headerlink" href="#officially-supported-client-libraries" title="Permanent link">&para;</a></h2>
+<p>The following client libraries are officially maintained by the Argo team.</p>
+<table>
+<thead>
+<tr>
+<th>Language</th>
+<th>Client Library</th>
+<th>Examples/Docs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Golang</td>
+<td><a href="https://github.com/argoproj/argo-workflows/blob/master/pkg/apiclient/apiclient.go">apiclient.go</a></td>
+<td><a href="https://github.com/argoproj/argo-workflows/blob/master/cmd/argo/commands/submit.go">Example</a></td>
+</tr>
+<tr>
+<td>Java</td>
+<td><a href="https://github.com/argoproj/argo-workflows/blob/master/sdks/java">java</a></td>
+<td></td>
+</tr>
+<tr>
+<td>Python</td>
+<td><a href="python">python</a></td>
+<td>TBC</td>
+</tr>
+</tbody>
+</table>
+<h2 id="community-maintained-client-libraries">Community-maintained client libraries<a class="headerlink" href="#community-maintained-client-libraries" title="Permanent link">&para;</a></h2>
+<p>The following client libraries are provided and maintained by their authors, not the Argo team.</p>
+<table>
+<thead>
+<tr>
+<th>Language</th>
+<th>Client Library</th>
+<th>Info</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python</td>
+<td><a href="https://github.com/couler-proj/couler">Couler</a></td>
+<td>Multi-workflow engine support Python SDK</td>
+</tr>
+<tr>
+<td>Python</td>
+<td>Hera</td>
+<td>TBC</td>
+</tr>
+</tbody>
+</table>
                 
                   
                 
@@ -2349,7 +2354,7 @@
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid">
         
-          <a href="../running-at-massive-scale/" title="Running At Massive Scale" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+          <a href="../rest-examples/" title="API Examples" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
             <div class="md-flex__cell md-flex__cell--shrink">
               <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
             </div>
@@ -2358,19 +2363,19 @@
                 <span class="md-footer-nav__direction">
                   Previous
                 </span>
-                Running At Massive Scale
+                API Examples
               </span>
             </div>
           </a>
         
         
-          <a href="../fields/" title="Field Reference" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+          <a href="../events/" title="Events" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
               <span class="md-flex__ellipsis">
                 <span class="md-footer-nav__direction">
                   Next
                 </span>
-                Field Reference
+                Events
               </span>
             </div>
             <div class="md-flex__cell md-flex__cell--shrink">
