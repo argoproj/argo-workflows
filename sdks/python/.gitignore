@@ -1,0 +1,4 @@
+/client/.openapi-generator/
+/client/.gitignore
+/client/.openapi-generator-ignore
+/client/*.*
