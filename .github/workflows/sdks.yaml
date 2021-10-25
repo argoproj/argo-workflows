@@ -10,7 +10,7 @@ on:
       - python-sdk
 jobs:
   sdk:
-    if: github.repository == 'argoproj/argo-workflows'
+    if: github.repository == 'terrytangyuan/argo-workflows'
     runs-on: ubuntu-latest
     name: Publish SDK
     strategy:
