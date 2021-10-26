@@ -9,7 +9,7 @@ argo cron delete [CRON_WORKFLOW... | --all] [flags]
 ### Options
 
 ```
-      --all    Delete all workflow templates
+      --all    Delete all cron workflows
   -h, --help   help for delete
 ```
 
