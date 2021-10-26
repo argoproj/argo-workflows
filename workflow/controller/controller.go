@@ -1102,12 +1102,12 @@ func (wfc *WorkflowController) GetManagedNamespace() string {
 }
 
 func (wfc *WorkflowController) GetContainerRuntimeExecutor(labels labels.Labels) string {
-	if wfc.containerRuntimeExecutor != "" {
-		return wfc.containerRuntimeExecutor
-	}
 	executor, err := wfc.Config.GetContainerRuntimeExecutor(labels)
 	if err != nil {
 		log.WithError(err).Info("failed to determine container runtime executor")
+	}
+	if executor == "" && wfc.containerRuntimeExecutor != "" {
+		return wfc.containerRuntimeExecutor
 	}
 	return executor
 }
