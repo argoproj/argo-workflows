@@ -85,6 +85,7 @@ message WorkflowLogRequest {
     string podName = 3;
     k8s.io.api.core.v1.PodLogOptions logOptions = 4;
     string grep = 5;
+    string selector = 6;
 }
 
 message WorkflowDeleteRequest {
