@@ -47,7 +47,8 @@ const (
 //go:generate mockery --name=Gatekeeper
 
 type Gatekeeper interface {
-	Context(ctx context.Context, req interface{}) (context.Context, error)
+	ContextWithRequest(ctx context.Context, req interface{}) (context.Context, error)
+	Context(ctx context.Context) (context.Context, error)
 	UnaryServerInterceptor() grpc.UnaryServerInterceptor
 	StreamServerInterceptor() grpc.StreamServerInterceptor
 }
@@ -84,7 +85,7 @@ func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.C
 
 func (s *gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-		ctx, err = s.Context(ctx, req)
+		ctx, err = s.ContextWithRequest(ctx, req)
 		if err != nil {
 			return nil, err
 		}
@@ -98,7 +99,7 @@ func (s *gatekeeper) StreamServerInterceptor() grpc.StreamServerInterceptor {
 	}
 }
 
-func (s *gatekeeper) Context(ctx context.Context, req interface{}) (context.Context, error) {
+func (s *gatekeeper) ContextWithRequest(ctx context.Context, req interface{}) (context.Context, error) {
 	clients, claims, err := s.getClients(ctx, req)
 	if err != nil {
 		return nil, err
@@ -110,6 +111,10 @@ func (s *gatekeeper) Context(ctx context.Context, req interface{}) (context.Cont
 	ctx = context.WithValue(ctx, KubeKey, clients.Kubernetes)
 	ctx = context.WithValue(ctx, ClaimsKey, claims)
 	return ctx, nil
+}
+
+func (s *gatekeeper) Context(ctx context.Context) (context.Context, error) {
+	return s.ContextWithRequest(ctx, nil)
 }
 
 func GetDynamicClient(ctx context.Context) dynamic.Interface {

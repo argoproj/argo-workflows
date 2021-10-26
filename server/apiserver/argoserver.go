@@ -336,7 +336,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 		if os.Getenv("ARGO_SERVER_METRICS_AUTH") != "false" {
 			header := metadata.New(map[string]string{"authorization": r.Header.Get("Authorization")})
 			ctx := metadata.NewIncomingContext(context.Background(), header)
-			if _, err := as.gatekeeper.Context(ctx, nil); err != nil {
+			if _, err := as.gatekeeper.Context(ctx); err != nil {
 				log.WithError(err).Error("failed to authenticate /metrics endpoint")
 				w.WriteHeader(403)
 				return
