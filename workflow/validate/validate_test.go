@@ -3119,6 +3119,6 @@ spec:
 `
 
 func TestStepsOutputParametersForContainerSet(t *testing.T) {
-	_, err := validate(stepsOutputParametersForScript)
+	_, err := validate(stepsOutputParametersForContainerSet)
 	assert.NoError(t, err)
 }
