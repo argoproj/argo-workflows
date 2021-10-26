@@ -11,7 +11,7 @@
 import unittest
 
 import openapi_client
-from io.argoproj.workflow.apis.info_service_api import InfoServiceApi  # noqa: E501
+from openapi_client.api.info_service_api import InfoServiceApi  # noqa: E501
 
 
 class TestInfoServiceApi(unittest.TestCase):

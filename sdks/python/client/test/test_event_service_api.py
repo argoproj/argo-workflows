@@ -11,7 +11,7 @@
 import unittest
 
 import openapi_client
-from io.argoproj.workflow.apis.event_service_api import EventServiceApi  # noqa: E501
+from openapi_client.api.event_service_api import EventServiceApi  # noqa: E501
 
 
 class TestEventServiceApi(unittest.TestCase):

@@ -28,8 +28,6 @@ generate:
 		-g python \
 		-o /wd \
 		-p hideGenerationTimestamp=true \
-		--api-package io.argoproj.workflow.apis \
-		--invoker-package io.argoproj.workflow \
 		--skip-validate-spec \
 		--artifact-id argo-client-python \
 		--global-property modelTests=false \

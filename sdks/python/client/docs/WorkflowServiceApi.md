@@ -33,7 +33,7 @@ Method | HTTP request | Description
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import workflow_service_api
+from openapi_client.api import workflow_service_api
 from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_create_request import IoArgoprojWorkflowV1alpha1WorkflowCreateRequest
@@ -19982,7 +19982,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import workflow_service_api
+from openapi_client.api import workflow_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
@@ -20069,7 +20069,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import workflow_service_api
+from openapi_client.api import workflow_service_api
 from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from pprint import pprint
@@ -20147,7 +20147,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import workflow_service_api
+from openapi_client.api import workflow_service_api
 from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_lint_request import IoArgoprojWorkflowV1alpha1WorkflowLintRequest
@@ -40088,7 +40088,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import workflow_service_api
+from openapi_client.api import workflow_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_list import IoArgoprojWorkflowV1alpha1WorkflowList
 from pprint import pprint
@@ -40180,7 +40180,7 @@ DEPRECATED: Cannot work via HTTP if podName is an empty string. Use WorkflowLogs
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import workflow_service_api
+from openapi_client.api import workflow_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.stream_result_of_io_argoproj_workflow_v1alpha1_log_entry import StreamResultOfIoArgoprojWorkflowV1alpha1LogEntry
 from pprint import pprint
@@ -40280,7 +40280,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import workflow_service_api
+from openapi_client.api import workflow_service_api
 from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_resubmit_request import IoArgoprojWorkflowV1alpha1WorkflowResubmitRequest
@@ -40353,7 +40353,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import workflow_service_api
+from openapi_client.api import workflow_service_api
 from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_resume_request import IoArgoprojWorkflowV1alpha1WorkflowResumeRequest
@@ -40426,7 +40426,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import workflow_service_api
+from openapi_client.api import workflow_service_api
 from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_retry_request import IoArgoprojWorkflowV1alpha1WorkflowRetryRequest
@@ -40500,7 +40500,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import workflow_service_api
+from openapi_client.api import workflow_service_api
 from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_set_request import IoArgoprojWorkflowV1alpha1WorkflowSetRequest
@@ -40576,7 +40576,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import workflow_service_api
+from openapi_client.api import workflow_service_api
 from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_stop_request import IoArgoprojWorkflowV1alpha1WorkflowStopRequest
@@ -40650,7 +40650,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import workflow_service_api
+from openapi_client.api import workflow_service_api
 from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_submit_request import IoArgoprojWorkflowV1alpha1WorkflowSubmitRequest
@@ -40743,7 +40743,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import workflow_service_api
+from openapi_client.api import workflow_service_api
 from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_suspend_request import IoArgoprojWorkflowV1alpha1WorkflowSuspendRequest
 from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
@@ -40815,7 +40815,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import workflow_service_api
+from openapi_client.api import workflow_service_api
 from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_terminate_request import IoArgoprojWorkflowV1alpha1WorkflowTerminateRequest
@@ -40887,7 +40887,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import workflow_service_api
+from openapi_client.api import workflow_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.stream_result_of_event import StreamResultOfEvent
 from pprint import pprint
@@ -40977,7 +40977,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import workflow_service_api
+from openapi_client.api import workflow_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.stream_result_of_io_argoproj_workflow_v1alpha1_workflow_watch_event import StreamResultOfIoArgoprojWorkflowV1alpha1WorkflowWatchEvent
 from pprint import pprint
@@ -41069,7 +41069,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import workflow_service_api
+from openapi_client.api import workflow_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.stream_result_of_io_argoproj_workflow_v1alpha1_log_entry import StreamResultOfIoArgoprojWorkflowV1alpha1LogEntry
 from pprint import pprint

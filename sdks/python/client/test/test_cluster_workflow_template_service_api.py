@@ -11,7 +11,7 @@
 import unittest
 
 import openapi_client
-from io.argoproj.workflow.apis.cluster_workflow_template_service_api import ClusterWorkflowTemplateServiceApi  # noqa: E501
+from openapi_client.api.cluster_workflow_template_service_api import ClusterWorkflowTemplateServiceApi  # noqa: E501
 
 
 class TestClusterWorkflowTemplateServiceApi(unittest.TestCase):

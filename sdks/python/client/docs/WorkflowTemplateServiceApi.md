@@ -22,7 +22,7 @@ Method | HTTP request | Description
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import workflow_template_service_api
+from openapi_client.api import workflow_template_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_template_create_request import IoArgoprojWorkflowV1alpha1WorkflowTemplateCreateRequest
 from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_template import IoArgoprojWorkflowV1alpha1WorkflowTemplate
@@ -7877,7 +7877,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import workflow_template_service_api
+from openapi_client.api import workflow_template_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
@@ -7964,7 +7964,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import workflow_template_service_api
+from openapi_client.api import workflow_template_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_template import IoArgoprojWorkflowV1alpha1WorkflowTemplate
 from pprint import pprint
@@ -8040,7 +8040,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import workflow_template_service_api
+from openapi_client.api import workflow_template_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_template_lint_request import IoArgoprojWorkflowV1alpha1WorkflowTemplateLintRequest
 from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_template import IoArgoprojWorkflowV1alpha1WorkflowTemplate
@@ -15895,7 +15895,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import workflow_template_service_api
+from openapi_client.api import workflow_template_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_template_list import IoArgoprojWorkflowV1alpha1WorkflowTemplateList
 from pprint import pprint
@@ -15985,7 +15985,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import workflow_template_service_api
+from openapi_client.api import workflow_template_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_template import IoArgoprojWorkflowV1alpha1WorkflowTemplate
 from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_template_update_request import IoArgoprojWorkflowV1alpha1WorkflowTemplateUpdateRequest

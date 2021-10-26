@@ -23,7 +23,7 @@ Method | HTTP request | Description
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import pipeline_service_api
+from openapi_client.api import pipeline_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
@@ -110,7 +110,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import pipeline_service_api
+from openapi_client.api import pipeline_service_api
 from openapi_client.model.github_com_argoproj_labs_argo_dataflow_api_v1alpha1_pipeline import GithubComArgoprojLabsArgoDataflowApiV1alpha1Pipeline
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from pprint import pprint
@@ -186,7 +186,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import pipeline_service_api
+from openapi_client.api import pipeline_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.github_com_argoproj_labs_argo_dataflow_api_v1alpha1_pipeline_list import GithubComArgoprojLabsArgoDataflowApiV1alpha1PipelineList
 from pprint import pprint
@@ -276,7 +276,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import pipeline_service_api
+from openapi_client.api import pipeline_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.stream_result_of_pipeline_log_entry import StreamResultOfPipelineLogEntry
 from pprint import pprint
@@ -374,7 +374,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import pipeline_service_api
+from openapi_client.api import pipeline_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
@@ -439,7 +439,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import pipeline_service_api
+from openapi_client.api import pipeline_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.stream_result_of_pipeline_pipeline_watch_event import StreamResultOfPipelinePipelineWatchEvent
 from pprint import pprint
@@ -529,7 +529,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import pipeline_service_api
+from openapi_client.api import pipeline_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.stream_result_of_pipeline_step_watch_event import StreamResultOfPipelineStepWatchEvent
 from pprint import pprint

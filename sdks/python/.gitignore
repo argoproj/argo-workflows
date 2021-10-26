@@ -2,3 +2,4 @@
 /client/.gitignore
 /client/.openapi-generator-ignore
 /client/*.*
+/client/README.md

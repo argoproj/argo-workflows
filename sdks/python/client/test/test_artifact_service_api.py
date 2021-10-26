@@ -11,7 +11,7 @@
 import unittest
 
 import openapi_client
-from io.argoproj.workflow.apis.artifact_service_api import ArtifactServiceApi  # noqa: E501
+from openapi_client.api.artifact_service_api import ArtifactServiceApi  # noqa: E501
 
 
 class TestArtifactServiceApi(unittest.TestCase):

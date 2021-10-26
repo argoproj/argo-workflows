@@ -11,7 +11,7 @@
 import unittest
 
 import openapi_client
-from io.argoproj.workflow.apis.sensor_service_api import SensorServiceApi  # noqa: E501
+from openapi_client.api.sensor_service_api import SensorServiceApi  # noqa: E501
 
 
 class TestSensorServiceApi(unittest.TestCase):

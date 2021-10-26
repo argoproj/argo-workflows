@@ -20,7 +20,7 @@ Get an input artifact.
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import artifact_service_api
+from openapi_client.api import artifact_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
@@ -89,7 +89,7 @@ Get an input artifact by UID.
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import artifact_service_api
+from openapi_client.api import artifact_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
@@ -158,7 +158,7 @@ Get an output artifact.
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import artifact_service_api
+from openapi_client.api import artifact_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
@@ -227,7 +227,7 @@ Get an output artifact by UID.
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import artifact_service_api
+from openapi_client.api import artifact_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746

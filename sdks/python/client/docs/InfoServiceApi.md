@@ -19,7 +19,7 @@ Method | HTTP request | Description
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import info_service_api
+from openapi_client.api import info_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_workflow_v1alpha1_info_response import IoArgoprojWorkflowV1alpha1InfoResponse
 from pprint import pprint
@@ -79,7 +79,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import info_service_api
+from openapi_client.api import info_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_workflow_v1alpha1_get_user_info_response import IoArgoprojWorkflowV1alpha1GetUserInfoResponse
 from pprint import pprint
@@ -139,7 +139,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import info_service_api
+from openapi_client.api import info_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_workflow_v1alpha1_version import IoArgoprojWorkflowV1alpha1Version
 from pprint import pprint

@@ -24,7 +24,7 @@ Method | HTTP request | Description
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import cron_workflow_service_api
+from openapi_client.api import cron_workflow_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_workflow_v1alpha1_cron_workflow import IoArgoprojWorkflowV1alpha1CronWorkflow
 from openapi_client.model.io_argoproj_workflow_v1alpha1_create_cron_workflow_request import IoArgoprojWorkflowV1alpha1CreateCronWorkflowRequest
@@ -7909,7 +7909,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import cron_workflow_service_api
+from openapi_client.api import cron_workflow_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
@@ -7996,7 +7996,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import cron_workflow_service_api
+from openapi_client.api import cron_workflow_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_workflow_v1alpha1_cron_workflow import IoArgoprojWorkflowV1alpha1CronWorkflow
 from pprint import pprint
@@ -8072,7 +8072,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import cron_workflow_service_api
+from openapi_client.api import cron_workflow_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_workflow_v1alpha1_cron_workflow import IoArgoprojWorkflowV1alpha1CronWorkflow
 from openapi_client.model.io_argoproj_workflow_v1alpha1_lint_cron_workflow_request import IoArgoprojWorkflowV1alpha1LintCronWorkflowRequest
@@ -15951,7 +15951,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import cron_workflow_service_api
+from openapi_client.api import cron_workflow_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_workflow_v1alpha1_cron_workflow_list import IoArgoprojWorkflowV1alpha1CronWorkflowList
 from pprint import pprint
@@ -16041,7 +16041,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import cron_workflow_service_api
+from openapi_client.api import cron_workflow_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_workflow_v1alpha1_cron_workflow import IoArgoprojWorkflowV1alpha1CronWorkflow
 from openapi_client.model.io_argoproj_workflow_v1alpha1_cron_workflow_resume_request import IoArgoprojWorkflowV1alpha1CronWorkflowResumeRequest
@@ -16113,7 +16113,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import cron_workflow_service_api
+from openapi_client.api import cron_workflow_service_api
 from openapi_client.model.io_argoproj_workflow_v1alpha1_cron_workflow_suspend_request import IoArgoprojWorkflowV1alpha1CronWorkflowSuspendRequest
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_workflow_v1alpha1_cron_workflow import IoArgoprojWorkflowV1alpha1CronWorkflow
@@ -16185,7 +16185,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import cron_workflow_service_api
+from openapi_client.api import cron_workflow_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_workflow_v1alpha1_cron_workflow import IoArgoprojWorkflowV1alpha1CronWorkflow
 from openapi_client.model.io_argoproj_workflow_v1alpha1_update_cron_workflow_request import IoArgoprojWorkflowV1alpha1UpdateCronWorkflowRequest

@@ -23,7 +23,7 @@ Method | HTTP request | Description
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import sensor_service_api
+from openapi_client.api import sensor_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.sensor_create_sensor_request import SensorCreateSensorRequest
 from openapi_client.model.io_argoproj_events_v1alpha1_sensor import IoArgoprojEventsV1alpha1Sensor
@@ -1669,7 +1669,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import sensor_service_api
+from openapi_client.api import sensor_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
@@ -1756,7 +1756,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import sensor_service_api
+from openapi_client.api import sensor_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_events_v1alpha1_sensor import IoArgoprojEventsV1alpha1Sensor
 from pprint import pprint
@@ -1832,7 +1832,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import sensor_service_api
+from openapi_client.api import sensor_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_events_v1alpha1_sensor_list import IoArgoprojEventsV1alpha1SensorList
 from pprint import pprint
@@ -1922,7 +1922,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import sensor_service_api
+from openapi_client.api import sensor_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.stream_result_of_sensor_log_entry import StreamResultOfSensorLogEntry
 from pprint import pprint
@@ -2020,7 +2020,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import sensor_service_api
+from openapi_client.api import sensor_service_api
 from openapi_client.model.sensor_update_sensor_request import SensorUpdateSensorRequest
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_events_v1alpha1_sensor import IoArgoprojEventsV1alpha1Sensor
@@ -3663,7 +3663,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import sensor_service_api
+from openapi_client.api import sensor_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.stream_result_of_sensor_sensor_watch_event import StreamResultOfSensorSensorWatchEvent
 from pprint import pprint

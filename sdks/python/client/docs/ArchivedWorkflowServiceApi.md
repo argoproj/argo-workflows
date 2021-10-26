@@ -21,7 +21,7 @@ Method | HTTP request | Description
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import archived_workflow_service_api
+from openapi_client.api import archived_workflow_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
@@ -84,7 +84,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import archived_workflow_service_api
+from openapi_client.api import archived_workflow_service_api
 from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from pprint import pprint
@@ -148,7 +148,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import archived_workflow_service_api
+from openapi_client.api import archived_workflow_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_workflow_v1alpha1_label_keys import IoArgoprojWorkflowV1alpha1LabelKeys
 from pprint import pprint
@@ -208,7 +208,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import archived_workflow_service_api
+from openapi_client.api import archived_workflow_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_workflow_v1alpha1_label_values import IoArgoprojWorkflowV1alpha1LabelValues
 from pprint import pprint
@@ -289,7 +289,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import archived_workflow_service_api
+from openapi_client.api import archived_workflow_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_list import IoArgoprojWorkflowV1alpha1WorkflowList
 from pprint import pprint

@@ -11,7 +11,7 @@
 import unittest
 
 import openapi_client
-from io.argoproj.workflow.apis.cron_workflow_service_api import CronWorkflowServiceApi  # noqa: E501
+from openapi_client.api.cron_workflow_service_api import CronWorkflowServiceApi  # noqa: E501
 
 
 class TestCronWorkflowServiceApi(unittest.TestCase):

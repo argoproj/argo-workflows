@@ -23,7 +23,7 @@ Method | HTTP request | Description
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import event_source_service_api
+from openapi_client.api import event_source_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_events_v1alpha1_event_source import IoArgoprojEventsV1alpha1EventSource
 from openapi_client.model.eventsource_create_event_source_request import EventsourceCreateEventSourceRequest
@@ -1922,7 +1922,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import event_source_service_api
+from openapi_client.api import event_source_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
@@ -2009,7 +2009,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import event_source_service_api
+from openapi_client.api import event_source_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.stream_result_of_eventsource_log_entry import StreamResultOfEventsourceLogEntry
 from pprint import pprint
@@ -2109,7 +2109,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import event_source_service_api
+from openapi_client.api import event_source_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_events_v1alpha1_event_source import IoArgoprojEventsV1alpha1EventSource
 from pprint import pprint
@@ -2175,7 +2175,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import event_source_service_api
+from openapi_client.api import event_source_service_api
 from openapi_client.model.io_argoproj_events_v1alpha1_event_source_list import IoArgoprojEventsV1alpha1EventSourceList
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from pprint import pprint
@@ -2265,7 +2265,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import event_source_service_api
+from openapi_client.api import event_source_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_events_v1alpha1_event_source import IoArgoprojEventsV1alpha1EventSource
 from openapi_client.model.eventsource_update_event_source_request import EventsourceUpdateEventSourceRequest
@@ -4167,7 +4167,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import event_source_service_api
+from openapi_client.api import event_source_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.stream_result_of_eventsource_event_source_watch_event import StreamResultOfEventsourceEventSourceWatchEvent
 from pprint import pprint

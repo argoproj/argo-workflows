@@ -11,7 +11,7 @@
 import unittest
 
 import openapi_client
-from io.argoproj.workflow.apis.archived_workflow_service_api import ArchivedWorkflowServiceApi  # noqa: E501
+from openapi_client.api.archived_workflow_service_api import ArchivedWorkflowServiceApi  # noqa: E501
 
 
 class TestArchivedWorkflowServiceApi(unittest.TestCase):

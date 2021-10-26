@@ -11,7 +11,7 @@
 import unittest
 
 import openapi_client
-from io.argoproj.workflow.apis.pipeline_service_api import PipelineServiceApi  # noqa: E501
+from openapi_client.api.pipeline_service_api import PipelineServiceApi  # noqa: E501
 
 
 class TestPipelineServiceApi(unittest.TestCase):

@@ -22,7 +22,7 @@ Method | HTTP request | Description
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import cluster_workflow_template_service_api
+from openapi_client.api import cluster_workflow_template_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template_create_request import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateCreateRequest
 from openapi_client.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate
@@ -7874,7 +7874,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import cluster_workflow_template_service_api
+from openapi_client.api import cluster_workflow_template_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
@@ -7959,7 +7959,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import cluster_workflow_template_service_api
+from openapi_client.api import cluster_workflow_template_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate
 from pprint import pprint
@@ -8033,7 +8033,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import cluster_workflow_template_service_api
+from openapi_client.api import cluster_workflow_template_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template_lint_request import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateLintRequest
 from openapi_client.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate
@@ -15885,7 +15885,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import cluster_workflow_template_service_api
+from openapi_client.api import cluster_workflow_template_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template_list import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateList
 from pprint import pprint
@@ -15966,7 +15966,7 @@ No authorization required
 ```python
 import time
 import openapi_client
-from io.argoproj.workflow.apis import cluster_workflow_template_service_api
+from openapi_client.api import cluster_workflow_template_service_api
 from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from openapi_client.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template_update_request import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateUpdateRequest
 from openapi_client.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate
