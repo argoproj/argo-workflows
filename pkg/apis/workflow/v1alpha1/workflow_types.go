@@ -1525,7 +1525,13 @@ type RetryStrategy struct {
 	// Limit is the maximum number of attempts when retrying a container
 	Limit *intstr.IntOrString `json:"limit,omitempty" protobuf:"varint,1,opt,name=limit"`
 
-	// RetryPolicy is a policy of NodePhase statuses that will be retried
+	// RetryPolicy is a policy of NodePhase statuses that will be retried. RetryPolicy can be one of
+	// OnFailure (retry steps marked as failed in Kubernetes), OnError (retry steps that encounter
+	// Argo controller errors, or whose init or wait containers fail), Always (retry all failed
+	// steps), or OnTransientError (retry steps with errors defined as transient in
+	// https://github.com/argoproj/argo-workflows/blob/master/util/errors/errors.go, or errors
+	// matching the TRANSIENT_ERROR_PATTERN environment variable (see
+	// https://argoproj.github.io/argo-workflows/environment-variables/).
 	RetryPolicy RetryPolicy `json:"retryPolicy,omitempty" protobuf:"bytes,2,opt,name=retryPolicy,casttype=RetryPolicy"`
 
 	// Backoff is a backoff strategy
@@ -1534,8 +1540,11 @@ type RetryStrategy struct {
 	// Affinity prevents running workflow's step on the same host
 	Affinity *RetryAffinity `json:"affinity,omitempty" protobuf:"bytes,4,opt,name=affinity"`
 
-	// Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not
-	// be retried and the retry strategy will be ignored/
+	// Expression is a condition expression for when a node will be retried. If it evaluates to false,
+	// the node will not be retried and the retry strategy will be ignored. Expression has access to
+	// the following local variables: lastRetry.exitCode (the exit code of the last retry, or "-1" if
+	// not available), lastRetry.status (the phase of the last retry: Error, Failed), and
+	// lastRetry.duration (in seconds).
 	Expression string `json:"expression,omitempty" protobuf:"bytes,5,opt,name=expression"`
 }
 
