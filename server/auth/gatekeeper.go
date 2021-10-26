@@ -182,7 +182,7 @@ func (s gatekeeper) getClients(ctx context.Context) (*servertypes.Clients, *type
 			return clients, claims, nil
 		} else {
 			// important! write an audit entry (i.e. log entry) so we know which user performed an operation
-			log.WithFields(log.Fields{"subject": claims.Subject}).Info("using the default service account for user")
+			log.WithFields(addClaimsLogFields(claims, nil)).Info("using the default service account for user")
 			return s.clients, claims, nil
 		}
 	default:
@@ -235,7 +235,7 @@ func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *types.Claims
 		}
 		claims.ServiceAccountName = serviceAccount.Name
 		// important! write an audit entry (i.e. log entry) so we know which user performed an operation
-		log.WithFields(log.Fields{"serviceAccount": serviceAccount.Name, "subject": claims.Subject}).Info("selected SSO RBAC service account for user")
+		log.WithFields(addClaimsLogFields(claims, log.Fields{"serviceAccount": serviceAccount.Name})).Info("selected SSO RBAC service account for user")
 		return clients, nil
 	}
 	return nil, fmt.Errorf("no service account rule matches")
@@ -254,6 +254,17 @@ func (s *gatekeeper) authorizationForServiceAccount(ctx context.Context, service
 		return "", fmt.Errorf("failed to get service account secret: %w", err)
 	}
 	return "Bearer " + string(secret.Data["token"]), nil
+}
+
+func addClaimsLogFields(claims *types.Claims, fields log.Fields) log.Fields {
+	if fields == nil {
+		fields = log.Fields{}
+	}
+	fields["subject"] = claims.Subject
+	if claims.Email != "" {
+		fields["email"] = claims.Email
+	}
+	return fields
 }
 
 func DefaultClientForAuthorization(authorization string) (*rest.Config, *servertypes.Clients, error) {
