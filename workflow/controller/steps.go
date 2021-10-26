@@ -8,11 +8,13 @@ import (
 	"time"
 
 	"github.com/Knetic/govaluate"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/template"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 )
 
@@ -152,7 +154,16 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 		node.Outputs = outputs
 		woc.addOutputsToGlobalScope(node.Outputs)
 		woc.wf.Status.Nodes[node.ID] = *node
+		if node.MemoizationStatus != nil {
+			c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
+			err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
+			if err != nil {
+				woc.log.WithFields(log.Fields{"nodeID": node.ID}).WithError(err).Error("Failed to save node outputs to cache")
+				node.Phase = wfv1.NodeError
+			}
+		}
 	}
+
 	return woc.markNodePhase(nodeName, wfv1.NodeSucceeded), nil
 }
 
@@ -260,7 +271,7 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 		if !childNode.Fulfilled() {
 			completed = false
 		} else if childNode.Completed() {
-			hasOnExitNode, onExitNode, err := woc.runOnExitNode(ctx, step.GetExitHook(woc.execWf.Spec.Arguments), childNode.Name, stepsCtx.boundaryID, stepsCtx.tmplCtx, "steps."+step.Name, childNode.Outputs)
+			hasOnExitNode, onExitNode, err := woc.runOnExitNode(ctx, step.GetExitHook(woc.execWf.Spec.Arguments), &childNode, stepsCtx.boundaryID, stepsCtx.tmplCtx, "steps."+step.Name)
 			if hasOnExitNode && (onExitNode == nil || !onExitNode.Fulfilled() || err != nil) {
 				// The onExit node is either not complete or has errored out, return.
 				completed = false

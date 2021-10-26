@@ -515,6 +515,7 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 		woc.globalParams[cTimeVar] = strftime.Format("%"+string(char), woc.wf.ObjectMeta.CreationTimestamp.Time)
 	}
 	woc.globalParams[common.GlobalVarWorkflowCreationTimestamp+".s"] = strconv.FormatInt(woc.wf.ObjectMeta.CreationTimestamp.Time.Unix(), 10)
+	woc.globalParams[common.GlobalVarWorkflowCreationTimestamp+".RFC3339"] = woc.wf.ObjectMeta.CreationTimestamp.Format(time.RFC3339)
 
 	if workflowParameters, err := json.Marshal(woc.execWf.Spec.Arguments.Parameters); err == nil {
 		woc.globalParams[common.GlobalVarWorkflowParameters] = string(workflowParameters)
@@ -1621,7 +1622,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	// Inject the pod name. If the pod has a retry strategy, the pod name will be changed and will be injected when it
 	// is determined
 	if resolvedTmpl.IsPodType() && woc.retryStrategy(resolvedTmpl) == nil {
-		localParams[common.LocalVarPodName] = woc.wf.NodeID(nodeName)
+		localParams[common.LocalVarPodName] = wfutil.PodName(woc.wf.Name, nodeName, resolvedTmpl.Name, woc.wf.NodeID(nodeName))
 	}
 
 	// Merge Template defaults to template
@@ -1789,6 +1790,11 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			if processedTmpl.Synchronization != nil {
 				woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
 			}
+			lastChildNode := getChildNodeIndex(retryParentNode, woc.wf.Status.Nodes, -1)
+			if lastChildNode != nil {
+				retryParentNode.Outputs = lastChildNode.Outputs.DeepCopy()
+				woc.wf.Status.Nodes[node.ID] = *retryParentNode
+			}
 			return retryParentNode, nil
 		}
 		lastChildNode := getChildNodeIndex(retryParentNode, woc.wf.Status.Nodes, -1)
@@ -1805,7 +1811,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			localParams := make(map[string]string)
 			// Change the `pod.name` variable to the new retry node name
 			if processedTmpl.IsPodType() {
-				localParams[common.LocalVarPodName] = woc.wf.NodeID(nodeName)
+				localParams[common.LocalVarPodName] = wfutil.PodName(woc.wf.Name, nodeName, processedTmpl.Name, woc.wf.NodeID(nodeName))
 			}
 			// Inject the retryAttempt number
 			localParams[common.LocalVarRetries] = strconv.Itoa(len(retryParentNode.Children))

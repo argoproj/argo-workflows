@@ -25,16 +25,15 @@ nodeSelector:
 
 > Suitable if you have a workflow that passes a lot of artifacts within itself.
 
-Copying artifacts to and from storage outside of a cluster can be expensive. The correct choice is dependent on your artifact storage provider is vs. what volume they are using. For example, we believe it may be more expensive to allocate and delete new EBS volumes every workflow using the PVC feature, than it is to upload and download some small files to S3.
+Copying artifacts to and from storage outside of a cluster can be expensive. The correct choice is dependent on your artifact storage provider is vs. what volume they are using. For example, we believe it may be more expensive to allocate and delete a new block storage volume (AWS EBS, GCP persistent disk) every workflow using the PVC feature, than it is to upload and download some small files to object storage (AWS S3, GCP cloud storage).
 
-On the other hand if they are using a NFS volume shared between all their workflows with large artifacts, that might be cheaper than the data transfer and storage costs of S3.
+On the other hand if they are using a NFS volume shared between all their workflows with large artifacts, that might be cheaper than the data transfer and storage costs of object storage.
 
 Consider:
 
 * Data transfer costs (upload/download vs. copying)
-* Data storage costs (s3 vs. volume)
-* Requirement for parallel access to data (NFS vs. EBS vs. artifact)
-
+* Data storage costs (object storage vs. volume)
+* Requirement for parallel access to data (NFS vs. block storage vs. artifact)
 ### Limit The Total Number Of Workflows And Pods
 
 > Suitable for all.

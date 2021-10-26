@@ -228,6 +228,7 @@ scan-%:
 
 .PHONY: codegen
 codegen: types swagger docs manifests
+	make --directory sdks/java generate
 
 .PHONY: types
 types: pkg/apis/workflow/v1alpha1/generated.proto pkg/apis/workflow/v1alpha1/openapi_generated.go pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go
@@ -403,7 +404,7 @@ dist/argosay:
 
 .PHONY: pull-images
 pull-images:
-	docker pull golang:1.16
+	docker pull golang:1.17
 	docker pull debian:10.7-slim
 	docker pull mysql:8
 	docker pull argoproj/argosay:v1
@@ -515,8 +516,11 @@ dist/swaggifed.swagger.json: dist/mixed.swagger.json hack/swaggify.sh
 dist/kubeified.swagger.json: dist/swaggifed.swagger.json dist/kubernetes.swagger.json
 	go run ./hack/swagger kubeifyswagger dist/swaggifed.swagger.json dist/kubeified.swagger.json
 
-api/openapi-spec/swagger.json: $(GOPATH)/bin/swagger dist/kubeified.swagger.json
-	swagger flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json -o api/openapi-spec/swagger.json
+dist/swagger.0.json: $(GOPATH)/bin/swagger dist/kubeified.swagger.json
+	swagger flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json -o dist/swagger.0.json
+
+api/openapi-spec/swagger.json: $(GOPATH)/bin/swagger dist/swagger.0.json
+	swagger flatten --with-flatten remove-unused dist/swagger.0.json -o api/openapi-spec/swagger.json
 
 api/jsonschema/schema.json: api/openapi-spec/swagger.json hack/jsonschema/main.go
 	go run ./hack/jsonschema

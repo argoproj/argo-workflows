@@ -77,6 +77,7 @@ func TestGitArtifactDriverLoad_HTTPS(t *testing.T) {
 }
 
 func TestGitArtifactDriverLoad_SSL(t *testing.T) {
+	t.SkipNow()
 	for _, tt := range []struct {
 		name     string
 		insecure bool
