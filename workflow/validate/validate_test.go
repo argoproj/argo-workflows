@@ -3006,3 +3006,131 @@ spec:
 	_, err := validate(wf)
 	assert.NoError(t, err)
 }
+
+var templateReferenceWorkflowConfigMapRefArgument = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: arguments-parameters-from-configmap-
+spec:
+  entrypoint: whalesay
+  serviceAccountName: argo
+  arguments:
+    parameters:
+    - name: message
+      valueFrom:
+        configMapKeyRef:
+          name: simple-parameters
+          key: msg
+  templates:
+    - name: whalesay
+      inputs:
+        parameters:
+          - name: message
+      container:
+        image: docker/whalesay:latest
+        command: [cowsay]
+        args: ["{{inputs.parameters.message}}"]
+`
+
+func TestTemplateReferenceWorkflowConfigMapRefArgument(t *testing.T) {
+	_, err := validate(templateReferenceWorkflowConfigMapRefArgument)
+	assert.NoError(t, err)
+}
+
+var stepsOutputParametersForScript = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: parameter-aggregation-
+spec:
+  entrypoint: parameter-aggregation
+  templates:
+    - name: parameter-aggregation
+      steps:
+        - - name: echo-num
+            template: echo-num
+            arguments:
+              parameters:
+                - name: num
+                  value: "{{item}}"
+            withItems: [1, 2, 3, 4]
+        - - name: echo-num-from-param
+            template: echo-num
+            arguments:
+              parameters:
+                - name: num
+                  value: "{{item.num}}"
+            withParam: "{{steps.echo-num.outputs.parameters}}"
+
+    - name: echo-num
+      inputs:
+        parameters:
+          - name: num
+      script:
+        image: argoproj/argosay:v1
+        command: [sh, -x]
+        source: |
+          sleep 1
+          echo {{inputs.parameters.num}} > /tmp/num
+      outputs:
+        parameters:
+          - name: num
+            valueFrom:
+              path: /tmp/num
+`
+
+func TestStepsOutputParametersForScript(t *testing.T) {
+	_, err := validate(stepsOutputParametersForScript)
+	assert.NoError(t, err)
+}
+
+var stepsOutputParametersForContainerSet = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: parameter-aggregation-
+spec:
+  entrypoint: parameter-aggregation
+  templates:
+    - name: parameter-aggregation
+      steps:
+        - - name: echo-num
+            template: echo-num
+            arguments:
+              parameters:
+                - name: num
+                  value: "{{item}}"
+            withItems: [1, 2, 3, 4]
+        - - name: echo-num-from-param
+            template: echo-num
+            arguments:
+              parameters:
+                - name: num
+                  value: "{{item.num}}"
+            withParam: "{{steps.echo-num.outputs.parameters}}"
+
+    - name: echo-num
+      inputs:
+        parameters:
+          - name: num
+      containerSet:
+        containers:
+          - name: main
+            image: 'docker/whalesay:latest'
+            command:
+              - sh
+              - '-c'
+            args:
+              - 'sleep 1; echo {{inputs.parameters.num}} > /tmp/num'
+      outputs:
+        parameters:
+          - name: num
+            valueFrom:
+              path: /tmp/num
+`
+
+func TestStepsOutputParametersForContainerSet(t *testing.T) {
+	_, err := validate(stepsOutputParametersForContainerSet)
+	assert.NoError(t, err)
+}
