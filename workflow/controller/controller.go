@@ -1122,10 +1122,13 @@ func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, m
 	if port == 0 {
 		port = metrics.DefaultMetricsServerPort
 	}
+
+	// Default to false until v3.5
 	secure := false
 	if wfc.Config.MetricsConfig.Secure != nil {
 		secure = *wfc.Config.MetricsConfig.Secure
 	}
+
 	metricsConfig := metrics.ServerConfig{
 		Enabled:      wfc.Config.MetricsConfig.Enabled == nil || *wfc.Config.MetricsConfig.Enabled,
 		Path:         path,
