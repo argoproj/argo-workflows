@@ -21,6 +21,7 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/fake"
@@ -314,6 +315,7 @@ func TestGlobalParams(t *testing.T) {
 		assert.Contains(t, woc.globalParams, fmt.Sprintf("%s.%s", "workflow.creationTimestamp", string(char)))
 	}
 	assert.Contains(t, woc.globalParams, "workflow.creationTimestamp.s")
+	assert.Contains(t, woc.globalParams, "workflow.creationTimestamp.RFC3339")
 
 	assert.Contains(t, woc.globalParams, "workflow.duration")
 	assert.Contains(t, woc.globalParams, "workflow.name")
@@ -7423,6 +7425,26 @@ func TestBuildRetryStrategyLocalScope(t *testing.T) {
 	assert.Equal(t, "1", localScope[common.LocalVarRetriesLastExitCode])
 	assert.Equal(t, string(wfv1.NodeFailed), localScope[common.LocalVarRetriesLastStatus])
 	assert.Equal(t, "6", localScope[common.LocalVarRetriesLastDuration])
+}
+
+func TestGetContainerRuntimeExecutor(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	controller.Config.ContainerRuntimeExecutor = "pns"
+	controller.Config.ContainerRuntimeExecutors = config.ContainerRuntimeExecutors{
+		{
+			Name: "emissary",
+			Selector: metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"workflows.argoproj.io/container-runtime-executor": "emissary",
+				},
+			},
+		},
+	}
+	executor := controller.GetContainerRuntimeExecutor(labels.Set{})
+	assert.Equal(t, common.ContainerRuntimeExecutorPNS, executor)
+	executor = controller.GetContainerRuntimeExecutor(labels.Set{"workflows.argoproj.io/container-runtime-executor": "emissary"})
+	assert.Equal(t, common.ContainerRuntimeExecutorEmissary, executor)
 }
 
 var exitHandlerWithRetryNodeParam = `

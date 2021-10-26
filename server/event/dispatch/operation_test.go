@@ -3,6 +3,7 @@ package dispatch
 import (
 	"context"
 	"encoding/json"
+	"sort"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -148,18 +149,27 @@ func TestNewOperation(t *testing.T) {
 		},
 	}, "my-ns", "my-discriminator", &wfv1.Item{Value: json.RawMessage(`{"foo": {"bar": "baz"}}`)})
 	assert.NoError(t, err)
-	operation.Dispatch(ctx)
+	err = operation.Dispatch(ctx)
+	assert.Error(t, err)
 
-	expectedParamValues := []string{"bar", "bar", `{"bar":"baz"}`}
+	expectedParamValues := []string{
+		"bar",
+		"bar",
+		`{"bar":"baz"}`,
+	}
+	var paramValues []string
 	// assert
 	list, err := client.ArgoprojV1alpha1().Workflows("my-ns").List(ctx, metav1.ListOptions{})
 	if assert.NoError(t, err) && assert.Len(t, list.Items, 3) {
-		for i, wf := range list.Items {
+		for _, wf := range list.Items {
 			assert.Equal(t, "my-instanceid", wf.Labels[common.LabelKeyControllerInstanceID])
 			assert.Equal(t, "my-sub", wf.Labels[common.LabelKeyCreator])
 			assert.Contains(t, wf.Labels, common.LabelKeyWorkflowEventBinding)
-			assert.Equal(t, []wfv1.Parameter{{Name: "my-param", Value: wfv1.AnyStringPtr(expectedParamValues[i])}}, wf.Spec.Arguments.Parameters)
+			assert.Contains(t, "my-param", wf.Spec.Arguments.Parameters[0].Name)
+			paramValues = append(paramValues, string(*wf.Spec.Arguments.Parameters[0].Value))
 		}
+		sort.Strings(paramValues)
+		assert.Equal(t, expectedParamValues, paramValues)
 	}
 	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to evaluate workflow template expression: unexpected token EOF (1:1)", <-recorder.Events)
 	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to get workflow template: workflowtemplates.argoproj.io \"not-found\" not found", <-recorder.Events)
@@ -317,7 +327,8 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 		&wfv1.Item{Value: json.RawMessage(`{"foo": {"bar": "baz", "numeric": 8675309, "bool": true}, "list": ["one", "two"]}`)})
 
 	assert.NoError(t, err)
-	operation.Dispatch(ctx)
+	err = operation.Dispatch(ctx)
+	assert.Error(t, err)
 
 	list, err := client.ArgoprojV1alpha1().Workflows("my-ns").List(ctx, metav1.ListOptions{})
 

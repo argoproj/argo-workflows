@@ -6,6 +6,17 @@ the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summar
 
 ## Upgrading to v3.3
 
+## feat(server)!: Sync dispatch of webhook events by default
+
+This is not expected to impact users.
+
+Events dispatch in the Argo Server has been change from async to sync by default. This is so that errors are surfaced to
+the client, rather than only appearing as logs or Kubernetes events. It is possible that response times under load are
+too long for your client and you may prefer to revert this behaviour.
+
+To revert this behaviour, restart Argo Server with `ARGO_EVENT_ASYNC_DISPATCH=true`. Make sure that `asyncDispatch=true`
+is logged.
+
 ### [bd49c630328d30206a5c5b78cbc9a00700a28e7d](https://github.com/argoproj/argo-workflows/commit/bd49c630328d30206a5c5b78cbc9a00700a28e7d) fix(artifact)!: default https to any URL missing a scheme. Fixes #6973
 
 HTTPArtifact without a scheme will now defaults to https instead of http

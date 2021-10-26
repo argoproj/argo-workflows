@@ -23,4 +23,5 @@ jobs:
         with:
           title: 'docs: updated CHANGELOG.md'
           commit-message: 'docs: updated CHANGELOG.md'
+          branch: create-pull-request/changelog
           signoff: true

@@ -295,7 +295,7 @@ metadata:
 				POST("/api/v1/events/argo/").
 				WithBytes([]byte(`{}`)).
 				Expect().
-				Status(200)
+				Status(500)
 		}).
 		Then().
 		ExpectAuditEvents(

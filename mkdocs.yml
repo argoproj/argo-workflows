@@ -70,6 +70,7 @@ nav:
           - swagger.md
           - rest-api.md
           - rest-examples.md
+          - client-libraries.md
           - events.md
           - webhooks.md
           - submit-workflow-via-automation.md

@@ -228,6 +228,7 @@ scan-%:
 
 .PHONY: codegen
 codegen: types swagger docs manifests
+	make --directory sdks/java generate
 
 .PHONY: types
 types: pkg/apis/workflow/v1alpha1/generated.proto pkg/apis/workflow/v1alpha1/openapi_generated.go pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go
@@ -403,7 +404,7 @@ dist/argosay:
 
 .PHONY: pull-images
 pull-images:
-	docker pull golang:1.16
+	docker pull golang:1.17
 	docker pull debian:10.7-slim
 	docker pull mysql:8
 	docker pull argoproj/argosay:v1
