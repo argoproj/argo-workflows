@@ -1947,6 +1947,19 @@
     Custom claims
   </a>
   
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-expr" title="Example expr" class="md-nav__link">
+    Example expr
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
       
@@ -2299,6 +2312,19 @@
     Custom claims
   </a>
   
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-expr" title="Example expr" class="md-nav__link">
+    Example expr
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
       
@@ -2430,7 +2456,7 @@ kubectl create secret -n argo generic client-secret-secret \
 <div class="highlight"><pre><span></span><code><span class="nt">sso</span><span class="p">:</span>
   <span class="nt">userInfoPath</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/oauth2/v1/userinfo</span>
 </code></pre></div></p>
-<p>#### Example expr</p>
+<h4 id="example-expr">Example expr<a class="headerlink" href="#example-expr" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="c1"># assuming customClaimGroupName: argo_groups</span>
 workflows.argoproj.io/rbac-rule: <span class="s2">&quot;&#39;argo_admins&#39; in groups&quot;</span>
 </code></pre></div>
