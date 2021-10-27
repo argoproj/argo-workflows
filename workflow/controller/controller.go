@@ -1130,7 +1130,7 @@ func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, m
 		TTL:          time.Duration(wfc.Config.MetricsConfig.MetricsTTL),
 		IgnoreErrors: wfc.Config.MetricsConfig.IgnoreErrors,
 		// Default to false until v3.5
-		Secure:       wfc.Config.MetricsConfig.GetSecure(false),
+		Secure: wfc.Config.MetricsConfig.GetSecure(false),
 	}
 
 	// Telemetry config
