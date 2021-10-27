@@ -12,3 +12,19 @@ func (woc *wfOperationCtx) executeHTTPTemplate(nodeName string, templateScope st
 	}
 	return node
 }
+
+func (woc *wfOperationCtx) nodeRequiresHttpReconciliation(nodeName string) bool {
+	node := woc.wf.GetNodeByName(nodeName)
+	// If this node is of type HTTP, it will need an HTTP reconciliation
+	if node.Type == wfv1.NodeTypeHTTP {
+		return true
+	}
+	for _, child := range node.Children {
+		// If any of the node's children need an HTTP reconciliation, the parent node will also need one
+		if woc.nodeRequiresHttpReconciliation(child) {
+			return true
+		}
+	}
+	// If neither of the children need one -- or if there are no children -- no HTTP reconciliation is needed.
+	return false
+}
