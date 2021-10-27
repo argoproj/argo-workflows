@@ -111,6 +111,7 @@ jobs:
       - run: make install controller cli $(go env GOPATH)/bin/goreman PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info
       - run: make start PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info UI=false > /tmp/log/argo-e2e/argo.log 2>&1 &
         timeout-minutes: 4
+      - run: docker pull quay.io/argoproj/argoexec:latest
       - name: make argoexec-image
         if: ${{matrix.test == 'test-executor' || matrix.test == 'test-functional'}}
         run: make argoexec-image STATIC_FILES=false
