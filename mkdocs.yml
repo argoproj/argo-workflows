@@ -60,6 +60,7 @@ nav:
           - memoization.md
           - tolerating-pod-deletion.md
           - widgets.md
+          - retries.md
       # all other topics, including API access
       - Advanced:
           - workflow-restrictions.md
