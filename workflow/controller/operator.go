@@ -473,21 +473,6 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	}
 }
 
-func (woc *wfOperationCtx) httpReconciliation(ctx context.Context) {
-	err := woc.reconcileTaskSet(ctx)
-	if err != nil {
-		woc.log.WithError(err).Error("error in workflowtaskset reconciliation")
-		return
-	}
-
-	err = woc.reconcileAgentPod(ctx)
-	if err != nil {
-		woc.log.WithError(err).Error("error in agent pod reconciliation")
-		woc.markWorkflowError(ctx, err)
-		return
-	}
-}
-
 func (woc *wfOperationCtx) getContainerRuntimeExecutor() string {
 	return woc.controller.GetContainerRuntimeExecutor(labels.Set(woc.wf.Labels))
 }

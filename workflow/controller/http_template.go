@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"context"
+
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
@@ -11,6 +13,21 @@ func (woc *wfOperationCtx) executeHTTPTemplate(nodeName string, templateScope st
 		woc.taskSet[node.ID] = *tmpl
 	}
 	return node
+}
+
+func (woc *wfOperationCtx) httpReconciliation(ctx context.Context) {
+	err := woc.reconcileTaskSet(ctx)
+	if err != nil {
+		woc.log.WithError(err).Error("error in workflowtaskset reconciliation")
+		return
+	}
+
+	err = woc.reconcileAgentPod(ctx)
+	if err != nil {
+		woc.log.WithError(err).Error("error in agent pod reconciliation")
+		woc.markWorkflowError(ctx, err)
+		return
+	}
 }
 
 func (woc *wfOperationCtx) nodeRequiresHttpReconciliation(nodeName string) bool {
