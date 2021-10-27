@@ -143,7 +143,7 @@ sso:
   userInfoPath: /oauth2/v1/userinfo
 ```
 
- #### Example expr
+#### Example expr
 
 ```shell
 # assuming customClaimGroupName: argo_groups
