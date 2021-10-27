@@ -136,9 +136,7 @@ func GenerateX509KeyPairTLSConfig(tlsMinVersion uint16) (*tls.Config, error) {
 	}, nil
 }
 
-func GetServerTLSConfigFromSecret(kubectlConfig kubernetes.Interface, tlsKubernetesSecretName string, tlsMinVersion uint16, namespace string) (*tls.Config, error) {
-
-	ctx := context.Background()
+func GetServerTLSConfigFromSecret(ctx context.Context, kubectlConfig kubernetes.Interface, tlsKubernetesSecretName string, tlsMinVersion uint16, namespace string) (*tls.Config, error) {
 
 	certpem, err := util.GetSecrets(ctx, kubectlConfig, namespace, tlsKubernetesSecretName, tlsCrtSecretKey)
 	if err != nil {

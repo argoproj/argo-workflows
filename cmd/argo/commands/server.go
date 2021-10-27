@@ -112,16 +112,18 @@ See %s`, help.ArgoServer),
 
 				if tlsCertificateSecretName != "" {
 					log.Infof("Getting contents of Kubernetes secret %s for TLS Certificates", tlsCertificateSecretName)
-					tlsConfig, err = tlsutils.GetServerTLSConfigFromSecret(clients.Kubernetes, tlsCertificateSecretName, uint16(tlsMinVersion), namespace)
-					if tlsConfig != nil {
-						log.Infof("Successfully loaded TLS config from Kubernetes secret %s", tlsCertificateSecretName)
+					tlsConfig, err = tlsutils.GetServerTLSConfigFromSecret(ctx, clients.Kubernetes, tlsCertificateSecretName, uint16(tlsMinVersion), namespace)
+					if err != nil {
+						return err
 					}
+					log.Infof("Successfully loaded TLS config from Kubernetes secret %s", tlsCertificateSecretName)
 				} else {
 					log.Infof("Generating Self Signed TLS Certificates for Secure Mode")
 					tlsConfig, err = tlsutils.GenerateX509KeyPairTLSConfig(uint16(tlsMinVersion))
-					if tlsConfig != nil {
-						log.Infof("Successfully loaded TLS config with self signed TLS certificates")
+					if err != nil {
+						return err
 					}
+					log.Infof("Successfully loaded TLS config with self signed TLS certificates")
 				}
 				if err != nil {
 					return err
