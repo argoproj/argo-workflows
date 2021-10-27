@@ -16,6 +16,7 @@ jobs:
       matrix:
         name:
         - java
+        - python
     steps:
       - uses: actions/checkout@v2
       - run: make --directory sdks/${{matrix.name}} publish -B
