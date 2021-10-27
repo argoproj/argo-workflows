@@ -27,6 +27,7 @@ const stepIcon = (type: Type): Icon => {
         case 'group':
             return 'object-group';
         case 'split':
+            return 'object-ungroup';
         default:
             return 'square';
     }
