@@ -113,8 +113,9 @@ jobs:
         timeout-minutes: 4
       - name: make argoexec-image
         run: make argoexec-image STATIC_FILES=false
+        if: ${{matrix.test}} == 'test-executor' || ${{matrix.test}} == 'test-functional'
       - run: make wait
-        timeout-minutes: 4
+        # timeout-minutes: 4
       - run: make ${{matrix.test}} E2E_TIMEOUT=1m STATIC_FILES=false
       - name: cat argo.log
         if: ${{ failure() }}
@@ -124,7 +125,7 @@ jobs:
     name: Codegen
     runs-on: ubuntu-20.04
     needs: [ tests ]
-    timeout-minutes: 9
+    # timeout-minutes: 9
     env:
       GOPATH: /home/runner/go
       PROTOC_ZIP: protoc-3.11.1-linux-x86_64.zip

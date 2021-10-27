@@ -548,12 +548,10 @@ validate-examples: api/jsonschema/schema.json
 
 .PHONY: pre-commit
 pre-commit: codegen lint
-
-ifeq ($(GIT_BRANCH),master)
-LOG_OPTS := '-n10'
-else
-LOG_OPTS := 'origin/master..'
-endif
+	# fix commit if not signed-off
+	git log -n1 | grep 'Signed-off-by:' || git commit --amend --signoff --no-edit
+	# fix commit messages if not conventional
+	git log -n1 --format=%B | grep '^[a-z]*:' || git commit --amend --no-edit -m "feat: `git log -n1 --format=%B`"
 
 release-notes: /dev/null
 	version=$(VERSION) envsubst < hack/release-notes.md > release-notes
