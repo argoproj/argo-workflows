@@ -15,6 +15,9 @@ func (woc *wfOperationCtx) executeHTTPTemplate(nodeName string, templateScope st
 
 func (woc *wfOperationCtx) nodeRequiresHttpReconciliation(nodeName string) bool {
 	node := woc.wf.GetNodeByName(nodeName)
+	if node == nil {
+		return false
+	}
 	// If this node is of type HTTP, it will need an HTTP reconciliation
 	if node.Type == wfv1.NodeTypeHTTP {
 		return true
