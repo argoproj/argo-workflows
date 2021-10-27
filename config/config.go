@@ -257,6 +257,13 @@ type MetricsConfig struct {
 	Secure *bool `json:"secure,omitempty"`
 }
 
+func (mc MetricsConfig) GetSecure(defaulValue bool) bool {
+	if mc.Secure != nil {
+		return *mc.Secure
+	}
+	return defaulValue
+}
+
 type WorkflowRestrictions struct {
 	TemplateReferencing TemplateReferencing `json:"templateReferencing,omitempty"`
 }

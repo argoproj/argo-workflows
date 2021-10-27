@@ -1123,19 +1123,14 @@ func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, m
 		port = metrics.DefaultMetricsServerPort
 	}
 
-	// Default to false until v3.5
-	secure := false
-	if wfc.Config.MetricsConfig.Secure != nil {
-		secure = *wfc.Config.MetricsConfig.Secure
-	}
-
 	metricsConfig := metrics.ServerConfig{
 		Enabled:      wfc.Config.MetricsConfig.Enabled == nil || *wfc.Config.MetricsConfig.Enabled,
 		Path:         path,
 		Port:         port,
 		TTL:          time.Duration(wfc.Config.MetricsConfig.MetricsTTL),
 		IgnoreErrors: wfc.Config.MetricsConfig.IgnoreErrors,
-		Secure:       secure,
+		// Default to false until v3.5
+		Secure:       wfc.Config.MetricsConfig.GetSecure(false),
 	}
 
 	// Telemetry config
@@ -1149,17 +1144,12 @@ func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, m
 		port = wfc.Config.TelemetryConfig.Port
 	}
 
-	secure = metricsConfig.Secure
-	if wfc.Config.TelemetryConfig.Secure != nil {
-		secure = *wfc.Config.TelemetryConfig.Secure
-	}
-
 	telemetryConfig := metrics.ServerConfig{
 		Enabled:      wfc.Config.TelemetryConfig.Enabled == nil || *wfc.Config.TelemetryConfig.Enabled,
 		Path:         path,
 		Port:         port,
 		IgnoreErrors: wfc.Config.TelemetryConfig.IgnoreErrors,
-		Secure:       secure,
+		Secure:       wfc.Config.TelemetryConfig.GetSecure(metricsConfig.Secure),
 	}
 	return metricsConfig, telemetryConfig
 }
