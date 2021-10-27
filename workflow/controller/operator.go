@@ -352,18 +352,8 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		return
 	}
 
-	err = woc.taskSetReconciliation(ctx)
-	if err != nil {
-		woc.log.WithError(err).Error("error in workflowtaskset reconciliation")
-		return
-	}
-
-	err = woc.reconcileAgentPod(ctx)
-	if err != nil {
-		woc.log.WithError(err).Error("error in agent pod reconciliation")
-		woc.markWorkflowError(ctx, err)
-		return
-	}
+	// Reconcile TaskSet and Agent for HTTP templates
+	woc.httpReconciliation(ctx)
 
 	if node == nil || !node.Fulfilled() {
 		// node can be nil if a workflow created immediately in a parallelism == 0 state
@@ -423,6 +413,12 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			}
 			return
 		}
+
+		// If the onExit node (or any child of the onExit node) requires HTTP reconciliation, do it here
+		if onExitNode != nil && woc.nodeRequiresHttpReconciliation(onExitNode.Name) {
+			woc.httpReconciliation(ctx)
+		}
+
 		if onExitNode == nil || !onExitNode.Fulfilled() {
 			return
 		}
