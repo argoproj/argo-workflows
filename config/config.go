@@ -257,11 +257,11 @@ type MetricsConfig struct {
 	Secure *bool `json:"secure,omitempty"`
 }
 
-func (mc MetricsConfig) GetSecure(defaulValue bool) bool {
+func (mc MetricsConfig) GetSecure(defaultValue bool) bool {
 	if mc.Secure != nil {
 		return *mc.Secure
 	}
-	return defaulValue
+	return defaultValue
 }
 
 type WorkflowRestrictions struct {
