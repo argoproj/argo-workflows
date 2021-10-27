@@ -17,6 +17,10 @@ argo logs WORKFLOW [POD] [flags]
 
   argo logs my-wf --follow
 
+# Print the logs of a workflows with a selector:
+
+  argo logs my-wf -l app=sth
+
 # Print the logs of single container in a pod
 
   argo logs my-wf my-pod -c my-container
@@ -43,6 +47,7 @@ argo logs WORKFLOW [POD] [flags]
   -h, --help                help for logs
       --no-color            Disable colorized output
   -p, --previous            Specify if the previously terminated container logs should be returned.
+  -l, --selector string     log selector for some pod
       --since duration      Only return logs newer than a relative duration like 5s, 2m, or 3h. Defaults to all logs. Only one of since-time / since may be used.
       --since-time string   Only return logs after a specific date (RFC3339). Defaults to all logs. Only one of since-time / since may be used.
       --tail int            If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime (default -1)
