@@ -2298,12 +2298,13 @@ following Semantic Versioning terminology.</p>
 <h2 id="supported-version-skew">Supported Version Skew<a class="headerlink" href="#supported-version-skew" title="Permanent link">&para;</a></h2>
 <p>Both the <code>argo-server</code> and <code>argocli</code> should be the same version as the controller.</p>
 <h1 id="release-cycle">Release Cycle<a class="headerlink" href="#release-cycle" title="Permanent link">&para;</a></h1>
-<p>For <strong>unstable</strong>, we build and tag <code>latest</code> images for every commit to master.</p>
-<p>New major versions are released roughly every 3 months. Release candidates for each major release are typically available
-for 6 weeks before the release becomes generally available.</p>
-<p>Otherwise, we typically release once a week:</p>
+<p>For <strong>stable</strong>, use the latest patch version.
+For <strong>unstable</strong>, we build and tag <code>latest</code> images for every commit to master.</p>
+<p>New minor versions are released roughly every 3 months. Release candidates for each major release are typically available
+for 4-6 weeks before the release becomes generally available.</p>
+<p>Otherwise, we typically release weekly:</p>
 <ul>
-<li>Patch fixes for the current stable version. These are tagged <code>stable</code>.</li>
+<li>Patch fixes for the current stable version. </li>
 <li>The next release candidate, if we are currently in a release-cycle.</li>
 </ul>
                 
