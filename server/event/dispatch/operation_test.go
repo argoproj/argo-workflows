@@ -52,6 +52,9 @@ func TestNewOperation(t *testing.T) {
 		&wfv1.WorkflowTemplate{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-wft-3", Namespace: "my-ns"},
 		},
+		&wfv1.WorkflowTemplate{
+			ObjectMeta: metav1.ObjectMeta{Name: "my-wft-4", Namespace: "my-ns", Labels: map[string]string{common.LabelKeyControllerInstanceID: "my-instanceid"}},
+		},
 	)
 	ctx := context.WithValue(context.WithValue(context.Background(), auth.WfKey, client), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
 	recorder := record.NewFakeRecorder(6)
@@ -147,11 +150,23 @@ func TestNewOperation(t *testing.T) {
 				},
 			},
 		},
-	}, "my-ns", "my-discriminator", &wfv1.Item{Value: json.RawMessage(`{"foo": {"bar": "baz"}}`)})
+		// test a bind with a payload and fmt expression
+		{
+			ObjectMeta: metav1.ObjectMeta{Name: "my-wfeb-8", Namespace: "my-ns"},
+			Spec: wfv1.WorkflowEventBindingSpec{
+				Event: wfv1.Event{Selector: "true"},
+				Submit: &wfv1.Submit{
+					WorkflowTemplateRef: wfv1.WorkflowTemplateRef{Name: "my-wft-4"},
+					Arguments:           &wfv1.Arguments{Parameters: []wfv1.Parameter{{Name: "my-param", ValueFrom: &wfv1.ValueFrom{Event: "payload.formatted"}}}},
+				},
+			},
+		},
+	}, "my-ns", "my-discriminator", &wfv1.Item{Value: json.RawMessage(`{"foo": {"bar": "baz"}, "formatted": "My%Test%"}`)})
 	assert.NoError(t, err)
 	operation.Dispatch(ctx)
 
 	expectedParamValues := []string{
+		`My%Test%`,
 		"bar",
 		"bar",
 		`{"bar":"baz"}`,
@@ -159,7 +174,7 @@ func TestNewOperation(t *testing.T) {
 	var paramValues []string
 	// assert
 	list, err := client.ArgoprojV1alpha1().Workflows("my-ns").List(ctx, metav1.ListOptions{})
-	if assert.NoError(t, err) && assert.Len(t, list.Items, 3) {
+	if assert.NoError(t, err) && assert.Len(t, list.Items, 4) {
 		for _, wf := range list.Items {
 			assert.Equal(t, "my-instanceid", wf.Labels[common.LabelKeyControllerInstanceID])
 			assert.Equal(t, "my-sub", wf.Labels[common.LabelKeyCreator])
