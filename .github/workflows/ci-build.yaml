@@ -33,6 +33,7 @@ jobs:
       - run: go build -v ./...
       - run: make test STATIC_FILES=false GOTEST='go test -covermode=atomic -coverprofile=coverage.out'
       - run: bash <(curl -s https://codecov.io/bash)
+        if: github.ref == 'refs/heads/master'
 
   e2e-tests:
     name: E2E Tests
