@@ -382,7 +382,7 @@ test: server/static/files.go dist/argosay
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
 
 .PHONY: install
-install:
+install: githooks
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 	@echo "installing PROFILE=$(PROFILE), E2E_EXECUTOR=$(E2E_EXECUTOR)"
@@ -552,12 +552,14 @@ validate-examples: api/jsonschema/schema.json
 
 # pre-push
 
+.git/hooks/commit-msg: hack/git/hooks/commit-msg
+	cp -v hack/git/hooks/commit-msg .git/hooks/commit-msg
+
+.PHONY: githooks
+githooks: .git/hooks/commit-msg
+
 .PHONY: pre-commit
-pre-commit: codegen lint
-	# fix commit if not signed-off
-	git log -n1 | grep 'Signed-off-by:' || git commit --amend --signoff --no-edit
-	# fix commit messages if not conventional
-	git log -n1 --format=%B | grep '^[a-z]*:' || git commit --amend --no-edit -m "feat: `git log -n1 --format=%B`"
+pre-commit: githooks codegen lint
 
 release-notes: /dev/null
 	version=$(VERSION) envsubst < hack/release-notes.md > release-notes
