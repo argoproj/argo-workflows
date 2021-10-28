@@ -253,6 +253,15 @@ type MetricsConfig struct {
 	Port int `json:"port,omitempty"`
 	// IgnoreErrors is a flag that instructs prometheus to ignore metric emission errors
 	IgnoreErrors bool `json:"ignoreErrors,omitempty"`
+	// Secure is a flag that starts the metrics servers using TLS
+	Secure *bool `json:"secure,omitempty"`
+}
+
+func (mc MetricsConfig) GetSecure(defaultValue bool) bool {
+	if mc.Secure != nil {
+		return *mc.Secure
+	}
+	return defaultValue
 }
 
 type WorkflowRestrictions struct {

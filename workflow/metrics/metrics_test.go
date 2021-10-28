@@ -48,6 +48,10 @@ func TestServerConfig_SameServerAs(t *testing.T) {
 	b.Port = DefaultMetricsServerPort
 	b.Path = "/telemetry"
 	assert.False(t, a.SameServerAs(b))
+
+	b.Path = DefaultMetricsServerPath
+	b.Secure = true
+	assert.False(t, a.SameServerAs(b))
 }
 
 func TestMetrics(t *testing.T) {
