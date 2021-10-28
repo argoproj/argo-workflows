@@ -6,7 +6,6 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -29,16 +28,6 @@ const (
 	tlsKeySecretKey = "tls.key"
 )
 
-func publicKey(priv interface{}) interface{} {
-	switch k := priv.(type) {
-	case *rsa.PrivateKey:
-		return &k.PublicKey
-	case *ecdsa.PrivateKey:
-		return &k.PublicKey
-	default:
-		return nil
-	}
-}
 func pemBlockForKey(priv interface{}) *pem.Block {
 	switch k := priv.(type) {
 	case *ecdsa.PrivateKey:
