@@ -213,7 +213,13 @@ argoexec-image:
 
 %-image:
 	[ ! -e dist/$* ] || mv dist/$* .
-	docker buildx build -t $(IMAGE_NAMESPACE)/$*:$(VERSION) --target $* --output=type=docker .
+	docker buildx install
+	docker build \
+		-t $(IMAGE_NAMESPACE)/$*:$(VERSION) \
+		--target $* \
+		--cache-from "type=local,src=/tmp/.buildx-cache" \
+		--cache-to "type=local,dest=/tmp/.buildx-cache" \
+		--output=type=docker .
 	[ ! -e $* ] || mv $* dist/
 	docker run --rm -t $(IMAGE_NAMESPACE)/$*:$(VERSION) version
 	if [ $(K3D) = true ]; then k3d image import $(IMAGE_NAMESPACE)/$*:$(VERSION); fi
@@ -376,7 +382,7 @@ test: server/static/files.go dist/argosay
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
 
 .PHONY: install
-install:
+install: githooks
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 	@echo "installing PROFILE=$(PROFILE), E2E_EXECUTOR=$(E2E_EXECUTOR)"
@@ -546,14 +552,14 @@ validate-examples: api/jsonschema/schema.json
 
 # pre-push
 
-.PHONY: pre-commit
-pre-commit: codegen lint
+.git/hooks/commit-msg: hack/git/hooks/commit-msg
+	cp -v hack/git/hooks/commit-msg .git/hooks/commit-msg
 
-ifeq ($(GIT_BRANCH),master)
-LOG_OPTS := '-n10'
-else
-LOG_OPTS := 'origin/master..'
-endif
+.PHONY: githooks
+githooks: .git/hooks/commit-msg
+
+.PHONY: pre-commit
+pre-commit: githooks codegen lint
 
 release-notes: /dev/null
 	version=$(VERSION) envsubst < hack/release-notes.md > release-notes
