@@ -3526,9 +3526,9 @@ func (woc *wfOperationCtx) substituteGlobalVariables() error {
 func setWfPodNamesAnnotation(wf *wfv1.Workflow) {
 	podNameVersion := wfutil.GetPodNameVersion()
 
-	if wf.ObjectMeta.Annotations == nil {
-		wf.ObjectMeta.Annotations = map[string]string{}
+	if wf.Annotations == nil {
+		wf.Annotations = map[string]string{}
 	}
 
-	wf.ObjectMeta.Annotations[common.AnnotationKeyPodNameVersion] = podNameVersion.String()
+	wf.Annotations[common.AnnotationKeyPodNameVersion] = podNameVersion.String()
 }
