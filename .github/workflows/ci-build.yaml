@@ -99,8 +99,9 @@ jobs:
         if: ${{!(matrix.test == 'test-executor' || matrix.test == 'test-functional')}}
       - name: make argoexec-image
         if: ${{matrix.test == 'test-executor' || matrix.test == 'test-functional'}}
+        # retry this once, as it can be flakey
         run: |
-          make argoexec-image STATIC_FILES=false
+          make argoexec-image STATIC_FILES=false || make argoexec-image STATIC_FILES=false
           docker image prune -f
       - name: Install and start K3S
         run: |
