@@ -1177,7 +1177,7 @@ func (wfc *WorkflowController) isArchivable(wf *wfv1.Workflow) bool {
 func (wfc *WorkflowController) syncWorkflowPhaseMetrics() {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 
-	for _, phase := range []wfv1.NodePhase{wfv1.NodePending, wfv1.NodeRunning, wfv1.NodeSucceeded, wfv1.NodeFailed, wfv1.NodeError} {
+	for _, phase := range []wfv1.NodePhase{wfv1.NodePending, wfv1.NodeRunning, wfv1.NodeSucceeded, wfv1.NodeFailed, wfv1.NodeTerminated, wfv1.NodeError} {
 		keys, err := wfc.wfInformer.GetIndexer().IndexKeys(indexes.WorkflowPhaseIndex, string(phase))
 		errors.CheckError(err)
 		wfc.metrics.SetWorkflowPhaseGauge(phase, len(keys))

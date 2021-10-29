@@ -51,13 +51,22 @@ func (woc *wfOperationCtx) updateAgentPodStatus(ctx context.Context, pod *apiv1.
 func assessAgentPodStatus(pod *apiv1.Pod) (wfv1.WorkflowPhase, string) {
 	var newPhase wfv1.WorkflowPhase
 	var message string
+	// Define static 'Terminate' message types
+	// as possible output options from workflow.
+	workflowMessageTypeTerminated := "Terminate"
 	log.Infof("assessAgentPodStatus")
 	switch pod.Status.Phase {
 	case apiv1.PodSucceeded, apiv1.PodRunning, apiv1.PodPending:
 		return "", ""
 	case apiv1.PodFailed:
-		newPhase = wfv1.WorkflowFailed
+		// If the Pod fails we need to evaluate the reason.
+		// A human canceled/terminated job is not a failed one.
 		message = pod.Status.Message
+		if message == workflowMessageTypeTerminated {
+			newPhase = wfv1.WorkflowTerminated
+		} else {
+			newPhase = wfv1.WorkflowFailed
+		}
 	default:
 		newPhase = wfv1.WorkflowError
 		message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.ObjectMeta.Name, pod.Status.Phase)

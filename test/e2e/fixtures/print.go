@@ -12,12 +12,13 @@ import (
 )
 
 var workflowPhaseIcon = map[wfv1.WorkflowPhase]string{
-	"":                     color.Ize(color.Gray, "?"),
-	wfv1.WorkflowPending:   color.Ize(color.Yellow, "◷"),
-	wfv1.WorkflowRunning:   color.Ize(color.Blue, "●"),
-	wfv1.WorkflowSucceeded: color.Ize(color.Green, "✔"),
-	wfv1.WorkflowFailed:    color.Ize(color.Red, "✖"),
-	wfv1.WorkflowError:     color.Ize(color.Red, "⚠"),
+	"":                      color.Ize(color.Gray, "?"),
+	wfv1.WorkflowPending:    color.Ize(color.Yellow, "◷"),
+	wfv1.WorkflowRunning:    color.Ize(color.Blue, "●"),
+	wfv1.WorkflowSucceeded:  color.Ize(color.Green, "✔"),
+	wfv1.WorkflowFailed:     color.Ize(color.Red, "✖"),
+	wfv1.WorkflowTerminated: color.Ize(color.Yellow, "#"),
+	wfv1.WorkflowError:      color.Ize(color.Red, "⚠"),
 }
 
 var nodePhaseIcon = map[wfv1.NodePhase]string{

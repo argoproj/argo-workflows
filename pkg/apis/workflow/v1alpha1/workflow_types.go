@@ -53,6 +53,8 @@ const (
 	NodeSkipped NodePhase = "Skipped"
 	// Node or child of node exited with non-0 code
 	NodeFailed NodePhase = "Failed"
+	// Node or child was terminated by human interaction
+	NodeTerminated NodePhase = "Terminated"
 	// Node had an error other than a non 0 exit code
 	NodeError NodePhase = "Error"
 	// Node was omitted because its `depends` condition was not met (only relevant in DAGs)

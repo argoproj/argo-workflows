@@ -361,13 +361,14 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	}
 
 	workflowStatus := map[wfv1.NodePhase]wfv1.WorkflowPhase{
-		wfv1.NodePending:   wfv1.WorkflowPending,
-		wfv1.NodeRunning:   wfv1.WorkflowRunning,
-		wfv1.NodeSucceeded: wfv1.WorkflowSucceeded,
-		wfv1.NodeSkipped:   wfv1.WorkflowSucceeded,
-		wfv1.NodeFailed:    wfv1.WorkflowFailed,
-		wfv1.NodeError:     wfv1.WorkflowError,
-		wfv1.NodeOmitted:   wfv1.WorkflowSucceeded,
+		wfv1.NodePending:    wfv1.WorkflowPending,
+		wfv1.NodeRunning:    wfv1.WorkflowRunning,
+		wfv1.NodeSucceeded:  wfv1.WorkflowSucceeded,
+		wfv1.NodeSkipped:    wfv1.WorkflowSucceeded,
+		wfv1.NodeFailed:     wfv1.WorkflowFailed,
+		wfv1.NodeTerminated: wfv1.WorkflowTerminated,
+		wfv1.NodeError:      wfv1.WorkflowError,
+		wfv1.NodeOmitted:    wfv1.WorkflowSucceeded,
 	}[node.Phase]
 
 	var onExitNode *wfv1.NodeStatus
@@ -425,8 +426,10 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	}
 
 	var workflowMessage string
+	var workflowMessageType string
 	if node.FailedOrError() && woc.GetShutdownStrategy().Enabled() {
 		workflowMessage = fmt.Sprintf("Stopped with strategy '%s'", woc.GetShutdownStrategy())
+		workflowMessageType = fmt.Sprintf("'%s'", woc.GetShutdownStrategy())
 	} else {
 		workflowMessage = node.Message
 	}
@@ -434,6 +437,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	// If we get here, the workflow completed, all PVCs were deleted successfully, and
 	// exit handlers were executed. We now need to infer the workflow phase from the
 	// node phase.
+	var workflowMarked bool = false
 	switch workflowStatus {
 	case wfv1.WorkflowSucceeded:
 		if onExitNode != nil && onExitNode.FailedOrError() {
@@ -441,17 +445,31 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			// the workflow is now considered unsuccessful.
 			switch onExitNode.Phase {
 			case wfv1.NodeFailed:
-				woc.markWorkflowFailed(ctx, onExitNode.Message)
+				workflowMessageTypeTerm := "Terminate"
+				if strings.Contains(workflowMessageType, workflowMessageTypeTerm) {
+					workflowMarked = true
+					woc.markWorkflowTerminated(ctx, onExitNode.Message)
+				} else {
+					woc.markWorkflowFailed(ctx, onExitNode.Message)
+				}
 			default:
-				woc.markWorkflowError(ctx, fmt.Errorf(onExitNode.Message))
+				if !workflowMarked {
+					woc.markWorkflowError(ctx, fmt.Errorf(onExitNode.Message))
+				}
 			}
-		} else {
-			woc.markWorkflowSuccess(ctx)
 		}
 	case wfv1.WorkflowFailed:
-		woc.markWorkflowFailed(ctx, workflowMessage)
+		workflowMessageTypeTerm := "Terminate"
+		if strings.Contains(workflowMessageType, workflowMessageTypeTerm) {
+			workflowMarked = true
+			woc.markWorkflowTerminated(ctx, workflowMessage)
+		} else {
+			woc.markWorkflowFailed(ctx, workflowMessage)
+		}
 	case wfv1.WorkflowError:
-		woc.markWorkflowPhase(ctx, wfv1.WorkflowError, workflowMessage)
+		if !workflowMarked {
+			woc.markWorkflowPhase(ctx, wfv1.WorkflowError, workflowMessage)
+		}
 	default:
 		// NOTE: we should never make it here because if the node was 'Running' we should have
 		// returned earlier.
@@ -2048,6 +2066,10 @@ func (woc *wfOperationCtx) markWorkflowSuccess(ctx context.Context) {
 
 func (woc *wfOperationCtx) markWorkflowFailed(ctx context.Context, message string) {
 	woc.markWorkflowPhase(ctx, wfv1.WorkflowFailed, message)
+}
+
+func (woc *wfOperationCtx) markWorkflowTerminated(ctx context.Context, message string) {
+	woc.markWorkflowPhase(ctx, wfv1.WorkflowTerminated, message)
 }
 
 func (woc *wfOperationCtx) markWorkflowError(ctx context.Context, err error) {
