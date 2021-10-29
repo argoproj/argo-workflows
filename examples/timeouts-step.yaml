@@ -12,5 +12,6 @@ spec:
   - name: sleep
     container:
       image: argoproj/argosay:v2
-      command: [sleep, 1d]
+      command: [bash, -c]
+      args: ["echo 123; sleep 1d"]
     activeDeadlineSeconds: 10
