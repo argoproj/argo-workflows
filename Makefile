@@ -195,12 +195,12 @@ ifeq ($(shell uname -s),Darwin)
 	# if local, then build fast: use CGO and dynamic-linking
 	go build -v -ldflags '${LDFLAGS}' -o $@ ./cmd/workflow-controller
 else
-	CGO_ENABLED=1 go build -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/workflow-controller
+	CGO_ENABLED=1 go build -v -ldflags '${LDFLAGS}' -o $@ ./cmd/workflow-controller
 endif
 
 dist/controller/plugins/hello.so:
 dist/controller/plugins/%.so: workflow/controller/plugins/%/plugin.go dist/workflow-controller
-	CGO_ENABLED=1 go build -v -ldflags '-extldflags -static' -buildmode=plugin -o dist/controller/plugins/$*.so ./workflow/controller/plugins/$*
+	CGO_ENABLED=1 go build -v -buildmode=plugin -o dist/controller/plugins/$*.so ./workflow/controller/plugins/$*
 
 workflow-controller-image:
 
