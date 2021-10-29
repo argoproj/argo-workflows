@@ -146,6 +146,7 @@ func (s *ArtifactsSuite) TestMainLog() {
 				}
 			})
 	})
+	s.Need(fixtures.K8SAPI, fixtures.PNS)
 	s.Run("ActiveDeadlineSeconds", func() {
 		s.Given().
 			Workflow("@expectedfailures/timeouts-step.yaml").
