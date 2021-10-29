@@ -142,6 +142,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 	// You can use DeepCopy() to make a deep copy of original object and modify this copy
 	// Or create a copy manually for better performance
 	wfCopy := wf.DeepCopyObject().(*wfv1.Workflow)
+
 	woc := wfOperationCtx{
 		wf:      wfCopy,
 		orig:    wf,
@@ -263,6 +264,8 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
 		woc.markWorkflowRunning(ctx)
+		setWfPodNamesAnnotation(woc.wf)
+
 		err := woc.createPDBResource(ctx)
 		if err != nil {
 			msg := fmt.Sprintf("Unable to create PDB resource for workflow, %s error: %s", woc.wf.Name, err)
@@ -3516,4 +3519,16 @@ func (woc *wfOperationCtx) substituteGlobalVariables() error {
 		return err
 	}
 	return nil
+}
+
+// setWfPodNamesAnnotation sets an annotation on a workflow with the pod naming
+// convention version
+func setWfPodNamesAnnotation(wf *wfv1.Workflow) {
+	podNameVersion := wfutil.GetPodNameVersion()
+
+	if wf.Annotations == nil {
+		wf.Annotations = map[string]string{}
+	}
+
+	wf.Annotations[common.AnnotationKeyPodNameVersion] = podNameVersion.String()
 }
