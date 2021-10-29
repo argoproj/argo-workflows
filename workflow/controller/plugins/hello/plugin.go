@@ -17,6 +17,10 @@ func init() {
 	log.Println("Hello! Just starting up...")
 }
 
+func main() {
+	// main funcs are never called in a Go plugin
+}
+
 func (plugin) WorkflowPreOperate(args plugins.WorkflowPreOperateArgs, _ *plugins.WorkflowPreOperateReply) error { //nolint:unparam
 	if _, ok := args.Workflow.Annotations["hello"]; ok && args.Workflow.Status.Phase == wfv1.WorkflowUnknown {
 		log.Println("setting hello to running")
