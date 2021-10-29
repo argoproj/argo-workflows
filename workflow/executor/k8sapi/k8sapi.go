@@ -44,7 +44,7 @@ func (k *K8sAPIExecutor) GetOutputStream(ctx context.Context, containerName stri
 // Wait for the container to complete
 func (k *K8sAPIExecutor) Wait(ctx context.Context, containerNames []string) error {
 	return k.Until(ctx, func(pod *corev1.Pod) bool {
-		return common.AllTerminated(pod.Status.ContainerStatuses, containerNames)
+		return common.AllTerminated(pod.Status.ContainerStatuses, containerNames) || pod.Status.Reason == "DeadlineExceeded"
 	})
 }
 
