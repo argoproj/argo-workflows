@@ -40,7 +40,7 @@ jobs:
     name: E2E Tests
     runs-on: ubuntu-20.04
     timeout-minutes: 20
-    needs: [ test, codegen, lint ]
+    needs: [ tests, codegen, lint ]
     env:
       KUBECONFIG: /home/runner/.kubeconfig
     strategy:
