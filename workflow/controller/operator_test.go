@@ -7622,6 +7622,10 @@ func TestExitHandlerWithRetryNodeParam(t *testing.T) {
 }
 
 func TestSetWFPodNamesAnnotation(t *testing.T) {
+	defer func() {
+		_ = os.Unsetenv("POD_NAMES")
+	}()
+
 	tests := []struct {
 		podNameVersion string
 	}{

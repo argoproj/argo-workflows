@@ -1,14 +1,14 @@
 import {NodeStatus} from '../../models';
 
-export const POD_NAME_VERSION_1 = 'v1';
-export const POD_NAME_VERSION_2 = 'v2';
+export const POD_NAME_V1 = 'v1';
+export const POD_NAME_V2 = 'v2';
 
 export const maxK8sResourceNameLength = 253;
 export const k8sNamingHashLength = 10;
 
 // getPodName returns a deterministic pod name
 export const getPodName = (workflowName: string, nodeName: string, templateName: string, nodeID: string, version: string): string => {
-    if (version === POD_NAME_VERSION_2) {
+    if (version === POD_NAME_V2) {
         if (workflowName === nodeName) {
             return workflowName;
         }
