@@ -39,6 +39,9 @@ const (
 	// AnnotationKeyWorkflowUID is the uid of the workflow
 	AnnotationKeyWorkflowUID = workflow.WorkflowFullName + "/workflow-uid"
 
+	// AnnotationKeyPodNameVersion stores the pod naming convention version
+	AnnotationKeyPodNameVersion = workflow.WorkflowFullName + "/pod-name-format"
+
 	// LabelKeyControllerInstanceID is the label the controller will carry forward to workflows/pod labels
 	// for the purposes of workflow segregation
 	LabelKeyControllerInstanceID = workflow.WorkflowFullName + "/controller-instanceid"
