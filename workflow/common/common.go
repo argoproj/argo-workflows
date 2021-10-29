@@ -200,6 +200,9 @@ const (
 
 	// ArgoProgressPath defines the path to a file used for self reporting progress
 	ArgoProgressPath = "/var/run/argo/progress"
+
+	// ErrDeadlineExceeded is the pod status reason when exceed deadline
+	ErrDeadlineExceeded = "DeadlineExceeded"
 )
 
 // AnnotationKeyKillCmd specifies the command to use to kill to container, useful for injected sidecars
