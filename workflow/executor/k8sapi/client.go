@@ -70,6 +70,9 @@ func (c *k8sAPIClient) getPod(ctx context.Context) (*corev1.Pod, error) {
 	err := waitutil.Backoff(backoffOver30s, func() (bool, error) {
 		var err error
 		pod, err = c.clientset.CoreV1().Pods(c.namespace).Get(ctx, c.podName, metav1.GetOptions{})
+		if err != nil && strings.Contains(err.Error(), "unknown (get pods)") {
+			err = fmt.Errorf("unable to get pods, you can check https://argoproj.github.io/argo-workflows/faq/: %w", err)
+		}
 		return !errorsutil.IsTransientErr(err), err
 	})
 	return pod, err
@@ -118,7 +121,7 @@ func (c *k8sAPIClient) until(ctx context.Context, f func(pod *corev1.Pod) bool) 
 			w, err := podInterface.Watch(ctx, metav1.ListOptions{FieldSelector: "metadata.name=" + c.podName})
 			if err != nil {
 				if strings.Contains(err.Error(), "unknown (get pods)") {
-					err = fmt.Errorf("check https://github.com/argoproj/argo-workflows/blob/master/docs/faq.md: %w", err)
+					err = fmt.Errorf("unable to watch pods, you can check https://argoproj.github.io/argo-workflows/faq/: %w", err)
 				}
 				return true, fmt.Errorf("failed to establish pod watch: %w", err)
 			}
