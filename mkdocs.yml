@@ -80,6 +80,7 @@ nav:
           - async-pattern.md
           - security.md
           - running-at-massive-scale.md
+          - plugins.md
       - ide-setup.md
       - Examples: https://github.com/argoproj/argo-workflows/blob/master/examples/README.md
       - Field Reference: fields.md

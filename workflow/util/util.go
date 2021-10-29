@@ -1046,21 +1046,9 @@ func PodSpecPatchMerge(wf *wfv1.Workflow, tmpl *wfv1.Template) (string, error) {
 	return string(data), err
 }
 
+// DEPRECATED: use tmpl.GetNodeType()
 func GetNodeType(tmpl *wfv1.Template) wfv1.NodeType {
-	if tmpl.RetryStrategy != nil {
-		return wfv1.NodeTypeRetry
-	}
-	switch tmpl.GetType() {
-	case wfv1.TemplateTypeContainer, wfv1.TemplateTypeContainerSet, wfv1.TemplateTypeScript, wfv1.TemplateTypeResource, wfv1.TemplateTypeData:
-		return wfv1.NodeTypePod
-	case wfv1.TemplateTypeDAG:
-		return wfv1.NodeTypeDAG
-	case wfv1.TemplateTypeSteps:
-		return wfv1.NodeTypeSteps
-	case wfv1.TemplateTypeSuspend:
-		return wfv1.NodeTypeSuspend
-	}
-	return ""
+	return tmpl.GetNodeType()
 }
 
 // IsWindowsUNCPath checks if path is prefixed with \\

@@ -39,6 +39,10 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeSteps, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning)
 	}
+	woc.runTemplateExecutorPlugins(tmpl, node)
+	if node.Fulfilled() {
+		return node, nil
+	}
 
 	defer func() {
 		if woc.wf.Status.Nodes[node.ID].Fulfilled() {

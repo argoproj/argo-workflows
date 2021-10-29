@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
+	"plugin"
 	"strconv"
 	"syscall"
 	"time"
@@ -53,6 +55,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/estimation"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/informer"
+	"github.com/argoproj/argo-workflows/v3/workflow/controller/plugins"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/pod"
 	"github.com/argoproj/argo-workflows/v3/workflow/cron"
 	"github.com/argoproj/argo-workflows/v3/workflow/events"
@@ -112,6 +115,7 @@ type WorkflowController struct {
 	archiveLabelSelector  labels.Selector
 	cacheFactory          controllercache.Factory
 	wfTaskSetInformer     wfextvv1alpha1.WorkflowTaskSetInformer
+	plugins               []plugin.Symbol
 }
 
 const (
@@ -124,7 +128,7 @@ const (
 )
 
 // NewWorkflowController instantiates a new WorkflowController
-func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap string) (*WorkflowController, error) {
+func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap, pluginsDir string) (*WorkflowController, error) {
 	dynamicInterface, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
 		return nil, err
@@ -156,7 +160,33 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 	wfc.podQueue = wfc.metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "pod_queue")
 	wfc.podCleanupQueue = wfc.metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "pod_cleanup_queue")
 
+	if err := wfc.loadPlugins(pluginsDir); err != nil {
+		return nil, err
+	}
+
 	return &wfc, nil
+}
+
+func (wfc *WorkflowController) loadPlugins(dir string) error {
+	log.WithField("dir", dir).Info("loading plugins")
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+	for _, f := range files {
+		path := filepath.Join(dir, f.Name())
+		log.WithField("path", path).Info("loading plugin")
+		plug, err := plugin.Open(path)
+		if err != nil {
+			return err
+		}
+		sym, err := plug.Lookup("Plugin")
+		if err != nil {
+			return err
+		}
+		wfc.plugins = append(wfc.plugins, sym)
+	}
+	return nil
 }
 
 func (wfc *WorkflowController) newThrottler() sync.Throttler {
@@ -767,6 +797,14 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		return true
 	}
 	startTime := time.Now()
+	req := plugins.WorkflowPreOperateArgs{Workflow: woc.wf}
+	for _, sym := range woc.controller.plugins {
+		if plug, ok := sym.(plugins.WorkflowLifecycleHook); ok {
+			if err := plug.WorkflowPreOperate(req, &plugins.WorkflowPreOperateReply{}); err != nil {
+				woc.markWorkflowError(ctx, err)
+			}
+		}
+	}
 	woc.operate(ctx)
 	wfc.metrics.OperationCompleted(time.Since(startTime).Seconds())
 	if woc.wf.Status.Fulfilled() {
