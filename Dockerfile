@@ -98,7 +98,7 @@ FROM builder as workflow-controller-build
 RUN cat .dockerignore >> .gitignore
 RUN git status --porcelain | cut -c4- | xargs git update-index --skip-worktree
 
-RUN --mount=type=cache,target=/root/.cache/go-build make dist/workflow-controller
+RUN --mount=type=cache,target=/root/.cache/go-build make controller
 
 ####################################################################################################
 
