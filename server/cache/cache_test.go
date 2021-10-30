@@ -1,4 +1,4 @@
-package k8s_utils
+package cache
 
 import (
 	"context"
@@ -26,10 +26,16 @@ func checkServiceAccountExists(saList []*v1.ServiceAccount, name string) bool {
 func TestServer_K8sUtilsCache(t *testing.T) {
 	_ = os.Setenv("KUBECONFIG", "/dev/null")
 	defer func() { _ = os.Unsetenv("KUBECONFIG") }()
+	saLabels := make(map[string]string)
+	saLabels["hello"] = "world"
+
+	secretLabels := make(map[string]string)
+	secretLabels["hi"] = "world"
 	kubeClient := kubefake.NewSimpleClientset(
 		&v1.ServiceAccount{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "sa1", Namespace: "ns1",
+				Labels: saLabels,
 				Annotations: map[string]string{
 					common.AnnotationKeyRBACRule:           "'other-group' in groups",
 					common.AnnotationKeyRBACRulePrecedence: "0",
@@ -40,6 +46,7 @@ func TestServer_K8sUtilsCache(t *testing.T) {
 		&v1.ServiceAccount{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "sa2", Namespace: "ns1",
+				Labels: saLabels,
 				Annotations: map[string]string{
 					common.AnnotationKeyRBACRule:           "'my-group' in groups",
 					common.AnnotationKeyRBACRulePrecedence: "1",
@@ -50,23 +57,37 @@ func TestServer_K8sUtilsCache(t *testing.T) {
 		&v1.ServiceAccount{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "sa3", Namespace: "ns2",
+				Labels: saLabels,
 				Annotations: map[string]string{
 					common.AnnotationKeyRBACRule:           "'my-group' in groups",
 					common.AnnotationKeyRBACRulePrecedence: "2",
 				},
 			},
 			Secrets: []v1.ObjectReference{{Name: "user-secret"}},
+		},
+		&v1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "s1",
+				Namespace: "ns1",
+				Labels:    secretLabels,
+			},
+			Data: map[string][]byte{
+				"token": {},
+			},
 		})
-	cache := NewK8sCache(kubeClient, context.TODO())
+	cache := NewResourceCache(kubeClient, context.TODO(), v1.NamespaceAll)
 
 	t.Run("List Service Accounts in different namespaces", func(t *testing.T) {
 		sa, _ := cache.ServiceAccountLister.ServiceAccounts("ns1").List(labels.Everything())
-		assert.Equal(t, len(sa), 2)
+		assert.Equal(t, 2, len(sa))
 		assert.True(t, checkServiceAccountExists(sa, "sa1"))
 		assert.True(t, checkServiceAccountExists(sa, "sa2"))
 
 		sa, _ = cache.ServiceAccountLister.ServiceAccounts("ns2").List(labels.Everything())
-		assert.Equal(t, len(sa), 1)
+		assert.Equal(t, 1, len(sa))
 		assert.True(t, checkServiceAccountExists(sa, "sa3"))
+
+		secrets, _ := cache.SecretLister.Secrets("ns1").List(labels.Everything())
+		assert.Equal(t, 1, len(secrets))
 	})
 }

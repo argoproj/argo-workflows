@@ -20,6 +20,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/env"
@@ -42,6 +43,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	"github.com/argoproj/argo-workflows/v3/server/auth/sso"
 	"github.com/argoproj/argo-workflows/v3/server/auth/webhook"
+	"github.com/argoproj/argo-workflows/v3/server/cache"
 	"github.com/argoproj/argo-workflows/v3/server/clusterworkflowtemplate"
 	"github.com/argoproj/argo-workflows/v3/server/cronworkflow"
 	"github.com/argoproj/argo-workflows/v3/server/event"
@@ -51,7 +53,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/sensor"
 	"github.com/argoproj/argo-workflows/v3/server/static"
 	"github.com/argoproj/argo-workflows/v3/server/types"
-	"github.com/argoproj/argo-workflows/v3/server/utils/k8s_utils"
 	"github.com/argoproj/argo-workflows/v3/server/workflow"
 	"github.com/argoproj/argo-workflows/v3/server/workflowarchive"
 	"github.com/argoproj/argo-workflows/v3/server/workflowtemplate"
@@ -82,12 +83,13 @@ type argoServer struct {
 	eventAsyncDispatch       bool
 	xframeOptions            string
 	accessControlAllowOrigin string
-	cache                    *k8s_utils.K8sCache
+	cache                    *cache.ResourceCache
 }
 
 type ArgoServerOpts struct {
 	BaseHRef   string
 	TLSConfig  *tls.Config
+	Namespaced bool
 	Namespace  string
 	Clients    *types.Clients
 	RestConfig *rest.Config
@@ -111,9 +113,16 @@ func init() {
 	}
 }
 
+func getResourceCacheNamespace(opts ArgoServerOpts) string {
+	if opts.Namespaced {
+		return opts.Namespace
+	}
+	return v1.NamespaceAll
+}
+
 func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error) {
 	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.Clients.Kubernetes, emptyConfigFunc)
-	cache := k8s_utils.NewK8sCache(opts.Clients.Kubernetes, ctx)
+	resourceCache := cache.NewResourceCache(opts.Clients.Kubernetes, ctx, getResourceCacheNamespace(opts))
 	ssoIf := sso.NullSSO
 	if opts.AuthModes[auth.SSO] {
 		c, err := configController.Get(ctx)
@@ -128,7 +137,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 	} else {
 		log.Info("SSO disabled")
 	}
-	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Clients, opts.RestConfig, ssoIf, auth.DefaultClientForAuthorization, opts.Namespace, cache)
+	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Clients, opts.RestConfig, ssoIf, auth.DefaultClientForAuthorization, opts.Namespace, opts.Namespaced, resourceCache)
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +157,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		eventAsyncDispatch:       opts.EventAsyncDispatch,
 		xframeOptions:            opts.XFrameOptions,
 		accessControlAllowOrigin: opts.AccessControlAllowOrigin,
-		cache:                    cache,
+		cache:                    resourceCache,
 	}, nil
 }
 

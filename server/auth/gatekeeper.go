@@ -8,6 +8,8 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/argoproj/argo-workflows/v3/server/cache"
+
 	"github.com/antonmedv/expr"
 	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
 	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
@@ -26,8 +28,8 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/auth/serviceaccount"
 	"github.com/argoproj/argo-workflows/v3/server/auth/sso"
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
+	"github.com/argoproj/argo-workflows/v3/server/cache"
 	servertypes "github.com/argoproj/argo-workflows/v3/server/types"
-	"github.com/argoproj/argo-workflows/v3/server/utils/k8s_utils"
 	jsonutil "github.com/argoproj/argo-workflows/v3/util/json"
 	"github.com/argoproj/argo-workflows/v3/util/kubeconfig"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -63,11 +65,12 @@ type gatekeeper struct {
 	ssoIf                  sso.Interface
 	clientForAuthorization ClientForAuthorization
 	// The namespace the server is installed in.
-	namespace string
-	cache     *k8s_utils.K8sCache
+	namespace  string
+	namespaced bool
+	cache      *cache.ResourceCache
 }
 
-func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.Config, ssoIf sso.Interface, clientForAuthorization ClientForAuthorization, namespace string, cache *k8s_utils.K8sCache) (Gatekeeper, error) {
+func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.Config, ssoIf sso.Interface, clientForAuthorization ClientForAuthorization, namespace string, namespaced bool, cache *cache.ResourceCache) (Gatekeeper, error) {
 	if len(modes) == 0 {
 		return nil, fmt.Errorf("must specify at least one auth mode")
 	}
@@ -78,6 +81,7 @@ func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.C
 		ssoIf,
 		clientForAuthorization,
 		namespace,
+		namespaced,
 		cache,
 	}, nil
 
@@ -253,8 +257,11 @@ func (s *gatekeeper) getServiceAccount(claims *types.Claims, namespace string) (
 }
 
 func (s *gatekeeper) canDelegateRBACToRequestNamespace(req interface{}) bool {
+	if s.namespaced || os.Getenv("SSO_DELEGATE_RBAC_TO_NAMESPACE") != "true" {
+		return false
+	}
 	namespace := getNamespace(req)
-	return len(namespace) != 0 && s.namespace != namespace && os.Getenv("SSO_DELEGATE_RBAC_TO_NAMESPACE") == "true"
+	return len(namespace) != 0 && s.namespace != namespace
 }
 
 func (s *gatekeeper) getClientsForServiceAccount(claims *types.Claims, serviceAccount *corev1.ServiceAccount) (*servertypes.Clients, error) {
@@ -281,7 +288,7 @@ func (s *gatekeeper) rbacAuthorization(claims *types.Claims, req interface{}) (*
 		ssoDelegationAllowed = true
 		namespaceAccount, err := s.getServiceAccount(claims, getNamespace(req))
 		if err != nil {
-			log.Info("Error while SSO Delegation: ", err)
+			log.WithError(err).Info("Error while SSO Delegation")
 		} else if precedence(namespaceAccount) > precedence(loginAccount) {
 			delegatedAccount = namespaceAccount
 			ssoDelegated = true
