@@ -1,12 +1,11 @@
 # Java SDK
 
-## Download
-
 ## Client Library
 
 This provides model and APIs for accessing the Argo Server API rather.
 
-If you wish to access the Kubernetes APIs, you can use the models to do this. You'll need to write your own code to speak to the API.
+If you wish to access the Kubernetes APIs, you can use the models to do this. You'll need to write your own code to
+speak to the API.
 
 ⚠️ The Java SDK is published to Github packages, not Maven Central. You must update your Maven settings.xml
 file: [how to do that](https://github.com/argoproj/argo-workflows/packages).
@@ -30,10 +29,6 @@ The very latest version:
     <version>0.0.0-SNAPSHOT</version>
 </dependency>
 ```
-
-## Examples
-
-* [Example.java](examples/client)
 
 ## Docs
 

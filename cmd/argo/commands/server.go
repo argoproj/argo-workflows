@@ -23,7 +23,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	restclient "k8s.io/client-go/rest"
-	"k8s.io/utils/env"
 
 	"github.com/argoproj/argo-workflows/v3"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
@@ -106,19 +105,9 @@ See %s`, help.ArgoServer),
 			var tlsConfig *tls.Config
 			if secure {
 				log.Infof("Generating Self Signed TLS Certificates for Secure Mode")
-				tlsMinVersion, err := env.GetInt("TLS_MIN_VERSION", tls.VersionTLS12)
+				tlsConfig, err = tlsutils.GenerateTLSConfig()
 				if err != nil {
 					return err
-				}
-				var cer *tls.Certificate
-				cer, err = tlsutils.GenerateX509KeyPair()
-				if err != nil {
-					return err
-				}
-				tlsConfig = &tls.Config{
-					Certificates:       []tls.Certificate{*cer},
-					MinVersion:         uint16(tlsMinVersion),
-					InsecureSkipVerify: true,
 				}
 			} else {
 				log.Warn("You are running in insecure mode. Learn how to enable transport layer security: https://argoproj.github.io/argo-workflows/tls/")

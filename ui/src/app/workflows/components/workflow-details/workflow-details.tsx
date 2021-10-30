@@ -4,6 +4,7 @@ import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 import {execSpec, Link, NodeStatus, Workflow} from '../../../../models';
+import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
 import {uiUrl} from '../../../shared/base';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {ErrorNotice} from '../../../shared/components/error-notice';
@@ -13,7 +14,7 @@ import {SecurityNudge} from '../../../shared/components/security-nudge';
 import {hasWarningConditionBadge} from '../../../shared/conditions-panel';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
-import {getPodName} from '../../../shared/pod-name';
+import {getPodName, getTemplateNameFromNode} from '../../../shared/pod-name';
 import {RetryWatch} from '../../../shared/retry-watch';
 import {services} from '../../../shared/services';
 import {useQueryParams} from '../../../shared/use-query-params';
@@ -235,7 +236,13 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
 
     const ensurePodName = (wf: Workflow, node: NodeStatus, nodeID: string): string => {
         if (workflow && node) {
-            return getPodName(wf.metadata.name, node.name, node.templateName, node.id);
+            let annotations: {[name: string]: string} = {};
+            if (typeof workflow.metadata.annotations !== 'undefined') {
+                annotations = workflow.metadata.annotations;
+            }
+            const version = annotations[ANNOTATION_KEY_POD_NAME_VERSION];
+            const templateName = getTemplateNameFromNode(node);
+            return getPodName(wf.metadata.name, node.name, templateName, node.id, version);
         }
 
         return nodeID;

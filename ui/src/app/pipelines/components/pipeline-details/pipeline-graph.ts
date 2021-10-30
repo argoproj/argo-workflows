@@ -87,7 +87,7 @@ export const graph = (pipeline: Pipeline, steps: Step[]) => {
                 g.nodes.set(subjectId, {genre: 'stan', icon: 'stream', label: x.stan.subject});
                 g.edges.set({v: subjectId, w: stepId}, {classNames});
             } else if (x.http) {
-                const y = new URL('http://' + (x.http.serviceName || pipeline.metadata.name + '-' + step.spec.name) + '/sources/' + x.name);
+                const y = new URL('https://' + (x.http.serviceName || pipeline.metadata.name + '-' + step.spec.name) + '/sources/' + x.name);
                 const subjectId = 'http/' + y;
                 g.nodes.set(subjectId, {genre: 'http', icon: 'cloud', label: y.hostname});
                 g.edges.set({v: subjectId, w: stepId}, {classNames});

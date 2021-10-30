@@ -131,10 +131,10 @@ export class WorkflowsService {
             .then(res => res.body as Workflow);
     }
 
-    public getContainerLogsFromCluster(workflow: Workflow, nodeId: string, container: string, grep: string): Observable<LogEntry> {
+    public getContainerLogsFromCluster(workflow: Workflow, podName: string, container: string, grep: string): Observable<LogEntry> {
         const namespace = workflow.metadata.namespace;
         const name = workflow.metadata.name;
-        const podLogsURL = `api/v1/workflows/${namespace}/${name}/log?logOptions.container=${container}&grep=${grep}&logOptions.follow=true${nodeId ? `&podName=${nodeId}` : ''}`;
+        const podLogsURL = `api/v1/workflows/${namespace}/${name}/log?logOptions.container=${container}&grep=${grep}&logOptions.follow=true${podName ? `&podName=${podName}` : ''}`;
         return requests
             .loadEventSource(podLogsURL)
             .filter(line => !!line)
@@ -145,9 +145,9 @@ export class WorkflowsService {
                 // that the connection to the server was interrupted while the node is still pending or running, this is not
                 // correct since we actually want the EventSource to re-connect and continue streaming logs.  In the event
                 // that the pod has completed, then we want to allow the unsubscribe to happen since no additional logs exist.
-                return Observable.fromPromise(this.isWorkflowNodePendingOrRunning(workflow, nodeId)).switchMap(isPendingOrRunning => {
+                return Observable.fromPromise(this.isWorkflowNodePendingOrRunning(workflow, podName)).switchMap(isPendingOrRunning => {
                     if (isPendingOrRunning) {
-                        return this.getContainerLogsFromCluster(workflow, nodeId, container, grep);
+                        return this.getContainerLogsFromCluster(workflow, podName, container, grep);
                     }
 
                     // If our workflow is completed, then simply complete the Observable since nothing else
@@ -182,7 +182,7 @@ export class WorkflowsService {
             .filter(x => !!x.content.match(grep));
     }
 
-    public getContainerLogs(workflow: Workflow, nodeId: string, container: string, grep: string, archived: boolean): Observable<LogEntry> {
+    public getContainerLogs(workflow: Workflow, podName: string, nodeId: string, container: string, grep: string, archived: boolean): Observable<LogEntry> {
         const getLogsFromArtifact = () => this.getContainerLogsFromArtifact(workflow, nodeId, container, grep, archived);
 
         // If our workflow is archived, don't even bother inspecting the cluster for logs since it's likely
@@ -195,7 +195,7 @@ export class WorkflowsService {
             if (!isPendingOrRunning && this.hasArtifactLogs(workflow, nodeId, container) && container === 'main') {
                 return getLogsFromArtifact();
             }
-            return this.getContainerLogsFromCluster(workflow, nodeId, container, grep).catch(getLogsFromArtifact);
+            return this.getContainerLogsFromCluster(workflow, podName, container, grep).catch(getLogsFromArtifact);
         });
     }
 

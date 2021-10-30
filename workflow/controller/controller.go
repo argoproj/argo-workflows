@@ -1122,12 +1122,15 @@ func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, m
 	if port == 0 {
 		port = metrics.DefaultMetricsServerPort
 	}
+
 	metricsConfig := metrics.ServerConfig{
 		Enabled:      wfc.Config.MetricsConfig.Enabled == nil || *wfc.Config.MetricsConfig.Enabled,
 		Path:         path,
 		Port:         port,
 		TTL:          time.Duration(wfc.Config.MetricsConfig.MetricsTTL),
 		IgnoreErrors: wfc.Config.MetricsConfig.IgnoreErrors,
+		// Default to false until v3.5
+		Secure: wfc.Config.MetricsConfig.GetSecure(false),
 	}
 
 	// Telemetry config
@@ -1140,11 +1143,13 @@ func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, m
 	if wfc.Config.TelemetryConfig.Port > 0 {
 		port = wfc.Config.TelemetryConfig.Port
 	}
+
 	telemetryConfig := metrics.ServerConfig{
 		Enabled:      wfc.Config.TelemetryConfig.Enabled == nil || *wfc.Config.TelemetryConfig.Enabled,
 		Path:         path,
 		Port:         port,
 		IgnoreErrors: wfc.Config.TelemetryConfig.IgnoreErrors,
+		Secure:       wfc.Config.TelemetryConfig.GetSecure(metricsConfig.Secure),
 	}
 	return metricsConfig, telemetryConfig
 }

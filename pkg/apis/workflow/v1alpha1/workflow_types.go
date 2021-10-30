@@ -1535,7 +1535,7 @@ type RetryStrategy struct {
 	Affinity *RetryAffinity `json:"affinity,omitempty" protobuf:"bytes,4,opt,name=affinity"`
 
 	// Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not
-	// be retried and the retry strategy will be ignored/
+	// be retried and the retry strategy will be ignored
 	Expression string `json:"expression,omitempty" protobuf:"bytes,5,opt,name=expression"`
 }
 
