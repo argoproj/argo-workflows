@@ -3320,3 +3320,85 @@ func TestDAGReferTaskAggregatedOutputs(t *testing.T) {
 		}
 	}
 }
+
+var dagHttpChildrenAssigned = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: http-template-nv52d
+spec:
+  entrypoint: main
+  templates:
+  - dag:
+      tasks:
+      - arguments:
+          parameters:
+          - name: url
+            value: https://raw.githubusercontent.com/argoproj/argo-workflows/4e450e250168e6b4d51a126b784e90b11a0162bc/pkg/apis/workflow/v1alpha1/generated.swagger.json
+        name: good1
+        template: http
+      - arguments:
+          parameters:
+          - name: url
+            value: https://raw.githubusercontent.com/argoproj/argo-workflows/4e450e250168e6b4d51a126b784e90b11a0162bc/pkg/apis/workflow/v1alpha1/generated.swagger.json
+        dependencies:
+        - good1
+        name: good2
+        template: http
+    name: main
+  - http:
+      url: '{{inputs.parameters.url}}'
+    inputs:
+      parameters:
+      - name: url
+    name: http
+status:
+  nodes:
+    http-template-nv52d:
+      children:
+      - http-template-nv52d-444770636
+      displayName: http-template-nv52d
+      id: http-template-nv52d
+      name: http-template-nv52d
+      outboundNodes:
+      - http-template-nv52d-478325874
+      phase: Running
+      startedAt: "2021-10-27T13:46:08Z"
+      templateName: main
+      templateScope: local/http-template-nv52d
+      type: DAG
+    http-template-nv52d-444770636:
+      boundaryID: http-template-nv52d
+      children:
+      - http-template-nv52d-495103493
+      displayName: good1
+      finishedAt: null
+      id: http-template-nv52d-444770636
+      name: http-template-nv52d.good1
+      phase: Succeeded
+      startedAt: "2021-10-27T13:46:08Z"
+      templateName: http
+      templateScope: local/http-template-nv52d
+      type: HTTP
+  phase: Running
+  startedAt: "2021-10-27T13:46:08Z"
+`
+
+func TestDagHttpChildrenAssigned(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(dagHttpChildrenAssigned)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	dagNode := woc.wf.Status.Nodes.FindByDisplayName("good2")
+	assert.NotNil(t, dagNode)
+
+	dagNode = woc.wf.Status.Nodes.FindByDisplayName("good1")
+	if assert.NotNil(t, dagNode) {
+		if assert.Len(t, dagNode.Children, 1) {
+			assert.Equal(t, "http-template-nv52d-495103493", dagNode.Children[0])
+		}
+	}
+}

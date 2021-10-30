@@ -1,8 +1,24 @@
+import {NodeStatus} from '../../models';
+
+export const POD_NAME_V1 = 'v1';
+export const POD_NAME_V2 = 'v2';
+
 export const maxK8sResourceNameLength = 253;
 export const k8sNamingHashLength = 10;
 
 // getPodName returns a deterministic pod name
-export const getPodName = (workflowName: string, nodeName: string, templateName: string, nodeID: string): string => {
+export const getPodName = (workflowName: string, nodeName: string, templateName: string, nodeID: string, version: string): string => {
+    if (version === POD_NAME_V2) {
+        if (workflowName === nodeName) {
+            return workflowName;
+        }
+
+        const prefix = ensurePodNamePrefixLength(`${workflowName}-${templateName}`);
+
+        const hash = createFNVHash(nodeName);
+        return `${prefix}-${hash}`;
+    }
+
     return nodeID;
 };
 
@@ -28,4 +44,12 @@ export const createFNVHash = (input: string): number => {
     }
 
     return hashint >>> 0;
+};
+
+export const getTemplateNameFromNode = (node: NodeStatus): string => {
+    if (node.templateName && node.templateName !== '') {
+        return node.templateName;
+    }
+
+    return node.templateRef.template;
 };

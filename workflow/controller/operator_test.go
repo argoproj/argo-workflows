@@ -2798,7 +2798,7 @@ func TestResolvePodNameInRetries(t *testing.T) {
 		{"v2", "output-value-placeholders-wf-tell-pod-name-3033990984"},
 	}
 	for _, tt := range tests {
-		os.Setenv("POD_NAMES", tt.podNameVersion)
+		_ = os.Setenv("POD_NAMES", tt.podNameVersion)
 		ctx := context.Background()
 		wf := wfv1.MustUnmarshalWorkflow(podNameInRetries)
 		woc := newWoc(*wf)
@@ -7619,4 +7619,32 @@ func TestExitHandlerWithRetryNodeParam(t *testing.T) {
 	assert.Equal(t, "hello world", retryStepNode.Outputs.Parameters[0].Value.String())
 	onExitNode := woc.wf.GetNodeByName("exit-handler-with-param-xbh52[0].step-1.onExit")
 	assert.Equal(t, "hello world", onExitNode.Inputs.Parameters[0].Value.String())
+}
+
+func TestSetWFPodNamesAnnotation(t *testing.T) {
+	defer func() {
+		_ = os.Unsetenv("POD_NAMES")
+	}()
+
+	tests := []struct {
+		podNameVersion string
+	}{
+		{"v1"},
+		{"v2"},
+	}
+
+	for _, tt := range tests {
+		_ = os.Setenv("POD_NAMES", tt.podNameVersion)
+
+		wf := wfv1.MustUnmarshalWorkflow(exitHandlerWithRetryNodeParam)
+		cancel, controller := newController(wf)
+		defer cancel()
+
+		ctx := context.Background()
+		woc := newWorkflowOperationCtx(wf, controller)
+
+		woc.operate(ctx)
+		annotations := woc.wf.ObjectMeta.GetAnnotations()
+		assert.Equal(t, annotations[common.AnnotationKeyPodNameVersion], tt.podNameVersion)
+	}
 }

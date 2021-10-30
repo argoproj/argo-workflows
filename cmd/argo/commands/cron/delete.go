@@ -38,6 +38,6 @@ func NewDeleteCommand() *cobra.Command {
 		},
 	}
 
-	command.Flags().BoolVar(&all, "all", false, "Delete all workflow templates")
+	command.Flags().BoolVar(&all, "all", false, "Delete all cron workflows")
 	return command
 }
