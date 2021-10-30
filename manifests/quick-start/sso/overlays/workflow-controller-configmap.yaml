@@ -13,6 +13,7 @@ data:
     scopes:
     - groups
     - email
+    - profile
     rbac:
       enabled: true
 kind: ConfigMap

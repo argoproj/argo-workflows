@@ -19,6 +19,9 @@ func Label(ctx context.Context, obj metav1.Object) {
 		if claims.Email != "" {
 			labels.Label(obj, common.LabelKeyCreatorEmail, dnsFriendly(strings.Replace(claims.Email, "@", ".at.", 1)))
 		}
+		if claims.Username != "" {
+			labels.Label(obj, common.LabelKeyCreatorUsername, dnsFriendly(claims.Username))
+		}
 	}
 }
 

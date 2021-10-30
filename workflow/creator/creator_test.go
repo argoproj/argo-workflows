@@ -22,10 +22,11 @@ func TestLabel(t *testing.T) {
 	})
 	t.Run("NotEmpty", func(t *testing.T) {
 		wf := &wfv1.Workflow{}
-		Label(context.WithValue(context.TODO(), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: strings.Repeat("x", 63) + "y"}, Email: "my@email"}), wf)
+		Label(context.WithValue(context.TODO(), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: strings.Repeat("x", 63) + "y"}, Email: "my@email", Username: "username"}), wf)
 		if assert.NotEmpty(t, wf.Labels) {
 			assert.Equal(t, strings.Repeat("x", 62)+"y", wf.Labels[common.LabelKeyCreator], "creator is truncated")
 			assert.Equal(t, "my.at.email", wf.Labels[common.LabelKeyCreatorEmail], "'@' is replaced by '.at.'")
+			assert.Equal(t, "username", wf.Labels[common.LabelKeyCreatorUsername], "username is matching")
 		}
 	})
 	t.Run("TooLongHyphen", func(t *testing.T) {
@@ -37,9 +38,10 @@ func TestLabel(t *testing.T) {
 	})
 	t.Run("InvalidDNSNames", func(t *testing.T) {
 		wf := &wfv1.Workflow{}
-		Label(context.WithValue(context.TODO(), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "!@#$%^&*()--__" + strings.Repeat("y", 35) + "__--!@#$%^&*()"}}), wf)
+		Label(context.WithValue(context.TODO(), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "!@#$%^&*()--__" + strings.Repeat("y", 35) + "__--!@#$%^&*()"}, Username: "us#er@name#"}), wf)
 		if assert.NotEmpty(t, wf.Labels) {
 			assert.Equal(t, strings.Repeat("y", 35), wf.Labels[common.LabelKeyCreator])
+			assert.Equal(t, "us-er-name", wf.Labels[common.LabelKeyCreatorUsername], "username is truncated")
 		}
 	})
 	t.Run("InvalidDNSNamesWithMidDashes", func(t *testing.T) {
