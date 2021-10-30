@@ -448,9 +448,11 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 	if len(step.WithItems) > 0 {
 		items = step.WithItems
 	} else if step.WithParam != "" {
-		err = json.Unmarshal([]byte(step.WithParam), &items)
-		if err != nil {
-			return nil, errors.Errorf(errors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s: %v", strings.TrimSpace(step.WithParam), err)
+		if !strings.HasPrefix(step.WithParam, "{{") || !strings.HasSuffix(step.WithParam, "}}") {
+			err = json.Unmarshal([]byte(step.WithParam), &items)
+			if err != nil {
+				return nil, errors.Errorf(errors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s: %v", strings.TrimSpace(step.WithParam), err)
+			}
 		}
 	} else if step.WithSequence != nil {
 		items, err = expandSequence(step.WithSequence)
