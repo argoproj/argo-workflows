@@ -2039,6 +2039,21 @@ func (woc *wfOperationCtx) findTemplate(pod *apiv1.Pod) *wfv1.Template {
 	if node == nil {
 		return nil // I don't expect this to happen in production, just in tests
 	}
+	return woc.GetNodeTemplate(node)
+}
+
+func (woc *wfOperationCtx) GetNodeTemplate(node *wfv1.NodeStatus) *wfv1.Template {
+	if node.TemplateRef != nil {
+		tmplCtx, err := woc.createTemplateContext(node.GetTemplateScope())
+		if err != nil {
+			woc.markNodePhase(node.Name, wfv1.NodeError, "Failed to create Template context", err.Error())
+		}
+		tmpl, err := tmplCtx.GetTemplateFromRef(node.TemplateRef)
+		if err != nil {
+			woc.markNodePhase(node.Name, wfv1.NodeError, "Failed to get TemplateRef", err.Error())
+		}
+		return tmpl
+	}
 	return woc.wf.GetTemplateByName(node.TemplateName)
 }
 
