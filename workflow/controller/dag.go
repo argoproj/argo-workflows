@@ -653,7 +653,6 @@ func expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
 				return nil, errors.Errorf(errors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s: %v", strings.TrimSpace(task.WithParam), err)
 			}
 		}
-
 	} else if task.WithSequence != nil {
 		items, err = expandSequence(task.WithSequence)
 		if err != nil {
