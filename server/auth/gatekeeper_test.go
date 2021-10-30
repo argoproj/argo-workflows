@@ -5,8 +5,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/argoproj/argo-workflows/v3/server/cache"
-
 	log "github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"

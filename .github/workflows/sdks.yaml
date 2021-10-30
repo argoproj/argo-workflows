@@ -1,0 +1,22 @@
+name: SDKs
+on:
+  push:
+    tags:
+      - v*
+    branches:
+      - master
+jobs:
+  sdk:
+    if: github.repository == 'argoproj/argo-workflows'
+    runs-on: ubuntu-latest
+    name: Publish SDK
+    strategy:
+      matrix:
+        name:
+        - java
+        - python
+    steps:
+      - uses: actions/checkout@v2
+      - run: make --directory sdks/${{matrix.name}} publish -B
+        env:
+          JAVA_SDK_MAVEN_PASSWORD: ${{ secrets.GITHUB_TOKEN }}

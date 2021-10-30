@@ -21,6 +21,7 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/fake"
@@ -314,6 +315,7 @@ func TestGlobalParams(t *testing.T) {
 		assert.Contains(t, woc.globalParams, fmt.Sprintf("%s.%s", "workflow.creationTimestamp", string(char)))
 	}
 	assert.Contains(t, woc.globalParams, "workflow.creationTimestamp.s")
+	assert.Contains(t, woc.globalParams, "workflow.creationTimestamp.RFC3339")
 
 	assert.Contains(t, woc.globalParams, "workflow.duration")
 	assert.Contains(t, woc.globalParams, "workflow.name")
@@ -2796,7 +2798,7 @@ func TestResolvePodNameInRetries(t *testing.T) {
 		{"v2", "output-value-placeholders-wf-tell-pod-name-3033990984"},
 	}
 	for _, tt := range tests {
-		os.Setenv("POD_NAMES", tt.podNameVersion)
+		_ = os.Setenv("POD_NAMES", tt.podNameVersion)
 		ctx := context.Background()
 		wf := wfv1.MustUnmarshalWorkflow(podNameInRetries)
 		woc := newWoc(*wf)
@@ -7425,6 +7427,26 @@ func TestBuildRetryStrategyLocalScope(t *testing.T) {
 	assert.Equal(t, "6", localScope[common.LocalVarRetriesLastDuration])
 }
 
+func TestGetContainerRuntimeExecutor(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	controller.Config.ContainerRuntimeExecutor = "pns"
+	controller.Config.ContainerRuntimeExecutors = config.ContainerRuntimeExecutors{
+		{
+			Name: "emissary",
+			Selector: metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"workflows.argoproj.io/container-runtime-executor": "emissary",
+				},
+			},
+		},
+	}
+	executor := controller.GetContainerRuntimeExecutor(labels.Set{})
+	assert.Equal(t, common.ContainerRuntimeExecutorPNS, executor)
+	executor = controller.GetContainerRuntimeExecutor(labels.Set{"workflows.argoproj.io/container-runtime-executor": "emissary"})
+	assert.Equal(t, common.ContainerRuntimeExecutorEmissary, executor)
+}
+
 var exitHandlerWithRetryNodeParam = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -7597,4 +7619,32 @@ func TestExitHandlerWithRetryNodeParam(t *testing.T) {
 	assert.Equal(t, "hello world", retryStepNode.Outputs.Parameters[0].Value.String())
 	onExitNode := woc.wf.GetNodeByName("exit-handler-with-param-xbh52[0].step-1.onExit")
 	assert.Equal(t, "hello world", onExitNode.Inputs.Parameters[0].Value.String())
+}
+
+func TestSetWFPodNamesAnnotation(t *testing.T) {
+	defer func() {
+		_ = os.Unsetenv("POD_NAMES")
+	}()
+
+	tests := []struct {
+		podNameVersion string
+	}{
+		{"v1"},
+		{"v2"},
+	}
+
+	for _, tt := range tests {
+		_ = os.Setenv("POD_NAMES", tt.podNameVersion)
+
+		wf := wfv1.MustUnmarshalWorkflow(exitHandlerWithRetryNodeParam)
+		cancel, controller := newController(wf)
+		defer cancel()
+
+		ctx := context.Background()
+		woc := newWorkflowOperationCtx(wf, controller)
+
+		woc.operate(ctx)
+		annotations := woc.wf.ObjectMeta.GetAnnotations()
+		assert.Equal(t, annotations[common.AnnotationKeyPodNameVersion], tt.podNameVersion)
+	}
 }

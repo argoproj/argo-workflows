@@ -39,6 +39,9 @@ const (
 	// AnnotationKeyWorkflowUID is the uid of the workflow
 	AnnotationKeyWorkflowUID = workflow.WorkflowFullName + "/workflow-uid"
 
+	// AnnotationKeyPodNameVersion stores the pod naming convention version
+	AnnotationKeyPodNameVersion = workflow.WorkflowFullName + "/pod-name-format"
+
 	// LabelKeyControllerInstanceID is the label the controller will carry forward to workflows/pod labels
 	// for the purposes of workflow segregation
 	LabelKeyControllerInstanceID = workflow.WorkflowFullName + "/controller-instanceid"
@@ -171,7 +174,7 @@ const (
 	LocalVarRetriesLastExitCode = "lastRetry.exitCode"
 	// LocalVarRetriesLastStatus is a variable that references information about the last retry's status
 	LocalVarRetriesLastStatus = "lastRetry.status"
-	// LocalVarRetriesLastDuration is a variable that references information about the last retry's duration
+	// LocalVarRetriesLastDuration is a variable that references information about the last retry's duration, in seconds
 	LocalVarRetriesLastDuration = "lastRetry.duration"
 
 	KubeConfigDefaultMountPath    = "/kube/config"

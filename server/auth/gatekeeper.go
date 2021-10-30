@@ -8,8 +8,6 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/argoproj/argo-workflows/v3/server/cache"
-
 	"github.com/antonmedv/expr"
 	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
 	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
@@ -196,7 +194,7 @@ func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertyp
 			return clients, claims, nil
 		} else {
 			// important! write an audit entry (i.e. log entry) so we know which user performed an operation
-			log.WithFields(log.Fields{"subject": claims.Subject}).Info("using the default service account for user")
+			log.WithFields(addClaimsLogFields(claims, nil)).Info("using the default service account for user")
 			return s.clients, claims, nil
 		}
 	default:
@@ -308,6 +306,17 @@ func (s *gatekeeper) authorizationForServiceAccount(serviceAccount *corev1.Servi
 		return "", fmt.Errorf("failed to get service account secret: %w", err)
 	}
 	return "Bearer " + string(secret.Data["token"]), nil
+}
+
+func addClaimsLogFields(claims *types.Claims, fields log.Fields) log.Fields {
+	if fields == nil {
+		fields = log.Fields{}
+	}
+	fields["subject"] = claims.Subject
+	if claims.Email != "" {
+		fields["email"] = claims.Email
+	}
+	return fields
 }
 
 func DefaultClientForAuthorization(authorization string) (*rest.Config, *servertypes.Clients, error) {

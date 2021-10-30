@@ -15,6 +15,8 @@ import (
 	"net"
 	"os"
 	"time"
+
+	"k8s.io/utils/env"
 )
 
 func pemBlockForKey(priv interface{}) *pem.Block {
@@ -99,4 +101,21 @@ func GenerateX509KeyPair() (*tls.Certificate, error) {
 		return nil, err
 	}
 	return &cert, nil
+}
+
+func GenerateTLSConfig() (*tls.Config, error) {
+	tlsMinVersion, err := env.GetInt("TLS_MIN_VERSION", tls.VersionTLS12)
+	if err != nil {
+		return nil, err
+	}
+	var cer *tls.Certificate
+	cer, err = GenerateX509KeyPair()
+	if err != nil {
+		return nil, err
+	}
+	return &tls.Config{
+		Certificates:       []tls.Certificate{*cer},
+		MinVersion:         uint16(tlsMinVersion),
+		InsecureSkipVerify: true,
+	}, nil
 }

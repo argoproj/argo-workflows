@@ -60,6 +60,7 @@ nav:
           - memoization.md
           - tolerating-pod-deletion.md
           - widgets.md
+          - retries.md
       # all other topics, including API access
       - Advanced:
           - workflow-restrictions.md
@@ -70,6 +71,7 @@ nav:
           - swagger.md
           - rest-api.md
           - rest-examples.md
+          - client-libraries.md
           - events.md
           - webhooks.md
           - submit-workflow-via-automation.md

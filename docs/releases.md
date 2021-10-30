@@ -17,12 +17,13 @@ Both the `argo-server` and `argocli` should be the same version as the controlle
 
 # Release Cycle
 
+For **stable**, use the latest patch version.
 For **unstable**, we build and tag `latest` images for every commit to master.
 
-New major versions are released roughly every 3 months. Release candidates for each major release are typically available
-for 6 weeks before the release becomes generally available.
+New minor versions are released roughly every 3 months. Release candidates for each major release are typically available
+for 4-6 weeks before the release becomes generally available.
 
-Otherwise, we typically release once a week:
+Otherwise, we typically release weekly:
 
-* Patch fixes for the current stable version. These are tagged `stable`.
+* Patch fixes for the current stable version. 
 * The next release candidate, if we are currently in a release-cycle.
