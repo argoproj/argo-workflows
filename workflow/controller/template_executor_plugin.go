@@ -1,17 +1,19 @@
 package controller
 
 import (
+	"reflect"
+
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/plugins"
 )
 
-func (woc *wfOperationCtx) runTemplateExecutorPlugins(tmpl *wfv1.Template, node *wfv1.NodeStatus) {
+func (woc *wfOperationCtx) runTemplateExecutorPlugins(tmpl *wfv1.Template, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 	req := plugins.ExecuteTemplateArgs{
 		Workflow: woc.wf,
 		Template: tmpl,
 	}
 	reply := &plugins.ExecuteTemplateReply{
-		Node: node,
+		Node: node.DeepCopy(),
 	}
 	for _, sym := range woc.controller.plugins {
 		if plug, ok := sym.(plugins.TemplateExecutor); ok {
@@ -20,4 +22,9 @@ func (woc *wfOperationCtx) runTemplateExecutorPlugins(tmpl *wfv1.Template, node 
 			}
 		}
 	}
+	if !reflect.DeepEqual(node, reply.Node) {
+		woc.wf.Status.Nodes[node.ID] = *reply.Node
+		woc.updated = true
+	}
+	return reply.Node
 }

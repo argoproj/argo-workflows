@@ -46,8 +46,8 @@ func (plugin) ExecuteTemplate(args plugins.ExecuteTemplateArgs, reply *plugins.E
 	if err != nil {
 		return err
 	}
-	log.Printf("executing hello plugin template: %v", value)
 	if _, ok := value["hello"]; ok {
+		log.Printf("executing hello plugin template: %v", value)
 		reply.Node.Phase = wfv1.NodeSucceeded
 		reply.Node.Message = fmt.Sprintf("Hello %s: %s", args.Workflow.Name, reply.Node.ID)
 	}
