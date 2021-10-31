@@ -814,6 +814,7 @@ class WorkflowServiceApi(object):
                 log_options_limit_bytes (str): If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional.. [optional]
                 log_options_insecure_skip_tls_verify_backend (bool): insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional.. [optional]
                 grep (str): [optional]
+                selector (str): [optional]
                 _return_http_data_only (bool): response data without head status
                     code and headers. Default is True.
                 _preload_content (bool): if False, the urllib3.HTTPResponse object
@@ -891,6 +892,7 @@ class WorkflowServiceApi(object):
                     'log_options_limit_bytes',
                     'log_options_insecure_skip_tls_verify_backend',
                     'grep',
+                    'selector',
                 ],
                 'required': [
                     'namespace',
@@ -938,6 +940,8 @@ class WorkflowServiceApi(object):
                         (bool,),
                     'grep':
                         (str,),
+                    'selector':
+                        (str,),
                 },
                 'attribute_map': {
                     'namespace': 'namespace',
@@ -954,6 +958,7 @@ class WorkflowServiceApi(object):
                     'log_options_limit_bytes': 'logOptions.limitBytes',
                     'log_options_insecure_skip_tls_verify_backend': 'logOptions.insecureSkipTLSVerifyBackend',
                     'grep': 'grep',
+                    'selector': 'selector',
                 },
                 'location_map': {
                     'namespace': 'path',
@@ -970,6 +975,7 @@ class WorkflowServiceApi(object):
                     'log_options_limit_bytes': 'query',
                     'log_options_insecure_skip_tls_verify_backend': 'query',
                     'grep': 'query',
+                    'selector': 'query',
                 },
                 'collection_format_map': {
                 }
@@ -2447,6 +2453,7 @@ class WorkflowServiceApi(object):
                 log_options_limit_bytes (str): If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional.. [optional]
                 log_options_insecure_skip_tls_verify_backend (bool): insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional.. [optional]
                 grep (str): [optional]
+                selector (str): [optional]
                 _return_http_data_only (bool): response data without head status
                     code and headers. Default is True.
                 _preload_content (bool): if False, the urllib3.HTTPResponse object
@@ -2522,6 +2529,7 @@ class WorkflowServiceApi(object):
                     'log_options_limit_bytes',
                     'log_options_insecure_skip_tls_verify_backend',
                     'grep',
+                    'selector',
                 ],
                 'required': [
                     'namespace',
@@ -2568,6 +2576,8 @@ class WorkflowServiceApi(object):
                         (bool,),
                     'grep':
                         (str,),
+                    'selector':
+                        (str,),
                 },
                 'attribute_map': {
                     'namespace': 'namespace',
@@ -2584,6 +2594,7 @@ class WorkflowServiceApi(object):
                     'log_options_limit_bytes': 'logOptions.limitBytes',
                     'log_options_insecure_skip_tls_verify_backend': 'logOptions.insecureSkipTLSVerifyBackend',
                     'grep': 'grep',
+                    'selector': 'selector',
                 },
                 'location_map': {
                     'namespace': 'path',
@@ -2600,6 +2611,7 @@ class WorkflowServiceApi(object):
                     'log_options_limit_bytes': 'query',
                     'log_options_insecure_skip_tls_verify_backend': 'query',
                     'grep': 'query',
+                    'selector': 'query',
                 },
                 'collection_format_map': {
                 }
