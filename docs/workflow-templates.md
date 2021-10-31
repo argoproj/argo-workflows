@@ -351,3 +351,36 @@ Using `kubectl apply -f` and `kubectl get wftmpl`
 ### UI
 
 `WorkflowTemplate` resources can also be managed by the UI
+
+User can specify `enum` to enable dropdown list selection when submitting using WorkflowTemplate from UI
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-with-enum-values
+spec:
+  entrypoint: argosay
+  arguments:
+    parameters:
+      - name: message
+        value: one
+        enum:
+          -   one
+          -   two
+          -   three
+  templates:
+    - name: argosay
+      inputs:
+        parameters:
+          - name: message
+            value: '{{workflow.parameters.message}}'
+      container:
+        name: main
+        image: 'argoproj/argosay:v2'
+        command:
+          - /argosay
+        args:
+          - echo
+          - '{{inputs.parameters.message}}'
+```
