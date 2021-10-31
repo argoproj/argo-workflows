@@ -204,7 +204,7 @@ workflow-controller-image:
 
 dist/argoexec: $(ARGOEXEC_PKGS) go.sum
 ifeq ($(shell uname -s),Darwin)
-	CGO_ENABLED=0 go build -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
 else
 	CGO_ENABLED=0 go build -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
 endif
@@ -217,6 +217,8 @@ argoexec-image:
 	docker build \
 		-t $(IMAGE_NAMESPACE)/$*:$(VERSION) \
 		--target $* \
+		--cache-from "type=local,src=/tmp/.buildx-cache" \
+		--cache-to "type=local,dest=/tmp/.buildx-cache" \
 		--output=type=docker .
 	[ ! -e $* ] || mv $* dist/
 	docker run --rm -t $(IMAGE_NAMESPACE)/$*:$(VERSION) version
