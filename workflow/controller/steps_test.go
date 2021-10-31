@@ -325,12 +325,6 @@ spec:
           - name: seconds
             value: "{{item}}"
         withParam: "{{steps.generate.outputs.result}}"
-    - - name: sleep-2
-        template: sleep-n-sec
-        arguments:
-          parameters:
-          - name: seconds
-            value: "5"
 
   - name: gen-number-list
     script:
@@ -362,5 +356,5 @@ func TestStepsUnresolvedWithParam(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }

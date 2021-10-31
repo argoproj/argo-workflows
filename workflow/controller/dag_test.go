@@ -3402,3 +3402,63 @@ func TestDagHttpChildrenAssigned(t *testing.T) {
 		}
 	}
 }
+
+var dagUnresolvedWithParam = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: loops-param-result-
+spec:
+  arguments:
+    parameters:
+      - name: get-list
+        value: false
+  entrypoint: loop-param-result-example
+  templates:
+    - name: loop-param-result-example
+      dag:
+        tasks:
+          - name: generate
+            when: "{{ workflow.parameters.get-list}} == true"
+            template: gen-number-list
+          - name: sleep
+            when: "{{ workflow.parameters.get-list}} == true"
+            template: sleep-n-sec
+            arguments:
+              parameters:
+                - name: seconds
+                  value: "{{item}}"
+            withParam: "{{tasks.generate.outputs.result}}"
+
+    - name: gen-number-list
+      script:
+        image: python:alpine3.6
+        command: [python]
+        source: |
+          import json
+          import sys
+          json.dump([i for i in range(20, 31)], sys.stdout)
+    - name: sleep-n-sec
+      inputs:
+        parameters:
+          - name: seconds
+      container:
+        image: alpine:latest
+        command: [sh, -c]
+        args: ["echo sleeping for {{inputs.parameters.seconds}} seconds; sleep {{inputs.parameters.seconds}}; echo done"]
+`
+
+func TestDagUnresolvedWithParam(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	ctx := context.Background()
+	wf := wfv1.MustUnmarshalWorkflow(dagUnresolvedWithParam)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
