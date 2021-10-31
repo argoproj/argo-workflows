@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/argoproj/pkg/sync"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
@@ -29,7 +30,7 @@ func NewAgentCommand() *cobra.Command {
 
 func initAgentExecutor() *executor.AgentExecutor {
 	version := argo.GetVersion()
-	log.WithFields(log.Fields{"version": version.Version}).Info("Starting Workflow Executor")
+	log.WithFields(log.Fields{"version": version.Version}).Info("SIMON Starting Workflow Executor")
 	config, err := clientConfig.ClientConfig()
 	checkErr(err)
 
@@ -55,8 +56,8 @@ func initAgentExecutor() *executor.AgentExecutor {
 		Namespace:         namespace,
 		WorkflowName:      workflowName,
 		WorkflowInterface: workflow.NewForConfigOrDie(config),
-		CompleteTask:      make(map[string]struct{}),
+		CompletedTasks:    make(map[string]struct{}),
+		KeyLock:           sync.NewKeyLock(),
 	}
 	return &agentExecutor
-
 }
