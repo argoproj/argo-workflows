@@ -218,30 +218,9 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 	// Maps nodes to their steps
 	nodeSteps := make(map[string]wfv1.WorkflowStep)
 
-	// The template scope of this step group.
-	stepTemplateScope := stepsCtx.tmplCtx.GetTemplateScope()
-
 	// Kick off all parallel steps in the group
 	for _, step := range stepGroup {
 		childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
-
-		// Check the step's when clause to decide if it should execute
-		proceed, err := shouldExecute(step.When)
-		if err != nil {
-			woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, stepTemplateScope, &step, stepsCtx.boundaryID, wfv1.NodeError, err.Error())
-			woc.addChildNode(sgNodeName, childNodeName)
-			woc.markNodeError(childNodeName, err)
-			return woc.markNodeError(sgNodeName, err)
-		}
-		if !proceed {
-			if woc.wf.GetNodeByName(childNodeName) == nil {
-				skipReason := fmt.Sprintf("when '%s' evaluated false", step.When)
-				woc.log.Infof("Skipping %s: %s", childNodeName, skipReason)
-				woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, stepTemplateScope, &step, stepsCtx.boundaryID, wfv1.NodeSkipped, skipReason)
-				woc.addChildNode(sgNodeName, childNodeName)
-			}
-			continue
-		}
 
 		childNode, err := woc.executeTemplate(ctx, childNodeName, &step, stepsCtx.tmplCtx, step.Arguments, &executeTemplateOpts{boundaryID: stepsCtx.boundaryID, onExitTemplate: stepsCtx.onExitTemplate})
 		if err != nil {
@@ -415,7 +394,29 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 // expandStepGroup looks at each step in a collection of parallel steps, and expands all steps using withItems/withParam
 func (woc *wfOperationCtx) expandStepGroup(sgNodeName string, stepGroup []wfv1.WorkflowStep, stepsCtx *stepsContext) ([]wfv1.WorkflowStep, error) {
 	newStepGroup := make([]wfv1.WorkflowStep, 0)
+	stepTemplateScope := stepsCtx.tmplCtx.GetTemplateScope()
 	for _, step := range stepGroup {
+		childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
+
+		// Check the step's when clause to decide if it should execute
+		proceed, err := shouldExecute(step.When)
+		if err != nil {
+			woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, stepTemplateScope, &step, stepsCtx.boundaryID, wfv1.NodeError, err.Error())
+			woc.addChildNode(sgNodeName, childNodeName)
+			woc.markNodeError(childNodeName, err)
+			woc.markNodeError(sgNodeName, err)
+			return nil,err
+		}
+		if !proceed {
+			if woc.wf.GetNodeByName(childNodeName) == nil {
+				skipReason := fmt.Sprintf("when '%s' evaluated false", step.When)
+				woc.log.Infof("Skipping %s: %s", childNodeName, skipReason)
+				woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, stepTemplateScope, &step, stepsCtx.boundaryID, wfv1.NodeSkipped, skipReason)
+				woc.addChildNode(sgNodeName, childNodeName)
+			}
+			continue
+		}
+
 		if !step.ShouldExpand() {
 			newStepGroup = append(newStepGroup, step)
 			continue
@@ -448,11 +449,9 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 	if len(step.WithItems) > 0 {
 		items = step.WithItems
 	} else if step.WithParam != "" {
-		if !strings.HasPrefix(step.WithParam, "{{") || !strings.HasSuffix(step.WithParam, "}}") {
-			err = json.Unmarshal([]byte(step.WithParam), &items)
-			if err != nil {
-				return nil, errors.Errorf(errors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s: %v", strings.TrimSpace(step.WithParam), err)
-			}
+		err = json.Unmarshal([]byte(step.WithParam), &items)
+		if err != nil {
+			return nil, errors.Errorf(errors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s: %v", strings.TrimSpace(step.WithParam), err)
 		}
 	} else if step.WithSequence != nil {
 		items, err = expandSequence(step.WithSequence)

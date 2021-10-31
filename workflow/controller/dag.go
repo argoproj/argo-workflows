@@ -434,81 +434,82 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 		return
 	}
 
-	// Next, expand the DAG's withItems/withParams/withSequence (if any). If there was none, then
-	// expandedTasks will be a single element list of the same task
-	expandedTasks, err := expandTask(*newTask)
-	if err != nil {
-		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
-		connectDependencies(nodeName)
-		return
-	}
+	taskNodeName := dagCtx.taskNodeName(newTask.Name)
+	node = dagCtx.getTaskNode(newTask.Name)
+	var expandedTasks []wfv1.DAGTask
+	if node == nil {
+		woc.log.Infof("All of node %s dependencies %v completed", taskNodeName, taskDependencies)
+		// Add the child relationship from our dependency's outbound nodes to this node.
+		connectDependencies(taskNodeName)
 
-	// If DAG task has withParam of with withSequence then we need to create virtual node of type TaskGroup.
-	// For example, if we had task A with withItems of ['foo', 'bar'] which expanded to ['A(0:foo)', 'A(1:bar)'], we still
-	// need to create a node for A.
-	if task.ShouldExpand() {
-		// DAG task with empty withParams list should be skipped
-		if len(expandedTasks) == 0 {
-			skipReason := "Skipped, empty params"
-			woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeSkipped, skipReason)
-			connectDependencies(nodeName)
-		} else if taskGroupNode == nil {
-			connectDependencies(nodeName)
-			taskGroupNode = woc.initializeNode(nodeName, wfv1.NodeTypeTaskGroup, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeRunning, "")
-		}
-	}
-
-	for _, t := range expandedTasks {
-		taskNodeName := dagCtx.taskNodeName(t.Name)
-		node = dagCtx.getTaskNode(t.Name)
-		if node == nil {
-			woc.log.Infof("All of node %s dependencies %v completed", taskNodeName, taskDependencies)
-			// Add the child relationship from our dependency's outbound nodes to this node.
-			connectDependencies(taskNodeName)
-
-			// Check the task's when clause to decide if it should execute
-			proceed, err := shouldExecute(t.When)
-			if err != nil {
-				woc.initializeNode(taskNodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
-				continue
-			}
-			if !proceed {
-				skipReason := fmt.Sprintf("when '%s' evaluated false", t.When)
-				woc.initializeNode(taskNodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeSkipped, skipReason)
-				continue
-			}
-		}
-
-		// Finally execute the template
-		_, err = woc.executeTemplate(ctx, taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, &executeTemplateOpts{boundaryID: dagCtx.boundaryID, onExitTemplate: dagCtx.onExitTemplate})
+		// Check the task's when clause to decide if it should execute
+		proceed, err := shouldExecute(newTask.When)
 		if err != nil {
-			switch err {
-			case ErrDeadlineExceeded:
-				return
-			case ErrParallelismReached:
-			case ErrTimeout:
-				_ = woc.markNodePhase(taskNodeName, wfv1.NodeFailed, err.Error())
-				return
-			default:
-				_ = woc.markNodeError(taskNodeName, fmt.Errorf("task '%s' errored: %v", taskNodeName, err))
+			woc.initializeNode(taskNodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
+		}
+		if !proceed {
+			skipReason := fmt.Sprintf("when '%s' evaluated false", newTask.When)
+			woc.initializeNode(taskNodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeSkipped, skipReason)
+		} else {
+			// Next, expand the DAG's withItems/withParams/withSequence (if any). If there was none, then
+			// expandedTasks will be a single element list of the same task
+			expandedTasks, err := expandTask(*newTask)
+			if err != nil {
+				woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
+				connectDependencies(nodeName)
 				return
 			}
-		}
-	}
 
-	if taskGroupNode != nil {
-		groupPhase := wfv1.NodeSucceeded
-		for _, t := range expandedTasks {
-			// Add the child relationship from our dependency's outbound nodes to this node.
-			node := dagCtx.getTaskNode(t.Name)
-			if node == nil || !node.Fulfilled() {
-				return
+			// If DAG task has withParam of with withSequence then we need to create virtual node of type TaskGroup.
+			// For example, if we had task A with withItems of ['foo', 'bar'] which expanded to ['A(0:foo)', 'A(1:bar)'], we still
+			// need to create a node for A.
+
+			if task.ShouldExpand() {
+				// DAG task with empty withParams list should be skipped
+				if len(expandedTasks) == 0 {
+					skipReason := "Skipped, empty params"
+					woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeSkipped, skipReason)
+					connectDependencies(nodeName)
+				} else if taskGroupNode == nil {
+					connectDependencies(nodeName)
+					taskGroupNode = woc.initializeNode(nodeName, wfv1.NodeTypeTaskGroup, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeRunning, "")
+				}
 			}
-			if node.FailedOrError() {
-				groupPhase = node.Phase
+			for _, t := range expandedTasks {
+				taskNodeName := dagCtx.taskNodeName(t.Name)
+
+				// Finally execute the template
+				_, err = woc.executeTemplate(ctx, taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, &executeTemplateOpts{boundaryID: dagCtx.boundaryID, onExitTemplate: dagCtx.onExitTemplate})
+				if err != nil {
+					switch err {
+					case ErrDeadlineExceeded:
+						return
+					case ErrParallelismReached:
+					case ErrTimeout:
+						_ = woc.markNodePhase(taskNodeName, wfv1.NodeFailed, err.Error())
+						return
+					default:
+						_ = woc.markNodeError(taskNodeName, fmt.Errorf("task '%s' errored: %v", taskNodeName, err))
+						return
+					}
+				}
 			}
+
 		}
-		woc.markNodePhase(taskGroupNode.Name, groupPhase)
+		if taskGroupNode != nil {
+			groupPhase := wfv1.NodeSucceeded
+			for _, t := range expandedTasks {
+				// Add the child relationship from our dependency's outbound nodes to this node.
+				node := dagCtx.getTaskNode(t.Name)
+				if node == nil || !node.Fulfilled() {
+					return
+				}
+				if node.FailedOrError() {
+					groupPhase = node.Phase
+				}
+			}
+			woc.markNodePhase(taskGroupNode.Name, groupPhase)
+		}
 	}
 }
 
@@ -647,11 +648,9 @@ func expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
 	if len(task.WithItems) > 0 {
 		items = task.WithItems
 	} else if task.WithParam != "" {
-		if !strings.HasPrefix(task.WithParam, "{{") || !strings.HasSuffix(task.WithParam, "}}") {
-			err = json.Unmarshal([]byte(task.WithParam), &items)
-			if err != nil {
-				return nil, errors.Errorf(errors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s: %v", strings.TrimSpace(task.WithParam), err)
-			}
+		err = json.Unmarshal([]byte(task.WithParam), &items)
+		if err != nil {
+			return nil, errors.Errorf(errors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s: %v", strings.TrimSpace(task.WithParam), err)
 		}
 	} else if task.WithSequence != nil {
 		items, err = expandSequence(task.WithSequence)
