@@ -298,7 +298,6 @@ func TestOptionalArgumentAndParameter(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }
 
-
 var stepsUnresolvedWithParam = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
