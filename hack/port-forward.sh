@@ -15,7 +15,7 @@ pf() {
 wait-for() {
   set -eu -o pipefail
   echo "wait-for $1"
-  kubectl -n argo wait --timeout 1m --for=condition=Available deploy/$1
+  kubectl -n argo wait --timeout 2m --for=condition=Available deploy/$1
 }
 
 wait-for minio
