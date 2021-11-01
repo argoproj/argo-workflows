@@ -52,7 +52,6 @@ import (
 	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/estimation"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/plugins"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
 	"github.com/argoproj/argo-workflows/v3/workflow/progress"
 	argosync "github.com/argoproj/argo-workflows/v3/workflow/sync"
@@ -572,14 +571,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		woc.log.Panic("cannot persist updates with mismatched resource versions")
 	}
 
-	req := plugins.WorkflowPreUpdateArgs{Old: woc.orig, New: woc.wf}
-	for _, sym := range woc.controller.plugins {
-		if plug, ok := sym.(plugins.WorkflowLifecycleHook); ok {
-			if err := plug.WorkflowPreUpdate(req, &plugins.WorkflowPreUpdateReply{}); err != nil {
-				woc.markWorkflowError(ctx, err)
-			}
-		}
-	}
+	woc.runWorkflowPreUpdatePlugins(ctx)
 
 	wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.ObjectMeta.Namespace)
 	// try and compress nodes if needed
@@ -673,7 +665,6 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 			woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, labelPodCompleted)
 		}
 	}
-
 }
 
 func (woc *wfOperationCtx) writeBackToInformer() error {
@@ -1642,7 +1633,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	}
 
 	// Inputs has been processed with arguments already, so pass empty arguments.
-	processedTmpl, err := common.ProcessArgs(resolvedTmpl, &args, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer)
+	processedTmpl, err := common.ProcessArgsWithHook(resolvedTmpl, &args, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer, woc.runParameterSubstitutionPlugins)
 	if err != nil {
 		return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 	}
@@ -1826,7 +1817,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			// Inject the retryAttempt number
 			localParams[common.LocalVarRetries] = strconv.Itoa(len(retryParentNode.Children))
 
-			processedTmpl, err = common.SubstituteParams(processedTmpl, map[string]string{}, localParams)
+			processedTmpl, err = common.SubstituteParamsWithHook(processedTmpl, map[string]string{}, localParams, woc.runParameterSubstitutionPlugins)
 			if err != nil {
 				return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 			}
@@ -1915,8 +1906,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		}
 		node = retryNode
 	}
-
-	return node, nil
+	return woc.runNodePostExecutePlugins(processedTmpl, node)
 }
 
 // Checks if the template has exceeded its deadline
@@ -2394,7 +2384,7 @@ func (woc *wfOperationCtx) executeContainer(ctx context.Context, nodeName string
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
 	}
-	woc.runTemplateExecutorPlugins(tmpl, node)
+	woc.runNodePreExecutePlugins(tmpl, node)
 	if node.Fulfilled() {
 		return node, nil
 	}
@@ -2598,7 +2588,7 @@ func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, t
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
 	}
-	woc.runTemplateExecutorPlugins(tmpl, node)
+	woc.runNodePreExecutePlugins(tmpl, node)
 	if !node.Pending() {
 		return node, nil
 	}
@@ -2863,7 +2853,7 @@ func (woc *wfOperationCtx) executeResource(ctx context.Context, nodeName string,
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
 	}
-	woc.runTemplateExecutorPlugins(tmpl, node)
+	woc.runNodePreExecutePlugins(tmpl, node)
 	if !node.Pending() {
 		return node, nil
 	}
@@ -2901,7 +2891,7 @@ func (woc *wfOperationCtx) executeData(ctx context.Context, nodeName string, tem
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
 	}
-	woc.runTemplateExecutorPlugins(tmpl, node)
+	woc.runNodePreExecutePlugins(tmpl, node)
 	if !node.Pending() {
 		return node, nil
 	}
@@ -2926,7 +2916,7 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeSuspend, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
 	}
-	woc.runTemplateExecutorPlugins(tmpl, node)
+	woc.runNodePreExecutePlugins(tmpl, node)
 	if node.Fulfilled() {
 		return node, nil
 	}

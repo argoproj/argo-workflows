@@ -210,7 +210,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeDAG, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning)
 	}
-	woc.runTemplateExecutorPlugins(tmpl, node)
+	woc.runNodePreExecutePlugins(tmpl, node)
 	if node.Fulfilled() {
 		return node, nil
 	}

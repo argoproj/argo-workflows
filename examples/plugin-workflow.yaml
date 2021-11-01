@@ -15,5 +15,21 @@ spec:
   entrypoint: main
   templates:
     - name: main
-      plugin:
-        hello: { }
+      dag:
+        tasks:
+          - name: a
+            # this hello plugin will succeed
+            inline:
+              plugin:
+                hello: { }
+          - name: b
+            inline:
+              # this container will:
+              # * be annotated with "hello"
+              # * "{{hello}}" will be substituted
+              container:
+                image: argoproj/argosay:v2
+                args:
+                  - echo
+                  - "{{hello}}"
+

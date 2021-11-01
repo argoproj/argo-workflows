@@ -55,7 +55,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/estimation"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/informer"
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/plugins"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/pod"
 	"github.com/argoproj/argo-workflows/v3/workflow/cron"
 	"github.com/argoproj/argo-workflows/v3/workflow/events"
@@ -797,14 +796,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		return true
 	}
 	startTime := time.Now()
-	req := plugins.WorkflowPreOperateArgs{Workflow: woc.wf}
-	for _, sym := range woc.controller.plugins {
-		if plug, ok := sym.(plugins.WorkflowLifecycleHook); ok {
-			if err := plug.WorkflowPreOperate(req, &plugins.WorkflowPreOperateReply{}); err != nil {
-				woc.markWorkflowError(ctx, err)
-			}
-		}
-	}
+	wfc.runWorkflowPreOperatePlugins(ctx, woc)
 	woc.operate(ctx)
 	wfc.metrics.OperationCompleted(time.Since(startTime).Seconds())
 	if woc.wf.Status.Fulfilled() {

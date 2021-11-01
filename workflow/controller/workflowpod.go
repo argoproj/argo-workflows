@@ -379,7 +379,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		if tmpl.IsPodType() {
 			localParams[common.LocalVarPodName] = pod.Name
 		}
-		tmpl, err := common.ProcessArgs(tmpl, &wfv1.Arguments{}, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer)
+		tmpl, err := common.ProcessArgsWithHook(tmpl, &wfv1.Arguments{}, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer, woc.runParameterSubstitutionPlugins)
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Failed to substitute the PodSpecPatch variables")
 		}
@@ -425,6 +425,10 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, pod.Name)
 
+	if err := woc.runPodPreCreatePlugins(tmpl, pod); err != nil {
+		return nil, err
+	}
+
 	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {
@@ -441,6 +445,9 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 	woc.log.Infof("Created pod: %s (%s)", nodeName, created.Name)
 	woc.activePods++
+	if err := woc.runPodPostCreatePlugins(tmpl, pod); err != nil {
+		return nil, err
+	}
 	return created, nil
 }
 

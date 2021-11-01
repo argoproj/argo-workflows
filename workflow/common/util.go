@@ -118,6 +118,10 @@ func GetExecutorOutput(exec remotecommand.Executor) (*bytes.Buffer, *bytes.Buffe
 // * global parameters (e.g. {{workflow.parameters.XX}}, {{workflow.name}}, {{workflow.status}})
 // * local parameters (e.g. {{pod.name}})
 func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams, localParams Parameters, validateOnly bool, namespace string, configMapInformer cache.SharedIndexInformer) (*wfv1.Template, error) {
+	return ProcessArgsWithHook(tmpl, args, globalParams, localParams, validateOnly, namespace, configMapInformer, func(map[string]string) error { return nil })
+}
+
+func ProcessArgsWithHook(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams, localParams Parameters, validateOnly bool, namespace string, configMapInformer cache.SharedIndexInformer, hook func(map[string]string) error) (*wfv1.Template, error) {
 	// For each input parameter:
 	// 1) check if was supplied as argument. if so use the supplied value from arg
 	// 2) if not, use default value.
@@ -179,11 +183,15 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 		}
 	}
 
-	return SubstituteParams(newTmpl, globalParams, localParams)
+	return SubstituteParamsWithHook(newTmpl, globalParams, localParams, hook)
 }
 
 // SubstituteParams returns a new copy of the template with global, pod, and input parameters substituted
 func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters) (*wfv1.Template, error) {
+	return SubstituteParamsWithHook(tmpl, globalParams, localParams, func(map[string]string) error { return nil })
+}
+
+func SubstituteParamsWithHook(tmpl *wfv1.Template, globalParams, localParams Parameters, hook func(p map[string]string) error) (*wfv1.Template, error) {
 	tmplBytes, err := json.Marshal(tmpl)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
@@ -228,6 +236,10 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 		if param.ValueFrom != nil && param.ValueFrom.Path != "" {
 			replaceMap["outputs.parameters."+param.Name+".path"] = param.ValueFrom.Path
 		}
+	}
+
+	if err := hook(replaceMap); err != nil {
+		return nil, err
 	}
 
 	s, err := template.Replace(globalReplacedTmplStr, replaceMap, true)

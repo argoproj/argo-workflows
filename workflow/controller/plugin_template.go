@@ -9,5 +9,5 @@ func (woc *wfOperationCtx) executePluginTemplate(nodeName string, templateScope 
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePlugin, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
 	}
-	return woc.runTemplateExecutorPlugins(tmpl, node)
+	return woc.runNodePreExecutePlugins(tmpl, node)
 }
