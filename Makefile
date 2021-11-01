@@ -434,6 +434,12 @@ else
 start: install
 endif
 	@echo "starting STATIC_FILES=$(STATIC_FILES) (DEV_BRANCH=$(DEV_BRANCH), GIT_BRANCH=$(GIT_BRANCH)), AUTH_MODE=$(AUTH_MODE), RUN_MODE=$(RUN_MODE), MANAGED_NAMESPACE=$(MANAGED_NAMESPACE)"
+ifneq ($(API),true)
+	@echo "⚠️️  not starting API. If you want to test the API, use 'make start API=true' to start it"
+endif
+ifneq ($(UI),true)
+	@echo "⚠️  not starting UI. If you want to test the UI, run 'make start UI=true' to start it"
+endif
 	# Check dex, minio, postgres and mysql are in hosts file
 ifeq ($(AUTH_MODE),sso)
 	grep '127.0.0.1[[:blank:]]*dex' /etc/hosts
@@ -457,8 +463,10 @@ logs: $(GOPATH)/bin/stern
 wait:
 	# Wait for workflow controller
 	until lsof -i :9090 > /dev/null ; do sleep 10s ; done
+ifeq ($(API),true)
 	# Wait for Argo Server
 	until lsof -i :2746 > /dev/null ; do sleep 10s ; done
+endif
 
 .PHONY: postgres-cli
 postgres-cli:
