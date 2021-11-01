@@ -2788,6 +2788,8 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 
 - [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation-dag.yaml)
 
+- [`plugin-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugin-workflow.yaml)
+
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-spec-from-previous-step.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resubmit.yaml)
@@ -4127,6 +4129,8 @@ DAGTask represents a node in the graph during DAG execution
 - [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-nested-dag.yaml)
 
 - [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation-dag.yaml)
+
+- [`plugin-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugin-workflow.yaml)
 
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-spec-from-previous-step.yaml)
 
@@ -5560,6 +5564,8 @@ A single application container that you want to run within a pod.
 - [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation-dag.yaml)
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation.yaml)
+
+- [`plugin-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugin-workflow.yaml)
 
 - [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy-with-label-selector.yaml)
 
