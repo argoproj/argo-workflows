@@ -439,14 +439,17 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 		taskNodeName := dagCtx.taskNodeName(newTask.Name)
 		woc.log.Infof("All of node %s dependencies %v completed", taskNodeName, taskDependencies)
 
+
 		// Check the task's when clause to decide if it should execute
 		proceed, err := shouldExecute(newTask.When)
 		if err != nil {
+			connectDependencies(taskNodeName)
 			woc.initializeNode(taskNodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
 			woc.markTaskGroupNode(dagCtx,[]wfv1.DAGTask{*newTask}, taskGroupNode)
 			return
 		}
 		if !proceed {
+			connectDependencies(taskNodeName)
 			skipReason := fmt.Sprintf("when '%s' evaluated false", newTask.When)
 			woc.initializeNode(taskNodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeSkipped, skipReason)
 			woc.markTaskGroupNode(dagCtx,[]wfv1.DAGTask{*newTask}, taskGroupNode)
