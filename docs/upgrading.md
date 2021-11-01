@@ -6,7 +6,7 @@ the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summar
 
 ## Upgrading to v3.3
 
-### [TODO: add commit once PR is merged] feat: Add TLS to Metrics and Telemetry servers (#7041)
+### [93c11a24ff](https://github.com/argoproj/argo-workflows/commit/93c11a24ff06049c2197149acd787f702e5c1f9b) feat: Add TLS to Metrics and Telemetry servers (#7041)
 
 This PR adds the ability to send metrics over TLS with a self-signed certificate. In v3.5 this will be enabled by default, so it is recommended that users enable this functionality now.
 
@@ -29,7 +29,7 @@ user need to explicitly include a http prefix if they want to retrieve HTTPArtif
 
 ## Upgrading to v3.2
 
-## [e5b131a33](https://github.com/argoproj/argo-workflows/commit/e5b131a33) feat: Add template node to pod name. Fixes #1319 (#6712)
+### [e5b131a33](https://github.com/argoproj/argo-workflows/commit/e5b131a33) feat: Add template node to pod name. Fixes #1319 (#6712)
 
 This add the template name to the pod name, to make it easier to understand which pod ran which step. This behaviour can be reverted by setting `POD_NAMES=v1` on the workflow controller. 
 
