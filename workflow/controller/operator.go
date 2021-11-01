@@ -2045,11 +2045,11 @@ func (woc *wfOperationCtx) GetNodeTemplate(node *wfv1.NodeStatus) *wfv1.Template
 	if node.TemplateRef != nil {
 		tmplCtx, err := woc.createTemplateContext(node.GetTemplateScope())
 		if err != nil {
-			woc.markNodePhase(node.Name, wfv1.NodeError, "Failed to create Template context", err.Error())
+			woc.markNodeError(node.Name, err)
 		}
 		tmpl, err := tmplCtx.GetTemplateFromRef(node.TemplateRef)
 		if err != nil {
-			woc.markNodePhase(node.Name, wfv1.NodeError, "Failed to get TemplateRef", err.Error())
+			woc.markNodeError(node.Name, err)
 		}
 		return tmpl
 	}
