@@ -547,7 +547,6 @@ func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string
 	return localScope, realTimeScope
 }
 
-
 func getChildNodeName(sgNodeName string, stepName string) string {
 	return fmt.Sprintf("%s.%s", sgNodeName, stepName)
 }
