@@ -438,8 +438,6 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 	if node == nil {
 		taskNodeName := dagCtx.taskNodeName(newTask.Name)
 		woc.log.Infof("All of node %s dependencies %v completed", taskNodeName, taskDependencies)
-		// Add the child relationship from our dependency's outbound nodes to this node.
-		connectDependencies(taskNodeName)
 
 		// Check the task's when clause to decide if it should execute
 		proceed, err := shouldExecute(newTask.When)
@@ -483,6 +481,9 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 	for _, t := range expandedTasks {
 		taskNodeName := dagCtx.taskNodeName(t.Name)
 		node = dagCtx.getTaskNode(t.Name)
+
+		// Add the child relationship from our dependency's outbound nodes to this node.
+		connectDependencies(taskNodeName)
 
 		// Finally execute the template
 		_, err = woc.executeTemplate(ctx, taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, &executeTemplateOpts{boundaryID: dagCtx.boundaryID, onExitTemplate: dagCtx.onExitTemplate})
