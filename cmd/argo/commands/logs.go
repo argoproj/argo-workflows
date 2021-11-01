@@ -24,6 +24,7 @@ func NewLogsCommand() *cobra.Command {
 		sinceTime string
 		tailLines int64
 		grep      string
+		selector  string
 	)
 	logOptions := &corev1.PodLogOptions{}
 	command := &cobra.Command{
@@ -36,6 +37,10 @@ func NewLogsCommand() *cobra.Command {
 # Follow the logs of a workflows:
 
   argo logs my-wf --follow
+
+# Print the logs of a workflows with a selector:
+
+  argo logs my-wf -l app=sth
 
 # Print the logs of single container in a pod
 
@@ -92,7 +97,7 @@ func NewLogsCommand() *cobra.Command {
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 
-			logWorkflow(ctx, serviceClient, namespace, workflow, podName, grep, logOptions)
+			logWorkflow(ctx, serviceClient, namespace, workflow, podName, grep, selector, logOptions)
 		},
 	}
 	command.Flags().StringVarP(&logOptions.Container, "container", "c", "main", "Print the logs of this container")
@@ -102,18 +107,20 @@ func NewLogsCommand() *cobra.Command {
 	command.Flags().StringVar(&sinceTime, "since-time", "", "Only return logs after a specific date (RFC3339). Defaults to all logs. Only one of since-time / since may be used.")
 	command.Flags().Int64Var(&tailLines, "tail", -1, "If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime")
 	command.Flags().StringVar(&grep, "grep", "", "grep for lines")
+	command.Flags().StringVarP(&selector, "selector", "l", "", "log selector for some pod")
 	command.Flags().BoolVar(&logOptions.Timestamps, "timestamps", false, "Include timestamps on each line in the log output")
 	command.Flags().BoolVar(&noColor, "no-color", false, "Disable colorized output")
 	return command
 }
 
-func logWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace, workflow, podName, grep string, logOptions *corev1.PodLogOptions) {
+func logWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace, workflow, podName, grep, selector string, logOptions *corev1.PodLogOptions) {
 	// logs
 	stream, err := serviceClient.WorkflowLogs(ctx, &workflowpkg.WorkflowLogRequest{
 		Name:       workflow,
 		Namespace:  namespace,
 		PodName:    podName,
 		LogOptions: logOptions,
+		Selector:   selector,
 		Grep:       grep,
 	})
 	errors.CheckError(err)

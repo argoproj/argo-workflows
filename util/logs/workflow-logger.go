@@ -34,6 +34,7 @@ type request interface {
 	GetPodName() string
 	GetLogOptions() *corev1.PodLogOptions
 	GetGrep() string
+	GetSelector() string
 }
 
 type sender interface {
@@ -56,9 +57,19 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 
 	logCtx := log.WithFields(log.Fields{"workflow": req.GetName(), "namespace": req.GetNamespace()})
 
-	// we create a watch on the pods labelled with the workflow name,
-	// but we also filter by pod name if that was requested
-	podListOptions := metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + req.GetName()}
+	var podListOptions metav1.ListOptions
+
+	// we add selector if cli specify the pod selector when using logs
+	if req.GetSelector() != "" {
+		podListOptions = metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + req.GetName() + "," + req.GetSelector()}
+
+	} else {
+		// we create a watch on the pods labelled with the workflow name,
+		// but we also filter by pod name if that was requested
+		podListOptions = metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + req.GetName()}
+
+	}
+
 	if req.GetPodName() != "" {
 		podListOptions.FieldSelector = "metadata.name=" + req.GetPodName()
 	}

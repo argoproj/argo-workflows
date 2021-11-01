@@ -3635,6 +3635,11 @@
             "type": "string",
             "name": "grep",
             "in": "query"
+          },
+          {
+            "type": "string",
+            "name": "selector",
+            "in": "query"
           }
         ],
         "responses": {
@@ -4064,6 +4069,11 @@
           {
             "type": "string",
             "name": "grep",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "name": "selector",
             "in": "query"
           }
         ],
