@@ -107,6 +107,14 @@ type ContainerRuntimeExecutor interface {
 	ListContainerNames(ctx context.Context) ([]string, error)
 }
 
+func errWithHelp(err error) error {
+	return fmt.Errorf("unable to get pods, you can check https://argoproj.github.io/argo-workflows/faq/: %w", err)
+}
+
+func isErrUnknownGetPods(err error) bool {
+	return strings.Contains(err.Error(), "unknown (get pods)")
+}
+
 // NewExecutor instantiates a new workflow executor
 func NewExecutor(clientset kubernetes.Interface, restClient rest.Interface, podName, namespace string, cre ContainerRuntimeExecutor, template wfv1.Template, includeScriptOutput bool, deadline time.Time) WorkflowExecutor {
 	return WorkflowExecutor{
@@ -597,8 +605,8 @@ func (we *WorkflowExecutor) getPod(ctx context.Context) (*apiv1.Pod, error) {
 	err := waitutil.Backoff(ExecutorRetry, func() (bool, error) {
 		var err error
 		pod, err = podsIf.Get(ctx, we.PodName, metav1.GetOptions{})
-		if err != nil && strings.Contains(err.Error(), "unknown (get pods)") {
-			err = fmt.Errorf("unable to get pods, you can check https://argoproj.github.io/argo-workflows/faq/: %w", err)
+		if err != nil && isErrUnknownGetPods(err) {
+			return !errorsutil.IsTransientErr(err), errWithHelp(err)
 		}
 		return !errorsutil.IsTransientErr(err), err
 	})

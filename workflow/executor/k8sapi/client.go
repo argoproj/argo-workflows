@@ -45,6 +45,10 @@ func errWithHelp(err error) error {
 	return fmt.Errorf("unable to get pods, you can check https://argoproj.github.io/argo-workflows/faq/: %w", err)
 }
 
+func isErrUnknownGetPods(err error) bool {
+	return strings.Contains(err.Error(), "unknown (get pods)")
+}
+
 func (c *k8sAPIClient) CreateArchive(ctx context.Context, containerName, sourcePath string) (*bytes.Buffer, error) {
 	command := []string{"tar", "cf", "-", sourcePath}
 	exec, err := common.ExecPodContainer(c.config, c.namespace, c.podName, containerName, true, false, command...)
@@ -124,8 +128,8 @@ func (c *k8sAPIClient) until(ctx context.Context, f func(pod *corev1.Pod) bool) 
 		done, err := func() (bool, error) {
 			w, err := podInterface.Watch(ctx, metav1.ListOptions{FieldSelector: "metadata.name=" + c.podName})
 			if err != nil {
-				if strings.Contains(err.Error(), "unknown (get pods)") {
-					return !errorsutil.IsTransientErr(err), errWithHelp(err)
+				if isErrUnknownGetPods(err) {
+					return true, errWithHelp(err)
 				}
 				return true, fmt.Errorf("failed to establish pod watch: %w", err)
 			}
