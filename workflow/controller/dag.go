@@ -435,8 +435,8 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 	}
 
 	node = dagCtx.getTaskNode(newTask.Name)
+	taskNodeName := dagCtx.taskNodeName(newTask.Name)
 	if node == nil {
-		taskNodeName := dagCtx.taskNodeName(newTask.Name)
 		woc.log.Infof("All of node %s dependencies %v completed", taskNodeName, taskDependencies)
 
 		// Check the task's when clause to decide if it should execute
