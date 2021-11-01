@@ -3422,6 +3422,7 @@ spec:
             when: "{{ workflow.parameters.get-list}} == true"
             template: gen-number-list
           - name: sleep
+            dependencies: [generate]
             when: "{{ workflow.parameters.get-list}} == true"
             template: sleep-n-sec
             arguments:
