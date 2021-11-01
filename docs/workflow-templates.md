@@ -352,7 +352,7 @@ Using `kubectl apply -f` and `kubectl get wftmpl`
 
 `WorkflowTemplate` resources can also be managed by the UI
 
-User can specify `enum` to enable dropdown list selection when submitting using WorkflowTemplate from UI
+Users can specify options under `enum` to enable drop-down list selection when submitting `WorkflowTemplate`s from the UI.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
