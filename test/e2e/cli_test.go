@@ -449,7 +449,7 @@ func (s *CLISuite) TestRoot() {
 	s.Run("Delete", func() {
 		s.Given().RunCli([]string{"delete", "@latest"}, fixtures.NoError)
 	})
-	t.Skip("https://github.com/argoproj/argo-workflows/issues/7111")
+	s.T().Skip("https://github.com/argoproj/argo-workflows/issues/7111")
 	s.Run("From", func() {
 		s.Given().
 			CronWorkflow("@cron/basic.yaml").
