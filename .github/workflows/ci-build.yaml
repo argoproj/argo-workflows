@@ -131,7 +131,7 @@ jobs:
           echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
       - run: make install controller cli $(go env GOPATH)/bin/goreman PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info
-      - run: make start PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info UI=false > /tmp/log/argo-e2e/argo.log 2>&1 &
+      - run: make start PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info SERVER=${{matrix.profile == 'test-api'}} > /tmp/log/argo-e2e/argo.log 2>&1 &
       - run: make wait
         timeout-minutes: 4
       - run: make ${{matrix.test}} E2E_TIMEOUT=1m STATIC_FILES=false
