@@ -63,12 +63,13 @@ type gatekeeper struct {
 	ssoIf                  sso.Interface
 	clientForAuthorization ClientForAuthorization
 	// The namespace the server is installed in.
-	namespace  string
-	namespaced bool
-	cache      *cache.ResourceCache
+	namespace    string
+	ssoNamespace string
+	namespaced   bool
+	cache        *cache.ResourceCache
 }
 
-func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.Config, ssoIf sso.Interface, clientForAuthorization ClientForAuthorization, namespace string, namespaced bool, cache *cache.ResourceCache) (Gatekeeper, error) {
+func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.Config, ssoIf sso.Interface, clientForAuthorization ClientForAuthorization, namespace string, ssoNamespace string, namespaced bool, cache *cache.ResourceCache) (Gatekeeper, error) {
 	if len(modes) == 0 {
 		return nil, fmt.Errorf("must specify at least one auth mode")
 	}
@@ -79,6 +80,7 @@ func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.C
 		ssoIf,
 		clientForAuthorization,
 		namespace,
+		ssoNamespace,
 		namespaced,
 		cache,
 	}, nil
@@ -259,7 +261,7 @@ func (s *gatekeeper) canDelegateRBACToRequestNamespace(req interface{}) bool {
 		return false
 	}
 	namespace := getNamespace(req)
-	return len(namespace) != 0 && s.namespace != namespace
+	return len(namespace) != 0 && s.ssoNamespace != namespace
 }
 
 func (s *gatekeeper) getClientsForServiceAccount(claims *types.Claims, serviceAccount *corev1.ServiceAccount) (*servertypes.Clients, error) {
@@ -277,7 +279,7 @@ func (s *gatekeeper) getClientsForServiceAccount(claims *types.Claims, serviceAc
 
 func (s *gatekeeper) rbacAuthorization(claims *types.Claims, req interface{}) (*servertypes.Clients, error) {
 	ssoDelegationAllowed, ssoDelegated := false, false
-	loginAccount, err := s.getServiceAccount(claims, s.namespace)
+	loginAccount, err := s.getServiceAccount(claims, s.ssoNamespace)
 	if err != nil {
 		return nil, err
 	}
