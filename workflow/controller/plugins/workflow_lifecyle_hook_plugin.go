@@ -4,7 +4,9 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
-type WorkflowPreOperateArgs struct{}
+type WorkflowPreOperateArgs struct {
+	Workflow *wfv1.Workflow
+}
 
 type WorkflowPreOperateReply struct {
 	Workflow *wfv1.Workflow
@@ -12,6 +14,7 @@ type WorkflowPreOperateReply struct {
 
 type WorkflowPreUpdateArgs struct {
 	Old *wfv1.Workflow
+	New *wfv1.Workflow
 }
 
 type WorkflowPreUpdateReply struct {

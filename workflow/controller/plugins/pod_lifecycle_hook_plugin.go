@@ -9,6 +9,7 @@ import (
 type PodPreCreateArgs struct {
 	Workflow *wfv1.Workflow
 	Template *wfv1.Template
+	Pod      *corev1.Pod
 }
 
 type PodPreCreateReply struct {

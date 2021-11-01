@@ -1,25 +1,22 @@
 package controller
 
 import (
-	"reflect"
-
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/plugins"
 )
 
 func (woc *wfOperationCtx) runNodePreExecutePlugins(tmpl *wfv1.Template, node *wfv1.NodeStatus) *wfv1.NodeStatus {
-	args := plugins.NodePreExecuteArgs{Workflow: woc.wf, Template: tmpl}
-	reply := &plugins.NodePreExecuteReply{Node: node.DeepCopy()}
+	args := plugins.NodePreExecuteArgs{Workflow: woc.wf, Template: tmpl, Node: node}
+	reply := &plugins.NodePreExecuteReply{}
 	for _, sym := range woc.controller.plugins {
 		if plug, ok := sym.(plugins.NodeLifecycleHook); ok {
 			if err := plug.NodePreExecute(args, reply); err != nil {
 				woc.markNodeError(node.Name, err)
+			} else if reply.Node != nil {
+				reply.Node.DeepCopyInto(node)
+				woc.updated = true
 			}
 		}
-	}
-	if !reflect.DeepEqual(node, reply.Node) {
-		woc.wf.Status.Nodes[node.ID] = *reply.Node
-		woc.updated = true
 	}
 	return reply.Node
 }

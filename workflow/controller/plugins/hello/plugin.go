@@ -47,6 +47,7 @@ func (plugin) NodePreExecute(args plugins.NodePreExecuteArgs, reply *plugins.Nod
 	}
 	if value != nil {
 		log.Printf("hello: executing hello plugin node: %v\n", value)
+		reply.Node = args.Node
 		reply.Node.Phase = wfv1.NodeSucceeded
 		reply.Node.Message = fmt.Sprintf("Hello %s: %s", args.Workflow.Name, reply.Node.ID)
 	}
@@ -69,6 +70,7 @@ var _ plugins.PodLifecycleHook = plugin{}
 func (p plugin) PodPreCreate(args plugins.PodPreCreateArgs, reply *plugins.PodPreCreateReply) error {
 	if _, ok := args.Workflow.Annotations["hello"]; ok {
 		log.Printf("hello: annotating pod: %s\n", reply.Pod.Name)
+		reply.Pod = args.Pod
 		reply.Pod.Annotations["hello"] = "here we are!"
 	}
 	return nil
@@ -86,6 +88,7 @@ var _ plugins.ParameterSubstitutionPlugin = plugin{}
 func (plugin) ParameterPreSubstitution(args plugins.ParameterPreSubstitutionArgs, reply *plugins.ParameterPreSubstitutionReply) error {
 	if _, ok := args.Workflow.Annotations["hello"]; ok {
 		log.Printf("hello: adding hello parameter: %s\n", args.Workflow.Name)
+		reply.Parameters = map[string]string{}
 		reply.Parameters["hello"] = "good morning"
 	}
 	return nil

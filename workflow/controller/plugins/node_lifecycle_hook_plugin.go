@@ -7,6 +7,7 @@ import (
 type NodePreExecuteArgs struct {
 	Workflow *wfv1.Workflow
 	Template *wfv1.Template
+	Node     *wfv1.NodeStatus
 }
 
 type NodePreExecuteReply struct {
