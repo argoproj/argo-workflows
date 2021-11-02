@@ -1948,6 +1948,26 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#sso-rbac-namespace-delegation" title="SSO RBAC Namespace Delegation" class="md-nav__link">
+    SSO RBAC Namespace Delegation
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#recommended-usage" title="Recommended usage" class="md-nav__link">
+    Recommended usage
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#sso-login-time" title="SSO Login Time" class="md-nav__link">
     SSO Login Time
   </a>
@@ -2313,6 +2333,26 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#sso-rbac-namespace-delegation" title="SSO RBAC Namespace Delegation" class="md-nav__link">
+    SSO RBAC Namespace Delegation
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#recommended-usage" title="Recommended usage" class="md-nav__link">
+    Recommended usage
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#sso-login-time" title="SSO Login Time" class="md-nav__link">
     SSO Login Time
   </a>
@@ -2445,6 +2485,36 @@ kubectl create secret -n argo generic client-secret-secret \
 </code></pre></div>
 <p>The precedence must be the lowest of all your service accounts.</p>
 </div>
+<h2 id="sso-rbac-namespace-delegation">SSO RBAC Namespace Delegation<a class="headerlink" href="#sso-rbac-namespace-delegation" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p>v3.3 and after</p>
+</blockquote>
+<p>You can optionally configure RBAC SSO per namespace.
+Typically, on organization has a K8s cluster and a central team manages the cluster who is the owner of the cluster. Along with this, there are multiple namespaces which are owned by individual team. This feature would help namespace owners to define RBAC for their own namespace.</p>
+<p>The feature is currently in beta.
+To enable the feature, set env variable <code>SSO_DELEGATE_RBAC_TO_NAMESPACE=true</code> in your argo-server deployment.</p>
+<h4 id="recommended-usage">Recommended usage<a class="headerlink" href="#recommended-usage" title="Permanent link">&para;</a></h4>
+<p>Configure a default account in the installation namespace which would allow all users of your organization. We will use this service account to allow a user to login to the cluster. You could optionally add workflow read-only role and rolebinding if you wish to.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ServiceAccount</span>
+<span class="nt">metadata</span><span class="p">:</span>
+  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">user-default-login</span>
+  <span class="nt">annotations</span><span class="p">:</span>
+    <span class="nt">workflows.argoproj.io/rbac-rule</span><span class="p">:</span> <span class="s">&quot;true&quot;</span>
+    <span class="nt">workflows.argoproj.io/rbac-rule-precedence</span><span class="p">:</span> <span class="s">&quot;0&quot;</span>
+</code></pre></div>
+<p>Now, for the the namespace that you own, configure a service account which would allow members of your team to perform operations in your namespace.
+Make sure that the precedence of the namespace service account is higher than the precedence of the login service account. Create approprite role that you want to grant to this serviceaccount and bind it with a role-binding.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ServiceAccount</span>
+<span class="nt">metadata</span><span class="p">:</span>
+  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-namespace-read-write-user</span>
+  <span class="nt">namespace</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-namespace</span>
+  <span class="nt">annotations</span><span class="p">:</span>
+    <span class="nt">workflows.argoproj.io/rbac-rule</span><span class="p">:</span> <span class="s">&quot;&#39;my-team&#39;</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">groups&quot;</span>
+    <span class="nt">workflows.argoproj.io/rbac-rule-precedence</span><span class="p">:</span> <span class="s">&quot;1&quot;</span>
+</code></pre></div>
+<p>Using this, whenever a user is logged in via SSO and makes a request in 'my-namespace', and the <code>rbac-rule</code>matches, we will use this service account to allow the user to perform that operation in the namespace. If no serviceaccount matches in the namespace, the first serviceaccount(<code>user-default-login</code>) and its associated role will be used to perform the operation in the namespace.</p>
 <h2 id="sso-login-time">SSO Login Time<a class="headerlink" href="#sso-login-time" title="Permanent link">&para;</a></h2>
 <blockquote>
 <p>v2.12 and after</p>
