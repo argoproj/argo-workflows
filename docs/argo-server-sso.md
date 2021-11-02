@@ -118,7 +118,7 @@ You can optionally configure RBAC SSO per namespace.
 Typically, on organization has a K8s cluster and a central team manages the cluster who is the owner of the cluster. Along with this, there are multiple namespaces which are owned by individual team. This feature would help namespace owners to define RBAC for their own namespace.
 
 The feature is currently in beta.
-To enable to, set env variable `SSO_DELEGATE_RBAC_TO_NAMESPACE=true`
+To enable the feature, set env variable `SSO_DELEGATE_RBAC_TO_NAMESPACE=true`
 
 #### Recommended usage
 
