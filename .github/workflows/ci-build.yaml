@@ -146,7 +146,7 @@ jobs:
         if: ${{ failure() }}
         run: cat /tmp/argo.log
   publish-test-results:
-    name: "Publish Tests Results"
+    name: "Publish Test Results"
     needs: [ tests, e2e-tests ]
     runs-on: ubuntu-latest
     if: always()
