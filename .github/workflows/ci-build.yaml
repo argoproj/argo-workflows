@@ -144,11 +144,12 @@ jobs:
           path: junit.xml
       - if: ${{ failure() }}
         run: cat /tmp/argo.log
+  # https://github.com/marketplace/actions/publish-unit-test-results
   publish-test-results:
     name: "Publish Test Results"
     needs: [ tests, e2e-tests ]
     runs-on: ubuntu-latest
-    if: always()
+    if: ${{ always() }}
     steps:
       - uses: actions/download-artifact@v2
         with:
