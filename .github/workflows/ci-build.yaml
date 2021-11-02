@@ -40,11 +40,87 @@ jobs:
       - run: bash <(curl -s https://codecov.io/bash)
         if: github.ref == 'refs/heads/master'
 
+  argoexec-image:
+    name: argoexec-image
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [ lint ]
+    env:
+      KUBECONFIG: /home/runner/.kubeconfig
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - test: test-api
+            containerRuntimeExecutor: emissary
+            profile: mysql
+          - test: test-cli
+            containerRuntimeExecutor: emissary
+            profile: mysql
+          - test: test-cron
+            containerRuntimeExecutor: emissary
+            profile: minimal
+          - test: test-executor
+            containerRuntimeExecutor: docker
+            profile: minimal
+          - test: test-examples
+            containerRuntimeExecutor: emissary
+            profile: minimal
+          - test: test-executor
+            containerRuntimeExecutor: emissary
+            profile: minimal
+          - test: test-executor
+            containerRuntimeExecutor: k8sapi
+            profile: minimal
+          - test: test-executor
+            containerRuntimeExecutor: kubelet
+            profile: minimal
+          - test: test-executor
+            containerRuntimeExecutor: pns
+            profile: minimal
+          - test: test-functional
+            containerRuntimeExecutor: emissary
+            profile: minimal
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: "1.17"
+      - uses: actions/cache@v2
+        with:
+          path: /home/runner/.cache/go-build
+          key: GOCACHE-v2-${{ hashFiles('**/go.mod') }}
+      - uses: actions/cache@v2
+        with:
+          path: /home/runner/go/pkg/mod
+          key: GOMODCACHE-v2-${{ hashFiles('**/go.mod') }}
+      - uses: actions/cache@v2
+        with:
+          path: /home/runner/go/bin
+          key: go-bin-v1-${{ hashFiles('**/go.mod') }}
+      - name: Cache Docker layers
+        uses: actions/cache@v2
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+      - uses: docker/setup-buildx-action@v1
+      - name: make argoexec-image
+        # retry this once, as it can be flakey
+        run: make argoexec-image STATIC_FILES=false || make argoexec-image STATIC_FILES=false
+      - run: docker save argoproj/argoexec:latest | gzip > argoexec_latest.tar.gz
+      - uses: actions/upload-artifact@v2
+        with:
+          name: argoexec image
+          path: argoexec_latest.tar.gz
+
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-20.04
     timeout-minutes: 20
-    needs: [ tests, codegen, lint ]
+    needs: [ tests, codegen, lint, argoexec-image ]
     env:
       KUBECONFIG: /home/runner/.kubeconfig
     strategy:
@@ -117,16 +193,11 @@ jobs:
           echo "    token: xxxxxx" >> $KUBECONFIG
           until kubectl cluster-info ; do sleep 10s ; done
       - run: |
-          docker pull $(grep -o 'image: .*' manifests/quick-start/base/minio/minio-deploy.yaml | cut -c 8-)
-      # we never want to pull images by accident on CI after we built them
-      # so imagePullPolicy=Never
-      # but, we can pull it if we don't need it
-      - run: docker pull quay.io/argoproj/argoexec:latest
-        if: ${{!(matrix.test == 'test-executor' || matrix.test == 'test-functional')}}
-      - name: make argoexec-image
-        if: ${{matrix.test == 'test-executor' || matrix.test == 'test-functional'}}
-        # retry this once, as it can be flakey
-        run: make argoexec-image STATIC_FILES=false || make argoexec-image STATIC_FILES=false
+          docker pull $(grep -o 'image: .*' manifests/quick-start/base/minio/minio-deploy.yaml | cut -c 8-) &
+      - uses: actions/download-artifact@v2
+        with:
+          path: argoexec_image.tar.gz
+      - run: docker load < gunzip argoexec_image.tar.gz
       - name: Set-up /etc/hosts
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
