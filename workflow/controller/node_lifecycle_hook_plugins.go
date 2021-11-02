@@ -13,7 +13,7 @@ func (woc *wfOperationCtx) runNodePreExecutePlugins(tmpl *wfv1.Template, node *w
 			if err := plug.NodePreExecute(args, reply); err != nil {
 				woc.markNodeError(node.Name, err)
 			} else if reply.Node != nil {
-				reply.Node.DeepCopyInto(node)
+				woc.wf.Status.Nodes[reply.Node.ID] = *reply.Node
 				woc.updated = true
 			}
 		}

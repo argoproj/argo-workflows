@@ -3,6 +3,8 @@ package controller
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/plugins"
 )
 
@@ -14,7 +16,8 @@ func (wfc *WorkflowController) runWorkflowPreOperatePlugins(ctx context.Context,
 			if err := plug.WorkflowPreOperate(args, reply); err != nil {
 				woc.markWorkflowError(ctx, err)
 			} else if wf := reply.Workflow; wf != nil {
-				wf.DeepCopyInto(woc.wf)
+				logrus.Info("plugin invoked")
+				woc.wf = wf
 			}
 		}
 	}
@@ -28,7 +31,7 @@ func (woc *wfOperationCtx) runWorkflowPreUpdatePlugins(ctx context.Context) {
 			if err := plug.WorkflowPreUpdate(args, reply); err != nil {
 				woc.markWorkflowError(ctx, err)
 			} else if wf := reply.New; wf != nil {
-				wf.DeepCopyInto(woc.wf)
+				woc.wf = wf
 			}
 		}
 	}

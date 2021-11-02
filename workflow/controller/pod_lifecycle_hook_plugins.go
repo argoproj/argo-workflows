@@ -8,12 +8,14 @@ import (
 )
 
 func (woc *wfOperationCtx) runPodPreCreatePlugins(tmpl *wfv1.Template, pod *apiv1.Pod) error {
-	args := plugins.PodPreCreateArgs{Workflow: woc.wf, Template: tmpl}
-	reply := &plugins.PodPreCreateReply{Pod: pod}
+	args := plugins.PodPreCreateArgs{Workflow: woc.wf, Template: tmpl, Pod: pod}
+	reply := &plugins.PodPreCreateReply{}
 	for _, sym := range woc.controller.plugins {
 		if plug, ok := sym.(plugins.PodLifecycleHook); ok {
 			if err := plug.PodPreCreate(args, reply); err != nil {
 				return err
+			} else if reply.Pod != nil {
+				*pod = *reply.Pod
 			}
 		}
 	}

@@ -34,6 +34,7 @@ func (plugin) WorkflowPreOperate(args plugins.WorkflowPreOperateArgs, reply *plu
 func (plugin) WorkflowPreUpdate(args plugins.WorkflowPreUpdateArgs, reply *plugins.WorkflowPreUpdateReply) error { //nolint:unparam
 	if args.New.Annotations["hello"] == "running" {
 		log.Println("hello: updating hello annotation")
+		reply.New = args.New
 		reply.New.Annotations["hello"] = "goodbye"
 	}
 	return nil
@@ -70,7 +71,7 @@ var _ plugins.PodLifecycleHook = plugin{}
 
 func (p plugin) PodPreCreate(args plugins.PodPreCreateArgs, reply *plugins.PodPreCreateReply) error {
 	if _, ok := args.Workflow.Annotations["hello"]; ok {
-		log.Printf("hello: annotating pod: %s\n", reply.Pod.Name)
+		log.Printf("hello: annotating pod: %s\n", args.Pod.Name)
 		reply.Pod = args.Pod
 		reply.Pod.Annotations["hello"] = "here we are!"
 	}
