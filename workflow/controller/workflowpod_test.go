@@ -1526,6 +1526,7 @@ spec:
 func TestHybridWfVolumesWindows(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(helloWindowsWf)
 	woc := newWoc(*wf)
+	woc.controller.Config.ContainerRuntimeExecutor = common.ContainerRuntimeExecutorDocker
 
 	ctx := context.Background()
 	mainCtr := woc.execWf.Spec.Templates[0].Container
@@ -1586,6 +1587,7 @@ func TestWindowsUNCPathsAreRemoved(t *testing.T) {
 func TestHybridWfVolumesLinux(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(helloLinuxWf)
 	woc := newWoc(*wf)
+	woc.controller.Config.ContainerRuntimeExecutor = common.ContainerRuntimeExecutorDocker
 
 	ctx := context.Background()
 	mainCtr := woc.execWf.Spec.Templates[0].Container
