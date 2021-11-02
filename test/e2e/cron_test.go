@@ -285,6 +285,7 @@ spec:
 				}
 			})
 	})
+	s.T().Skip("https://github.com/argoproj/argo-workflows/issues/7132")
 	s.Run("TestSuccessfulJobHistoryLimit", func() {
 		s.T().Parallel()
 		var listOptions v1.ListOptions
