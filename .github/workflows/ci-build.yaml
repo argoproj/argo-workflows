@@ -56,11 +56,11 @@ jobs:
             ${{ runner.os }}-buildx-
       - uses: docker/setup-buildx-action@v1
       - run: make argoexec-image STATIC_FILES=false
-      - run: docker save argoproj/argoexec:latest | gzip > argoexec_latest.tar.gz
+      - run: docker save argoproj/argoexec:latest | gzip > argoexec_image.tar.gz
       - uses: actions/upload-artifact@v2
         with:
           name: argoexec image
-          path: argoexec_latest.tar.gz
+          path: argoexec_image.tar.gz
 
   e2e-tests:
     name: E2E Tests
