@@ -1712,15 +1712,17 @@ spec:
 
 func TestPodDefaultContainer(t *testing.T) {
 	ctx := context.Background()
-	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	wf := wfv1.MustUnmarshalWorkflow(wfWithContainerSet)
+	// change first container name to main
+	wf.Spec.Templates[0].ContainerSet.Containers[0].Name = common.MainContainerName
 	woc := newWoc(*wf)
-	mainCtr := woc.execWf.Spec.Templates[0].Container
-	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	template := woc.execWf.Spec.Templates[0]
+	pod, _ := woc.createWorkflowPod(ctx, wf.Name, template.ContainerSet.GetContainers(), &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	assert.Equal(t, common.MainContainerName, pod.ObjectMeta.Annotations[common.AnnotationKeyDefaultContainer])
 
 	wf = wfv1.MustUnmarshalWorkflow(wfWithContainerSet)
 	woc = newWoc(*wf)
-	template := woc.execWf.Spec.Templates[0]
+	template = woc.execWf.Spec.Templates[0]
 	pod, _ = woc.createWorkflowPod(ctx, wf.Name, template.ContainerSet.GetContainers(), &template, &createWorkflowPodOpts{})
 	assert.Equal(t, "b", pod.ObjectMeta.Annotations[common.AnnotationKeyDefaultContainer])
 }
