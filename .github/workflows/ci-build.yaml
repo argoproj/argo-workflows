@@ -140,10 +140,9 @@ jobs:
       - run: make ${{matrix.test}} E2E_TIMEOUT=1m STATIC_FILES=false
       - uses: actions/upload-artifact@v2
         with:
-          name: Test Results (${{ matrix.test }})
+          name: E2E Test Results (${{ matrix.test }})
           path: junit.xml
-      - name: cat argo.log
-        if: ${{ failure() }}
+      - if: ${{ failure() }}
         run: cat /tmp/argo.log
   publish-test-results:
     name: "Publish Test Results"
