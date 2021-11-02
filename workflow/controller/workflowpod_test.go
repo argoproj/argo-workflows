@@ -1689,6 +1689,42 @@ func TestPodMetadata(t *testing.T) {
 	assert.Equal(t, "world", pod.ObjectMeta.Labels["template-level-pod-label"])
 }
 
+var wfWithContainerSet = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-with-container-set
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    containerSet:
+      containers:
+        - name: a
+          image: docker/whalesay:latest
+          command: [cowsay]
+          args: ["hello world"]
+        - name: b
+          image: docker/whalesay:latest
+          command: [cowsay]
+          args: ["hello world"]
+`
+
+func TestPodDefaultContainer(t *testing.T) {
+	ctx := context.Background()
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	woc := newWoc(*wf)
+	mainCtr := woc.execWf.Spec.Templates[0].Container
+	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	assert.Equal(t, common.MainContainerName, pod.ObjectMeta.Annotations[common.AnnotationKeyDefaultContainer])
+
+	wf = wfv1.MustUnmarshalWorkflow(wfWithContainerSet)
+	woc = newWoc(*wf)
+	template := woc.execWf.Spec.Templates[0]
+	pod, _ = woc.createWorkflowPod(ctx, wf.Name, template.ContainerSet.GetContainers(), &template, &createWorkflowPodOpts{})
+	assert.Equal(t, "b", pod.ObjectMeta.Annotations[common.AnnotationKeyDefaultContainer])
+}
+
 func TestGetDeadline(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	ctx := context.Background()
