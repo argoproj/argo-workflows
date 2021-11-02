@@ -32,9 +32,9 @@ jobs:
       - run: make server/static/files.go STATIC_FILES=false
       - run: go build -v ./...
       - run: make test STATIC_FILES=false GOTEST='go test -covermode=atomic -coverprofile=coverage.out'
-      - uses: EnricoMi/publish-unit-test-result-action@v1
-        if: always()
+      - uses: actions/upload-artifact@v2
         with:
+          name: Test Results
           files: junit.xml
       # engineers just ignore this in PRs, so lets not even run it
       - run: bash <(curl -s https://codecov.io/bash)
@@ -138,13 +138,25 @@ jobs:
       - run: make wait
         timeout-minutes: 4
       - run: make ${{matrix.test}} E2E_TIMEOUT=1m STATIC_FILES=false
-      - uses: EnricoMi/publish-unit-test-result-action@v1
-        if: always()
+      - uses: actions/upload-artifact@v2
         with:
+          name: Test Results (${{ matrix.test }})
           files: junit.xml
       - name: cat argo.log
         if: ${{ failure() }}
         run: cat /tmp/argo.log
+  publish-test-results:
+    name: "Publish Tests Results"
+    needs: [ tests, e2e-tests ]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - uses: actions/download-artifact@v2
+        with:
+          path: artifacts
+      - uses: EnricoMi/publish-unit-test-result-action@v1
+        with:
+          files: artifacts/**/*.xml
   codegen:
     name: Codegen
     runs-on: ubuntu-20.04
