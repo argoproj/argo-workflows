@@ -78,7 +78,7 @@ func (c *k8sAPIClient) getPod(ctx context.Context) (*corev1.Pod, error) {
 	err := waitutil.Backoff(backoffOver30s, func() (bool, error) {
 		var err error
 		pod, err = c.clientset.CoreV1().Pods(c.namespace).Get(ctx, c.podName, metav1.GetOptions{})
-		if err != nil && strings.Contains(err.Error(), "unknown (get pods)") {
+		if err != nil && isErrUnknownGetPods(err) {
 			return !errorsutil.IsTransientErr(err), errWithHelp(err)
 		}
 		return !errorsutil.IsTransientErr(err), err
