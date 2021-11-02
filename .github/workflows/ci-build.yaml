@@ -35,7 +35,7 @@ jobs:
       - uses: actions/upload-artifact@v2
         with:
           name: Test Results
-          files: junit.xml
+          path: junit.xml
       # engineers just ignore this in PRs, so lets not even run it
       - run: bash <(curl -s https://codecov.io/bash)
         if: github.ref == 'refs/heads/master'
@@ -141,7 +141,7 @@ jobs:
       - uses: actions/upload-artifact@v2
         with:
           name: Test Results (${{ matrix.test }})
-          files: junit.xml
+          path: junit.xml
       - name: cat argo.log
         if: ${{ failure() }}
         run: cat /tmp/argo.log
