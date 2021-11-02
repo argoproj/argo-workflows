@@ -377,6 +377,8 @@ rules:
   verbs:
   - get
   - create
+  - list
+  - watch
 - apiGroups:
   - ""
   resources:
@@ -403,6 +405,7 @@ rules:
   verbs:
   - get
   - list
+  - watch
 - apiGroups:
   - argoproj.io
   resources:
