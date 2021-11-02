@@ -121,14 +121,6 @@ jobs:
         with:
           path: /home/runner/go/bin
           key: go-bin-v1-${{ hashFiles('**/go.mod') }}
-      - name: Cache Docker layers
-        uses: actions/cache@v2
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
-      - uses: docker/setup-buildx-action@v1
       - name: Install and start K3S
         run: |
           curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.21.2+k3s1 INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh -
@@ -143,7 +135,7 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           path: argoexec_image.tar.gz
-      - run: docker load < gunzip argoexec_image.tar.gz
+      - run: docker load < gzip -cd argoexec_image.tar.gz
       - name: Set-up /etc/hosts
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
