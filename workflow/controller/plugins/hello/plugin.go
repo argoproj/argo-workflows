@@ -23,15 +23,16 @@ func main() {
 var _ plugins.WorkflowLifecycleHook = plugin{}
 
 func (plugin) WorkflowPreOperate(args plugins.WorkflowPreOperateArgs, reply *plugins.WorkflowPreOperateReply) error { //nolint:unparam
-	if _, ok := reply.Workflow.Annotations["hello"]; ok && reply.Workflow.Status.Phase == wfv1.WorkflowUnknown {
+	if _, ok := args.Workflow.Annotations["hello"]; ok && args.Workflow.Status.Phase == wfv1.WorkflowUnknown {
 		log.Println("hello: setting hello annotation to running")
+		reply.Workflow = args.Workflow
 		reply.Workflow.Annotations["hello"] = "running"
 	}
 	return nil
 }
 
 func (plugin) WorkflowPreUpdate(args plugins.WorkflowPreUpdateArgs, reply *plugins.WorkflowPreUpdateReply) error { //nolint:unparam
-	if reply.New.Annotations["hello"] == "running" {
+	if args.New.Annotations["hello"] == "running" {
 		log.Println("hello: updating hello annotation")
 		reply.New.Annotations["hello"] = "goodbye"
 	}
