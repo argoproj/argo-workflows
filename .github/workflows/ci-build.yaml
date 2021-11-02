@@ -59,7 +59,7 @@ jobs:
       - run: docker save quay.io/argoproj/argoexec:latest | gzip > argoexec_image.tar.gz
       - uses: actions/upload-artifact@v2
         with:
-          name: argoexec image
+          name: argoexec_image.tar.gz
           path: argoexec_image.tar.gz
           if-no-files-found: error
 
@@ -135,7 +135,7 @@ jobs:
           docker pull $(grep -o 'image: .*' manifests/quick-start/base/minio/minio-deploy.yaml | cut -c 8-) &
       - uses: actions/download-artifact@v2
         with:
-          path: argoexec_image.tar.gz
+          path: .
       - run: docker load < gzip -cd argoexec_image.tar.gz
       - name: Set-up /etc/hosts
         run: |
