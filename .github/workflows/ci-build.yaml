@@ -112,7 +112,8 @@ jobs:
           echo "  user:" >> $KUBECONFIG
           echo "    token: xxxxxx" >> $KUBECONFIG
           until kubectl cluster-info ; do sleep 10s ; done
-      - run: docker pull minio/minio:RELEASE.2019-12-17T23-16-33Z
+      - run: |
+          docker pull $(grep -o 'image: .*' manifests/quick-start/base/minio/minio-deploy.yaml | cut -c 8-)
       # we never want to pull images by accident on CI after we built them
       # so imagePullPolicy=Never
       # but, we can pull it if we don't need it
