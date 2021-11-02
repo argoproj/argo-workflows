@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/argoproj/pkg/sync"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
@@ -56,8 +55,7 @@ func initAgentExecutor() *executor.AgentExecutor {
 		Namespace:         namespace,
 		WorkflowName:      workflowName,
 		WorkflowInterface: workflow.NewForConfigOrDie(config),
-		CompletedTasks:    make(map[string]struct{}),
-		KeyLock:           sync.NewKeyLock(),
+		ConsideredTasks:   make(map[string]bool),
 	}
 	return &agentExecutor
 }
