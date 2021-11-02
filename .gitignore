@@ -12,6 +12,7 @@ hack/**/debug
 release-notes
 debug.test
 git-ask-pass.sh
+junit.xml
 *.iml
 /coverage.out
 .envrc
