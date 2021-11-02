@@ -4,7 +4,7 @@ Plugins allow you to extend Argo Workflows.
 
 ## Types
 
-## Workflow Lifecycle Hook
+##> Workflow Lifecycle Hook
 
 You can can view or modify a workflow before it is operated on, or saved. 
 
