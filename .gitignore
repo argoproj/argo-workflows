@@ -13,6 +13,7 @@ release-notes
 debug.test
 git-ask-pass.sh
 junit.xml
+test.out
 *.iml
 /coverage.out
 .envrc
