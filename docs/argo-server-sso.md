@@ -114,7 +114,7 @@ If no rule matches, we deny the user access.
 
 ## SSO RBAC Namespace Delegation
 
-You can optionally configure RBAC to SSO per namespace.
+You can optionally configure RBAC SSO per namespace.
 Typically, on organization has a K8s cluster and a central team manages the cluster who is the owner of the cluster. Along with this, there are multiple namespaces which are owned by individual team. This feature would help namespace owners to define RBAC for their own namespace.
 
 #### Recommended usage
