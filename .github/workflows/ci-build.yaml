@@ -48,16 +48,31 @@ jobs:
         uses: actions/cache@v2
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          key: ${{ runner.os }}-single-buildx-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-buildx-
-      - run: make argoexec-image STATIC_FILES=false
-      - run: docker save quay.io/argoproj/argoexec:latest | gzip > /tmp/argoexec_image.tar.gz
+            ${{ runner.os }}-single-buildx
+      - name: build argoexec-image
+        run: |
+          docker build \
+          	-t quay.io/argoproj/argoexec:latest \
+          	--target argoexec \
+            --squash \
+          	--cache-from "type=local,src=/tmp/.buildx-cache" \
+          	--cache-to "type=local,dest=/tmp/.buildx-cache-new" \
+          	--output=type=local,dest=/tmp/argoexec_image.tar \
+            .
       - uses: actions/upload-artifact@v2
         with:
           name: argoexec
-          path: /tmp/argoexec_image.tar.gz
+          path: /tmp/argoexec_image.tar
           if-no-files-found: error
+        # Temp fix
+        # https://github.com/docker/build-push-action/issues/252
+        # https://github.com/moby/buildkit/issues/1896
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
   e2e-tests:
     name: E2E Tests
@@ -69,7 +84,7 @@ jobs:
       KUBECONFIG: /home/runner/.kubeconfig
     strategy:
       fail-fast: false
-      max-parallel: 2
+      max-parallel: 3
       matrix:
         include:
           - test: test-api
@@ -128,7 +143,7 @@ jobs:
         with:
           name: argoexec
           path: /tmp
-      - run: gzip -cd /tmp/argoexec_image.tar.gz | docker load
+      - run: docker load -i argoexec_image.tar
       - name: Set-up /etc/hosts
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
