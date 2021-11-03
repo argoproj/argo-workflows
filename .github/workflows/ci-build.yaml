@@ -40,7 +40,7 @@ jobs:
     name: argoexec-image
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [ lint ]
+    # needs: [ lint ]
     steps:
       - uses: actions/checkout@v2
       - uses: docker/setup-buildx-action@v1
@@ -132,8 +132,7 @@ jobs:
         with:
           name: argoexec
           path: /tmp
-      - run: ls -R /tmp
-      - run: docker load < gzip -cd /tmp/argoexec/argoexec_image.tar.gz
+      - run: gzip -cd /tmp/argoexec_image.tar.gz | docker load
       - name: Set-up /etc/hosts
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
