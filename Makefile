@@ -483,11 +483,6 @@ postgres-cli:
 mysql-cli:
 	kubectl exec -ti `kubectl get pod -l app=mysql -o name|cut -c 5-` -- mysql -u mysql -ppassword argo
 
-start-e2e:
-	$(MAKE) start PROFILE=mysql E2E_EXECUTOR=$(E2E_EXECUTOR) ALWAYS_OFFLOAD_NODE_STATUS=true AUTH_MODE=client
-
-test-e2e: test-api test-cli test-cron test-executor test-functional
-
 test-cli: ./dist/argo
 
 test-%: $(GOPATH)/bin/go-junit-report
