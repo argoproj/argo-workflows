@@ -13,24 +13,21 @@ jobs:
   tests:
     name: Unit Tests
     runs-on: ubuntu-latest
-    # 5m30
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
           go-version: "1.17"
+      # https://github.com/actions/cache/blob/main/examples.md#go---modules
       - uses: actions/cache@v2
         with:
-          path: /home/runner/.cache/go-build
-          key: GOCACHE-v2-${{ hashFiles('**/go.mod') }}
-      - uses: actions/cache@v2
-        with:
-          path: /home/runner/go/pkg/mod
-          key: GOMODCACHE-v2-${{ hashFiles('**/go.mod') }}
-      - run: go mod download -x
-      - run: make server/static/files.go STATIC_FILES=false
-      - run: go build -v ./...
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
       - run: make test STATIC_FILES=false GOTEST='go test -covermode=atomic -coverprofile=coverage.out'
       # engineers just ignore this in PRs, so lets not even run it
       - run: bash <(curl -s https://codecov.io/bash)
@@ -58,12 +55,15 @@ jobs:
             containerRuntimeExecutor: emissary
             profile: minimal
           - test: test-executor
-            containerRuntimeExecutor: docker
+            containerRuntimeExecutor: emissary
             profile: minimal
-          - test: test-examples
+          - test: test-functional
             containerRuntimeExecutor: emissary
             profile: minimal
           - test: test-executor
+            containerRuntimeExecutor: docker
+            profile: minimal
+          - test: test-examples
             containerRuntimeExecutor: emissary
             profile: minimal
           - test: test-executor
@@ -74,9 +74,6 @@ jobs:
             profile: minimal
           - test: test-executor
             containerRuntimeExecutor: pns
-            profile: minimal
-          - test: test-functional
-            containerRuntimeExecutor: emissary
             profile: minimal
     steps:
       - uses: actions/checkout@v2
@@ -138,9 +135,6 @@ jobs:
       - name: cat argo.log
         if: ${{ failure() }}
         run: cat /tmp/log/argo-e2e/argo.log
-      - name: MinIO logs
-        if: ${{ failure() }}
-        run: kubectl -n argo logs deploy/minio
   codegen:
     name: Codegen
     runs-on: ubuntu-latest
@@ -185,7 +179,6 @@ jobs:
           mkdir -p /home/runner/go/src/github.com/argoproj
           ln -s "$PWD" /home/runner/go/src/github.com/argoproj/argo-workflows
       - run: make codegen -B STATIC_FILES=false
-      - run: make validate-examples STATIC_FILES=false
       - run: git diff --exit-code
 
   lint:

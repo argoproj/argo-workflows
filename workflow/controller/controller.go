@@ -351,18 +351,6 @@ func (wfc *WorkflowController) startLeading(ctx context.Context, logCtx *log.Ent
 	}
 }
 
-func (wfc *WorkflowController) waitForCacheSync(ctx context.Context) {
-	// Wait for all involved caches to be synced, before processing items from the queue is started
-	if !cache.WaitForCacheSync(ctx.Done(), wfc.wfInformer.HasSynced, wfc.wftmplInformer.Informer().HasSynced, wfc.podInformer.HasSynced) {
-		panic("Timed out waiting for caches to sync")
-	}
-	if wfc.cwftmplInformer != nil {
-		if !cache.WaitForCacheSync(ctx.Done(), wfc.cwftmplInformer.Informer().HasSynced) {
-			panic("Timed out waiting for caches to sync")
-		}
-	}
-}
-
 // Create and the Synchronization Manager
 func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context) {
 	getSyncLimit := func(lockKey string) (int, error) {

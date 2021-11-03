@@ -553,10 +553,6 @@ docs/fields.md: api/openapi-spec/swagger.json $(shell find examples -type f) hac
 docs/cli/argo.md: $(CLI_PKGS) go.sum server/static/files.go hack/cli/main.go
 	go run ./hack/cli
 
-.PHONY: validate-examples
-validate-examples: api/jsonschema/schema.json
-	cd examples && go test
-
 # pre-push
 
 .git/hooks/commit-msg: hack/git/hooks/commit-msg
