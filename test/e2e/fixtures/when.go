@@ -2,11 +2,14 @@ package fixtures
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strconv"
 	"testing"
 	"time"
+
+	"k8s.io/apimachinery/pkg/types"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -419,6 +422,30 @@ func (w *When) deleteResourceQuota(name string) *When {
 	w.t.Helper()
 	ctx := context.Background()
 	err := w.kubeClient.CoreV1().ResourceQuotas(Namespace).Delete(ctx, name, metav1.DeleteOptions{})
+	if err != nil {
+		w.t.Fatal(err)
+	}
+	return w
+}
+
+func (w *When) ResumeCronWorkflow(string) *When {
+	w.t.Helper()
+	return w.setCronWorkflowSuspend(false)
+}
+
+func (w *When) SuspendCronWorkflow() *When {
+	w.t.Helper()
+	return w.setCronWorkflowSuspend(true)
+}
+
+func (w *When) setCronWorkflowSuspend(suspend bool) *When {
+	ctx := context.Background()
+	w.t.Helper()
+	data, err := json.Marshal(map[string]interface{}{"spec": map[string]interface{}{"suspend": suspend}})
+	if err != nil {
+		w.t.Fatal(err)
+	}
+	_, err = w.cronClient.Patch(ctx, w.cronWf.Name, types.MergePatchType, data, metav1.PatchOptions{})
 	if err != nil {
 		w.t.Fatal(err)
 	}

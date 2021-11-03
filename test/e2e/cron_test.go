@@ -113,7 +113,7 @@ spec:
 			})
 	})
 	s.Run("TestSuspend", func() {
-		s.T().Parallel()
+		//s.T().Parallel()
 		s.Given().
 			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
@@ -138,13 +138,11 @@ spec:
           image: argoproj/argosay:v2`).
 			When().
 			CreateCronWorkflow().
+			SuspendCronWorkflow().
 			Then().
-			RunCli([]string{"cron", "suspend", "test-cron-wf-basic-suspend"}, func(t *testing.T, output string, err error) {
-				assert.NoError(t, err)
-				assert.Contains(t, output, "CronWorkflow 'test-cron-wf-basic-suspend' suspended")
-			}).ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
-			assert.True(t, cronWf.Spec.Suspend)
-		})
+			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
+				assert.True(t, cronWf.Spec.Suspend)
+			})
 	})
 	s.Run("TestResume", func() {
 		s.T().Parallel()
@@ -172,13 +170,11 @@ spec:
           image: argoproj/argosay:v2`).
 			When().
 			CreateCronWorkflow().
+			ResumeCronWorkflow("test-cron-wf-basic-resume").
 			Then().
-			RunCli([]string{"cron", "resume", "test-cron-wf-basic-resume"}, func(t *testing.T, output string, err error) {
-				assert.NoError(t, err)
-				assert.Contains(t, output, "CronWorkflow 'test-cron-wf-basic-resume' resumed")
-			}).ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
-			assert.False(t, cronWf.Spec.Suspend)
-		})
+			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
+				assert.False(t, cronWf.Spec.Suspend)
+			})
 	})
 	s.Run("TestBasicForbid", func() {
 		s.T().Parallel()
