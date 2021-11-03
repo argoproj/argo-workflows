@@ -137,6 +137,7 @@ jobs:
         timeout-minutes: 4
       - run: make ${{matrix.test}} E2E_TIMEOUT=1m STATIC_FILES=false
       - uses: actions/upload-artifact@v2
+        if: matrix.test != 'test-examples
         with:
           name: ${{ matrix.test }}-results
           path: junit.xml
