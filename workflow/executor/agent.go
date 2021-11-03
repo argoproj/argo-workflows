@@ -108,6 +108,9 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 }
 
 func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Template) (*wfv1.Outputs, error) {
+	if tmpl.HTTP == nil {
+		return nil, fmt.Errorf("attempting to execute template that is not of type HTTP")
+	}
 	httpTemplate := tmpl.HTTP
 	request, err := http.NewRequest(httpTemplate.Method, httpTemplate.URL, bytes.NewBufferString(httpTemplate.Body))
 	if err != nil {
@@ -125,7 +128,7 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Temp
 		}
 		request.Header.Add(header.Name, value)
 	}
-	response, err := argohttp.SendHttpRequest(request)
+	response, err := argohttp.SendHttpRequest(request, httpTemplate.TimeoutSeconds)
 	if err != nil {
 		return nil, err
 	}
