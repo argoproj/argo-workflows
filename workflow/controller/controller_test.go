@@ -17,6 +17,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/pointer"
@@ -200,7 +201,18 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		go wfc.wfTaskSetInformer.Informer().Run(ctx.Done())
 		wfc.cwftmplInformer = informerFactory.Argoproj().V1alpha1().ClusterWorkflowTemplates()
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
-		wfc.waitForCacheSync(ctx)
+		// wfc.waitForCacheSync() takes minimum 100ms, we can be faster
+		for _, c := range []cache.SharedIndexInformer{
+			wfc.wfInformer,
+			wfc.wftmplInformer.Informer(),
+			wfc.podInformer,
+			wfc.cwftmplInformer.Informer(),
+		} {
+			for !c.HasSynced() {
+				time.Sleep(5 * time.Millisecond)
+			}
+		}
+
 	}
 	return cancel, wfc
 }

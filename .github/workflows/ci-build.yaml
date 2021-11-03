@@ -13,25 +13,26 @@ jobs:
   tests:
     name: Unit Tests
     runs-on: ubuntu-latest
-    # 5m30
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
           go-version: "1.17"
+      # https://github.com/actions/cache/blob/main/examples.md#go---modules
       - uses: actions/cache@v2
         with:
-          path: /home/runner/.cache/go-build
-          key: GOCACHE-v2-${{ hashFiles('**/go.mod') }}
-      - uses: actions/cache@v2
-        with:
-          path: /home/runner/go/pkg/mod
-          key: GOMODCACHE-v2-${{ hashFiles('**/go.mod') }}
-      - run: go mod download -x
-      - run: make server/static/files.go STATIC_FILES=false
-      - run: go build -v ./...
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
       - run: make test STATIC_FILES=false GOTEST='go test -covermode=atomic -coverprofile=coverage.out'
+      - uses: actions/upload-artifact@v2
+        with:
+          name: test-results
+          path: junit.xml
       # engineers just ignore this in PRs, so lets not even run it
       - run: bash <(curl -s https://codecov.io/bash)
         if: github.ref == 'refs/heads/master'
@@ -138,9 +139,26 @@ jobs:
       - run: make wait
         timeout-minutes: 4
       - run: make ${{matrix.test}} E2E_TIMEOUT=1m STATIC_FILES=false
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.test }}-results
+          path: junit.xml
       - if: ${{ failure() }}
         run: |
           [ -e /tmp/argo.log ] && cat /tmp/argo.log
+  # https://github.com/marketplace/actions/publish-unit-test-results
+  publish-test-results:
+    name: "Publish Test Results"
+    needs: [ tests, e2e-tests ]
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    steps:
+      - uses: actions/download-artifact@v2
+        with:
+          path: artifacts
+      - uses: EnricoMi/publish-unit-test-result-action@v1
+        with:
+          files: artifacts/**/junit.xml
   codegen:
     name: Codegen
     runs-on: ubuntu-latest
@@ -148,7 +166,6 @@ jobs:
     timeout-minutes: 20
     env:
       GOPATH: /home/runner/go
-      PROTOC_ZIP: protoc-3.11.1-linux-x86_64.zip
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
@@ -156,36 +173,28 @@ jobs:
           go-version: "1.17"
       - uses: actions/cache@v2
         with:
-          path: /home/runner/.cache/go-build
-          key: GOCACHE-v2-${{ hashFiles('**/go.mod') }}
-      - uses: actions/cache@v2
-        with:
-          path: /home/runner/go/pkg/mod
-          key: GOMODCACHE-v2-${{ hashFiles('**/go.mod') }}
-      - uses: actions/cache@v2
-        with:
-          path: /home/runner/go/bin
-          key: go-bin-v1-${{ hashFiles('**/go.mod') }}
-      - uses: actions/cache@v2
-        with:
-          path: protoc-3.11.1-linux-x86_64.zip
-          key: protoc-3.11.1-linux-x86_64.zip
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
       - name: Install protoc
         run: |
           set -eux -o pipefail
-          curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v3.11.1/$PROTOC_ZIP
-          sudo unzip -o $PROTOC_ZIP -d /usr/local bin/protoc
-          sudo unzip -o $PROTOC_ZIP -d /usr/local 'include/*'
+          curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v3.11.1/protoc-3.11.1-linux-x86_64.zip
+          sudo unzip -o protoc-3.11.1-linux-x86_64.zip -d /usr/local bin/protoc
+          sudo unzip -o protoc-3.11.1-linux-x86_64.zip -d /usr/local 'include/*'
           sudo chmod +x /usr/local/bin/protoc
           sudo find /usr/local/include -type f | xargs sudo chmod a+r
           sudo find /usr/local/include -type d | xargs sudo chmod a+rx
           ls /usr/local/include/google/protobuf/
+      - run: docker pull openapitools/openapi-generator-cli:v5.2.1 &
       - name: Create links
         run: |
           mkdir -p /home/runner/go/src/github.com/argoproj
           ln -s "$PWD" /home/runner/go/src/github.com/argoproj/argo-workflows
       - run: make codegen -B STATIC_FILES=false
-      - run: make validate-examples STATIC_FILES=false
       - run: git diff --exit-code
 
   lint:
