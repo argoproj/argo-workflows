@@ -56,11 +56,11 @@ jobs:
             ${{ runner.os }}-buildx-
       - uses: docker/setup-buildx-action@v1
       - run: make argoexec-image STATIC_FILES=false
-      - run: docker save quay.io/argoproj/argoexec:latest | gzip > argoexec_image.tar.gz
+      - run: docker save quay.io/argoproj/argoexec:latest | gzip > /tmp/argoexec_image.tar.gz
       - uses: actions/upload-artifact@v2
         with:
           name: argoexec
-          path: argoexec_image.tar.gz
+          path: /tmp/argoexec_image.tar.gz
           if-no-files-found: error
 
   e2e-tests:
@@ -135,8 +135,9 @@ jobs:
           docker pull $(grep -o 'image: .*' manifests/quick-start/base/minio/minio-deploy.yaml | cut -c 8-) &
       - uses: actions/download-artifact@v2
         with:
-          path: argoexec
-      - run: docker load < gzip -cd argoexec/argoexec_image.tar.gz
+          name: argoexec
+          path: /tmp
+      - run: docker load < gzip -cd /tmp/argoexec_image.tar.gz
       - name: Set-up /etc/hosts
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
