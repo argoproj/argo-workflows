@@ -132,7 +132,8 @@ jobs:
         with:
           name: argoexec
           path: /tmp
-      - run: docker load < gzip -cd /tmp/argoexec_image.tar.gz
+      - run: ls -R /tmp
+      - run: docker load < gzip -cd /tmp/argoexec/argoexec_image.tar.gz
       - name: Set-up /etc/hosts
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
