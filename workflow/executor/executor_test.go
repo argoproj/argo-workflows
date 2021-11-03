@@ -371,6 +371,7 @@ func TestSaveArtifacts(t *testing.T) {
 }
 
 func TestMonitorProgress(t *testing.T) {
+	t.Skip("https://github.com/argoproj/argo-workflows/issues/7148")
 	deadline, ok := t.Deadline()
 	if !ok {
 		deadline = time.Now().Add(30 * time.Second)
