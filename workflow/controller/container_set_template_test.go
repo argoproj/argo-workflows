@@ -42,9 +42,8 @@ spec:
 	pod, err := getPod(woc, "pod")
 	assert.NoError(t, err)
 
-	socket := corev1.HostPathSocket
 	assert.ElementsMatch(t, []corev1.Volume{
-		{Name: "docker-sock", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: "/var/run/docker.sock", Type: &socket}}},
+		{Name: "var-run-argo", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 		{Name: "workspace", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 	}, pod.Spec.Volumes)
 
@@ -55,11 +54,12 @@ spec:
 		switch c.Name {
 		case common.WaitContainerName:
 			assert.ElementsMatch(t, []corev1.VolumeMount{
-				{Name: "docker-sock", MountPath: "/var/run/docker.sock", ReadOnly: true},
+				{Name: "var-run-argo", MountPath: "/var/run/argo"},
 			}, c.VolumeMounts)
 		case "ctr-0":
 			assert.ElementsMatch(t, []corev1.VolumeMount{
 				{Name: "workspace", MountPath: "/workspace"},
+				{Name: "var-run-argo", MountPath: "/var/run/argo"},
 			}, c.VolumeMounts)
 		default:
 			t.Fatalf(c.Name)
@@ -108,9 +108,8 @@ spec:
 	pod, err := getPod(woc, "pod")
 	assert.NoError(t, err)
 
-	socket := corev1.HostPathSocket
 	assert.ElementsMatch(t, []corev1.Volume{
-		{Name: "docker-sock", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: "/var/run/docker.sock", Type: &socket}}},
+		{Name: "var-run-argo", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 		{Name: "workspace", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 		{Name: "input-artifacts", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 	}, pod.Spec.Volumes)
@@ -120,6 +119,7 @@ spec:
 		assert.ElementsMatch(t, []corev1.VolumeMount{
 			{Name: "input-artifacts", MountPath: "/argo/inputs/artifacts"},
 			{Name: "workspace", MountPath: "/mainctrfs/workspace"},
+			{Name: "var-run-argo", MountPath: "/var/run/argo"},
 		}, c.VolumeMounts)
 	}
 
@@ -128,14 +128,15 @@ spec:
 		switch c.Name {
 		case common.WaitContainerName:
 			assert.ElementsMatch(t, []corev1.VolumeMount{
-				{Name: "docker-sock", MountPath: "/var/run/docker.sock", ReadOnly: true},
 				{Name: "workspace", MountPath: "/mainctrfs/workspace"},
 				{Name: "input-artifacts", MountPath: "/mainctrfs/in/in-0", SubPath: "in-0"},
+				{Name: "var-run-argo", MountPath: "/var/run/argo"},
 			}, c.VolumeMounts)
 		case "main":
 			assert.ElementsMatch(t, []corev1.VolumeMount{
 				{Name: "workspace", MountPath: "/workspace"},
 				{Name: "input-artifacts", MountPath: "/in/in-0", SubPath: "in-0"},
+				{Name: "var-run-argo", MountPath: "/var/run/argo"},
 			}, c.VolumeMounts)
 		default:
 			t.Fatalf(c.Name)
@@ -184,9 +185,8 @@ spec:
 	pod, err := getPod(woc, "pod")
 	assert.NoError(t, err)
 
-	socket := corev1.HostPathSocket
 	assert.ElementsMatch(t, []corev1.Volume{
-		{Name: "docker-sock", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: "/var/run/docker.sock", Type: &socket}}},
+		{Name: "var-run-argo", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 		{Name: "workspace", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 	}, pod.Spec.Volumes)
 
@@ -197,12 +197,13 @@ spec:
 		switch c.Name {
 		case common.WaitContainerName:
 			assert.ElementsMatch(t, []corev1.VolumeMount{
-				{Name: "docker-sock", MountPath: "/var/run/docker.sock", ReadOnly: true},
 				{Name: "workspace", MountPath: "/mainctrfs/workspace"},
+				{Name: "var-run-argo", MountPath: "/var/run/argo"},
 			}, c.VolumeMounts)
 		case "main":
 			assert.ElementsMatch(t, []corev1.VolumeMount{
 				{Name: "workspace", MountPath: "/workspace"},
+				{Name: "var-run-argo", MountPath: "/var/run/argo"},
 			}, c.VolumeMounts)
 		default:
 			t.Fatalf(c.Name)

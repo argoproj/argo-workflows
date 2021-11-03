@@ -1,22 +1,42 @@
 package progress
 
 import (
+	apiv1 "k8s.io/api/core/v1"
+
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
+// PodProgress reads the progress annotation of a pod and ensures it's valid and synced
+// with the node status.
+func PodProgress(pod *apiv1.Pod, node *wfv1.NodeStatus) wfv1.Progress {
+	progress := wfv1.Progress("0/1")
+	if node.Progress.IsValid() {
+		progress = node.Progress
+	}
+
+	if annotation, ok := pod.Annotations[common.AnnotationKeyProgress]; ok {
+		v, ok := wfv1.ParseProgress(annotation)
+		if ok {
+			progress = v
+		}
+	}
+	if node.Fulfilled() {
+		progress = progress.Complete()
+	}
+	return progress
+}
+
+// UpdateProgress ensures the workflow's progress is updated with the individual node progress.
 func UpdateProgress(wf *wfv1.Workflow) {
 	wf.Status.Progress = "0/0"
-	for nodeID, node := range wf.Status.Nodes {
+	for _, node := range wf.Status.Nodes {
 		if node.Type != wfv1.NodeTypePod {
 			continue
 		}
-		progress := wfv1.Progress("0/1")
-		if node.Fulfilled() {
-			progress = "1/1"
+		if node.Progress.IsValid() {
+			wf.Status.Progress = wf.Status.Progress.Add(node.Progress)
 		}
-		node.Progress = progress
-		wf.Status.Nodes[nodeID] = node
-		wf.Status.Progress = wf.Status.Progress.Add(progress)
 	}
 	for nodeID, node := range wf.Status.Nodes {
 		if node.Type == wfv1.NodeTypePod {
