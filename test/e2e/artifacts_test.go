@@ -138,8 +138,11 @@ func (s *ArtifactsSuite) TestMainLog() {
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
-		ExpectArtifact("-", "main-logs", func(t *testing.T, data []byte) {
-			assert.NotEmpty(t, data)
+		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			n := status.Nodes[m.Name]
+			if assert.NotNil(t, n) {
+				assert.Len(t, n.Outputs.Artifacts, 1)
+			}
 		})
 }
 
