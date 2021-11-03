@@ -385,7 +385,7 @@ $(GOPATH)/bin/go-junit-report:
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
 test: server/static/files.go dist/argosay $(GOPATH)/bin/go-junit-report
-	env KUBECONFIG=/dev/null $(GOTEST) 2>&1 | tee test.out
+	env KUBECONFIG=/dev/null $(GOTEST) ./.. 2>&1 | tee test.out
 	cat test.out | go-junit-report > junit.xml
 
 .PHONY: install
