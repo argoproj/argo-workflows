@@ -16,17 +16,23 @@ metadata:
 spec:
   entrypoint: suspend
   templates:
-  - name: suspend
+  - name: pipeline
+    step:
+    - - name: step1
+        template: skdjfhdskjfh
+      - name: monitoring
+        template: monitoring
+  
+  - name: monitoring
     steps:
-    - - name: build
-        template: whalesay
-    - - name: approve
-        template: approve
     - - name: delay
         template: delay
-    - - name: release
-        template: whalesay
+    - - name: notify
+        template: sendemail
+        when: workflow.status == runnning
 
+
+  
   - name: approve
     suspend: {}
 
