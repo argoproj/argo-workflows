@@ -34,6 +34,10 @@ func (in Progress) Add(x Progress) Progress {
 	return Progress(fmt.Sprintf("%v/%v", in.N()+x.N(), in.M()+x.M()))
 }
 
+func (in Progress) Complete() Progress {
+	return Progress(fmt.Sprintf("%v/%v", in.M(), in.M()))
+}
+
 func (in Progress) IsValid() bool {
 	return in != "" && in.N() >= 0 && in.N() <= in.M() && in.M() > 0
 }

@@ -20,6 +20,9 @@ GREP_LOGS             := ""
 IMAGE_NAMESPACE       ?= quay.io/argoproj
 DEV_IMAGE             ?= $(shell [ `uname -s` = Darwin ] && echo true || echo false)
 
+# declares which cluster to import to in case it's not the default name
+K3D_CLUSTER_NAME      ?= k3s-default
+
 # The name of the namespace where Kubernetes resources/RBAC will be installed
 KUBE_NAMESPACE        ?= argo
 MANAGED_NAMESPACE     ?= $(KUBE_NAMESPACE)
@@ -226,7 +229,7 @@ argoexec-image:
 		--output=type=docker .
 	[ ! -e $* ] || mv $* dist/
 	docker run --rm -t $(IMAGE_NAMESPACE)/$*:$(VERSION) version
-	if [ $(K3D) = true ]; then k3d image import $(IMAGE_NAMESPACE)/$*:$(VERSION); fi
+	if [ $(K3D) = true ]; then k3d image import -c $(K3D_CLUSTER_NAME) $(IMAGE_NAMESPACE)/$*:$(VERSION); fi
 	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$*:$(VERSION) ; fi
 
 scan-images: scan-workflow-controller scan-argoexec scan-argocli
@@ -403,7 +406,7 @@ endif
 argosay:
 	cd test/e2e/images/argosay/v2 && docker build . -t argoproj/argosay:v2
 ifeq ($(K3D),true)
-	k3d image import argoproj/argosay:v2
+	k3d image import -c $(K3D_CLUSTER_NAME) argoproj/argosay:v2
 endif
 ifeq ($(DOCKER_PUSH),true)
 	docker push argoproj/argosay:v2
