@@ -136,7 +136,8 @@ jobs:
         timeout-minutes: 4
       - run: make ${{matrix.test}} E2E_TIMEOUT=1m STATIC_FILES=false
       - if: ${{ failure() }}
-        run: [ -e /tmp/argo.log ] && cat /tmp/argo.log
+        run: |
+          [ -e /tmp/argo.log ] && cat /tmp/argo.log
       - name: MinIO logs
       if: ${{ failure() }}
       run: kubectl -n argo logs deploy/minio
