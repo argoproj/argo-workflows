@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -715,11 +716,13 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, pods.Items, 1)
 		pod := pods.Items[0]
-		assert.Equal(t, 2, len(pod.Spec.Volumes))
-		assert.Equal(t, "docker-sock", pod.Spec.Volumes[0].Name)
-		assert.Equal(t, "volume-name", pod.Spec.Volumes[1].Name)
-		assert.Equal(t, 1, len(pod.Spec.Containers[1].VolumeMounts))
+		assert.Equal(t, 3, len(pod.Spec.Volumes))
+		assert.Equal(t, "var-run-argo", pod.Spec.Volumes[0].Name)
+		assert.Equal(t, "docker-sock", pod.Spec.Volumes[1].Name)
+		assert.Equal(t, "volume-name", pod.Spec.Volumes[2].Name)
+		assert.Equal(t, 2, len(pod.Spec.Containers[1].VolumeMounts))
 		assert.Equal(t, "volume-name", pod.Spec.Containers[1].VolumeMounts[0].Name)
+		assert.Equal(t, "var-run-argo", pod.Spec.Containers[1].VolumeMounts[1].Name)
 	})
 
 	// For Kubelet executor
@@ -738,10 +741,12 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, pods.Items, 1)
 		pod := pods.Items[0]
-		assert.Equal(t, 1, len(pod.Spec.Volumes))
-		assert.Equal(t, "volume-name", pod.Spec.Volumes[0].Name)
-		assert.Equal(t, 1, len(pod.Spec.Containers[1].VolumeMounts))
+		assert.Equal(t, 2, len(pod.Spec.Volumes))
+		assert.Equal(t, "var-run-argo", pod.Spec.Volumes[0].Name)
+		assert.Equal(t, "volume-name", pod.Spec.Volumes[1].Name)
+		assert.Equal(t, 2, len(pod.Spec.Containers[1].VolumeMounts))
 		assert.Equal(t, "volume-name", pod.Spec.Containers[1].VolumeMounts[0].Name)
+		assert.Equal(t, "var-run-argo", pod.Spec.Containers[1].VolumeMounts[1].Name)
 	})
 
 	// For K8sAPI executor
@@ -760,10 +765,12 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, pods.Items, 1)
 		pod := pods.Items[0]
-		assert.Equal(t, 1, len(pod.Spec.Volumes))
-		assert.Equal(t, "volume-name", pod.Spec.Volumes[0].Name)
-		assert.Equal(t, 1, len(pod.Spec.Containers[1].VolumeMounts))
+		assert.Equal(t, 2, len(pod.Spec.Volumes))
+		assert.Equal(t, "var-run-argo", pod.Spec.Volumes[0].Name)
+		assert.Equal(t, "volume-name", pod.Spec.Volumes[1].Name)
+		assert.Equal(t, 2, len(pod.Spec.Containers[1].VolumeMounts))
 		assert.Equal(t, "volume-name", pod.Spec.Containers[1].VolumeMounts[0].Name)
+		assert.Equal(t, "var-run-argo", pod.Spec.Containers[1].VolumeMounts[1].Name)
 	})
 
 	// For emissary executor
@@ -848,10 +855,10 @@ func TestVolumesPodSubstitution(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Equal(t, 2, len(pod.Spec.Volumes))
-	assert.Equal(t, "volume-name", pod.Spec.Volumes[1].Name)
-	assert.Equal(t, "test-name", pod.Spec.Volumes[1].PersistentVolumeClaim.ClaimName)
-	assert.Equal(t, 1, len(pod.Spec.Containers[1].VolumeMounts))
+	assert.Equal(t, 3, len(pod.Spec.Volumes))
+	assert.Equal(t, "volume-name", pod.Spec.Volumes[2].Name)
+	assert.Equal(t, "test-name", pod.Spec.Volumes[2].PersistentVolumeClaim.ClaimName)
+	assert.Equal(t, 2, len(pod.Spec.Containers[1].VolumeMounts))
 	assert.Equal(t, "volume-name", pod.Spec.Containers[1].VolumeMounts[0].Name)
 }
 
@@ -1013,9 +1020,10 @@ func TestInitContainers(t *testing.T) {
 	for _, v := range volumes {
 		assert.Contains(t, pod.Spec.Volumes, v)
 	}
-	assert.Equal(t, 2, len(pod.Spec.InitContainers[0].VolumeMounts))
+	assert.Equal(t, 3, len(pod.Spec.InitContainers[0].VolumeMounts))
 	assert.Equal(t, "init-volume-name", pod.Spec.InitContainers[0].VolumeMounts[0].Name)
 	assert.Equal(t, "volume-name", pod.Spec.InitContainers[0].VolumeMounts[1].Name)
+	assert.Equal(t, "var-run-argo", pod.Spec.InitContainers[0].VolumeMounts[2].Name)
 }
 
 // TestSidecars verifies the ability to set up sidecars
@@ -1077,7 +1085,7 @@ func TestSidecars(t *testing.T) {
 	for _, v := range volumes {
 		assert.Contains(t, pod.Spec.Volumes, v)
 	}
-	assert.Equal(t, 2, len(pod.Spec.Containers[2].VolumeMounts))
+	assert.Equal(t, 3, len(pod.Spec.Containers[2].VolumeMounts))
 	assert.Equal(t, "sidecar-volume-name", pod.Spec.Containers[2].VolumeMounts[0].Name)
 	assert.Equal(t, "volume-name", pod.Spec.Containers[2].VolumeMounts[1].Name)
 }
@@ -1533,7 +1541,7 @@ func TestHybridWfVolumesWindows(t *testing.T) {
 	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	assert.Equal(t, "\\\\.\\pipe\\docker_engine", pod.Spec.Containers[0].VolumeMounts[0].MountPath)
 	assert.Equal(t, false, pod.Spec.Containers[0].VolumeMounts[0].ReadOnly)
-	assert.Equal(t, (*apiv1.HostPathType)(nil), pod.Spec.Volumes[0].HostPath.Type)
+	assert.Equal(t, (*apiv1.HostPathType)(nil), pod.Spec.Volumes[1].HostPath.Type)
 }
 
 func TestWindowsUNCPathsAreRemoved(t *testing.T) {
@@ -1594,7 +1602,7 @@ func TestHybridWfVolumesLinux(t *testing.T) {
 	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	assert.Equal(t, "/var/run/docker.sock", pod.Spec.Containers[0].VolumeMounts[0].MountPath)
 	assert.Equal(t, true, pod.Spec.Containers[0].VolumeMounts[0].ReadOnly)
-	assert.Equal(t, &hostPathSocket, pod.Spec.Volumes[0].HostPath.Type)
+	assert.Equal(t, &hostPathSocket, pod.Spec.Volumes[1].HostPath.Type)
 }
 
 var propagateMaxDuration = `
@@ -1791,4 +1799,100 @@ func TestPodExists(t *testing.T) {
 	assert.NotNil(t, existingPod)
 	assert.True(t, doesExist)
 	assert.EqualValues(t, pod, existingPod)
+}
+
+func TestProgressEnvVars(t *testing.T) {
+	setup := func(t *testing.T, options ...interface{}) (context.CancelFunc, *apiv1.Pod) {
+		cancel, controller := newController(options...)
+
+		wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+		ctx := context.Background()
+		woc := newWorkflowOperationCtx(wf, controller)
+		err := woc.setExecWorkflow(ctx)
+		require.NoError(t, err)
+		mainCtr := woc.execWf.Spec.Templates[0].Container
+		pod, err := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+		require.NoError(t, err)
+		assert.NotNil(t, pod)
+		return cancel, pod
+	}
+
+	t.Run("default settings use self reporting progress with defaults", func(t *testing.T) {
+		cancel, pod := setup(t)
+		defer cancel()
+
+		assert.Contains(t, pod.Spec.Containers[0].Env, apiv1.EnvVar{
+			Name:  common.EnvVarProgressFile,
+			Value: common.ArgoProgressPath,
+		})
+		assert.Contains(t, pod.Spec.Containers[0].Env, apiv1.EnvVar{
+			Name:  common.EnvVarProgressPatchTickDuration,
+			Value: "1m0s",
+		})
+		assert.Contains(t, pod.Spec.Containers[0].Env, apiv1.EnvVar{
+			Name:  common.EnvVarProgressFileTickDuration,
+			Value: "3s",
+		})
+	})
+
+	t.Run("setting patch tick duration to 0 disables self reporting progress but still exposes the ARGO_PROGRESS_FILE env var as a convenience.", func(t *testing.T) {
+		cancel, pod := setup(t, func(workflowController *WorkflowController) {
+			workflowController.progressPatchTickDuration = 0
+		})
+		defer cancel()
+
+		assert.Contains(t, pod.Spec.Containers[0].Env, apiv1.EnvVar{
+			Name:  common.EnvVarProgressFile,
+			Value: common.ArgoProgressPath,
+		})
+		assert.NotContains(t, pod.Spec.Containers[0].Env, apiv1.EnvVar{
+			Name:  common.EnvVarProgressPatchTickDuration,
+			Value: "1m0s",
+		})
+		assert.NotContains(t, pod.Spec.Containers[0].Env, apiv1.EnvVar{
+			Name:  common.EnvVarProgressFileTickDuration,
+			Value: "3s",
+		})
+	})
+
+	t.Run("setting read file tick duration to 0 disables self reporting progress but still exposes the ARGO_PROGRESS_FILE env var as a convenience.", func(t *testing.T) {
+		cancel, pod := setup(t, func(workflowController *WorkflowController) {
+			workflowController.progressFileTickDuration = 0
+		})
+		defer cancel()
+
+		assert.Contains(t, pod.Spec.Containers[0].Env, apiv1.EnvVar{
+			Name:  common.EnvVarProgressFile,
+			Value: common.ArgoProgressPath,
+		})
+		assert.NotContains(t, pod.Spec.Containers[0].Env, apiv1.EnvVar{
+			Name:  common.EnvVarProgressPatchTickDuration,
+			Value: "1m0s",
+		})
+		assert.NotContains(t, pod.Spec.Containers[0].Env, apiv1.EnvVar{
+			Name:  common.EnvVarProgressFileTickDuration,
+			Value: "3s",
+		})
+	})
+
+	t.Run("tick durations are configurable", func(t *testing.T) {
+		cancel, pod := setup(t, func(workflowController *WorkflowController) {
+			workflowController.progressPatchTickDuration = 30 * time.Second
+			workflowController.progressFileTickDuration = 1 * time.Second
+		})
+		defer cancel()
+
+		assert.Contains(t, pod.Spec.Containers[0].Env, apiv1.EnvVar{
+			Name:  common.EnvVarProgressFile,
+			Value: common.ArgoProgressPath,
+		})
+		assert.Contains(t, pod.Spec.Containers[0].Env, apiv1.EnvVar{
+			Name:  common.EnvVarProgressPatchTickDuration,
+			Value: "30s",
+		})
+		assert.Contains(t, pod.Spec.Containers[0].Env, apiv1.EnvVar{
+			Name:  common.EnvVarProgressFileTickDuration,
+			Value: "1s",
+		})
+	})
 }

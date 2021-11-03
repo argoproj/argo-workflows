@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: progress-
+  labels:
+    argo-e2e: "true"
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: progress
+            template: progress
+    - name: progress
+      metadata:
+        annotations:
+          workflows.argoproj.io/progress: 0/100
+      container:
+        image: argoproj/argosay:v2
+        command: ["/bin/sh", "-c"]
+        args:
+          - /argosay echo 50/100 $ARGO_PROGRESS_FILE && /argosay sleep 70s

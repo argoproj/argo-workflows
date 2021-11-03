@@ -105,6 +105,10 @@ func initExecutor() *executor.WorkflowExecutor {
 	deadline, err := time.Parse(time.RFC3339, os.Getenv(common.EnvVarDeadline))
 	checkErr(err)
 
+	// errors ignored because values are set by the controller and checked there.
+	annotationPatchTickDuration, _ := time.ParseDuration(os.Getenv(common.EnvVarProgressPatchTickDuration))
+	progressFileTickDuration, _ := time.ParseDuration(os.Getenv(common.EnvVarProgressFileTickDuration))
+
 	var cre executor.ContainerRuntimeExecutor
 	log.Infof("Creating a %s executor", executorType)
 	switch executorType {
@@ -121,7 +125,7 @@ func initExecutor() *executor.WorkflowExecutor {
 	}
 	checkErr(err)
 
-	wfExecutor := executor.NewExecutor(clientset, restClient, podName, namespace, cre, *tmpl, includeScriptOutput, deadline)
+	wfExecutor := executor.NewExecutor(clientset, restClient, podName, namespace, cre, *tmpl, includeScriptOutput, deadline, annotationPatchTickDuration, progressFileTickDuration)
 
 	log.
 		WithField("version", version.String()).
