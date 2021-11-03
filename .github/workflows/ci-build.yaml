@@ -138,9 +138,6 @@ jobs:
       - name: cat argo.log
         if: ${{ failure() }}
         run: cat /tmp/log/argo-e2e/argo.log
-      - name: MinIO logs
-        if: ${{ failure() }}
-        run: kubectl -n argo logs deploy/minio
   codegen:
     name: Codegen
     runs-on: ubuntu-latest
