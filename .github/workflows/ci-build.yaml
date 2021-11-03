@@ -142,6 +142,7 @@ jobs:
         with:
           name: argoexec
           path: /tmp
+      - run: file /tmp/argoexec_image.tar
       - run: docker load -i /tmp/argoexec_image.tar
       - name: Set-up /etc/hosts
         run: |
