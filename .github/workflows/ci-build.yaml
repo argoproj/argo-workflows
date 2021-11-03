@@ -138,7 +138,6 @@ jobs:
       - if: ${{ failure() }}
         run: |
           [ -e /tmp/argo.log ] && cat /tmp/argo.log
-      - name: MinIO logs
   codegen:
     name: Codegen
     runs-on: ubuntu-latest
