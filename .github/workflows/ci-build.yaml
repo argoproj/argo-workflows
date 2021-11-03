@@ -55,8 +55,8 @@ jobs:
           	--target argoexec \
           	--cache-from "type=local,src=/tmp/.buildx-cache" \
           	--cache-to "type=local,dest=/tmp/.buildx-cache-new" \
-          	--output=type=tar,dest=/tmp/argoexec_image.tar \
             .
+      - run: docker save quay.io/argoproj/argoexec:latest > /tmp/argoexec_image.tar
       - uses: actions/upload-artifact@v2
         with:
           name: argoexec
@@ -139,7 +139,6 @@ jobs:
         with:
           name: argoexec
           path: /tmp
-      - run: file /tmp/argoexec_image.tar
       - run: docker load < /tmp/argoexec_image.tar
       - name: Set-up /etc/hosts
         run: |
