@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -326,6 +327,9 @@ func (w *When) Exec(name string, args []string, block func(t *testing.T, output 
 
 func (w *When) RunCli(args []string, block func(t *testing.T, output string, err error)) *When {
 	w.t.Helper()
+	if !strings.HasPrefix(w.t.Name(), "TestCLISuite/") {
+		w.t.Fatal("You cannot use RunCli for tests that are not in TestCLISuite")
+	}
 	return w.Exec("../../dist/argo", append([]string{"-n", Namespace}, args...), block)
 }
 
@@ -440,11 +444,26 @@ func (w *When) SuspendCronWorkflow() *When {
 func (w *When) setCronWorkflowSuspend(suspend bool) *When {
 	ctx := context.Background()
 	w.t.Helper()
-	data, err := json.Marshal(map[string]interface{}{"spec": map[string]interface{}{"suspend": suspend}})
+	spec := map[string]interface{}{"suspend": suspend}
+	data, err := json.Marshal(map[string]interface{}{"spec": spec})
 	if err != nil {
 		w.t.Fatal(err)
 	}
 	_, err = w.cronClient.Patch(ctx, w.cronWf.Name, types.MergePatchType, data, metav1.PatchOptions{})
+	if err != nil {
+		w.t.Fatal(err)
+	}
+	return w
+}
+
+func (w *When) ShutdownWorkflow(strategy wfv1.ShutdownStrategy) *When {
+	w.t.Helper()
+	ctx := context.Background()
+	data, err := json.Marshal(map[string]interface{}{"spec": map[string]interface{}{"shutdown": strategy}})
+	if err != nil {
+		w.t.Fatal(err)
+	}
+	_, err = w.client.Patch(ctx, w.wf.Name, types.MergePatchType, data, metav1.PatchOptions{})
 	if err != nil {
 		w.t.Fatal(err)
 	}
