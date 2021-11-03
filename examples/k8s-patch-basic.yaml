@@ -7,8 +7,6 @@ metadata:
   annotations:
     workflows.argoproj.io/description: |
       This example shows a standard patch with the default mergeStrategy
-    workflows.argoproj.io/verify.py: |
-      assert status["phase"] == "Succeeded"
 spec:
   entrypoint: main
   templates:
