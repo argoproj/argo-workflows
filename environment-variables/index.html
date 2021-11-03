@@ -2483,6 +2483,18 @@ Note that these environment variables may be removed at any time.</p>
 <td>Use different GRPC Max message size for Argo server deployment (supporting huge workflows).</td>
 <td></td>
 </tr>
+<tr>
+<td><code>ARGO_PROGRESS_PATCH_TICK_DURATION</code></td>
+<td><code>time.Duration</code></td>
+<td><code>1m</code></td>
+<td>How often self reported progress is patched into the pod annotations which means how long it takes until the controller picks up the progress change. Set to 0 to disable self reporting progress.</td>
+</tr>
+<tr>
+<td><code>ARGO_PROGRESS_FILE_TICK_DURATION</code></td>
+<td><code>time.Duration</code></td>
+<td><code>3s</code></td>
+<td>How often the progress file is read by the executor. Set to 0 to disable self reporting progress.</td>
+</tr>
 </tbody>
 </table>
 <p>CLI parameters of the <code>argo-server</code> and <code>workflow-controller</code> can be specified as environment variables with the <code>ARGO_</code> prefix. For example:</p>

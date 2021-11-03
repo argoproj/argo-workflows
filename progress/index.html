@@ -684,9 +684,38 @@
       
     
     
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        Workflow Progress
+      </label>
+    
     <a href="./" title="Workflow Progress" class="md-nav__link md-nav__link--active">
       Workflow Progress
     </a>
+    
+      
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#self-reporting-progress" title="Self reporting progress" class="md-nav__link">
+    Self reporting progress
+  </a>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
+</nav>
     
   </li>
 
@@ -2218,6 +2247,22 @@
     
   
   
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#self-reporting-progress" title="Self reporting progress" class="md-nav__link">
+    Self reporting progress
+  </a>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -2254,6 +2299,43 @@
 <p class="admonition-title">Warning</p>
 <p><code>M</code> will increase during workflow run each time a node is added to the graph.</p>
 </div>
+<h2 id="self-reporting-progress">Self reporting progress<a class="headerlink" href="#self-reporting-progress" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p>v3.3 and after</p>
+</blockquote>
+<p>Pods in a workflow can report their own progress during their runtime. This self reported progress overrides the 
+auto-generated progress. </p>
+<p>Reporting progress works as follows:
+- create and write the progress to a file indicated by the env variable <code>ARGO_PROGRESS_FILE</code>
+- format of the progress must be <code>N/M</code></p>
+<p>The executor will read this file every 3s and if there was an update, 
+patch the pod annotations with <code>workflows.argoproj.io/progress: N/M</code>.
+The controller picks this up and writes the progress to the appropriate Status properties.</p>
+<p>Initially the progress of a workflows' pod is always <code>0/1</code>. If you want to influence this, make sure to set an initial
+progress annotation on the pod:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
+<span class="nt">metadata</span><span class="p">:</span>
+  <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">progress-</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">entrypoint</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">main</span>
+  <span class="nt">templates</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">main</span>
+      <span class="nt">dag</span><span class="p">:</span>
+        <span class="nt">tasks</span><span class="p">:</span>
+          <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">progress</span>
+            <span class="nt">template</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">progress</span>
+    <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">progress</span>
+      <span class="nt">metadata</span><span class="p">:</span>
+        <span class="nt">annotations</span><span class="p">:</span>
+          <span class="nt">workflows.argoproj.io/progress</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0/100</span>
+      <span class="nt">container</span><span class="p">:</span>
+        <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">alpine:3.14</span>
+        <span class="nt">command</span><span class="p">:</span> <span class="p p-Indicator">[</span> <span class="s">&quot;/bin/sh&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;-c&quot;</span> <span class="p p-Indicator">]</span>
+        <span class="nt">args</span><span class="p">:</span>
+          <span class="p p-Indicator">-</span> <span class="p p-Indicator">|</span>
+            <span class="no">for i in `seq 1 10`; do sleep 10; echo &quot;$(($i*10))&quot;&#39;/100&#39; &gt; $ARGO_PROGRESS_FILE; done</span>
+</code></pre></div>
                 
                   
                 
