@@ -33,6 +33,7 @@ type ValidateOpts struct {
 	// skip some validations which is permissible during linting but not submission (e.g. missing
 	// input parameters to the workflow)
 	Lint bool
+
 	// ContainerRuntimeExecutor will trigger additional validation checks specific to different
 	// types of executors. For example, the inability of kubelet/k8s executors to copy artifacts
 	// out of the base image layer. If unspecified, will use docker executor validation
@@ -44,6 +45,10 @@ type ValidateOpts struct {
 
 	// WorkflowTemplateValidation indicates that the current context is validating a WorkflowTemplate or ClusterWorkflowTemplate
 	WorkflowTemplateValidation bool
+
+	// Submit indicates that the current operation is a workflow submission. This will impose
+	// more stringent requirements (e.g. require input values for all spec arguments)
+	Submit bool
 }
 
 // templateValidationCtx is the context for validating a workflow spec
@@ -149,9 +154,11 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	if err != nil {
 		return nil, errors.Errorf(errors.CodeBadRequest, "spec.templates%s", err.Error())
 	}
-	if ctx.Lint {
-		// if we are just linting we don't care if spec.arguments.parameters.XXX doesn't have an
-		// explicit value. workflows without a default value is a desired use case
+
+	if ctx.Lint || (ctx.WorkflowTemplateValidation && !ctx.Submit) {
+		// if we are linting, we don't care if spec.arguments.parameters.XXX doesn't have an
+		// explicit value. Workflow templates without a default value are also a desired use
+		// case, since values will be provided during workflow submission.
 		err = validateArgumentsFieldNames("spec.arguments.", wfArgs)
 	} else {
 		err = validateArguments("spec.arguments.", wfArgs)
@@ -239,7 +246,7 @@ func ValidateWorkflowTemplateRefFields(wfSpec wfv1.WorkflowSpec) error {
 }
 
 // ValidateWorkflowTemplate accepts a workflow template and performs validation against it.
-func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl *wfv1.WorkflowTemplate) (*wfv1.Conditions, error) {
+func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl *wfv1.WorkflowTemplate, opts ValidateOpts) (*wfv1.Conditions, error) {
 	if len(wftmpl.Name) > maxCharsInObjectName {
 		return nil, fmt.Errorf("workflow template name %q must not be more than 63 characters long (currently %d)", wftmpl.Name, len(wftmpl.Name))
 	}
@@ -251,11 +258,13 @@ func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNa
 		},
 		Spec: wftmpl.Spec.WorkflowSpec,
 	}
-	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntrypoint: wf.Spec.Entrypoint == "", WorkflowTemplateValidation: true})
+	opts.IgnoreEntrypoint = wf.Spec.Entrypoint == ""
+	opts.WorkflowTemplateValidation = true
+	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, opts)
 }
 
 // ValidateClusterWorkflowTemplate accepts a cluster workflow template and performs validation against it.
-func ValidateClusterWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, cwftmpl *wfv1.ClusterWorkflowTemplate) (*wfv1.Conditions, error) {
+func ValidateClusterWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, cwftmpl *wfv1.ClusterWorkflowTemplate, opts ValidateOpts) (*wfv1.Conditions, error) {
 	if len(cwftmpl.Name) > maxCharsInObjectName {
 		return nil, fmt.Errorf("cluster workflow template name %q must not be more than 63 characters long (currently %d)", cwftmpl.Name, len(cwftmpl.Name))
 	}
@@ -267,7 +276,9 @@ func ValidateClusterWorkflowTemplate(wftmplGetter templateresolution.WorkflowTem
 		},
 		Spec: cwftmpl.Spec.WorkflowSpec,
 	}
-	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntrypoint: wf.Spec.Entrypoint == "", WorkflowTemplateValidation: true})
+	opts.IgnoreEntrypoint = wf.Spec.Entrypoint == ""
+	opts.WorkflowTemplateValidation = true
+	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, opts)
 }
 
 // ValidateCronWorkflow validates a CronWorkflow
