@@ -1,11 +1,16 @@
 # https://golangci-lint.run/usage/quick-start/
 run:
-  concurrency: 4
-  timeout: 5m
+  timeout: 4m
   skip-dirs:
+    - dist
+    - docs
+    - examples
+    - hack
+    - manifests
     - pkg/client
-    - vendor
+    - sdks
     - ui
+    - vendor
   skip-files:
     - server/static/files.go
   build-tags:
