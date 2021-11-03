@@ -82,12 +82,15 @@ jobs:
             containerRuntimeExecutor: emissary
             profile: minimal
           - test: test-executor
-            containerRuntimeExecutor: docker
+            containerRuntimeExecutor: emissary
             profile: minimal
-          - test: test-examples
+          - test: test-functional
             containerRuntimeExecutor: emissary
             profile: minimal
           - test: test-executor
+            containerRuntimeExecutor: docker
+            profile: minimal
+          - test: test-examples
             containerRuntimeExecutor: emissary
             profile: minimal
           - test: test-executor
@@ -98,9 +101,6 @@ jobs:
             profile: minimal
           - test: test-executor
             containerRuntimeExecutor: pns
-            profile: minimal
-          - test: test-functional
-            containerRuntimeExecutor: emissary
             profile: minimal
     steps:
       - uses: actions/checkout@v2
@@ -147,9 +147,6 @@ jobs:
       - name: cat argo.log
         if: ${{ failure() }}
         run: cat /tmp/log/argo-e2e/argo.log
-      - name: MinIO logs
-        if: ${{ failure() }}
-        run: kubectl -n argo logs deploy/minio
   codegen:
     name: Codegen
     runs-on: ubuntu-latest

@@ -22,7 +22,7 @@ type ParseResult struct {
 }
 
 func ParseObjects(body []byte, strict bool) []ParseResult {
-	res := []ParseResult{}
+	var res []ParseResult
 	if jsonpkg.IsJSON(body) {
 		un := &unstructured.Unstructured{}
 		err := jsonpkg.Unmarshal(body, un)
@@ -34,15 +34,19 @@ func ParseObjects(body []byte, strict bool) []ParseResult {
 		return append(res, ParseResult{v, err})
 	}
 
-	for _, text := range yamlSeparator.Split(string(body), -1) {
+	for i, text := range yamlSeparator.Split(string(body), -1) {
 		if strings.TrimSpace(text) == "" {
 			continue
 		}
 		un := &unstructured.Unstructured{}
 		err := yaml.Unmarshal([]byte(text), un)
-		if un.GetKind() != "" && err != nil {
-			// only return an error if this is a kubernetes object, otherwise, ignore
-			res = append(res, ParseResult{nil, err})
+		if err != nil {
+			// Only return an error if this is a kubernetes object, otherwise, print the error
+			if un.GetKind() != "" {
+				res = append(res, ParseResult{nil, err})
+			} else {
+				log.Errorf("yaml file at index %d is not valid: %s", i, err)
+			}
 			continue
 		}
 		v, err := toWorkflowTypeYAML([]byte(text), un.GetKind(), strict)
