@@ -53,9 +53,10 @@ jobs:
             ${{ runner.os }}-single-buildx
       - name: build argoexec-image
         run: |
-          docker build \
+          docker buildx build \
           	-t quay.io/argoproj/argoexec:latest \
           	--target argoexec \
+            --squash \
           	--cache-from "type=local,src=/tmp/.buildx-cache" \
           	--cache-to "type=local,dest=/tmp/.buildx-cache-new" \
           	--output=type=local,dest=/tmp/argoexec_image.tar \
