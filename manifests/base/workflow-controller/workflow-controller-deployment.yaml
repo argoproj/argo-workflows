@@ -12,6 +12,9 @@ spec:
         app: workflow-controller
     spec:
       serviceAccountName: argo
+      volumes:
+        - name: plugins
+          emptyDir: { }
       containers:
         - name: workflow-controller
           image: quay.io/argoproj/workflow-controller:latest
@@ -48,6 +51,9 @@ spec:
             initialDelaySeconds: 90
             periodSeconds: 60
             timeoutSeconds: 30
+          volumeMounts:
+            - mountPath: /plugins
+              name: plugins
       securityContext:
         runAsNonRoot: true
       nodeSelector:

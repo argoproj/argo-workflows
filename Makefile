@@ -191,7 +191,7 @@ clis: dist/argo-linux-amd64.gz dist/argo-linux-arm64.gz dist/argo-linux-ppc64le.
 # controller
 
 .PHONY: controller
-controller: dist/workflow-controller dist/controller/plugins/hello.so
+controller: dist/workflow-controller
 
 dist/workflow-controller: $(CONTROLLER_PKGS) go.sum
 ifeq ($(shell uname -s),Darwin)
@@ -201,6 +201,8 @@ else
 	CGO_ENABLED=1 go build -v -ldflags '${LDFLAGS}' -o $@ ./cmd/workflow-controller
 endif
 
+.PHONY: plugins
+plugins: dist/controller/plugins/hello.so
 dist/controller/plugins/hello.so:
 dist/controller/plugins/%.so: workflow/controller/plugins/%/plugin.go dist/workflow-controller
 	CGO_ENABLED=1 go build -v -buildmode=plugin -o dist/controller/plugins/$*.so ./workflow/controller/plugins/$*
@@ -430,7 +432,7 @@ $(GOPATH)/bin/goreman:
 
 .PHONY: start
 ifeq ($(RUN_MODE),local)
-start: install controller cli $(GOPATH)/bin/goreman
+start: install controller plugins cli $(GOPATH)/bin/goreman
 else
 start: install
 endif
