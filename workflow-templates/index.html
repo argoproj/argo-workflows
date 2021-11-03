@@ -2779,6 +2779,36 @@ Here is an example for referring <code>WorkflowTemplate</code> as Workflow with 
 <p><code>WorkflowTemplate</code> resources can be managed with GitOps by using <a href="https://github.com/argoproj/argo-cd">Argo CD</a></p>
 <h3 id="ui">UI<a class="headerlink" href="#ui" title="Permanent link">&para;</a></h3>
 <p><code>WorkflowTemplate</code> resources can also be managed by the UI</p>
+<p>Users can specify options under <code>enum</code> to enable drop-down list selection when submitting <code>WorkflowTemplate</code>s from the UI.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">WorkflowTemplate</span>
+<span class="nt">metadata</span><span class="p">:</span>
+  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">workflow-template-with-enum-values</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">entrypoint</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argosay</span>
+  <span class="nt">arguments</span><span class="p">:</span>
+    <span class="nt">parameters</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">message</span>
+        <span class="nt">value</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">one</span>
+        <span class="nt">enum</span><span class="p">:</span>
+          <span class="p p-Indicator">-</span>   <span class="l l-Scalar l-Scalar-Plain">one</span>
+          <span class="p p-Indicator">-</span>   <span class="l l-Scalar l-Scalar-Plain">two</span>
+          <span class="p p-Indicator">-</span>   <span class="l l-Scalar l-Scalar-Plain">three</span>
+  <span class="nt">templates</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argosay</span>
+      <span class="nt">inputs</span><span class="p">:</span>
+        <span class="nt">parameters</span><span class="p">:</span>
+          <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">message</span>
+            <span class="nt">value</span><span class="p">:</span> <span class="s">&#39;{{workflow.parameters.message}}&#39;</span>
+      <span class="nt">container</span><span class="p">:</span>
+        <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">main</span>
+        <span class="nt">image</span><span class="p">:</span> <span class="s">&#39;argoproj/argosay:v2&#39;</span>
+        <span class="nt">command</span><span class="p">:</span>
+          <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">/argosay</span>
+        <span class="nt">args</span><span class="p">:</span>
+          <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">echo</span>
+          <span class="p p-Indicator">-</span> <span class="s">&#39;{{inputs.parameters.message}}&#39;</span>
+</code></pre></div>
                 
                   
                 
