@@ -142,7 +142,7 @@ jobs:
         with:
           name: argoexec
           path: /tmp
-      - run: docker load -i argoexec_image.tar
+      - run: docker load -i /tmp/argoexec_image.tar
       - name: Set-up /etc/hosts
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
@@ -157,6 +157,7 @@ jobs:
       - name: cat argo.log
         if: ${{ failure() }}
         run: cat /tmp/log/argo-e2e/argo.log
+
   codegen:
     name: Codegen
     runs-on: ubuntu-latest
