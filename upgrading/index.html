@@ -1718,6 +1718,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#chore-remove-the-hidden-flag-verify-from-argo-submit" title="chore!: Remove the hidden flag --verify from argo submit." class="md-nav__link">
+    chore!: Remove the hidden flag --verify from argo submit.
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2413,6 +2420,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#chore-remove-the-hidden-flag-verify-from-argo-submit" title="chore!: Remove the hidden flag --verify from argo submit." class="md-nav__link">
+    chore!: Remove the hidden flag --verify from argo submit.
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2562,6 +2576,8 @@ is logged.</p>
 <h3 id="bd49c6303-fixartifact-default-https-to-any-url-missing-a-scheme-fixes-6973"><a href="https://github.com/argoproj/argo-workflows/commit/bd49c630328d30206a5c5b78cbc9a00700a28e7d">bd49c6303</a> fix(artifact)!: default https to any URL missing a scheme. Fixes #6973<a class="headerlink" href="#bd49c6303-fixartifact-default-https-to-any-url-missing-a-scheme-fixes-6973" title="Permanent link">&para;</a></h3>
 <p>HTTPArtifact without a scheme will now defaults to https instead of http</p>
 <p>user need to explicitly include a http prefix if they want to retrieve HTTPArtifact through http</p>
+<h3 id="chore-remove-the-hidden-flag-verify-from-argo-submit">chore!: Remove the hidden flag <code>--verify</code> from <code>argo submit</code>.<a class="headerlink" href="#chore-remove-the-hidden-flag-verify-from-argo-submit" title="Permanent link">&para;</a></h3>
+<p>The hidden flag <code>--verify</code> has been removed from <code>argo submit</code>. This is a internal testing flag we don't need anymore.</p>
 <h2 id="upgrading-to-v32">Upgrading to v3.2<a class="headerlink" href="#upgrading-to-v32" title="Permanent link">&para;</a></h2>
 <h3 id="e5b131a33-feat-add-template-node-to-pod-name-fixes-1319-6712"><a href="https://github.com/argoproj/argo-workflows/commit/e5b131a33">e5b131a33</a> feat: Add template node to pod name. Fixes #1319 (#6712)<a class="headerlink" href="#e5b131a33-feat-add-template-node-to-pod-name-fixes-1319-6712" title="Permanent link">&para;</a></h3>
 <p>This add the template name to the pod name, to make it easier to understand which pod ran which step. This behaviour can be reverted by setting <code>POD_NAMES=v1</code> on the workflow controller. </p>
