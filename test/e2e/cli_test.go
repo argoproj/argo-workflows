@@ -476,6 +476,17 @@ func (s *CLISuite) TestRoot() {
 	})
 }
 
+func (s *CLISuite) TestSubmitClusterWorkflowTemplate() {
+	s.Given().
+		ClusterWorkflowTemplate("@smoke/cluster-workflow-template-whalesay-template.yaml").
+		When().
+		CreateClusterWorkflowTemplates().
+		RunCli([]string{"submit", "--from", "clusterworkflowtemplate/cluster-workflow-template-whalesay-template", "--name", "my-wf", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
+			assert.NoError(t, err)
+		}).
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
 func (s *CLISuite) TestWorkflowSuspendResume() {
 	s.Given().
 		Workflow("@testdata/sleep-3s.yaml").

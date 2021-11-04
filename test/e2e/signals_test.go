@@ -36,10 +36,7 @@ func (s *SignalsSuite) TestStopBehavior() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToHaveRunningPod, kill2xDuration).
-		RunCli([]string{"stop", "@latest"}, func(t *testing.T, output string, err error) {
-			assert.NoError(t, err)
-			assert.Regexp(t, "workflow stop-terminate-.* stopped", output)
-		}).
+		ShutdownWorkflow(wfv1.ShutdownStrategyStop).
 		WaitForWorkflow(kill2xDuration).
 		Then().
 		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
@@ -65,10 +62,7 @@ func (s *SignalsSuite) TestTerminateBehavior() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToHaveRunningPod, kill2xDuration).
-		RunCli([]string{"terminate", "@latest"}, func(t *testing.T, output string, err error) {
-			assert.NoError(t, err)
-			assert.Regexp(t, "workflow stop-terminate-.* terminated", output)
-		}).
+		ShutdownWorkflow(wfv1.ShutdownStrategyTerminate).
 		WaitForWorkflow(kill2xDuration).
 		Then().
 		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
@@ -91,11 +85,8 @@ func (s *SignalsSuite) TestDoNotCreatePodsUnderStopBehavior() {
 		Workflow("@functional/stop-terminate-2.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToHaveRunningPod).
-		RunCli([]string{"stop", "@latest"}, func(t *testing.T, output string, err error) {
-			assert.NoError(t, err)
-			assert.Regexp(t, "workflow stop-terminate-.* stopped", output)
-		}).
+		WaitForWorkflow(fixtures.ToHaveRunningPod, kill2xDuration).
+		ShutdownWorkflow(wfv1.ShutdownStrategyStop).
 		WaitForWorkflow(kill2xDuration).
 		Then().
 		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
