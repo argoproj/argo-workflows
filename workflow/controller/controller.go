@@ -325,8 +325,8 @@ func (wfc *WorkflowController) startLeading(ctx context.Context, logCtx *log.Ent
 		if err != nil {
 			log.WithField("CACHE_GC_PERIOD", v).WithError(err).Panic("failed to parse")
 			return 
-		} 
-		go wait.UntilWithContext(ctx, wfc.syncAllCacheForGC, cacheGCPeriod)
+		}
+		go wait.JitterUntilWithContext(ctx, wfc.syncAllCacheForGC, cacheGCPeriod, 0.0, true)
 	}
 }
 
@@ -788,7 +788,6 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	return true
 }
 
-//nolint:unparam
 func (wfc *WorkflowController) syncAllCacheForGC(ctx context.Context) {
 	if v, found := os.LookupEnv("CACHE_GC_AFTER_NOT_HIT_DURATION"); found {
 		gcAfterNotHitDuration, err := time.ParseDuration(v)
@@ -804,9 +803,8 @@ func (wfc *WorkflowController) syncAllCacheForGC(ctx context.Context) {
 					log.Error("Unable to convert object to configmap when syncing ConfigMaps")
 					continue
 				}
-				if err := wfc.cleanupUnusedCache(cm, gcAfterNotHitDuration); err != nil {
-					wfc.eventRecorderManager.Get(cm.GetNamespace()).Event(cm, apiv1.EventTypeWarning, "SyncFailed", err.Error())
-					log.WithError(err).Errorf("Unable to sync ConfigMap: %s", cm.Name)
+				if err := wfc.cleanupUnusedCache(ctx, cm, gcAfterNotHitDuration); err != nil {
+					log.WithFields(log.Fields{"key": cm.Name, "error": err}).Error("Unable to sync ConfigMap: %s", cm.Name)
 					continue
 				}
 			}
@@ -814,7 +812,7 @@ func (wfc *WorkflowController) syncAllCacheForGC(ctx context.Context) {
 	}
 }
 
-func (wfc *WorkflowController) cleanupUnusedCache(cm *apiv1.ConfigMap, gcAfterNotHitDuration time.Duration) error {
+func (wfc *WorkflowController) cleanupUnusedCache(ctx context.Context, cm *apiv1.ConfigMap, gcAfterNotHitDuration time.Duration) error {
 	if cmType := cm.Labels[indexes.LabelKeyConfigMapType]; cmType != indexes.LabelValueCacheTypeConfigMap {
 		return nil
 	}
@@ -830,25 +828,19 @@ func (wfc *WorkflowController) cleanupUnusedCache(cm *apiv1.ConfigMap, gcAfterNo
 			modified = true
 		}
 	}
-	selfLink := fmt.Sprintf("api/v1/namespaces/%s/configmaps/%s",
-		cm.Namespace, cm.Name)
 	if len(cm.Data) == 0 {
 		log.Infof("Deleting ConfigMap %s since it doesn't contain any cache entries", cm.Name)
-		request := wfc.kubeclientset.CoreV1().RESTClient().Delete().RequestURI(selfLink)
-		stream, err := request.Stream(context.TODO())
+		err := wfc.kubeclientset.CoreV1().ConfigMaps(cm.Namespace).Delete(ctx, cm.Name, metav1.DeleteOptions{})
 		if err != nil {
 			return fmt.Errorf("failed to delete ConfigMap %s: %w", cm.Name, err)
 		}
-		defer func() { _ = stream.Close() }()
 	} else {
 		if modified {
 			log.Infof("Modified ConfigMap: %s: %v", cm.Name, cm)
-			request := wfc.kubeclientset.CoreV1().RESTClient().Put().RequestURI(selfLink).Body(cm)
-			stream, err := request.Stream(context.TODO())
+			_, err := wfc.kubeclientset.CoreV1().ConfigMaps(cm.Namespace).Update(ctx, cm, metav1.UpdateOptions{})
 			if err != nil {
-				return fmt.Errorf("failed to patch ConfigMap %s: %w", cm.Name, err)
+				return fmt.Errorf("failed to update ConfigMap %s: %w", cm.Name, err)
 			}
-			defer func() { _ = stream.Close() }()
 		}
 	}
 
