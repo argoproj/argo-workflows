@@ -186,12 +186,10 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	defer func() {
 		if r := recover(); r != nil {
 			woc.log.WithFields(log.Fields{"stack": string(debug.Stack()), "r": r}).Errorf("Recovered from panic")
-			if !woc.wf.Status.Fulfilled() {
-				if rerr, ok := r.(error); ok {
-					woc.markWorkflowError(ctx, rerr)
-				} else {
-					woc.markWorkflowError(ctx, fmt.Errorf("%v", r))
-				}
+			if rerr, ok := r.(error); ok {
+				woc.markWorkflowError(ctx, rerr)
+			} else {
+				woc.markWorkflowError(ctx, fmt.Errorf("%v", r))
 			}
 			woc.controller.metrics.OperationPanic()
 		}
