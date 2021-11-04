@@ -3,8 +3,7 @@ import * as classNames from 'classnames';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
-import {Sensor} from '../../../../models';
-import {kubernetes} from '../../../../models';
+import {kubernetes, Sensor} from '../../../../models';
 import {ID} from '../../../event-flow/components/event-flow-details/id';
 import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
@@ -76,6 +75,9 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
         return {value, ...x};
     })();
 
+    const loading = !error && !sensors;
+    const zeroState = (sensors || []).length === 0;
+
     return (
         <Page
             title='Sensors'
@@ -96,9 +98,8 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
                 tools: [<NamespaceFilter key='namespace-filter' value={namespace} onChange={setNamespace} />]
             }}>
             <ErrorNotice error={error} />
-            {!sensors ? (
-                <Loading />
-            ) : sensors.length === 0 ? (
+            {loading && <Loading />}
+            {zeroState && (
                 <ZeroState title='No sensors'>
                     <p>
                         A sensor defines what actions to trigger when certain events occur. Typical events are a Git push, a file dropped into a bucket, or a message on a queue or
@@ -107,7 +108,8 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
                     </p>
                     <p>{learnMore}.</p>
                 </ZeroState>
-            ) : (
+            )}
+            {sensors && sensors.length > 0 && (
                 <>
                     <div className='argo-table-list'>
                         <div className='row argo-table-list__head'>
