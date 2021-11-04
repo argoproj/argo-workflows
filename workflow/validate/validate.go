@@ -153,7 +153,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		// if we are just linting we don't care if spec.arguments.parameters.XXX doesn't have an
 		// explicit value. workflows without a default value is a desired use case
 		err = validateArgumentsFieldNames("spec.arguments.", wfArgs)
-	} else {
+	} else if !opts.WorkflowTemplateValidation{
 		err = validateArguments("spec.arguments.", wfArgs)
 	}
 	if err != nil {
