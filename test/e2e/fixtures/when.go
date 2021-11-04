@@ -426,6 +426,7 @@ func (w *When) UpdateConfigMap(name string, data map[string]string) *When {
 func (w *When) DeleteConfigMap(name string) *When {
 	w.t.Helper()
 	ctx := context.Background()
+	fmt.Printf("deleting configmap %s\n", name)
 	err := w.kubeClient.CoreV1().ConfigMaps(Namespace).Delete(ctx, name, metav1.DeleteOptions{})
 	if err != nil {
 		w.t.Fatal(err)
