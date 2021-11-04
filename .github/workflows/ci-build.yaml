@@ -29,10 +29,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
       - run: make test STATIC_FILES=false GOTEST='go test -covermode=atomic -coverprofile=coverage.out'
-      - uses: actions/upload-artifact@v2
-        with:
-          name: test-results
-          path: junit.xml
       # engineers just ignore this in PRs, so lets not even run it
       - run: bash <(curl -s https://codecov.io/bash)
         if: github.ref == 'refs/heads/master'
@@ -155,27 +151,9 @@ jobs:
       - run: make wait
         timeout-minutes: 4
       - run: make ${{matrix.test}} E2E_TIMEOUT=1m STATIC_FILES=false
-      - uses: actions/upload-artifact@v2
-        with:
-          name: ${{ matrix.test }}-results
-          path: junit.xml
       - name: cat argo.log
         if: ${{ failure() }}
         run: cat /tmp/log/argo-e2e/argo.log
-
-  # https://github.com/marketplace/actions/publish-unit-test-results
-  publish-test-results:
-    name: "Publish Test Results"
-    needs: [ tests, e2e-tests ]
-    runs-on: ubuntu-latest
-    if: ${{ always() }}
-    steps:
-      - uses: actions/download-artifact@v2
-        with:
-          path: artifacts
-      - uses: EnricoMi/publish-unit-test-result-action@v1
-        with:
-          files: artifacts/**/junit.xml
 
   codegen:
     name: Codegen

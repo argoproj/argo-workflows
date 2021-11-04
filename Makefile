@@ -379,14 +379,10 @@ lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 	# Lint Go files
 	$(GOPATH)/bin/golangci-lint run --fix --verbose
 
-$(GOPATH)/bin/go-junit-report:
-	go install github.com/jstemmer/go-junit-report@v0.9.1
-
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
-test: server/static/files.go dist/argosay $(GOPATH)/bin/go-junit-report
-	env KUBECONFIG=/dev/null $(GOTEST) 2>&1 | tee test.out
-	cat test.out | go-junit-report > junit.xml
+test: server/static/files.go dist/argosay
+	env KUBECONFIG=/dev/null $(GOTEST) ./...
 
 .PHONY: install
 install: githooks
@@ -476,9 +472,8 @@ test-e2e: test-api test-cli test-cron test-executor test-functional
 
 test-cli: ./dist/argo
 
-test-%: $(GOPATH)/bin/go-junit-report
-	go test -v -timeout 15m -count 1 --tags $* -parallel 10 ./test/e2e 2>&1 | tee test.out
-	cat test.out | go-junit-report > junit.xml
+test-%:
+	go test -v -timeout 15m -count 1 --tags $* -parallel 10 ./test/e2e
 
 .PHONY: test-examples
 test-examples: ./dist/argo
