@@ -324,7 +324,7 @@ func (wfc *WorkflowController) startLeading(ctx context.Context, logCtx *log.Ent
 		cacheGCPeriod, err := time.ParseDuration(v)
 		if err != nil {
 			log.WithField("CACHE_GC_PERIOD", v).WithError(err).Panic("failed to parse")
-			return 
+			return
 		}
 		go wait.JitterUntilWithContext(ctx, wfc.syncAllCacheForGC, cacheGCPeriod, 0.0, true)
 	}
@@ -804,7 +804,7 @@ func (wfc *WorkflowController) syncAllCacheForGC(ctx context.Context) {
 					continue
 				}
 				if err := wfc.cleanupUnusedCache(ctx, cm, gcAfterNotHitDuration); err != nil {
-					log.WithFields(log.Fields{"key": cm.Name, "error": err}).Error("Unable to sync ConfigMap: %s", cm.Name)
+					log.WithFields(log.Fields{"key": cm.Name, "error": err}).Errorf("Unable to sync ConfigMap: %s", cm.Name)
 					continue
 				}
 			}
