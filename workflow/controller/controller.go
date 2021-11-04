@@ -767,13 +767,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		return true
 	}
 	startTime := time.Now()
-
-	// check if workflow is already completed
-	if !woc.wf.Status.Fulfilled() {
-		woc.operate(ctx)
-	} else {
-		woc.log.Warn("workflow is already fulfilled")
-	}
+	woc.operate(ctx)
 	wfc.metrics.OperationCompleted(time.Since(startTime).Seconds())
 	if woc.wf.Status.Fulfilled() {
 		err := woc.completeTaskSet(ctx)
