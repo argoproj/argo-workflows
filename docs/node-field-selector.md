@@ -61,7 +61,7 @@ Consider the following workflow:
 
 Here we have two steps with the same `displayName`: `wait-approval`. To select one to suspend, we need to use their
 `name`, either `appr-promotion-ffsv4.app1.wait-approval` or `appr-promotion-ffsv4.app3.wait-approval`. If it is not clear
-what the full name of a done is, it can be found using `kubectl`:
+what the full name of a node is, it can be found using `kubectl`:
 
 ```
 $ kubectl get wf appr-promotion-ffsv4 -o yaml

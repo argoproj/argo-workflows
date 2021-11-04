@@ -261,6 +261,51 @@ spec:
 	assert.Equal(t, wfv1.Progress("1/1"), woc.wf.Status.Nodes.FindByDisplayName("pod").Progress)
 }
 
+func TestLoggedProgress(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+metadata:
+  name: my-wf
+  namespace: my-ns
+spec:
+  entrypoint: main
+  templates:
+   - name: main
+     dag:
+       tasks:
+       - name: pod
+         template: pod
+   - name: pod
+     container: 
+       image: my-image
+`)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	makePodsPhase(ctx, woc, apiv1.PodRunning, withProgress("50/100"))
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.Progress("50/100"), woc.wf.Status.Progress)
+	assert.Equal(t, wfv1.Progress("50/100"), woc.wf.Status.Nodes[woc.wf.Name].Progress)
+	pod := woc.wf.Status.Nodes.FindByDisplayName("pod")
+	assert.Equal(t, wfv1.Progress("50/100"), pod.Progress)
+
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withProgress("100/100"))
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.Progress("100/100"), woc.wf.Status.Progress)
+	assert.Equal(t, wfv1.Progress("100/100"), woc.wf.Status.Nodes[woc.wf.Name].Progress)
+	pod = woc.wf.Status.Nodes.FindByDisplayName("pod")
+	assert.Equal(t, wfv1.Progress("100/100"), pod.Progress)
+}
+
 var sidecarWithVol = `
 # Verifies sidecars can reference volumeClaimTemplates
 apiVersion: argoproj.io/v1alpha1
@@ -2798,7 +2843,7 @@ func TestResolvePodNameInRetries(t *testing.T) {
 		{"v2", "output-value-placeholders-wf-tell-pod-name-3033990984"},
 	}
 	for _, tt := range tests {
-		os.Setenv("POD_NAMES", tt.podNameVersion)
+		_ = os.Setenv("POD_NAMES", tt.podNameVersion)
 		ctx := context.Background()
 		wf := wfv1.MustUnmarshalWorkflow(podNameInRetries)
 		woc := newWoc(*wf)
@@ -6004,7 +6049,7 @@ func TestWFWithRetryAndWithParam(t *testing.T) {
 			ctrs := pods.Items[0].Spec.Containers
 			assert.Len(t, ctrs, 2)
 			envs := ctrs[1].Env
-			assert.Len(t, envs, 4)
+			assert.Len(t, envs, 7)
 			assert.Equal(t, apiv1.EnvVar{Name: "ARGO_INCLUDE_SCRIPT_OUTPUT", Value: "true"}, envs[2])
 		}
 	})
@@ -7619,6 +7664,34 @@ func TestExitHandlerWithRetryNodeParam(t *testing.T) {
 	assert.Equal(t, "hello world", retryStepNode.Outputs.Parameters[0].Value.String())
 	onExitNode := woc.wf.GetNodeByName("exit-handler-with-param-xbh52[0].step-1.onExit")
 	assert.Equal(t, "hello world", onExitNode.Inputs.Parameters[0].Value.String())
+}
+
+func TestSetWFPodNamesAnnotation(t *testing.T) {
+	defer func() {
+		_ = os.Unsetenv("POD_NAMES")
+	}()
+
+	tests := []struct {
+		podNameVersion string
+	}{
+		{"v1"},
+		{"v2"},
+	}
+
+	for _, tt := range tests {
+		_ = os.Setenv("POD_NAMES", tt.podNameVersion)
+
+		wf := wfv1.MustUnmarshalWorkflow(exitHandlerWithRetryNodeParam)
+		cancel, controller := newController(wf)
+		defer cancel()
+
+		ctx := context.Background()
+		woc := newWorkflowOperationCtx(wf, controller)
+
+		woc.operate(ctx)
+		annotations := woc.wf.ObjectMeta.GetAnnotations()
+		assert.Equal(t, annotations[common.AnnotationKeyPodNameVersion], tt.podNameVersion)
+	}
 }
 
 func TestReOperateCompletedWf(t *testing.T) {

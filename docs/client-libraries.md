@@ -14,8 +14,8 @@ The following client libraries are officially maintained by the Argo team.
 | Language | Client Library | Examples/Docs |
 |----------|----------------|---------------|
 | Golang   | [apiclient.go](https://github.com/argoproj/argo-workflows/blob/master/pkg/apiclient/apiclient.go) | [Example](https://github.com/argoproj/argo-workflows/blob/master/cmd/argo/commands/submit.go)
-| Java     | [java](https://github.com/argoproj/argo-workflows/blob/master/sdks/java) | |
-| Python   | [python](python) | TBC | 
+| Java     | [Java](https://github.com/argoproj/argo-workflows/blob/master/sdks/java) | |
+| Python   | [Python](https://github.com/argoproj/argo-workflows/blob/master/sdks/python) | [Examples](https://github.com/argoproj/argo-workflows/tree/master/sdks/python/examples)/[Docs](https://github.com/argoproj/argo-workflows/tree/master/sdks/python/client/docs) | 
 
 ## Community-maintained client libraries
 

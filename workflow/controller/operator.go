@@ -69,7 +69,7 @@ type wfOperationCtx struct {
 	// updated indicates whether or not the workflow object itself was updated
 	// and needs to be persisted back to kubernetes
 	updated bool
-	// log is an logrus logging context to corralate logs with a workflow
+	// log is an logrus logging context to correlate logs with a workflow
 	log *log.Entry
 	// controller reference to workflow controller
 	controller *WorkflowController
@@ -142,6 +142,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 	// You can use DeepCopy() to make a deep copy of original object and modify this copy
 	// Or create a copy manually for better performance
 	wfCopy := wf.DeepCopyObject().(*wfv1.Workflow)
+
 	woc := wfOperationCtx{
 		wf:      wfCopy,
 		orig:    wf,
@@ -268,6 +269,8 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
 		woc.markWorkflowRunning(ctx)
+		setWfPodNamesAnnotation(woc.wf)
+
 		err := woc.createPDBResource(ctx)
 		if err != nil {
 			msg := fmt.Sprintf("Unable to create PDB resource for workflow, %s error: %s", woc.wf.Name, err)
@@ -357,18 +360,8 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		return
 	}
 
-	err = woc.taskSetReconciliation(ctx)
-	if err != nil {
-		woc.log.WithError(err).Error("error in workflowtaskset reconciliation")
-		return
-	}
-
-	err = woc.reconcileAgentPod(ctx)
-	if err != nil {
-		woc.log.WithError(err).Error("error in agent pod reconciliation")
-		woc.markWorkflowError(ctx, err)
-		return
-	}
+	// Reconcile TaskSet and Agent for HTTP templates
+	woc.httpReconciliation(ctx)
 
 	if node == nil || !node.Fulfilled() {
 		// node can be nil if a workflow created immediately in a parallelism == 0 state
@@ -428,6 +421,12 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			}
 			return
 		}
+
+		// If the onExit node (or any child of the onExit node) requires HTTP reconciliation, do it here
+		if onExitNode != nil && woc.nodeRequiresHttpReconciliation(onExitNode.Name) {
+			woc.httpReconciliation(ctx)
+		}
+
 		if onExitNode == nil || !onExitNode.Fulfilled() {
 			return
 		}
@@ -999,6 +998,13 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 			if node.Type == wfv1.NodeTypePod {
 				if node.HostNodeName != pod.Spec.NodeName {
 					node.HostNodeName = pod.Spec.NodeName
+					woc.wf.Status.Nodes[nodeID] = node
+					woc.updated = true
+				}
+				podProgress := progress.PodProgress(pod, &node)
+				if podProgress.IsValid() && node.Progress != podProgress {
+					woc.log.WithField("progress", podProgress).Info("pod progress")
+					node.Progress = podProgress
 					woc.wf.Status.Nodes[nodeID] = node
 					woc.updated = true
 				}
@@ -2044,6 +2050,21 @@ func (woc *wfOperationCtx) findTemplate(pod *apiv1.Pod) *wfv1.Template {
 	if node == nil {
 		return nil // I don't expect this to happen in production, just in tests
 	}
+	return woc.GetNodeTemplate(node)
+}
+
+func (woc *wfOperationCtx) GetNodeTemplate(node *wfv1.NodeStatus) *wfv1.Template {
+	if node.TemplateRef != nil {
+		tmplCtx, err := woc.createTemplateContext(node.GetTemplateScope())
+		if err != nil {
+			woc.markNodeError(node.Name, err)
+		}
+		tmpl, err := tmplCtx.GetTemplateFromRef(node.TemplateRef)
+		if err != nil {
+			woc.markNodeError(node.Name, err)
+		}
+		return tmpl
+	}
 	return woc.wf.GetTemplateByName(node.TemplateName)
 }
 
@@ -2396,7 +2417,7 @@ func (woc *wfOperationCtx) executeContainer(ctx context.Context, nodeName string
 func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
 	node := woc.wf.Status.Nodes[nodeID]
 	switch node.Type {
-	case wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend:
+	case wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend, wfv1.NodeTypeHTTP:
 		return []string{node.ID}
 	case wfv1.NodeTypePod:
 
@@ -3525,4 +3546,16 @@ func (woc *wfOperationCtx) substituteGlobalVariables() error {
 		return err
 	}
 	return nil
+}
+
+// setWfPodNamesAnnotation sets an annotation on a workflow with the pod naming
+// convention version
+func setWfPodNamesAnnotation(wf *wfv1.Workflow) {
+	podNameVersion := wfutil.GetPodNameVersion()
+
+	if wf.Annotations == nil {
+		wf.Annotations = map[string]string{}
+	}
+
+	wf.Annotations[common.AnnotationKeyPodNameVersion] = podNameVersion.String()
 }

@@ -17,6 +17,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/pointer"
@@ -27,6 +28,7 @@ import (
 	fakewfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/scheme"
 	wfextv "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions"
+	envutil "github.com/argoproj/argo-workflows/v3/util/env"
 	armocks "github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories/mocks"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
@@ -151,16 +153,18 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 				S3Bucket: wfv1.S3Bucket{Endpoint: "my-endpoint", Bucket: "my-bucket"},
 			},
 		}),
-		kubeclientset:        kube,
-		dynamicInterface:     dynamicClient,
-		wfclientset:          wfclientset,
-		workflowKeyLock:      sync.NewKeyLock(),
-		wfArchive:            sqldb.NullWorkflowArchive,
-		hydrator:             hydratorfake.Noop,
-		estimatorFactory:     estimation.DummyEstimatorFactory,
-		eventRecorderManager: &testEventRecorderManager{eventRecorder: record.NewFakeRecorder(64)},
-		archiveLabelSelector: labels.Everything(),
-		cacheFactory:         controllercache.NewCacheFactory(kube, "default"),
+		kubeclientset:             kube,
+		dynamicInterface:          dynamicClient,
+		wfclientset:               wfclientset,
+		workflowKeyLock:           sync.NewKeyLock(),
+		wfArchive:                 sqldb.NullWorkflowArchive,
+		hydrator:                  hydratorfake.Noop,
+		estimatorFactory:          estimation.DummyEstimatorFactory,
+		eventRecorderManager:      &testEventRecorderManager{eventRecorder: record.NewFakeRecorder(64)},
+		archiveLabelSelector:      labels.Everything(),
+		cacheFactory:              controllercache.NewCacheFactory(kube, "default"),
+		progressPatchTickDuration: envutil.LookupEnvDurationOr(common.EnvVarProgressPatchTickDuration, 1*time.Minute),
+		progressFileTickDuration:  envutil.LookupEnvDurationOr(common.EnvVarProgressFileTickDuration, 3*time.Second),
 	}
 
 	for _, opt := range options {
@@ -197,7 +201,18 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		go wfc.wfTaskSetInformer.Informer().Run(ctx.Done())
 		wfc.cwftmplInformer = informerFactory.Argoproj().V1alpha1().ClusterWorkflowTemplates()
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
-		wfc.waitForCacheSync(ctx)
+		// wfc.waitForCacheSync() takes minimum 100ms, we can be faster
+		for _, c := range []cache.SharedIndexInformer{
+			wfc.wfInformer,
+			wfc.wftmplInformer.Informer(),
+			wfc.podInformer,
+			wfc.cwftmplInformer.Informer(),
+		} {
+			for !c.HasSynced() {
+				time.Sleep(5 * time.Millisecond)
+			}
+		}
+
 	}
 	return cancel, wfc
 }
@@ -261,7 +276,8 @@ func listPods(woc *wfOperationCtx) (*apiv1.PodList, error) {
 
 type with func(pod *apiv1.Pod)
 
-func withOutputs(v string) with { return withAnnotation(common.AnnotationKeyOutputs, v) }
+func withOutputs(v string) with  { return withAnnotation(common.AnnotationKeyOutputs, v) }
+func withProgress(v string) with { return withAnnotation(common.AnnotationKeyProgress, v) }
 
 func withExitCode(v int32) with {
 	return func(pod *apiv1.Pod) {

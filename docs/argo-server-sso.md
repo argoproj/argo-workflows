@@ -112,6 +112,46 @@ If no rule matches, we deny the user access.
 
     The precedence must be the lowest of all your service accounts.
 
+## SSO RBAC Namespace Delegation
+
+> v3.3 and after
+
+You can optionally configure RBAC SSO per namespace.
+Typically, on organization has a K8s cluster and a central team manages the cluster who is the owner of the cluster. Along with this, there are multiple namespaces which are owned by individual team. This feature would help namespace owners to define RBAC for their own namespace.
+
+The feature is currently in beta.
+To enable the feature, set env variable `SSO_DELEGATE_RBAC_TO_NAMESPACE=true` in your argo-server deployment.
+
+#### Recommended usage
+
+Configure a default account in the installation namespace which would allow all users of your organization. We will use this service account to allow a user to login to the cluster. You could optionally add workflow read-only role and rolebinding if you wish to.
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: user-default-login
+  annotations:
+    workflows.argoproj.io/rbac-rule: "true"
+    workflows.argoproj.io/rbac-rule-precedence: "0"
+```
+
+Now, for the the namespace that you own, configure a service account which would allow members of your team to perform operations in your namespace.
+Make sure that the precedence of the namespace service account is higher than the precedence of the login service account. Create approprite role that you want to grant to this serviceaccount and bind it with a role-binding.
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: my-namespace-read-write-user
+  namespace: my-namespace
+  annotations:
+    workflows.argoproj.io/rbac-rule: "'my-team' in groups"
+    workflows.argoproj.io/rbac-rule-precedence: "1"
+```
+
+Using this, whenever a user is logged in via SSO and makes a request in 'my-namespace', and the `rbac-rule`matches, we will use this service account to allow the user to perform that operation in the namespace. If no serviceaccount matches in the namespace, the first serviceaccount(`user-default-login`) and its associated role will be used to perform the operation in the namespace.
+
 ## SSO Login Time
 
 > v2.12 and after
@@ -143,7 +183,7 @@ sso:
   userInfoPath: /oauth2/v1/userinfo
 ```
 
- #### Example expr
+#### Example expr
 
 ```shell
 # assuming customClaimGroupName: argo_groups

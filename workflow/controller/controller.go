@@ -112,6 +112,13 @@ type WorkflowController struct {
 	archiveLabelSelector  labels.Selector
 	cacheFactory          controllercache.Factory
 	wfTaskSetInformer     wfextvv1alpha1.WorkflowTaskSetInformer
+
+	// progressPatchTickDuration defines how often the executor will patch pod annotations if an updated progress is found.
+	// Default is 1m and can be configured using the env var ARGO_PROGRESS_PATCH_TICK_DURATION.
+	progressPatchTickDuration time.Duration
+	// progressFileTickDuration defines how often the progress file is read.
+	// Default is 3s and can be configured using the env var ARGO_PROGRESS_FILE_TICK_DURATION
+	progressFileTickDuration time.Duration
 }
 
 const (
@@ -144,6 +151,8 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		workflowKeyLock:            syncpkg.NewKeyLock(),
 		cacheFactory:               controllercache.NewCacheFactory(kubeclientset, namespace),
 		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
+		progressPatchTickDuration:  env.LookupEnvDurationOr(common.EnvVarProgressPatchTickDuration, 1*time.Minute),
+		progressFileTickDuration:   env.LookupEnvDurationOr(common.EnvVarProgressFileTickDuration, 3*time.Second),
 	}
 
 	wfc.UpdateConfig(ctx)
@@ -310,18 +319,6 @@ func (wfc *WorkflowController) startLeading(ctx context.Context, logCtx *log.Ent
 	}
 	for i := 0; i < podWorkers; i++ {
 		go wait.Until(wfc.podWorker, time.Second, ctx.Done())
-	}
-}
-
-func (wfc *WorkflowController) waitForCacheSync(ctx context.Context) {
-	// Wait for all involved caches to be synced, before processing items from the queue is started
-	if !cache.WaitForCacheSync(ctx.Done(), wfc.wfInformer.HasSynced, wfc.wftmplInformer.Informer().HasSynced, wfc.podInformer.HasSynced) {
-		panic("Timed out waiting for caches to sync")
-	}
-	if wfc.cwftmplInformer != nil {
-		if !cache.WaitForCacheSync(ctx.Done(), wfc.cwftmplInformer.Informer().HasSynced) {
-			panic("Timed out waiting for caches to sync")
-		}
 	}
 }
 
@@ -1122,12 +1119,15 @@ func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, m
 	if port == 0 {
 		port = metrics.DefaultMetricsServerPort
 	}
+
 	metricsConfig := metrics.ServerConfig{
 		Enabled:      wfc.Config.MetricsConfig.Enabled == nil || *wfc.Config.MetricsConfig.Enabled,
 		Path:         path,
 		Port:         port,
 		TTL:          time.Duration(wfc.Config.MetricsConfig.MetricsTTL),
 		IgnoreErrors: wfc.Config.MetricsConfig.IgnoreErrors,
+		// Default to false until v3.5
+		Secure: wfc.Config.MetricsConfig.GetSecure(false),
 	}
 
 	// Telemetry config
@@ -1140,11 +1140,13 @@ func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, m
 	if wfc.Config.TelemetryConfig.Port > 0 {
 		port = wfc.Config.TelemetryConfig.Port
 	}
+
 	telemetryConfig := metrics.ServerConfig{
 		Enabled:      wfc.Config.TelemetryConfig.Enabled == nil || *wfc.Config.TelemetryConfig.Enabled,
 		Path:         path,
 		Port:         port,
 		IgnoreErrors: wfc.Config.TelemetryConfig.IgnoreErrors,
+		Secure:       wfc.Config.TelemetryConfig.GetSecure(metricsConfig.Secure),
 	}
 	return metricsConfig, telemetryConfig
 }

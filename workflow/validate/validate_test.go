@@ -1626,7 +1626,7 @@ func TestBaseImageOutputVerify(t *testing.T) {
 	wfNonPathOutputParam := unmarshalWf(nonPathOutputParameter)
 	var err error
 
-	for _, executor := range []string{common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorPNS, common.ContainerRuntimeExecutorDocker, ""} {
+	for _, executor := range []string{common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorPNS, common.ContainerRuntimeExecutorDocker, common.ContainerRuntimeExecutorDocker, common.ContainerRuntimeExecutorEmissary, ""} {
 		switch executor {
 		case common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorKubelet:
 			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
@@ -1644,7 +1644,7 @@ func TestBaseImageOutputVerify(t *testing.T) {
 			assert.NoError(t, err)
 			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseWithEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.Error(t, err)
-		case common.ContainerRuntimeExecutorDocker, "":
+		case common.ContainerRuntimeExecutorDocker, common.ContainerRuntimeExecutorEmissary, "":
 			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.NoError(t, err)
 			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseOutParam, ValidateOpts{ContainerRuntimeExecutor: executor})
@@ -3023,5 +3023,102 @@ spec:
 
 func TestTemplateReferenceWorkflowConfigMapRefArgument(t *testing.T) {
 	_, err := validate(templateReferenceWorkflowConfigMapRefArgument)
+	assert.NoError(t, err)
+}
+
+var stepsOutputParametersForScript = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: parameter-aggregation-
+spec:
+  entrypoint: parameter-aggregation
+  templates:
+    - name: parameter-aggregation
+      steps:
+        - - name: echo-num
+            template: echo-num
+            arguments:
+              parameters:
+                - name: num
+                  value: "{{item}}"
+            withItems: [1, 2, 3, 4]
+        - - name: echo-num-from-param
+            template: echo-num
+            arguments:
+              parameters:
+                - name: num
+                  value: "{{item.num}}"
+            withParam: "{{steps.echo-num.outputs.parameters}}"
+
+    - name: echo-num
+      inputs:
+        parameters:
+          - name: num
+      script:
+        image: argoproj/argosay:v1
+        command: [sh, -x]
+        source: |
+          sleep 1
+          echo {{inputs.parameters.num}} > /tmp/num
+      outputs:
+        parameters:
+          - name: num
+            valueFrom:
+              path: /tmp/num
+`
+
+func TestStepsOutputParametersForScript(t *testing.T) {
+	_, err := validate(stepsOutputParametersForScript)
+	assert.NoError(t, err)
+}
+
+var stepsOutputParametersForContainerSet = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: parameter-aggregation-
+spec:
+  entrypoint: parameter-aggregation
+  templates:
+    - name: parameter-aggregation
+      steps:
+        - - name: echo-num
+            template: echo-num
+            arguments:
+              parameters:
+                - name: num
+                  value: "{{item}}"
+            withItems: [1, 2, 3, 4]
+        - - name: echo-num-from-param
+            template: echo-num
+            arguments:
+              parameters:
+                - name: num
+                  value: "{{item.num}}"
+            withParam: "{{steps.echo-num.outputs.parameters}}"
+
+    - name: echo-num
+      inputs:
+        parameters:
+          - name: num
+      containerSet:
+        containers:
+          - name: main
+            image: 'docker/whalesay:latest'
+            command:
+              - sh
+              - '-c'
+            args:
+              - 'sleep 1; echo {{inputs.parameters.num}} > /tmp/num'
+      outputs:
+        parameters:
+          - name: num
+            valueFrom:
+              path: /tmp/num
+`
+
+func TestStepsOutputParametersForContainerSet(t *testing.T) {
+	_, err := validate(stepsOutputParametersForContainerSet)
 	assert.NoError(t, err)
 }

@@ -317,9 +317,9 @@ func TestNonHTTPTemplateScenario(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	woc := newWorkflowOperationCtx(wf, controller)
 	ctx := context.Background()
-	t.Run("taskSetReconciliation", func(t *testing.T) {
+	t.Run("reconcileTaskSet", func(t *testing.T) {
 		woc.operate(ctx)
-		err := woc.taskSetReconciliation(ctx)
+		err := woc.reconcileTaskSet(ctx)
 		assert.NoError(t, err)
 	})
 	t.Run("completeTaskSet", func(t *testing.T) {

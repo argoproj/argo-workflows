@@ -26,10 +26,11 @@ type ServerConfig struct {
 	Port         int
 	TTL          time.Duration
 	IgnoreErrors bool
+	Secure       bool
 }
 
 func (s ServerConfig) SameServerAs(other ServerConfig) bool {
-	return s.Port == other.Port && s.Path == other.Path && s.Enabled && other.Enabled
+	return s.Port == other.Port && s.Path == other.Path && s.Enabled && other.Enabled && s.Secure == other.Secure
 }
 
 type metric struct {

@@ -289,29 +289,27 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	addSidecars(pod, tmpl)
 	addOutputArtifactsVolumes(pod, tmpl)
 
-	if woc.getContainerRuntimeExecutor() == common.ContainerRuntimeExecutorEmissary {
-		for i, c := range pod.Spec.InitContainers {
-			c.VolumeMounts = append(c.VolumeMounts, volumeMountVarArgo)
-			pod.Spec.InitContainers[i] = c
-		}
-		for i, c := range pod.Spec.Containers {
-			if c.Name != common.WaitContainerName {
-				// https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#notes
-				if len(c.Command) == 0 {
-					x := woc.getImage(c.Image)
-					c.Command = x.Command
-					if c.Args == nil { // check nil rather than length, as zero-length is valid args
-						c.Args = x.Args
-					}
+	for i, c := range pod.Spec.InitContainers {
+		c.VolumeMounts = append(c.VolumeMounts, volumeMountVarArgo)
+		pod.Spec.InitContainers[i] = c
+	}
+	for i, c := range pod.Spec.Containers {
+		if woc.getContainerRuntimeExecutor() == common.ContainerRuntimeExecutorEmissary && c.Name != common.WaitContainerName {
+			// https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#notes
+			if len(c.Command) == 0 {
+				x := woc.getImage(c.Image)
+				c.Command = x.Command
+				if c.Args == nil { // check nil rather than length, as zero-length is valid args
+					c.Args = x.Args
 				}
-				if len(c.Command) == 0 {
-					return nil, fmt.Errorf("when using the emissary executor you must either explicitly specify the command, or list the image's command in the index: https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary")
-				}
-				c.Command = append([]string{"/var/run/argo/argoexec", "emissary", "--"}, c.Command...)
 			}
-			c.VolumeMounts = append(c.VolumeMounts, volumeMountVarArgo)
-			pod.Spec.Containers[i] = c
+			if len(c.Command) == 0 {
+				return nil, fmt.Errorf("when using the emissary executor you must either explicitly specify the command, or list the image's command in the index: https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary")
+			}
+			c.Command = append([]string{"/var/run/argo/argoexec", "emissary", "--"}, c.Command...)
 		}
+		c.VolumeMounts = append(c.VolumeMounts, volumeMountVarArgo)
+		pod.Spec.Containers[i] = c
 	}
 
 	// Add standard environment variables, making pod spec larger
@@ -319,6 +317,22 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		{Name: common.EnvVarTemplate, Value: wfv1.MustMarshallJSON(tmpl)},
 		{Name: common.EnvVarIncludeScriptOutput, Value: strconv.FormatBool(opts.includeScriptOutput)},
 		{Name: common.EnvVarDeadline, Value: woc.getDeadline(opts).Format(time.RFC3339)},
+		{Name: common.EnvVarProgressFile, Value: common.ArgoProgressPath},
+	}
+
+	// only set tick durations if progress is enabled. The EnvVarProgressFile is always set (user convenience) but the
+	// progress is only monitored if the tick durations are >0.
+	if woc.controller.progressPatchTickDuration != 0 && woc.controller.progressFileTickDuration != 0 {
+		envVars = append(envVars,
+			apiv1.EnvVar{
+				Name:  common.EnvVarProgressPatchTickDuration,
+				Value: woc.controller.progressPatchTickDuration.String(),
+			},
+			apiv1.EnvVar{
+				Name:  common.EnvVarProgressFileTickDuration,
+				Value: woc.controller.progressFileTickDuration.String(),
+			},
+		)
 	}
 
 	for i, c := range pod.Spec.InitContainers {
@@ -535,7 +549,7 @@ func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) *apiv1.Containe
 			// in order to SIGTERM/SIGKILL the pid
 			ctr.SecurityContext.Privileged = pointer.BoolPtr(true)
 		}
-	case "", common.ContainerRuntimeExecutorDocker:
+	case common.ContainerRuntimeExecutorDocker:
 		ctr.VolumeMounts = append(ctr.VolumeMounts, woc.getVolumeMountDockerSock(tmpl))
 	}
 	return ctr
@@ -636,11 +650,11 @@ func (woc *wfOperationCtx) createVolumes(tmpl *wfv1.Template) []apiv1.Volume {
 			},
 		})
 	}
+
+	volumes = append(volumes, volumeVarArgo)
+
 	switch woc.getContainerRuntimeExecutor() {
-	case common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorPNS:
-	case common.ContainerRuntimeExecutorEmissary:
-		volumes = append(volumes, volumeVarArgo)
-	default:
+	case common.ContainerRuntimeExecutorDocker:
 		volumes = append(volumes, woc.getVolumeDockerSock(tmpl))
 	}
 	volumes = append(volumes, tmpl.Volumes...)

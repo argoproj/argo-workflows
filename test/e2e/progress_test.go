@@ -4,6 +4,7 @@
 package e2e
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -29,6 +30,24 @@ func (s *ProgressSuite) TestDefaultProgress() {
 			assert.Equal(t, wfv1.Progress("1/1"), status.Progress)
 			assert.Equal(t, wfv1.Progress("1/1"), status.Nodes[metadata.Name].Progress)
 		})
+}
+
+func (s *ProgressSuite) TestLoggedProgress() {
+	toHaveProgress := func(p wfv1.Progress) fixtures.Condition {
+		return func(wf *wfv1.Workflow) (bool, string) {
+			return wf.Status.Nodes[wf.Name].Progress == p &&
+				wf.Status.Nodes.FindByDisplayName("progress").Progress == p, fmt.Sprintf("progress is %s", p)
+		}
+	}
+
+	s.Given().
+		Workflow("@testdata/progress-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeRunning).
+		WaitForWorkflow(toHaveProgress("0/100")).
+		WaitForWorkflow(toHaveProgress("50/100")).
+		WaitForWorkflow(toHaveProgress("100/100"))
 }
 
 func TestProgressSuite(t *testing.T) {
