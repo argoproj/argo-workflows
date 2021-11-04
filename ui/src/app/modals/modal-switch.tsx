@@ -1,28 +1,33 @@
 import * as React from 'react';
 import {useEffect, useState} from 'react';
-import {ScopedLocalStorage} from '../shared/scoped-local-storage';
+import {uiUrl} from '../shared/base';
 import {FirstTimeUserModal} from './first-time-user-modal';
 import {NewVersionModal} from './new-version-modal';
 import {majorMinor} from './version';
 
 export const ModalSwitch = ({version}: {version: string}) => {
-    const storage = new ScopedLocalStorage('modal-switch');
-
-    const firstTimeUserKey = 'firstTimeUser';
-    const [firstTimeUser, setFirstTimeUser] = useState(storage.getItem(firstTimeUserKey, true));
-    useEffect(() => storage.setItem(firstTimeUserKey, firstTimeUser, true), [firstTimeUser]);
-
-    const lastVersionKey = 'lastVersion';
-    const [lastVersion, setLastVersion] = useState(storage.getItem(lastVersionKey, ''));
-    useEffect(() => storage.setItem(lastVersionKey, lastVersion, ''), [lastVersion]);
+    // "" === FTU never shown
+    // v0.0 === FTU dismissed
+    // vx.y === new version for version shown
+    const [modal, setModal] = useState<string>(
+        (
+            decodeURIComponent(document.cookie)
+                .split(';')
+                .map(x => x.trim())
+                .find(x => x.startsWith('modal=')) || ''
+        ).replace(/^modal="?(.*?)"?$/, '$1')
+    );
+    useEffect(() => {
+        document.cookie = 'modal=' + modal + ';SameSite=Strict;path=' + uiUrl('');
+    }, [modal]);
 
     const xyVersion = majorMinor(version);
 
-    if (firstTimeUser) {
-        return <FirstTimeUserModal dismiss={() => setFirstTimeUser(false)} />;
+    if (!modal) {
+        return <FirstTimeUserModal dismiss={() => setModal('v0.0')} />;
     }
-    if (lastVersion !== xyVersion) {
-        return <NewVersionModal dismiss={() => setLastVersion(xyVersion)} version={version} />;
+    if (modal !== xyVersion) {
+        return <NewVersionModal dismiss={() => setModal(xyVersion)} version={version} />;
     }
     return <></>;
 };
