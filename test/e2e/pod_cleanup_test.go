@@ -101,6 +101,7 @@ spec:
 		When().
 		SubmitWorkflow().
 		WaitForPod(fixtures.PodDeleted).
+		WaitForPod(fixtures.PodDeleted).
 		Then().
 		ExpectWorkflowNode(wfv1.FailedPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
 			if assert.NotNil(t, n) {
@@ -147,6 +148,7 @@ spec:
 		When().
 		SubmitWorkflow().
 		WaitForPod(fixtures.PodDeleted).
+		WaitForPod(fixtures.PodDeleted).
 		Then().
 		ExpectWorkflowNode(wfv1.FailedPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
 			if assert.NotNil(t, n) {
@@ -186,6 +188,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
+		WaitForPod(fixtures.PodDeleted).
 		WaitForPod(fixtures.PodDeleted).
 		Then().
 		ExpectWorkflowNode(wfv1.FailedPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
@@ -234,6 +237,7 @@ spec:
 		When().
 		SubmitWorkflow().
 		WaitForPod(fixtures.PodCompleted).
+		WaitForPod(fixtures.PodCompleted).
 		Then().
 		ExpectWorkflowNode(wfv1.FailedPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
 			if assert.NotNil(t, n) {
@@ -279,6 +283,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
+		WaitForPod(fixtures.PodDeleted).
 		WaitForPod(fixtures.PodDeleted).
 		Then().
 		ExpectWorkflowNode(wfv1.FailedPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
