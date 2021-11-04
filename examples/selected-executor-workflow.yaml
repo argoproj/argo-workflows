@@ -28,4 +28,4 @@ spec:
   templates:
     - name: main
       container:
-        image: docker/whalesay
+        image: argoproj/argosay:v2

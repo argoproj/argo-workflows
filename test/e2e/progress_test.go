@@ -4,8 +4,8 @@
 package e2e
 
 import (
+	"fmt"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -33,14 +33,11 @@ func (s *ProgressSuite) TestDefaultProgress() {
 }
 
 func (s *ProgressSuite) TestLoggedProgress() {
-	assertProgress := func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus, expectedPhase wfv1.WorkflowPhase, expectedProgress wfv1.Progress) {
-		assert.Equal(t, expectedPhase, status.Phase)
-		assert.Equal(t, expectedProgress, status.Progress)
-		// DAG
-		assert.Equal(t, expectedProgress, status.Nodes[metadata.Name].Progress)
-		// Pod
-		podNode := status.Nodes.FindByDisplayName("progress")
-		assert.Equal(t, expectedProgress, podNode.Progress)
+	toHaveProgress := func(p wfv1.Progress) fixtures.Condition {
+		return func(wf *wfv1.Workflow) (bool, string) {
+			return wf.Status.Nodes[wf.Name].Progress == p &&
+				wf.Status.Nodes.FindByDisplayName("progress").Progress == p, fmt.Sprintf("progress is %s", p)
+		}
 	}
 
 	s.Given().
@@ -48,23 +45,9 @@ func (s *ProgressSuite) TestLoggedProgress() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeRunning).
-		Wait(5 * time.Second).
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assertProgress(t, metadata, status, wfv1.WorkflowRunning, "0/100")
-		}).
-		When().
-		Wait(65 * time.Second).
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assertProgress(t, metadata, status, wfv1.WorkflowRunning, "50/100")
-		}).
-		When().
-		WaitForWorkflow(10 * time.Second).
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assertProgress(t, metadata, status, wfv1.WorkflowSucceeded, "100/100")
-		})
+		WaitForWorkflow(toHaveProgress("0/100")).
+		WaitForWorkflow(toHaveProgress("50/100")).
+		WaitForWorkflow(toHaveProgress("100/100"))
 }
 
 func TestProgressSuite(t *testing.T) {

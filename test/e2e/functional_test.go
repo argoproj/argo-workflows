@@ -196,11 +196,14 @@ func (s *FunctionalSuite) TestEventOnNodeFailSentAsPod() {
 	var nodeName string
 	// Update controller config map to set nodeEvents.sendAsPod to true
 	ctx := context.Background()
-	configMap, _ := s.KubeClient.CoreV1().ConfigMaps("argo").Get(
+	configMap, err := s.KubeClient.CoreV1().ConfigMaps(fixtures.Namespace).Get(
 		ctx,
 		"workflow-controller-configmap",
 		metav1.GetOptions{},
 	)
+	if err != nil {
+		s.T().Fatal(err)
+	}
 	originalData := make(map[string]string)
 	for key, value := range configMap.Data {
 		originalData[key] = value
