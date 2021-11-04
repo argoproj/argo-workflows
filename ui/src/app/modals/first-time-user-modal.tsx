@@ -3,6 +3,11 @@ import {BigButton} from '../shared/components/big-button';
 import {Icon} from '../shared/components/icon';
 import {Modal} from '../shared/components/modal/modal';
 
+/**
+ * The intention of this modal is to:
+ * (a) help us understand what our users are using workflows for
+ * (b) provide them with targetted support and docs
+ */
 export const FirstTimeUserModal = ({dismiss}: {dismiss: () => void}) => (
     <Modal dismiss={dismiss}>
         <h3 style={{textAlign: 'center'}}>Tell us what you want to use Argo for - we'll tell you how to do it. </h3>

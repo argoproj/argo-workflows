@@ -179,7 +179,7 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                             </Switch>
                         </ErrorBoundary>
                         <ChatButton />
-                        <ModalSwitch version={version ? version.version : 'v0.0.0'} />
+                        {version && <ModalSwitch version={version.version} />}
                     </Layout>
                 </Switch>
             </Router>

@@ -1,1 +1,1 @@
-export const majorMinor = (version: string) => version.substr(0, version.lastIndexOf('.'));
+export const majorMinor = (version: string) => (version.includes('.') ? version.substr(0, version.lastIndexOf('.')) : version);

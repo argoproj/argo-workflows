@@ -2,13 +2,9 @@ import * as React from 'react';
 import {Modal} from '../shared/components/modal/modal';
 
 require('./new-version-modal.scss');
-
-const links = {
-    'v3.0': 'https://blog.argoproj.io/argo-workflows-v3-0-4d0b69f15a6e?utm_source=argo-ui',
-    'v3.1': 'https://blog.argoproj.io/argo-workflows-v3-1-is-coming-1fb1c1091324?utm_source=argo-ui',
-    'v3.2': 'https://blog.argoproj.io/argo-workflows-v3-2-af780a99b362?utm_source=argo-ui'
-};
-
+/**
+ * The intention of this modal is to encourage update of new features.
+ */
 export const NewVersionModal = ({version, dismiss}: {version: string; dismiss: () => void}) => {
     return (
         <Modal dismiss={dismiss}>
@@ -18,64 +14,26 @@ export const NewVersionModal = ({version, dismiss}: {version: string; dismiss: (
             <h4 className='new-version-modal-title'>
                 It looks like <b>{version}</b> has just been installed!
             </h4>
-            <p>Recent changes:</p>
+            <h5>
+                <a href='https://blog.argoproj.io/argo-workflows-v3-2-af780a99b362?utm_source=argo-ui'>v3.2</a>
+            </h5>
             <ul className='new-version-modal-bullets'>
                 <li>
-                    Writing workflows without YAML using{' '}
-                    <a href={links['v3.2']} target='_blank'>
-                        {' '}
-                        Python and Java SDKs
-                    </a>
-                    .
+                    Writing workflows <b>without YAML</b> using Python and Java SDKs.
                 </li>
-                <li>
-                    Visualize{' '}
-                    <a href={links['v3.2']} target='_blank'>
-                        ArgoLabs Dataflow pipelines
-                    </a>
-                    .
-                </li>
-                <li>
-                    Interact with third-party systems using{' '}
-                    <a href={links['v3.2']} target='_blank'>
-                        HTTP template
-                    </a>
-                    .
-                </li>
-                <li>
-                    Run workflows faster and cheaper using{' '}
-                    <a href={links['v3.1']} target='_blank'>
-                        container set template and Emissary executor
-                    </a>
-                    .
-                </li>
-                <li>
-                    Run fan-out workflows based on bucket contents using{' '}
-                    <a href={links['v3.1']} target='_blank'>
-                        data templates
-                    </a>
-                    .
-                </li>
-                <li>
-                    Complex and dynamic templating using{' '}
-                    <a href={links['v3.1']} target='_blank'>
-                        expression tag templates
-                    </a>
-                    .
-                </li>
-                <li>
-                    Embed widgets in your own apps with{' '}
-                    <a href={links['v3.0']} target='_blank'>
-                        widgets
-                    </a>
-                    .
-                </li>
+                <li>Visualize ArgoLabs Dataflow pipelines.</li>
+                <li>Interact with third-party systems using HTTP template.</li>
             </ul>
-            <p>
-                <a href='https://github.com/argoproj/argo-workflows/blob/master/CHANGELOG.md' target='_blank'>
-                    Changelog
-                </a>
-            </p>
+            <h5>
+                <a href='https://blog.argoproj.io/argo-workflows-v3-1-is-coming-1fb1c1091324?utm_source=argo-ui'>v3.1</a>
+            </h5>
+            <ul className='new-version-modal-bullets'>
+                <li>
+                    Run workflows <b>faster and cheaper</b> using container set template and Emissary executor.
+                </li>
+                <li>Run fan-out workflows based on bucket contents using data templates.</li>
+                <li>Complex and dynamic templating using expression tag templates.</li>
+            </ul>
         </Modal>
     );
 };
