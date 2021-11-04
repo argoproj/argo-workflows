@@ -490,7 +490,7 @@ test-%: $(GOPATH)/bin/go-junit-report
 	cat test.out | go-junit-report > junit.xml
 
 .PHONY: test-examples
-test-examples: ./dist/argo
+test-examples:
 	./hack/test-examples.sh
 
 # clean
@@ -498,7 +498,7 @@ test-examples: ./dist/argo
 .PHONY: clean
 clean:
 	go clean
-	rm -Rf test-results node_modules vendor v2 argoexec-linux-amd64 dist/* ui/dist
+	rm -Rf test-results node_modules vendor v2 v3 argoexec-linux-amd64 dist/* ui/dist
 
 # swagger
 

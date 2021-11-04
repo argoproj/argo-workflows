@@ -5,10 +5,10 @@ set -eu -o pipefail
 kubectl apply -f examples/configmaps/simple-parameters-configmap.yaml
 
 grep -lR 'workflows.argoproj.io/test' examples/* | while read f ; do
-  kubectl delete wf -l workflows.argoproj.io/test
+  kubectl delete workflow -l workflows.argoproj.io/test
   echo "RUN $f"
   kubectl create -f $f
-  name=$(kubectl get wf -o name)
+  name=$(kubectl get workflow -o name)
   kubectl wait --for=condition=Completed $name --timeout 10s
   phase="$(kubectl get $name -o 'jsonpath={.status.phase}')"
   test Succeeded == $phase
