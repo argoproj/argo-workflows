@@ -6,7 +6,6 @@ package e2e
 import (
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -22,8 +21,6 @@ type PodCleanupSuite struct {
 	fixtures.E2ESuite
 }
 
-const enoughTimeForPodCleanup = 10 * time.Second
-
 func (s *PodCleanupSuite) TestNone() {
 	s.Given().
 		Workflow(`
@@ -38,8 +35,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow().
-		Wait(enoughTimeForPodCleanup).
+		WaitForPod(fixtures.PodCompleted).
 		Then().
 		ExpectWorkflowNode(wfv1.SucceededPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
 			if assert.NotNil(t, n) && assert.NotNil(t, p) {
@@ -104,8 +100,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow().
-		Wait(enoughTimeForPodCleanup).
+		WaitForPod(fixtures.PodDeleted).
 		Then().
 		ExpectWorkflowNode(wfv1.FailedPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
 			if assert.NotNil(t, n) {
@@ -151,8 +146,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow().
-		Wait(enoughTimeForPodCleanup).
+		WaitForPod(fixtures.PodDeleted).
 		Then().
 		ExpectWorkflowNode(wfv1.FailedPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
 			if assert.NotNil(t, n) {
@@ -192,8 +186,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow().
-		Wait(enoughTimeForPodCleanup).
+		WaitForPod(fixtures.PodDeleted).
 		Then().
 		ExpectWorkflowNode(wfv1.FailedPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
 			if assert.NotNil(t, n) {
@@ -208,6 +201,7 @@ spec:
 }
 
 func (s *PodCleanupSuite) TestOnPodSuccessLabelNotMatch() {
+	s.T().Skip("https://github.com/argoproj/argo-workflows/issues/7159")
 	s.Given().
 		Workflow(`
 metadata:
@@ -239,8 +233,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow().
-		Wait(enoughTimeForPodCleanup).
+		WaitForPod(fixtures.PodCompleted).
 		Then().
 		ExpectWorkflowNode(wfv1.FailedPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
 			if assert.NotNil(t, n) {
@@ -286,8 +279,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow().
-		Wait(enoughTimeForPodCleanup).
+		WaitForPod(fixtures.PodDeleted).
 		Then().
 		ExpectWorkflowNode(wfv1.FailedPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
 			if assert.NotNil(t, n) {
@@ -318,8 +310,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow().
-		Wait(enoughTimeForPodCleanup).
+		WaitForPod(fixtures.PodDeleted).
 		Then().
 		ExpectWorkflowNode(wfv1.FailedPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
 			if assert.NotNil(t, n) {
@@ -329,6 +320,7 @@ spec:
 }
 
 func (s *PodCleanupSuite) TestOnWorkflowCompletionLabelNotMatch() {
+	s.T().Skip("https://github.com/argoproj/argo-workflows/issues/7159")
 	s.Given().
 		Workflow(`
 metadata:
@@ -348,8 +340,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow().
-		Wait(enoughTimeForPodCleanup).
+		WaitForPod(fixtures.PodCompleted).
 		Then().
 		ExpectWorkflowNode(wfv1.FailedPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
 			if assert.NotNil(t, n) {
@@ -381,8 +372,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow().
-		Wait(enoughTimeForPodCleanup).
+		WaitForPod(fixtures.PodDeleted).
 		Then().
 		ExpectWorkflowNode(wfv1.FailedPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
 			if assert.NotNil(t, n) {
@@ -407,8 +397,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow().
-		Wait(enoughTimeForPodCleanup).
+		WaitForPod(fixtures.PodDeleted).
 		Then().
 		ExpectWorkflowNode(wfv1.SucceededPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
 			if assert.NotNil(t, n) {
@@ -418,6 +407,7 @@ spec:
 }
 
 func (s *PodCleanupSuite) TestOnWorkflowSuccessLabelNotMatch() {
+	s.T().Skip("https://github.com/argoproj/argo-workflows/issues/7159")
 	s.Given().
 		Workflow(`
 metadata:
@@ -436,8 +426,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow().
-		Wait(enoughTimeForPodCleanup).
+		WaitForPod(fixtures.PodCompleted).
 		Then().
 		ExpectWorkflowNode(wfv1.SucceededPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
 			if assert.NotNil(t, n) {
@@ -468,8 +457,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow().
-		Wait(enoughTimeForPodCleanup).
+		WaitForPod(fixtures.PodDeleted).
 		Then().
 		ExpectWorkflowNode(wfv1.SucceededPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
 			if assert.NotNil(t, n) {
