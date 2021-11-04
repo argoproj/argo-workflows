@@ -310,11 +310,10 @@ func (w *When) hydrateWorkflow(wf *wfv1.Workflow) {
 	}
 }
 
+// Wait creates slow flaky tests
+// DEPRECATED: do not use this
 func (w *When) Wait(timeout time.Duration) *When {
 	w.t.Helper()
-	if timeout > 3*time.Second {
-		w.t.Fatal("timout must be less than 3s, otherwise we'll have a slow test suite")
-	}
 	_, _ = fmt.Println("Waiting for", timeout.String())
 	time.Sleep(timeout)
 	_, _ = fmt.Println("Done waiting")
