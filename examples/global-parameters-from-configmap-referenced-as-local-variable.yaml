@@ -25,6 +25,5 @@ spec:
       parameters:
       - name: message
     container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["{{inputs.parameters.message}}"]
+      image: argoproj/argosay:v2
+      args: ["echo", "{{inputs.parameters.message}}"]

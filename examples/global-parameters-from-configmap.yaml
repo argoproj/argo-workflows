@@ -24,6 +24,5 @@ spec:
   templates:
   - name: whalesay
     container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["{{workflow.parameters.message}}"]
+      image: argoproj/argosay:v2
+      args: ["echo", "{{workflow.parameters.message}}"]
