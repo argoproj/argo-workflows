@@ -3,8 +3,7 @@ import * as classNames from 'classnames';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
-import {EventSource} from '../../../../models';
-import {kubernetes} from '../../../../models';
+import {EventSource, kubernetes} from '../../../../models';
 import {ID} from '../../../event-flow/components/event-flow-details/id';
 import {Utils as EventsUtils} from '../../../sensors/components/utils';
 import {uiUrl} from '../../../shared/base';
@@ -80,6 +79,9 @@ export const EventSourceList = ({match, location, history}: RouteComponentProps<
         return {value, ...x};
     })();
 
+    const loading = !error && !eventSources;
+    const zeroState = (eventSources || []).length === 0;
+
     return (
         <Page
             title='EventSources'
@@ -100,9 +102,8 @@ export const EventSourceList = ({match, location, history}: RouteComponentProps<
                 tools: [<NamespaceFilter key='namespace-filter' value={namespace} onChange={setNamespace} />]
             }}>
             <ErrorNotice error={error} />
-            {!eventSources ? (
-                <Loading />
-            ) : eventSources.length === 0 ? (
+            {loading && <Loading />}
+            {zeroState && (
                 <ZeroState title='No event sources'>
                     <p>
                         An event source defines what events can be used to trigger actions. Typical event sources are calender (to create events on schedule) GitHub or GitLab (to
@@ -111,7 +112,8 @@ export const EventSourceList = ({match, location, history}: RouteComponentProps<
                     </p>
                     <p>{learnMore}.</p>
                 </ZeroState>
-            ) : (
+            )}
+            {eventSources && eventSources.length > 0 && (
                 <>
                     <div className='argo-table-list'>
                         <div className='row argo-table-list__head'>
