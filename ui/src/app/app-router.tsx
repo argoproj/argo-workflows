@@ -13,6 +13,7 @@ import eventflow from './event-flow';
 import eventSources from './event-sources';
 import help from './help';
 import login from './login';
+import {ModalSwitch} from './modals/modal-switch';
 import pipelines from './pipelines';
 import reports from './reports';
 import sensors from './sensors';
@@ -178,6 +179,7 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                             </Switch>
                         </ErrorBoundary>
                         <ChatButton />
+                        <ModalSwitch version={version ? version.version : 'v0.0.0'} />
                     </Layout>
                 </Switch>
             </Router>
