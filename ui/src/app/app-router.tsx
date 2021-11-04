@@ -26,7 +26,6 @@ import {Widgets} from './widgets/widgets';
 import workflowEventBindings from './workflow-event-bindings';
 import workflowTemplates from './workflow-templates';
 import workflows from './workflows';
-import {FirstTimeUser} from "./modal/first-time-user";
 
 const eventFlowUrl = uiUrl('event-flow');
 const sensorUrl = uiUrl('sensors');
@@ -179,7 +178,6 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                             </Switch>
                         </ErrorBoundary>
                         <ChatButton />
-                        <FirstTimeUser/>
                     </Layout>
                 </Switch>
             </Router>
