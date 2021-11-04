@@ -113,7 +113,7 @@ spec:
 			})
 	})
 	s.Run("TestSuspend", func() {
-		//s.T().Parallel()
+		s.T().Parallel()
 		s.Given().
 			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
