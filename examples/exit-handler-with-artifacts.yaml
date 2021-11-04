@@ -8,8 +8,6 @@ metadata:
     workflows.argoproj.io/description: |
       onExitTemplate enables workflow to pass the arguments (parameters/Artifacts) to exit handler template.
     workflows.argoproj.io/version: '>= 3.1.0'
-    workflows.argoproj.io/verify.py: |
-      assert status["phase"] == "Succeeded"
 spec:
   entrypoint: main
   templates:

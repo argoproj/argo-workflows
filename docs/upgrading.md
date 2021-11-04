@@ -27,6 +27,10 @@ HTTPArtifact without a scheme will now defaults to https instead of http
 
 user need to explicitly include a http prefix if they want to retrieve HTTPArtifact through http
 
+### chore!: Remove the hidden flag `--verify` from `argo submit`.
+
+The hidden flag `--verify` has been removed from `argo submit`. This is a internal testing flag we don't need anymore.
+
 ## Upgrading to v3.2
 
 ### [e5b131a33](https://github.com/argoproj/argo-workflows/commit/e5b131a33) feat: Add template node to pod name. Fixes #1319 (#6712)
