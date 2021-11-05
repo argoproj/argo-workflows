@@ -121,7 +121,7 @@ type WorkflowController struct {
 	// progressFileTickDuration defines how often the progress file is read.
 	// Default is 3s and can be configured using the env var ARGO_PROGRESS_FILE_TICK_DURATION
 	progressFileTickDuration time.Duration
-	plugins               []plugin.Symbol
+	plugins                  []plugin.Symbol
 }
 
 const (
