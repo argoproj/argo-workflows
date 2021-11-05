@@ -213,12 +213,11 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		}
 	}
 
-	if wf.Spec.PodGC != nil {
-		switch wf.Spec.PodGC.Strategy {
-		case wfv1.PodGCOnPodCompletion, wfv1.PodGCOnPodSuccess, wfv1.PodGCOnWorkflowCompletion, wfv1.PodGCOnWorkflowSuccess:
-		default:
-			return nil, errors.Errorf(errors.CodeBadRequest, "podGC.strategy unknown strategy '%s'", wf.Spec.PodGC.Strategy)
-		}
+	if !wf.Spec.PodGC.GetStrategy().IsValid() {
+		return nil, errors.Errorf(errors.CodeBadRequest, "podGC.strategy unknown strategy '%s'", wf.Spec.PodGC.Strategy)
+	}
+	if _, err := wf.Spec.PodGC.GetLabelSelector(); err != nil {
+		return nil, errors.Errorf(errors.CodeBadRequest, "podGC.labelSelector invalid: %v", err)
 	}
 
 	// Check if all templates can be resolved.

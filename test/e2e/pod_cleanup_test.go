@@ -4,13 +4,11 @@
 package e2e
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
@@ -35,36 +33,6 @@ spec:
 		When().
 		SubmitWorkflow().
 		WaitForPod(fixtures.PodCompleted)
-}
-
-func (s *PodCleanupSuite) TestInvalidPodGCLabelSelector() {
-	s.Given().
-		Workflow(`
-metadata:
-  generateName: test-pod-cleanup-invalid-pod-gc-label-selector-
-spec:
-  podGC:
-    strategy: OnPodCompletion
-    labelSelector:
-      matchExpressions:
-        - {key: environment, operator: InvalidOperator, values: [dev]}
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: success
-            template: success
-    - name: success
-      container:
-        image: argoproj/argosay:v2
-`).
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeFailed).
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.True(t, strings.Contains(status.Message, "failed to parse label selector"))
-		})
 }
 
 func (s *PodCleanupSuite) TestOnPodCompletion() {
@@ -109,7 +77,6 @@ spec:
 
 func (s *PodCleanupSuite) TestOnPodCompletionLabelSelected() {
 	s.Run("FailedPod", func() {
-		s.T().Skip("https://github.com/argoproj/argo-workflows/issues/7159")
 		s.Given().
 			Workflow(`
 metadata:
@@ -135,7 +102,6 @@ spec:
 			WaitForPod(fixtures.PodDeleted)
 	})
 	s.Run("SucceededPod", func() {
-		s.T().Skip("https://github.com/argoproj/argo-workflows/issues/7159")
 		s.Given().
 			Workflow(`
 metadata:
@@ -160,7 +126,6 @@ spec:
 
 func (s *PodCleanupSuite) TestOnPodSuccess() {
 	s.Run("FailedPod", func() {
-		s.T().Skip("https://github.com/argoproj/argo-workflows/issues/7159")
 		s.Given().
 			Workflow(`
 metadata:
@@ -200,7 +165,6 @@ spec:
 }
 
 func (s *PodCleanupSuite) TestOnPodSuccessLabelNotMatch() {
-	s.T().Skip("https://github.com/argoproj/argo-workflows/issues/7159")
 	s.Given().
 		Workflow(`
 metadata:
@@ -248,7 +212,6 @@ spec:
 
 func (s *PodCleanupSuite) TestOnPodSuccessLabelMatch() {
 	s.Run("FailedPod", func() {
-		s.T().Skip("https://github.com/argoproj/argo-workflows/issues/7159")
 		s.Given().
 			Workflow(`
 metadata:
@@ -317,7 +280,6 @@ spec:
 }
 
 func (s *PodCleanupSuite) TestOnWorkflowCompletionLabelNotMatch() {
-	s.T().Skip("https://github.com/argoproj/argo-workflows/issues/7159")
 	s.Given().
 		Workflow(`
 metadata:
@@ -386,7 +348,6 @@ spec:
 }
 
 func (s *PodCleanupSuite) TestOnWorkflowSuccessLabelNotMatch() {
-	s.T().Skip("https://github.com/argoproj/argo-workflows/issues/7159")
 	s.Given().
 		Workflow(`
 metadata:
