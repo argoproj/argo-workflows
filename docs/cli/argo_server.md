@@ -30,6 +30,7 @@ See https://argoproj.github.io/argo-workflows/argo-server/
       --managed-namespace string             namespace that watches, default to the installation namespace
       --namespaced                           run as namespaced mode
   -p, --port int                             Port to listen on (default 2746)
+      --sso-namespace string                 namespace that will be used for SSO RBAC. Defaults to installation namespace. Used only in namespaced mode
       --x-frame-options string               Set X-Frame-Options header in HTTP responses. (default "DENY")
 ```
 

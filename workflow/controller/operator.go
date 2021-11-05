@@ -69,7 +69,7 @@ type wfOperationCtx struct {
 	// updated indicates whether or not the workflow object itself was updated
 	// and needs to be persisted back to kubernetes
 	updated bool
-	// log is an logrus logging context to corralate logs with a workflow
+	// log is an logrus logging context to correlate logs with a workflow
 	log *log.Entry
 	// controller reference to workflow controller
 	controller *WorkflowController
@@ -993,6 +993,13 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 			if node.Type == wfv1.NodeTypePod {
 				if node.HostNodeName != pod.Spec.NodeName {
 					node.HostNodeName = pod.Spec.NodeName
+					woc.wf.Status.Nodes[nodeID] = node
+					woc.updated = true
+				}
+				podProgress := progress.PodProgress(pod, &node)
+				if podProgress.IsValid() && node.Progress != podProgress {
+					woc.log.WithField("progress", podProgress).Info("pod progress")
+					node.Progress = podProgress
 					woc.wf.Status.Nodes[nodeID] = node
 					woc.updated = true
 				}
@@ -2037,6 +2044,21 @@ func (woc *wfOperationCtx) findTemplate(pod *apiv1.Pod) *wfv1.Template {
 	node := woc.wf.GetNodeByName(nodeName)
 	if node == nil {
 		return nil // I don't expect this to happen in production, just in tests
+	}
+	return woc.GetNodeTemplate(node)
+}
+
+func (woc *wfOperationCtx) GetNodeTemplate(node *wfv1.NodeStatus) *wfv1.Template {
+	if node.TemplateRef != nil {
+		tmplCtx, err := woc.createTemplateContext(node.GetTemplateScope())
+		if err != nil {
+			woc.markNodeError(node.Name, err)
+		}
+		tmpl, err := tmplCtx.GetTemplateFromRef(node.TemplateRef)
+		if err != nil {
+			woc.markNodeError(node.Name, err)
+		}
+		return tmpl
 	}
 	return woc.wf.GetTemplateByName(node.TemplateName)
 }

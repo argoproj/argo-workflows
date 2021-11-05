@@ -40209,6 +40209,7 @@ with openapi_client.ApiClient() as api_client:
     log_options_limit_bytes = "logOptions.limitBytes_example" # str | If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional. (optional)
     log_options_insecure_skip_tls_verify_backend = True # bool | insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional. (optional)
     grep = "grep_example" # str |  (optional)
+    selector = "selector_example" # str |  (optional)
 
     # example passing only required values which don't have defaults set
     try:
@@ -40222,7 +40223,7 @@ with openapi_client.ApiClient() as api_client:
     # and optional values
     try:
         # DEPRECATED: Cannot work via HTTP if podName is an empty string. Use WorkflowLogs.
-        api_response = api_instance.workflow_service_pod_logs(namespace, name, pod_name, log_options_container=log_options_container, log_options_follow=log_options_follow, log_options_previous=log_options_previous, log_options_since_seconds=log_options_since_seconds, log_options_since_time_seconds=log_options_since_time_seconds, log_options_since_time_nanos=log_options_since_time_nanos, log_options_timestamps=log_options_timestamps, log_options_tail_lines=log_options_tail_lines, log_options_limit_bytes=log_options_limit_bytes, log_options_insecure_skip_tls_verify_backend=log_options_insecure_skip_tls_verify_backend, grep=grep)
+        api_response = api_instance.workflow_service_pod_logs(namespace, name, pod_name, log_options_container=log_options_container, log_options_follow=log_options_follow, log_options_previous=log_options_previous, log_options_since_seconds=log_options_since_seconds, log_options_since_time_seconds=log_options_since_time_seconds, log_options_since_time_nanos=log_options_since_time_nanos, log_options_timestamps=log_options_timestamps, log_options_tail_lines=log_options_tail_lines, log_options_limit_bytes=log_options_limit_bytes, log_options_insecure_skip_tls_verify_backend=log_options_insecure_skip_tls_verify_backend, grep=grep, selector=selector)
         pprint(api_response)
     except openapi_client.ApiException as e:
         print("Exception when calling WorkflowServiceApi->workflow_service_pod_logs: %s\n" % e)
@@ -40247,6 +40248,7 @@ Name | Type | Description  | Notes
  **log_options_limit_bytes** | **str**| If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional. | [optional]
  **log_options_insecure_skip_tls_verify_backend** | **bool**| insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver&#39;s TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional. | [optional]
  **grep** | **str**|  | [optional]
+ **selector** | **str**|  | [optional]
 
 ### Return type
 
@@ -41098,6 +41100,7 @@ with openapi_client.ApiClient() as api_client:
     log_options_limit_bytes = "logOptions.limitBytes_example" # str | If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional. (optional)
     log_options_insecure_skip_tls_verify_backend = True # bool | insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional. (optional)
     grep = "grep_example" # str |  (optional)
+    selector = "selector_example" # str |  (optional)
 
     # example passing only required values which don't have defaults set
     try:
@@ -41109,7 +41112,7 @@ with openapi_client.ApiClient() as api_client:
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.workflow_service_workflow_logs(namespace, name, pod_name=pod_name, log_options_container=log_options_container, log_options_follow=log_options_follow, log_options_previous=log_options_previous, log_options_since_seconds=log_options_since_seconds, log_options_since_time_seconds=log_options_since_time_seconds, log_options_since_time_nanos=log_options_since_time_nanos, log_options_timestamps=log_options_timestamps, log_options_tail_lines=log_options_tail_lines, log_options_limit_bytes=log_options_limit_bytes, log_options_insecure_skip_tls_verify_backend=log_options_insecure_skip_tls_verify_backend, grep=grep)
+        api_response = api_instance.workflow_service_workflow_logs(namespace, name, pod_name=pod_name, log_options_container=log_options_container, log_options_follow=log_options_follow, log_options_previous=log_options_previous, log_options_since_seconds=log_options_since_seconds, log_options_since_time_seconds=log_options_since_time_seconds, log_options_since_time_nanos=log_options_since_time_nanos, log_options_timestamps=log_options_timestamps, log_options_tail_lines=log_options_tail_lines, log_options_limit_bytes=log_options_limit_bytes, log_options_insecure_skip_tls_verify_backend=log_options_insecure_skip_tls_verify_backend, grep=grep, selector=selector)
         pprint(api_response)
     except openapi_client.ApiException as e:
         print("Exception when calling WorkflowServiceApi->workflow_service_workflow_logs: %s\n" % e)
@@ -41134,6 +41137,7 @@ Name | Type | Description  | Notes
  **log_options_limit_bytes** | **str**| If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional. | [optional]
  **log_options_insecure_skip_tls_verify_backend** | **bool**| insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver&#39;s TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional. | [optional]
  **grep** | **str**|  | [optional]
+ **selector** | **str**|  | [optional]
 
 ### Return type
 

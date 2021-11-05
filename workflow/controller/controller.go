@@ -112,6 +112,13 @@ type WorkflowController struct {
 	archiveLabelSelector  labels.Selector
 	cacheFactory          controllercache.Factory
 	wfTaskSetInformer     wfextvv1alpha1.WorkflowTaskSetInformer
+
+	// progressPatchTickDuration defines how often the executor will patch pod annotations if an updated progress is found.
+	// Default is 1m and can be configured using the env var ARGO_PROGRESS_PATCH_TICK_DURATION.
+	progressPatchTickDuration time.Duration
+	// progressFileTickDuration defines how often the progress file is read.
+	// Default is 3s and can be configured using the env var ARGO_PROGRESS_FILE_TICK_DURATION
+	progressFileTickDuration time.Duration
 }
 
 const (
@@ -144,6 +151,8 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		workflowKeyLock:            syncpkg.NewKeyLock(),
 		cacheFactory:               controllercache.NewCacheFactory(kubeclientset, namespace),
 		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
+		progressPatchTickDuration:  env.LookupEnvDurationOr(common.EnvVarProgressPatchTickDuration, 1*time.Minute),
+		progressFileTickDuration:   env.LookupEnvDurationOr(common.EnvVarProgressFileTickDuration, 3*time.Second),
 	}
 
 	wfc.UpdateConfig(ctx)

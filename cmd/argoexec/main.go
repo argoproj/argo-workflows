@@ -21,7 +21,7 @@ func main() {
 				os.Exit(137) // probably SIGTERM or SIGKILL
 			}
 		} else {
-			util.WriteTeriminateMessage(err.Error()) // we don't want to overwrite any other message
+			util.WriteTerminateMessage(err.Error()) // we don't want to overwrite any other message
 			println(err.Error())
 			os.Exit(64)
 		}
