@@ -90,8 +90,6 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
 
 ## Emissary (emissary)
 
-![alpha](assets/alpha.svg)
-
 > v3.1 and after
 
 **default in >= v3.3 **
