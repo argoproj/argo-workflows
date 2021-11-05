@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-
 	log "github.com/sirupsen/logrus"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -60,7 +58,7 @@ type patchResponse struct {
 func (ae *AgentExecutor) Agent(ctx context.Context) error {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 
-	log.Info("SIMON Starting 12")
+	log.Info("Starting Agent")
 
 	agentTaskQueue := make(chan agentTask)
 	patchResponseQueue := make(chan patchResponse)
@@ -78,7 +76,7 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 		}
 
 		for event := range wfWatch.ResultChan() {
-			log.WithFields(log.Fields{"workflow": ae.WorkflowName, "event_type": event.Type}).Infof("SIMON TaskSet Event")
+			log.WithFields(log.Fields{"workflow": ae.WorkflowName, "event_type": event.Type}).Infof("TaskSet Event")
 
 			if event.Type == watch.Deleted {
 				// We're done if the task set is deleted
@@ -104,38 +102,38 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 func (ae *AgentExecutor) taskWorker(ctx context.Context, agentTaskQueue chan agentTask, patchResponseQueue chan patchResponse) {
 	for task := range agentTaskQueue {
 		nodeID, tmpl := task.NodeId, task.Template
-		log.WithFields(log.Fields{"nodeID": nodeID}).Error("SIMON Attempting task")
+		log.WithFields(log.Fields{"nodeID": nodeID}).Error("Attempting task")
 
 		// Do not work on tasks that have already been considered once, to prevent calling an endpoint more
 		// than once unintentionally.
 		if _, ok := ae.consideredTasks[nodeID]; ok {
-			log.WithFields(log.Fields{"nodeID": nodeID}).Error("SIMON Task is already considered")
+			log.WithFields(log.Fields{"nodeID": nodeID}).Error("Task is already considered")
 			continue
 		}
 
 		ae.consideredTasks[nodeID] = true
 
-		log.WithFields(log.Fields{"nodeID": nodeID}).Error("SIMON Processing task")
+		log.WithFields(log.Fields{"nodeID": nodeID}).Error("Processing task")
 		patch, err := ae.processTask(ctx, nodeID, tmpl)
 		if err != nil {
 			log.WithFields(log.Fields{"error": err, "nodeID": nodeID}).Error("Error in agent task")
 			return
 		}
 
-		log.WithFields(log.Fields{"nodeID": nodeID}).Error("SIMON Sending patch")
+		log.WithFields(log.Fields{"nodeID": nodeID}).Error("Sending patch")
 		patchResponseQueue <- patchResponse{NodeId: nodeID, Patch: patch}
 	}
 }
 
 func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alpha1.WorkflowTaskSetInterface, patchResponseQueue chan patchResponse) {
 	for patch := range patchResponseQueue {
-		log.WithFields(log.Fields{"workflow": ae.WorkflowName, "nodeID": patch.NodeId}).Error("SIMON Processing Patch")
+		log.WithFields(log.Fields{"workflow": ae.WorkflowName, "nodeID": patch.NodeId}).Error("Processing Patch")
 
 		obj, err := taskSetInterface.Patch(ctx, ae.WorkflowName, types.MergePatchType, patch.Patch, metav1.PatchOptions{})
 		if err != nil {
 			log.WithError(err).WithField("taskset", obj).Errorf("TaskSet Patch Failed")
 		} else {
-			log.WithField("taskset", obj).Infof("SIMON Patched TaskSet, %s", patch)
+			log.WithField("taskset", obj).Infof("Patched TaskSet, %s", patch)
 		}
 	}
 }

@@ -28,7 +28,7 @@ func NewAgentCommand() *cobra.Command {
 
 func initAgentExecutor() *executor.AgentExecutor {
 	version := argo.GetVersion()
-	log.WithFields(log.Fields{"version": version.Version}).Info("SIMON Starting Workflow Executor")
+	log.WithFields(log.Fields{"version": version.Version}).Info("Starting Workflow Executor")
 	config, err := clientConfig.ClientConfig()
 	checkErr(err)
 
