@@ -801,8 +801,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#retry-expressions" title="Retry expressions" class="md-nav__link">
-    Retry expressions
+  <a href="#conditional-retries" title="Conditional retries" class="md-nav__link">
+    Conditional retries
   </a>
   
 </li>
@@ -2286,8 +2286,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#retry-expressions" title="Retry expressions" class="md-nav__link">
-    Retry expressions
+  <a href="#conditional-retries" title="Conditional retries" class="md-nav__link">
+    Conditional retries
   </a>
   
 </li>
@@ -2343,7 +2343,7 @@
 <li>Always: Retry all failed steps</li>
 <li>OnFailure: Retry steps whose main container is marked as failed in Kubernetes</li>
 <li>OnError: Retry steps that encounter Argo controller errors, or whose init or wait containers fail</li>
-<li>OnTransientError: Retry steps that encounter errors <a href="https://github.com/argoproj/argo-workflows/blob/master/util/errors/errors.go">defined as transient</a>, or errors matching the TRANSIENT_ERROR_PATTERN <a href="https://argoproj.github.io/argo-workflows/environment-variables/">environment variable</a>.</li>
+<li>OnTransientError: Retry steps that encounter errors <a href="https://github.com/argoproj/argo-workflows/blob/master/util/errors/errors.go">defined as transient</a>, or errors matching the TRANSIENT_ERROR_PATTERN <a href="https://argoproj.github.io/argo-workflows/environment-variables/">environment variable</a>. Available in version 3.0 and later.</li>
 </ul>
 <p>For example:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
@@ -2363,7 +2363,10 @@
       <span class="c1"># fail with a 80% probability</span>
       <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;import</span><span class="nv"> </span><span class="s">random;</span><span class="nv"> </span><span class="s">import</span><span class="nv"> </span><span class="s">sys;</span><span class="nv"> </span><span class="s">exit_code</span><span class="nv"> </span><span class="s">=</span><span class="nv"> </span><span class="s">random.choice(range(0,</span><span class="nv"> </span><span class="s">5));</span><span class="nv"> </span><span class="s">sys.exit(exit_code)&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
-<h2 id="retry-expressions">Retry expressions<a class="headerlink" href="#retry-expressions" title="Permanent link">&para;</a></h2>
+<h2 id="conditional-retries">Conditional retries<a class="headerlink" href="#conditional-retries" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p>v3.2 and after</p>
+</blockquote>
 <p>You can also use <code>expression</code> to control retries. The <code>expression</code> field
 accepts an <a href="https://github.com/antonmedv/expr">expr</a> expression and has
 access to the following variables:</p>
