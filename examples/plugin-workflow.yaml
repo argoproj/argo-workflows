@@ -9,8 +9,6 @@ metadata:
     workflows.argoproj.io/description: |
       This example shows how to use the build-in hello plugin. The plugin will change the "hello" annotation from
       "greetings" to "goodbye" and it will mark the hello step as successful.
-    workflows.argoproj.io/verify.py: |
-      assert status["phase"] == "Succeeded"
 spec:
   entrypoint: main
   templates:
