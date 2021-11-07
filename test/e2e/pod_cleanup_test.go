@@ -6,8 +6,8 @@ package e2e
 import (
 	"testing"
 
-	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 	"github.com/stretchr/testify/suite"
+
 )
 
 type PodCleanupSuite struct {
