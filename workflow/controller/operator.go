@@ -198,6 +198,9 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	woc.log.Infof("Processing workflow")
 
+	woc.runWorkflowPreOperatePlugins(ctx)
+	defer woc.runWorkflowPreUpdatePlugins(ctx)
+
 	// Set the Execute workflow spec for execution
 	// ExecWF is a runtime execution spec which merged from Wf, WFT and Wfdefault
 	err := woc.setExecWorkflow(ctx)
@@ -570,8 +573,6 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	if woc.orig.ResourceVersion != woc.wf.ResourceVersion {
 		woc.log.Panic("cannot persist updates with mismatched resource versions")
 	}
-
-	woc.runWorkflowPreUpdatePlugins(ctx)
 
 	wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.ObjectMeta.Namespace)
 	// try and compress nodes if needed

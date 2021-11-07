@@ -5,19 +5,19 @@ import (
 )
 
 type NodePreExecuteArgs struct {
-	Workflow *wfv1.Workflow
-	Template *wfv1.Template
-	Node     *wfv1.NodeStatus
+	Workflow *wfv1.Workflow   `json:"workflow"`
+	Template *wfv1.Template   `json:"template"`
+	Node     *wfv1.NodeStatus `json:"node"`
 }
 
 type NodePreExecuteReply struct {
-	Node *wfv1.NodeStatus
+	Node *wfv1.NodeStatus `json:"node,omitempty"`
 }
 
 type NodePostExecuteArgs struct {
-	Workflow *wfv1.Workflow
-	Template *wfv1.Template
-	Node     *wfv1.NodeStatus
+	Workflow *wfv1.Workflow   `json:"workflow"`
+	Template *wfv1.Template   `json:"template"`
+	Node     *wfv1.NodeStatus `json:"node"`
 }
 
 type NodePostExecuteReply struct {

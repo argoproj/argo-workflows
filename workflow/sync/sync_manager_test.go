@@ -314,7 +314,7 @@ func GetSyncLimitFunc(kube *fake.Clientset) func(string) (int, error) {
 	syncLimitConfig := func(lockName string) (int, error) {
 		items := strings.Split(lockName, "/")
 		if len(items) < 4 {
-			return 0, argoErr.New(argoErr.CodeBadRequest, "Invalid Config Map Key")
+			return 0, argoErr.New(argoErr.CodeBadRequest, "Invalid Spec Map Key")
 		}
 
 		ctx := context.Background()

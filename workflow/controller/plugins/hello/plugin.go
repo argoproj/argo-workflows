@@ -10,19 +10,18 @@ import (
 
 type plugin struct{}
 
-var Plugin = plugin{} //nolint:deadcode
-
-func init() {
+func New(map[string]interface{}) (interface{}, error) { //nolint:deadcode
 	log.Println("Hello! Just starting up...")
+	return &plugin{}, nil
 }
 
 func main() {
 	// main funcs are never called in a Go plugin
 }
 
-var _ plugins.WorkflowLifecycleHook = plugin{}
+var _ plugins.WorkflowLifecycleHook = &plugin{}
 
-func (plugin) WorkflowPreOperate(args plugins.WorkflowPreOperateArgs, reply *plugins.WorkflowPreOperateReply) error { //nolint:unparam
+func (p *plugin) WorkflowPreOperate(args plugins.WorkflowPreOperateArgs, reply *plugins.WorkflowPreOperateReply) error {
 	if _, ok := args.Workflow.Annotations["hello"]; ok && args.Workflow.Status.Phase == wfv1.WorkflowUnknown {
 		log.Println("hello: setting hello annotation to running")
 		reply.Workflow = args.Workflow
@@ -31,7 +30,7 @@ func (plugin) WorkflowPreOperate(args plugins.WorkflowPreOperateArgs, reply *plu
 	return nil
 }
 
-func (plugin) WorkflowPreUpdate(args plugins.WorkflowPreUpdateArgs, reply *plugins.WorkflowPreUpdateReply) error { //nolint:unparam
+func (p *plugin) WorkflowPreUpdate(args plugins.WorkflowPreUpdateArgs, reply *plugins.WorkflowPreUpdateReply) error {
 	if args.New.Annotations["hello"] == "running" {
 		log.Println("hello: updating hello annotation")
 		reply.New = args.New
@@ -40,9 +39,9 @@ func (plugin) WorkflowPreUpdate(args plugins.WorkflowPreUpdateArgs, reply *plugi
 	return nil
 }
 
-var _ plugins.NodeLifecycleHook = plugin{}
+var _ plugins.NodeLifecycleHook = &plugin{}
 
-func (plugin) NodePreExecute(args plugins.NodePreExecuteArgs, reply *plugins.NodePreExecuteReply) error { //nolint:unparam
+func (p *plugin) NodePreExecute(args plugins.NodePreExecuteArgs, reply *plugins.NodePreExecuteReply) error {
 	value, err := args.Template.Plugin.Get("hello")
 	if err != nil {
 		return err
@@ -56,7 +55,7 @@ func (plugin) NodePreExecute(args plugins.NodePreExecuteArgs, reply *plugins.Nod
 	return nil
 }
 
-func (plugin) NodePostExecute(args plugins.NodePostExecuteArgs, reply *plugins.NodePostExecuteReply) error {
+func (p *plugin) NodePostExecute(args plugins.NodePostExecuteArgs, reply *plugins.NodePostExecuteReply) error {
 	value, err := args.Template.Plugin.Get("hello")
 	if err != nil {
 		return err
@@ -85,9 +84,9 @@ func (p plugin) PodPostCreate(args plugins.PodPostCreateArgs, reply *plugins.Pod
 	return nil
 }
 
-var _ plugins.ParameterSubstitutionPlugin = plugin{}
+var _ plugins.ParameterSubstitutionPlugin = &plugin{}
 
-func (plugin) ParameterPreSubstitution(args plugins.ParameterPreSubstitutionArgs, reply *plugins.ParameterPreSubstitutionReply) error {
+func (p *plugin) ParameterPreSubstitution(args plugins.ParameterPreSubstitutionArgs, reply *plugins.ParameterPreSubstitutionReply) error {
 	if _, ok := args.Workflow.Annotations["hello"]; ok {
 		log.Printf("hello: adding hello parameter: %s\n", args.Workflow.Name)
 		reply.Parameters = map[string]string{}

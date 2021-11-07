@@ -8,7 +8,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/plugins"
 )
 
-func (wfc *WorkflowController) runWorkflowPreOperatePlugins(ctx context.Context, woc *wfOperationCtx) {
+func (woc *wfOperationCtx) runWorkflowPreOperatePlugins(ctx context.Context) {
 	args := plugins.WorkflowPreOperateArgs{Workflow: woc.wf}
 	reply := &plugins.WorkflowPreOperateReply{}
 	for _, sym := range woc.controller.plugins {
@@ -24,6 +24,9 @@ func (wfc *WorkflowController) runWorkflowPreOperatePlugins(ctx context.Context,
 }
 
 func (woc *wfOperationCtx) runWorkflowPreUpdatePlugins(ctx context.Context) {
+	if !woc.updated {
+		return
+	}
 	args := plugins.WorkflowPreUpdateArgs{Old: woc.orig, New: woc.wf}
 	reply := &plugins.WorkflowPreUpdateReply{}
 	for _, sym := range woc.controller.plugins {

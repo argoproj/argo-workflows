@@ -1,0 +1,3 @@
+path: rpc.so
+spec:
+  address: http://localhost:1234

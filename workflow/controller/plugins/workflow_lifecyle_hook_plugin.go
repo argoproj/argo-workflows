@@ -5,20 +5,20 @@ import (
 )
 
 type WorkflowPreOperateArgs struct {
-	Workflow *wfv1.Workflow
+	Workflow *wfv1.Workflow `json:"workflow"`
 }
 
 type WorkflowPreOperateReply struct {
-	Workflow *wfv1.Workflow
+	Workflow *wfv1.Workflow `json:"workflow,omitempty"`
 }
 
 type WorkflowPreUpdateArgs struct {
-	Old *wfv1.Workflow
-	New *wfv1.Workflow
+	Old *wfv1.Workflow `json:"old"`
+	New *wfv1.Workflow `json:"new"`
 }
 
 type WorkflowPreUpdateReply struct {
-	New *wfv1.Workflow
+	New *wfv1.Workflow `json:"new,omitempty"`
 }
 
 type WorkflowLifecycleHook interface {

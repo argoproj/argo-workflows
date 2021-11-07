@@ -7,19 +7,19 @@ import (
 )
 
 type PodPreCreateArgs struct {
-	Workflow *wfv1.Workflow
-	Template *wfv1.Template
-	Pod      *corev1.Pod
+	Workflow *wfv1.Workflow `json:"workflow"`
+	Template *wfv1.Template `json:"template"`
+	Pod      *corev1.Pod    `json:"pod"`
 }
 
 type PodPreCreateReply struct {
-	Pod *corev1.Pod
+	Pod *corev1.Pod `json:"pod,omitempty"`
 }
 
 type PodPostCreateArgs struct {
-	Workflow *wfv1.Workflow
-	Template *wfv1.Template
-	Pod      *corev1.Pod
+	Workflow *wfv1.Workflow `json:"workflow"`
+	Template *wfv1.Template `json:"template"`
+	Pod      *corev1.Pod    `json:"pod"`
 }
 
 type PodPostCreateReply struct {

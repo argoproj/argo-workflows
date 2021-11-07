@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"plugin"
 	"strconv"
 	"syscall"
@@ -173,28 +172,6 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 	}
 
 	return &wfc, nil
-}
-
-func (wfc *WorkflowController) loadPlugins(dir string) error {
-	log.WithField("dir", dir).Info("loading plugins")
-	files, err := os.ReadDir(dir)
-	if err != nil {
-		return err
-	}
-	for _, f := range files {
-		path := filepath.Join(dir, f.Name())
-		log.WithField("path", path).Info("loading plugin")
-		plug, err := plugin.Open(path)
-		if err != nil {
-			return err
-		}
-		sym, err := plug.Lookup("Plugin")
-		if err != nil {
-			return err
-		}
-		wfc.plugins = append(wfc.plugins, sym)
-	}
-	return nil
 }
 
 func (wfc *WorkflowController) newThrottler() sync.Throttler {
@@ -793,7 +770,6 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		return true
 	}
 	startTime := time.Now()
-	wfc.runWorkflowPreOperatePlugins(ctx, woc)
 	woc.operate(ctx)
 	wfc.metrics.OperationCompleted(time.Since(startTime).Seconds())
 	if woc.wf.Status.Fulfilled() {
