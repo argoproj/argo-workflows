@@ -29,7 +29,7 @@ Use `retryPolicy` to choose which failures to retry:
 - Always: Retry all failed steps
 - OnFailure: Retry steps whose main container is marked as failed in Kubernetes
 - OnError: Retry steps that encounter Argo controller errors, or whose init or wait containers fail
-- OnTransientError: Retry steps that encounter errors [defined as transient](https://github.com/argoproj/argo-workflows/blob/master/util/errors/errors.go), or errors matching the TRANSIENT_ERROR_PATTERN [environment variable](https://argoproj.github.io/argo-workflows/environment-variables/).
+- OnTransientError: Retry steps that encounter errors [defined as transient](https://github.com/argoproj/argo-workflows/blob/master/util/errors/errors.go), or errors matching the TRANSIENT_ERROR_PATTERN [environment variable](https://argoproj.github.io/argo-workflows/environment-variables/). Available in version 3.0 and later.
 
 For example:
 
@@ -52,7 +52,9 @@ spec:
       args: ["import random; import sys; exit_code = random.choice(range(0, 5)); sys.exit(exit_code)"]
 ```
 
-## Retry expressions
+## Conditional retries
+
+> v3.2 and after
 
 You can also use `expression` to control retries. The `expression` field
 accepts an [expr](https://github.com/antonmedv/expr) expression and has
