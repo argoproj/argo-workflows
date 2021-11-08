@@ -1,14 +1,14 @@
 package controller
 
 import (
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/plugins"
+	controller2 "github.com/argoproj/argo-workflows/v3/pkg/plugins/controller"
 )
 
 func (woc *wfOperationCtx) runParameterSubstitutionPlugins(p map[string]string) error {
-	args := plugins.ParameterPreSubstitutionArgs{Workflow: woc.wf.Reduced()}
-	reply := &plugins.ParameterPreSubstitutionReply{}
+	args := controller2.ParameterPreSubstitutionArgs{Workflow: woc.wf.Reduced()}
+	reply := &controller2.ParameterPreSubstitutionReply{}
 	for _, sym := range woc.controller.plugins {
-		if plug, ok := sym.(plugins.ParameterSubstitutionPlugin); ok {
+		if plug, ok := sym.(controller2.ParameterSubstitutionPlugin); ok {
 			if err := plug.ParameterPreSubstitution(args, reply); err != nil {
 				return err
 			} else if reply.Parameters != nil {

@@ -5,7 +5,7 @@ import (
 	"log"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/plugins"
+	plugins "github.com/argoproj/argo-workflows/v3/pkg/plugins/controller"
 )
 
 type plugin struct{}
@@ -42,7 +42,7 @@ func (p *plugin) WorkflowPostOperate(args plugins.WorkflowPostOperateArgs, reply
 var _ plugins.NodeLifecycleHook = &plugin{}
 
 func (p *plugin) NodePreExecute(args plugins.NodePreExecuteArgs, reply *plugins.NodePreExecuteReply) error {
-	value, err := args.Template.Plugin.Get("hello")
+	value, err := args.Template.Plugin.Get("helloController")
 	if err != nil {
 		return err
 	}
@@ -56,7 +56,7 @@ func (p *plugin) NodePreExecute(args plugins.NodePreExecuteArgs, reply *plugins.
 }
 
 func (p *plugin) NodePostExecute(args plugins.NodePostExecuteArgs, reply *plugins.NodePostExecuteReply) error {
-	value, err := args.Template.Plugin.Get("hello")
+	value, err := args.Template.Plugin.Get("helloController")
 	if err != nil {
 		return err
 	}
@@ -87,10 +87,7 @@ func (p plugin) PodPostCreate(args plugins.PodPostCreateArgs, reply *plugins.Pod
 var _ plugins.ParameterSubstitutionPlugin = &plugin{}
 
 func (p *plugin) ParameterPreSubstitution(args plugins.ParameterPreSubstitutionArgs, reply *plugins.ParameterPreSubstitutionReply) error {
-	if _, ok := args.Workflow.Annotations["hello"]; ok {
-		log.Printf("hello: adding hello parameter: %s\n", args.Workflow.Name)
-		reply.Parameters = map[string]string{}
-		reply.Parameters["hello"] = "good morning"
-	}
+	reply.Parameters = map[string]string{}
+	reply.Parameters["hello"] = "good morning"
 	return nil
 }

@@ -7,7 +7,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/plugins"
+	plugins "github.com/argoproj/argo-workflows/v3/pkg/plugins/controller"
 )
 
 type plugin struct {

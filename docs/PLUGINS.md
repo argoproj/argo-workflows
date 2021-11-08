@@ -24,7 +24,7 @@ You can can view or modify a node before or after it is executed.
 Use cases:
 
 * Short-circuit executing, marking steps as complete based on external information.
-* Run custom templates.
+* Run custom templates (if they can run in the operator's namespace).
 * Run non-pod tasks, e.g Tekton or Spark jobs.
 * Offload caching decision to an external system.
 * Block workflow execution until an external system has finished logging some metadata for one task.
@@ -158,3 +158,11 @@ Consider a workflows with 100k nodes, and then consider you have 5 plugins:
 We'll make num(nodes) x num(plugins) calls.
 
 So we have 500k network calls per loop. 
+
+## Agent Plugins
+
+An agent plugin allows the agent to do work for a workflow.
+
+Use cases
+
+* Run custom templates (if they can run in the user's namespace).
