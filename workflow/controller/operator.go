@@ -791,6 +791,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 	if retryStrategy.Expression != "" && len(node.Children) > 0 {
 		localScope := buildRetryStrategyLocalScope(node, woc.wf.Status.Nodes)
 		scope := env.GetFuncMap(localScope)
+		woc.log.WithField("node", node.Name).Infof("evaluating retry conditional with scope %s", localScope)
 		res, err := expr.Eval(retryStrategy.Expression, scope)
 		if err != nil {
 			return nil, false, err
