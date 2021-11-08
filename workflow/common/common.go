@@ -15,6 +15,9 @@ const (
 	// DockerSockVolumeName is the volume name for the /var/run/docker.sock host path volume
 	DockerSockVolumeName = "docker-sock"
 
+	// AnnotationKeyDefaultContainer is the annotation that specify container that will be used by default in case of kubectl commands for example
+	AnnotationKeyDefaultContainer = "kubectl.kubernetes.io/default-container"
+
 	// AnnotationKeyNodeID is the ID of the node.
 	// Historically, the pod name was the same as the node ID.
 	// Therefore, if it does not exist, then the node ID is the pod name.

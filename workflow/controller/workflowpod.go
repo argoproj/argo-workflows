@@ -259,6 +259,17 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	// container's PID and root filesystem.
 	pod.Spec.Containers = append(pod.Spec.Containers, mainCtrs...)
 
+	// Configuring default container to be used with commands like "kubectl exec/logs".
+	// Select "main" container if it's available. In other case use the last container (can happent when pod created from ContainerSet).
+	defaultContainer := pod.Spec.Containers[len(pod.Spec.Containers)-1].Name
+	for _, c := range pod.Spec.Containers {
+		if c.Name == common.MainContainerName {
+			defaultContainer = common.MainContainerName
+			break
+		}
+	}
+	pod.ObjectMeta.Annotations[common.AnnotationKeyDefaultContainer] = defaultContainer
+
 	// Add init container only if it needs input artifacts. This is also true for
 	// script templates (which needs to populate the script)
 	if len(tmpl.Inputs.Artifacts) > 0 || tmpl.GetType() == wfv1.TemplateTypeScript || woc.getContainerRuntimeExecutor() == common.ContainerRuntimeExecutorEmissary {
