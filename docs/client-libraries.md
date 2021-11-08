@@ -24,4 +24,4 @@ The following client libraries are provided and maintained by their authors, not
 | Language | Client Library | Info |
 |----------|----------------|---------------|
 | Python | [Couler](https://github.com/couler-proj/couler) | Multi-workflow engine support Python SDK |
-| Python | Hera | TBC |
+| Python | [Hera](https://github.com/argoproj-labs/hera-workflows) | Easy and accessible Argo workflows construction and submission in Python |
