@@ -200,6 +200,10 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	if woc.wf.Status.Fulfilled() {
 		woc.log.Info("workflow is already fulfilled")
+		if !(woc.wf.Labels != nil && woc.wf.Labels[common.LabelKeyCompleted] !="true") {
+			woc.log.Warn("phase and labels are out sync. Updated label and phase")
+			woc.updateWorkflowCompletion(ctx)
+		}
 		return
 	}
 
@@ -1990,32 +1994,39 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 	switch phase {
 	case wfv1.WorkflowSucceeded, wfv1.WorkflowFailed, wfv1.WorkflowError:
 		// wait for all daemon nodes to get terminated before marking workflow completed
-		if markCompleted && !woc.hasDaemonNodes() {
-			woc.log.Infof("Marking workflow completed")
-			woc.wf.Status.FinishedAt = metav1.Time{Time: time.Now().UTC()}
-			woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", woc.wf.Status.FinishedAt.Sub(woc.wf.Status.StartedAt.Time).Seconds())
-			if woc.wf.ObjectMeta.Labels == nil {
-				woc.wf.ObjectMeta.Labels = make(map[string]string)
-			}
-			woc.wf.ObjectMeta.Labels[common.LabelKeyCompleted] = "true"
-			woc.wf.Status.Conditions.UpsertCondition(wfv1.Condition{Status: metav1.ConditionTrue, Type: wfv1.ConditionTypeCompleted})
-			err := woc.deletePDBResource(ctx)
-			if err != nil {
-				woc.wf.Status.Phase = wfv1.WorkflowError
-				woc.wf.ObjectMeta.Labels[common.LabelKeyPhase] = string(wfv1.NodeError)
-				woc.updated = true
-				woc.wf.Status.Message = err.Error()
-			}
-			if woc.controller.wfArchive.IsEnabled() {
-				if woc.controller.isArchivable(woc.wf) {
-					woc.log.Infof("Marking workflow as pending archiving")
-					woc.wf.Labels[common.LabelKeyWorkflowArchivingStatus] = "Pending"
-				} else {
-					woc.log.Infof("Doesn't match with archive label selector. Skipping Archive")
-				}
-			}
-			woc.updated = true
+		if markCompleted {
+			woc.updateWorkflowCompletion(ctx)
 		}
+	}
+}
+
+func (woc *wfOperationCtx) updateWorkflowCompletion(ctx context.Context){
+	// wait for all daemon nodes to get terminated before marking workflow completed
+	if !woc.hasDaemonNodes() {
+		woc.log.Infof("Marking workflow completed")
+		woc.wf.Status.FinishedAt = metav1.Time{Time: time.Now().UTC()}
+		woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", woc.wf.Status.FinishedAt.Sub(woc.wf.Status.StartedAt.Time).Seconds())
+		if woc.wf.ObjectMeta.Labels == nil {
+			woc.wf.ObjectMeta.Labels = make(map[string]string)
+		}
+		woc.wf.ObjectMeta.Labels[common.LabelKeyCompleted] = "true"
+		woc.wf.Status.Conditions.UpsertCondition(wfv1.Condition{Status: metav1.ConditionTrue, Type: wfv1.ConditionTypeCompleted})
+		err := woc.deletePDBResource(ctx)
+		if err != nil {
+			woc.wf.Status.Phase = wfv1.WorkflowError
+			woc.wf.ObjectMeta.Labels[common.LabelKeyPhase] = string(wfv1.NodeError)
+			woc.updated = true
+			woc.wf.Status.Message = err.Error()
+		}
+		if woc.controller.wfArchive.IsEnabled() {
+			if woc.controller.isArchivable(woc.wf) {
+				woc.log.Infof("Marking workflow as pending archiving")
+				woc.wf.Labels[common.LabelKeyWorkflowArchivingStatus] = "Pending"
+			} else {
+				woc.log.Infof("Doesn't match with archive label selector. Skipping Archive")
+			}
+		}
+		woc.updated = true
 	}
 }
 
