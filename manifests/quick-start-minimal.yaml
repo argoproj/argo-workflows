@@ -678,7 +678,7 @@ data:
   path: hello.so
 kind: ConfigMap
 metadata:
-  annotations:
+  labels:
     workflows.argoproj.io/configmap-type: ControllerPlugin
   name: hello-controller-plugin
 ---
