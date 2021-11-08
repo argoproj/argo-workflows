@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
 
 type PodCleanupSuite struct {
