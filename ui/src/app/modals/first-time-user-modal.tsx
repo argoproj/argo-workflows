@@ -14,16 +14,13 @@ export const FirstTimeUserModal = ({dismiss}: {dismiss: () => void}) => (
         <div style={{textAlign: 'center'}}>
             {[
                 {key: 'machine-learning', icon: 'brain', title: 'Machine Learning'},
-                {key: 'ci-cd', icon: 'sync-alt', title: 'CI/CD'},
                 {key: 'data-processing', icon: 'database', title: 'Data Processing'},
-                {key: 'etl', icon: 'cog', title: 'ETL'},
-                {key: 'batch-processing', icon: 'clock', title: 'Batch Processing'},
-                {key: 'infrastructure-automation', icon: 'network-wired', title: 'Infrastructure Automation'},
                 {key: 'anomaly-detection', icon: 'search', title: 'Anomaly Detection'},
-                {key: 'operation-analytics', icon: 'chart-line', title: 'Operational Analytics'},
+                {key: 'ci-cd', icon: 'sync-alt', title: 'CI/CD'},
+                {key: 'infrastructure-automation', icon: 'network-wired', title: 'Infrastructure Automation'},
                 {key: 'other', icon: 'question-circle', title: 'Other...'}
             ].map(({key, icon, title}) => (
-                <BigButton key={key} title={title} icon={icon as Icon} href={`https://argoproj.github.io/argo-workflows/use-cases/{key}?utm_source=argo-ui`} />
+                <BigButton key={key} title={title} icon={icon as Icon} href={`https://argoproj.github.io/argo-workflows/use-cases/{key}`} />
             ))}
         </div>
     </Modal>
