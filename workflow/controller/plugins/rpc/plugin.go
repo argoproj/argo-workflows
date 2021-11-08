@@ -58,8 +58,8 @@ func (p *plugin) WorkflowPreOperate(args plugins.WorkflowPreOperateArgs, reply *
 	return p.call("WorkflowLifecycleHook.WorkflowPreOperate", args, reply)
 }
 
-func (p *plugin) WorkflowPreUpdate(args plugins.WorkflowPreUpdateArgs, reply *plugins.WorkflowPreUpdateReply) error {
-	return p.call("WorkflowLifecycleHook.WorkflowPreUpdate", args, reply)
+func (p *plugin) WorkflowPostOperate(args plugins.WorkflowPostOperateArgs, reply *plugins.WorkflowPostOperateReply) error {
+	return p.call("WorkflowLifecycleHook.WorkflowPostOperate", args, reply)
 }
 
 var _ plugins.NodeLifecycleHook = &plugin{}

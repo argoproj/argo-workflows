@@ -6,7 +6,7 @@ import (
 )
 
 func (woc *wfOperationCtx) runNodePreExecutePlugins(tmpl *wfv1.Template, node *wfv1.NodeStatus) *wfv1.NodeStatus {
-	args := plugins.NodePreExecuteArgs{Workflow: woc.wf, Template: tmpl, Node: node}
+	args := plugins.NodePreExecuteArgs{Workflow: woc.tinyWf(), Template: tmpl, Node: node}
 	reply := &plugins.NodePreExecuteReply{}
 	for _, sym := range woc.controller.plugins {
 		if plug, ok := sym.(plugins.NodeLifecycleHook); ok {
@@ -21,15 +21,15 @@ func (woc *wfOperationCtx) runNodePreExecutePlugins(tmpl *wfv1.Template, node *w
 	return reply.Node
 }
 
-func (woc *wfOperationCtx) runNodePostExecutePlugins(tmpl *wfv1.Template, node *wfv1.NodeStatus) (*wfv1.NodeStatus, error) {
-	args := plugins.NodePostExecuteArgs{Workflow: woc.wf, Template: tmpl, Node: node}
+func (woc *wfOperationCtx) runNodePostExecutePlugins(tmpl *wfv1.Template, old, new *wfv1.NodeStatus) error {
+	args := plugins.NodePostExecuteArgs{Workflow: woc.tinyWf(), Template: tmpl, Old: old, New: new}
 	reply := &plugins.NodePostExecuteReply{}
 	for _, sym := range woc.controller.plugins {
 		if plug, ok := sym.(plugins.NodeLifecycleHook); ok {
 			if err := plug.NodePostExecute(args, reply); err != nil {
-				return node, err
+				return err
 			}
 		}
 	}
-	return node, nil
+	return nil
 }

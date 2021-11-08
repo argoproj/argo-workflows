@@ -30,7 +30,7 @@ func (p *plugin) WorkflowPreOperate(args plugins.WorkflowPreOperateArgs, reply *
 	return nil
 }
 
-func (p *plugin) WorkflowPreUpdate(args plugins.WorkflowPreUpdateArgs, reply *plugins.WorkflowPreUpdateReply) error {
+func (p *plugin) WorkflowPostOperate(args plugins.WorkflowPostOperateArgs, reply *plugins.WorkflowPostOperateReply) error {
 	if args.New.Annotations["hello"] == "running" {
 		log.Println("hello: updating hello annotation")
 		reply.New = args.New

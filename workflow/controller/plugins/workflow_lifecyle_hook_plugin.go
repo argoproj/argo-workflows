@@ -12,18 +12,18 @@ type WorkflowPreOperateReply struct {
 	Workflow *wfv1.Workflow `json:"workflow,omitempty"`
 }
 
-type WorkflowPreUpdateArgs struct {
+type WorkflowPostOperateArgs struct {
 	Old *wfv1.Workflow `json:"old"`
 	New *wfv1.Workflow `json:"new"`
 }
 
-type WorkflowPreUpdateReply struct {
+type WorkflowPostOperateReply struct {
 	New *wfv1.Workflow `json:"new,omitempty"`
 }
 
 type WorkflowLifecycleHook interface {
 	// WorkflowPreOperate is called prior to reconciliation, allowing you to modify the workflow before execution.
 	WorkflowPreOperate(args WorkflowPreOperateArgs, reply *WorkflowPreOperateReply) error
-	// WorkflowPreUpdate is called prior to persisting a changed workflow.
-	WorkflowPreUpdate(args WorkflowPreUpdateArgs, reply *WorkflowPreUpdateReply) error
+	// WorkflowPostOperate is called prior to persisting a changed workflow.
+	WorkflowPostOperate(args WorkflowPostOperateArgs, reply *WorkflowPostOperateReply) error
 }

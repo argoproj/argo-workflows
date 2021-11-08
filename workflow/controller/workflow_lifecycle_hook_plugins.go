@@ -23,15 +23,15 @@ func (woc *wfOperationCtx) runWorkflowPreOperatePlugins(ctx context.Context) {
 	}
 }
 
-func (woc *wfOperationCtx) runWorkflowPreUpdatePlugins(ctx context.Context) {
+func (woc *wfOperationCtx) runWorkflowPostOperatePlugins(ctx context.Context) {
 	if !woc.updated {
 		return
 	}
-	args := plugins.WorkflowPreUpdateArgs{Old: woc.orig, New: woc.wf}
-	reply := &plugins.WorkflowPreUpdateReply{}
+	args := plugins.WorkflowPostOperateArgs{Old: woc.orig, New: woc.wf}
+	reply := &plugins.WorkflowPostOperateReply{}
 	for _, sym := range woc.controller.plugins {
 		if plug, ok := sym.(plugins.WorkflowLifecycleHook); ok {
-			if err := plug.WorkflowPreUpdate(args, reply); err != nil {
+			if err := plug.WorkflowPostOperate(args, reply); err != nil {
 				woc.markWorkflowError(ctx, err)
 			} else if wf := reply.New; wf != nil {
 				woc.wf = wf

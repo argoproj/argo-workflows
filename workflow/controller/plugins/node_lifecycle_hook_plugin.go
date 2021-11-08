@@ -17,7 +17,8 @@ type NodePreExecuteReply struct {
 type NodePostExecuteArgs struct {
 	Workflow *wfv1.Workflow   `json:"workflow"`
 	Template *wfv1.Template   `json:"template"`
-	Node     *wfv1.NodeStatus `json:"node"`
+	Old      *wfv1.NodeStatus `json:"old"`
+	New      *wfv1.NodeStatus `json:"new"`
 }
 
 type NodePostExecuteReply struct {

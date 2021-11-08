@@ -199,7 +199,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	woc.log.Infof("Processing workflow")
 
 	woc.runWorkflowPreOperatePlugins(ctx)
-	defer woc.runWorkflowPreUpdatePlugins(ctx)
+	defer woc.runWorkflowPostOperatePlugins(ctx)
 
 	// Set the Execute workflow spec for execution
 	// ExecWF is a runtime execution spec which merged from Wf, WFT and Wfdefault
@@ -1616,6 +1616,8 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 
 	node := woc.wf.GetNodeByName(nodeName)
 
+	old := node.DeepCopy()
+
 	// Set templateScope from which the template resolution starts.
 	templateScope := tmplCtx.GetTemplateScope()
 	newTmplCtx, resolvedTmpl, templateStored, err := tmplCtx.ResolveTemplate(orgTmpl)
@@ -1914,7 +1916,10 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		}
 		node = retryNode
 	}
-	return woc.runNodePostExecutePlugins(processedTmpl, node)
+	if err = woc.runNodePostExecutePlugins(processedTmpl, old, node); err != nil {
+		return woc.markNodeError(node.Name, err), err
+	}
+	return node, nil
 }
 
 // Checks if the template has exceeded its deadline
