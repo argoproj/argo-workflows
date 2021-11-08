@@ -10,7 +10,7 @@ import (
 
 type plugin struct{}
 
-func New(map[string]interface{}) (interface{}, error) { //nolint:deadcode
+func New(map[string]string) (interface{}, error) { //nolint:deadcode
 	log.Println("Hello! Just starting up...")
 	return &plugin{}, nil
 }

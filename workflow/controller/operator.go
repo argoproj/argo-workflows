@@ -2397,7 +2397,9 @@ func (woc *wfOperationCtx) executeContainer(ctx context.Context, nodeName string
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
 	}
-	woc.runNodePreExecutePlugins(tmpl, node)
+	if err := woc.runNodePreExecutePlugins(tmpl, node); err != nil {
+		return node, err
+	}
 	if node.Fulfilled() {
 		return node, nil
 	}
@@ -2601,7 +2603,9 @@ func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, t
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
 	}
-	woc.runNodePreExecutePlugins(tmpl, node)
+	if err := woc.runNodePreExecutePlugins(tmpl, node); err != nil {
+		return node, err
+	}
 	if !node.Pending() {
 		return node, nil
 	}
@@ -2866,7 +2870,9 @@ func (woc *wfOperationCtx) executeResource(ctx context.Context, nodeName string,
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
 	}
-	woc.runNodePreExecutePlugins(tmpl, node)
+	if err := woc.runNodePreExecutePlugins(tmpl, node); err != nil {
+		return node, err
+	}
 	if !node.Pending() {
 		return node, nil
 	}
@@ -2904,7 +2910,9 @@ func (woc *wfOperationCtx) executeData(ctx context.Context, nodeName string, tem
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
 	}
-	woc.runNodePreExecutePlugins(tmpl, node)
+	if err := woc.runNodePreExecutePlugins(tmpl, node); err != nil {
+		return node, err
+	}
 	if !node.Pending() {
 		return node, nil
 	}
@@ -2929,7 +2937,9 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeSuspend, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
 	}
-	woc.runNodePreExecutePlugins(tmpl, node)
+	if err := woc.runNodePreExecutePlugins(tmpl, node); err != nil {
+		return node, err
+	}
 	if node.Fulfilled() {
 		return node, nil
 	}

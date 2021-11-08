@@ -2708,6 +2708,23 @@ func (wf *Workflow) SetStoredTemplate(scope ResourceScope, resourceName string, 
 	return false, nil
 }
 
+func (w *Workflow) Reduced() *Workflow {
+	return &Workflow{
+		ObjectMeta: w.ObjectMeta,
+		Spec: WorkflowSpec{
+			Suspend:  w.Spec.Suspend,
+			Shutdown: w.Spec.Shutdown,
+		},
+		Status: WorkflowStatus{
+			Phase:      w.Status.Phase,
+			Message:    w.Status.Message,
+			StartedAt:  w.Status.StartedAt,
+			FinishedAt: w.Status.FinishedAt,
+			Progress:   w.Status.Progress,
+		},
+	}
+}
+
 // resolveTemplateReference resolves the stored template name of a given template holder on the template scope and determines
 // if it should be stored
 func resolveTemplateReference(callerScope ResourceScope, resourceName string, caller TemplateReferenceHolder) (string, bool) {

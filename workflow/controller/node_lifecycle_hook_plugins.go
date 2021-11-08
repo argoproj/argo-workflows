@@ -5,24 +5,25 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/plugins"
 )
 
-func (woc *wfOperationCtx) runNodePreExecutePlugins(tmpl *wfv1.Template, node *wfv1.NodeStatus) *wfv1.NodeStatus {
-	args := plugins.NodePreExecuteArgs{Workflow: woc.tinyWf(), Template: tmpl, Node: node}
+func (woc *wfOperationCtx) runNodePreExecutePlugins(tmpl *wfv1.Template, node *wfv1.NodeStatus) error {
+	args := plugins.NodePreExecuteArgs{Workflow: woc.wf.Reduced(), Template: tmpl, Node: node}
 	reply := &plugins.NodePreExecuteReply{}
 	for _, sym := range woc.controller.plugins {
 		if plug, ok := sym.(plugins.NodeLifecycleHook); ok {
 			if err := plug.NodePreExecute(args, reply); err != nil {
-				woc.markNodeError(node.Name, err)
+				return err
 			} else if reply.Node != nil {
-				woc.wf.Status.Nodes[reply.Node.ID] = *reply.Node
+				reply.Node.DeepCopyInto(node)
+				woc.wf.Status.Nodes[reply.Node.ID] = *node
 				woc.updated = true
 			}
 		}
 	}
-	return reply.Node
+	return nil
 }
 
 func (woc *wfOperationCtx) runNodePostExecutePlugins(tmpl *wfv1.Template, old, new *wfv1.NodeStatus) error {
-	args := plugins.NodePostExecuteArgs{Workflow: woc.tinyWf(), Template: tmpl, Old: old, New: new}
+	args := plugins.NodePostExecuteArgs{Workflow: woc.wf.Reduced(), Template: tmpl, Old: old, New: new}
 	reply := &plugins.NodePostExecuteReply{}
 	for _, sym := range woc.controller.plugins {
 		if plug, ok := sym.(plugins.NodeLifecycleHook); ok {

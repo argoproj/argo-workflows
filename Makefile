@@ -206,18 +206,13 @@ endif
 .PHONY: plugins
 plugins: \
 	dist/controller/plugins/hello.so \
-	dist/controller/plugins/hello.yaml \
-	dist/controller/plugins/rpc.so \
-	dist/controller/plugins/rpc.yaml
+	dist/controller/plugins/rpc.so 
+
 dist/controller/plugins/hello.so:
 dist/controller/plugins/rpc.so:
 dist/controller/plugins/%.so: workflow/controller/plugins/%/plugin.go dist/workflow-controller
 	CGO_ENABLED=1 go build -v -buildmode=plugin -o dist/controller/plugins/$*.so ./workflow/controller/plugins/$*
 
-dist/controller/plugins/hello.yaml:
-dist/controller/plugins/rpc.yaml:
-dist/controller/plugins/%.yaml: workflow/controller/plugins/%/manifest.yaml
-	cp ./workflow/controller/plugins/$*/manifest.yaml dist/controller/plugins/$*.yaml
 
 workflow-controller-image:
 

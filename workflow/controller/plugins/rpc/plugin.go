@@ -15,8 +15,8 @@ type plugin struct {
 	invalid map[string]bool
 }
 
-func New(spec map[string]interface{}) (interface{}, error) { //nolint:deadcode,unparam
-	return &plugin{address: spec["address"].(string), invalid: map[string]bool{}}, nil
+func New(data map[string]string) (interface{}, error) { //nolint:deadcode,unparam
+	return &plugin{address: data["address"], invalid: map[string]bool{}}, nil
 }
 
 func main() {

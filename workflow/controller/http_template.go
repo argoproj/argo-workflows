@@ -12,7 +12,9 @@ func (woc *wfOperationCtx) executeHTTPTemplate(nodeName string, templateScope st
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeHTTP, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
 		woc.taskSet[node.ID] = *tmpl
 	}
-	woc.runNodePreExecutePlugins(tmpl, node)
+	if err := woc.runNodePreExecutePlugins(tmpl, node); err != nil {
+		return woc.markNodeError(nodeName, err)
+	}
 	return node
 }
 

@@ -5,7 +5,7 @@ import (
 )
 
 func (woc *wfOperationCtx) runParameterSubstitutionPlugins(p map[string]string) error {
-	args := plugins.ParameterPreSubstitutionArgs{Workflow: woc.tinyWf()}
+	args := plugins.ParameterPreSubstitutionArgs{Workflow: woc.wf.Reduced()}
 	reply := &plugins.ParameterPreSubstitutionReply{}
 	for _, sym := range woc.controller.plugins {
 		if plug, ok := sym.(plugins.ParameterSubstitutionPlugin); ok {

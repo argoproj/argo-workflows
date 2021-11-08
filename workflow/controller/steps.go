@@ -39,7 +39,9 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeSteps, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning)
 	}
-	woc.runNodePreExecutePlugins(tmpl, node)
+	if err := woc.runNodePreExecutePlugins(tmpl, node); err != nil {
+		return node, err
+	}
 	if node.Fulfilled() {
 		return node, nil
 	}

@@ -8,7 +8,7 @@ import (
 )
 
 func (woc *wfOperationCtx) runPodPreCreatePlugins(tmpl *wfv1.Template, pod *apiv1.Pod) error {
-	args := plugins.PodPreCreateArgs{Workflow: woc.tinyWf(), Template: tmpl, Pod: pod}
+	args := plugins.PodPreCreateArgs{Workflow: woc.wf.Reduced(), Template: tmpl, Pod: pod}
 	reply := &plugins.PodPreCreateReply{}
 	for _, sym := range woc.controller.plugins {
 		if plug, ok := sym.(plugins.PodLifecycleHook); ok {
@@ -23,7 +23,7 @@ func (woc *wfOperationCtx) runPodPreCreatePlugins(tmpl *wfv1.Template, pod *apiv
 }
 
 func (woc *wfOperationCtx) runPodPostCreatePlugins(tmpl *wfv1.Template, pod *apiv1.Pod) error {
-	args := plugins.PodPostCreateArgs{Workflow: woc.tinyWf(), Template: tmpl, Pod: pod}
+	args := plugins.PodPostCreateArgs{Workflow: woc.wf.Reduced(), Template: tmpl, Pod: pod}
 	reply := &plugins.PodPostCreateReply{}
 	for _, sym := range woc.controller.plugins {
 		if plug, ok := sym.(plugins.PodLifecycleHook); ok {

@@ -2,43 +2,26 @@ package controller
 
 import (
 	"fmt"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"os"
 	"path/filepath"
 	"plugin"
-	"strings"
-
-	"sigs.k8s.io/yaml"
 
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
+
+	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 )
 
-type pluginManifest struct {
-	Path string                 `json:"path,omitempty"`
-	Spec map[string]interface{} `json:"spec,omitempty"`
-}
-
 func (wfc *WorkflowController) loadPlugins(dir string) error {
-	log.WithField("dir", dir).Info("loading plugins")
-	files, err := os.ReadDir(dir)
+	objs, err := wfc.configMapInformer.GetIndexer().ByIndex(indexes.ConfigMapLabelsIndex, "ControllerPlugin")
 	if err != nil {
 		return err
 	}
-	for _, f := range files {
-		path := filepath.Join(dir, f.Name())
-		if !strings.HasSuffix(path, ".yaml") {
-			continue
-		}
+	log.WithField("num", len(objs)).Info("loading plugins")
+	for _, obj := range objs {
+		cm := obj.(*corev1.ConfigMap)
+		path := filepath.Join(dir, cm.Data["path"])
 		log.WithField("path", path).Info("loading plugin")
-		data, err := os.ReadFile(filepath.Join(dir, f.Name()))
-		if err != nil {
-			return err
-		}
-		spec := &pluginManifest{}
-		if err := yaml.Unmarshal(data, spec); err != nil {
-			return err
-		}
-		plug, err := plugin.Open(filepath.Join(dir, spec.Path))
+		plug, err := plugin.Open(path)
 		if err != nil {
 			return err
 		}
@@ -46,32 +29,15 @@ func (wfc *WorkflowController) loadPlugins(dir string) error {
 		if err != nil {
 			return err
 		}
-		newFunc, ok := f.(func(map[string]interface{}) (interface{}, error))
+		newFunc, ok := f.(func(map[string]string) (interface{}, error))
 		if !ok {
 			return fmt.Errorf("plugin %q does not export `func New() interface{}`", path)
 		}
-		sym, err := newFunc(spec.Spec)
+		sym, err := newFunc(cm.Data)
 		if err != nil {
 			return err
 		}
 		wfc.plugins = append(wfc.plugins, sym)
 	}
 	return nil
-}
-
-func (woc *wfOperationCtx) tinyWf() *wfv1.Workflow {
-	return &wfv1.Workflow{
-		ObjectMeta: woc.wf.ObjectMeta,
-		Spec: wfv1.WorkflowSpec{
-			Suspend:  woc.wf.Spec.Suspend,
-			Shutdown: woc.wf.Spec.Shutdown,
-		},
-		Status: wfv1.WorkflowStatus{
-			Phase:      woc.wf.Status.Phase,
-			Message:    woc.wf.Status.Message,
-			StartedAt:  woc.wf.Status.StartedAt,
-			FinishedAt: woc.wf.Status.FinishedAt,
-			Progress:   woc.wf.Status.Progress,
-		},
-	}
 }
