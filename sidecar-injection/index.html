@@ -1802,8 +1802,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-we-kill-sidecars-using-kubect-exec" title="How We Kill Sidecars Using kubect exec" class="md-nav__link">
-    How We Kill Sidecars Using kubect exec
+  <a href="#how-we-kill-sidecars-using-kubectl-exec" title="How We Kill Sidecars Using kubectl exec" class="md-nav__link">
+    How We Kill Sidecars Using kubectl exec
   </a>
   
 </li>
@@ -2265,8 +2265,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-we-kill-sidecars-using-kubect-exec" title="How We Kill Sidecars Using kubect exec" class="md-nav__link">
-    How We Kill Sidecars Using kubect exec
+  <a href="#how-we-kill-sidecars-using-kubectl-exec" title="How We Kill Sidecars Using kubectl exec" class="md-nav__link">
+    How We Kill Sidecars Using kubectl exec
   </a>
   
 </li>
@@ -2301,6 +2301,7 @@ will run as PID 1, which is protected. It can be impossible for the wait contain
 <h3 id="support-matrix">Support Matrix<a class="headerlink" href="#support-matrix" title="Permanent link">&para;</a></h3>
 <p>Key:</p>
 <ul>
+<li>Unsupported - this executor is no longer supported</li>
 <li>Any - we can kill any image</li>
 <li>KubectlExec - we kill images by running <code>kubectl exec</code></li>
 </ul>
@@ -2316,7 +2317,7 @@ will run as PID 1, which is protected. It can be impossible for the wait contain
 <tr>
 <td><code>docker</code></td>
 <td>Any</td>
-<td>Any</td>
+<td>Unsupported</td>
 </tr>
 <tr>
 <td><code>emissary</code></td>
@@ -2340,7 +2341,7 @@ will run as PID 1, which is protected. It can be impossible for the wait contain
 </tr>
 </tbody>
 </table>
-<h2 id="how-we-kill-sidecars-using-kubect-exec">How We Kill Sidecars Using <code>kubect exec</code><a class="headerlink" href="#how-we-kill-sidecars-using-kubect-exec" title="Permanent link">&para;</a></h2>
+<h2 id="how-we-kill-sidecars-using-kubectl-exec">How We Kill Sidecars Using <code>kubectl exec</code><a class="headerlink" href="#how-we-kill-sidecars-using-kubectl-exec" title="Permanent link">&para;</a></h2>
 <blockquote>
 <p>v3.1 and after</p>
 </blockquote>
@@ -2367,6 +2368,7 @@ and logs of that pod.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">spec</span><span class="p">:</span>
   <span class="nt">podMetadata</span><span class="p">:</span>
     <span class="nt">annotations</span><span class="p">:</span>
+      <span class="nt">workflows.argoproj.io/kill-cmd-istio-proxy</span><span class="p">:</span> <span class="s">&#39;[&quot;pilot-agent&quot;,</span><span class="nv"> </span><span class="s">&quot;request&quot;,</span><span class="nv"> </span><span class="s">&quot;POST&quot;,</span><span class="nv"> </span><span class="s">&quot;quitquitquit&quot;]&#39;</span>
       <span class="nt">workflows.argoproj.io/kill-cmd-vault-agent</span><span class="p">:</span> <span class="s">&#39;[&quot;sh&quot;,</span><span class="nv"> </span><span class="s">&quot;-c&quot;,</span><span class="nv"> </span><span class="s">&quot;kill</span><span class="nv"> </span><span class="s">-%d</span><span class="nv"> </span><span class="s">1&quot;]&#39;</span>
       <span class="nt">workflows.argoproj.io/kill-cmd-sidecar</span><span class="p">:</span> <span class="s">&#39;[&quot;sh&quot;,</span><span class="nv"> </span><span class="s">&quot;-c&quot;,</span><span class="nv"> </span><span class="s">&quot;kill</span><span class="nv"> </span><span class="s">-%d</span><span class="nv"> </span><span class="s">$(pidof</span><span class="nv"> </span><span class="s">entrypoint.sh)&quot;]&#39;</span>
 </code></pre></div>
