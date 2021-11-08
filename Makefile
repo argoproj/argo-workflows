@@ -1,5 +1,3 @@
-export SHELL:=/bin/bash
-export SHELLOPTS:=$(if $(SHELLOPTS),$(SHELLOPTS):)pipefail:errexit
 
 # https://stackoverflow.com/questions/4122831/disable-make-builtin-rules-and-variables-from-inside-the-make-file
 MAKEFLAGS += --no-builtin-rules
@@ -216,21 +214,17 @@ workflow-controller-image:
 
 # argoexec
 
-.PHONY: argoexec
-argoexec: \
-	dist/executor/plugins/rpc.so \
-	dist/argoexec
-
 dist/argoexec: $(ARGOEXEC_PKGS) go.sum
-	CGO_ENABLED=1 go build -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
-
-dist/executor/plugins/rpc.so:
-dist/executor/plugins/%.so: workflow/executor/plugins/%/plugin.go dist/argoexec
-	CGO_ENABLED=1 go build -v -buildmode=plugin -o dist/executor/plugins/$*.so ./workflow/executor/plugins/$*
+ifeq ($(shell uname -s),Darwin)
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
+else
+	CGO_ENABLED=0 go build -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
+endif
 
 argoexec-image:
 
 %-image:
+	[ ! -e dist/$* ] || mv dist/$* .
 	docker buildx install
 	docker build \
 		-t $(IMAGE_NAMESPACE)/$*:$(VERSION) \
@@ -238,6 +232,7 @@ argoexec-image:
 		--cache-from "type=local,src=/tmp/.buildx-cache" \
 		--cache-to "type=local,dest=/tmp/.buildx-cache" \
 		--output=type=docker .
+	[ ! -e $* ] || mv $* dist/
 	docker run --rm -t $(IMAGE_NAMESPACE)/$*:$(VERSION) version
 	if [ $(K3D) = true ]; then k3d image import -c $(K3D_CLUSTER_NAME) $(IMAGE_NAMESPACE)/$*:$(VERSION); fi
 	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$*:$(VERSION) ; fi

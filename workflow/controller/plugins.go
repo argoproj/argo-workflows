@@ -12,7 +12,7 @@ import (
 )
 
 func (wfc *WorkflowController) loadPlugins(dir string) error {
-	objs, err := wfc.configMapInformer.GetIndexer().ByIndex(indexes.ConfigMapLabelsIndex, "ControllerPlugin")
+	objs, err := wfc.configMapInformer.GetIndexer().ByIndex(indexes.ConfigMapLabelsIndex, indexes.ConfigMapIndexValue(wfc.namespace, "ControllerPlugin"))
 	if err != nil {
 		return err
 	}

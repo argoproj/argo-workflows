@@ -12,7 +12,7 @@ You can can view or modify a workflow before it is operated on, or saved.
 
 Use cases:
 
-* Validate it, e.g. to enforce image allow list.
+* Validate it, e.g. to enforce so custom constraint.
 * Record meta-data and lineage to external system.
 * Real-time progress reporting.
 * Emit notifications.
@@ -24,17 +24,11 @@ You can can view or modify a node before or after it is executed.
 Use cases:
 
 * Short-circuit executing, marking steps as complete based on external information.
-* Run custom templates (if they can run in the operator's namespace).
+* Run custom templates.
 * Run non-pod tasks, e.g Tekton or Spark jobs.
 * Offload caching decision to an external system.
 * Block workflow execution until an external system has finished logging some metadata for one task.
 * Emit notifications.
-
-#### Pod Lifecycle Hook
-
-* Add labels or annotations to a pod.
-* Add a sidecar to every pod.
-* Prevent pods being created.
 
 #### Parameters Substitution Plugin
 
@@ -87,7 +81,7 @@ spec:
           image: python:alpine3.6
 ```
 
-You also need to enable the plugin by creating this configuration:
+You also need create this configuration:
 
 ```yaml
 apiVersion: v1
@@ -107,23 +101,30 @@ Verify the controller started successfully, and logged:
 level=info msg="loading plugin" path=/plugins/rpc.so
 ```
 
-You can enable more of this plugin, by changing "7584" to "1235" etc.
+You can enable more of this plugin, by changing "7584" to "1234" etc.
+
+You only need to implement the methods you need. If you return 404 error, then that method will not be called again.
 
 ### Authoring A Golang Plugin
 
-Before you start, please
-research [is anyone using Go plugins](https://www.google.com/search?client=safari&rls=en&q=is+anyone+using+go+plugins&ie=UTF-8&oe=UTF-8)
-, downsides:
+Golang plugins have advantages over RPC sidecar plugins:
+
+* Better at scale.
+* Lower memory footprint.
+
+But the have downsides too:
 
 * Only Linux and MacOS, not Windows.
-* You must re-build them for every new version of Argo Workflows.
+* Must be re-built for every new version of Argo Workflows.
+
+[Is anyone using Go plugins?](https://www.google.com/search?client=safari&rls=en&q=is+anyone+using+go+plugins&ie=UTF-8&oe=UTF-8)
 
 Look at the example workflow/controller/plugins/hello/plugin.go.
 
 #### Installing Shared Libraries
 
-Shared libraries must be in the `/plugins` directory. The easiest option to get them into that directory is to add
-an init container that either has the plugin as part of the image, or gets the plugin from elsewhere.
+Shared libraries must be in the `/plugins` directory. The easiest option to get them into that directory is to add an
+init container that either has the plugin as part of the image, or gets the plugin from elsewhere.
 
 The kustomize patch will get plugins.
 
@@ -151,18 +152,22 @@ spec:
         - name: workflow-controller
 ```
 
-### Performance Is Important
+### Considerations
+
+### Failure Modes
+
+An error in a plugin is typically contained as follows:
+
+* For node lifecycle hooks, the node will error. The workflow therefore may fail.
+* Other errors will result in an errored workflow.
+* Panics will result in an errored workflow.
+
+Failures in a plugin should not take down the controller.
+
+#### Performance Is Important
 
 Consider a workflows with 100k nodes, and then consider you have 5 plugins:
 
 We'll make num(nodes) x num(plugins) calls.
 
 So we have 500k network calls per loop. 
-
-## Agent Plugins
-
-An agent plugin allows the agent to do work for a workflow.
-
-Use cases
-
-* Run custom templates (if they can run in the user's namespace).

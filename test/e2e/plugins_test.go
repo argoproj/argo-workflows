@@ -1,5 +1,5 @@
-//go:build functional
-// +build functional
+//go:build plugins
+// +build plugins
 
 package e2e
 

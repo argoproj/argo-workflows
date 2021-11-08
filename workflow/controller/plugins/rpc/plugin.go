@@ -72,16 +72,6 @@ func (p *plugin) NodePostExecute(args plugins.NodePostExecuteArgs, reply *plugin
 	return p.call("NodeLifecycleHook.NodePostExecute", args, reply)
 }
 
-var _ plugins.PodLifecycleHook = &plugin{}
-
-func (p *plugin) PodPreCreate(args plugins.PodPreCreateArgs, reply *plugins.PodPreCreateReply) error {
-	return p.call("PodLifecycleHook.PodPreCreate", args, reply)
-}
-
-func (p *plugin) PodPostCreate(args plugins.PodPostCreateArgs, reply *plugins.PodPostCreateReply) error {
-	return p.call("PodLifecycleHook.PodPostCreate", args, reply)
-}
-
 var _ plugins.ParameterSubstitutionPlugin = &plugin{}
 
 func (p *plugin) ParameterPreSubstitution(args plugins.ParameterPreSubstitutionArgs, reply *plugins.ParameterPreSubstitutionReply) error {

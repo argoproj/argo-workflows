@@ -66,24 +66,6 @@ func (p *plugin) NodePostExecute(args plugins.NodePostExecuteArgs, reply *plugin
 	return nil
 }
 
-var _ plugins.PodLifecycleHook = plugin{}
-
-func (p plugin) PodPreCreate(args plugins.PodPreCreateArgs, reply *plugins.PodPreCreateReply) error {
-	if _, ok := args.Workflow.Annotations["hello"]; ok {
-		log.Printf("hello: annotating pod: %s\n", args.Pod.Name)
-		reply.Pod = args.Pod
-		reply.Pod.Annotations["hello"] = "here we are!"
-	}
-	return nil
-}
-
-func (p plugin) PodPostCreate(args plugins.PodPostCreateArgs, reply *plugins.PodPostCreateReply) error {
-	if _, ok := args.Workflow.Annotations["hello"]; ok {
-		log.Printf("hello: created pod: %s\n", args.Pod.Name)
-	}
-	return nil
-}
-
 var _ plugins.ParameterSubstitutionPlugin = &plugin{}
 
 func (p *plugin) ParameterPreSubstitution(args plugins.ParameterPreSubstitutionArgs, reply *plugins.ParameterPreSubstitutionReply) error {
