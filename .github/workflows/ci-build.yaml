@@ -83,6 +83,9 @@ jobs:
       max-parallel: 4
       matrix:
         include:
+          - test: test-plugins
+            containerRuntimeExecutor: emissary
+            profile: minimal
           - test: test-functional
             containerRuntimeExecutor: emissary
             profile: minimal
@@ -150,7 +153,7 @@ jobs:
       - run: make controller $(go env GOPATH)/bin/goreman STATIC_FILES=false
       - run: make cli STATIC_FILES=false
         if: ${{matrix.test == 'test-api' || matrix.test == 'test-cli'}}
-      - run: make start PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=${{matrix.test == 'test-api' || matrix.test == 'test-cli'}} UI=false > /tmp/argo.log 2>&1 &
+      - run: make start PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=${{matrix.test == 'test-api' || matrix.test == 'test-cli'}} PLUGINS=${{matrix.test == 'test-plugins'}}  UI=false > /tmp/argo.log 2>&1 &
       - run: make wait
         timeout-minutes: 4
       - run: make ${{matrix.test}} E2E_TIMEOUT=1m STATIC_FILES=false

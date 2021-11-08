@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: rpc-1234-controller-plugin
+  name: rpc-7584-controller-plugin
   labels:
     workflows.argoproj.io/configmap-type: ControllerPlugin
 data:
   path: rpc.so
-  address: http://localhost:1234
+  address: http://localhost:7584

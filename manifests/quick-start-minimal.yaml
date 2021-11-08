@@ -684,6 +684,26 @@ metadata:
 ---
 apiVersion: v1
 data:
+  address: http://localhost:7584
+  path: rpc.so
+kind: ConfigMap
+metadata:
+  labels:
+    workflows.argoproj.io/configmap-type: ControllerPlugin
+  name: rpc-7584-controller-plugin
+---
+apiVersion: v1
+data:
+  address: http://localhost:7584
+  path: rpc.so
+kind: ConfigMap
+metadata:
+  labels:
+    workflows.argoproj.io/configmap-type: ExecutorPlugin
+  name: rpc-7584-executor-plugin
+---
+apiVersion: v1
+data:
   artifactRepository: |
     s3:
       bucket: my-bucket
@@ -934,6 +954,33 @@ spec:
         app: workflow-controller
     spec:
       containers:
+      - args:
+        - |
+          import json
+          from http.server import BaseHTTPRequestHandler, HTTPServer
+
+
+          class Plugin(BaseHTTPRequestHandler):
+
+            def do_POST(self):
+              if self.path == "/WorkflowLifecycleHook.WorkflowPreOperate":
+                print("hello", self.path)
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(json.dumps({}).encode("UTF-8"))
+              else:
+                self.send_response(404)
+                self.end_headers()
+
+
+          if __name__ == '__main__':
+            httpd = HTTPServer(('', 7584), Plugin)
+            httpd.serve_forever()
+        command:
+        - python
+        - -c
+        image: python:alpine3.6
+        name: rpc-7584
       - args:
         - --configmap
         - workflow-controller-configmap

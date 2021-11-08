@@ -6,7 +6,6 @@ class Plugin(BaseHTTPRequestHandler):
 
     def do_POST(self):
         if self.path == "/WorkflowLifecycleHook.WorkflowPreOperate":
-            print("hello", self.path)
             self.send_response(200)
             self.end_headers()
             self.wfile.write(json.dumps({}).encode("UTF-8"))
@@ -16,5 +15,5 @@ class Plugin(BaseHTTPRequestHandler):
 
 
 if __name__ == '__main__':
-    httpd = HTTPServer(('', 1234), Plugin)
+    httpd = HTTPServer(('', 7584), Plugin)
     httpd.serve_forever()

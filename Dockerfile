@@ -86,7 +86,7 @@ FROM builder as argoexec-build
 RUN cat .dockerignore >> .gitignore
 RUN git status --porcelain | cut -c4- | xargs git update-index --skip-worktree
 
-RUN --mount=type=cache,target=/root/.cache/go-build make dist/argoexec
+RUN --mount=type=cache,target=/root/.cache/go-build make argoexec
 RUN setcap CAP_SYS_PTRACE,CAP_SYS_CHROOT+ei dist/argoexec
 
 ####################################################################################################
@@ -98,7 +98,7 @@ FROM builder as workflow-controller-build
 RUN cat .dockerignore >> .gitignore
 RUN git status --porcelain | cut -c4- | xargs git update-index --skip-worktree
 
-RUN --mount=type=cache,target=/root/.cache/go-build make dist/workflow-controller
+RUN --mount=type=cache,target=/root/.cache/go-build make controller
 
 ####################################################################################################
 
@@ -121,6 +121,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build make dist/argo
 
 FROM argoexec-base as argoexec
 
+COPY --from=argoexec-build /go/src/github.com/argoproj/argo-workflows/dist/executor/plugins /plugins
 COPY --from=argoexec-build /go/src/github.com/argoproj/argo-workflows/dist/argoexec /usr/local/bin/
 ENTRYPOINT [ "argoexec" ]
 

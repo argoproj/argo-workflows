@@ -57,7 +57,7 @@ spec:
   template:
     spec:
       containers:
-        - name: rpc-1234
+        - name: rpc-7584
           args:
             - |
               import json
@@ -78,7 +78,7 @@ spec:
 
 
               if __name__ == '__main__':
-                httpd = HTTPServer(('', 1234), Plugin)
+                httpd = HTTPServer(('', 7584), Plugin)
                 httpd.serve_forever()
 
           command:
@@ -93,12 +93,12 @@ You also need to enable the plugin by creating this configuration:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: rpc-1234-controller-plugin
+  name: rpc-7584-controller-plugin
   labels:
     workflows.argoproj.io/configmap-type: ControllerPlugin
 data:
   path: rpc.so
-  address: http://localhost:1234
+  address: http://localhost:7584
 ```
 
 Verify the controller started successfully, and logged:
@@ -107,7 +107,7 @@ Verify the controller started successfully, and logged:
 level=info msg="loading plugin" path=/plugins/rpc.so
 ```
 
-You can enable more of this plugin, by changing "1234" to "1235" etc.
+You can enable more of this plugin, by changing "7584" to "1235" etc.
 
 ### Authoring A Golang Plugin
 

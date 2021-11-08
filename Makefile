@@ -46,6 +46,7 @@ endif
 UI                    ?= false
 # start the Argo Server
 API                   ?= $(UI)
+PLUGINS               ?= true
 GOTEST                ?= go test -v
 PROFILE               ?= minimal
 # by keeping this short we speed up the tests
@@ -193,7 +194,10 @@ clis: dist/argo-linux-amd64.gz dist/argo-linux-arm64.gz dist/argo-linux-ppc64le.
 # controller
 
 .PHONY: controller
-controller: dist/workflow-controller
+controller: \
+	dist/controller/plugins/hello.so \
+	dist/controller/plugins/rpc.so \
+	dist/workflow-controller
 
 dist/workflow-controller: $(CONTROLLER_PKGS) go.sum
 ifeq ($(shell uname -s),Darwin)
@@ -203,32 +207,30 @@ else
 	CGO_ENABLED=1 go build -v -ldflags '${LDFLAGS}' -o $@ ./cmd/workflow-controller
 endif
 
-.PHONY: plugins
-plugins: \
-	dist/controller/plugins/hello.so \
-	dist/controller/plugins/rpc.so 
-
 dist/controller/plugins/hello.so:
 dist/controller/plugins/rpc.so:
 dist/controller/plugins/%.so: workflow/controller/plugins/%/plugin.go dist/workflow-controller
 	CGO_ENABLED=1 go build -v -buildmode=plugin -o dist/controller/plugins/$*.so ./workflow/controller/plugins/$*
 
-
 workflow-controller-image:
 
 # argoexec
 
+.PHONY: argoexec
+argoexec: \
+	dist/executor/plugins/rpc.so \
+	dist/argoexec
+
 dist/argoexec: $(ARGOEXEC_PKGS) go.sum
-ifeq ($(shell uname -s),Darwin)
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
-else
-	CGO_ENABLED=0 go build -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
-endif
+	CGO_ENABLED=1 go build -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
+
+dist/executor/plugins/rpc.so:
+dist/executor/plugins/%.so: workflow/executor/plugins/%/plugin.go dist/argoexec
+	CGO_ENABLED=1 go build -v -buildmode=plugin -o dist/executor/plugins/$*.so ./workflow/executor/plugins/$*
 
 argoexec-image:
 
 %-image:
-	[ ! -e dist/$* ] || mv dist/$* .
 	docker buildx install
 	docker build \
 		-t $(IMAGE_NAMESPACE)/$*:$(VERSION) \
@@ -236,7 +238,6 @@ argoexec-image:
 		--cache-from "type=local,src=/tmp/.buildx-cache" \
 		--cache-to "type=local,dest=/tmp/.buildx-cache" \
 		--output=type=docker .
-	[ ! -e $* ] || mv $* dist/
 	docker run --rm -t $(IMAGE_NAMESPACE)/$*:$(VERSION) version
 	if [ $(K3D) = true ]; then k3d image import -c $(K3D_CLUSTER_NAME) $(IMAGE_NAMESPACE)/$*:$(VERSION); fi
 	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$*:$(VERSION) ; fi
@@ -440,9 +441,9 @@ $(GOPATH)/bin/goreman:
 .PHONY: start
 ifeq ($(RUN_MODE),local)
 ifeq ($(API),true)
-start: install controller plugins cli $(GOPATH)/bin/goreman
+start: install controller cli $(GOPATH)/bin/goreman
 else
-start: install controller plugins $(GOPATH)/bin/goreman
+start: install controller $(GOPATH)/bin/goreman
 endif
 else
 start: install
@@ -454,6 +455,9 @@ endif
 ifneq ($(UI),true)
 	@echo "⚠️  not starting UI. If you want to test the UI, run 'make start UI=true' to start it"
 endif
+ifneq ($(PLUGINS),true)
+	@echo "⚠️  not starting plugins. If you want to test plugins, run 'make start PLUGINS=true' to start it"
+endif
 	# Check dex, minio, postgres and mysql are in hosts file
 ifeq ($(AUTH_MODE),sso)
 	grep '127.0.0.1[[:blank:]]*dex' /etc/hosts
@@ -463,7 +467,7 @@ endif
 	grep '127.0.0.1[[:blank:]]*mysql' /etc/hosts
 	./hack/port-forward.sh
 ifeq ($(RUN_MODE),local)
-	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) MANAGED_NAMESPACE=$(MANAGED_NAMESPACE) UI=$(UI) API=$(API) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start $(shell if [ -z $GREP_LOGS ]; then echo; else echo "| grep \"$(GREP_LOGS)\""; fi)
+	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) MANAGED_NAMESPACE=$(MANAGED_NAMESPACE) UI=$(UI) API=$(API) PLUGINS=$(PLUGINS) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start $(shell if [ -z $GREP_LOGS ]; then echo; else echo "| grep \"$(GREP_LOGS)\""; fi)
 endif
 
 $(GOPATH)/bin/stern:
