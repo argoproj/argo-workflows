@@ -207,7 +207,7 @@ var indexers = cache.Indexers{
 }
 
 // Run starts an Workflow resource controller
-func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podWorkers, podCleanupWorkers int, pluginsDir string) {
+func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podWorkers, podCleanupWorkers int, plugins bool, pluginsDir string) {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -250,8 +250,12 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		log.Fatal("Timed out waiting for caches to sync")
 	}
 
-	if err := wfc.loadPlugins(pluginsDir); err != nil {
-		log.Fatal(err)
+	log.WithField("plugins", plugins).Info("plugins")
+
+	if plugins {
+		if err := wfc.loadPlugins(pluginsDir); err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	wfc.createClusterWorkflowTemplateInformer(ctx)

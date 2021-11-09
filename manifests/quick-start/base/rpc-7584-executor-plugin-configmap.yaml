@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: rpc-7584-executor-plugin
-  labels:
-    workflows.argoproj.io/configmap-type: ExecutorPlugin
-data:
-  path: rpc.so
-  address: http://localhost:7584

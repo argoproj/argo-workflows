@@ -694,16 +694,6 @@ metadata:
 ---
 apiVersion: v1
 data:
-  address: http://localhost:7584
-  path: rpc.so
-kind: ConfigMap
-metadata:
-  labels:
-    workflows.argoproj.io/configmap-type: ExecutorPlugin
-  name: rpc-7584-executor-plugin
----
-apiVersion: v1
-data:
   artifactRepository: |
     s3:
       bucket: my-bucket

@@ -34,6 +34,10 @@ Use cases:
 
 * Allow extra placeholders using data from an external system.
 
+### Configuration
+
+Plugins are disabled by default. Start the controller with `ARGO_PLUGINS=true`.
+
 ### Bundled Plugins
 
 We bundle `rpc.so`, plugin that makes delegates RPC calls by making requests over HTTP, allowing you to write no-Go
