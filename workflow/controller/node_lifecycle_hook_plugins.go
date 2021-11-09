@@ -3,6 +3,7 @@ package controller
 import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	plugins "github.com/argoproj/argo-workflows/v3/pkg/plugins/controller"
+	"github.com/argoproj/argo-workflows/v3/util/patch"
 )
 
 func (woc *wfOperationCtx) runNodePreExecutePlugins(tmpl *wfv1.Template, node *wfv1.NodeStatus) error {
@@ -14,7 +15,7 @@ func (woc *wfOperationCtx) runNodePreExecutePlugins(tmpl *wfv1.Template, node *w
 			if err := plug.NodePreExecute(args, reply); err != nil {
 				return err
 			} else if reply.Node != nil {
-				if err := woc.patchObj(node, reply.Node); err != nil {
+				if err := patch.Obj(node, reply.Node); err != nil {
 					return err
 				}
 				woc.wf.Status.Nodes[node.ID] = *node

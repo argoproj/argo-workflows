@@ -2,9 +2,9 @@ package controller
 
 import (
 	"context"
-	"encoding/json"
 
-	jsonpatch "github.com/evanphx/json-patch"
+	plugins "github.com/argoproj/argo-workflows/v3/pkg/plugins/controller"
+	"github.com/argoproj/argo-workflows/v3/util/patch"
 )
 
 func (woc *wfOperationCtx) runWorkflowPreOperatePlugins() error {
@@ -15,7 +15,7 @@ func (woc *wfOperationCtx) runWorkflowPreOperatePlugins() error {
 			if err := plug.WorkflowPreOperate(args, reply); err != nil {
 				return err
 			} else if reply.Workflow != nil {
-				if err := woc.patchObj(woc.wf, reply.Workflow); err != nil {
+				if err := patch.Obj(woc.wf, reply.Workflow); err != nil {
 					return err
 				}
 				woc.updated = true
@@ -24,31 +24,6 @@ func (woc *wfOperationCtx) runWorkflowPreOperatePlugins() error {
 	}
 	return nil
 }
-
-func (woc *wfOperationCtx) patchObj(old interface{}, patch interface{}) error {
-	orig, err := json.Marshal(old)
-	if err != nil {
-		return err
-	}
-	patchBytes, err := json.Marshal(patch)
-	if err != nil {
-		return err
-	}
-	mergePatch, err := jsonpatch.CreateMergePatch([]byte("{}"), patchBytes)
-	if err != nil {
-		return err
-	}
-	data, err := jsonpatch.MergePatch(orig, mergePatch)
-	if err != nil {
-		return nil
-	}
-	err = json.Unmarshal(data, old)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (woc *wfOperationCtx) runWorkflowPostOperatePlugins(ctx context.Context) {
 	if !woc.updated {
 		return
