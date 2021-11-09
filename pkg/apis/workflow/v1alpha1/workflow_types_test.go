@@ -80,6 +80,23 @@ func TestWorkflowHappenedBetween(t *testing.T) {
 	}))
 }
 
+func TestArtifact_ValidatePath(t *testing.T) {
+	t.Run("empty path fails", func(t *testing.T) {
+		err := Artifact{Name: "a1", Path: ""}.ValidatePath()
+		assert.EqualError(t, err, "Artifact a1 did not specify a path")
+	})
+
+	t.Run("directory traversal fails", func(t *testing.T) {
+		err := Artifact{Name: "a1", Path: "../../etc/passwd"}.ValidatePath()
+		assert.Contains(t, err.Error(), "Directory traversal is not permitted")
+	})
+
+	t.Run("normal artifact path succeeds", func(t *testing.T) {
+		err := Artifact{Name: "a1", Path: "/tmp/some-artifact.txt"}.ValidatePath()
+		assert.NoError(t, err)
+	})
+}
+
 func TestArtifactLocation_IsArchiveLogs(t *testing.T) {
 	var l *ArtifactLocation
 	assert.False(t, l.IsArchiveLogs())

@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"encoding/json"
 	"fmt"
+	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
 	"hash/fnv"
 	"net/url"
 	"path"
@@ -851,6 +852,17 @@ type Artifact struct {
 
 	// FromExpression, if defined, is evaluated to specify the value for the artifact
 	FromExpression string `json:"fromExpression,omitempty" protobuf:"bytes,11,opt,name=fromExpression"`
+}
+
+// ValidatePath verifies that the artifact path is valid.
+func (art Artifact) ValidatePath() error {
+	if art.Path == "" {
+		return argoerrs.InternalErrorf("Artifact %s did not specify a path", art.Name)
+	}
+	if strings.Contains(art.Path, "..") {
+		return argoerrs.InternalErrorf("Artifact %s attempted to use a path containing '..'. Directory traversal is not permitted", art.Name)
+	}
+	return nil
 }
 
 // PodGC describes how to delete completed pods as they complete

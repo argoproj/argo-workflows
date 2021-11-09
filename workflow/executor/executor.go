@@ -178,15 +178,16 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 			return err
 		}
 		// Determine the file path of where to load the artifact
-		if art.Path == "" {
-			return argoerrs.InternalErrorf("Artifact %s did not specify a path", art.Name)
+		err = art.ValidatePath()
+		if err != nil {
+			return err
 		}
 		var artPath string
 		mnt := common.FindOverlappingVolume(&we.Template, art.Path)
 		if mnt == nil {
 			artPath = path.Join(common.ExecutorArtifactBaseDir, art.Name)
 		} else {
-			// If we get here, it means the input artifact path overlaps with an user specified
+			// If we get here, it means the input artifact path overlaps with a user-specified
 			// volumeMount in the container. Because we also implement input artifacts as volume
 			// mounts, we need to load the artifact into the user specified volume mount,
 			// as opposed to the `input-artifacts` volume that is an implementation detail
@@ -300,8 +301,9 @@ func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) error {
 
 func (we *WorkflowExecutor) saveArtifact(ctx context.Context, containerName string, art *wfv1.Artifact) error {
 	// Determine the file path of where to find the artifact
-	if art.Path == "" {
-		return argoerrs.InternalErrorf("Artifact %s did not specify a path", art.Name)
+	err := art.ValidatePath()
+	if err != nil {
+		return err
 	}
 	fileName, localArtPath, err := we.stageArchiveFile(containerName, art)
 	if err != nil {
