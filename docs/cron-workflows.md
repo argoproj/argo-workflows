@@ -35,7 +35,7 @@ spec:
 
 `CronWorkflow.spec.workflowSpec` is the same type as `Workflow.spec` and serves as a template for `Workflow` objects that are created from it. Everything under this spec will be converted to a `Workflow`.
 
-The resuling `Workflow` name will be a generated name based on the `CronWorkflow` name. In this example it could be something like `test-cron-wf-tj6fe`.
+The resulting `Workflow` name will be a generated name based on the `CronWorkflow` name. In this example it could be something like `test-cron-wf-tj6fe`.
 
 `CronWorkflow.spec.workflowMetadata` can be used to add `labels` and `annotations`.
 
