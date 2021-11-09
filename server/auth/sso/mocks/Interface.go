@@ -3,10 +3,10 @@
 package mocks
 
 import (
+	mock "github.com/stretchr/testify/mock"
 	http "net/http"
 
-	mock "github.com/stretchr/testify/mock"
-
+	impersonate "github.com/argoproj/argo-workflows/v3/server/auth/impersonate"
 	types "github.com/argoproj/argo-workflows/v3/server/auth/types"
 )
 
@@ -38,6 +38,20 @@ func (_m *Interface) Authorize(authorization string) (*types.Claims, error) {
 	return r0, r1
 }
 
+// GetImpersonateUserClaim provides a mock function with given fields:
+func (_m *Interface) GetImpersonateUserClaim() impersonate.Claim {
+	ret := _m.Called()
+
+	var r0 impersonate.Claim
+	if rf, ok := ret.Get(0).(func() impersonate.Claim); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(impersonate.Claim)
+	}
+
+	return r0
+}
+
 // HandleCallback provides a mock function with given fields: writer, request
 func (_m *Interface) HandleCallback(writer http.ResponseWriter, request *http.Request) {
 	_m.Called(writer, request)
@@ -46,6 +60,20 @@ func (_m *Interface) HandleCallback(writer http.ResponseWriter, request *http.Re
 // HandleRedirect provides a mock function with given fields: writer, request
 func (_m *Interface) HandleRedirect(writer http.ResponseWriter, request *http.Request) {
 	_m.Called(writer, request)
+}
+
+// IsImpersonateEnabled provides a mock function with given fields:
+func (_m *Interface) IsImpersonateEnabled() bool {
+	ret := _m.Called()
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func() bool); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
 }
 
 // IsRBACEnabled provides a mock function with given fields:

@@ -333,6 +333,11 @@ data:
     scopes:
      - groups
      - email
+    # Impersonate Config. >= v3.3
+    impersonate:
+      enabled: false
+      # one of: {"email", "sub"}
+      usernameClaim: email
     # RBAC Config. >= v2.12
     rbac:
       enabled: false

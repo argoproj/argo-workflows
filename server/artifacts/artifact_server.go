@@ -13,12 +13,11 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	"github.com/argoproj/argo-workflows/v3/server/types"
@@ -241,12 +240,9 @@ func (a *ArtifactServer) getWorkflowAndValidate(ctx context.Context, namespace s
 }
 
 func (a *ArtifactServer) validateAccess(ctx context.Context, wf *wfv1.Workflow) error {
-	allowed, err := auth.CanI(ctx, "get", "workflows", wf.Namespace, wf.Name)
+	err := auth.AccessReview(ctx, wf.Namespace, "get", workflow.Group, workflow.WorkflowPlural, wf.Name)
 	if err != nil {
 		return err
-	}
-	if !allowed {
-		return status.Error(codes.PermissionDenied, "permission denied")
 	}
 	return nil
 }

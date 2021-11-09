@@ -80,12 +80,9 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 		return nil, err
 	}
 
-	allowed, err := auth.CanI(ctx, "list", workflow.WorkflowPlural, namespace, "")
+	err = auth.AccessReview(ctx, namespace, "list", workflow.Group, workflow.WorkflowPlural, "")
 	if err != nil {
 		return nil, err
-	}
-	if !allowed {
-		return nil, status.Error(codes.PermissionDenied, "permission denied")
 	}
 
 	// When the zero value is passed, we should treat this as returning all results
@@ -123,12 +120,9 @@ func (w *archivedWorkflowServer) GetArchivedWorkflow(ctx context.Context, req *w
 	if wf == nil {
 		return nil, status.Error(codes.NotFound, "not found")
 	}
-	allowed, err := auth.CanI(ctx, "get", workflow.WorkflowPlural, wf.Namespace, wf.Name)
+	err = auth.AccessReview(ctx, wf.Namespace, "get", workflow.Group, workflow.WorkflowPlural, wf.Name)
 	if err != nil {
 		return nil, err
-	}
-	if !allowed {
-		return nil, status.Error(codes.PermissionDenied, "permission denied")
 	}
 	return wf, err
 }
@@ -138,12 +132,9 @@ func (w *archivedWorkflowServer) DeleteArchivedWorkflow(ctx context.Context, req
 	if err != nil {
 		return nil, err
 	}
-	allowed, err := auth.CanI(ctx, "delete", workflow.WorkflowPlural, wf.Namespace, wf.Name)
+	err = auth.AccessReview(ctx, wf.Namespace, "delete", workflow.Group, workflow.WorkflowPlural, wf.Name)
 	if err != nil {
 		return nil, err
-	}
-	if !allowed {
-		return nil, status.Error(codes.PermissionDenied, "permission denied")
 	}
 	err = w.wfArchive.DeleteWorkflow(req.Uid)
 	if err != nil {

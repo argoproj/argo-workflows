@@ -152,6 +152,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Claims: jwt.Claims{Subject: "my-sub"}}, nil)
 		ssoIf.On("IsRBACEnabled").Return(false)
+		ssoIf.On("IsImpersonateEnabled").Return(false)
 		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache)
 		if assert.NoError(t, err) {
 			ctx, err := g.Context(x("Bearer v2:whatever"))
@@ -164,6 +165,21 @@ func TestServer_GetWFClient(t *testing.T) {
 			}
 		}
 	})
+	t.Run("SSO+Impersonate", func(t *testing.T) {
+		ssoIf := &ssomocks.Interface{}
+		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Claims: jwt.Claims{Subject: "my-sub"}}, nil)
+		ssoIf.On("IsRBACEnabled").Return(false)
+		ssoIf.On("IsImpersonateEnabled").Return(true)
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache)
+		if assert.NoError(t, err) {
+			ctx, err := g.Context(x("Bearer v2:whatever"))
+			if assert.NoError(t, err) {
+				assert.NotEqual(t, wfClient, GetWfClient(ctx))
+				assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
+				assert.NotNil(t, GetImpersonateClient(ctx))
+			}
+		}
+	})
 	hook := &test.Hook{}
 	log.AddHook(hook)
 	defer log.StandardLogger().ReplaceHooks(nil)
@@ -171,6 +187,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Groups: []string{"my-group", "other-group"}}, nil)
 		ssoIf.On("IsRBACEnabled").Return(true)
+		ssoIf.On("IsImpersonateEnabled").Return(false)
 		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache)
 		if assert.NoError(t, err) {
 			ctx, err := g.Context(x("Bearer v2:whatever"))
@@ -190,6 +207,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Groups: []string{"my-group", "other-group"}}, nil)
 		ssoIf.On("IsRBACEnabled").Return(true)
+		ssoIf.On("IsImpersonateEnabled").Return(false)
 		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns", "my-ns", false, resourceCache)
 		if assert.NoError(t, err) {
 			ctx, err := g.ContextWithRequest(x("Bearer v2:whatever"), servertypes.NamespaceHolder("user1-ns"))
@@ -209,6 +227,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Groups: []string{"my-group", "other-group"}}, nil)
 		ssoIf.On("IsRBACEnabled").Return(true)
+		ssoIf.On("IsImpersonateEnabled").Return(false)
 		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache)
 		if assert.NoError(t, err) {
 			ctx, err := g.ContextWithRequest(x("Bearer v2:whatever"), servertypes.NamespaceHolder("user1-ns"))
@@ -228,6 +247,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Groups: []string{"my-group", "other-group"}}, nil)
 		ssoIf.On("IsRBACEnabled").Return(true)
+		ssoIf.On("IsImpersonateEnabled").Return(false)
 		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns", "my-ns", false, resourceCache)
 		if assert.NoError(t, err) {
 			ctx, err := g.ContextWithRequest(x("Bearer v2:whatever"), servertypes.NamespaceHolder("user2-ns"))
@@ -248,6 +268,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Groups: []string{"my-group", "other-group"}}, nil)
 		ssoIf.On("IsRBACEnabled").Return(true)
+		ssoIf.On("IsImpersonateEnabled").Return(false)
 		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns", "my-ns", false, resourceCache)
 		if assert.NoError(t, err) {
 			ctx, err := g.ContextWithRequest(x("Bearer v2:whatever"), servertypes.NamespaceHolder("user3-ns"))
@@ -267,6 +288,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Groups: []string{"other-group"}}, nil)
 		ssoIf.On("IsRBACEnabled").Return(true)
+		ssoIf.On("IsImpersonateEnabled").Return(false)
 		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache)
 		if assert.NoError(t, err) {
 			ctx, err := g.Context(x("Bearer v2:whatever"))
@@ -280,6 +302,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{}, nil)
 		ssoIf.On("IsRBACEnabled").Return(true)
+		ssoIf.On("IsImpersonateEnabled").Return(false)
 		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache)
 		if assert.NoError(t, err) {
 			_, err := g.Context(x("Bearer v2:whatever"))

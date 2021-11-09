@@ -9,17 +9,24 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func CanI(ctx context.Context, kubeclientset kubernetes.Interface, verb, resource, namespace, name string) (bool, error) {
-	logCtx := log.WithFields(log.Fields{"verb": verb, "resource": resource, "namespace": namespace, "name": name})
+func CanI(ctx context.Context, kubeClient kubernetes.Interface, namespace, verb, resourceGroup, resourceType, resourceName string) (bool, error) {
+	logCtx := log.WithFields(log.Fields{
+		"Namespace": namespace,
+		"Verb":      verb,
+		"Group":     resourceGroup,
+		"Resource":  resourceType,
+		"Name":      resourceName,
+	})
 	logCtx.Debug("CanI")
 
-	review, err := kubeclientset.AuthorizationV1().SelfSubjectAccessReviews().Create(ctx, &auth.SelfSubjectAccessReview{
+	review, err := kubeClient.AuthorizationV1().SelfSubjectAccessReviews().Create(ctx, &auth.SelfSubjectAccessReview{
 		Spec: auth.SelfSubjectAccessReviewSpec{
 			ResourceAttributes: &auth.ResourceAttributes{
 				Namespace: namespace,
 				Verb:      verb,
-				Group:     "argoproj.io",
-				Resource:  resource,
+				Group:     resourceGroup,
+				Resource:  resourceType,
+				Name:      resourceName,
 			},
 		},
 	}, metav1.CreateOptions{})

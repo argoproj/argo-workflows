@@ -11,7 +11,7 @@ import (
 	k8stesting "k8s.io/client-go/testing"
 )
 
-func TestAuthorizer_CanI(t *testing.T) {
+func TestAuthorizer_AccessReview(t *testing.T) {
 	kubeClient := &kubefake.Clientset{}
 	allowed := true
 	kubeClient.AddReactor("create", "selfsubjectaccessreviews", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
@@ -20,11 +20,9 @@ func TestAuthorizer_CanI(t *testing.T) {
 		}, nil
 	})
 	ctx := context.WithValue(context.Background(), KubeKey, kubeClient)
-	t.Run("CanI", func(t *testing.T) {
-		allowed, err := CanI(ctx, "", "", "", "")
-		if assert.NoError(t, err) {
-			assert.True(t, allowed)
-		}
+	t.Run("AccessReview", func(t *testing.T) {
+		err := AccessReview(ctx, "", "", "", "", "")
+		assert.NoError(t, err)
 	})
 	kubeClient.AddReactor("create", "selfsubjectrulesreviews", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
 		return true, &authorizationv1.SelfSubjectRulesReview{
