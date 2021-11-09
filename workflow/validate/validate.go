@@ -155,14 +155,11 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		return nil, errors.Errorf(errors.CodeBadRequest, "spec.templates%s", err.Error())
 	}
 
-	if ctx.Lint || (ctx.WorkflowTemplateValidation && !ctx.Submit) {
-		// if we are linting, we don't care if spec.arguments.parameters.XXX doesn't have an
-		// explicit value. Workflow templates without a default value are also a desired use
-		// case, since values will be provided during workflow submission.
-		err = validateArgumentsFieldNames("spec.arguments.", wfArgs)
-	} else {
-		err = validateArguments("spec.arguments.", wfArgs)
-	}
+	// if we are linting, we don't care if spec.arguments.parameters.XXX doesn't have an
+	// explicit value. Workflow templates without a default value are also a desired use
+	// case, since values will be provided during workflow submission.
+	allowEmptyValues := ctx.Lint || (ctx.WorkflowTemplateValidation && !ctx.Submit)
+	err = validateArguments("spec.arguments.", wfArgs, allowEmptyValues)
 	if err != nil {
 		return nil, err
 	}
@@ -691,12 +688,12 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 	return nil
 }
 
-func validateArguments(prefix string, arguments wfv1.Arguments) error {
+func validateArguments(prefix string, arguments wfv1.Arguments, allowEmptyValues bool) error {
 	err := validateArgumentsFieldNames(prefix, arguments)
 	if err != nil {
 		return err
 	}
-	return validateArgumentsValues(prefix, arguments)
+	return validateArgumentsValues(prefix, arguments, allowEmptyValues)
 }
 
 func validateArgumentsFieldNames(prefix string, arguments wfv1.Arguments) error {
@@ -714,10 +711,12 @@ func validateArgumentsFieldNames(prefix string, arguments wfv1.Arguments) error 
 }
 
 // validateArgumentsValues ensures that all arguments have parameter values or artifact locations
-func validateArgumentsValues(prefix string, arguments wfv1.Arguments) error {
+func validateArgumentsValues(prefix string, arguments wfv1.Arguments, allowEmptyValues bool) error {
 	for _, param := range arguments.Parameters {
 		if param.ValueFrom == nil && param.Value == nil {
-			return errors.Errorf(errors.CodeBadRequest, "%s%s.value is required", prefix, param.Name)
+			if !allowEmptyValues {
+				return errors.Errorf(errors.CodeBadRequest, "%s%s.value is required", prefix, param.Name)
+			}
 		}
 		if param.Enum != nil {
 			if len(param.Enum) == 0 {
@@ -772,7 +771,7 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 			if err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
 			}
-			err = validateArguments(fmt.Sprintf("templates.%s.steps[%d].%s.arguments.", tmpl.Name, i, step.Name), step.Arguments)
+			err = validateArguments(fmt.Sprintf("templates.%s.steps[%d].%s.arguments.", tmpl.Name, i, step.Name), step.Arguments, false)
 			if err != nil {
 				return err
 			}
@@ -1277,7 +1276,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
-		err = validateArguments(fmt.Sprintf("templates.%s.tasks.%s.arguments.", tmpl.Name, task.Name), task.Arguments)
+		err = validateArguments(fmt.Sprintf("templates.%s.tasks.%s.arguments.", tmpl.Name, task.Name), task.Arguments, false)
 		if err != nil {
 			return err
 		}

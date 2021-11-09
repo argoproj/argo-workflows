@@ -2743,18 +2743,18 @@ func TestWorkflowTemplateWithEnumValue(t *testing.T) {
 
 func TestWorkflowTemplateWithEmptyEnumList(t *testing.T) {
 	err := validateWorkflowTemplate(workflowTemplateWithEmptyEnumList, ValidateOpts{})
-	assert.NoError(t, err)
+	assert.EqualError(t, err, "spec.arguments.message.enum should contain at least one value")
 	err = validateWorkflowTemplate(workflowTemplateWithEmptyEnumList, ValidateOpts{Lint: true})
-	assert.NoError(t, err)
+	assert.EqualError(t, err, "spec.arguments.message.enum should contain at least one value")
 	err = validateWorkflowTemplate(workflowTemplateWithEmptyEnumList, ValidateOpts{Submit: true})
 	assert.EqualError(t, err, "spec.arguments.message.enum should contain at least one value")
 }
 
 func TestWorkflowTemplateWithArgumentValueNotFromEnumList(t *testing.T) {
 	err := validateWorkflowTemplate(workflowTemplateWithArgumentValueNotFromEnumList, ValidateOpts{})
-	assert.NoError(t, err)
+	assert.EqualError(t, err, "spec.arguments.message.value should be present in spec.arguments.message.enum list")
 	err = validateWorkflowTemplate(workflowTemplateWithArgumentValueNotFromEnumList, ValidateOpts{Lint: true})
-	assert.NoError(t, err)
+	assert.EqualError(t, err, "spec.arguments.message.value should be present in spec.arguments.message.enum list")
 	err = validateWorkflowTemplate(workflowTemplateWithArgumentValueNotFromEnumList, ValidateOpts{Submit: true})
 	assert.EqualError(t, err, "spec.arguments.message.value should be present in spec.arguments.message.enum list")
 }
