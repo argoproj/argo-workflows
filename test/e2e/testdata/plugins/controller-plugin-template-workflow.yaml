@@ -7,4 +7,4 @@ spec:
   templates:
     - name: main
       plugin:
-        helloController: { }
+        hello: { }

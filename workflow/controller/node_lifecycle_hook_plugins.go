@@ -2,14 +2,14 @@ package controller
 
 import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	controller2 "github.com/argoproj/argo-workflows/v3/pkg/plugins/controller"
+	plugins "github.com/argoproj/argo-workflows/v3/pkg/plugins/controller"
 )
 
 func (woc *wfOperationCtx) runNodePreExecutePlugins(tmpl *wfv1.Template, node *wfv1.NodeStatus) error {
-	args := controller2.NodePreExecuteArgs{Workflow: woc.wf.Reduced(), Template: tmpl, Node: node}
-	reply := &controller2.NodePreExecuteReply{}
+	args := plugins.NodePreExecuteArgs{Workflow: woc.wf.Reduced(), Template: tmpl, Node: node}
+	reply := &plugins.NodePreExecuteReply{}
 	for _, sym := range woc.controller.plugins {
-		if plug, ok := sym.(controller2.NodeLifecycleHook); ok {
+		if plug, ok := sym.(plugins.NodeLifecycleHook); ok {
 			if err := plug.NodePreExecute(args, reply); err != nil {
 				return err
 			} else if reply.Node != nil {
@@ -23,10 +23,10 @@ func (woc *wfOperationCtx) runNodePreExecutePlugins(tmpl *wfv1.Template, node *w
 }
 
 func (woc *wfOperationCtx) runNodePostExecutePlugins(tmpl *wfv1.Template, old, new *wfv1.NodeStatus) error {
-	args := controller2.NodePostExecuteArgs{Workflow: woc.wf.Reduced(), Template: tmpl, Old: old, New: new}
-	reply := &controller2.NodePostExecuteReply{}
+	args := plugins.NodePostExecuteArgs{Workflow: woc.wf.Reduced(), Template: tmpl, Old: old, New: new}
+	reply := &plugins.NodePostExecuteReply{}
 	for _, sym := range woc.controller.plugins {
-		if plug, ok := sym.(controller2.NodeLifecycleHook); ok {
+		if plug, ok := sym.(plugins.NodeLifecycleHook); ok {
 			if err := plug.NodePostExecute(args, reply); err != nil {
 				return err
 			}

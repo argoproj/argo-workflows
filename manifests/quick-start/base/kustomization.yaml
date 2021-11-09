@@ -13,7 +13,6 @@ resources:
   - cluster-workflow-template-rbac.yaml
   - artifact-repositories-configmap.yaml
   - hello-controller-plugin-configmap.yaml
-  - rpc-7584-controller-plugin-configmap.yaml
 
 patchesStrategicMerge:
   - overlays/workflow-controller-configmap.yaml

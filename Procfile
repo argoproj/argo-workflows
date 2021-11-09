@@ -2,4 +2,3 @@ controller: ./hack/free-port.sh 9090 && ARGO_PLUGINS=${PLUGINS} ARGO_PLUGINS_DIR
 argo-server: ./hack/free-port.sh 2746 && [ "$API" = "true" ] && UPPERIO_DB_DEBUG=${UPPERIO_DB_DEBUG} ./dist/argo --loglevel ${LOG_LEVEL} server --namespaced=${NAMESPACED} --namespace ${NAMESPACE} --auth-mode ${AUTH_MODE} --secure=$SECURE --x-frame-options=SAMEORIGIN
 ui: ./hack/free-port.sh 8080 && [ "$UI" = "true" ] && yarn --cwd ui install && yarn --cwd ui start
 logs: make logs
-controller-plugin: ./hack/free-port.sh 7584 && [ "$PLUGINS" = "true" ] && python3 test/e2e/plugins/controller/server.py

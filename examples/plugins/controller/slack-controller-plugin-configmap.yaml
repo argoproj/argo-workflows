@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: rpc-7584-controller-plugin
+  name: slack-controller-plugin
   labels:
     workflows.argoproj.io/configmap-type: ControllerPlugin
 data:

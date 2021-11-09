@@ -42,7 +42,7 @@ func (p *plugin) WorkflowPostOperate(args plugins.WorkflowPostOperateArgs, reply
 var _ plugins.NodeLifecycleHook = &plugin{}
 
 func (p *plugin) NodePreExecute(args plugins.NodePreExecuteArgs, reply *plugins.NodePreExecuteReply) error {
-	value, err := args.Template.Plugin.Get("helloController")
+	value, err := args.Template.Plugin.Get("hello")
 	if err != nil {
 		return err
 	}
@@ -56,7 +56,7 @@ func (p *plugin) NodePreExecute(args plugins.NodePreExecuteArgs, reply *plugins.
 }
 
 func (p *plugin) NodePostExecute(args plugins.NodePostExecuteArgs, reply *plugins.NodePostExecuteReply) error {
-	value, err := args.Template.Plugin.Get("helloController")
+	value, err := args.Template.Plugin.Get("hello")
 	if err != nil {
 		return err
 	}
