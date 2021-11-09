@@ -47,6 +47,7 @@ const reportsUrl = uiUrl('reports');
 
 export const AppRouter = ({popupManager, history, notificationsManager}: {popupManager: PopupManager; history: H.History; notificationsManager: NotificationsManager}) => {
     const [popupProps, setPopupProps] = useState<PopupProps>();
+    const [modals, setModals] = useState<{string: boolean}>();
     const [version, setVersion] = useState<Version>();
     const [namespace, setNamespace] = useState<string>();
     const setError = (error: Error) => {
@@ -66,6 +67,7 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
             .then(info => {
                 Utils.managedNamespace = info.managedNamespace;
                 setNamespace(Utils.currentNamespace);
+                setModals(info.modals);
             })
             .then(() => services.info.getVersion())
             .then(setVersion)
@@ -179,7 +181,7 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                             </Switch>
                         </ErrorBoundary>
                         <ChatButton />
-                        {version && <ModalSwitch version={version.version} />}
+                        {version && modals && <ModalSwitch version={version.version} modals={modals} />}
                     </Layout>
                 </Switch>
             </Router>

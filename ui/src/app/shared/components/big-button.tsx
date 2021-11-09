@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {Icon} from './icon';
 
-export const BigButton = ({icon, title, href}: {icon: Icon; title: string; href: string}) => {
+export const BigButton = ({icon, title, onClick, href}: {icon: Icon; title: string; onClick?: () => void; href?: string}) => {
     return (
         <a
             style={{
@@ -18,6 +18,7 @@ export const BigButton = ({icon, title, href}: {icon: Icon; title: string; href:
                 color: 'white'
             }}
             target='_blank'
+            onClick={onClick}
             href={href}>
             <div style={{fontSize: '28pt', lineHeight: '65px', verticalAlign: 'bottom'}}>
                 <i className={'fa fa-' + icon} />
