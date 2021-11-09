@@ -5617,6 +5617,8 @@ spec:
                         type: array
                       manifest:
                         type: string
+                      manifestPath:
+                        type: string
                       mergeStrategy:
                         type: string
                       setOwnerReference:
@@ -12066,6 +12068,8 @@ spec:
                             type: string
                           type: array
                         manifest:
+                          type: string
+                        manifestPath:
                           type: string
                         mergeStrategy:
                           type: string

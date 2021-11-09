@@ -2318,6 +2318,9 @@ type ResourceTemplate struct {
 	// Manifest contains the kubernetes manifest
 	Manifest string `json:"manifest,omitempty" protobuf:"bytes,3,opt,name=manifest"`
 
+	// ManifestPath contains the path to the kubernetes manifest. Useful for loading manifest from artifacts
+	ManifestPath string `json:"manifestPath,omitempty" protobuf:"bytes,8,opt,name=manifestPath"`
+
 	// SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.
 	SetOwnerReference bool `json:"setOwnerReference,omitempty" protobuf:"varint,4,opt,name=setOwnerReference"`
 
