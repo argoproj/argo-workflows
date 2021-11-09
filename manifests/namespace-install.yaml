@@ -575,14 +575,8 @@ spec:
             - ALL
           readOnlyRootFilesystem: true
           runAsNonRoot: true
-        volumeMounts:
-        - mountPath: /plugins
-          name: plugins
       nodeSelector:
         kubernetes.io/os: linux
       securityContext:
         runAsNonRoot: true
       serviceAccountName: argo
-      volumes:
-      - emptyDir: {}
-        name: plugins
