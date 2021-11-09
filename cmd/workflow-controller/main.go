@@ -58,7 +58,6 @@ func NewRootCommand() *cobra.Command {
 		namespaced               bool   // --namespaced
 		managedNamespace         string // --managed-namespace
 		plugins                  bool
-		pluginsDir               string
 	)
 
 	command := cobra.Command{
@@ -109,7 +108,7 @@ func NewRootCommand() *cobra.Command {
 			wfController, err := controller.NewWorkflowController(ctx, config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap)
 			errors.CheckError(err)
 
-			go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podWorkers, podCleanupWorkers, plugins, pluginsDir)
+			go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podWorkers, podCleanupWorkers, plugins)
 
 			http.HandleFunc("/healthz", wfController.Healthz)
 
@@ -140,7 +139,6 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run workflow-controller as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that workflow-controller watches, default to the installation namespace")
 	command.Flags().BoolVar(&plugins, "plugins", false, "enable plugins")
-	command.Flags().StringVar(&pluginsDir, "plugins-dir", "plugins", "where to find plugins")
 
 	viper.AutomaticEnv()
 	viper.SetEnvPrefix("ARGO")

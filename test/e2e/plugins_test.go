@@ -34,7 +34,7 @@ func (s *PluginsSuite) TestWorkflowLifecycleHookPlugin() {
 		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
 		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, _ *wfv1.WorkflowStatus) {
-			assert.Equal(t, "goodbye", md.Annotations["hello"])
+			assert.Equal(t, "good morning", md.Annotations["hello"])
 		})
 }
 

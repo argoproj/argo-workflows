@@ -12,7 +12,6 @@ resources:
   - workflow-default-rolebinding.yaml
   - cluster-workflow-template-rbac.yaml
   - artifact-repositories-configmap.yaml
-  - hello-controller-plugin-configmap.yaml
 
 patchesStrategicMerge:
   - overlays/workflow-controller-configmap.yaml

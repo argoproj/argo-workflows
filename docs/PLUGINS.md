@@ -55,7 +55,7 @@ spec:
   template:
     spec:
       containers:
-        - name: rpc-7584
+        - name: rpc-4355
           args:
             - |
               import json
@@ -76,7 +76,7 @@ spec:
 
 
               if __name__ == '__main__':
-                httpd = HTTPServer(('', 7584), Plugin)
+                httpd = HTTPServer(('', 4355), Plugin)
                 httpd.serve_forever()
 
           command:
@@ -91,12 +91,11 @@ You also need create this configuration:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: rpc-7584-controller-plugin
+  name: rpc-4355-controller-plugin
   labels:
     workflows.argoproj.io/configmap-type: ControllerPlugin
 data:
-  path: rpc.so
-  address: http://localhost:7584
+  address: http://localhost:4355
 ```
 
 Verify the controller started successfully, and logged:
@@ -105,56 +104,9 @@ Verify the controller started successfully, and logged:
 level=info msg="loading plugin" path=/plugins/rpc.so
 ```
 
-You can enable more of this plugin, by changing "7584" to "1234" etc.
+You can enable more of this plugin, by changing "4355" to "1234" etc.
 
 You only need to implement the methods you need. If you return 404 error, then that method will not be called again.
-
-### Authoring A Golang Plugin
-
-Golang plugins have advantages over RPC sidecar plugins:
-
-* Better at scale.
-* Lower memory footprint.
-
-But the have downsides too:
-
-* Only Linux and MacOS, not Windows.
-* Must be re-built for every new version of Argo Workflows.
-
-[Is anyone using Go plugins?](https://www.google.com/search?client=safari&rls=en&q=is+anyone+using+go+plugins&ie=UTF-8&oe=UTF-8)
-
-Look at the example workflow/controller/plugins/hello/plugin.go.
-
-#### Installing Shared Libraries
-
-Shared libraries must be in the `/plugins` directory. The easiest option to get them into that directory is to add an
-init container that either has the plugin as part of the image, or gets the plugin from elsewhere.
-
-The kustomize patch will get plugins.
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: workflow-controller
-spec:
-  template:
-    spec:
-      initContainers:
-        - name: plugins
-          volumeMounts:
-            - mountPath: /plugins
-              name: plugins
-          command:
-            - sh
-            - c
-          args:
-            - |
-              curl http://.../plugin.tar.gz
-              tar -xf plugins.tar.gz -C plugins
-      containers:
-        - name: workflow-controller
-```
 
 ### Considerations
 

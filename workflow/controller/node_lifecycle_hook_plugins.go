@@ -6,6 +6,7 @@ import (
 )
 
 func (woc *wfOperationCtx) runNodePreExecutePlugins(tmpl *wfv1.Template, node *wfv1.NodeStatus) error {
+	println("ALEX", wfv1.MustMarshallJSON(node))
 	args := plugins.NodePreExecuteArgs{Workflow: woc.wf.Reduced(), Template: tmpl, Node: node}
 	reply := &plugins.NodePreExecuteReply{}
 	for _, sym := range woc.controller.plugins {
@@ -13,8 +14,10 @@ func (woc *wfOperationCtx) runNodePreExecutePlugins(tmpl *wfv1.Template, node *w
 			if err := plug.NodePreExecute(args, reply); err != nil {
 				return err
 			} else if reply.Node != nil {
-				reply.Node.DeepCopyInto(node)
-				woc.wf.Status.Nodes[reply.Node.ID] = *node
+				if err := woc.patchObj(node, reply.Node); err != nil {
+					return err
+				}
+				woc.wf.Status.Nodes[node.ID] = *node
 				woc.updated = true
 			}
 		}

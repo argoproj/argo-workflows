@@ -198,7 +198,10 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	woc.log.Infof("Processing workflow")
 
-	woc.runWorkflowPreOperatePlugins(ctx)
+	if err := woc.runWorkflowPreOperatePlugins(); err != nil {
+		woc.markWorkflowError(ctx, err)
+		return
+	}
 	defer woc.runWorkflowPostOperatePlugins(ctx)
 
 	// Set the Execute workflow spec for execution

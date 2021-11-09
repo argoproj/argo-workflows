@@ -207,7 +207,7 @@ var indexers = cache.Indexers{
 }
 
 // Run starts an Workflow resource controller
-func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podWorkers, podCleanupWorkers int, plugins bool, pluginsDir string) {
+func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podWorkers, podCleanupWorkers int, plugins bool) {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -253,7 +253,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	log.WithField("plugins", plugins).Info("plugins")
 
 	if plugins {
-		if err := wfc.loadPlugins(pluginsDir); err != nil {
+		if err := wfc.loadPlugins(); err != nil {
 			log.Fatal(err)
 		}
 	}

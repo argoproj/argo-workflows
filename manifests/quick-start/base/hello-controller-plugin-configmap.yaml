@@ -1,8 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: hello-controller-plugin
-  labels:
-    workflows.argoproj.io/configmap-type: ControllerPlugin
-data:
-  path: hello.so

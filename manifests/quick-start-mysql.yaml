@@ -675,15 +675,6 @@ metadata:
 ---
 apiVersion: v1
 data:
-  path: hello.so
-kind: ConfigMap
-metadata:
-  labels:
-    workflows.argoproj.io/configmap-type: ControllerPlugin
-  name: hello-controller-plugin
----
-apiVersion: v1
-data:
   artifactRepository: |
     s3:
       bucket: my-bucket

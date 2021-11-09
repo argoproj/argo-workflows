@@ -18,7 +18,6 @@ type WorkflowPostOperateArgs struct {
 }
 
 type WorkflowPostOperateReply struct {
-	New *wfv1.Workflow `json:"new,omitempty"`
 }
 
 type WorkflowLifecycleHook interface {

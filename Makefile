@@ -46,9 +46,9 @@ endif
 UI                    ?= false
 # start the Argo Server
 API                   ?= $(UI)
-PLUGINS               ?= true
 GOTEST                ?= go test -v
 PROFILE               ?= minimal
+PLUGINS               ?= $(shell [ $PROFILE = plugins ] && echo false || echo true)
 # by keeping this short we speed up the tests
 DEFAULT_REQUEUE_TIME  ?= 100ms
 # whether or not to start the Argo Service in TLS mode
@@ -194,28 +194,15 @@ clis: dist/argo-linux-amd64.gz dist/argo-linux-arm64.gz dist/argo-linux-ppc64le.
 # controller
 
 .PHONY: controller
-ifeq ($(PLUGINS),true)
-controller: \
-	dist/controller/plugins/hello.so \
-	dist/controller/plugins/rpc.so \
-	dist/workflow-controller
-else
-controller: \
-	dist/workflow-controller
-endif
+controller: dist/workflow-controller
 
 dist/workflow-controller: $(CONTROLLER_PKGS) go.sum
 ifeq ($(shell uname -s),Darwin)
 	# if local, then build fast: use CGO and dynamic-linking
 	go build -v -ldflags '${LDFLAGS}' -o $@ ./cmd/workflow-controller
 else
-	CGO_ENABLED=1 go build -v -ldflags '${LDFLAGS}' -o $@ ./cmd/workflow-controller
+	CGO_ENABLED=0 go build -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/workflow-controller
 endif
-
-dist/controller/plugins/hello.so:
-dist/controller/plugins/rpc.so:
-dist/controller/plugins/%.so: workflow/controller/plugins/%/plugin.go dist/workflow-controller
-	CGO_ENABLED=1 go build -v -buildmode=plugin -o dist/controller/plugins/$*.so ./workflow/controller/plugins/$*
 
 workflow-controller-image:
 

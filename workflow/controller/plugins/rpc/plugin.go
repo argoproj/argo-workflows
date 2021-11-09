@@ -1,4 +1,4 @@
-package main
+package rpc
 
 import (
 	"bytes"
@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 
 	plugins "github.com/argoproj/argo-workflows/v3/pkg/plugins/controller"
 )
@@ -16,11 +18,11 @@ type plugin struct {
 }
 
 func New(data map[string]string) (interface{}, error) { //nolint:deadcode,unparam
-	return &plugin{address: data["address"], invalid: map[string]bool{}}, nil
-}
-
-func main() {
-	// main funcs are never called in a Go plugin
+	address, ok := data["address"]
+	if !ok {
+		return nil, fmt.Errorf("address not specfied")
+	}
+	return &plugin{address: address, invalid: map[string]bool{}}, nil
 }
 
 func (p *plugin) call(method string, args interface{}, reply interface{}) error {
@@ -40,6 +42,9 @@ func (p *plugin) call(method string, args interface{}, reply interface{}) error 
 	case 200:
 		return json.NewDecoder(resp.Body).Decode(reply)
 	case 404:
+		log.WithField("address", p.invalid).
+			WithField("method", method).
+			Info("method not found, never calling again")
 		p.invalid[method] = true
 		_, err := io.Copy(io.Discard, resp.Body)
 		return err

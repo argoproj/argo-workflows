@@ -1,9 +1,8 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: slack-controller-plugin
+  name: hello-controller-plugin
   labels:
     workflows.argoproj.io/configmap-type: ControllerPlugin
 data:
-  path: rpc.so
-  address: http://localhost:7584
+  address: http://localhost:4355

@@ -11,7 +11,7 @@ type NodePreExecuteArgs struct {
 }
 
 type NodePreExecuteReply struct {
-	Node *wfv1.NodeStatus `json:"node,omitempty"`
+	Node *wfv1.NodeResult `json:"node,omitempty"`
 }
 
 type NodePostExecuteArgs struct {
