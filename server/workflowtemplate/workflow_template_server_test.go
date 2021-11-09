@@ -172,6 +172,18 @@ func getWorkflowTemplateServer() (workflowtemplatepkg.WorkflowTemplateServiceSer
 
 func TestWorkflowTemplateServer_CreateWorkflowTemplate(t *testing.T) {
 	server, ctx := getWorkflowTemplateServer()
+	t.Run("Without parameter values", func(t *testing.T) {
+		var wftReq workflowtemplatepkg.WorkflowTemplateCreateRequest
+		v1alpha1.MustUnmarshal(wftStr1, &wftReq)
+		wftReq.Template.Name = "foo-without-param-values"
+		wftReq.Template.Spec.Arguments.Parameters[0].Value = nil
+		wftRsp, err := server.CreateWorkflowTemplate(ctx, &wftReq)
+		if assert.NoError(t, err) {
+			assert.NotNil(t, wftRsp)
+			assert.Equal(t, "message", wftRsp.Spec.Arguments.Parameters[0].Name)
+			assert.Nil(t, wftRsp.Spec.Arguments.Parameters[0].Value)
+		}
+	})
 	t.Run("Labelled", func(t *testing.T) {
 		var wftReq workflowtemplatepkg.WorkflowTemplateCreateRequest
 		v1alpha1.MustUnmarshal(wftStr1, &wftReq)
