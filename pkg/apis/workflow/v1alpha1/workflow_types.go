@@ -3,7 +3,6 @@ package v1alpha1
 import (
 	"encoding/json"
 	"fmt"
-	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
 	"hash/fnv"
 	"net/url"
 	"path"
@@ -19,6 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/util/slice"
 )
 
