@@ -1053,7 +1053,6 @@ spec:
 
             def do_POST(self):
               if self.path == "/WorkflowLifecycleHook.WorkflowPreOperate":
-                print("hello", self.path)
                 self.send_response(200)
                 self.end_headers()
                 self.wfile.write(json.dumps({}).encode("UTF-8"))

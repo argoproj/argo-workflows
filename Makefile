@@ -192,10 +192,15 @@ clis: dist/argo-linux-amd64.gz dist/argo-linux-arm64.gz dist/argo-linux-ppc64le.
 # controller
 
 .PHONY: controller
+ifeq ($(PLUGINS),true)
 controller: \
 	dist/controller/plugins/hello.so \
 	dist/controller/plugins/rpc.so \
 	dist/workflow-controller
+else
+controller: \
+	dist/workflow-controller
+endif
 
 dist/workflow-controller: $(CONTROLLER_PKGS) go.sum
 ifeq ($(shell uname -s),Darwin)
