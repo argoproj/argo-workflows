@@ -7,6 +7,8 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/argoproj/argo-workflows/v3/util/errors"
+
 	log "github.com/sirupsen/logrus"
 
 	plugins "github.com/argoproj/argo-workflows/v3/pkg/plugins/controller"
@@ -48,12 +50,18 @@ func (p *plugin) call(method string, args interface{}, reply interface{}) error 
 		p.invalid[method] = true
 		_, err := io.Copy(io.Discard, resp.Body)
 		return err
+	case 503:
+		data, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		return errors.NewErrTransient(string(data))
 	default:
 		data, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return err
 		}
-		return fmt.Errorf("%s", string(data))
+		return fmt.Errorf("%s: %s", resp.Status, string(data))
 	}
 }
 

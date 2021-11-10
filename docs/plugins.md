@@ -176,6 +176,7 @@ level=info msg="loading plugin" name=hello-controller-plugin
 
 An error in a plugin is typically contained as follows:
 
+* Transient errors are ignored, and reconciliation aborted.
 * For node lifecycle hooks, the node will error. The workflow therefore may fail.
 * Other errors will result in an errored workflow.
 

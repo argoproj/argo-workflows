@@ -199,7 +199,9 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	woc.log.Infof("Processing workflow")
 
 	if err := woc.runWorkflowPreOperatePlugins(); err != nil {
-		woc.markWorkflowError(ctx, err)
+		if !errorsutil.IsTransientErr(err) {
+			woc.markWorkflowError(ctx, err)
+		}
 		return
 	}
 	defer woc.runWorkflowPostOperatePlugins(ctx)
@@ -1647,6 +1649,9 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 
 	// Inputs has been processed with arguments already, so pass empty arguments.
 	processedTmpl, err := common.ProcessArgsWithHook(resolvedTmpl, &args, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer, woc.runParameterSubstitutionPlugins)
+	if errorsutil.IsTransientErr(err) {
+		return node, err
+	}
 	if err != nil {
 		return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 	}
@@ -1831,6 +1836,9 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			localParams[common.LocalVarRetries] = strconv.Itoa(len(retryParentNode.Children))
 
 			processedTmpl, err = common.SubstituteParamsWithHook(processedTmpl, map[string]string{}, localParams, woc.runParameterSubstitutionPlugins)
+			if errorsutil.IsTransientErr(err) {
+				return node, err
+			}
 			if err != nil {
 				return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 			}

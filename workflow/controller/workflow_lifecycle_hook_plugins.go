@@ -4,6 +4,7 @@ import (
 	"context"
 
 	plugins "github.com/argoproj/argo-workflows/v3/pkg/plugins/controller"
+	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/util/patch"
 )
 
@@ -33,7 +34,9 @@ func (woc *wfOperationCtx) runWorkflowPostOperatePlugins(ctx context.Context) {
 	for _, sym := range woc.controller.plugins {
 		if plug, ok := sym.(plugins.WorkflowLifecycleHook); ok {
 			if err := plug.WorkflowPostOperate(args, reply); err != nil {
-				woc.markWorkflowError(ctx, err)
+				if !errorsutil.IsTransientErr(err) {
+					woc.markWorkflowError(ctx, err)
+				}
 			}
 		}
 	}
