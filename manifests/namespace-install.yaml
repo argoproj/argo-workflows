@@ -453,7 +453,7 @@ spec:
       - args:
         - server
         - --namespaced
-        image: docker.io/argoproj/argocli:latest
+        image: quay.io/codefresh/argocli:latest
         name: argo-server
         ports:
         - containerPort: 2746
@@ -499,7 +499,7 @@ spec:
         - --configmap
         - workflow-controller-configmap
         - --executor-image
-        - argoproj/argoexec:latest
+        - quay.io/codefresh/argoexec:latest
         - --namespaced
         command:
         - workflow-controller
@@ -509,7 +509,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.name
-        image: docker.io/argoproj/workflow-controller:latest
+        image: quay.io/codefresh/workflow-controller:latest
         livenessProbe:
           failureThreshold: 3
           httpGet:

@@ -10,7 +10,7 @@ spec:
           args:
             - --loglevel=warn
             - --configmap=workflow-controller-configmap
-            - --executor-image=argoproj/argoexec:latest
+            - --executor-image=quay.io/codefresh/argoexec:latest
             - --namespaced
             - --burst=2048
             - --qps=512

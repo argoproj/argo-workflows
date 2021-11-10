@@ -66,7 +66,7 @@ spec:
       parameters:
       - name: job-uid
     container:
-      image: argoproj/argoexec:latest
+      image: quay.io/codefresh/argoexec:latest
       command: [sh, -c]
       args: ["
         for i in `kubectl get pods -l controller-uid={{inputs.parameters.job-uid}} -o name`; do 
