@@ -87,6 +87,65 @@ sso:
     enabled: false
 ```
 
+Standard [Kubernetes RBAC](https://kubernetes.io/docs/reference/access-authn-authz/rbac/) is then used to give access based on a user's OIDC `email`.
+The following RBAC gives `admin@example.com` full access to create/delete/etc. workflows in the `xyz` Namespace (note, we use a `RoleBinding`, rather than `ClusterRoleBinding`).
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+# could also be a namespaced `Role`, if needed
+kind: ClusterRole
+metadata:
+  name: argo-superadmin
+rules:
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - clusterworkflowtemplates
+      - clusterworkflowtemplates/finalizers
+      - cronworkflows
+      - cronworkflows/finalizers
+      - workfloweventbindings
+      - workfloweventbindings/finalizers
+      - workflows
+      - workflows/finalizers
+      - workflowtasksets
+      - workflowtasksets/finalizers
+      - workflowtemplates
+      - workflowtemplates/finalizers
+    verbs:
+      - create
+      - delete
+      - deletecollection
+      - get
+      - list
+      - patch
+      - update
+      - watch
+```
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+# could also be a `ClusterRoleBinding`, if needed
+kind: RoleBinding
+metadata:
+  name: argo-example-binding
+  # note, this only allows "admin@example.com" to create/delete/etc. workflows in the "xyz" namespace
+  namespace: xyz
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: argo-superadmin
+subjects:
+  - kind: User
+    # this is the user's `email` claim
+    name: "admin@example.com"
+    apiGroup: rbac.authorization.k8s.io
+```
+
+!!! Note
+    Currently, only `RoleBindings` and `ClusterRoleBindings` for "User" subjects are checked in the `SubjectAccessReviews`.
+    That is, if your users are members of Kubernetes "Groups", the `RoleBindings` or `ClusterRoleBindings` of those "Groups" will not be checked.
+
 ## SSO RBAC
 
 > v2.12 and after
