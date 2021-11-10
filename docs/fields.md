@@ -238,6 +238,8 @@ Workflow is the definition of a workflow resource
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation.yaml)
 
+- [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/hello/hello-workflow.yaml)
+
 - [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy-with-label-selector.yaml)
 
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy.yaml)
@@ -654,6 +656,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation-script.yaml)
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation.yaml)
+
+- [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/hello/hello-workflow.yaml)
 
 - [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy-with-label-selector.yaml)
 
@@ -1090,6 +1094,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation.yaml)
 
+- [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/hello/hello-workflow.yaml)
+
 - [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy-with-label-selector.yaml)
 
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy.yaml)
@@ -1480,6 +1486,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation-script.yaml)
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation.yaml)
+
+- [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/hello/hello-workflow.yaml)
 
 - [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy-with-label-selector.yaml)
 
@@ -2816,6 +2824,8 @@ Data is a data template
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
 
+- [`hello-controller-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/hello/hello-controller-plugin-configmap.yaml)
+
 - [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-delete-with-flags.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-tmpl-level.yaml)
@@ -2854,6 +2864,8 @@ _No description available_
 - [`input-artifact-http.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-http.yaml)
 
 - [`input-artifact-oss.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-oss.yaml)
+
+- [`hello-controller-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/hello/hello-controller-plugin-configmap.yaml)
 
 - [`sidecar-nginx.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar-nginx.yaml)
 
@@ -3710,6 +3722,8 @@ HTTPArtifact allows an file served on HTTP to be placed as an input artifact in 
 
 - [`input-artifact-oss.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-oss.yaml)
 
+- [`hello-controller-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/hello/hello-controller-plugin-configmap.yaml)
+
 - [`sidecar-nginx.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar-nginx.yaml)
 
 - [`sidecar.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar.yaml)
@@ -3970,6 +3984,8 @@ MetricLabel is a single label for a prometheus metric
 - [`k8s-patch-basic.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch-basic.yaml)
 
 - [`k8s-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch.yaml)
+
+- [`hello-controller-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/hello/hello-controller-plugin-configmap.yaml)
 
 - [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy-with-label-selector.yaml)
 
@@ -4946,6 +4962,10 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation-script.yaml)
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation.yaml)
+
+- [`hello-controller-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/hello/hello-controller-plugin-configmap.yaml)
+
+- [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/hello/hello-workflow.yaml)
 
 - [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy-with-label-selector.yaml)
 
@@ -6259,6 +6279,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation-script.yaml)
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation.yaml)
+
+- [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/hello/hello-workflow.yaml)
 
 - [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy-with-label-selector.yaml)
 
