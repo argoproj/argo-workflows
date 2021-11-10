@@ -16,7 +16,7 @@ spec:
     - name: main
       dag:
         tasks:
-          - name: good
+          - name: http
             template: http
             arguments:
               parameters:
@@ -28,9 +28,9 @@ spec:
             arguments:
               parameters:
                 - name: msg
-                  value: '{{tasks.good.outputs.result}}'
+                  value: '{{tasks.http.outputs.result}}'
             dependencies:
-              - good
+              - http
     - name: http
       inputs:
         parameters:
