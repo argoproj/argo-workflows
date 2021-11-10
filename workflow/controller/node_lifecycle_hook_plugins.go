@@ -7,7 +7,6 @@ import (
 )
 
 func (woc *wfOperationCtx) runNodePreExecutePlugins(tmpl *wfv1.Template, node *wfv1.NodeStatus) error {
-	println("ALEX", wfv1.MustMarshallJSON(node))
 	args := plugins.NodePreExecuteArgs{Workflow: woc.wf.Reduced(), Template: tmpl, Node: node}
 	reply := &plugins.NodePreExecuteReply{}
 	for _, sym := range woc.controller.plugins {

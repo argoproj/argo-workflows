@@ -26,7 +26,6 @@ type NodePostExecuteReply struct {
 
 type NodeLifecycleHook interface {
 	// NodePreExecute is called when executing a template. It will called multiple times.
-	// If the returned status is fulfilled, then the controller will short-circuit execution.
 	NodePreExecute(args NodePreExecuteArgs, reply *NodePreExecuteReply) error
 	// NodePostExecute is called after executing a template.
 	NodePostExecute(args NodePostExecuteArgs, reply *NodePostExecuteReply) error

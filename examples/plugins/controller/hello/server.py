@@ -7,7 +7,7 @@ class Plugin(BaseHTTPRequestHandler):
     def args(self):
         return json.loads(self.rfile.read(int(self.headers.get('Content-Length'))))
 
-    def reply(self, reply: dict):
+    def reply(self, reply):
         self.send_response(200)
         self.end_headers()
         self.wfile.write(json.dumps(reply).encode("UTF-8"))
