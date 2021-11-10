@@ -23,7 +23,7 @@ class Plugin(BaseHTTPRequestHandler):
             self.reply({'workflow': {'metadata': {'annotations': {'hello': 'good morning'}}}})
         elif self.path == '/NodeLifecycleHook.NodePreExecute':
             args = self.args()
-            if args['template']['plugin'] is not None and args['template']['plugin']['hello'] is not None:
+            if 'plugin' in args['template'] and 'hello' in args['template']['plugin']:
                 self.reply({'node': {'phase': 'Succeeded', 'message': 'Hello workflow!'}})
             else:
                 self.reply({})
