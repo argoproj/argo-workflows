@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -16,11 +17,11 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util"
+	"github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	argohttp "github.com/argoproj/argo-workflows/v3/workflow/executor/http"
 )
@@ -45,28 +46,28 @@ func NewAgentExecutor(clientSet kubernetes.Interface, restClient rest.Interface,
 	}
 }
 
-type agentTask struct {
+type task struct {
 	NodeId   string
 	Template wfv1.Template
 }
 
-type patchResponse struct {
+type response struct {
 	NodeId string
-	Patch  []byte
+	Result *wfv1.NodeResult
 }
 
 func (ae *AgentExecutor) Agent(ctx context.Context) error {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 
-	log.Info("Starting Agent")
+	log.Info("Starting Agent s13")
 
-	agentTaskQueue := make(chan agentTask)
-	patchResponseQueue := make(chan patchResponse)
+	taskQueue := make(chan task)
+	responseQueue := make(chan response)
 	taskSetInterface := ae.WorkflowInterface.ArgoprojV1alpha1().WorkflowTaskSets(ae.Namespace)
 
-	go ae.patchWorker(ctx, taskSetInterface, patchResponseQueue)
+	go ae.patchWorker(ctx, taskSetInterface, responseQueue)
 	for i := 0; i < 8; i++ {
-		go ae.taskWorker(ctx, agentTaskQueue, patchResponseQueue)
+		go ae.taskWorker(ctx, taskQueue, responseQueue)
 	}
 
 	for {
@@ -93,55 +94,90 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 			}
 
 			for nodeID, tmpl := range taskSet.Spec.Tasks {
-				agentTaskQueue <- agentTask{NodeId: nodeID, Template: tmpl}
+				taskQueue <- task{NodeId: nodeID, Template: tmpl}
 			}
 		}
 	}
 }
 
-func (ae *AgentExecutor) taskWorker(ctx context.Context, agentTaskQueue chan agentTask, patchResponseQueue chan patchResponse) {
-	for task := range agentTaskQueue {
+func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, responseQueue chan response) {
+	for task := range taskQueue {
 		nodeID, tmpl := task.NodeId, task.Template
-		log.WithFields(log.Fields{"nodeID": nodeID}).Error("Attempting task")
+		log.WithFields(log.Fields{"nodeID": nodeID}).Info("Attempting task")
 
 		// Do not work on tasks that have already been considered once, to prevent calling an endpoint more
 		// than once unintentionally.
 		if _, ok := ae.consideredTasks[nodeID]; ok {
-			log.WithFields(log.Fields{"nodeID": nodeID}).Error("Task is already considered")
+			log.WithFields(log.Fields{"nodeID": nodeID}).Info("Task is already considered")
 			continue
 		}
 
 		ae.consideredTasks[nodeID] = true
 
-		log.WithFields(log.Fields{"nodeID": nodeID}).Error("Processing task")
-		patch, err := ae.processTask(ctx, nodeID, tmpl)
+		log.WithFields(log.Fields{"nodeID": nodeID}).Info("Processing task")
+		result, err := ae.processTask(ctx, tmpl)
 		if err != nil {
 			log.WithFields(log.Fields{"error": err, "nodeID": nodeID}).Error("Error in agent task")
 			return
 		}
 
-		log.WithFields(log.Fields{"nodeID": nodeID}).Error("Sending patch")
-		patchResponseQueue <- patchResponse{NodeId: nodeID, Patch: patch}
+		log.WithFields(log.Fields{"nodeID": nodeID}).Info("Sending result")
+		responseQueue <- response{NodeId: nodeID, Result: result}
 	}
 }
 
-func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alpha1.WorkflowTaskSetInterface, patchResponseQueue chan patchResponse) {
-	for patch := range patchResponseQueue {
-		log.WithFields(log.Fields{"workflow": ae.WorkflowName, "nodeID": patch.NodeId}).Error("Processing Patch")
+func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alpha1.WorkflowTaskSetInterface, responseQueue chan response) {
+	ticker := time.NewTicker(1 * time.Second)
+	nodeResults := map[string]wfv1.NodeResult{}
+	for {
+		select {
+		case res := <-responseQueue:
+			nodeResults[res.NodeId] = *res.Result
+		case <-ticker.C:
+			if len(nodeResults) == 0 {
+				continue
+			}
 
-		obj, err := taskSetInterface.Patch(ctx, ae.WorkflowName, types.MergePatchType, patch.Patch, metav1.PatchOptions{})
-		if err != nil {
-			log.WithError(err).WithField("taskset", obj).Errorf("TaskSet Patch Failed")
-		} else {
-			log.WithField("taskset", obj).Infof("Patched TaskSet, %s", patch)
+			patch, err := json.Marshal(map[string]interface{}{"status": wfv1.WorkflowTaskSetStatus{Nodes: nodeResults}})
+			if err != nil {
+				log.WithError(err).Error("Generating Patch Failed")
+				continue
+			}
+
+			log.WithFields(log.Fields{"workflow": ae.WorkflowName}).Info("Processing Patch")
+
+			obj, err := taskSetInterface.Patch(ctx, ae.WorkflowName, types.MergePatchType, patch, metav1.PatchOptions{})
+			if err != nil {
+				isTransientErr := errors.IsTransientErr(err)
+				log.WithError(err).WithFields(log.Fields{"taskset": obj, "is_transient_error": isTransientErr}).Errorf("TaskSet Patch Failed")
+
+				// If this is not a transient error, then it's likely that the contents of the patch have caused the error.
+				// To avoid a deadlock with the workflow overall, or an infinite loop, fail and propagate the error messages
+				// to the nodes.
+				// If this is a transient error, then simply do nothing and another patch will be retried in the next iteration.
+				if !isTransientErr {
+					for node := range nodeResults {
+						nodeResults[node] = wfv1.NodeResult{
+							Phase:   wfv1.NodeError,
+							Message: fmt.Sprintf("HTTP request completed successfully but an error occurred when patching its result: %s", err),
+						}
+					}
+				}
+				continue
+			}
+
+			// Patch was successful, clear nodeResults for next iteration
+			nodeResults = map[string]wfv1.NodeResult{}
+
+			log.WithField("taskset", obj).Infof("Patched TaskSet")
 		}
 	}
 }
 
-func (ae *AgentExecutor) processTask(ctx context.Context, nodeID string, tmpl wfv1.Template) ([]byte, error) {
+func (ae *AgentExecutor) processTask(ctx context.Context, tmpl wfv1.Template) (*wfv1.NodeResult, error) {
 	switch {
 	case tmpl.HTTP != nil:
-		result := wfv1.NodeResult{}
+		var result wfv1.NodeResult
 		if outputs, err := ae.executeHTTPTemplate(ctx, tmpl); err != nil {
 			result.Phase = wfv1.NodeFailed
 			result.Message = err.Error()
@@ -149,15 +185,7 @@ func (ae *AgentExecutor) processTask(ctx context.Context, nodeID string, tmpl wf
 			result.Phase = wfv1.NodeSucceeded
 			result.Outputs = outputs
 		}
-		nodeResults := map[string]wfv1.NodeResult{}
-		nodeResults[nodeID] = result
-
-		patch, err := json.Marshal(map[string]interface{}{"status": wfv1.WorkflowTaskSetStatus{Nodes: nodeResults}})
-		if err != nil {
-			return nil, errors.InternalWrapError(err)
-		}
-
-		return patch, nil
+		return &result, nil
 	default:
 		return nil, fmt.Errorf("agent cannot execute: unknown task type")
 	}
