@@ -100,8 +100,6 @@ rules:
   - apiGroups:
       - argoproj.io
     resources:
-      - clusterworkflowtemplates
-      - clusterworkflowtemplates/finalizers
       - cronworkflows
       - cronworkflows/finalizers
       - workfloweventbindings
@@ -112,6 +110,10 @@ rules:
       - workflowtasksets/finalizers
       - workflowtemplates
       - workflowtemplates/finalizers
+      # TIP: `ClusterWorkflowTemplates` are cluster-scoped resources, so only a `ClusterRoleBinding` can give access to them
+      # (that means our `RoleBinding/argo-example-binding` effectively ignores the following lines)
+      - clusterworkflowtemplates
+      - clusterworkflowtemplates/finalizers
     verbs:
       - create
       - delete
