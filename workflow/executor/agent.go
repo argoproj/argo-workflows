@@ -21,6 +21,7 @@ import (
 	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util"
+	"github.com/argoproj/argo-workflows/v3/util/env"
 	"github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	argohttp "github.com/argoproj/argo-workflows/v3/workflow/executor/http"
@@ -56,17 +57,20 @@ type response struct {
 	Result *wfv1.NodeResult
 }
 
+const EnvAgentTaskWorkers = "ARGO_AGENT_TASK_WORKERS"
+
 func (ae *AgentExecutor) Agent(ctx context.Context) error {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 
-	log.Info("Starting Agent s13")
+	taskWorkers := env.LookupEnvIntOr(EnvAgentTaskWorkers, 16)
+	log.WithField("task_workers", taskWorkers).Info("Starting Agent s15")
 
 	taskQueue := make(chan task)
 	responseQueue := make(chan response)
 	taskSetInterface := ae.WorkflowInterface.ArgoprojV1alpha1().WorkflowTaskSets(ae.Namespace)
 
 	go ae.patchWorker(ctx, taskSetInterface, responseQueue)
-	for i := 0; i < 8; i++ {
+	for i := 0; i < taskWorkers; i++ {
 		go ae.taskWorker(ctx, taskQueue, responseQueue)
 	}
 
@@ -154,7 +158,7 @@ func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alp
 				// If this is not a transient error, then it's likely that the contents of the patch have caused the error.
 				// To avoid a deadlock with the workflow overall, or an infinite loop, fail and propagate the error messages
 				// to the nodes.
-				// If this is a transient error, then simply do nothing and another patch will be retried in the next iteration.
+				// If this is a transient error, then simply do nothing and another patch will be retried in the next tick.
 				if !isTransientErr {
 					for node := range nodeResults {
 						nodeResults[node] = wfv1.NodeResult{
