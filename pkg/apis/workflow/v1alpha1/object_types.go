@@ -22,22 +22,3 @@ func (i Object) OpenAPISchemaType() []string {
 }
 
 func (i Object) OpenAPISchemaFormat() string { return "" }
-
-func (i *Object) AsMap() (map[string]interface{}, error) {
-	if i == nil {
-		return nil, nil
-	}
-	resp := map[string]interface{}{}
-	return resp, json.Unmarshal(i.Value, &resp)
-}
-
-func (i *Object) Get(s string) (interface{}, error) {
-	m, err := i.AsMap()
-	if err != nil {
-		return nil, err
-	}
-	if v, ok := m[s]; ok {
-		return v, nil
-	}
-	return nil, nil
-}

@@ -25,7 +25,7 @@ Use cases:
 
 #### Node Lifecycle Hook
 
-View or modify a node before or after it is executed.
+View or modify a node before or after it is executed, including writing your own custom templates.
 
 Use cases:
 

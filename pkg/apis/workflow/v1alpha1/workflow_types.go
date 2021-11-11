@@ -2087,7 +2087,7 @@ type HDFSArtifact struct {
 	// Path is a file path in HDFS
 	Path string `json:"path" protobuf:"bytes,2,opt,name=path"`
 
-	// Force copies a file forcibly even if it exists
+	// Force copies a file forcibly even if it exists (default: false)
 	Force bool `json:"force,omitempty" protobuf:"varint,3,opt,name=force"`
 }
 

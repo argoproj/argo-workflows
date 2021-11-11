@@ -7,11 +7,10 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/argoproj/argo-workflows/v3/util/errors"
-
 	log "github.com/sirupsen/logrus"
 
 	plugins "github.com/argoproj/argo-workflows/v3/pkg/plugins/controller"
+	"github.com/argoproj/argo-workflows/v3/util/errors"
 )
 
 type plugin struct {
