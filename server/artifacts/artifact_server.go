@@ -3,7 +3,6 @@ package artifacts
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
@@ -183,7 +182,7 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 	if err != nil {
 		return err
 	}
-	tmp, err := ioutil.TempFile("/tmp", "artifact")
+	tmp, err := os.CreateTemp("/tmp", "artifact")
 	if err != nil {
 		return err
 	}

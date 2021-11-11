@@ -1,7 +1,6 @@
 package git
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -28,7 +27,7 @@ func TestGitArtifactDriverLoad_HTTPS(t *testing.T) {
 			t.Skip("not running an GITHUB_TOKEN not set")
 		}
 		_ = os.Remove("git-ask-pass.sh")
-		tmp, err := ioutil.TempDir("", "")
+		tmp, err := os.MkdirTemp("", "")
 		assert.NoError(t, err)
 		driver := &ArtifactDriver{Username: os.Getenv("GITHUB_TOKEN")}
 		assert.NotEmpty(t, driver.Username)
@@ -62,12 +61,12 @@ func TestGitArtifactDriverLoad_SSL(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			_ = os.Remove("git-ask-pass.sh")
 			key := os.Getenv("HOME") + "/.ssh/id_rsa"
-			data, err := ioutil.ReadFile(key)
+			data, err := os.ReadFile(key)
 			if err != nil && os.IsNotExist(err) {
 				t.Skip(key + " does not exist")
 			}
 			assert.NoError(t, err)
-			tmp, err := ioutil.TempDir("", "")
+			tmp, err := os.MkdirTemp("", "")
 			assert.NoError(t, err)
 			println(tmp)
 			driver := &ArtifactDriver{SSHPrivateKey: string(data)}

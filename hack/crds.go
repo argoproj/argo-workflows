@@ -1,14 +1,14 @@
 package main
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"sigs.k8s.io/yaml"
 )
 
 func cleanCRD(filename string) {
-	data, err := ioutil.ReadFile(filepath.Clean(filename))
+	data, err := os.ReadFile(filepath.Clean(filename))
 	if err != nil {
 		panic(err)
 	}
@@ -46,14 +46,14 @@ func cleanCRD(filename string) {
 	if err != nil {
 		panic(err)
 	}
-	err = ioutil.WriteFile(filename, data, 0o600)
+	err = os.WriteFile(filename, data, 0o600)
 	if err != nil {
 		panic(err)
 	}
 }
 
 func removeCRDValidation(filename string) {
-	data, err := ioutil.ReadFile(filepath.Clean(filename))
+	data, err := os.ReadFile(filepath.Clean(filename))
 	if err != nil {
 		panic(err)
 	}
@@ -75,7 +75,7 @@ func removeCRDValidation(filename string) {
 	if err != nil {
 		panic(err)
 	}
-	err = ioutil.WriteFile(filename, data, 0o600)
+	err = os.WriteFile(filename, data, 0o600)
 	if err != nil {
 		panic(err)
 	}

@@ -3,7 +3,6 @@ package git
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -51,11 +50,11 @@ func (g *ArtifactDriver) auth(sshUser string) (func(), transport.AuthMethod, []s
 		if err != nil {
 			return nil, nil, nil, err
 		}
-		privateKeyFile, err := ioutil.TempFile("", "id_rsa.")
+		privateKeyFile, err := os.CreateTemp("", "id_rsa.")
 		if err != nil {
 			return nil, nil, nil, err
 		}
-		err = ioutil.WriteFile(privateKeyFile.Name(), []byte(g.SSHPrivateKey), 0o600)
+		err = os.WriteFile(privateKeyFile.Name(), []byte(g.SSHPrivateKey), 0o600)
 		if err != nil {
 			return nil, nil, nil, err
 		}
@@ -84,7 +83,7 @@ func (g *ArtifactDriver) auth(sshUser string) (func(), transport.AuthMethod, []s
 		_, err := os.Stat(filename)
 		if os.IsNotExist(err) {
 			//nolint:gosec
-			err := ioutil.WriteFile(filename, []byte(`#!/bin/sh
+			err := os.WriteFile(filename, []byte(`#!/bin/sh
 case "$1" in
 Username*) echo "${GIT_USERNAME}" ;;
 Password*) echo "${GIT_PASSWORD}" ;;

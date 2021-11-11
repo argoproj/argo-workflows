@@ -3,7 +3,7 @@ package fixtures
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"reflect"
 	"testing"
@@ -193,7 +193,7 @@ func (t *Then) ExpectArtifact(nodeName, artifactName string, f func(t *testing.T
 		t.t.Fatal(err)
 	}
 	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		t.t.Fatal(err)
 	}

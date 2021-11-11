@@ -2,7 +2,7 @@ package http
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 
@@ -21,7 +21,7 @@ func SendHttpRequest(request *http.Request, timeout *int64) (string, error) {
 	defer out.Body.Close()
 
 	log.WithFields(log.Fields{"url": request.URL, "status": out.Status}).Info("HTTP Request Sent")
-	data, err := ioutil.ReadAll(out.Body)
+	data, err := io.ReadAll(out.Body)
 	if err != nil {
 		return "", err
 	}

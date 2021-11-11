@@ -3,7 +3,6 @@ package executor
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 	"time"
@@ -306,10 +305,10 @@ func TestChmod(t *testing.T) {
 
 	for _, test := range tests {
 		// Setup directory and file for testing
-		tempDir, err := ioutil.TempDir("testdata", "chmod-dir-test")
+		tempDir, err := os.MkdirTemp("testdata", "chmod-dir-test")
 		assert.NoError(t, err)
 
-		tempFile, err := ioutil.TempFile(tempDir, "chmod-file-test")
+		tempFile, err := os.CreateTemp(tempDir, "chmod-file-test")
 		assert.NoError(t, err)
 
 		// TearDown test by removing directory and file

@@ -1,7 +1,6 @@
 package executor
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 	"runtime"
@@ -50,7 +49,7 @@ func TestResourceFlags(t *testing.T) {
 	_, err = we.getKubectlArguments("fake", "unknown-location", fakeFlags)
 	assert.EqualError(t, err, "open unknown-location: no such file or directory")
 
-	emptyFile, err := ioutil.TempFile("/tmp", "empty-manifest")
+	emptyFile, err := os.CreateTemp("/tmp", "empty-manifest")
 	assert.NoError(t, err)
 	defer func() { _ = os.Remove(emptyFile.Name()) }()
 	_, err = we.getKubectlArguments("fake", emptyFile.Name(), nil)
@@ -62,7 +61,7 @@ func TestResourceFlags(t *testing.T) {
 func TestResourcePatchFlags(t *testing.T) {
 	fakeClientset := fake.NewSimpleClientset()
 	manifestPath := "../../examples/hello-world.yaml"
-	buff, err := ioutil.ReadFile(manifestPath)
+	buff, err := os.ReadFile(manifestPath)
 	assert.NoError(t, err)
 	fakeFlags := []string{"patch", "--type", "strategic", "-p", string(buff), "-f", manifestPath, "-o", "json"}
 
@@ -93,7 +92,7 @@ func TestResourcePatchFlags(t *testing.T) {
 func TestResourcePatchFlagsJson(t *testing.T) {
 	fakeClientset := fake.NewSimpleClientset()
 	manifestPath := "../../examples/hello-world.yaml"
-	buff, err := ioutil.ReadFile(manifestPath)
+	buff, err := os.ReadFile(manifestPath)
 	assert.NoError(t, err)
 	fakeFlags := []string{"patch", "--type", "json", "-p", string(buff), "-o", "json"}
 

@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"os/signal"
 	"path"
@@ -269,7 +268,7 @@ func (we *WorkflowExecutor) StageFiles() error {
 	default:
 		return nil
 	}
-	err := ioutil.WriteFile(filePath, body, 0o644)
+	err := os.WriteFile(filePath, body, 0o644)
 	if err != nil {
 		return argoerrs.InternalWrapError(err)
 	}
@@ -519,7 +518,7 @@ func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
 		} else {
 			log.Infof("Copying %s from volume mount", param.ValueFrom.Path)
 			mountedPath := filepath.Join(common.ExecutorMainFilesystemDir, param.ValueFrom.Path)
-			data, err := ioutil.ReadFile(filepath.Clean(mountedPath))
+			data, err := os.ReadFile(filepath.Clean(mountedPath))
 			if err != nil {
 				// We have a default value to use instead of returning an error
 				if param.ValueFrom.Default != nil {
@@ -567,7 +566,7 @@ func (we *WorkflowExecutor) SaveLogs(ctx context.Context) (*wfv1.Artifact, error
 
 // GetSecret will retrieve the Secrets from VolumeMount
 func (we *WorkflowExecutor) GetSecret(ctx context.Context, accessKeyName string, accessKey string) (string, error) {
-	file, err := ioutil.ReadFile(filepath.Clean(filepath.Join(common.SecretVolMountPath, accessKeyName, accessKey)))
+	file, err := os.ReadFile(filepath.Clean(filepath.Join(common.SecretVolMountPath, accessKeyName, accessKey)))
 	if err != nil {
 		return "", err
 	}
@@ -709,7 +708,7 @@ func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
 		return err
 	}
 	defer func() { _ = reader.Close() }()
-	bytes, err := ioutil.ReadAll(reader)
+	bytes, err := io.ReadAll(reader)
 	if err != nil {
 		return argoerrs.InternalWrapError(err)
 	}
@@ -890,7 +889,7 @@ func unpack(srcPath string, destPath string, decompressor func(string, string) e
 	}
 	// next, decide how we wish to rename the file/dir
 	// to the destination path.
-	files, err := ioutil.ReadDir(tmpDir)
+	files, err := os.ReadDir(tmpDir)
 	if err != nil {
 		return argoerrs.InternalWrapError(err)
 	}
@@ -985,7 +984,7 @@ func (we *WorkflowExecutor) monitorProgress(ctx context.Context, progressFile st
 				log.WithField("progress", we.progress).WithError(err).Warn("failed to patch progress annotation")
 			}
 		case <-fileTicker.C:
-			data, err := ioutil.ReadFile(progressFile)
+			data, err := os.ReadFile(progressFile)
 			if err != nil {
 				if !errors.Is(err, fs.ErrNotExist) {
 					log.WithError(err).WithField("file", progressFile).Info("unable to watch file")

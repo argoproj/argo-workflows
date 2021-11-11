@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -170,7 +169,7 @@ func (d *DockerExecutor) GetExitCode(ctx context.Context, containerName string) 
 		return "", errors.InternalWrapError(err, "Could not start command")
 	}
 	defer func() { _ = reader.Close() }()
-	bytes, err := ioutil.ReadAll(reader)
+	bytes, err := io.ReadAll(reader)
 	if err != nil {
 		return "", errors.InternalWrapError(err, "Could not read from STDOUT")
 	}

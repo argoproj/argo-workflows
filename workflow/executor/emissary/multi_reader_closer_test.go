@@ -2,7 +2,7 @@ package emissary
 
 import (
 	"bufio"
-	"io/ioutil"
+	"io"
 	"strings"
 	"testing"
 
@@ -10,8 +10,8 @@ import (
 )
 
 func Test_multiReaderCloser(t *testing.T) {
-	a := ioutil.NopCloser(strings.NewReader("a"))
-	b := ioutil.NopCloser(strings.NewReader("b"))
+	a := io.NopCloser(strings.NewReader("a"))
+	b := io.NopCloser(strings.NewReader("b"))
 	c := newMultiReaderCloser(a, b)
 	s := bufio.NewScanner(c)
 	assert.True(t, s.Scan())

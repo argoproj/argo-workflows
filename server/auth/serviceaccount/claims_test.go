@@ -1,7 +1,6 @@
 package serviceaccount
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -39,9 +38,9 @@ func TestClaimSetFor(t *testing.T) {
 	})
 
 	// set-up test
-	tmp, err := ioutil.TempFile("", "")
+	tmp, err := os.CreateTemp("", "")
 	assert.NoError(t, err)
-	err = ioutil.WriteFile(tmp.Name(), []byte(token), 0o600)
+	err = os.WriteFile(tmp.Name(), []byte(token), 0o600)
 	assert.NoError(t, err)
 	defer func() { _ = os.Remove(tmp.Name()) }()
 

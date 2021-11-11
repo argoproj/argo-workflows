@@ -1,7 +1,6 @@
 package s3
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -242,7 +241,7 @@ func TestLoadS3Artifact(t *testing.T) {
 }
 
 func TestSaveS3Artifact(t *testing.T) {
-	tempDir, err := ioutil.TempDir("", "example")
+	tempDir, err := os.MkdirTemp("", "example")
 	if err != nil {
 		panic(err)
 	}
@@ -250,7 +249,7 @@ func TestSaveS3Artifact(t *testing.T) {
 	defer os.RemoveAll(tempDir) // clean up
 
 	tempFile := filepath.Join(tempDir, "tmpfile")
-	if err := ioutil.WriteFile(tempFile, []byte("temporary file's content"), 0o600); err != nil {
+	if err := os.WriteFile(tempFile, []byte("temporary file's content"), 0o600); err != nil {
 		panic(err)
 	}
 
