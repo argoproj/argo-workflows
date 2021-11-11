@@ -98,6 +98,15 @@ metadata:
   name: argo-superadmin
 rules:
   - apiGroups:
+      - ""
+    resources:
+      - events
+      - pods
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
       - argoproj.io
     resources:
       - cronworkflows

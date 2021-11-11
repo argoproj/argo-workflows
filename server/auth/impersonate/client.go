@@ -30,14 +30,18 @@ func NewClient(kubeClient kubernetes.Interface, username string) (Client, error)
 }
 
 func (c *client) AccessReview(ctx context.Context, namespace string, verb string, resourceGroup string, resourceKind string, resourceName string, subresource string) error {
-	log.WithFields(log.Fields{
-		"Namespace":   namespace,
-		"Verb":        verb,
-		"Group":       resourceGroup,
-		"Resource":    resourceKind,
-		"Name":        resourceName,
-		"Subresource": subresource,
-	}).Debug(fmt.Printf("SubjectAccessReview - %s", c.username))
+	log.Debug(
+		fmt.Sprintf(
+			"SubjectAccessReview for User='%s' Namespace='%s' Verb='%s' Group='%s' Resource='%s' Name='%s' Subresource='%s'",
+			c.username,
+			namespace,
+			verb,
+			resourceGroup,
+			resourceKind,
+			resourceName,
+			subresource,
+		),
+	)
 
 	review, err := c.kubeClient.AuthorizationV1().SubjectAccessReviews().Create(ctx, &auth.SubjectAccessReview{
 		Spec: auth.SubjectAccessReviewSpec{
@@ -72,15 +76,11 @@ func (c *client) AccessReview(ctx context.Context, namespace string, verb string
 		}
 		resourceString = strings.TrimPrefix(resourceString, "/")
 
-		return status.Error(
-			codes.PermissionDenied,
-			fmt.Sprintf("user '%s' is not allowed to '%s' %s in namespace '%s'",
-				c.username,
-				verb,
-				resourceString,
-				namespace,
-			),
-		)
+		if namespace == "" {
+			return status.Errorf(codes.PermissionDenied, "user '%s' is not allowed to '%s' %s in cluster", c.username, verb, resourceString)
+		} else {
+			return status.Errorf(codes.PermissionDenied, "user '%s' is not allowed to '%s' %s in namespace '%s'", c.username, verb, resourceString, namespace)
+		}
 	}
 
 	return nil

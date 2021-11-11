@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"google.golang.org/grpc/codes"
@@ -49,14 +48,12 @@ func AccessReview(ctx context.Context, namespace, verb, resourceGroup, resourceK
 				resourceString += "/" + resourceName
 			}
 			resourceString = strings.TrimPrefix(resourceString, "/")
-			return status.Error(
-				codes.PermissionDenied,
-				fmt.Sprintf("caller is not allowed to '%s' %s in namespace '%s'",
-					verb,
-					resourceString,
-					namespace,
-				),
-			)
+
+			if namespace == "" {
+				return status.Errorf(codes.PermissionDenied, "caller is not allowed to '%s' %s in cluster", verb, resourceString)
+			} else {
+				return status.Errorf(codes.PermissionDenied, "caller is not allowed to '%s' %s in namespace '%s'", verb, resourceString, namespace)
+			}
 		}
 	}
 
