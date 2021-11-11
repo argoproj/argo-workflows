@@ -6,6 +6,7 @@ import (
 
 	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
 	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -38,10 +39,14 @@ type argoKubeClient struct {
 
 var _ Client = &argoKubeClient{}
 
-func newArgoKubeClient(clientConfig clientcmd.ClientConfig, instanceIDService instanceid.Service) (context.Context, Client, error) {
+func newArgoKubeClient(ctx context.Context, clientConfig clientcmd.ClientConfig, instanceIDService instanceid.Service) (context.Context, Client, error) {
 	restConfig, err := clientConfig.ClientConfig()
 	if err != nil {
 		return nil, nil, err
+	}
+	dynamicClient, err := dynamic.NewForConfig(restConfig)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failure to create dynamic client: %w", err)
 	}
 	wfClient, err := workflow.NewForConfig(restConfig)
 	if err != nil {
@@ -59,12 +64,18 @@ func newArgoKubeClient(clientConfig clientcmd.ClientConfig, instanceIDService in
 	if err != nil {
 		return nil, nil, err
 	}
-	clients := &types.Clients{Workflow: wfClient, EventSource: eventSourceInterface, Sensor: sensorInterface, Kubernetes: kubeClient}
+	clients := &types.Clients{
+		Dynamic:     dynamicClient,
+		EventSource: eventSourceInterface,
+		Kubernetes:  kubeClient,
+		Sensor:      sensorInterface,
+		Workflow:    wfClient,
+	}
 	gatekeeper, err := auth.NewGatekeeper(auth.Modes{auth.Server: true}, clients, restConfig, nil, auth.DefaultClientForAuthorization, "unused")
 	if err != nil {
 		return nil, nil, err
 	}
-	ctx, err := gatekeeper.Context(context.Background())
+	ctx, err = gatekeeper.Context(ctx)
 	if err != nil {
 		return nil, nil, err
 	}

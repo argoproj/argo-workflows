@@ -95,9 +95,17 @@ func (s *ArgoServerSuite) TestVersion() {
 	})
 }
 
-func (s *ArgoServerSuite) TestMetrics() {
-	s.Need(fixtures.CI)
-	s.e().GET("/metrics").
+func (s *ArgoServerSuite) TestMetricsForbidden() {
+	s.bearerToken = ""
+	s.e().
+		GET("/metrics").
+		Expect().
+		Status(403)
+}
+
+func (s *ArgoServerSuite) TestMetricsOK() {
+	s.e().
+		GET("/metrics").
 		Expect().
 		Status(200).
 		Body().
@@ -1637,6 +1645,20 @@ func (s *ArgoServerSuite) TestEventSourcesService() {
 	})
 	s.Run("DeleteEventSource", func() {
 		s.e().DELETE("/api/v1/event-sources/argo/test-event-source").
+			Expect().
+			Status(200)
+	})
+}
+
+func (s *ArgoServerSuite) TestPipelineService() {
+	s.T().SkipNow()
+	s.Run("GetPipeline", func() {
+		s.e().GET("/api/v1/pipelines/argo/not-exists").
+			Expect().
+			Status(404)
+	})
+	s.Run("ListPipelines", func() {
+		s.e().GET("/api/v1/pipelines/argo").
 			Expect().
 			Status(200)
 	})

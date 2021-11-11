@@ -15,12 +15,12 @@ jobs:
     name: Unit Tests
     runs-on: ubuntu-20.04
     # 5m30
-    timeout-minutes: 7
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
-          go-version: "1.15.7"
+          go-version: "1.16"
       - uses: actions/cache@v2
         with:
           path: /home/runner/.cache/go-build
@@ -59,6 +59,9 @@ jobs:
           - test: test-cron
             containerRuntimeExecutor: docker
             profile: minimal
+          - test: test-examples
+            containerRuntimeExecutor: emissary
+            profile: minimal
           - test: test-executor
             containerRuntimeExecutor: docker
             profile: minimal
@@ -78,7 +81,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
-          go-version: "1.15.7"
+          go-version: "1.16"
       - uses: actions/cache@v2
         with:
           path: /home/runner/.cache/go-build
@@ -91,10 +94,6 @@ jobs:
         with:
           path: /home/runner/go/bin
           key: go-bin-v1-${{ hashFiles('**/go.mod') }}
-      - uses: actions/cache@v2
-        with:
-          path: dist/kustomize
-          key: kustomize
       - run: mkdir -p /tmp/log/argo-e2e
       - name: Install and start K3S
         timeout-minutes: 3
@@ -136,7 +135,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
-          go-version: "1.15.7"
+          go-version: "1.16"
       - uses: actions/cache@v2
         with:
           path: /home/runner/.cache/go-build
@@ -176,7 +175,7 @@ jobs:
     name: Lint
     runs-on: ubuntu-20.04
     needs: [ tests, codegen ]
-    timeout-minutes: 5
+    timeout-minutes: 6
     env:
       GOPATH: /home/runner/go
     steps:
@@ -184,7 +183,7 @@ jobs:
       - run: cp server/static/files.go.stub server/static/files.go
       - uses: golangci/golangci-lint-action@v2
         with:
-          version: v1.36.0
+          version: v1.42.0
 
   ui:
     name: UI

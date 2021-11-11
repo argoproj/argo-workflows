@@ -16,7 +16,7 @@ You may also wish to read about [webhooks](webhooks.md).
 
 Clients wanting to send events to the endpoint need an [access token](access-token.md).   
 
-It is only possible to submit workflow templates your access token has access to: [example role](manifests/quick-start/base/webhooks/submit-workflow-template-role.yaml).
+It is only possible to submit workflow templates your access token has access to: [example role](https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/quick-start/base/webhooks/submit-workflow-template-role.yaml).
 
 Example (note the trailing slash):
 
@@ -39,10 +39,35 @@ The event endpoint will always return in under 10 seconds because the event will
 !!! Warning "Processing Order"
     Events may not always be processed in the order they are received.   
   
+## Workflow Template triggered by the event
+
+Before the binding between an event and a workflow template, you must create the workflow template that you want to trigger.
+The following one takes in input the "message" parameter specified into the API call body, passed through the WorkflowEventBinding parameters section, and finally resolved here as the message of the whalesay image.
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: my-wf-tmple
+  namespace: argo
+spec:
+  templates:
+    - name: main
+      inputs:
+        parameters:
+          - name: message
+            value: "{{workflow.parameters.message}}"
+      container:
+        image: docker/whalesay:latest
+        command: [cowsay]
+        args: ["{{inputs.parameters.message}}"]
+  entrypoint: main
+```
+
 ## Submitting A Workflow From A Workflow Template
 
 A workflow template will be submitted (i.e. workflow created from it) and that can be created using parameters from the event itself. 
-The following example will be trigger by an event with "message" in the payload. That message will be used as an argument for the created workflow.
+The following example will be triggered by an event with "message" in the payload. That message will be used as an argument for the created workflow.  Note that the name of the metadata header "x-argo-e2e" is lowercase in the selector to match.  Incoming header names are converted to lowercase.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -51,7 +76,8 @@ metadata:
   name: event-consumer
 spec:
   event:
-    selector: payload.message != "" && metadata["x-argo"] == ["true"] && discriminator == "my-discriminator"
+    # metadata header name must be lowercase to match in selector
+    selector: payload.message != "" && metadata["x-argo-e2e"] == ["true"] && discriminator == "my-discriminator"
   submit:
     workflowTemplateRef:
       name: my-wf-tmple
@@ -61,6 +87,14 @@ spec:
         valueFrom:
           event: payload.message
 ```
+Please, notice that "workflowTemplateRef" refers to a template with the name "my-wf-tmple", this template has to be created before the triggering of the event.
+After that you have to apply the above explained WorkflowEventBinding (in this example this is called event-template.yml) to realize the binding between Workflow Template and event (you can use kubectl to do that):
+
+```bash
+kubectl apply -f event-template.yml   
+```
+
+Finally you can trigger the creation of your first parametrized workflow template, by using the following call:
 
 Event:
 

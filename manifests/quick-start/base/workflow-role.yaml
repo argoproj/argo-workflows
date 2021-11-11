@@ -48,3 +48,16 @@ rules:
     verbs:
       - create
       - get
+  # This allows agent pod to update the taskset.
+  # This is only needed for http templates.
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - workflowtasksets
+      - workflowtasksets/finalizers
+    verbs:
+      - list
+      - watch
+      - get
+      - update
+      - patch

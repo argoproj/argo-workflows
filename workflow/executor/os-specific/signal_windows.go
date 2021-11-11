@@ -5,10 +5,6 @@ import (
 	"syscall"
 )
 
-func GetOsSignal() os.Signal {
-	return syscall.SIGINT
-}
-
 func IsSIGCHLD(s os.Signal) bool {
 	return false // this does not exist on windows
 }

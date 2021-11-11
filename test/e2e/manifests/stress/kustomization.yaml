@@ -9,6 +9,7 @@ resources:
 patchesStrategicMerge:
   - workflow-controller-configmap.yaml
   - workflow-controller-deployment.yaml
+  - argo-server-deployment.yaml
 
 commonLabels:
   "app.kubernetes.io/part-of": "argo"

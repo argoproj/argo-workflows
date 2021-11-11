@@ -202,6 +202,8 @@ artifacts:
         key: secretKey
 ```
 
+You can also set `createBucketIfNotPresent` to `true` to tell the artifact driver to automatically create the OSS bucket if it doesn't exist yet when saving artifacts. Note that you'll need to set additional permission for your OSS account to create new buckets.
+
 # Configure the Default Artifact Repository
 
 In order for Argo to use your artifact repository, you can configure it as the

@@ -8,12 +8,14 @@ import {execSpec} from '../../../../models';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {InfoIcon, WarningIcon} from '../../../shared/components/fa-icons';
 import {Links} from '../../../shared/components/links';
+import {getPodName} from '../../../shared/pod-name';
 import {services} from '../../../shared/services';
 import {FullHeightLogsViewer} from './full-height-logs-viewer';
 
 interface WorkflowLogsViewerProps {
     workflow: models.Workflow;
     nodeId?: string;
+    initialPodName: string;
     container: string;
     archived: boolean;
 }
@@ -22,8 +24,8 @@ function identity<T>(value: T) {
     return () => value;
 }
 
-export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: WorkflowLogsViewerProps) => {
-    const [podName, setPodName] = useState(nodeId || '');
+export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container, archived}: WorkflowLogsViewerProps) => {
+    const [podName, setPodName] = useState(initialPodName || '');
     const [selectedContainer, setContainer] = useState(container);
     const [grep, setGrep] = useState('');
     const [error, setError] = useState<Error>();
@@ -59,7 +61,11 @@ export const WorkflowLogsViewer = ({workflow, nodeId, container, archived}: Work
     const podNames = [{value: '', label: 'All'}].concat(
         Object.values(workflow.status.nodes || {})
             .filter(x => x.type === 'Pod')
-            .map(x => ({value: x.id, label: (x.displayName || x.name) + ' (' + x.id + ')'}))
+            .map(targetNode => {
+                const {name, id, templateName, displayName} = targetNode;
+                const targetPodName = getPodName(workflow.metadata.name, name, templateName, id);
+                return {value: targetPodName, label: (displayName || name) + ' (' + targetPodName + ')'};
+            })
     );
 
     const node = workflow.status.nodes[nodeId];

@@ -5,7 +5,7 @@ pf() {
   set -eu -o pipefail
   resource=$1
   port=$2
-  dest_port=${4:-"$port"}
+  dest_port=${3:-"$port"}
   ./hack/free-port.sh $port
   echo "port-forward $resource $port"
   kubectl -n argo port-forward "svc/$resource" "$port:$dest_port" > /dev/null &
@@ -47,7 +47,7 @@ fi
 if [[ "$(kubectl -n argo get pod -l app=workflow-controller -o name)" != "" ]]; then
   wait-for workflow-controller
   pf workflow-controller-metrics 9090
-  if [[ "$(kubectl -n argo get svc -l app=workflow-controller-pprof -o name)" != "" ]]; then
+  if [[ "$(kubectl -n argo get svc workflow-controller-pprof -o name)" != "" ]]; then
     pf workflow-controller-pprof 6060
   fi
 fi

@@ -228,7 +228,7 @@ func (c *DocGeneratorContext) loadFiles() {
 		panic(err)
 	}
 	for _, fileName := range files {
-		bytes, err := ioutil.ReadFile(fileName)
+		bytes, err := ioutil.ReadFile(filepath.Clean(fileName))
 		if err != nil {
 			panic(err)
 		}
@@ -345,7 +345,7 @@ func (c *DocGeneratorContext) generate() string {
 func generateDocs() {
 	println("generating docs/fields.md")
 	c := NewDocGeneratorContext()
-	err := ioutil.WriteFile("docs/fields.md", []byte(c.generate()), 0o644)
+	err := ioutil.WriteFile("docs/fields.md", []byte(c.generate()), 0o600)
 	if err != nil {
 		panic(err)
 	}

@@ -2,10 +2,6 @@
 
 start the Argo Server
 
-### Synopsis
-
-start the Argo Server
-
 ```
 argo server [flags]
 ```
@@ -14,7 +10,7 @@ argo server [flags]
 
 ```
 
-See https://argoproj.github.io/argo-workflows/argo-server.md
+See https://argoproj.github.io/argo-workflows/argo-server/
 ```
 
 ### Options

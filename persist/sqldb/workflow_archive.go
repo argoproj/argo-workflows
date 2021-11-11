@@ -51,7 +51,7 @@ type archivedWorkflowLabelRecord struct {
 type WorkflowArchive interface {
 	ArchiveWorkflow(wf *wfv1.Workflow) error
 	// list workflows, with the most recently started workflows at the beginning (i.e. index 0 is the most recent)
-	ListWorkflows(namespace string, minStartAt, maxStartAt time.Time, labelRequirements labels.Requirements, limit, offset int) (wfv1.Workflows, error)
+	ListWorkflows(namespace string, name string, minStartAt, maxStartAt time.Time, labelRequirements labels.Requirements, limit, offset int) (wfv1.Workflows, error)
 	GetWorkflow(uid string) (*wfv1.Workflow, error)
 	DeleteWorkflow(uid string) error
 	DeleteExpiredWorkflows(ttl time.Duration) error
@@ -134,7 +134,7 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 	})
 }
 
-func (r *workflowArchive) ListWorkflows(namespace string, minStartedAt, maxStartedAt time.Time, labelRequirements labels.Requirements, limit int, offset int) (wfv1.Workflows, error) {
+func (r *workflowArchive) ListWorkflows(namespace string, name string, minStartedAt, maxStartedAt time.Time, labelRequirements labels.Requirements, limit int, offset int) (wfv1.Workflows, error) {
 	var archivedWfs []archivedWorkflowMetadata
 	clause, err := labelsClause(r.dbType, labelRequirements)
 	if err != nil {
@@ -153,6 +153,7 @@ func (r *workflowArchive) ListWorkflows(namespace string, minStartedAt, maxStart
 		From(archiveTableName).
 		Where(r.clusterManagedNamespaceAndInstanceID()).
 		And(namespaceEqual(namespace)).
+		And(nameEqual(name)).
 		And(startedAtClause(minStartedAt, maxStartedAt)).
 		And(clause).
 		OrderBy("-startedat").
@@ -205,6 +206,14 @@ func namespaceEqual(namespace string) db.Cond {
 		return db.Cond{}
 	} else {
 		return db.Cond{"namespace": namespace}
+	}
+}
+
+func nameEqual(name string) db.Cond {
+	if name == "" {
+		return db.Cond{}
+	} else {
+		return db.Cond{"name": name}
 	}
 }
 

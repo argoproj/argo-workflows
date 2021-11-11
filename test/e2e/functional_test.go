@@ -3,12 +3,14 @@
 package e2e
 
 import (
+	"context"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	corev1 "k8s.io/api/core/v1"
+	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -186,6 +188,80 @@ spec:
 		})
 }
 
+func (s *FunctionalSuite) TestEventOnNodeFailSentAsPod() {
+	// Test whether an WorkflowFailed event (with appropriate message) is emitted in case of node failure
+	var uid types.UID
+	var nodeId types.UID
+	var nodeName string
+	// Update controller config map to set nodeEvents.sendAsPod to true
+	ctx := context.Background()
+	configMap, _ := s.KubeClient.CoreV1().ConfigMaps("argo").Get(
+		ctx,
+		"workflow-controller-configmap",
+		metav1.GetOptions{},
+	)
+	originalData := make(map[string]string)
+	for key, value := range configMap.Data {
+		originalData[key] = value
+	}
+	configMap.Data["nodeEvents"] = "\n  sendAsPod: true"
+	s.Given().
+		Workflow("@expectedfailures/failed-step-event.yaml").
+		When().
+		UpdateConfigMap(
+			"workflow-controller-configmap",
+			configMap.Data).
+		// Give controller enough time to update from config map change
+		Wait(5*time.Second).
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			uid = metadata.UID
+		}).
+		ExpectWorkflowNode(func(status wfv1.NodeStatus) bool {
+			return strings.HasPrefix(status.Name, "failed-step-event-")
+		}, func(t *testing.T, status *wfv1.NodeStatus, pod *apiv1.Pod) {
+			nodeId = pod.UID
+			nodeName = status.Name
+		}).
+		ExpectAuditEvents(
+			func(event apiv1.Event) bool {
+				return (event.InvolvedObject.Kind == workflow.WorkflowKind && event.InvolvedObject.UID == uid) || (event.InvolvedObject.Kind == "Pod" && event.InvolvedObject.UID == nodeId && strings.HasPrefix(event.Reason, "Workflow"))
+			},
+			4,
+			func(t *testing.T, es []apiv1.Event) {
+				for _, e := range es {
+					switch e.Reason {
+					case "WorkflowNodeRunning":
+						assert.Equal(t, e.InvolvedObject.Kind, "Pod")
+						assert.Contains(t, e.Message, "Running node failed-step-event-")
+						assert.Equal(t, e.Annotations["workflows.argoproj.io/node-name"], nodeName)
+						assert.Equal(t, e.Annotations["workflows.argoproj.io/workflow-uid"], string(uid))
+						assert.Contains(t, e.Annotations["workflows.argoproj.io/workflow-name"], "failed-step-event-")
+					case "WorkflowRunning":
+					case "WorkflowNodeFailed":
+						assert.Equal(t, e.InvolvedObject.Kind, "Pod")
+						assert.Contains(t, e.Message, "Failed node failed-step-event-")
+						assert.Equal(t, e.Annotations["workflows.argoproj.io/node-type"], "Pod")
+						assert.Equal(t, e.Annotations["workflows.argoproj.io/node-name"], nodeName)
+						assert.Contains(t, e.Annotations["workflows.argoproj.io/workflow-name"], "failed-step-event-")
+						assert.Equal(t, e.Annotations["workflows.argoproj.io/workflow-uid"], string(uid))
+					case "WorkflowFailed":
+						assert.Contains(t, e.Message, "exit code 1")
+					default:
+						assert.Fail(t, e.Reason)
+					}
+				}
+			},
+		).
+		When().
+		// Reset config map to original settings
+		UpdateConfigMap("workflow-controller-configmap", originalData).
+		// Give controller enough time to update from config map change
+		Wait(5 * time.Second)
+}
+
 func (s *FunctionalSuite) TestEventOnNodeFail() {
 	// Test whether an WorkflowFailed event (with appropriate message) is emitted in case of node failure
 	var uid types.UID
@@ -201,7 +277,7 @@ func (s *FunctionalSuite) TestEventOnNodeFail() {
 		ExpectAuditEvents(
 			fixtures.HasInvolvedObject(workflow.WorkflowKind, uid),
 			4,
-			func(t *testing.T, es []corev1.Event) {
+			func(t *testing.T, es []apiv1.Event) {
 				for _, e := range es {
 					switch e.Reason {
 					case "WorkflowNodeRunning":
@@ -236,7 +312,7 @@ func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
 		ExpectAuditEvents(
 			fixtures.HasInvolvedObject(workflow.WorkflowKind, uid),
 			4,
-			func(t *testing.T, es []corev1.Event) {
+			func(t *testing.T, es []apiv1.Event) {
 				for _, e := range es {
 					println(e.Reason, e.Message)
 					switch e.Reason {
@@ -272,7 +348,7 @@ func (s *FunctionalSuite) TestEventOnPVCFail() {
 		ExpectAuditEvents(
 			fixtures.HasInvolvedObject(workflow.WorkflowKind, uid),
 			2,
-			func(t *testing.T, e []corev1.Event) {
+			func(t *testing.T, e []apiv1.Event) {
 				assert.Equal(t, "WorkflowRunning", e[0].Reason)
 
 				assert.Equal(t, "WorkflowFailed", e[1].Reason)
@@ -677,7 +753,7 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow().
 		Then().
-		ExpectWorkflowNode(wfv1.SucceededPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *corev1.Pod) {
+		ExpectWorkflowNode(wfv1.SucceededPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
 			assert.Equal(t, *p.Spec.TerminationGracePeriodSeconds, int64(5))
 			for _, c := range p.Spec.Containers {
 				if c.Name == "main" {

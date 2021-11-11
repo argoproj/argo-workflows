@@ -102,7 +102,7 @@ export const WorkflowEventBindings = ({match, location, history}: RouteComponent
                 <ZeroState>
                     <p>{introductionText}</p>
                     <p>
-                        Once you've created a a workflow event binding, you can test it from the CLI using <code>curl</code>, for example:
+                        Once you've created a workflow event binding, you can test it from the CLI using <code>curl</code>, for example:
                     </p>
                     <p>
                         <code>

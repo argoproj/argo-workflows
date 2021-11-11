@@ -12,7 +12,7 @@ import (
 	"time"
 
 	pkgrand "github.com/argoproj/pkg/rand"
-	"github.com/coreos/go-oidc"
+	"github.com/coreos/go-oidc/v3/oidc"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 	"gopkg.in/square/go-jose.v2"
@@ -46,6 +46,7 @@ var _ Interface = &sso{}
 
 type sso struct {
 	config          *oauth2.Config
+	issuer          string
 	idTokenVerifier *oidc.IDTokenVerifier
 	baseHRef        string
 	secure          bool
@@ -53,6 +54,8 @@ type sso struct {
 	encrypter       jose.Encrypter
 	rbacConfig      *rbac.Config
 	expiry          time.Duration
+	customClaimName string
+	userInfoPath    string
 }
 
 func (s *sso) IsRBACEnabled() bool {
@@ -61,6 +64,7 @@ func (s *sso) IsRBACEnabled() bool {
 
 type Config struct {
 	Issuer       string                  `json:"issuer"`
+	IssuerAlias  string                  `json:"issuerAlias,omitempty"`
 	ClientID     apiv1.SecretKeySelector `json:"clientId"`
 	ClientSecret apiv1.SecretKeySelector `json:"clientSecret"`
 	RedirectURL  string                  `json:"redirectUrl"`
@@ -68,6 +72,9 @@ type Config struct {
 	// additional scopes (on top of "openid")
 	Scopes        []string        `json:"scopes,omitempty"`
 	SessionExpiry metav1.Duration `json:"sessionExpiry,omitempty"`
+	// customGroupClaimName will override the groups claim name
+	CustomGroupClaimName string `json:"customGroupClaimName,omitempty"`
+	UserInfoPath         string `json:"userInfoPath,omitempty"`
 }
 
 func (c Config) GetSessionExpiry() time.Duration {
@@ -112,15 +119,19 @@ func newSso(
 	if c.ClientSecret.Name == "" || c.ClientSecret.Key == "" {
 		return nil, fmt.Errorf("clientSecret empty")
 	}
-	if c.RedirectURL == "" {
-		return nil, fmt.Errorf("redirectUrl empty")
-	}
 	ctx := context.Background()
 	clientSecretObj, err := secretsIf.Get(ctx, c.ClientSecret.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	provider, err := factory(context.Background(), c.Issuer)
+	// Some offspec providers like Azure, Oracle IDCS have oidc discovery url different from issuer url which causes issuerValidation to fail
+	// This providerCtx will allow the Verifier to succeed if the alternate/alias URL is in the config
+	var providerCtx context.Context = context.Background()
+	if c.IssuerAlias != "" {
+		providerCtx = oidc.InsecureIssuerURLContext(ctx, c.IssuerAlias)
+	}
+
+	provider, err := factory(providerCtx, c.Issuer)
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +188,12 @@ func newSso(
 	if err != nil {
 		return nil, fmt.Errorf("failed to create JWT encrpytor: %w", err)
 	}
-	log.WithFields(log.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "clientId": c.ClientID, "scopes": config.Scopes}).Info("SSO configuration")
+	lf := log.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "issuerAlias": "DISABLED", "clientId": c.ClientID, "scopes": config.Scopes}
+	if c.IssuerAlias != "" {
+		lf["issuerAlias"] = c.IssuerAlias
+	}
+	log.WithFields(lf).Info("SSO configuration")
+
 	return &sso{
 		config:          config,
 		idTokenVerifier: idTokenVerifier,
@@ -187,6 +203,9 @@ func newSso(
 		encrypter:       encrypter,
 		rbacConfig:      c.RBAC,
 		expiry:          c.GetSessionExpiry(),
+		customClaimName: c.CustomGroupClaimName,
+		userInfoPath:    c.UserInfoPath,
+		issuer:          c.Issuer,
 	}, nil
 }
 
@@ -206,7 +225,9 @@ func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteLaxMode,
 		Secure:   s.secure,
 	})
-	http.Redirect(w, r, s.config.AuthCodeURL(state), http.StatusFound)
+
+	redirectOption := oauth2.SetAuthURLParam("redirect_uri", s.getRedirectUrl(r))
+	http.Redirect(w, r, s.config.AuthCodeURL(state, redirectOption), http.StatusFound)
 }
 
 func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
@@ -219,7 +240,8 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(fmt.Sprintf("invalid state: %v", err)))
 		return
 	}
-	oauth2Token, err := s.config.Exchange(ctx, r.URL.Query().Get("code"))
+	redirectOption := oauth2.SetAuthURLParam("redirect_uri", s.getRedirectUrl(r))
+	oauth2Token, err := s.config.Exchange(ctx, r.URL.Query().Get("code"), redirectOption)
 	if err != nil {
 		w.WriteHeader(401)
 		_, _ = w.Write([]byte(fmt.Sprintf("failed to exchange token: %v", err)))
@@ -243,20 +265,48 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(fmt.Sprintf("failed to get claims: %v", err)))
 		return
 	}
+
+	// Default to groups claim but if customClaimName is set
+	// extract groups based on that claim key
+	groups := c.Groups
+	if s.customClaimName != "" {
+		groups, err = c.GetCustomGroup(s.customClaimName)
+		if err != nil {
+			w.WriteHeader(401)
+			_, _ = w.Write([]byte(fmt.Sprintf("failed to get custom claim: %v", err)))
+			return
+		}
+	}
+
+	// Some SSO implementations (Okta) require a call to
+	// the OIDC user info path to get attributes like groups
+	if s.userInfoPath != "" {
+		groups, err = c.GetUserInfoGroups(oauth2Token.AccessToken, s.issuer, s.userInfoPath)
+		if err != nil {
+			w.WriteHeader(401)
+			_, _ = w.Write([]byte(fmt.Sprintf("failed to get groups claim: %v", err)))
+			return
+		}
+	}
+
 	argoClaims := &types.Claims{
 		Claims: jwt.Claims{
 			Issuer:  issuer,
 			Subject: c.Subject,
 			Expiry:  jwt.NewNumericDate(time.Now().Add(s.expiry)),
 		},
-		Groups:             c.Groups,
+		Groups:             groups,
+		RawClaim:           c.RawClaim,
 		Email:              c.Email,
 		EmailVerified:      c.EmailVerified,
 		ServiceAccountName: c.ServiceAccountName,
 	}
+
 	raw, err := jwt.Encrypted(s.encrypter).Claims(argoClaims).CompactSerialize()
 	if err != nil {
-		panic(err)
+		w.WriteHeader(401)
+		_, _ = w.Write([]byte(fmt.Sprintf("failed to encode claims: %v", err)))
+		return
 	}
 	value := Prefix + raw
 	log.Debugf("handing oauth2 callback %v", value)
@@ -269,7 +319,14 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		Secure:   s.secure,
 	})
 	redirect := s.baseHRef
-	if cookie.Value != "" {
+
+	proto := "http"
+	if s.secure {
+		proto = "https"
+	}
+	prefix := fmt.Sprintf("%s://%s%s", proto, r.Host, s.baseHRef)
+
+	if strings.HasPrefix(cookie.Value, prefix) {
 		redirect = cookie.Value
 	}
 	http.Redirect(w, r, redirect, 302)
@@ -285,8 +342,26 @@ func (s *sso) Authorize(authorization string) (*types.Claims, error) {
 	if err := tok.Claims(s.privateKey, c); err != nil {
 		return nil, fmt.Errorf("failed to parse claims: %v", err)
 	}
+
 	if err := c.Validate(jwt.Expected{Issuer: issuer}); err != nil {
 		return nil, fmt.Errorf("failed to validate claims: %v", err)
 	}
+
 	return c, nil
+}
+
+func (s *sso) getRedirectUrl(r *http.Request) string {
+	if s.config.RedirectURL != "" {
+		return s.config.RedirectURL
+	}
+
+	proto := "http"
+
+	if r.URL.Scheme != "" {
+		proto = r.URL.Scheme
+	} else if s.secure {
+		proto = "https"
+	}
+
+	return fmt.Sprintf("%s://%s%soauth2/callback", proto, r.Host, s.baseHRef)
 }

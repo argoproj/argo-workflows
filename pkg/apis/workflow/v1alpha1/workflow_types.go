@@ -34,6 +34,7 @@ const (
 	TemplateTypeDAG          TemplateType = "DAG"
 	TemplateTypeSuspend      TemplateType = "Suspend"
 	TemplateTypeData         TemplateType = "Data"
+	TemplateTypeHTTP         TemplateType = "HTTP"
 	TemplateTypeUnknown      TemplateType = "Unknown"
 )
 
@@ -72,6 +73,7 @@ const (
 	NodeTypeRetry     NodeType = "Retry"
 	NodeTypeSkipped   NodeType = "Skipped"
 	NodeTypeSuspend   NodeType = "Suspend"
+	NodeTypeHTTP      NodeType = "HTTP"
 )
 
 // PodGCStrategy is the strategy when to delete completed pods for GC.
@@ -353,6 +355,9 @@ type WorkflowSpec struct {
 
 	// TemplateDefaults holds default template values that will apply to all templates in the Workflow, unless overridden on the template-level
 	TemplateDefaults *Template `json:"templateDefaults,omitempty" protobuf:"bytes,39,opt,name=templateDefaults"`
+
+	// ArchiveLogs indicates if the container logs should be archived
+	ArchiveLogs *bool `json:"archiveLogs,omitempty" protobuf:"varint,40,opt,name=archiveLogs"`
 }
 
 // GetVolumeClaimGC returns the VolumeClaimGC that was defined in the workflow spec.  If none was provided, a default value is returned.
@@ -537,6 +542,9 @@ type Template struct {
 
 	// Data is a data template
 	Data *Data `json:"data,omitempty" protobuf:"bytes,39,opt,name=data"`
+
+	// HTTP makes a HTTP request
+	HTTP *HTTP `json:"http,omitempty" protobuf:"bytes,42,opt,name=http"`
 
 	// Volumes is a list of volumes that can be mounted by containers in a template.
 	// +patchStrategy=merge
@@ -766,6 +774,9 @@ type ValueFrom struct {
 
 	// Supplied value to be filled in directly, either through the CLI, API, etc.
 	Supplied *SuppliedValueFrom `json:"supplied,omitempty" protobuf:"bytes,6,opt,name=supplied"`
+
+	// ConfigMapKeyRef is configmap selector for input parameter configuration
+	ConfigMapKeyRef *apiv1.ConfigMapKeySelector `json:"configMapKeyRef,omitempty" protobuf:"bytes,9,opt,name=configMapKeyRef"`
 
 	// Default specifies a value to be used if retrieving the value from the specified source fails
 	Default *AnyString `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
@@ -1120,6 +1131,9 @@ type WorkflowStep struct {
 	// Template is the name of the template to execute as the step
 	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
 
+	// Inline is the template. Template must be empty if this is declared (and vice-versa).
+	Inline *Template `json:"inline,omitempty" protobuf:"bytes,13,opt,name=inline"`
+
 	// Arguments hold arguments to the template
 	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,3,opt,name=arguments"`
 
@@ -1197,6 +1211,10 @@ func (step *WorkflowStep) GetExitHook(args Arguments) *LifecycleHook {
 		return &LifecycleHook{Template: step.OnExit, Arguments: args}
 	}
 	return step.Hooks.GetExitHook().WithArgs(args)
+}
+
+func (step *WorkflowStep) GetTemplate() *Template {
+	return step.Inline
 }
 
 func (step *WorkflowStep) GetTemplateName() string {
@@ -1337,6 +1355,15 @@ func (n Nodes) Find(f func(NodeStatus) bool) *NodeStatus {
 		}
 	}
 	return nil
+}
+
+func (n Nodes) HasHTTPNodes() bool {
+	for _, i := range n {
+		if i.Type == NodeTypeHTTP {
+			return true
+		}
+	}
+	return false
 }
 
 func NodeWithDisplayName(name string) func(n NodeStatus) bool {
@@ -1506,6 +1533,10 @@ type RetryStrategy struct {
 
 	// Affinity prevents running workflow's step on the same host
 	Affinity *RetryAffinity `json:"affinity,omitempty" protobuf:"bytes,4,opt,name=affinity"`
+
+	// Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not
+	// be retried and the retry strategy will be ignored/
+	Expression string `json:"expression,omitempty" protobuf:"bytes,5,opt,name=expression"`
 }
 
 // The amount of requested resource * the duration that request was used.
@@ -1846,6 +1877,10 @@ func (n NodeStatus) GetTemplateScope() (ResourceScope, string) {
 
 var _ TemplateReferenceHolder = &NodeStatus{}
 
+func (n *NodeStatus) GetTemplate() *Template {
+	return nil
+}
+
 func (n *NodeStatus) GetTemplateName() string {
 	return n.TemplateName
 }
@@ -1901,8 +1936,25 @@ type S3Bucket struct {
 	// UseSDKCreds tells the driver to figure out credentials based on sdk defaults.
 	UseSDKCreds bool `json:"useSDKCreds,omitempty" protobuf:"varint,8,opt,name=useSDKCreds"`
 
-	// CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist
+	// CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist. Setting Enabled Encryption will apply either SSE-S3 to the bucket if KmsKeyId is not set or SSE-KMS if it is.
 	CreateBucketIfNotPresent *CreateS3BucketOptions `json:"createBucketIfNotPresent,omitempty" protobuf:"bytes,9,opt,name=createBucketIfNotPresent"`
+
+	EncryptionOptions *S3EncryptionOptions `json:"encryptionOptions,omitempty" protobuf:"bytes,10,opt,name=encryptionOptions"`
+}
+
+// S3EncryptionOptions used to determine encryption options during s3 operations
+type S3EncryptionOptions struct {
+	// KMSKeyId tells the driver to encrypt the object using the specified KMS Key.
+	KmsKeyId string `json:"kmsKeyId,omitempty" protobuf:"bytes,1,opt,name=kmsKeyId"`
+
+	// KmsEncryptionContext is a json blob that contains an encryption context. See https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html#encrypt_context for more information
+	KmsEncryptionContext string `json:"kmsEncryptionContext,omitempty" protobuf:"bytes,2,opt,name=kmsEncryptionContext"`
+
+	// EnableEncryption tells the driver to encrypt objects if set to true. If kmsKeyId and serverSideCustomerKeySecret are not set, SSE-S3 will be used
+	EnableEncryption bool `json:"enableEncryption,omitempty" protobuf:"varint,3,opt,name=enableEncryption"`
+
+	// ServerSideCustomerKeySecret tells the driver to encrypt the output artifacts using SSE-C with the specified secret.
+	ServerSideCustomerKeySecret *apiv1.SecretKeySelector `json:"serverSideCustomerKeySecret,omitempty" protobuf:"bytes,4,opt,name=serverSideCustomerKeySecret"`
 }
 
 // CreateS3BucketOptions options used to determine automatic automatic bucket-creation process
@@ -2300,6 +2352,9 @@ func (tmpl *Template) GetType() TemplateType {
 	if tmpl.Suspend != nil {
 		return TemplateTypeSuspend
 	}
+	if tmpl.HTTP != nil {
+		return TemplateTypeHTTP
+	}
 	return TemplateTypeUnknown
 }
 
@@ -2315,7 +2370,7 @@ func (tmpl *Template) IsPodType() bool {
 // IsLeaf returns whether or not the template is a leaf
 func (tmpl *Template) IsLeaf() bool {
 	switch tmpl.GetType() {
-	case TemplateTypeContainer, TemplateTypeContainerSet, TemplateTypeScript, TemplateTypeResource, TemplateTypeData:
+	case TemplateTypeContainer, TemplateTypeContainerSet, TemplateTypeScript, TemplateTypeResource, TemplateTypeData, TemplateTypeHTTP:
 		return true
 	}
 	return false
@@ -2394,6 +2449,9 @@ type DAGTask struct {
 	// Name of template to execute
 	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
 
+	// Inline is the template. Template must be empty if this is declared (and vice-versa).
+	Inline *Template `json:"inline,omitempty" protobuf:"bytes,14,opt,name=inline"`
+
 	// Arguments are the parameter and artifact arguments to the template
 	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,3,opt,name=arguments"`
 
@@ -2448,6 +2506,10 @@ func (t *DAGTask) GetExitHook(args Arguments) *LifecycleHook {
 
 func (t *DAGTask) HasExitHook() bool {
 	return (t.Hooks != nil && t.Hooks.GetExitHook() != nil) || t.OnExit != ""
+}
+
+func (t *DAGTask) GetTemplate() *Template {
+	return t.Inline
 }
 
 func (t *DAGTask) GetTemplateName() string {

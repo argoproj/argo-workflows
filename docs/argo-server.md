@@ -131,6 +131,11 @@ spec:
 
 Create a ingress, with the annotation `ingress.kubernetes.io/rewrite-target: /`:
 
+>If TLS is enabled (default in v3.0 and after), the ingress controller must be told
+>that the backend uses HTTPS. The method depends on the ingress controller, e.g.
+>Traefik expects an `ingress.kubernetes.io/protocol` annotation, while ingress-nginx
+>uses `nginx.ingress.kubernetes.io/backend-protocol`
+
 ```yaml
 apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
@@ -138,6 +143,8 @@ metadata:
   name: argo-server
   annotations:
     ingress.kubernetes.io/rewrite-target: /$2
+    ingress.kubernetes.io/protocol: https # Traefik
+    nginx.ingress.kubernetes.io/backend-protocol: https # ingress-nginx
 spec:
   rules:
     - http:
@@ -149,3 +156,16 @@ spec:
 ```
 
 [Learn more](https://github.com/argoproj/argo-workflows/issues/3080)
+
+
+## Security
+
+Users should consider the following in their set-up of the Argo Server:
+
+### API Authentication Rate Limiting
+
+Argo Server does not perform authenticatinon directly. It delegates this to either the Kubernetes API Server (when `--auth-mode=client`) and the OAuth provider (when `--auth-mode=sso`). In each case, it is recommended that the delegate implements any authentication rate limiting you need. 
+
+### IP Address Logging
+
+Argo Server does not log the IP addresses of API requests. We recommend you put the Argo Server behind a load balancer, and that load balancer is configured to log the IP addresses of requests that return authentication or authorization errors.

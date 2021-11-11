@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -40,7 +41,6 @@ type ctr struct {
 }
 
 func NewDockerExecutor(namespace, podName string) (*DockerExecutor, error) {
-	log.Infof("Creating a docker executor")
 	return &DockerExecutor{namespace, podName, make(map[string]ctr)}, nil
 }
 
@@ -73,7 +73,7 @@ func (d *DockerExecutor) CopyFile(containerName string, sourcePath string, destP
 	if err != nil {
 		return err
 	}
-	copiedFile, err := os.Open(destPath)
+	copiedFile, err := os.Open(filepath.Clean(destPath))
 	if err != nil {
 		return err
 	}

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {Parameter, Workflow} from '../../../models';
+import {Parameter, Template, Workflow} from '../../../models';
 import {uiUrl} from '../../shared/base';
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {services} from '../../shared/services';
@@ -12,25 +12,40 @@ interface Props {
     namespace: string;
     name: string;
     entrypoint: string;
-    entrypoints: string[];
-    parameters: Parameter[];
+    templates: Template[];
+    workflowParameters: Parameter[];
 }
 
 interface State {
     entrypoint: string;
+    entrypoints: string[];
     parameters: Parameter[];
+    selectedTemplate: Template;
+    templates: Template[];
     labels: string[];
     error?: Error;
 }
 
+const workflowEntrypoint = '<default>';
+
 export class SubmitWorkflowPanel extends React.Component<Props, State> {
     constructor(props: any) {
         super(props);
-        this.state = {
-            entrypoint: this.props.entrypoint || (this.props.entrypoints.length > 0 && this.props.entrypoints[0]),
-            parameters: this.props.parameters || [],
+        const defaultTemplate: Template = {
+            name: workflowEntrypoint,
+            inputs: {
+                parameters: this.props.workflowParameters
+            }
+        };
+        const state = {
+            entrypoint: workflowEntrypoint,
+            entrypoints: this.props.templates.map(t => t.name),
+            selectedTemplate: defaultTemplate,
+            parameters: this.props.workflowParameters || [],
+            templates: [defaultTemplate].concat(this.props.templates),
             labels: ['submit-from-ui=true']
         };
+        this.state = state;
     }
 
     public render() {
@@ -46,11 +61,18 @@ export class SubmitWorkflowPanel extends React.Component<Props, State> {
                         <label>Entrypoint</label>
                         <Select
                             value={this.state.entrypoint}
-                            options={this.props.entrypoints.map((value, index) => ({
-                                value,
-                                title: value
+                            options={this.state.templates.map(t => ({
+                                value: t.name,
+                                title: t.name
                             }))}
-                            onChange={selected => this.setState({entrypoint: selected.value})}
+                            onChange={selected => {
+                                const selectedTemplate = this.getSelectedTemplate(selected.value);
+                                this.setState({
+                                    entrypoint: selected.value,
+                                    selectedTemplate,
+                                    parameters: (selectedTemplate && selectedTemplate.inputs.parameters) || []
+                                });
+                            }}
                         />
                     </div>
                     <div key='parameters' style={{marginBottom: 25}}>
@@ -85,11 +107,20 @@ export class SubmitWorkflowPanel extends React.Component<Props, State> {
         );
     }
 
+    private getSelectedTemplate(entrypoint: string): Template {
+        for (const t of this.state.templates) {
+            if (t.name === entrypoint) {
+                return t;
+            }
+        }
+        return null;
+    }
+
     private displaySelectFieldForEnumValues(parameter: Parameter) {
         return (
             <Select
                 key={parameter.name}
-                value={parameter.value}
+                value={this.getValue(parameter)}
                 options={parameter.enum.map(value => ({
                     value,
                     title: value
@@ -98,7 +129,7 @@ export class SubmitWorkflowPanel extends React.Component<Props, State> {
                     this.setState({
                         parameters: this.state.parameters.map(p => ({
                             name: p.name,
-                            value: p.name === parameter.name ? event.value : p.value,
+                            value: p.name === parameter.name ? event.value : this.getValue(p),
                             enum: p.enum
                         }))
                     });
@@ -111,12 +142,12 @@ export class SubmitWorkflowPanel extends React.Component<Props, State> {
         return (
             <input
                 className='argo-field'
-                value={parameter.value}
+                value={this.getValue(parameter)}
                 onChange={event => {
                     this.setState({
                         parameters: this.state.parameters.map(p => ({
                             name: p.name,
-                            value: p.name === parameter.name ? event.target.value : p.value,
+                            value: p.name === parameter.name ? event.target.value : this.getValue(p),
                             enum: p.enum
                         }))
                     });
@@ -125,11 +156,19 @@ export class SubmitWorkflowPanel extends React.Component<Props, State> {
         );
     }
 
+    private getValue(p: Parameter) {
+        if (p.value === undefined) {
+            return p.default;
+        } else {
+            return p.value;
+        }
+    }
+
     private submit() {
         services.workflows
             .submit(this.props.kind, this.props.name, this.props.namespace, {
-                entryPoint: this.state.entrypoint,
-                parameters: this.state.parameters.map(p => p.name + '=' + p.value),
+                entryPoint: this.state.entrypoint === workflowEntrypoint ? null : this.state.entrypoint,
+                parameters: this.state.parameters.filter(p => this.getValue(p) !== undefined).map(p => p.name + '=' + this.getValue(p)),
                 labels: this.state.labels.join(',')
             })
             .then((submitted: Workflow) => (document.location.href = uiUrl(`workflows/${submitted.metadata.namespace}/${submitted.metadata.name}`)))

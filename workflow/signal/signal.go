@@ -6,9 +6,8 @@ import (
 	"strings"
 	"syscall"
 
-	corev1 "k8s.io/api/core/v1"
-
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -16,6 +15,9 @@ import (
 
 func SignalContainer(restConfig *rest.Config, pod *corev1.Pod, container string, s syscall.Signal) error {
 	command := []string{"/bin/sh", "-c", "kill -%d 1"}
+	if container == common.WaitContainerName {
+		command = []string{"/bin/sh", "-c", "kill -%d $(pidof argoexec)"}
+	}
 
 	if v, ok := pod.Annotations[common.AnnotationKeyKillCmd(container)]; ok {
 		if err := json.Unmarshal([]byte(v), &command); err != nil {

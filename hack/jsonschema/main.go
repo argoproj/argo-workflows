@@ -26,9 +26,17 @@ func main() {
 			"WorkflowEventBinding",
 			"WorkflowTemplate",
 		} {
-			v := definitions.(obj)["io.argoproj.workflow.v1alpha1."+kind].(obj)["properties"].(obj)
-			v["apiVersion"].(obj)["const"] = "argoproj.io/v1alpha1"
-			v["kind"].(obj)["const"] = kind
+			v := definitions.(obj)["io.argoproj.workflow.v1alpha1."+kind].(obj)
+			v["x-kubernetes-group-version-kind"] = []map[string]string{
+				{
+					"group":   "argoproj.io",
+					"kind":    kind,
+					"version": "v1alpha1",
+				},
+			}
+			props := v["properties"].(obj)
+			props["apiVersion"].(obj)["const"] = "argoproj.io/v1alpha1"
+			props["kind"].(obj)["const"] = kind
 		}
 		schema := obj{
 			"$id":     "http://workflows.argoproj.io/workflows.json", // don't really know what this should be

@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
+	"github.com/gorilla/handlers"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_logrus "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
@@ -17,8 +19,10 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/metadata"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/rest"
+	"k8s.io/utils/env"
 
 	"github.com/argoproj/argo-workflows/v3"
 	"github.com/argoproj/argo-workflows/v3/config"
@@ -28,6 +32,7 @@ import (
 	eventpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/event"
 	eventsourcepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/eventsource"
 	infopkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/info"
+	pipelinepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/pipeline"
 	sensorpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sensor"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
@@ -42,6 +47,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/event"
 	"github.com/argoproj/argo-workflows/v3/server/eventsource"
 	"github.com/argoproj/argo-workflows/v3/server/info"
+	pipeline "github.com/argoproj/argo-workflows/v3/server/pipeline"
 	"github.com/argoproj/argo-workflows/v3/server/sensor"
 	"github.com/argoproj/argo-workflows/v3/server/static"
 	"github.com/argoproj/argo-workflows/v3/server/types"
@@ -56,10 +62,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 )
 
-const (
-	// MaxGRPCMessageSize contains max grpc message size
-	MaxGRPCMessageSize = 100 * 1024 * 1024
-)
+var MaxGRPCMessageSize int
 
 type argoServer struct {
 	baseHRef string
@@ -94,6 +97,14 @@ type ArgoServerOpts struct {
 	EventWorkerCount         int
 	XFrameOptions            string
 	AccessControlAllowOrigin string
+}
+
+func init() {
+	var err error
+	MaxGRPCMessageSize, err = env.GetInt("GRPC_MESSAGE_SIZE", 100*1024*1024)
+	if err != nil {
+		log.Fatalf("GRPC_MESSAGE_SIZE environment variable must be set as an integer: %v", err)
+	}
 }
 
 func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error) {
@@ -209,6 +220,9 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	if as.tlsConfig != nil {
 		url = "https://localhost" + address
 	}
+	log.WithFields(log.Fields{
+		"GRPC_MESSAGE_SIZE": MaxGRPCMessageSize,
+	}).Info("GRPC Server Max Message Size, MaxGRPCMessageSize, is set")
 	log.Infof("Argo Server started successfully on %s", url)
 	browserOpenFunc(url)
 
@@ -222,7 +236,7 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 	grpc_prometheus.EnableHandlingTimeHistogram()
 
 	sOpts := []grpc.ServerOption{
-		// Set both the send and receive the bytes limit to be 100MB
+		// Set both the send and receive the bytes limit to be 100MB or GRPC_MESSAGE_SIZE
 		// The proper way to achieve high performance is to have pagination
 		// while we work toward that, we can have high limit first
 		grpc.MaxRecvMsgSize(MaxGRPCMessageSize),
@@ -249,6 +263,7 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 	infopkg.RegisterInfoServiceServer(grpcServer, info.NewInfoServer(as.managedNamespace, links))
 	eventpkg.RegisterEventServiceServer(grpcServer, eventServer)
 	eventsourcepkg.RegisterEventSourceServiceServer(grpcServer, eventsource.NewEventSourceServer())
+	pipelinepkg.RegisterPipelineServiceServer(grpcServer, pipeline.NewPipelineServer())
 	sensorpkg.RegisterSensorServiceServer(grpcServer, sensor.NewSensorServer())
 	workflowpkg.RegisterWorkflowServiceServer(grpcServer, workflow.NewWorkflowServer(instanceIDService, offloadNodeStatusRepo))
 	workflowtemplatepkg.RegisterWorkflowTemplateServiceServer(grpcServer, workflowtemplate.NewWorkflowTemplateServer(instanceIDService))
@@ -296,6 +311,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mustRegisterGWHandler(eventpkg.RegisterEventServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(eventsourcepkg.RegisterEventSourceServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(sensorpkg.RegisterSensorServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
+	mustRegisterGWHandler(pipelinepkg.RegisterPipelineServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflowpkg.RegisterWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflowtemplatepkg.RegisterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(cronworkflowpkg.RegisterCronWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
@@ -307,9 +323,21 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mux.HandleFunc("/input-artifacts/", artifactServer.GetInputArtifact)
 	mux.HandleFunc("/artifacts-by-uid/", artifactServer.GetOutputArtifactByUID)
 	mux.HandleFunc("/input-artifacts-by-uid/", artifactServer.GetInputArtifactByUID)
-	mux.HandleFunc("/oauth2/redirect", as.oAuth2Service.HandleRedirect)
-	mux.HandleFunc("/oauth2/callback", as.oAuth2Service.HandleCallback)
-	mux.Handle("/metrics", promhttp.Handler())
+	mux.Handle("/oauth2/redirect", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleRedirect)))
+	mux.Handle("/oauth2/callback", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleCallback)))
+	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+		if os.Getenv("ARGO_SERVER_METRICS_AUTH") != "false" {
+			header := metadata.New(map[string]string{"authorization": r.Header.Get("Authorization")})
+			ctx := metadata.NewIncomingContext(context.Background(), header)
+			if _, err := as.gatekeeper.Context(ctx); err != nil {
+				log.WithError(err).Error("failed to authenticate /metrics endpoint")
+				w.WriteHeader(403)
+				return
+			}
+		}
+		promhttp.Handler().ServeHTTP(w, r)
+
+	})
 	// we only enable HTST if we are secure mode, otherwise you would never be able access the UI
 	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef, as.tlsConfig != nil && as.hsts, as.xframeOptions, as.accessControlAllowOrigin).ServerFiles)
 	return &httpServer

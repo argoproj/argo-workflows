@@ -3,6 +3,7 @@
 package e2e
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -15,6 +16,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/yaml"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
@@ -383,16 +385,54 @@ func (s *CLISuite) TestRoot() {
 		})
 	})
 	s.Run("List", func() {
-		s.Given().
-			RunCli([]string{"list"}, func(t *testing.T, output string, err error) {
-				if assert.NoError(t, err) {
-					assert.Contains(t, output, "NAME")
-					assert.Contains(t, output, "STATUS")
-					assert.Contains(t, output, "AGE")
-					assert.Contains(t, output, "DURATION")
-					assert.Contains(t, output, "PRIORITY")
-				}
-			})
+		s.Run("DefaultOutput", func() {
+			s.Given().
+				RunCli([]string{"list"}, func(t *testing.T, output string, err error) {
+					if assert.NoError(t, err) {
+						assert.Contains(t, output, "NAME")
+						assert.Contains(t, output, "STATUS")
+						assert.Contains(t, output, "AGE")
+						assert.Contains(t, output, "DURATION")
+						assert.Contains(t, output, "PRIORITY")
+					}
+				})
+		})
+		s.Run("NameOutput", func() {
+			s.Given().
+				RunCli([]string{"list", "-o", "name"}, func(t *testing.T, output string, err error) {
+					if assert.NoError(t, err) {
+						assert.NotContains(t, output, "NAME")
+					}
+				})
+		})
+		s.Run("WideOutput", func() {
+			s.Given().
+				RunCli([]string{"list", "-o", "wide"}, func(t *testing.T, output string, err error) {
+					if assert.NoError(t, err) {
+						assert.Contains(t, output, "PARAMETERS")
+					}
+				})
+		})
+		s.Run("JSONOutput", func() {
+			s.Given().
+				RunCli([]string{"list", "-o", "json"}, func(t *testing.T, output string, err error) {
+					if assert.NoError(t, err) {
+						list := wfv1.Workflows{}
+						assert.NoError(t, json.Unmarshal([]byte(output), &list))
+						assert.Len(t, list, 1)
+					}
+				})
+		})
+		s.Run("YAMLOutput", func() {
+			s.Given().
+				RunCli([]string{"list", "-o", "yaml"}, func(t *testing.T, output string, err error) {
+					if assert.NoError(t, err) {
+						list := wfv1.Workflows{}
+						assert.NoError(t, yaml.UnmarshalStrict([]byte(output), &list))
+						assert.Len(t, list, 1)
+					}
+				})
+		})
 	})
 	s.Run("Get", func() {
 		s.Given().RunCli([]string{"get", "@latest"}, func(t *testing.T, output string, err error) {
@@ -679,7 +719,7 @@ func (s *CLISuite) TestWorkflowLint() {
 		data, err := ioutil.ReadFile("smoke/basic.yaml")
 		s.CheckError(err)
 		// Write data to dst
-		err = ioutil.WriteFile(filepath.Join(tmp, "my-workflow.yaml"), data, 0o644)
+		err = ioutil.WriteFile(filepath.Join(tmp, "my-workflow.yaml"), data, 0o600)
 		s.CheckError(err)
 		s.Given().
 			RunCli([]string{"lint", tmp}, func(t *testing.T, output string, err error) {
@@ -1120,6 +1160,22 @@ func (s *CLISuite) TestCron() {
 		s.Given().RunCli([]string{"cron", "create", "cron/param.yaml", "-p", "message=\"bar test passed\"", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "bar test passed")
+			}
+		})
+	})
+
+	s.Run("Create Name Override", func() {
+		s.Given().RunCli([]string{"cron", "create", "cron/basic.yaml", "--name", "basic-cron-wf-overridden-name", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, strings.Replace(output, " ", "", -1), "Name:basic-cron-wf-overridden-name")
+			}
+		})
+	})
+
+	s.Run("Create GenerateName Override", func() {
+		s.Given().RunCli([]string{"cron", "create", "cron/basic.yaml", "--generate-name", "basic-cron-wf-overridden-generate-name-", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, strings.Replace(output, " ", "", -1), "Name:basic-cron-wf-overridden-generate-name-")
 			}
 		})
 	})

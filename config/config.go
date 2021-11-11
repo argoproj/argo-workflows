@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"math"
+	"time"
 
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -21,7 +22,7 @@ type ResourceRateLimit struct {
 // Config contain the configuration settings for the workflow controller
 type Config struct {
 
-	// NodeEvents configures how node events are omitted
+	// NodeEvents configures how node events are emitted
 	NodeEvents NodeEvents `json:"nodeEvents,omitempty"`
 
 	// ExecutorImage is the image name of the executor to use when running pods
@@ -104,11 +105,15 @@ type Config struct {
 	// PodSpecLogStrategy enables the logging of podspec on controller log.
 	PodSpecLogStrategy PodSpecLogStrategy `json:"podSpecLogStrategy,omitempty"`
 
-	// PodGCGracePeriodSeconds specifies the duration in seconds before the pods in the GC queue get deleted.
-	// Value must be non-negative integer. A zero value indicates that the pods will be deleted immediately
-	// as soon as they arrived in the pod GC queue.
-	// Defaults to 30 seconds.
+	// PodGCGracePeriodSeconds specifies the duration in seconds before a terminating pod is forcefully killed.
+	// Value must be non-negative integer. A zero value indicates that the pod will be forcefully terminated immediately.
+	// Defaults to the Kubernetes default of 30 seconds.
 	PodGCGracePeriodSeconds *int64 `json:"podGCGracePeriodSeconds,omitempty"`
+
+	// PodGCDeleteDelayDuration specifies the duration in seconds before the pods in the GC queue get deleted.
+	// Value must be non-negative integer. A zero value indicates that the pods will be deleted immediately.
+	// Defaults to 5 seconds.
+	PodGCDeleteDelayDuration *metav1.Duration `json:"podGCDeleteDelayDuration,omitempty"`
 
 	// WorkflowRestrictions restricts the controller to executing Workflows that meet certain restrictions
 	WorkflowRestrictions *WorkflowRestrictions `json:"workflowRestrictions,omitempty"`
@@ -140,6 +145,14 @@ func (c Config) GetResourceRateLimit() ResourceRateLimit {
 		Limit: math.MaxFloat32,
 		Burst: math.MaxInt32,
 	}
+}
+
+func (c Config) GetPodGCDeleteDelayDuration() time.Duration {
+	if c.PodGCDeleteDelayDuration == nil {
+		return 5 * time.Second
+	}
+
+	return c.PodGCDeleteDelayDuration.Duration
 }
 
 // PodSpecLogStrategy contains the configuration for logging the pod spec in controller log for debugging purpose

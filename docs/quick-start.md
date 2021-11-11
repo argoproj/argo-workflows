@@ -8,9 +8,12 @@ Firstly, you'll need a Kubernetes cluster and `kubectl` set-up
 
 To get started quickly, you can use the quick start manifest which will install Argo Workflow as well as some commonly used components:
 
+!!! note
+    These manifests are intended to help you get started quickly. They are not suitable in production, on test environments, or any environment containing any real data. They contain hard-coded passwords that are publicly available.
+
 ```sh
 kubectl create ns argo
-kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflows/stable/manifests/quick-start-postgres.yaml
+kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/quick-start-postgres.yaml
 ```
 
 !!! note
@@ -21,7 +24,7 @@ kubectl create clusterrolebinding YOURNAME-cluster-admin-binding --clusterrole=c
 ```
 
 !!! note
-    To run Argo on GKE Autopilot, you must use the `k8sapi` executor. Find more information on our [executors doc](workflow-executors.md).
+    To run Argo on GKE Autopilot, you must use the `emissary` executor or the `k8sapi` executor. Find more information on our [executors doc](workflow-executors.md).
 
 If you are running Argo Workflows locally (e.g. using Minikube or Docker for Desktop), open a port-forward so you can access the namespace:
 
@@ -33,7 +36,7 @@ This will serve the user interface on https://localhost:2746
 
 If you're using running Argo Workflows on a remote cluster (e.g. on EKS or GKE) then [follow these instructions](argo-server.md#access-the-argo-workflows-ui). 
 
-Next, Download the latest Argo CLI from our [releases page](https://github.com/argoproj/argo-workflows/releases).
+Next, Download the latest Argo CLI from our [releases page](https://github.com/argoproj/argo-workflows/releases/latest).
 
 Finally, submit an example workflow:  
 

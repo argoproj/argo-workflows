@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"syscall"
@@ -49,7 +50,7 @@ type PNSExecutor struct {
 
 func NewPNSExecutor(clientset *kubernetes.Clientset, podName, namespace string) (*PNSExecutor, error) {
 	thisPID := os.Getpid()
-	log.Infof("Creating PNS executor (namespace: %s, pod: %s, pid: %d)", namespace, podName, thisPID)
+	log.Infof("Initialized PNS executor (namespace: %s, pod: %s, pid: %d)", namespace, podName, thisPID)
 	if thisPID == 1 {
 		return nil, errors.New(errors.CodeBadRequest, "process namespace sharing is not enabled on pod")
 	}
@@ -72,7 +73,7 @@ func (p *PNSExecutor) GetFileContents(containerName string, sourcePath string) (
 		return "", err
 	}
 	defer func() { _ = p.exitChroot() }()
-	out, err := ioutil.ReadFile(sourcePath)
+	out, err := ioutil.ReadFile(filepath.Clean(sourcePath))
 	if err != nil {
 		return "", err
 	}

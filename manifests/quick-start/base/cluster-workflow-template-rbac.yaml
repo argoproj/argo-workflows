@@ -56,4 +56,3 @@ subjects:
   - kind: ServiceAccount
     name: argo-server
     namespace: argo
-

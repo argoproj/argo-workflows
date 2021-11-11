@@ -2,12 +2,16 @@ package kubeconfig
 
 import (
 	"encoding/base64"
+	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
+	clientauthenticationapi "k8s.io/client-go/pkg/apis/clientauthentication"
 	"k8s.io/client-go/plugin/pkg/client/auth/exec"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -144,7 +148,15 @@ func GetBearerToken(in *restclient.Config, explicitKubeConfigPath string) (strin
 			return "", err
 		}
 
-		auth, err := exec.GetAuthenticator(in.ExecProvider)
+		var cluster *clientauthenticationapi.Cluster
+		if in.ExecProvider.ProvideClusterInfo {
+			var err error
+			cluster, err = ConfigToExecCluster(in)
+			if err != nil {
+				return "", err
+			}
+		}
+		auth, err := exec.GetAuthenticator(in.ExecProvider, cluster)
 		if err != nil {
 			return "", err
 		}
@@ -160,7 +172,11 @@ func GetBearerToken(in *restclient.Config, explicitKubeConfigPath string) (strin
 		req := http.Request{Header: map[string][]string{}}
 
 		newT := NewUserAgentRoundTripper("dummy", rt)
-		_, _ = newT.RoundTrip(&req)
+		resp, err := newT.RoundTrip(&req)
+		if err != nil {
+			return "", err
+		}
+		resp.Body.Close()
 
 		token := req.Header.Get("Authorization")
 		return strings.TrimPrefix(token, "Bearer "), nil
@@ -176,6 +192,58 @@ func GetBearerToken(in *restclient.Config, explicitKubeConfigPath string) (strin
 		}
 	}
 	return "", errors.Errorf("could not find a token")
+}
+
+/*https://pkg.go.dev/k8s.io/client-go@v0.20.4/pkg/apis/clientauthentication#Cluster
+I am following this example: https://github.com/kubernetes/client-go/blob/v0.20.4/rest/transport.go#L99 and https://github.com/kubernetes/client-go/blob/v0.20.4/rest/exec.go */
+
+// ConfigToExecCluster creates a clientauthentication.Cluster with the corresponding fields from the provided Config
+func ConfigToExecCluster(config *restclient.Config) (*clientauthenticationapi.Cluster, error) {
+	caData, err := dataFromSliceOrFile(config.CAData, config.CAFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load CA bundle for execProvider: %v", err)
+	}
+
+	var proxyURL string
+	if config.Proxy != nil {
+		req, err := http.NewRequest("", config.Host, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create proxy URL request for execProvider: %w", err)
+		}
+		url, err := config.Proxy(req)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get proxy URL for execProvider: %w", err)
+		}
+		if url != nil {
+			proxyURL = url.String()
+		}
+	}
+
+	return &clientauthenticationapi.Cluster{
+		Server:                   config.Host,
+		TLSServerName:            config.ServerName,
+		InsecureSkipTLSVerify:    config.Insecure,
+		CertificateAuthorityData: caData,
+		ProxyURL:                 proxyURL,
+		Config:                   config.ExecProvider.Config,
+	}, nil
+}
+
+// dataFromSliceOrFile returns data from the slice (if non-empty), or from the file,
+// or an error if an error occurred reading the file
+func dataFromSliceOrFile(data []byte, file string) ([]byte, error) {
+	if len(data) > 0 {
+		return data, nil
+	}
+
+	if len(file) > 0 {
+		fileData, err := ioutil.ReadFile(filepath.Clean(file))
+		if err != nil {
+			return []byte{}, err
+		}
+		return fileData, nil
+	}
+	return nil, nil
 }
 
 func encodeBasicAuthToken(username, password string) string {
@@ -247,6 +315,11 @@ func RefreshAuthToken(in *restclient.Config) error {
 	rt = auth.WrapTransport(rt)
 	req := http.Request{Header: map[string][]string{}}
 
-	_, _ = rt.RoundTrip(&req)
+	resp, err := rt.RoundTrip(&req)
+	if err != nil {
+		return err
+	}
+	resp.Body.Close()
+
 	return nil
 }

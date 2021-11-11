@@ -918,3 +918,61 @@ func TestParameterGetValue(t *testing.T) {
 	assert.True(t, valueFrom.HasValue())
 
 }
+
+func TestTemplateIsLeaf(t *testing.T) {
+	tmpls := []Template{
+		{
+			HTTP: &HTTP{URL: "test.com"},
+		},
+		{
+			ContainerSet: &ContainerSetTemplate{},
+		},
+		{
+			Container: &corev1.Container{},
+		},
+		{
+			Script: &ScriptTemplate{},
+		},
+		{
+			Resource: &ResourceTemplate{},
+		},
+	}
+	for _, tmpl := range tmpls {
+		assert.True(t, tmpl.IsLeaf())
+	}
+	tmpl := Template{
+		DAG: &DAGTemplate{},
+	}
+	assert.False(t, tmpl.IsLeaf())
+	tmpl = Template{
+		Steps: []ParallelSteps{},
+	}
+	assert.False(t, tmpl.IsLeaf())
+
+}
+
+func TestTemplateGetType(t *testing.T) {
+	tmpl := Template{HTTP: &HTTP{}}
+	assert.Equal(t, TemplateTypeHTTP, tmpl.GetType())
+}
+
+func TestHasHTTPNodes(t *testing.T) {
+	nodes := Nodes{
+		"test": {
+			Type: NodeTypeHTTP,
+		},
+		"test1": {
+			Type: NodeTypeContainer,
+		},
+	}
+	assert.True(t, nodes.HasHTTPNodes())
+	nodes = Nodes{
+		"test": {
+			Type: NodeTypeSteps,
+		},
+		"test1": {
+			Type: NodeTypeContainer,
+		},
+	}
+	assert.False(t, nodes.HasHTTPNodes())
+}

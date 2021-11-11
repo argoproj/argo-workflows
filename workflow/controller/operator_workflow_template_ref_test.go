@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -488,4 +489,47 @@ func TestWorkflowTemplateUpdateScenario(t *testing.T) {
 	woc1.operate(ctx)
 	assert.NotEmpty(t, woc1.wf.Status.StoredWorkflowSpec)
 	assert.Equal(t, woc.wf.Status.StoredWorkflowSpec, woc1.wf.Status.StoredWorkflowSpec)
+}
+
+const wfTmplWithVol = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-whalesay-template-with-volume
+  namespace: default
+spec:
+  volumeClaimTemplates:
+  - metadata:
+      name: workdir
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+  entrypoint: whalesay-template
+  templates:
+  - name: whalesay-template
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      volumeMounts:
+      - name: workdir
+        mountPath: /mnt/vol
+`
+
+func TestWFTWithVol(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(wfTmplWithVol)
+	cancel, controller := newController(wf, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl))
+	defer cancel()
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	pvc, err := controller.kubeclientset.CoreV1().PersistentVolumeClaims("default").List(ctx, metav1.ListOptions{})
+	assert.NoError(t, err)
+	assert.Len(t, pvc.Items, 1)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc.operate(ctx)
+	pvc, err = controller.kubeclientset.CoreV1().PersistentVolumeClaims("default").List(ctx, metav1.ListOptions{})
+	assert.NoError(t, err)
+	assert.Len(t, pvc.Items, 0)
 }

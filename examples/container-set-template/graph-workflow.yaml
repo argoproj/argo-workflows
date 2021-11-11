@@ -21,14 +21,10 @@ spec:
             image: argoproj/argosay:v2
           - name: b
             image: argoproj/argosay:v2
-            dependencies:
-              - a
+            dependencies: ["a"]
           - name: c
             image: argoproj/argosay:v2
-            dependencies:
-              - a
+            dependencies: ["a"]
           - name: d
             image: argoproj/argosay:v2
-            dependencies:
-              - b
-              - c
+            dependencies: ["b", "c"]

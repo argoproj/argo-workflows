@@ -64,6 +64,7 @@ func Test_resubmitWorkflows(t *testing.T) {
 			ListOptions: &metav1.ListOptions{
 				LabelSelector: resubmitOpts.labelSelector,
 			},
+			Fields: defaultFields,
 		}
 
 		wfList := &wfv1.WorkflowList{Items: wfv1.Workflows{
@@ -103,6 +104,7 @@ func Test_resubmitWorkflows(t *testing.T) {
 			ListOptions: &metav1.ListOptions{
 				LabelSelector: resubmitOpts.labelSelector,
 			},
+			Fields: defaultFields,
 		}
 
 		wfList := &wfv1.WorkflowList{Items: wfv1.Workflows{

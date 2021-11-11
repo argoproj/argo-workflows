@@ -16,19 +16,19 @@ spec:
             arguments:
               parameters: [{name: message, value: A}]
           - name: B
-            dependencies: [A]
+            depends: "A"
             onExit: exit
             template: echo
             arguments:
               parameters: [{name: message, value: B}]
           - name: C
-            dependencies: [A]
+            depends: "A"
             onExit: exit
             template: echo
             arguments:
               parameters: [{name: message, value: C}]
           - name: D
-            dependencies: [B, C]
+            depends: "B && C"
             onExit: exit
             template: echo
             arguments:

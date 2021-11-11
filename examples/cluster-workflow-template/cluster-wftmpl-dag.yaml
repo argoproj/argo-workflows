@@ -25,7 +25,7 @@ spec:
           - name: message
             value: A
       - name: B
-        dependencies: [A]
+        depends: "A"
         templateRef:
           name: cluster-workflow-template-whalesay-template
           template: whalesay-template
@@ -35,13 +35,13 @@ spec:
           - name: message
             value: B
       - name: C
-        dependencies: [A]
+        depends: "A"
         templateRef:
           name: cluster-workflow-template-inner-dag
           template: inner-diamond
           clusterScope: true
       - name: D
-        dependencies: [B, C]
+        depends: "B && C"
         templateRef:
           name: cluster-workflow-template-whalesay-template
           template: whalesay-template
