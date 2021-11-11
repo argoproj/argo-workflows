@@ -9,12 +9,12 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func CanI(ctx context.Context, kubeClient kubernetes.Interface, namespace, verb, resourceGroup, resourceType, resourceName string) (bool, error) {
+func CanI(ctx context.Context, kubeClient kubernetes.Interface, namespace, verb, resourceGroup, resourceKind, resourceName string) (bool, error) {
 	logCtx := log.WithFields(log.Fields{
 		"Namespace": namespace,
 		"Verb":      verb,
 		"Group":     resourceGroup,
-		"Resource":  resourceType,
+		"Resource":  resourceKind,
 		"Name":      resourceName,
 	})
 	logCtx.Debug("CanI")
@@ -25,7 +25,7 @@ func CanI(ctx context.Context, kubeClient kubernetes.Interface, namespace, verb,
 				Namespace: namespace,
 				Verb:      verb,
 				Group:     resourceGroup,
-				Resource:  resourceType,
+				Resource:  resourceKind,
 				Name:      resourceName,
 			},
 		},

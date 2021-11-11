@@ -14,7 +14,7 @@ import (
 )
 
 type Client interface {
-	AccessReview(ctx context.Context, namespace string, verb string, resourceGroup string, resourceType string, resourceName string, subresource string) error
+	AccessReview(ctx context.Context, namespace string, verb string, resourceGroup string, resourceKind string, resourceName string, subresource string) error
 }
 
 type client struct {
@@ -29,12 +29,12 @@ func NewClient(kubeClient kubernetes.Interface, username string) (Client, error)
 	}, nil
 }
 
-func (c *client) AccessReview(ctx context.Context, namespace string, verb string, resourceGroup string, resourceType string, resourceName string, subresource string) error {
+func (c *client) AccessReview(ctx context.Context, namespace string, verb string, resourceGroup string, resourceKind string, resourceName string, subresource string) error {
 	log.WithFields(log.Fields{
 		"Namespace":   namespace,
 		"Verb":        verb,
 		"Group":       resourceGroup,
-		"Resource":    resourceType,
+		"Resource":    resourceKind,
 		"Name":        resourceName,
 		"Subresource": subresource,
 	}).Debug(fmt.Printf("SubjectAccessReview - %s", c.username))
@@ -46,7 +46,7 @@ func (c *client) AccessReview(ctx context.Context, namespace string, verb string
 				Namespace:   namespace,
 				Verb:        verb,
 				Group:       resourceGroup,
-				Resource:    resourceType,
+				Resource:    resourceKind,
 				Name:        resourceName,
 				Subresource: subresource,
 			},
@@ -61,8 +61,8 @@ func (c *client) AccessReview(ctx context.Context, namespace string, verb string
 		if resourceGroup != "" {
 			resourceString += resourceGroup
 		}
-		if resourceType != "" {
-			resourceString += "/" + resourceType
+		if resourceKind != "" {
+			resourceString += "/" + resourceKind
 		}
 		if resourceName != "" {
 			resourceString += "/" + resourceName

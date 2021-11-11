@@ -16,8 +16,11 @@ type k8sLogRoundTripper struct {
 func (m k8sLogRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
 	x, err := m.roundTripper.RoundTrip(r)
 	if x != nil {
-		verb, kind := k8s.ParseRequest(r)
-		log.Infof("%s %s %d", verb, kind, x.StatusCode)
+		kubeRequest, err := k8s.ParseRequest(r)
+		if err != nil {
+			return nil, err
+		}
+		log.Infof("%s %s %d", kubeRequest.Verb, kubeRequest.Kind, x.StatusCode)
 	}
 	return x, err
 }

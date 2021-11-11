@@ -1,29 +1,13 @@
 package impersonate
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 )
 
 type Config struct {
-	Enabled       bool  `json:"enabled,omitempty"`
-	UsernameClaim Claim `json:"usernameClaim,omitempty"`
-}
-
-// UnmarshalJSON is a custom Unmarshal that overwrites json.Unmarshal
-func (c *Config) UnmarshalJSON(data []byte) error {
-	type innerConfig Config
-	inner := &innerConfig{
-		// set the default `sso.impersonate.usernameClaim` as "email" when omitted
-		UsernameClaim: EmailClaim,
-	}
-	err := json.Unmarshal(data, inner)
-	if err != nil {
-		return err
-	}
-	*c = Config(*inner)
-	return nil
+	Enabled       bool   `json:"enabled,omitempty"`
+	UsernameClaim *Claim `json:"usernameClaim,omitempty"`
 }
 
 func (c *Config) IsEnabled() bool {
@@ -31,7 +15,12 @@ func (c *Config) IsEnabled() bool {
 }
 
 func (c *Config) GetUsernameClaim() Claim {
-	return c.UsernameClaim
+	if c.UsernameClaim != nil {
+		return *c.UsernameClaim
+	} else {
+		// default to "email" when `sso.impersonate.usernameClaim` is nil/omitted
+		return EmailClaim
+	}
 }
 
 type Claim string
@@ -41,16 +30,19 @@ const (
 	SubjectClaim Claim = "sub"
 )
 
-// UnmarshalJSON is a custom Unmarshal that overwrites json.Unmarshal
+// UnmarshalJSON is a custom Unmarshal that overwrites json.Unmarshal for Claim
 func (c *Claim) UnmarshalJSON(data []byte) error {
 	str := strings.ToLower(strings.Trim(string(data), `"`))
 	switch str {
-	case "email", "":
+	case "":
+		// default to "email" when `sso.impersonate.usernameClaim` is ""
+		*c = EmailClaim
+	case "email":
 		*c = EmailClaim
 	case "sub":
 		*c = SubjectClaim
 	default:
-		return fmt.Errorf("invalid `sso.impersonate.usernameClaim` '%s', must be one of: {'email', 'sub'}", str)
+		return fmt.Errorf("'%s' is not a valid `sso.impersonate.usernameClaim`, must be one of: {'email', 'sub'}", str)
 	}
 	return nil
 }

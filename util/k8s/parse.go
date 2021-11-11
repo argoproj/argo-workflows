@@ -1,50 +1,100 @@
 package k8s
 
 import (
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"net/http"
-	"strings"
+	"regexp"
 )
 
-func ParseRequest(r *http.Request) (verb string, kind string) {
-	i := strings.Index(r.URL.Path, "/v") + 1
-	path := strings.Split(r.URL.Path[i:], "/")
-	n := len(path)
+type kubeRequest struct {
+	Verb        string
+	Namespace   string
+	Group       string
+	Version     string
+	Kind        string
+	Name        string
+	Subresource string
+}
 
-	verb = map[string]string{
-		http.MethodGet:    "List",
-		http.MethodPost:   "Create",
-		http.MethodDelete: "Delete",
-		http.MethodPatch:  "Patch",
-		http.MethodPut:    "Update",
-	}[r.Method]
-
-	x := n%2 == 0
-
-	if r.URL.Query().Get("watch") != "" {
-		verb = "Watch"
-	} else if verb == "List" && !x {
-		verb = "Get"
-	} else if verb == "Delete" && x {
-		verb = "DeleteCollection"
+func ParseRequest(r *http.Request) (*kubeRequest, error) {
+	// extract ResourceAttributes from URL path
+	// https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-uris
+	urlPath := r.URL.Path
+	re := regexp.MustCompile(
+		`^(?:/api|/apis/(?P<GROUP>[^/]+))/(?P<VERSION>[^/]+)(?:/namespaces/(?P<NAMESPACE>[^/]+))?/(?P<KIND>[^/\n]+)(?:/(?P<NAME>[^/\n]+))?(?:/(?P<SUBRESOURCE>[^/\n]+))?$`,
+	)
+	matches := re.FindStringSubmatch(urlPath)
+	if matches == nil {
+		return nil, status.Errorf(codes.Internal, "invalid kubernetes request path: %s", urlPath)
+	}
+	namespace := ""
+	if re.SubexpIndex("NAMESPACE") != -1 {
+		namespace = matches[re.SubexpIndex("NAMESPACE")]
+	}
+	resourceGroup := ""
+	if re.SubexpIndex("GROUP") != -1 {
+		resourceGroup = matches[re.SubexpIndex("GROUP")]
+	}
+	resourceVersion := ""
+	if re.SubexpIndex("VERSION") != -1 {
+		resourceVersion = matches[re.SubexpIndex("VERSION")]
+	}
+	resourceKind := ""
+	if re.SubexpIndex("KIND") != -1 {
+		resourceKind = matches[re.SubexpIndex("KIND")]
+	}
+	resourceName := ""
+	if re.SubexpIndex("NAME") != -1 {
+		resourceName = matches[re.SubexpIndex("NAME")]
+	}
+	subresource := ""
+	if re.SubexpIndex("SUBRESOURCE") != -1 {
+		subresource = matches[re.SubexpIndex("SUBRESOURCE")]
 	}
 
-	kind = "Unknown"
-	switch verb {
-	case "List", "Watch", "Create", "DeleteCollection":
-		if n > 2 && n%4 == 2 {
-			// sub-resource, e.g. pods/exec
-			kind = path[n-3] + "/" + path[n-1]
+	// extract flags from URL query
+	urlQuery := r.URL.Query()
+	isWatch := urlQuery.Get("watch") != ""
+
+	// calculate the resource verb
+	// https://kubernetes.io/docs/reference/access-authn-authz/authorization/#determine-the-request-verb
+	urlMethod := r.Method
+	verb := ""
+	switch urlMethod {
+	case "", "GET":
+		if isWatch {
+			verb = "watch"
 		} else {
-			kind = path[n-1]
+			if resourceName != "" {
+				verb = "get"
+			} else {
+				verb = "list"
+			}
 		}
-	case "Get", "Delete", "Patch", "Update":
-		if x {
-			// sub-resource
-			kind = path[n-3] + "/" + path[n-1]
+	case "POST":
+		verb = "create"
+	case "PUT":
+		verb = "update"
+	case "PATCH":
+		verb = "patch"
+	case "DELETE":
+		if resourceName != "" {
+			verb = "delete"
 		} else {
-			kind = path[n-2]
+			verb = "deletecollection"
 		}
+	default:
+		return nil, status.Errorf(codes.Internal, "could not calculate kubernetes resource verb for %s on %s", urlMethod, urlPath)
 	}
 
-	return verb, kind
+	return &kubeRequest{
+		Verb:        verb,
+		Namespace:   namespace,
+		Group:       resourceGroup,
+		Version:     resourceVersion,
+		Kind:        resourceKind,
+		Name:        resourceName,
+		Subresource: subresource,
+	}, nil
 }

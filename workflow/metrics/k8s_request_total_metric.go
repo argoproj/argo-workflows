@@ -27,8 +27,11 @@ type metricsRoundTripper struct {
 func (m metricsRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
 	x, err := m.roundTripper.RoundTrip(r)
 	if x != nil {
-		verb, kind := k8s.ParseRequest(r)
-		K8sRequestTotalMetric.WithLabelValues(kind, verb, strconv.Itoa(x.StatusCode)).Inc()
+		kubeRequest, err := k8s.ParseRequest(r)
+		if err != nil {
+			return nil, err
+		}
+		K8sRequestTotalMetric.WithLabelValues(kubeRequest.Kind, kubeRequest.Verb, strconv.Itoa(x.StatusCode)).Inc()
 	}
 	return x, err
 }

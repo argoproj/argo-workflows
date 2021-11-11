@@ -14,7 +14,7 @@ import (
 // AccessReview checks if the current context would be allowed to preform an action against the Kubernetes API
 // this is used when we aren't going to actually run this verb against the api,
 // for example, when querying the workflow archive
-func AccessReview(ctx context.Context, namespace, verb, resourceGroup, resourceType, resourceName string) error {
+func AccessReview(ctx context.Context, namespace, verb, resourceGroup, resourceKind, resourceName string) error {
 	kubeClient := GetKubeClient(ctx)
 	impersonateClient := GetImpersonateClient(ctx)
 
@@ -24,7 +24,7 @@ func AccessReview(ctx context.Context, namespace, verb, resourceGroup, resourceT
 			namespace,
 			verb,
 			resourceGroup,
-			resourceType,
+			resourceKind,
 			resourceName,
 			"",
 		)
@@ -32,7 +32,7 @@ func AccessReview(ctx context.Context, namespace, verb, resourceGroup, resourceT
 			return err
 		}
 	} else {
-		allowed, err := authUtil.CanI(ctx, kubeClient, namespace, verb, resourceGroup, resourceType, resourceName)
+		allowed, err := authUtil.CanI(ctx, kubeClient, namespace, verb, resourceGroup, resourceKind, resourceName)
 		if err != nil {
 			return err
 		}
@@ -42,8 +42,8 @@ func AccessReview(ctx context.Context, namespace, verb, resourceGroup, resourceT
 			if resourceGroup != "" {
 				resourceString += resourceGroup
 			}
-			if resourceType != "" {
-				resourceString += "/" + resourceType
+			if resourceKind != "" {
+				resourceString += "/" + resourceKind
 			}
 			if resourceName != "" {
 				resourceString += "/" + resourceName

@@ -69,7 +69,7 @@ func (s *sso) IsImpersonateEnabled() bool {
 }
 
 func (s *sso) GetImpersonateUserClaim() impersonate.Claim {
-	return s.impersonateConfig.UsernameClaim
+	return s.impersonateConfig.GetUsernameClaim()
 }
 
 func (s *sso) IsRBACEnabled() bool {

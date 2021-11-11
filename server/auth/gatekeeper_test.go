@@ -17,6 +17,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	fakewfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo-workflows/v3/server/auth/impersonate"
 	ssomocks "github.com/argoproj/argo-workflows/v3/server/auth/sso/mocks"
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
 	"github.com/argoproj/argo-workflows/v3/server/cache"
@@ -170,13 +171,17 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Claims: jwt.Claims{Subject: "my-sub"}}, nil)
 		ssoIf.On("IsRBACEnabled").Return(false)
 		ssoIf.On("IsImpersonateEnabled").Return(true)
-		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, ssoIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache)
+		ssoIf.On("GetImpersonateUserClaim").Return(impersonate.EmailClaim)
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache)
 		if assert.NoError(t, err) {
 			ctx, err := g.Context(x("Bearer v2:whatever"))
 			if assert.NoError(t, err) {
 				assert.NotEqual(t, wfClient, GetWfClient(ctx))
 				assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
 				assert.NotNil(t, GetImpersonateClient(ctx))
+				if assert.NotNil(t, GetClaims(ctx)) {
+					assert.Equal(t, "my-sub", GetClaims(ctx).Subject)
+				}
 			}
 		}
 	})

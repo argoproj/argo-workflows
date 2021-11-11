@@ -3,10 +3,11 @@
 package mocks
 
 import (
-	mock "github.com/stretchr/testify/mock"
 	http "net/http"
 
 	impersonate "github.com/argoproj/argo-workflows/v3/server/auth/impersonate"
+	mock "github.com/stretchr/testify/mock"
+
 	types "github.com/argoproj/argo-workflows/v3/server/auth/types"
 )
 

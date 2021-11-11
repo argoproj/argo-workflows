@@ -368,6 +368,12 @@ metadata:
   name: argo-server-role
 rules:
 - apiGroups:
+  - authorization.k8s.io
+  resources:
+  - subjectaccessreviews
+  verbs:
+  - create
+- apiGroups:
   - ""
   resources:
   - configmaps

@@ -2,13 +2,13 @@ package auth
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"net/http"
-	"regexp"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/argoproj/argo-workflows/v3/util/k8s"
 )
 
 type impersonateRoundTripper struct {
@@ -26,85 +26,19 @@ func (rt *impersonateRoundTripper) RoundTrip(req *http.Request) (*http.Response,
 		return nil, status.Error(codes.Internal, "`impersonate.Client` is missing from HTTP context")
 	}
 
-	urlPath := req.URL.Path
-	urlQuery := req.URL.Query()
-
-	//log.WithFields(
-	//	log.Fields{"Method": req.Method, "Path": urlPath, "Query": req.URL.RawQuery},
-	//).Debug("ImpersonateRoundTripper")
-
-	// extract ResourceAttributes from URL path
-	re := regexp.MustCompile(
-		`^(?:/api|/apis/(?P<GROUP>[^/]+))/(?P<VERSION>[^/]+)(?:/namespaces/(?P<NAMESPACE>[^/]+))?/(?P<RESOURCETYPE>[^/\n]+)(?:/(?P<NAME>[^/\n]+))?(?:/(?P<SUBRESOURCE>[^/\n]+))?$`,
-	)
-	matches := re.FindStringSubmatch(urlPath)
-	if matches == nil {
-		return nil, status.Error(codes.Internal, fmt.Sprintf("Invalid Kubernetes Resource URI path: %s", urlPath))
-	}
-	namespace := ""
-	if re.SubexpIndex("NAMESPACE") != -1 {
-		namespace = matches[re.SubexpIndex("NAMESPACE")]
-	}
-	resourceGroup := ""
-	if re.SubexpIndex("GROUP") != -1 {
-		resourceGroup = matches[re.SubexpIndex("GROUP")]
-	}
-	resourceType := ""
-	if re.SubexpIndex("RESOURCETYPE") != -1 {
-		resourceType = matches[re.SubexpIndex("RESOURCETYPE")]
-	}
-	resourceName := ""
-	if re.SubexpIndex("NAME") != -1 {
-		resourceName = matches[re.SubexpIndex("NAME")]
-	}
-	subresource := ""
-	if re.SubexpIndex("NAME") != -1 {
-		subresource = matches[re.SubexpIndex("NAME")]
+	kubeRequest, err := k8s.ParseRequest(req)
+	if err != nil {
+		return nil, err
 	}
 
-	// extract flags from URL query
-	isWatch := false
-	if urlQuery.Get("watch") == "1" {
-		isWatch = true
-	}
-
-	// calculate the resource verb
-	verb := ""
-	switch req.Method {
-	case "", "GET":
-		if isWatch {
-			verb = "watch"
-		} else {
-			if resourceName != "" {
-				verb = "get"
-			} else {
-				verb = "list"
-			}
-		}
-	case "POST":
-		verb = "create"
-	case "PUT":
-		verb = "update"
-	case "PATCH":
-		verb = "patch"
-	case "DELETE":
-		if resourceName != "" {
-			verb = "delete"
-		} else {
-			verb = "deletecollection"
-		}
-	default:
-		return nil, status.Error(codes.Internal, fmt.Sprintf("Could not calcluate kubernetes resource verb for %s on %s", req.Method, req.URL))
-	}
-
-	err := impersonateClient.AccessReview(
+	err = impersonateClient.AccessReview(
 		req.Context(),
-		namespace,
-		verb,
-		resourceGroup,
-		resourceType,
-		resourceName,
-		subresource,
+		kubeRequest.Namespace,
+		kubeRequest.Verb,
+		kubeRequest.Group,
+		kubeRequest.Kind,
+		kubeRequest.Name,
+		kubeRequest.Subresource,
 	)
 	if err != nil {
 		responseBody := err.Error()

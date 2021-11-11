@@ -117,19 +117,21 @@ func (s *gatekeeper) ContextWithRequest(ctx context.Context, req interface{}) (c
 	ctx = context.WithValue(ctx, KubeKey, clients.Kubernetes)
 	ctx = context.WithValue(ctx, ClaimsKey, claims)
 
-	if s.ssoIf.IsImpersonateEnabled() {
+	if s.ssoIf != nil && s.ssoIf.IsImpersonateEnabled() {
 		username := ""
 		switch s.ssoIf.GetImpersonateUserClaim() {
 		case impersonate.EmailClaim:
 			username = claims.Email
 		case impersonate.SubjectClaim:
 			username = claims.Subject
+		default:
+			panic("this should never happen")
 		}
-		impersonate, err := impersonate.NewClient(s.clients.Kubernetes, username)
+		impersonateClient, err := impersonate.NewClient(s.clients.Kubernetes, username)
 		if err != nil {
 			return nil, err
 		}
-		ctx = context.WithValue(ctx, ImpersonateKey, impersonate)
+		ctx = context.WithValue(ctx, ImpersonateKey, impersonateClient)
 	}
 
 	return ctx, nil
@@ -239,6 +241,9 @@ func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertyp
 
 func (s *gatekeeper) impersonateAuthorization() (*servertypes.Clients, error) {
 	restConfig := s.restConfig
+	if restConfig == nil {
+		panic("`gatekeeper` must have non-nil `restConfig` to use impersonation")
+	}
 	restConfig.Wrap(
 		func(rt http.RoundTripper) http.RoundTripper {
 			return NewImpersonateRoundTripper(rt)
