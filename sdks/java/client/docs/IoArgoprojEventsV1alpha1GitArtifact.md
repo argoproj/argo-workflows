@@ -13,6 +13,7 @@ Name | Type | Description | Notes
 **filePath** | **String** |  |  [optional]
 **ref** | **String** |  |  [optional]
 **remote** | [**IoArgoprojEventsV1alpha1GitRemoteConfig**](IoArgoprojEventsV1alpha1GitRemoteConfig.md) |  |  [optional]
+**sshKeyPath** | **String** |  |  [optional]
 **sshKeySecret** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
 **tag** | **String** |  |  [optional]
 **url** | **String** |  |  [optional]

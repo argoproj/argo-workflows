@@ -12,7 +12,9 @@ Name | Type | Description | Notes
 **metadata** | **Map&lt;String, String&gt;** |  |  [optional]
 **method** | **String** |  |  [optional]
 **port** | **String** | Port on which HTTP server is listening for incoming events. |  [optional]
+**serverCertPath** | **String** | DeprecatedServerCertPath refers the file that contains the cert. |  [optional]
 **serverCertSecret** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
+**serverKeyPath** | **String** |  |  [optional]
 **serverKeySecret** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
 **url** | **String** | URL is the url of the server. |  [optional]
 

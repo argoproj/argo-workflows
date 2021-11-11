@@ -20,8 +20,8 @@ Name | Type | Description | Notes
 **name** | **String** | Name is a unique name of the action to take. |  [optional]
 **nats** | [**IoArgoprojEventsV1alpha1NATSTrigger**](IoArgoprojEventsV1alpha1NATSTrigger.md) |  |  [optional]
 **openWhisk** | [**IoArgoprojEventsV1alpha1OpenWhiskTrigger**](IoArgoprojEventsV1alpha1OpenWhiskTrigger.md) |  |  [optional]
-**pulsar** | [**IoArgoprojEventsV1alpha1PulsarTrigger**](IoArgoprojEventsV1alpha1PulsarTrigger.md) |  |  [optional]
 **slack** | [**IoArgoprojEventsV1alpha1SlackTrigger**](IoArgoprojEventsV1alpha1SlackTrigger.md) |  |  [optional]
+**_switch** | [**IoArgoprojEventsV1alpha1TriggerSwitch**](IoArgoprojEventsV1alpha1TriggerSwitch.md) |  |  [optional]
 
 
 

@@ -13,6 +13,7 @@ Name | Type | Description | Notes
 **persistence** | [**IoArgoprojEventsV1alpha1EventPersistence**](IoArgoprojEventsV1alpha1EventPersistence.md) |  |  [optional]
 **schedule** | **String** |  |  [optional]
 **timezone** | **String** |  |  [optional]
+**userPayload** | **byte[]** | UserPayload will be sent to sensor as extra data once the event is triggered +optional Deprecated: will be removed in v1.5. Please use Metadata instead. |  [optional]
 
 
 
