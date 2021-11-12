@@ -119,9 +119,8 @@ func GenerateX509KeyPairTLSConfig(tlsMinVersion uint16) (*tls.Config, error) {
 	}
 
 	return &tls.Config{
-		Certificates:       []tls.Certificate{*cer},
-		MinVersion:         uint16(tlsMinVersion),
-		InsecureSkipVerify: true,
+		Certificates: []tls.Certificate{*cer},
+		MinVersion:   uint16(tlsMinVersion),
 	}, nil
 }
 
@@ -143,8 +142,7 @@ func GetServerTLSConfigFromSecret(ctx context.Context, kubectlConfig kubernetes.
 	}
 
 	return &tls.Config{
-		Certificates:       []tls.Certificate{cert},
-		MinVersion:         uint16(tlsMinVersion),
-		InsecureSkipVerify: true,
+		Certificates: []tls.Certificate{cert},
+		MinVersion:   uint16(tlsMinVersion),
 	}, nil
 }
