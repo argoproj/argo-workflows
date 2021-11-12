@@ -81,7 +81,7 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
 
     const containers = ['init', 'wait'].concat(
         templates
-            .map(t => ((t.containerSet && t.containerSet.containers) || [{name: 'main'}]).concat(t.sidecars || []))
+            .map(t => ((t.containerSet && t.containerSet.containers) || [{name: 'main'}]).concat(t.sidecars || []).concat(t.initContainers || []))
             .reduce((a, v) => a.concat(v), [])
             .map(c => c.name)
     );
