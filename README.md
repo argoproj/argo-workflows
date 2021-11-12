@@ -68,9 +68,9 @@ Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) hosted pr
 [SQLFlow](https://github.com/sql-machine-learning/sqlflow)
 
 
-## SDKs
+## Client Libraries
 
-Check out our [Java, Golang and Python SDKs](https://github.com/argoproj-labs/argo-client-gen).
+Check out our [Java, Golang and Python clients](docs/client-libraries.md).
 
 ## Quickstart
 
@@ -142,6 +142,7 @@ the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/master/code-o
 
 ## Community Blogs and Presentations
 
+* [Awesome-Argo: A Curated List of Awesome Projects and Resources Related to Argo](https://github.com/terrytangyuan/awesome-argo)
 * [Automation of Everything - How To Combine Argo Events, Workflows & Pipelines, CD, and Rollouts](https://youtu.be/XNXJtxkUKeY)
 * [Argo Workflows and Pipelines - CI/CD, Machine Learning, and Other Kubernetes Workflows](https://youtu.be/UMaivwrAyTA)
 * [Argo Ansible role: Provisioning Argo Workflows on OpenShift](https://medium.com/@marekermk/provisioning-argo-on-openshift-with-ansible-and-kustomize-340a1fda8b50)

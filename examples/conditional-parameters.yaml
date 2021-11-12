@@ -13,8 +13,6 @@ metadata:
       Based on that condition, one of step will not be executed. The step template's output parameter will be
       set from the executed step's output.
     workflows.argoproj.io/version: '>= 3.1.0'
-    workflows.argoproj.io/verify.py: |
-      assert status["phase"] == "Succeeded"
 spec:
   entrypoint: main
   templates:

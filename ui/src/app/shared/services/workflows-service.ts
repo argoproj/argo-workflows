@@ -3,6 +3,7 @@ import * as models from '../../../models';
 import {Event, LogEntry, NodeStatus, Workflow, WorkflowList, WorkflowPhase} from '../../../models';
 import {SubmitOpts} from '../../../models/submit-opts';
 import {Pagination} from '../pagination';
+import {Utils} from '../utils';
 import requests from './requests';
 import {WorkflowDeleteResponse} from './responses';
 
@@ -39,15 +40,7 @@ export class WorkflowsService {
             'items.spec.suspend'
         ]
     ) {
-        const params = this.queryParams({phases, labels});
-        if (pagination) {
-            if (pagination.offset) {
-                params.push(`listOptions.continue=${pagination.offset}`);
-            }
-            if (pagination.limit) {
-                params.push(`listOptions.limit=${pagination.limit}`);
-            }
-        }
+        const params = Utils.queryParams({phases, labels, pagination});
         params.push(`fields=${fields.join(',')}`);
         return requests.get(`api/v1/workflows/${namespace}?${params.join('&')}`).then(res => res.body as WorkflowList);
     }
@@ -63,7 +56,7 @@ export class WorkflowsService {
         labels?: Array<string>;
         resourceVersion?: string;
     }): Observable<models.kubernetes.WatchEvent<Workflow>> {
-        const url = `api/v1/workflow-events/${filter.namespace || ''}?${this.queryParams(filter).join('&')}`;
+        const url = `api/v1/workflow-events/${filter.namespace || ''}?${Utils.queryParams(filter).join('&')}`;
         return requests.loadEventSource(url).map(data => data && (JSON.parse(data).result as models.kubernetes.WatchEvent<Workflow>));
     }
 
@@ -78,7 +71,7 @@ export class WorkflowsService {
         labels?: Array<string>;
         resourceVersion?: string;
     }): Observable<models.kubernetes.WatchEvent<Workflow>> {
-        const params = this.queryParams(filter);
+        const params = Utils.queryParams(filter);
         const fields = [
             'result.object.metadata.name',
             'result.object.metadata.namespace',
@@ -138,10 +131,10 @@ export class WorkflowsService {
             .then(res => res.body as Workflow);
     }
 
-    public getContainerLogsFromCluster(workflow: Workflow, nodeId: string, container: string, grep: string): Observable<LogEntry> {
+    public getContainerLogsFromCluster(workflow: Workflow, podName: string, container: string, grep: string): Observable<LogEntry> {
         const namespace = workflow.metadata.namespace;
         const name = workflow.metadata.name;
-        const podLogsURL = `api/v1/workflows/${namespace}/${name}/log?logOptions.container=${container}&grep=${grep}&logOptions.follow=true${nodeId ? `&podName=${nodeId}` : ''}`;
+        const podLogsURL = `api/v1/workflows/${namespace}/${name}/log?logOptions.container=${container}&grep=${grep}&logOptions.follow=true${podName ? `&podName=${podName}` : ''}`;
         return requests
             .loadEventSource(podLogsURL)
             .filter(line => !!line)
@@ -152,9 +145,9 @@ export class WorkflowsService {
                 // that the connection to the server was interrupted while the node is still pending or running, this is not
                 // correct since we actually want the EventSource to re-connect and continue streaming logs.  In the event
                 // that the pod has completed, then we want to allow the unsubscribe to happen since no additional logs exist.
-                return Observable.fromPromise(this.isWorkflowNodePendingOrRunning(workflow, nodeId)).switchMap(isPendingOrRunning => {
+                return Observable.fromPromise(this.isWorkflowNodePendingOrRunning(workflow, podName)).switchMap(isPendingOrRunning => {
                     if (isPendingOrRunning) {
-                        return this.getContainerLogsFromCluster(workflow, nodeId, container, grep);
+                        return this.getContainerLogsFromCluster(workflow, podName, container, grep);
                     }
 
                     // If our workflow is completed, then simply complete the Observable since nothing else
@@ -189,7 +182,7 @@ export class WorkflowsService {
             .filter(x => !!x.content.match(grep));
     }
 
-    public getContainerLogs(workflow: Workflow, nodeId: string, container: string, grep: string, archived: boolean): Observable<LogEntry> {
+    public getContainerLogs(workflow: Workflow, podName: string, nodeId: string, container: string, grep: string, archived: boolean): Observable<LogEntry> {
         const getLogsFromArtifact = () => this.getContainerLogsFromArtifact(workflow, nodeId, container, grep, archived);
 
         // If our workflow is archived, don't even bother inspecting the cluster for logs since it's likely
@@ -202,7 +195,7 @@ export class WorkflowsService {
             if (!isPendingOrRunning && this.hasArtifactLogs(workflow, nodeId, container) && container === 'main') {
                 return getLogsFromArtifact();
             }
-            return this.getContainerLogsFromCluster(workflow, nodeId, container, grep).catch(getLogsFromArtifact);
+            return this.getContainerLogsFromCluster(workflow, podName, container, grep).catch(getLogsFromArtifact);
         });
     }
 
@@ -232,34 +225,5 @@ export class WorkflowsService {
         }
 
         return node.outputs.artifacts.findIndex(a => a.name === `${container}-logs`) !== -1;
-    }
-
-    private queryParams(filter: {namespace?: string; name?: string; phases?: Array<WorkflowPhase>; labels?: Array<string>; resourceVersion?: string}) {
-        const queryParams: string[] = [];
-        if (filter.name) {
-            queryParams.push(`listOptions.fieldSelector=metadata.name=${filter.name}`);
-        }
-        const labelSelector = this.labelSelectorParams(filter.phases, filter.labels);
-        if (labelSelector.length > 0) {
-            queryParams.push(`listOptions.labelSelector=${labelSelector}`);
-        }
-        if (filter.resourceVersion) {
-            queryParams.push(`listOptions.resourceVersion=${filter.resourceVersion}`);
-        }
-        return queryParams;
-    }
-
-    private labelSelectorParams(phases?: Array<WorkflowPhase>, labels?: Array<string>) {
-        let labelSelector = '';
-        if (phases && phases.length > 0) {
-            labelSelector = `workflows.argoproj.io/phase in (${phases.join(',')})`;
-        }
-        if (labels && labels.length > 0) {
-            if (labelSelector.length > 0) {
-                labelSelector += ',';
-            }
-            labelSelector += labels.join(',');
-        }
-        return labelSelector;
     }
 }

@@ -105,6 +105,10 @@ func initExecutor() *executor.WorkflowExecutor {
 	deadline, err := time.Parse(time.RFC3339, os.Getenv(common.EnvVarDeadline))
 	checkErr(err)
 
+	// errors ignored because values are set by the controller and checked there.
+	annotationPatchTickDuration, _ := time.ParseDuration(os.Getenv(common.EnvVarProgressPatchTickDuration))
+	progressFileTickDuration, _ := time.ParseDuration(os.Getenv(common.EnvVarProgressFileTickDuration))
+
 	var cre executor.ContainerRuntimeExecutor
 	log.Infof("Creating a %s executor", executorType)
 	switch executorType {
@@ -114,14 +118,14 @@ func initExecutor() *executor.WorkflowExecutor {
 		cre, err = kubelet.NewKubeletExecutor(namespace, podName)
 	case common.ContainerRuntimeExecutorPNS:
 		cre, err = pns.NewPNSExecutor(clientset, podName, namespace)
-	case common.ContainerRuntimeExecutorEmissary:
-		cre, err = emissary.New()
-	default:
+	case common.ContainerRuntimeExecutorDocker:
 		cre, err = docker.NewDockerExecutor(namespace, podName)
+	default:
+		cre, err = emissary.New()
 	}
 	checkErr(err)
 
-	wfExecutor := executor.NewExecutor(clientset, restClient, podName, namespace, cre, *tmpl, includeScriptOutput, deadline)
+	wfExecutor := executor.NewExecutor(clientset, restClient, podName, namespace, cre, *tmpl, includeScriptOutput, deadline, annotationPatchTickDuration, progressFileTickDuration)
 
 	log.
 		WithField("version", version.String()).
@@ -137,7 +141,7 @@ func initExecutor() *executor.WorkflowExecutor {
 // checkErr is a convenience function to panic upon error
 func checkErr(err error) {
 	if err != nil {
-		util.WriteTeriminateMessage(err.Error())
+		util.WriteTerminateMessage(err.Error())
 		panic(err.Error())
 	}
 }

@@ -382,6 +382,8 @@ rules:
   verbs:
   - get
   - create
+  - list
+  - watch
 - apiGroups:
   - ""
   resources:
@@ -408,6 +410,7 @@ rules:
   verbs:
   - get
   - list
+  - watch
 - apiGroups:
   - argoproj.io
   resources:
@@ -683,16 +686,16 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
-  containerRuntimeExecutor: docker
+  containerRuntimeExecutor: emissary
   containerRuntimeExecutors: |
-    - name: k8sapi
-      selector:
-        matchLabels:
-          workflows.argoproj.io/container-runtime-executor: k8sapi
     - name: emissary
       selector:
         matchLabels:
           workflows.argoproj.io/container-runtime-executor: emissary
+    - name: pns
+      selector:
+        matchLabels:
+          workflows.argoproj.io/container-runtime-executor: pns
   executor: |
     resources:
       requests:
@@ -928,7 +931,7 @@ spec:
           value: admin
         - name: MINIO_SECRET_KEY
           value: password
-        image: minio/minio:RELEASE.2019-12-17T23-16-33Z
+        image: minio/minio
         lifecycle:
           postStart:
             exec:

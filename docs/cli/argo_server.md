@@ -21,6 +21,7 @@ See https://argoproj.github.io/argo-workflows/argo-server/
       --basehref string                      Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /. Defaults to the environment variable BASE_HREF. (default "/")
   -b, --browser                              enable automatic launching of the browser [local mode]
       --configmap string                     Name of K8s configmap to retrieve workflow controller configuration (default "workflow-controller-configmap")
+      --event-async-dispatch                 dispatch event async
       --event-operation-queue-size int       how many events operations that can be queued at once (default 16)
       --event-worker-count int               how many event workers to run (default 4)
   -h, --help                                 help for server
@@ -29,6 +30,7 @@ See https://argoproj.github.io/argo-workflows/argo-server/
       --managed-namespace string             namespace that watches, default to the installation namespace
       --namespaced                           run as namespaced mode
   -p, --port int                             Port to listen on (default 2746)
+      --sso-namespace string                 namespace that will be used for SSO RBAC. Defaults to installation namespace. Used only in namespaced mode
       --x-frame-options string               Set X-Frame-Options header in HTTP responses. (default "DENY")
 ```
 

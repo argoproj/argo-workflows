@@ -3,6 +3,7 @@ package dispatch
 import (
 	"context"
 	"encoding/json"
+	"sort"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -50,6 +51,9 @@ func TestNewOperation(t *testing.T) {
 		},
 		&wfv1.WorkflowTemplate{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-wft-3", Namespace: "my-ns"},
+		},
+		&wfv1.WorkflowTemplate{
+			ObjectMeta: metav1.ObjectMeta{Name: "my-wft-4", Namespace: "my-ns", Labels: map[string]string{common.LabelKeyControllerInstanceID: "my-instanceid"}},
 		},
 	)
 	ctx := context.WithValue(context.WithValue(context.Background(), auth.WfKey, client), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
@@ -146,20 +150,41 @@ func TestNewOperation(t *testing.T) {
 				},
 			},
 		},
-	}, "my-ns", "my-discriminator", &wfv1.Item{Value: json.RawMessage(`{"foo": {"bar": "baz"}}`)})
+		// test a bind with a payload and fmt expression
+		{
+			ObjectMeta: metav1.ObjectMeta{Name: "my-wfeb-8", Namespace: "my-ns"},
+			Spec: wfv1.WorkflowEventBindingSpec{
+				Event: wfv1.Event{Selector: "true"},
+				Submit: &wfv1.Submit{
+					WorkflowTemplateRef: wfv1.WorkflowTemplateRef{Name: "my-wft-4"},
+					Arguments:           &wfv1.Arguments{Parameters: []wfv1.Parameter{{Name: "my-param", ValueFrom: &wfv1.ValueFrom{Event: "payload.formatted"}}}},
+				},
+			},
+		},
+	}, "my-ns", "my-discriminator", &wfv1.Item{Value: json.RawMessage(`{"foo": {"bar": "baz"}, "formatted": "My%Test%"}`)})
 	assert.NoError(t, err)
-	operation.Dispatch(ctx)
+	err = operation.Dispatch(ctx)
+	assert.Error(t, err)
 
-	expectedParamValues := []string{"bar", "bar", `{"bar":"baz"}`}
+	expectedParamValues := []string{
+		`My%Test%`,
+		"bar",
+		"bar",
+		`{"bar":"baz"}`,
+	}
+	var paramValues []string
 	// assert
 	list, err := client.ArgoprojV1alpha1().Workflows("my-ns").List(ctx, metav1.ListOptions{})
-	if assert.NoError(t, err) && assert.Len(t, list.Items, 3) {
-		for i, wf := range list.Items {
+	if assert.NoError(t, err) && assert.Len(t, list.Items, 4) {
+		for _, wf := range list.Items {
 			assert.Equal(t, "my-instanceid", wf.Labels[common.LabelKeyControllerInstanceID])
 			assert.Equal(t, "my-sub", wf.Labels[common.LabelKeyCreator])
 			assert.Contains(t, wf.Labels, common.LabelKeyWorkflowEventBinding)
-			assert.Equal(t, []wfv1.Parameter{{Name: "my-param", Value: wfv1.AnyStringPtr(expectedParamValues[i])}}, wf.Spec.Arguments.Parameters)
+			assert.Contains(t, "my-param", wf.Spec.Arguments.Parameters[0].Name)
+			paramValues = append(paramValues, string(*wf.Spec.Arguments.Parameters[0].Value))
 		}
+		sort.Strings(paramValues)
+		assert.Equal(t, expectedParamValues, paramValues)
 	}
 	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to evaluate workflow template expression: unexpected token EOF (1:1)", <-recorder.Events)
 	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to get workflow template: workflowtemplates.argoproj.io \"not-found\" not found", <-recorder.Events)
@@ -317,7 +342,8 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 		&wfv1.Item{Value: json.RawMessage(`{"foo": {"bar": "baz", "numeric": 8675309, "bool": true}, "list": ["one", "two"]}`)})
 
 	assert.NoError(t, err)
-	operation.Dispatch(ctx)
+	err = operation.Dispatch(ctx)
+	assert.Error(t, err)
 
 	list, err := client.ArgoprojV1alpha1().Workflows("my-ns").List(ctx, metav1.ListOptions{})
 

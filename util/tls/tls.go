@@ -15,7 +15,6 @@ import (
 	"net"
 	"os"
 	"time"
-
 	"github.com/argoproj/argo-workflows/v3/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
@@ -33,7 +32,7 @@ func pemBlockForKey(priv interface{}) *pem.Block {
 	case *ecdsa.PrivateKey:
 		b, err := x509.MarshalECPrivateKey(k)
 		if err != nil {
-			log.Fatal(err)
+			log.Print(err)
 			os.Exit(2)
 		}
 		return &pem.Block{Type: "EC PRIVATE KEY", Bytes: b}

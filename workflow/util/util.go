@@ -169,7 +169,7 @@ func IsWorkflowCompleted(wf *wfv1.Workflow) bool {
 	return false
 }
 
-// SubmitWorkflow validates and submit a single workflow and override some of the fields of the workflow
+// SubmitWorkflow validates and submits a single workflow and overrides some of the fields of the workflow
 func SubmitWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Interface, namespace string, wf *wfv1.Workflow, opts *wfv1.SubmitOpts) (*wfv1.Workflow, error) {
 	err := ApplySubmitOpts(wf, opts)
 	if err != nil {
@@ -178,7 +178,7 @@ func SubmitWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, wfClie
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace))
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
-	_, err = validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, validate.ValidateOpts{})
+	_, err = validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, validate.ValidateOpts{Submit: true})
 	if err != nil {
 		return nil, err
 	}
@@ -591,6 +591,11 @@ func randString(n int) string {
 	return string(b)
 }
 
+// RandSuffix generates a random suffix suitable for suffixing resource name.
+func RandSuffix() string {
+	return randString(5)
+}
+
 // FormulateResubmitWorkflow formulate a new workflow from a previous workflow, optionally re-using successful nodes
 func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow, error) {
 	newWF := wfv1.Workflow{}
@@ -611,7 +616,7 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 		default:
 			return nil, errors.Errorf(errors.CodeBadRequest, "workflow must be Failed/Error to resubmit in memoized mode")
 		}
-		newWF.ObjectMeta.Name = newWF.ObjectMeta.GenerateName + randString(5)
+		newWF.ObjectMeta.Name = newWF.ObjectMeta.GenerateName + RandSuffix()
 	}
 
 	// carry over the unmodified spec

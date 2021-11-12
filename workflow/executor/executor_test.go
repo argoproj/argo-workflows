@@ -6,12 +6,16 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor/mocks"
 )
 
@@ -364,4 +368,91 @@ func TestSaveArtifacts(t *testing.T) {
 	we.Template.Outputs.Artifacts[0].Optional = false
 	err = we.SaveArtifacts(ctx)
 	assert.Error(t, err)
+}
+
+func TestMonitorProgress(t *testing.T) {
+	deadline, ok := t.Deadline()
+	if !ok {
+		deadline = time.Now().Add(time.Second)
+	}
+	ctx, cancel := context.WithDeadline(context.Background(), deadline)
+	defer cancel()
+
+	fakeClientset := fake.NewSimpleClientset(&corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fakePodName,
+			Namespace: fakeNamespace,
+		},
+		Spec: corev1.PodSpec{},
+		Status: corev1.PodStatus{
+			ContainerStatuses: []corev1.ContainerStatus{
+				{
+					Name: "main",
+					State: corev1.ContainerState{
+						Running: &corev1.ContainerStateRunning{
+							StartedAt: metav1.Now(),
+						},
+					},
+				},
+			},
+		},
+	})
+
+	f, err := os.CreateTemp("", "")
+	require.NoError(t, err)
+	defer func() {
+		name := f.Name()
+		err := f.Close()
+		assert.NoError(t, err)
+		err = os.Remove(name)
+		assert.NoError(t, err)
+	}()
+	annotationPackTickDuration := 5 * time.Millisecond
+	readProgressFileTickDuration := time.Millisecond
+	progressFile := f.Name()
+
+	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
+	we := NewExecutor(fakeClientset, nil, fakePodName, fakeNamespace, &mockRuntimeExecutor, wfv1.Template{}, false, deadline, annotationPackTickDuration, readProgressFileTickDuration)
+
+	go we.monitorProgress(ctx, progressFile)
+
+	go func(ctx context.Context) {
+		progress := 0
+		maxProgress := 10
+		tickDuration := time.Millisecond
+		ticker := time.After(tickDuration)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker:
+				t.Logf("tick progress=%d", progress)
+				_, err := fmt.Fprintf(f, "%d/100\n", progress*10)
+				assert.NoError(t, err)
+				if progress >= maxProgress {
+					return
+				}
+				progress += 1
+				ticker = time.After(tickDuration)
+			}
+		}
+	}(ctx)
+
+	ticker := time.After(annotationPackTickDuration)
+	for {
+		select {
+		case <-ctx.Done():
+			t.Error(ctx.Err())
+			return
+		case <-ticker:
+			pod, err := we.getPod(ctx)
+			assert.NoError(t, err)
+			progress, ok := pod.Annotations[common.AnnotationKeyProgress]
+			if ok && progress == "100/100" {
+				t.Log("success reaching 100/100 progress")
+				return
+			}
+			ticker = time.After(annotationPackTickDuration)
+		}
+	}
 }

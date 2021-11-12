@@ -5,8 +5,8 @@ metadata:
   labels:
     # run this workflow as a part of our test suite
     workflows.argoproj.io/test: "true"
-    # use the k8sapi executor, rather than the default (typically docker)
-    workflows.argoproj.io/container-runtime-executor: k8sapi
+    # use the pns executor, rather than the default (typically emissary)
+    workflows.argoproj.io/container-runtime-executor: pns
   annotations:
     workflows.argoproj.io/description: |
 
@@ -18,18 +18,9 @@ metadata:
 
     # this workflow will only run on workflows version v3.0.0
     workflows.argoproj.io/version: ">= 3.0.0"
-
-    # this workflow will fail because the k8sapi executor does not support base-layer outputs
-    workflows.argoproj.io/verify.py: |
-      assert status["phase"] == "Failed"
 spec:
   entrypoint: main
   templates:
     - name: main
       container:
         image: argoproj/argosay:v2
-      outputs:
-        parameters:
-          - name: out-0
-            valueFrom:
-              path: /not-allowed

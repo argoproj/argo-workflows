@@ -4,20 +4,20 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"sort"
 	"strconv"
 
 	"github.com/antonmedv/expr"
 	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
 	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -26,6 +26,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/auth/serviceaccount"
 	"github.com/argoproj/argo-workflows/v3/server/auth/sso"
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
+	"github.com/argoproj/argo-workflows/v3/server/cache"
 	servertypes "github.com/argoproj/argo-workflows/v3/server/types"
 	jsonutil "github.com/argoproj/argo-workflows/v3/util/json"
 	"github.com/argoproj/argo-workflows/v3/util/kubeconfig"
@@ -46,6 +47,7 @@ const (
 //go:generate mockery --name=Gatekeeper
 
 type Gatekeeper interface {
+	ContextWithRequest(ctx context.Context, req interface{}) (context.Context, error)
 	Context(ctx context.Context) (context.Context, error)
 	UnaryServerInterceptor() grpc.UnaryServerInterceptor
 	StreamServerInterceptor() grpc.StreamServerInterceptor
@@ -61,19 +63,33 @@ type gatekeeper struct {
 	ssoIf                  sso.Interface
 	clientForAuthorization ClientForAuthorization
 	// The namespace the server is installed in.
-	namespace string
+	namespace    string
+	ssoNamespace string
+	namespaced   bool
+	cache        *cache.ResourceCache
 }
 
-func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.Config, ssoIf sso.Interface, clientForAuthorization ClientForAuthorization, namespace string) (Gatekeeper, error) {
+func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.Config, ssoIf sso.Interface, clientForAuthorization ClientForAuthorization, namespace string, ssoNamespace string, namespaced bool, cache *cache.ResourceCache) (Gatekeeper, error) {
 	if len(modes) == 0 {
 		return nil, fmt.Errorf("must specify at least one auth mode")
 	}
-	return &gatekeeper{modes, clients, restConfig, ssoIf, clientForAuthorization, namespace}, nil
+	return &gatekeeper{
+		modes,
+		clients,
+		restConfig,
+		ssoIf,
+		clientForAuthorization,
+		namespace,
+		ssoNamespace,
+		namespaced,
+		cache,
+	}, nil
+
 }
 
 func (s *gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-		ctx, err = s.Context(ctx)
+		ctx, err = s.ContextWithRequest(ctx, req)
 		if err != nil {
 			return nil, err
 		}
@@ -83,18 +99,12 @@ func (s *gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 
 func (s *gatekeeper) StreamServerInterceptor() grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-		ctx, err := s.Context(ss.Context())
-		if err != nil {
-			return err
-		}
-		wrapped := grpc_middleware.WrapServerStream(ss)
-		wrapped.WrappedContext = ctx
-		return handler(srv, wrapped)
+		return handler(srv, NewAuthorizingServerStream(ss, s))
 	}
 }
 
-func (s *gatekeeper) Context(ctx context.Context) (context.Context, error) {
-	clients, claims, err := s.getClients(ctx)
+func (s *gatekeeper) ContextWithRequest(ctx context.Context, req interface{}) (context.Context, error) {
+	clients, claims, err := s.getClients(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -105,6 +115,10 @@ func (s *gatekeeper) Context(ctx context.Context) (context.Context, error) {
 	ctx = context.WithValue(ctx, KubeKey, clients.Kubernetes)
 	ctx = context.WithValue(ctx, ClaimsKey, claims)
 	return ctx, nil
+}
+
+func (s *gatekeeper) Context(ctx context.Context) (context.Context, error) {
+	return s.ContextWithRequest(ctx, nil)
 }
 
 func GetDynamicClient(ctx context.Context) dynamic.Interface {
@@ -150,7 +164,7 @@ func getAuthHeader(md metadata.MD) string {
 	return ""
 }
 
-func (s gatekeeper) getClients(ctx context.Context) (*servertypes.Clients, *types.Claims, error) {
+func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertypes.Clients, *types.Claims, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	authorization := getAuthHeader(md)
 	mode, valid := s.Modes.GetMode(authorization)
@@ -174,7 +188,7 @@ func (s gatekeeper) getClients(ctx context.Context) (*servertypes.Clients, *type
 			return nil, nil, status.Error(codes.Unauthenticated, err.Error())
 		}
 		if s.ssoIf.IsRBACEnabled() {
-			clients, err := s.rbacAuthorization(ctx, claims)
+			clients, err := s.rbacAuthorization(claims, req)
 			if err != nil {
 				log.WithError(err).Error("failed to perform RBAC authorization")
 				return nil, nil, status.Error(codes.PermissionDenied, "not allowed")
@@ -182,7 +196,7 @@ func (s gatekeeper) getClients(ctx context.Context) (*servertypes.Clients, *type
 			return clients, claims, nil
 		} else {
 			// important! write an audit entry (i.e. log entry) so we know which user performed an operation
-			log.WithFields(log.Fields{"subject": claims.Subject}).Info("using the default service account for user")
+			log.WithFields(addClaimsLogFields(claims, nil)).Info("using the default service account for user")
 			return s.clients, claims, nil
 		}
 	default:
@@ -190,22 +204,34 @@ func (s gatekeeper) getClients(ctx context.Context) (*servertypes.Clients, *type
 	}
 }
 
-func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *types.Claims) (*servertypes.Clients, error) {
-	list, err := s.clients.Kubernetes.CoreV1().ServiceAccounts(s.namespace).List(ctx, metav1.ListOptions{})
+func getNamespace(req interface{}) string {
+	if req == nil {
+		return ""
+	}
+	namespacedRequest, ok := req.(servertypes.NamespacedRequest)
+	if !ok {
+		return ""
+	}
+	return namespacedRequest.GetNamespace()
+}
+
+func precedence(serviceAccount *corev1.ServiceAccount) int {
+	i, _ := strconv.Atoi(serviceAccount.Annotations[common.AnnotationKeyRBACRulePrecedence])
+	return i
+}
+
+func (s *gatekeeper) getServiceAccount(claims *types.Claims, namespace string) (*corev1.ServiceAccount, error) {
+	list, err := s.cache.ServiceAccountLister.ServiceAccounts(namespace).List(labels.Everything())
 	if err != nil {
 		return nil, fmt.Errorf("failed to list SSO RBAC service accounts: %w", err)
 	}
-	var serviceAccounts []corev1.ServiceAccount
-	for _, serviceAccount := range list.Items {
+	var serviceAccounts []*corev1.ServiceAccount
+	for _, serviceAccount := range list {
 		_, ok := serviceAccount.Annotations[common.AnnotationKeyRBACRule]
 		if !ok {
 			continue
 		}
 		serviceAccounts = append(serviceAccounts, serviceAccount)
-	}
-	precedence := func(serviceAccount corev1.ServiceAccount) int {
-		i, _ := strconv.Atoi(serviceAccount.Annotations[common.AnnotationKeyRBACRulePrecedence])
-		return i
 	}
 	sort.Slice(serviceAccounts, func(i, j int) bool { return precedence(serviceAccounts[i]) > precedence(serviceAccounts[j]) })
 	for _, serviceAccount := range serviceAccounts {
@@ -225,35 +251,74 @@ func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *types.Claims
 		if !allow {
 			continue
 		}
-		authorization, err := s.authorizationForServiceAccount(ctx, serviceAccount.Name)
-		if err != nil {
-			return nil, err
-		}
-		_, clients, err := s.clientForAuthorization(authorization)
-		if err != nil {
-			return nil, err
-		}
-		claims.ServiceAccountName = serviceAccount.Name
-		// important! write an audit entry (i.e. log entry) so we know which user performed an operation
-		log.WithFields(log.Fields{"serviceAccount": serviceAccount.Name, "subject": claims.Subject}).Info("selected SSO RBAC service account for user")
-		return clients, nil
+		return serviceAccount, nil
 	}
 	return nil, fmt.Errorf("no service account rule matches")
 }
 
-func (s *gatekeeper) authorizationForServiceAccount(ctx context.Context, serviceAccountName string) (string, error) {
-	serviceAccount, err := s.clients.Kubernetes.CoreV1().ServiceAccounts(s.namespace).Get(ctx, serviceAccountName, metav1.GetOptions{})
+func (s *gatekeeper) canDelegateRBACToRequestNamespace(req interface{}) bool {
+	if s.namespaced || os.Getenv("SSO_DELEGATE_RBAC_TO_NAMESPACE") != "true" {
+		return false
+	}
+	namespace := getNamespace(req)
+	return len(namespace) != 0 && s.ssoNamespace != namespace
+}
+
+func (s *gatekeeper) getClientsForServiceAccount(claims *types.Claims, serviceAccount *corev1.ServiceAccount) (*servertypes.Clients, error) {
+	authorization, err := s.authorizationForServiceAccount(serviceAccount)
 	if err != nil {
-		return "", fmt.Errorf("failed to get service account: %w", err)
+		return nil, err
 	}
+	_, clients, err := s.clientForAuthorization(authorization)
+	if err != nil {
+		return nil, err
+	}
+	claims.ServiceAccountName = serviceAccount.Name
+	return clients, nil
+}
+
+func (s *gatekeeper) rbacAuthorization(claims *types.Claims, req interface{}) (*servertypes.Clients, error) {
+	ssoDelegationAllowed, ssoDelegated := false, false
+	loginAccount, err := s.getServiceAccount(claims, s.ssoNamespace)
+	if err != nil {
+		return nil, err
+	}
+	delegatedAccount := loginAccount
+	if s.canDelegateRBACToRequestNamespace(req) {
+		ssoDelegationAllowed = true
+		namespaceAccount, err := s.getServiceAccount(claims, getNamespace(req))
+		if err != nil {
+			log.WithError(err).Info("Error while SSO Delegation")
+		} else if precedence(namespaceAccount) > precedence(loginAccount) {
+			delegatedAccount = namespaceAccount
+			ssoDelegated = true
+		}
+	}
+	// important! write an audit entry (i.e. log entry) so we know which user performed an operation
+	log.WithFields(log.Fields{"serviceAccount": delegatedAccount.Name, "loginServiceAccount": loginAccount.Name, "subject": claims.Subject, "ssoDelegationAllowed": ssoDelegationAllowed, "ssoDelegated": ssoDelegated}).Info("selected SSO RBAC service account for user")
+	return s.getClientsForServiceAccount(claims, delegatedAccount)
+}
+
+func (s *gatekeeper) authorizationForServiceAccount(serviceAccount *corev1.ServiceAccount) (string, error) {
 	if len(serviceAccount.Secrets) == 0 {
-		return "", fmt.Errorf("expected at least one secret for SSO RBAC service account: %w", err)
+		return "", fmt.Errorf("expected at least one secret for SSO RBAC service account: %s", serviceAccount.GetName())
 	}
-	secret, err := s.clients.Kubernetes.CoreV1().Secrets(s.namespace).Get(ctx, serviceAccount.Secrets[0].Name, metav1.GetOptions{})
+	secret, err := s.cache.SecretLister.Secrets(serviceAccount.GetNamespace()).Get(serviceAccount.Secrets[0].Name)
 	if err != nil {
 		return "", fmt.Errorf("failed to get service account secret: %w", err)
 	}
 	return "Bearer " + string(secret.Data["token"]), nil
+}
+
+func addClaimsLogFields(claims *types.Claims, fields log.Fields) log.Fields {
+	if fields == nil {
+		fields = log.Fields{}
+	}
+	fields["subject"] = claims.Subject
+	if claims.Email != "" {
+		fields["email"] = claims.Email
+	}
+	return fields
 }
 
 func DefaultClientForAuthorization(authorization string) (*rest.Config, *servertypes.Clients, error) {

@@ -33,6 +33,7 @@ type ValidateOpts struct {
 	// skip some validations which is permissible during linting but not submission (e.g. missing
 	// input parameters to the workflow)
 	Lint bool
+
 	// ContainerRuntimeExecutor will trigger additional validation checks specific to different
 	// types of executors. For example, the inability of kubelet/k8s executors to copy artifacts
 	// out of the base image layer. If unspecified, will use docker executor validation
@@ -44,6 +45,10 @@ type ValidateOpts struct {
 
 	// WorkflowTemplateValidation indicates that the current context is validating a WorkflowTemplate or ClusterWorkflowTemplate
 	WorkflowTemplateValidation bool
+
+	// Submit indicates that the current operation is a workflow submission. This will impose
+	// more stringent requirements (e.g. require input values for all spec arguments)
+	Submit bool
 }
 
 // templateValidationCtx is the context for validating a workflow spec
@@ -149,13 +154,12 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	if err != nil {
 		return nil, errors.Errorf(errors.CodeBadRequest, "spec.templates%s", err.Error())
 	}
-	if ctx.Lint {
-		// if we are just linting we don't care if spec.arguments.parameters.XXX doesn't have an
-		// explicit value. workflows without a default value is a desired use case
-		err = validateArgumentsFieldNames("spec.arguments.", wfArgs)
-	} else {
-		err = validateArguments("spec.arguments.", wfArgs)
-	}
+
+	// if we are linting, we don't care if spec.arguments.parameters.XXX doesn't have an
+	// explicit value. Workflow templates without a default value are also a desired use
+	// case, since values will be provided during workflow submission.
+	allowEmptyValues := ctx.Lint || (ctx.WorkflowTemplateValidation && !ctx.Submit)
+	err = validateArguments("spec.arguments.", wfArgs, allowEmptyValues)
 	if err != nil {
 		return nil, err
 	}
@@ -239,7 +243,7 @@ func ValidateWorkflowTemplateRefFields(wfSpec wfv1.WorkflowSpec) error {
 }
 
 // ValidateWorkflowTemplate accepts a workflow template and performs validation against it.
-func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl *wfv1.WorkflowTemplate) (*wfv1.Conditions, error) {
+func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl *wfv1.WorkflowTemplate, opts ValidateOpts) (*wfv1.Conditions, error) {
 	if len(wftmpl.Name) > maxCharsInObjectName {
 		return nil, fmt.Errorf("workflow template name %q must not be more than 63 characters long (currently %d)", wftmpl.Name, len(wftmpl.Name))
 	}
@@ -251,11 +255,13 @@ func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNa
 		},
 		Spec: wftmpl.Spec.WorkflowSpec,
 	}
-	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntrypoint: wf.Spec.Entrypoint == "", WorkflowTemplateValidation: true})
+	opts.IgnoreEntrypoint = wf.Spec.Entrypoint == ""
+	opts.WorkflowTemplateValidation = true
+	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, opts)
 }
 
 // ValidateClusterWorkflowTemplate accepts a cluster workflow template and performs validation against it.
-func ValidateClusterWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, cwftmpl *wfv1.ClusterWorkflowTemplate) (*wfv1.Conditions, error) {
+func ValidateClusterWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, cwftmpl *wfv1.ClusterWorkflowTemplate, opts ValidateOpts) (*wfv1.Conditions, error) {
 	if len(cwftmpl.Name) > maxCharsInObjectName {
 		return nil, fmt.Errorf("cluster workflow template name %q must not be more than 63 characters long (currently %d)", cwftmpl.Name, len(cwftmpl.Name))
 	}
@@ -267,7 +273,9 @@ func ValidateClusterWorkflowTemplate(wftmplGetter templateresolution.WorkflowTem
 		},
 		Spec: cwftmpl.Spec.WorkflowSpec,
 	}
-	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntrypoint: wf.Spec.Entrypoint == "", WorkflowTemplateValidation: true})
+	opts.IgnoreEntrypoint = wf.Spec.Entrypoint == ""
+	opts.WorkflowTemplateValidation = true
+	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, opts)
 }
 
 // ValidateCronWorkflow validates a CronWorkflow
@@ -680,12 +688,12 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 	return nil
 }
 
-func validateArguments(prefix string, arguments wfv1.Arguments) error {
+func validateArguments(prefix string, arguments wfv1.Arguments, allowEmptyValues bool) error {
 	err := validateArgumentsFieldNames(prefix, arguments)
 	if err != nil {
 		return err
 	}
-	return validateArgumentsValues(prefix, arguments)
+	return validateArgumentsValues(prefix, arguments, allowEmptyValues)
 }
 
 func validateArgumentsFieldNames(prefix string, arguments wfv1.Arguments) error {
@@ -703,10 +711,12 @@ func validateArgumentsFieldNames(prefix string, arguments wfv1.Arguments) error 
 }
 
 // validateArgumentsValues ensures that all arguments have parameter values or artifact locations
-func validateArgumentsValues(prefix string, arguments wfv1.Arguments) error {
+func validateArgumentsValues(prefix string, arguments wfv1.Arguments, allowEmptyValues bool) error {
 	for _, param := range arguments.Parameters {
 		if param.ValueFrom == nil && param.Value == nil {
-			return errors.Errorf(errors.CodeBadRequest, "%s%s.value is required", prefix, param.Name)
+			if !allowEmptyValues {
+				return errors.Errorf(errors.CodeBadRequest, "%s%s.value is required", prefix, param.Name)
+			}
 		}
 		if param.Enum != nil {
 			if len(param.Enum) == 0 {
@@ -761,7 +771,7 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 			if err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
 			}
-			err = validateArguments(fmt.Sprintf("templates.%s.steps[%d].%s.arguments.", tmpl.Name, i, step.Name), step.Arguments)
+			err = validateArguments(fmt.Sprintf("templates.%s.steps[%d].%s.arguments.", tmpl.Name, i, step.Name), step.Arguments, false)
 			if err != nil {
 				return err
 			}
@@ -894,6 +904,7 @@ func (ctx *templateValidationCtx) addOutputsToScope(tmpl *wfv1.Template, prefix 
 		case wfv1.TemplateTypeScript, wfv1.TemplateTypeContainerSet:
 			scope[fmt.Sprintf("%s.outputs.result", prefix)] = true
 			scope[fmt.Sprintf("%s.exitCode", prefix)] = true
+			scope[fmt.Sprintf("%s.outputs.parameters", prefix)] = true
 		default:
 			scope[fmt.Sprintf("%s.outputs.parameters", prefix)] = true
 		}
@@ -1265,7 +1276,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
-		err = validateArguments(fmt.Sprintf("templates.%s.tasks.%s.arguments.", tmpl.Name, task.Name), task.Arguments)
+		err = validateArguments(fmt.Sprintf("templates.%s.tasks.%s.arguments.", tmpl.Name, task.Name), task.Arguments, false)
 		if err != nil {
 			return err
 		}

@@ -16,7 +16,7 @@ jobs:
   build-linux-amd64:
     name: Build & push linux/amd64
     if: github.repository == 'argoproj/argo-workflows'
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         platform: [ linux/amd64 ]
@@ -82,7 +82,7 @@ jobs:
   build-linux-arm64:
     name: Build & push linux/arm64
     if: github.repository == 'argoproj/argo-workflows'
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         platform: [ linux/arm64 ]
@@ -193,7 +193,7 @@ jobs:
   push-images:
     name: Push manifest with all images
     if: github.repository == 'argoproj/argo-workflows'
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     needs: [ build-linux-amd64, build-linux-arm64, build-windows ]
     steps:
       - uses: actions/checkout@v2
@@ -242,7 +242,7 @@ jobs:
   test-images-linux-amd64:
     name: Try pulling linux/amd64
     if: github.repository == 'argoproj/argo-workflows'
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     needs: [ push-images ]
     strategy:
       matrix:
@@ -313,7 +313,7 @@ jobs:
           done
 
   publish-release:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     if: github.repository == 'argoproj/argo-workflows'
     needs: [ push-images, test-images-linux-amd64, test-images-windows ]
     env:
@@ -329,7 +329,7 @@ jobs:
           key: ${{ runner.os }}-node-dep-v1-${{ hashFiles('**/yarn.lock') }}
       - uses: actions/setup-go@v2
         with:
-          go-version: "1.16"
+          go-version: "1.17"
       - uses: actions/cache@v2
         with:
           path: /home/runner/.cache/go-build

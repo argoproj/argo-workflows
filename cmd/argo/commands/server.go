@@ -23,7 +23,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	restclient "k8s.io/client-go/rest"
-	"k8s.io/utils/env"
 
 	"github.com/argoproj/argo-workflows/v3"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
@@ -48,9 +47,11 @@ func NewServerCommand() *cobra.Command {
 		htst                     bool
 		namespaced               bool   // --namespaced
 		managedNamespace         string // --managed-namespace
+		ssoNamespace             string
 		enableOpenBrowser        bool
 		eventOperationQueueSize  int
 		eventWorkerCount         int
+		eventAsyncDispatch       bool
 		frameOptions             string
 		accessControlAllowOrigin string
 		logFormat                string // --log-format
@@ -144,11 +145,29 @@ See %s`, help.ArgoServer),
 				log.Warn("You are running without client authentication. Learn how to enable client authentication: https://argoproj.github.io/argo-workflows/argo-server-auth-mode/")
 			}
 
+			if namespaced {
+				// Case 1: If ssoNamespace is not specified, default it to installation namespace
+				if ssoNamespace == "" {
+					ssoNamespace = namespace
+				}
+				// Case 2: If ssoNamespace is not equal to installation or managed namespace, default it to installation namespace
+				if ssoNamespace != namespace && ssoNamespace != managedNamespace {
+					log.Warn("--sso-namespace should be equal to --managed-namespace or the installation namespace")
+					ssoNamespace = namespace
+				}
+			} else {
+				if ssoNamespace != "" {
+					log.Warn("ignoring --sso-namespace because --namespaced is false")
+				}
+				ssoNamespace = namespace
+			}
 			opts := apiserver.ArgoServerOpts{
 				BaseHRef:                 baseHRef,
 				TLSConfig:                tlsConfig,
 				HSTS:                     htst,
+				Namespaced:               namespaced,
 				Namespace:                namespace,
+				SSONameSpace:             ssoNamespace,
 				Clients:                  clients,
 				RestConfig:               config,
 				AuthModes:                modes,
@@ -156,6 +175,7 @@ See %s`, help.ArgoServer),
 				ConfigName:               configMap,
 				EventOperationQueueSize:  eventOperationQueueSize,
 				EventWorkerCount:         eventWorkerCount,
+				EventAsyncDispatch:       eventAsyncDispatch,
 				XFrameOptions:            frameOptions,
 				AccessControlAllowOrigin: accessControlAllowOrigin,
 			}
@@ -192,8 +212,13 @@ See %s`, help.ArgoServer),
 		},
 	}
 
+	defaultBaseHRef := os.Getenv("BASE_HREF")
+	if defaultBaseHRef == "" {
+		defaultBaseHRef = "/"
+	}
+
 	command.Flags().IntVarP(&port, "port", "p", 2746, "Port to listen on")
-	command.Flags().StringVar(&baseHRef, "basehref", "/", "Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /. Defaults to the environment variable BASE_HREF.")
+	command.Flags().StringVar(&baseHRef, "basehref", defaultBaseHRef, "Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /. Defaults to the environment variable BASE_HREF.")
 	// "-e" for encrypt, like zip
 	command.Flags().BoolVarP(&secure, "secure", "e", true, "Whether or not we should listen on TLS.")
 	command.Flags().StringVar(&tlsCertificateSecretName, "tls-certificate-secret-name", "", "The name of a Kubernetes secret that contains the server certificates")
@@ -202,9 +227,11 @@ See %s`, help.ArgoServer),
 	command.Flags().StringVar(&configMap, "configmap", "workflow-controller-configmap", "Name of K8s configmap to retrieve workflow controller configuration")
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that watches, default to the installation namespace")
+	command.Flags().StringVar(&ssoNamespace, "sso-namespace", "", "namespace that will be used for SSO RBAC. Defaults to installation namespace. Used only in namespaced mode")
 	command.Flags().BoolVarP(&enableOpenBrowser, "browser", "b", false, "enable automatic launching of the browser [local mode]")
 	command.Flags().IntVar(&eventOperationQueueSize, "event-operation-queue-size", 16, "how many events operations that can be queued at once")
 	command.Flags().IntVar(&eventWorkerCount, "event-worker-count", 4, "how many event workers to run")
+	command.Flags().BoolVar(&eventAsyncDispatch, "event-async-dispatch", false, "dispatch event async")
 	command.Flags().StringVar(&frameOptions, "x-frame-options", "DENY", "Set X-Frame-Options header in HTTP responses.")
 	command.Flags().StringVar(&accessControlAllowOrigin, "access-control-allow-origin", "", "Set Access-Control-Allow-Origin header in HTTP responses.")
 	command.Flags().StringVar(&logFormat, "log-format", "text", "The formatter to use for logs. One of: text|json")

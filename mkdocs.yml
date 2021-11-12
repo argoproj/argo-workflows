@@ -60,6 +60,7 @@ nav:
           - memoization.md
           - tolerating-pod-deletion.md
           - widgets.md
+          - retries.md
       # all other topics, including API access
       - Advanced:
           - workflow-restrictions.md
@@ -70,6 +71,7 @@ nav:
           - swagger.md
           - rest-api.md
           - rest-examples.md
+          - client-libraries.md
           - events.md
           - webhooks.md
           - submit-workflow-via-automation.md
@@ -87,6 +89,8 @@ nav:
           - argo archive delete: cli/argo_archive_delete.md
           - argo archive get: cli/argo_archive_get.md
           - argo archive list: cli/argo_archive_list.md
+          - argo archive list-label-keys: cli/argo_archive_list-label-keys.md
+          - argo archive list-label-values: cli/argo_archive_list-label-values.md
           - argo auth: cli/argo_auth.md
           - argo auth token: cli/argo_auth_token.md
           - argo cluster-template: cli/argo_cluster-template.md

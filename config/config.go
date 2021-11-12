@@ -46,7 +46,7 @@ type Config struct {
 	// KubeConfig specifies a kube config file for the wait & init containers
 	KubeConfig *KubeConfig `json:"kubeConfig,omitempty"`
 
-	// ContainerRuntimeExecutor specifies the container runtime interface to use, default is docker
+	// ContainerRuntimeExecutor specifies the container runtime interface to use, default is emissary
 	ContainerRuntimeExecutor string `json:"containerRuntimeExecutor,omitempty"`
 
 	ContainerRuntimeExecutors ContainerRuntimeExecutors `json:"containerRuntimeExecutors,omitempty"`
@@ -253,6 +253,15 @@ type MetricsConfig struct {
 	Port int `json:"port,omitempty"`
 	// IgnoreErrors is a flag that instructs prometheus to ignore metric emission errors
 	IgnoreErrors bool `json:"ignoreErrors,omitempty"`
+	// Secure is a flag that starts the metrics servers using TLS
+	Secure *bool `json:"secure,omitempty"`
+}
+
+func (mc MetricsConfig) GetSecure(defaultValue bool) bool {
+	if mc.Secure != nil {
+		return *mc.Secure
+	}
+	return defaultValue
 }
 
 type WorkflowRestrictions struct {

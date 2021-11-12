@@ -20,6 +20,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/env"
@@ -42,6 +43,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	"github.com/argoproj/argo-workflows/v3/server/auth/sso"
 	"github.com/argoproj/argo-workflows/v3/server/auth/webhook"
+	"github.com/argoproj/argo-workflows/v3/server/cache"
 	"github.com/argoproj/argo-workflows/v3/server/clusterworkflowtemplate"
 	"github.com/argoproj/argo-workflows/v3/server/cronworkflow"
 	"github.com/argoproj/argo-workflows/v3/server/event"
@@ -78,13 +80,16 @@ type argoServer struct {
 	stopCh                   chan struct{}
 	eventQueueSize           int
 	eventWorkerCount         int
+	eventAsyncDispatch       bool
 	xframeOptions            string
 	accessControlAllowOrigin string
+	cache                    *cache.ResourceCache
 }
 
 type ArgoServerOpts struct {
 	BaseHRef   string
 	TLSConfig  *tls.Config
+	Namespaced bool
 	Namespace  string
 	Clients    *types.Clients
 	RestConfig *rest.Config
@@ -92,9 +97,11 @@ type ArgoServerOpts struct {
 	// config map name
 	ConfigName               string
 	ManagedNamespace         string
+	SSONameSpace             string
 	HSTS                     bool
 	EventOperationQueueSize  int
 	EventWorkerCount         int
+	EventAsyncDispatch       bool
 	XFrameOptions            string
 	AccessControlAllowOrigin string
 }
@@ -107,8 +114,16 @@ func init() {
 	}
 }
 
+func getResourceCacheNamespace(opts ArgoServerOpts) string {
+	if opts.Namespaced {
+		return opts.SSONameSpace
+	}
+	return v1.NamespaceAll
+}
+
 func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error) {
 	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.Clients.Kubernetes, emptyConfigFunc)
+	var resourceCache *cache.ResourceCache = nil
 	ssoIf := sso.NullSSO
 	if opts.AuthModes[auth.SSO] {
 		c, err := configController.Get(ctx)
@@ -119,11 +134,12 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		if err != nil {
 			return nil, err
 		}
+		resourceCache = cache.NewResourceCache(opts.Clients.Kubernetes, ctx, getResourceCacheNamespace(opts))
 		log.Info("SSO enabled")
 	} else {
 		log.Info("SSO disabled")
 	}
-	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Clients, opts.RestConfig, ssoIf, auth.DefaultClientForAuthorization, opts.Namespace)
+	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Clients, opts.RestConfig, ssoIf, auth.DefaultClientForAuthorization, opts.Namespace, opts.SSONameSpace, opts.Namespaced, resourceCache)
 	if err != nil {
 		return nil, err
 	}
@@ -140,8 +156,10 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		stopCh:                   make(chan struct{}),
 		eventQueueSize:           opts.EventOperationQueueSize,
 		eventWorkerCount:         opts.EventWorkerCount,
+		eventAsyncDispatch:       opts.EventAsyncDispatch,
 		xframeOptions:            opts.XFrameOptions,
 		accessControlAllowOrigin: opts.AccessControlAllowOrigin,
+		cache:                    resourceCache,
 	}, nil
 }
 
@@ -181,7 +199,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	eventRecorderManager := events.NewEventRecorderManager(as.clients.Kubernetes)
 	artifactRepositories := artifactrepositories.New(as.clients.Kubernetes, as.managedNamespace, &config.ArtifactRepository)
 	artifactServer := artifacts.NewArtifactServer(as.gatekeeper, hydrator.New(offloadRepo), wfArchive, instanceIDService, artifactRepositories)
-	eventServer := event.NewController(instanceIDService, eventRecorderManager, as.eventQueueSize, as.eventWorkerCount)
+	eventServer := event.NewController(instanceIDService, eventRecorderManager, as.eventQueueSize, as.eventWorkerCount, as.eventAsyncDispatch)
 	grpcServer := as.newGRPCServer(instanceIDService, offloadRepo, wfArchive, eventServer, config.Links)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 

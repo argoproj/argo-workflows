@@ -22,7 +22,7 @@ spec:
 
     - name: container
       container:
-        image: golang:1.16
+        image: golang:1.17
         args:
           - sh
           - -c
@@ -48,7 +48,7 @@ spec:
         env:
           - name: GOCACHE
             value: /tmp/.gocache
-        image: golang:1.16
+        image: golang:1.17
         path: examples/git
         url: https://github.com/argoproj-labs/argo-dataflow
       sources:

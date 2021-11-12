@@ -12,34 +12,6 @@ import (
 
 var d = uint64(1)
 
-func TestGitArtifactDriver_Load(t *testing.T) {
-	for _, tt := range []struct {
-		url string
-	}{
-		{"https://github.com/argoproj/argo-workflows.git"},
-	} {
-		_ = os.Remove("git-ask-pass.sh")
-		driver := &ArtifactDriver{}
-		path := "/tmp/git-found"
-		assert.NoError(t, os.RemoveAll(path))
-		assert.NoError(t, os.MkdirAll(path, 0o777))
-		err := driver.Load(&wfv1.Artifact{
-			ArtifactLocation: wfv1.ArtifactLocation{
-				Git: &wfv1.GitArtifact{
-					Repo:     tt.url,
-					Fetch:    []string{"+refs/heads/*:refs/remotes/origin/*"},
-					Revision: "HEAD",
-					Depth:    &d,
-				},
-			},
-		}, path)
-		if assert.NoError(t, err) {
-			_, err := os.Stat(path)
-			assert.NoError(t, err)
-		}
-	}
-}
-
 func TestGitArtifactDriver_Save(t *testing.T) {
 	driver := &ArtifactDriver{}
 	err := driver.Save("", nil)
@@ -50,7 +22,6 @@ func TestGitArtifactDriverLoad_HTTPS(t *testing.T) {
 	for _, tt := range []struct {
 		url string
 	}{
-		{"https://github.com/argoproj/argo-workflows.git"},
 		{"https://github.com/argoproj/empty.git"},
 	} {
 		if os.Getenv("GITHUB_TOKEN") == "" {
@@ -77,6 +48,7 @@ func TestGitArtifactDriverLoad_HTTPS(t *testing.T) {
 }
 
 func TestGitArtifactDriverLoad_SSL(t *testing.T) {
+	t.SkipNow()
 	for _, tt := range []struct {
 		name     string
 		insecure bool
