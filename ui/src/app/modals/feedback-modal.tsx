@@ -9,18 +9,14 @@ export const FeedbackModal = ({dismiss}: {dismiss: () => void}) => {
     return (
         <Modal dismiss={dismiss}>
             <h3 style={{textAlign: 'center'}}>How's it going so far?</h3>
-            {!choice ? (
-                <div style={{textAlign: 'center'}}>
-                    <BigButton icon='smile-beam' title='Great' onClick={() => setChoice(1)} />
-                    <BigButton icon='frown-open' title='Not so good' href='#' onClick={() => setChoice(2)} />
-                </div>
-            ) : (
-                <>
-                    <p style={{textAlign: 'center'}}>Could you help us improve our product by completing a short survey?</p>
-                    <p style={{textAlign: 'center'}}>
-                        <SurveyButton />
-                    </p>
-                </>
+            <div style={{textAlign: 'center'}}>
+                <BigButton icon='smile-beam' title='Great' onClick={() => setChoice(1)} />
+                <BigButton icon='frown-open' title='Not so good' href='#' onClick={() => setChoice(2)} />
+            </div>
+            {choice !== 0 && (
+                <p style={{textAlign: 'center', paddingTop: 20}}>
+                    <SurveyButton />
+                </p>
             )}
         </Modal>
     );
