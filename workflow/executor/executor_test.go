@@ -371,10 +371,9 @@ func TestSaveArtifacts(t *testing.T) {
 }
 
 func TestMonitorProgress(t *testing.T) {
-	t.Skip("https://github.com/argoproj/argo-workflows/issues/7148")
 	deadline, ok := t.Deadline()
 	if !ok {
-		deadline = time.Now().Add(30 * time.Second)
+		deadline = time.Now().Add(time.Second)
 	}
 	ctx, cancel := context.WithDeadline(context.Background(), deadline)
 	defer cancel()
@@ -408,8 +407,8 @@ func TestMonitorProgress(t *testing.T) {
 		err = os.Remove(name)
 		assert.NoError(t, err)
 	}()
-	annotationPackTickDuration := 5 * time.Second
-	readProgressFileTickDuration := 1 * time.Second
+	annotationPackTickDuration := 5 * time.Millisecond
+	readProgressFileTickDuration := time.Millisecond
 	progressFile := f.Name()
 
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
@@ -420,7 +419,7 @@ func TestMonitorProgress(t *testing.T) {
 	go func(ctx context.Context) {
 		progress := 0
 		maxProgress := 10
-		tickDuration := 1 * time.Second
+		tickDuration := time.Millisecond
 		ticker := time.After(tickDuration)
 		for {
 			select {
