@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"plugin"
 	"strconv"
 	"syscall"
 	"time"
@@ -120,7 +119,7 @@ type WorkflowController struct {
 	// progressFileTickDuration defines how often the progress file is read.
 	// Default is 3s and can be configured using the env var ARGO_PROGRESS_FILE_TICK_DURATION
 	progressFileTickDuration time.Duration
-	plugins                  []plugin.Symbol
+	plugins                  bool
 }
 
 const (
@@ -133,7 +132,7 @@ const (
 )
 
 // NewWorkflowController instantiates a new WorkflowController
-func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap string) (*WorkflowController, error) {
+func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap string, plugins bool) (*WorkflowController, error) {
 	dynamicInterface, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
 		return nil, err
@@ -155,6 +154,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
 		progressPatchTickDuration:  env.LookupEnvDurationOr(common.EnvVarProgressPatchTickDuration, 1*time.Minute),
 		progressFileTickDuration:   env.LookupEnvDurationOr(common.EnvVarProgressFileTickDuration, 3*time.Second),
+		plugins:                    plugins,
 	}
 
 	wfc.UpdateConfig(ctx)
@@ -207,7 +207,7 @@ var indexers = cache.Indexers{
 }
 
 // Run starts an Workflow resource controller
-func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podWorkers, podCleanupWorkers int, plugins bool) {
+func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podWorkers, podCleanupWorkers int) {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -248,14 +248,6 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	// Wait for all involved caches to be synced, before processing items from the queue is started
 	if !cache.WaitForCacheSync(ctx.Done(), wfc.wfInformer.HasSynced, wfc.wftmplInformer.Informer().HasSynced, wfc.podInformer.HasSynced, wfc.configMapInformer.HasSynced) {
 		log.Fatal("Timed out waiting for caches to sync")
-	}
-
-	log.WithField("plugins", plugins).Info("plugins")
-
-	if plugins {
-		if err := wfc.loadPlugins(); err != nil {
-			log.Fatal(err)
-		}
 	}
 
 	wfc.createClusterWorkflowTemplateInformer(ctx)
@@ -1081,6 +1073,18 @@ func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer 
 	}, func(opts *metav1.ListOptions) {
 		opts.LabelSelector = indexes.ConfigMapTypeLabel
 	})
+}
+
+func (wfc *WorkflowController) getConfigMaps(namespace string, configMapType string) ([]*apiv1.ConfigMap, error) {
+	objs, err := wfc.configMapInformer.GetIndexer().ByIndex(indexes.ConfigMapLabelsIndex, indexes.ConfigMapIndexValue(namespace, configMapType))
+	if err != nil {
+		return nil, err
+	}
+	cms := make([]*apiv1.ConfigMap, len(objs))
+	for i, obj := range objs {
+		cms[i] = obj.(*apiv1.ConfigMap)
+	}
+	return cms, nil
 }
 
 // call this func whenever the configuration changes, or when the workflow informer changes

@@ -1,91 +1,44 @@
 package rpc
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 
-	log "github.com/sirupsen/logrus"
-
-	plugins "github.com/argoproj/argo-workflows/v3/pkg/plugins/controller"
-	"github.com/argoproj/argo-workflows/v3/util/errors"
+	controllerplugins "github.com/argoproj/argo-workflows/v3/pkg/plugins/controller"
+	plugins "github.com/argoproj/argo-workflows/v3/workflow/util/plugins"
 )
 
-type plugin struct {
-	address string
-	invalid map[string]bool
-}
+type plugin struct{ plugins.Plugin }
 
-func New(data map[string]string) (interface{}, error) { //nolint:deadcode,unparam
+func New(data map[string]string) (*plugin, error) { //nolint:deadcode,unparam
 	address, ok := data["address"]
 	if !ok {
 		return nil, fmt.Errorf("address not specfied")
 	}
-	return &plugin{address: address, invalid: map[string]bool{}}, nil
+	return &plugin{Plugin: plugins.New(address)}, nil
 }
 
-func (p *plugin) call(method string, args interface{}, reply interface{}) error {
-	if p.invalid[method] {
-		return nil
-	}
-	req, err := json.Marshal(args)
-	if err != nil {
-		return err
-	}
-	resp, err := http.Post(fmt.Sprintf("%s/%s", p.address, method), "application/json", bytes.NewBuffer(req))
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	switch resp.StatusCode {
-	case 200:
-		return json.NewDecoder(resp.Body).Decode(reply)
-	case 404:
-		log.WithField("address", p.invalid).
-			WithField("method", method).
-			Info("method not found, never calling again")
-		p.invalid[method] = true
-		_, err := io.Copy(io.Discard, resp.Body)
-		return err
-	case 503:
-		data, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return err
-		}
-		return errors.NewErrTransient(string(data))
-	default:
-		data, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return err
-		}
-		return fmt.Errorf("%s: %s", resp.Status, string(data))
-	}
+var _ controllerplugins.WorkflowLifecycleHook = &plugin{}
+
+func (p *plugin) WorkflowPreOperate(args controllerplugins.WorkflowPreOperateArgs, reply *controllerplugins.WorkflowPreOperateReply) error {
+	return p.Call("workflow.preOperate", args, reply)
 }
 
-var _ plugins.WorkflowLifecycleHook = &plugin{}
-
-func (p *plugin) WorkflowPreOperate(args plugins.WorkflowPreOperateArgs, reply *plugins.WorkflowPreOperateReply) error {
-	return p.call("WorkflowLifecycleHook.WorkflowPreOperate", args, reply)
+func (p *plugin) WorkflowPostOperate(args controllerplugins.WorkflowPostOperateArgs, reply *controllerplugins.WorkflowPostOperateReply) error {
+	return p.Call("workflow.postOperate", args, reply)
 }
 
-func (p *plugin) WorkflowPostOperate(args plugins.WorkflowPostOperateArgs, reply *plugins.WorkflowPostOperateReply) error {
-	return p.call("WorkflowLifecycleHook.WorkflowPostOperate", args, reply)
+var _ controllerplugins.NodeLifecycleHook = &plugin{}
+
+func (p *plugin) NodePreExecute(args controllerplugins.NodePreExecuteArgs, reply *controllerplugins.NodePreExecuteReply) error {
+	return p.Call("node.preExecute", args, reply)
 }
 
-var _ plugins.NodeLifecycleHook = &plugin{}
-
-func (p *plugin) NodePreExecute(args plugins.NodePreExecuteArgs, reply *plugins.NodePreExecuteReply) error {
-	return p.call("NodeLifecycleHook.NodePreExecute", args, reply)
+func (p *plugin) NodePostExecute(args controllerplugins.NodePostExecuteArgs, reply *controllerplugins.NodePostExecuteReply) error {
+	return p.Call("node.postExecute", args, reply)
 }
 
-func (p *plugin) NodePostExecute(args plugins.NodePostExecuteArgs, reply *plugins.NodePostExecuteReply) error {
-	return p.call("NodeLifecycleHook.NodePostExecute", args, reply)
-}
+var _ controllerplugins.ParameterSubstitutionPlugin = &plugin{}
 
-var _ plugins.ParameterSubstitutionPlugin = &plugin{}
-
-func (p *plugin) ParameterPreSubstitution(args plugins.ParameterPreSubstitutionArgs, reply *plugins.ParameterPreSubstitutionReply) error {
-	return p.call("ParameterSubstitutionPlugin.ParameterPreSubstitution", args, reply)
+func (p *plugin) AddParameters(args controllerplugins.ParameterPreSubstitutionArgs, reply *controllerplugins.ParameterPreSubstitutionReply) error {
+	return p.Call("parameters.add", args, reply)
 }

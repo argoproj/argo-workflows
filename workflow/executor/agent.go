@@ -20,6 +20,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
+	agentplugins "github.com/argoproj/argo-workflows/v3/pkg/plugins/agent"
 	"github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	argohttp "github.com/argoproj/argo-workflows/v3/workflow/executor/http"
@@ -32,7 +33,10 @@ type AgentExecutor struct {
 	RESTClient        rest.Interface
 	Namespace         string
 	CompleteTask      map[string]struct{}
+	Plugins           []agentplugins.TemplateExecutor
 }
+
+type templateExecutor = func(ctx context.Context, tmpl wfv1.Template, reply *wfv1.NodeResult) error
 
 func (ae *AgentExecutor) Agent(ctx context.Context) error {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
@@ -57,7 +61,7 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 				return apierr.FromObject(event.Object)
 			}
 			if IsWorkflowCompleted(obj) {
-				log.WithField("taskset", ae.WorkflowName).Info("stopped agent")
+				log.WithField("taskset", ae.WorkflowName).Info("stopped plugins")
 				os.Exit(0)
 			}
 			tasks := obj.Spec.Tasks
@@ -67,54 +71,56 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 					continue
 				}
 
+				var executeTemplate templateExecutor
 				switch {
 				case tmpl.HTTP != nil:
-					result := wfv1.NodeResult{}
-					if outputs, err := ae.executeHTTPTemplate(ctx, tmpl); err != nil {
-						result.Phase = wfv1.NodeFailed
-						result.Message = err.Error()
-					} else {
-						result.Phase = wfv1.NodeSucceeded
-						result.Outputs = outputs
-					}
-
-					nodeResults := map[string]wfv1.NodeResult{}
-
-					nodeResults[nodeID] = result
-
-					patch, err := json.Marshal(map[string]interface{}{"status": wfv1.WorkflowTaskSetStatus{Nodes: nodeResults}})
-
-					if err != nil {
-						return errors.InternalWrapError(err)
-					}
-
-					log.WithFields(log.Fields{"taskset": obj, "workflow": ae.WorkflowName, "namespace": ae.Namespace}).Infof("Patch content, %s", patch)
-
-					obj, err = taskSetInterface.Patch(ctx, ae.WorkflowName, types.MergePatchType, patch, metav1.PatchOptions{})
-
-					log.WithField("taskset", obj).Infof("updated content, %s", patch)
-
-					ae.CompleteTask[nodeID] = struct{}{}
-
-					if err != nil {
-						log.WithError(err).WithField("taskset", obj).Errorf("failed to update the taskset")
-					}
+					executeTemplate = ae.executeHTTPTemplate
+				case tmpl.Plugin != nil:
+					executeTemplate = ae.executePluginTemplate
 				default:
-					return fmt.Errorf("agent cannot execute: unknown task type")
+					return fmt.Errorf("plugins cannot execute: unknown task type")
+				}
+
+				result := wfv1.NodeResult{}
+				if err := executeTemplate(ctx, tmpl, &result); err != nil {
+					result.Phase = wfv1.NodeFailed
+					result.Message = err.Error()
+				}
+
+				nodeResults := map[string]wfv1.NodeResult{}
+
+				nodeResults[nodeID] = result
+
+				patch, err := json.Marshal(map[string]interface{}{"status": wfv1.WorkflowTaskSetStatus{Nodes: nodeResults}})
+
+				if err != nil {
+					return errors.InternalWrapError(err)
+				}
+
+				log.WithFields(log.Fields{"taskset": obj, "workflow": ae.WorkflowName, "namespace": ae.Namespace}).Infof("Patch content, %s", patch)
+
+				obj, err = taskSetInterface.Patch(ctx, ae.WorkflowName, types.MergePatchType, patch, metav1.PatchOptions{})
+
+				log.WithField("taskset", obj).Infof("updated content, %s", patch)
+
+				ae.CompleteTask[nodeID] = struct{}{}
+
+				if err != nil {
+					log.WithError(err).WithField("taskset", obj).Errorf("failed to update the taskset")
 				}
 			}
 		}
 	}
 }
 
-func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Template) (*wfv1.Outputs, error) {
+func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Template, reply *wfv1.NodeResult) error {
 	if tmpl.HTTP == nil {
-		return nil, fmt.Errorf("attempting to execute template that is not of type HTTP")
+		return fmt.Errorf("attempting to execute template that is not of type HTTP")
 	}
 	httpTemplate := tmpl.HTTP
 	request, err := http.NewRequest(httpTemplate.Method, httpTemplate.URL, bytes.NewBufferString(httpTemplate.Body))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	for _, header := range httpTemplate.Headers {
@@ -122,7 +128,7 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Temp
 		if header.ValueFrom != nil && header.ValueFrom.SecretKeyRef != nil {
 			secret, err := util.GetSecrets(ctx, ae.ClientSet, ae.Namespace, header.ValueFrom.SecretKeyRef.Name, header.ValueFrom.SecretKeyRef.Key)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			value = string(secret)
 		}
@@ -130,12 +136,31 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Temp
 	}
 	response, err := argohttp.SendHttpRequest(request, httpTemplate.TimeoutSeconds)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	outputs := &wfv1.Outputs{}
-	outputs.Parameters = append(outputs.Parameters, wfv1.Parameter{Name: "result", Value: wfv1.AnyStringPtr(response)})
+	reply.Phase = wfv1.NodeSucceeded
+	reply.Outputs = &wfv1.Outputs{
+		Parameters: []wfv1.Parameter{{Name: "result", Value: wfv1.AnyStringPtr(response)}},
+	}
+	return nil
+}
 
-	return outputs, nil
+func (ae *AgentExecutor) executePluginTemplate(_ context.Context, tmpl wfv1.Template, result *wfv1.NodeResult) error {
+	args := agentplugins.ExecuteTemplateArgs{
+		Workflow: &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{Name: ae.WorkflowName},
+		},
+		Template: &tmpl,
+	}
+	reply := &agentplugins.ExecuteTemplateReply{}
+	for _, plug := range ae.Plugins {
+		if err := plug.ExecuteTemplate(args, reply); err != nil {
+			return err
+		} else if reply.Node != nil {
+			*result = *reply.Node
+		}
+	}
+	return nil
 }
 
 func IsWorkflowCompleted(wts *wfv1.WorkflowTaskSet) bool {

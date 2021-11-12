@@ -77,7 +77,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 class Plugin(BaseHTTPRequestHandler):
 
     def do_POST(self):
-        if self.path == "/WorkflowLifecycleHook.WorkflowPreOperate":
+        if self.path == "/workflow.preOperate":
             print("hello")
             self.send_response(200)
             self.end_headers()

@@ -9,6 +9,7 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
+	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -80,6 +81,11 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		}
 	}
 
+	pluginSidecars, pluginAddresses, err := woc.getAgentPlugins()
+	if err != nil {
+		return nil, err
+	}
+
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      podName,
@@ -95,17 +101,19 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		Spec: apiv1.PodSpec{
 			RestartPolicy:    apiv1.RestartPolicyOnFailure,
 			ImagePullSecrets: woc.execWf.Spec.ImagePullSecrets,
-			Containers: []apiv1.Container{
-				{
+			Containers: append(
+				pluginSidecars,
+				apiv1.Container{
 					Name:    "main",
 					Command: []string{"argoexec"},
 					Args:    []string{"agent"},
 					Image:   woc.controller.executorImage(),
 					Env: []apiv1.EnvVar{
 						{Name: common.EnvVarWorkflowName, Value: woc.wf.Name},
+						{Name: common.EnvVarPluginAddresses, Value: wfv1.MustMarshallJSON(pluginAddresses)},
 					},
 				},
-			},
+			),
 		},
 	}
 
@@ -129,4 +137,47 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	}
 	woc.log.Infof("Created Agent pod: %s", created.Name)
 	return created, nil
+}
+
+func (woc *wfOperationCtx) getAgentPlugins() ([]apiv1.Container, []string, error) {
+	var sidecars []apiv1.Container
+	var addresses []string
+	if woc.controller.plugins {
+		namespaces := map[string]bool{}
+		namespaces[woc.controller.namespace] = true
+		namespaces[woc.wf.Namespace] = true
+		for namespace := range namespaces {
+			cms, err := woc.controller.getConfigMaps(namespace, "AgentPlugin")
+			if err != nil {
+				return nil, nil, err
+			}
+			for _, cm := range cms {
+				var command, args []string
+				if v, ok := cm.Data["command"]; ok {
+					if err := yaml.Unmarshal([]byte(v), &command); err != nil {
+						return nil, nil, fmt.Errorf("failed to parse %q: %w", v, err)
+					}
+				}
+				if v, ok := cm.Data["args"]; ok {
+					if err := yaml.Unmarshal([]byte(v), &args); err != nil {
+						return nil, nil, fmt.Errorf("failed to parse %q: %w", v, err)
+					}
+				}
+				image, address := cm.Data["image"], cm.Data["address"]
+				log.WithField("command", command).
+					WithField("args", args).
+					WithField("image", image).
+					WithField("address", address).
+					Debug("adding agent plugins sidecar")
+				sidecars = append(sidecars, apiv1.Container{
+					Name:    cm.Name,
+					Image:   image,
+					Command: command,
+					Args:    args,
+				})
+				addresses = append(addresses, address)
+			}
+		}
+	}
+	return sidecars, addresses, nil
 }

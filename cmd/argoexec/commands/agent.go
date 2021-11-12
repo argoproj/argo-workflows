@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -12,9 +13,11 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3"
 	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
+	agentplugins "github.com/argoproj/argo-workflows/v3/pkg/plugins/agent"
 	"github.com/argoproj/argo-workflows/v3/util/logs"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor"
+	"github.com/argoproj/argo-workflows/v3/workflow/executor/plugins/rpc"
 )
 
 func NewAgentCommand() *cobra.Command {
@@ -49,6 +52,16 @@ func initAgentExecutor() *executor.AgentExecutor {
 	if !ok {
 		log.Fatalf("Unable to determine workflow name from environment variable %s", common.EnvVarWorkflowName)
 	}
+
+	var addresses []string
+	if err := json.Unmarshal([]byte(os.Getenv(common.EnvVarPluginAddresses)), &addresses); err != nil {
+		log.Fatal(err)
+	}
+	var plugins []agentplugins.TemplateExecutor
+	for _, address := range addresses {
+		plugins = append(plugins, rpc.New(address))
+	}
+
 	agentExecutor := executor.AgentExecutor{
 		ClientSet:         clientSet,
 		RESTClient:        restClient,
@@ -56,6 +69,7 @@ func initAgentExecutor() *executor.AgentExecutor {
 		WorkflowName:      workflowName,
 		WorkflowInterface: workflow.NewForConfigOrDie(config),
 		CompleteTask:      make(map[string]struct{}),
+		Plugins:           plugins,
 	}
 	return &agentExecutor
 

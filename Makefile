@@ -445,7 +445,7 @@ ifneq ($(UI),true)
 	@echo "⚠️  not starting UI. If you want to test the UI, run 'make start UI=true' to start it"
 endif
 ifneq ($(PLUGINS),true)
-	@echo "⚠️  not starting plugins. If you want to test plugins, run 'make start PLUGINS=true' to start it"
+	@echo "⚠️  not starting plugins. If you want to test plugins, run 'make start PROFILE=plugins' to start it"
 endif
 	# Check dex, minio, postgres and mysql are in hosts file
 ifeq ($(AUTH_MODE),sso)

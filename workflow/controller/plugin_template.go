@@ -16,5 +16,8 @@ func (woc *wfOperationCtx) executePluginTemplate(nodeName string, templateScope 
 		}
 		return woc.markNodeError(nodeName, err)
 	}
+	if !node.Fulfilled() {
+		woc.taskSet[node.ID] = *tmpl
+	}
 	return node
 }

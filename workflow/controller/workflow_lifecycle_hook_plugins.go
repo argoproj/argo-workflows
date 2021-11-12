@@ -3,16 +3,20 @@ package controller
 import (
 	"context"
 
-	plugins "github.com/argoproj/argo-workflows/v3/pkg/plugins/controller"
+	controllerplugins "github.com/argoproj/argo-workflows/v3/pkg/plugins/controller"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/util/patch"
 )
 
 func (woc *wfOperationCtx) runWorkflowPreOperatePlugins() error {
-	args := plugins.WorkflowPreOperateArgs{Workflow: woc.wf}
-	reply := &plugins.WorkflowPreOperateReply{}
-	for _, sym := range woc.controller.plugins {
-		if plug, ok := sym.(plugins.WorkflowLifecycleHook); ok {
+	plugs, err := woc.controller.getControllerPlugins()
+	if err != nil {
+		return err
+	}
+	args := controllerplugins.WorkflowPreOperateArgs{Workflow: woc.wf}
+	reply := &controllerplugins.WorkflowPreOperateReply{}
+	for _, plug := range plugs {
+		if plug, ok := plug.(controllerplugins.WorkflowLifecycleHook); ok {
 			if err := plug.WorkflowPreOperate(args, reply); err != nil {
 				return err
 			} else if reply.Workflow != nil {
@@ -25,14 +29,18 @@ func (woc *wfOperationCtx) runWorkflowPreOperatePlugins() error {
 	}
 	return nil
 }
-func (woc *wfOperationCtx) runWorkflowPostOperatePlugins(ctx context.Context) {
+func (woc *wfOperationCtx) runWorkflowPostOperatePlugins(ctx context.Context) error {
 	if !woc.updated {
-		return
+		return nil
 	}
-	args := plugins.WorkflowPostOperateArgs{Old: woc.orig, New: woc.wf}
-	reply := &plugins.WorkflowPostOperateReply{}
-	for _, sym := range woc.controller.plugins {
-		if plug, ok := sym.(plugins.WorkflowLifecycleHook); ok {
+	plugs, err := woc.controller.getControllerPlugins()
+	if err != nil {
+		return err
+	}
+	args := controllerplugins.WorkflowPostOperateArgs{Old: woc.orig, New: woc.wf}
+	reply := &controllerplugins.WorkflowPostOperateReply{}
+	for _, plug := range plugs {
+		if plug, ok := plug.(controllerplugins.WorkflowLifecycleHook); ok {
 			if err := plug.WorkflowPostOperate(args, reply); err != nil {
 				if !errorsutil.IsTransientErr(err) {
 					woc.markWorkflowError(ctx, err)
@@ -40,4 +48,5 @@ func (woc *wfOperationCtx) runWorkflowPostOperatePlugins(ctx context.Context) {
 			}
 		}
 	}
+	return nil
 }

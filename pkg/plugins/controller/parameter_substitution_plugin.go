@@ -12,5 +12,5 @@ type ParameterPreSubstitutionReply struct {
 }
 
 type ParameterSubstitutionPlugin interface {
-	ParameterPreSubstitution(args ParameterPreSubstitutionArgs, reply *ParameterPreSubstitutionReply) error
+	AddParameters(args ParameterPreSubstitutionArgs, reply *ParameterPreSubstitutionReply) error
 }

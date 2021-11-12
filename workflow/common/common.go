@@ -104,6 +104,8 @@ const (
 	EnvVarPodName = "ARGO_POD_NAME"
 	// EnvVarWorkflowName
 	EnvVarWorkflowName = "ARGO_WORKFLOW_NAME"
+	// EnvVarPluginAddresses is a list of plugin addresses
+	EnvVarPluginAddresses = "ARGO_PLUGIN_ADDRESSES"
 	// EnvVarContainerName container the container's name for the current pod
 	EnvVarContainerName = "ARGO_CONTAINER_NAME"
 	// EnvVarDeadline is the deadline for the pod

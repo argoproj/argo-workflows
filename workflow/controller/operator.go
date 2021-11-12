@@ -204,7 +204,11 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		}
 		return
 	}
-	defer woc.runWorkflowPostOperatePlugins(ctx)
+	defer func() {
+		if err := woc.runWorkflowPostOperatePlugins(ctx); err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	// Set the Execute workflow spec for execution
 	// ExecWF is a runtime execution spec which merged from Wf, WFT and Wfdefault

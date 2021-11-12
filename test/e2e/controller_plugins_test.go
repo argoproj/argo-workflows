@@ -14,21 +14,21 @@ import (
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
 
-type PluginsSuite struct {
+type ControllerPluginsSuite struct {
 	fixtures.E2ESuite
 }
 
-func (s *PluginsSuite) TestParameterSubstitutionPlugin() {
+func (s *ControllerPluginsSuite) TestParameterSubstitutionPlugin() {
 	s.Given().
-		Workflow("@testdata/plugins/params-workflow.yaml").
+		Workflow("@testdata/plugins/controller/params-workflow.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 
-func (s *PluginsSuite) TestWorkflowLifecycleHookPlugin() {
+func (s *ControllerPluginsSuite) TestWorkflowLifecycleHook() {
 	s.Given().
-		Workflow("@testdata/plugins/workflow-lifecycle-hook-workflow.yaml").
+		Workflow("@testdata/plugins/controller/workflow-lifecycle-hook-workflow.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
@@ -38,9 +38,9 @@ func (s *PluginsSuite) TestWorkflowLifecycleHookPlugin() {
 		})
 }
 
-func (s *PluginsSuite) TestNodeLifecycleHookPlugin() {
+func (s *ControllerPluginsSuite) TestNodeLifecycleHook() {
 	s.Given().
-		Workflow("@testdata/plugins/controller-plugin-template-workflow.yaml").
+		Workflow("@testdata/plugins/controller/controller-plugin-template-workflow.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
@@ -51,6 +51,6 @@ func (s *PluginsSuite) TestNodeLifecycleHookPlugin() {
 		})
 }
 
-func TestPluginsSuite(t *testing.T) {
-	suite.Run(t, new(PluginsSuite))
+func TestControllerPluginsSuite(t *testing.T) {
+	suite.Run(t, new(ControllerPluginsSuite))
 }
