@@ -1254,18 +1254,6 @@ definitions:
         type: array
     title: ExecAction describes a "run in container" action.
     type: object
-  ExecuteTemplateArgs:
-    properties:
-      template:
-        $ref: '#/definitions/Template'
-      workflow:
-        $ref: '#/definitions/Workflow'
-    type: object
-  ExecuteTemplateReply:
-    properties:
-      node:
-        $ref: '#/definitions/NodeResult'
-    type: object
   ExecutorConfig:
     properties:
       serviceAccountName:
@@ -2152,6 +2140,33 @@ definitions:
   NodePhase:
     title: NodePhase is a label for the condition of a node at the current time.
     type: string
+  NodePostExecuteArgs:
+    properties:
+      new:
+        $ref: '#/definitions/NodeStatus'
+      old:
+        $ref: '#/definitions/NodeStatus'
+      template:
+        $ref: '#/definitions/Template'
+      workflow:
+        $ref: '#/definitions/Workflow'
+    type: object
+  NodePostExecuteReply:
+    type: object
+  NodePreExecuteArgs:
+    properties:
+      node:
+        $ref: '#/definitions/NodeStatus'
+      template:
+        $ref: '#/definitions/Template'
+      workflow:
+        $ref: '#/definitions/Workflow'
+    type: object
+  NodePreExecuteReply:
+    properties:
+      node:
+        $ref: '#/definitions/NodeResult'
+    type: object
   NodeResult:
     properties:
       message:
@@ -2484,6 +2499,20 @@ definitions:
         $ref: '#/definitions/AnyString'
       valueFrom:
         $ref: '#/definitions/ValueFrom'
+    type: object
+  ParameterPreSubstitutionArgs:
+    properties:
+      template:
+        $ref: '#/definitions/Template'
+      workflow:
+        $ref: '#/definitions/Workflow'
+    type: object
+  ParameterPreSubstitutionReply:
+    properties:
+      parameters:
+        additionalProperties:
+          type: string
+        type: object
     type: object
   PersistentVolumeAccessMode:
     type: string
@@ -5196,6 +5225,16 @@ definitions:
   WorkflowPhase:
     description: the workflow's phase
     type: string
+  WorkflowPreOperateArgs:
+    properties:
+      workflow:
+        $ref: '#/definitions/Workflow'
+    type: object
+  WorkflowPreOperateReply:
+    properties:
+      workflow:
+        $ref: '#/definitions/Workflow'
+    type: object
   WorkflowSpec:
     properties:
       activeDeadlineSeconds:
@@ -5422,25 +5461,81 @@ definitions:
     type: object
 host: localhost
 info:
-  title: is the API for an agent plugin.
+  title: is the API for a controller plugin.
 paths:
-  /template.execute:
+  /node.postExecute:
     post:
-      operationId: executeTemplate
+      operationId: nodePostExecute
       parameters:
       - in: body
         name: Body
         schema:
-          $ref: '#/definitions/ExecuteTemplateArgs'
+          $ref: '#/definitions/NodePostExecuteArgs'
       responses:
         "200":
-          $ref: '#/responses/executeTemplate'
+          $ref: '#/responses/nodePostExecute'
+  /node.preExecute:
+    post:
+      operationId: nodePreExecute
+      parameters:
+      - in: body
+        name: Body
+        schema:
+          $ref: '#/definitions/NodePreExecuteArgs'
+      responses:
+        "200":
+          $ref: '#/responses/nodePreExecute'
+  /parameters.add:
+    post:
+      operationId: addParameters
+      parameters:
+      - in: body
+        name: Body
+        schema:
+          $ref: '#/definitions/ParameterPreSubstitutionArgs'
+      responses:
+        "200":
+          $ref: '#/responses/addParameters'
+  /workflow.postOperate:
+    post:
+      operationId: workflowPostOperate
+      parameters:
+      - in: body
+        name: Body
+        schema:
+          $ref: '#/definitions/WorkflowPreOperateArgs'
+      responses:
+        "200":
+          $ref: '#/responses/workflowPostOperate'
+  /workflow.preOperate:
+    post:
+      operationId: workflowPreOperate
+      parameters:
+      - in: body
+        name: Body
+        schema:
+          $ref: '#/definitions/WorkflowPreOperateArgs'
+      responses:
+        "200":
+          $ref: '#/responses/workflowPreOperate'
 produces:
 - application/json
 responses:
-  executeTemplate:
+  addParameters:
     schema:
-      $ref: '#/definitions/ExecuteTemplateReply'
+      $ref: '#/definitions/ParameterPreSubstitutionReply'
+  nodePostExecute:
+    schema:
+      $ref: '#/definitions/NodePostExecuteReply'
+  nodePreExecute:
+    schema:
+      $ref: '#/definitions/NodePreExecuteReply'
+  workflowPostOperate:
+    schema:
+      $ref: '#/definitions/WorkflowPreOperateReply'
+  workflowPreOperate:
+    schema:
+      $ref: '#/definitions/WorkflowPreOperateReply'
 schemes:
 - http
 swagger: "2.0"

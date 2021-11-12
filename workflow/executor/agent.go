@@ -78,7 +78,7 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 				case tmpl.Plugin != nil:
 					executeTemplate = ae.executePluginTemplate
 				default:
-					return fmt.Errorf("plugins cannot execute: unknown task type")
+					return fmt.Errorf("plugins cannot execute: unknown task type: %v", tmpl.GetType())
 				}
 
 				result := wfv1.NodeResult{}

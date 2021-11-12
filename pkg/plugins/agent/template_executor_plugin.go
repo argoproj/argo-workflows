@@ -27,5 +27,7 @@ type ExecuteTemplateReply struct {
 
 type TemplateExecutor interface {
 	// swagger:route POST /template.execute executeTemplate
+	//     Responses:
+	//       200: executeTemplate
 	ExecuteTemplate(args ExecuteTemplateArgs, reply *ExecuteTemplateReply) error
 }
