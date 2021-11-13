@@ -104,10 +104,11 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			Containers: append(
 				pluginSidecars,
 				apiv1.Container{
-					Name:    "main",
-					Command: []string{"argoexec"},
-					Args:    []string{"agent"},
-					Image:   woc.controller.executorImage(),
+					Name:            "main",
+					Command:         []string{"argoexec"},
+					Args:            []string{"agent"},
+					Image:           woc.controller.executorImage(),
+					ImagePullPolicy: woc.controller.executorImagePullPolicy(),
 					Env: []apiv1.EnvVar{
 						{Name: common.EnvVarWorkflowName, Value: woc.wf.Name},
 						{Name: common.EnvVarPluginAddresses, Value: wfv1.MustMarshallJSON(pluginAddresses)},

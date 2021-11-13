@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"k8s.io/client-go/util/retry"
 	"net/http"
 	"os"
 
@@ -154,7 +155,12 @@ func (ae *AgentExecutor) executePluginTemplate(_ context.Context, tmpl wfv1.Temp
 	}
 	reply := &agentplugins.ExecuteTemplateReply{}
 	for _, plug := range ae.Plugins {
-		if err := plug.ExecuteTemplate(args, reply); err != nil {
+		err := retry.OnError(retry.DefaultBackoff, func(err error) bool {
+			return true
+		}, func() error {
+			return plug.ExecuteTemplate(args, reply)
+		})
+		if err != nil {
 			return err
 		} else if reply.Node != nil {
 			*result = *reply.Node
