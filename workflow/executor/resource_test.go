@@ -3,6 +3,8 @@ package executor
 import (
 	"io/ioutil"
 	"os"
+	"path"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/util/retry"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor/mocks"
@@ -32,13 +35,11 @@ func TestResourceFlags(t *testing.T) {
 	}
 
 	we := WorkflowExecutor{
-		PodName:            fakePodName,
-		Template:           template,
-		ClientSet:          fakeClientset,
-		Namespace:          fakeNamespace,
-		PodAnnotationsPath: fakeAnnotations,
-		ExecutionControl:   nil,
-		RuntimeExecutor:    &mockRuntimeExecutor,
+		PodName:         fakePodName,
+		Template:        template,
+		ClientSet:       fakeClientset,
+		Namespace:       fakeNamespace,
+		RuntimeExecutor: &mockRuntimeExecutor,
 	}
 	args, err := we.getKubectlArguments("fake", manifestPath, fakeFlags)
 	assert.NoError(t, err)
@@ -75,13 +76,11 @@ func TestResourcePatchFlags(t *testing.T) {
 	}
 
 	we := WorkflowExecutor{
-		PodName:            fakePodName,
-		Template:           template,
-		ClientSet:          fakeClientset,
-		Namespace:          fakeNamespace,
-		PodAnnotationsPath: fakeAnnotations,
-		ExecutionControl:   nil,
-		RuntimeExecutor:    &mockRuntimeExecutor,
+		PodName:         fakePodName,
+		Template:        template,
+		ClientSet:       fakeClientset,
+		Namespace:       fakeNamespace,
+		RuntimeExecutor: &mockRuntimeExecutor,
 	}
 	args, err := we.getKubectlArguments("patch", manifestPath, nil)
 
@@ -109,16 +108,13 @@ func TestResourcePatchFlagsJson(t *testing.T) {
 	}
 
 	we := WorkflowExecutor{
-		PodName:            fakePodName,
-		Template:           template,
-		ClientSet:          fakeClientset,
-		Namespace:          fakeNamespace,
-		PodAnnotationsPath: fakeAnnotations,
-		ExecutionControl:   nil,
-		RuntimeExecutor:    &mockRuntimeExecutor,
+		PodName:         fakePodName,
+		Template:        template,
+		ClientSet:       fakeClientset,
+		Namespace:       fakeNamespace,
+		RuntimeExecutor: &mockRuntimeExecutor,
 	}
 	args, err := we.getKubectlArguments("patch", manifestPath, nil)
-
 	assert.NoError(t, err)
 	assert.Equal(t, args, fakeFlags)
 }
@@ -178,4 +174,30 @@ func TestInferSelfLink(t *testing.T) {
 		Kind:    "Duty",
 	})
 	assert.Equal(t, "apis/test.group/v1/namespaces/test-namespace/duties/test-name", inferObjectSelfLink(obj))
+}
+
+// TestResourceExecRetry tests whether Exec retries transitive errors
+func TestResourceExecRetry(t *testing.T) {
+	we := WorkflowExecutor{
+		PodName:         fakePodName,
+		Template:        wfv1.Template{},
+		ClientSet:       fake.NewSimpleClientset(),
+		Namespace:       fakeNamespace,
+		RuntimeExecutor: &mocks.ContainerRuntimeExecutor{},
+	}
+
+	_, filename, _, _ := runtime.Caller(0)
+	dirname := path.Dir(filename)
+	duration := retry.DefaultBackoff.Duration
+	path := os.Getenv("PATH")
+	defer func() {
+		os.Setenv("PATH", path)
+		retry.DefaultBackoff.Duration = duration
+	}()
+	retry.DefaultBackoff.Duration = 0
+	os.Setenv("PATH", dirname+"/testdata")
+
+	_, _, _, err := we.ExecResource("", "../../examples/hello-world.yaml", nil)
+	assert.Error(t, err)
+	assert.Equal(t, "no more retries i/o timeout", err.Error())
 }

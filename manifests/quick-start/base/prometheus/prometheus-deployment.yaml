@@ -33,5 +33,3 @@ spec:
         - name: config
           configMap:
             name: prometheus-config
-
-

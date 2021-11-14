@@ -21,6 +21,7 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/fake"
@@ -1264,11 +1265,6 @@ func TestAssessNodeStatus(t *testing.T) {
 	}, {
 		name: "pod running",
 		pod: &apiv1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{
-					common.AnnotationKeyTemplate: "{}",
-				},
-			},
 			Status: apiv1.PodStatus{
 				Phase: apiv1.PodRunning,
 			},
@@ -1296,6 +1292,7 @@ func TestAssessNodeStatus(t *testing.T) {
 			assert.Equal(t, tt.want, got.Phase)
 		})
 	}
+
 	t.Run("Daemon Step finished - Pod running", func(t *testing.T) {
 		cancel, controller := newController()
 		defer cancel()
@@ -1307,7 +1304,7 @@ func TestAssessNodeStatus(t *testing.T) {
 		node := &wfv1.NodeStatus{Daemoned: &daemoned, Phase: wfv1.NodeFailed}
 		woc := newWorkflowOperationCtx(wf, controller)
 		got := woc.assessNodeStatus(pod, node)
-		assert.Nil(t, got)
+		assert.True(t, got.Phase == wfv1.NodeFailed)
 	})
 
 	t.Run("Daemon Step finished - Pod running", func(t *testing.T) {
@@ -1321,8 +1318,156 @@ func TestAssessNodeStatus(t *testing.T) {
 		node := &wfv1.NodeStatus{Daemoned: &daemoned, Phase: wfv1.NodeSucceeded}
 		woc := newWorkflowOperationCtx(wf, controller)
 		got := woc.assessNodeStatus(pod, node)
-		assert.Nil(t, got)
+		assert.True(t, got.Phase == wfv1.NodeSucceeded)
 	})
+
+}
+
+func getPodTemplate(pod *apiv1.Pod) (*wfv1.Template, error) {
+	tmpl := &wfv1.Template{}
+	for _, c := range pod.Spec.Containers {
+		for _, e := range c.Env {
+			if e.Name == common.EnvVarTemplate {
+				return tmpl, json.Unmarshal([]byte(e.Value), tmpl)
+			}
+		}
+	}
+	return nil, fmt.Errorf("not found")
+}
+
+func getPodDeadline(pod *apiv1.Pod) (time.Time, error) {
+	for _, c := range pod.Spec.Containers {
+		for _, e := range c.Env {
+			if e.Name == common.EnvVarDeadline {
+				return time.Parse(time.RFC3339, e.Value)
+			}
+		}
+	}
+	return time.Time{}, fmt.Errorf("not found")
+}
+
+func TestGetPodTemplate(t *testing.T) {
+	tests := []struct {
+		name string
+		pod  *apiv1.Pod
+		want *wfv1.Template
+	}{{
+		name: "missing template",
+		pod: &apiv1.Pod{
+			Spec: apiv1.PodSpec{
+				Containers: []apiv1.Container{
+					{
+						Env: []apiv1.EnvVar{},
+					},
+				},
+			},
+		},
+		want: nil,
+	}, {
+		name: "empty template",
+		pod: &apiv1.Pod{
+			Spec: apiv1.PodSpec{
+				Containers: []apiv1.Container{
+					{
+						Env: []apiv1.EnvVar{
+							{
+								Name:  common.EnvVarTemplate,
+								Value: "{}",
+							},
+						},
+					},
+				},
+			},
+		},
+		want: &wfv1.Template{},
+	}, {
+		name: "simple template",
+		pod: &apiv1.Pod{
+			Spec: apiv1.PodSpec{
+				Containers: []apiv1.Container{
+					{
+						Env: []apiv1.EnvVar{
+							{
+								Name:  common.EnvVarTemplate,
+								Value: "{\"name\":\"argosay\"}",
+							},
+						},
+					},
+				},
+			},
+		},
+		want: &wfv1.Template{
+			Name: "argosay",
+		},
+	}}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, _ := getPodTemplate(tt.pod)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestGetPodDeadline(t *testing.T) {
+	tests := []struct {
+		name string
+		pod  *apiv1.Pod
+		want time.Time
+	}{{
+		name: "missing deadline",
+		pod: &apiv1.Pod{
+			Spec: apiv1.PodSpec{
+				Containers: []apiv1.Container{
+					{
+						Env: []apiv1.EnvVar{},
+					},
+				},
+			},
+		},
+		want: time.Time{},
+	}, {
+		name: "zero deadline",
+		pod: &apiv1.Pod{
+			Spec: apiv1.PodSpec{
+				Containers: []apiv1.Container{
+					{
+						Env: []apiv1.EnvVar{
+							{
+								Name:  common.EnvVarDeadline,
+								Value: "0001-01-01T00:00:00Z",
+							},
+						},
+					},
+				},
+			},
+		},
+		want: time.Time{},
+	}, {
+		name: "a deadline",
+		pod: &apiv1.Pod{
+			Spec: apiv1.PodSpec{
+				Containers: []apiv1.Container{
+					{
+						Env: []apiv1.EnvVar{
+							{
+								Name:  common.EnvVarDeadline,
+								Value: "2021-01-21T01:02:03Z",
+							},
+						},
+					},
+				},
+			},
+		},
+		want: time.Date(2021, time.Month(1), 21, 1, 2, 3, 0, time.UTC),
+	}}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, _ := getPodDeadline(tt.pod)
+			assert.Equal(t, tt.want, got)
+		})
+	}
 }
 
 var workflowStepRetry = `
@@ -1434,36 +1579,25 @@ spec:
 
 // TestWorkflowParallelismLimit verifies parallelism at a workflow level is honored.
 func TestWorkflowParallelismLimit(t *testing.T) {
-	cancel, controller := newController()
+	ctx := context.Background()
+	wf := wfv1.MustUnmarshalWorkflow(workflowParallelismLimit)
+	cancel, controller := newController(wf)
 	defer cancel()
 
-	ctx := context.Background()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
-	wf := wfv1.MustUnmarshalWorkflow(workflowParallelismLimit)
-	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
-	assert.NoError(t, err)
-
-	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
-	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	pods, err := listPods(woc)
 	assert.NoError(t, err)
-	assert.Equal(t, 2, len(pods.Items))
-	// operate again and make sure we don't schedule any more pods
+	assert.Len(t, pods.Items, 2)
+
 	makePodsPhase(ctx, woc, apiv1.PodRunning)
 
-	syncPodsInformer(ctx, woc)
-
-	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
-	assert.NoError(t, err)
-	// wfBytes, _ := json.MarshalIndent(wf, "", "  ")
-	// log.Printf("%s", wfBytes)
-	woc = newWorkflowOperationCtx(wf, controller)
+	// operate again and make sure we don't schedule any more pods
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
 	pods, err = listPods(woc)
 	assert.NoError(t, err)
-	assert.Equal(t, 2, len(pods.Items))
+	assert.Len(t, pods.Items, 2)
 }
 
 var stepsTemplateParallelismLimit = `
@@ -1687,6 +1821,7 @@ func TestSidecarResourceLimits(t *testing.T) {
 	assert.NoError(t, err)
 	var waitCtr *apiv1.Container
 	for _, ctr := range pod.Spec.Containers {
+		ctr := ctr
 		if ctr.Name == "wait" {
 			waitCtr = &ctr
 			break
@@ -2627,10 +2762,9 @@ func TestResolvePlaceholdersInOutputValues(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
 
-	templateString := pods.Items[0].ObjectMeta.Annotations["workflows.argoproj.io/template"]
-	var template wfv1.Template
-	wfv1.MustUnmarshal([]byte(templateString), &template)
-	parameterValue := template.Outputs.Parameters[0].Value
+	tmpl, err := getPodTemplate(&pods.Items[0])
+	assert.NoError(t, err)
+	parameterValue := tmpl.Outputs.Parameters[0].Value
 	assert.NotNil(t, parameterValue)
 	assert.Equal(t, "output-value-placeholders-wf", parameterValue.String())
 }
@@ -2664,9 +2798,8 @@ func TestResolvePodNameInRetries(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
 
-	templateString := pods.Items[0].ObjectMeta.Annotations["workflows.argoproj.io/template"]
-	var template wfv1.Template
-	wfv1.MustUnmarshal([]byte(templateString), &template)
+	template, err := getPodTemplate(&pods.Items[0])
+	assert.NoError(t, err)
 	parameterValue := template.Outputs.Parameters[0].Value
 	assert.NotNil(t, parameterValue)
 	assert.Equal(t, "output-value-placeholders-wf-3033990984", parameterValue.String())
@@ -2765,19 +2898,16 @@ func TestResourceTemplate(t *testing.T) {
 	if !assert.NoError(t, err) {
 		t.Fatal(err)
 	}
-	tmplStr := pod.Annotations[common.AnnotationKeyTemplate]
-	tmpl := wfv1.Template{}
-	err = yaml.Unmarshal([]byte(tmplStr), &tmpl)
-	if !assert.NoError(t, err) {
-		t.Fatal(err)
+	tmpl, err := getPodTemplate(pod)
+	if assert.NoError(t, err) {
+		cm := apiv1.ConfigMap{}
+		err = yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &cm)
+		if !assert.NoError(t, err) {
+			t.Fatal(err)
+		}
+		assert.Equal(t, "resource-cm", cm.Name)
+		assert.Empty(t, cm.ObjectMeta.OwnerReferences)
 	}
-	cm := apiv1.ConfigMap{}
-	err = yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &cm)
-	if !assert.NoError(t, err) {
-		t.Fatal(err)
-	}
-	assert.Equal(t, "resource-cm", cm.Name)
-	assert.Empty(t, cm.ObjectMeta.OwnerReferences)
 }
 
 var resourceWithOwnerReferenceTemplate = `
@@ -2859,9 +2989,7 @@ func TestResourceWithOwnerReferenceTemplate(t *testing.T) {
 
 	objectMetas := map[string]metav1.ObjectMeta{}
 	for _, pod := range pods.Items {
-		tmplStr := pod.Annotations[common.AnnotationKeyTemplate]
-		tmpl := wfv1.Template{}
-		err = yaml.Unmarshal([]byte(tmplStr), &tmpl)
+		tmpl, err := getPodTemplate(&pod)
 		if !assert.NoError(t, err) {
 			t.Fatal(err)
 		}
@@ -3286,6 +3414,102 @@ spec:
 	}
 }
 
+func TestEventNodeEventsAsPod(t *testing.T) {
+	for manifest, want := range map[string][]string{
+		// Invalid spec
+		`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: invalid-spec
+spec:
+  entrypoint: 123
+`: {
+			"Warning WorkflowFailed invalid spec: template name '123' undefined",
+		},
+		// DAG
+		`
+metadata:
+  name: dag-events
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: a
+            template: whalesay
+    - name: whalesay
+      container:
+        image: docker/whalesay:latest
+`: {
+			"Normal WorkflowRunning Workflow Running",
+			"Normal WorkflowNodeRunning Running node dag-events",
+			"Normal WorkflowNodeRunning Running node dag-events.a",
+			"Normal WorkflowNodeSucceeded Succeeded node dag-events.a",
+			"Normal WorkflowNodeSucceeded Succeeded node dag-events",
+			"Normal WorkflowSucceeded Workflow completed",
+		},
+		// steps
+		`
+metadata:
+  name: steps-events
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: a
+            template: whalesay
+    - name: whalesay
+      container:
+        image: docker/whalesay:latest
+`: {
+			"Normal WorkflowRunning Workflow Running",
+			"Normal WorkflowNodeRunning Running node steps-events",
+			"Normal WorkflowNodeRunning Running node steps-events[0]",
+			"Normal WorkflowNodeRunning Running node steps-events[0].a",
+			"Normal WorkflowNodeSucceeded Succeeded node steps-events[0].a",
+			"Normal WorkflowNodeSucceeded Succeeded node steps-events[0]",
+			"Normal WorkflowNodeSucceeded Succeeded node steps-events",
+			"Normal WorkflowSucceeded Workflow completed",
+		},
+		// no DAG or steps
+		`
+metadata:
+  name: no-dag-or-steps
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`: {
+			"Normal WorkflowRunning Workflow Running",
+			"Normal WorkflowNodeRunning Running node no-dag-or-steps",
+			"Normal WorkflowNodeSucceeded Succeeded node no-dag-or-steps",
+			"Normal WorkflowSucceeded Workflow completed",
+		},
+	} {
+		wf := wfv1.MustUnmarshalWorkflow(manifest)
+		ctx := context.Background()
+		t.Run(wf.Name, func(t *testing.T) {
+			cancel, controller := newController(wf)
+			defer cancel()
+			controller.Config.NodeEvents = config.NodeEvents{SendAsPod: true}
+			woc := newWorkflowOperationCtx(wf, controller)
+			createRunningPods(ctx, woc)
+			woc.operate(ctx)
+			makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+			woc = newWorkflowOperationCtx(woc.wf, controller)
+			woc.operate(ctx)
+			assert.ElementsMatch(t, want, getEvents(controller, len(want)))
+		})
+	}
+}
+
 func getEvents(controller *WorkflowController, num int) []string {
 	c := controller.eventRecorderManager.(*testEventRecorderManager).eventRecorder.Events
 	events := make([]string, num)
@@ -3293,6 +3517,48 @@ func getEvents(controller *WorkflowController, num int) []string {
 		events[i] = <-c
 	}
 	return events
+}
+
+func TestGetPodByNode(t *testing.T) {
+	workflowText := `
+metadata:
+  name: dag-events
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: a
+            template: whalesay
+    - name: whalesay
+      container:
+        image: docker/whalesay:latest
+`
+	wf := wfv1.MustUnmarshalWorkflow(workflowText)
+	wf.Namespace = "argo"
+	ctx := context.Background()
+	cancel, controller := newController(wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(wf, controller)
+	createRunningPods(ctx, woc)
+	woc.operate(ctx)
+	time.Sleep(time.Second)
+	// Parent dag node has no pod
+	parentNode := woc.wf.GetNodeByName("dag-events")
+	pod, err := woc.getPodByNode(parentNode)
+	assert.Nil(t, pod)
+	assert.Error(t, err, "Expected node type Pod, got DAG")
+	// Pod node should return a pod
+	podNode := woc.wf.GetNodeByName("dag-events.a")
+	pod, err = woc.getPodByNode(podNode)
+	assert.NotNil(t, pod)
+	assert.Nil(t, err)
+	// Invalid node should not return a pod
+	invalidNode := wfv1.NodeStatus{Type: wfv1.NodeTypePod, Name: "doesnt-exist"}
+	pod, err = woc.getPodByNode(&invalidNode)
+	assert.Nil(t, pod)
+	assert.Nil(t, err)
 }
 
 var pdbwf = `
@@ -3893,9 +4159,8 @@ func TestResolvePlaceholdersInGlobalVariables(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
 
-	templateString := pods.Items[0].ObjectMeta.Annotations["workflows.argoproj.io/template"]
-	var template wfv1.Template
-	wfv1.MustUnmarshal([]byte(templateString), &template)
+	template, err := getPodTemplate(&pods.Items[0])
+	assert.NoError(t, err)
 	namespaceValue := template.Outputs.Parameters[0].Value
 	assert.NotNil(t, namespaceValue)
 	assert.Equal(t, "testNamespace", namespaceValue.String())
@@ -5726,8 +5991,8 @@ func TestWFWithRetryAndWithParam(t *testing.T) {
 			ctrs := pods.Items[0].Spec.Containers
 			assert.Len(t, ctrs, 2)
 			envs := ctrs[1].Env
-			assert.Len(t, envs, 2)
-			assert.Equal(t, apiv1.EnvVar{Name: "ARGO_INCLUDE_SCRIPT_OUTPUT", Value: "true"}, envs[1])
+			assert.Len(t, envs, 4)
+			assert.Equal(t, apiv1.EnvVar{Name: "ARGO_INCLUDE_SCRIPT_OUTPUT", Value: "true"}, envs[2])
 		}
 	})
 }
@@ -6536,227 +6801,6 @@ func TestRootRetryStrategyCompletes(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
-const testOnExitNameBackwardsCompatibility = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world-69h5d
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    steps:
-    - - name: run
-        onExit: pass
-        template: pass
-  - container:
-      args:
-      - exit 0
-      command:
-      - sh
-      - -c
-      image: alpine
-    name: pass
-  ttlStrategy:
-    secondsAfterCompletion: 600
-status:
-  nodes:
-    hello-world-69h5d:
-      children:
-      - hello-world-69h5d-4087924081
-      displayName: hello-world-69h5d
-      finishedAt: "2021-03-24T14:53:32Z"
-      id: hello-world-69h5d
-      name: hello-world-69h5d
-      outboundNodes:
-      - hello-world-69h5d-928074325
-      phase: Running
-      startedAt: "2021-03-24T14:53:18Z"
-      templateName: main
-      templateScope: local/hello-world-69h5d
-      type: Steps
-    hello-world-69h5d-928074325:
-      boundaryID: hello-world-69h5d
-      displayName: run.onExit
-      finishedAt: "2021-03-24T14:53:31Z"
-      hostNodeName: k3d-k3s-default-server-0
-      id: hello-world-69h5d-928074325
-      name: run.onExit
-      phase: Running
-      startedAt: "2021-03-24T14:53:25Z"
-      templateName: pass
-      templateScope: local/hello-world-69h5d
-      type: Pod
-    hello-world-69h5d-2500098386:
-      boundaryID: hello-world-69h5d
-      children:
-      - hello-world-69h5d-928074325
-      displayName: run
-      finishedAt: "2021-03-24T14:53:24Z"
-      hostNodeName: k3d-k3s-default-server-0
-      id: hello-world-69h5d-2500098386
-      name: hello-world-69h5d[0].run
-      phase: Succeeded
-      startedAt: "2021-03-24T14:53:18Z"
-      templateName: pass
-      templateScope: local/hello-world-69h5d
-      type: Pod
-    hello-world-69h5d-4087924081:
-      boundaryID: hello-world-69h5d
-      children:
-      - hello-world-69h5d-2500098386
-      displayName: '[0]'
-      finishedAt: "2021-03-24T14:53:32Z"
-      id: hello-world-69h5d-4087924081
-      name: hello-world-69h5d[0]
-      phase: Running
-      startedAt: "2021-03-24T14:53:18Z"
-      templateScope: local/hello-world-69h5d
-      type: StepGroup
-  phase: Running
-  startedAt: "2021-03-24T14:53:18Z"
-`
-
-// Previously we used `parentNodeDisplayName` to generate all onExit node names. However, as these can be non-unique
-// we transitioned to using `parentNodeName` instead, which are guaranteed to be unique. In order to not disrupt
-// running workflows during upgrade time, we first check if there is an onExit node that currently exists with the
-// legacy name AND said node is a child of the parent node. If it does, we continue execution with the legacy name.
-// If it doesn't, we use the new (and unique) name for all operations henceforth.
-//
-// Here we test to see if this backwards compatibility works. This test workflow contains a running onExit node with the
-// old name. When we call operate on it, we should NOT create another onExit node with the new name and instead respect
-// the old onExit node.
-//
-// TODO: This test should be removed after a couple of "grace period" version upgrades to allow transitions. It was introduced in v3.0.0
-// See more: https://github.com/argoproj/argo-workflows/issues/5502
-func TestOnExitNameBackwardsCompatibility(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(testOnExitNameBackwardsCompatibility)
-	cancel, controller := newController(wf)
-	defer cancel()
-
-	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
-
-	createRunningPods(ctx, woc)
-
-	nodesBeforeOperation := len(woc.wf.Status.Nodes)
-	woc.operate(ctx)
-
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	// Number of nodes should not change (no new name node was created)
-	assert.Equal(t, nodesBeforeOperation, len(woc.wf.Status.Nodes))
-	node := woc.wf.Status.Nodes.FindByDisplayName("run.onExit")
-	if assert.NotNil(t, node) {
-		assert.Equal(t, wfv1.NodeRunning, node.Phase)
-	}
-}
-
-const testOnExitDAGStatusCompatibility = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: dag-diamond-8xw8l
-spec:
-  entrypoint: diamond
-  templates:
-  - dag:
-      tasks:
-      - name: A
-        onExit: echo
-        template: echo
-      - depends: A
-        name: B
-        template: echo
-    name: diamond
-  - container:
-      command:
-      - echo
-      - hi
-      image: alpine:3.7
-    name: echo
-status:
-  nodes:
-    dag-diamond-8xw8l:
-      children:
-      - dag-diamond-8xw8l-1488416551
-      displayName: dag-diamond-8xw8l
-      finishedAt: "2021-03-24T15:37:06Z"
-      id: dag-diamond-8xw8l
-      name: dag-diamond-8xw8l
-      outboundNodes:
-      - dag-diamond-8xw8l-1505194170
-      phase: Running
-      startedAt: "2021-03-24T15:36:47Z"
-      templateName: diamond
-      templateScope: local/dag-diamond-8xw8l
-      type: DAG
-    dag-diamond-8xw8l-1342580575:
-      boundaryID: dag-diamond-8xw8l
-      displayName: A.onExit
-      finishedAt: "2021-03-24T15:36:59Z"
-      hostNodeName: k3d-k3s-default-server-0
-      id: dag-diamond-8xw8l-1342580575
-      name: A.onExit
-      phase: Running
-      startedAt: "2021-03-24T15:36:54Z"
-      templateName: echo
-      templateScope: local/dag-diamond-8xw8l
-      type: Pod
-    dag-diamond-8xw8l-1488416551:
-      boundaryID: dag-diamond-8xw8l
-      children:
-      - dag-diamond-8xw8l-1342580575
-      displayName: A
-      finishedAt: "2021-03-24T15:36:53Z"
-      hostNodeName: k3d-k3s-default-server-0
-      id: dag-diamond-8xw8l-1488416551
-      name: dag-diamond-8xw8l.A
-      phase: Succeeded
-      startedAt: "2021-03-24T15:36:47Z"
-      templateName: echo
-      templateScope: local/dag-diamond-8xw8l
-      type: Pod
-  phase: Running
-  startedAt: "2021-03-24T15:36:47Z"
-`
-
-// Previously we used `parentNodeDisplayName` to generate all onExit node names. However, as these can be non-unique
-// we transitioned to using `parentNodeName` instead, which are guaranteed to be unique. In order to not disrupt
-// running workflows during upgrade time, we first check if there is an onExit node that currently exists with the
-// legacy name AND said node is a child of the parent node. If it does, we continue execution with the legacy name.
-// If it doesn't, we use the new (and unique) name for all operations henceforth.
-//
-// Here we test to see if this backwards compatibility works. This test workflow contains a running onExit node with the
-// old name. When we call operate on it, we should NOT create the subsequent DAG done ("B") until the onExit node name with
-// the old name finishes running.
-//
-// TODO: This test should be removed after a couple of "grace period" version upgrades to allow transitions. It was introduced in v3.0.0
-// See more: https://github.com/argoproj/argo-workflows/issues/5502
-func TestOnExitDAGStatusCompatibility(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(testOnExitDAGStatusCompatibility)
-	cancel, controller := newController(wf)
-	defer cancel()
-
-	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
-
-	createRunningPods(ctx, woc)
-
-	nodesBeforeOperation := len(woc.wf.Status.Nodes)
-	woc.operate(ctx)
-
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	// Number of nodes should not change (no new name node was created)
-	assert.Equal(t, nodesBeforeOperation, len(woc.wf.Status.Nodes))
-	node := woc.wf.Status.Nodes.FindByDisplayName("A.onExit")
-	if assert.NotNil(t, node) {
-		assert.Equal(t, wfv1.NodeRunning, node.Phase)
-	}
-
-	nodeB := woc.wf.Status.Nodes.FindByDisplayName("B")
-	assert.Nil(t, nodeB)
-}
-
 const testGlobalParamSubstitute = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -7182,4 +7226,384 @@ func TestDagTwoChildrenContainerSet(t *testing.T) {
 	sentNode := woc.wf.Status.Nodes.FindByDisplayName("a")
 
 	assert.Len(t, sentNode.Children, 1)
+}
+
+const operatorRetryExpression = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: retry-script-9z9pv
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: safe-to-retry
+        template: safe-to-retry
+    - - arguments:
+          parameters:
+          - name: safe-to-retry
+            value: '{{steps.safe-to-retry.outputs.result}}'
+        name: retry
+        template: retry-script
+  - name: safe-to-retry
+    script:
+      command:
+      - python
+      image: python:alpine3.6
+      source: |
+        print("true")
+  - inputs:
+      parameters:
+      - name: safe-to-retry
+    name: retry-script
+    retryStrategy:
+      expression: asInt(lastRetry.exitCode) > 1 && {{inputs.parameters.safe-to-retry}}
+        == true
+      limit: "3"
+    script:
+      command:
+      - python
+      image: python:alpine3.6
+      source: |
+        import random;
+        import sys;
+        exit_code = random.choice([1, 2]);
+        sys.exit(exit_code)
+status:
+  nodes:
+    retry-script-9z9pv:
+      children:
+      - retry-script-9z9pv-1740877928
+      displayName: retry-script-9z9pv
+      id: retry-script-9z9pv
+      name: retry-script-9z9pv
+      outboundNodes:
+      - retry-script-9z9pv-2327053777
+      phase: Running
+      startedAt: "2021-06-10T22:28:49Z"
+      templateName: main
+      templateScope: local/retry-script-9z9pv
+      type: Steps
+    retry-script-9z9pv-734073693:
+      boundaryID: retry-script-9z9pv
+      children:
+      - retry-script-9z9pv-2346402485
+      displayName: '[1]'
+      id: retry-script-9z9pv-734073693
+      name: retry-script-9z9pv[1]
+      phase: Running
+      startedAt: "2021-06-10T22:28:56Z"
+      templateScope: local/retry-script-9z9pv
+      type: StepGroup
+    retry-script-9z9pv-1740877928:
+      boundaryID: retry-script-9z9pv
+      children:
+      - retry-script-9z9pv-3940097040
+      displayName: '[0]'
+      finishedAt: "2021-06-10T22:28:56Z"
+      id: retry-script-9z9pv-1740877928
+      name: retry-script-9z9pv[0]
+      phase: Succeeded
+      startedAt: "2021-06-10T22:28:49Z"
+      templateScope: local/retry-script-9z9pv
+      type: StepGroup
+    retry-script-9z9pv-2327053777:
+      boundaryID: retry-script-9z9pv
+      displayName: retry(1)
+      finishedAt: "2021-06-10T22:29:10Z"
+      id: retry-script-9z9pv-2327053777
+      inputs:
+        parameters:
+        - name: safe-to-retry
+          value: "true"
+      message: Error (exit code 1)
+      name: retry-script-9z9pv[1].retry(1)
+      outputs:
+        exitCode: "1"
+      phase: Failed
+      startedAt: "2021-06-10T22:29:04Z"
+      templateName: retry-script
+      templateScope: local/retry-script-9z9pv
+      type: Pod
+    retry-script-9z9pv-2346402485:
+      boundaryID: retry-script-9z9pv
+      children:
+      - retry-script-9z9pv-2931195156
+      - retry-script-9z9pv-2327053777
+      displayName: retry
+      id: retry-script-9z9pv-2346402485
+      inputs:
+        parameters:
+        - name: safe-to-retry
+          value: "true"
+      name: retry-script-9z9pv[1].retry
+      phase: Running
+      startedAt: "2021-06-10T22:28:56Z"
+      templateName: retry-script
+      templateScope: local/retry-script-9z9pv
+      type: Retry
+    retry-script-9z9pv-2931195156:
+      boundaryID: retry-script-9z9pv
+      displayName: retry(0)
+      finishedAt: "2021-06-10T22:29:02Z"
+      id: retry-script-9z9pv-2931195156
+      inputs:
+        parameters:
+        - name: safe-to-retry
+          value: "true"
+      message: Error (exit code 2)
+      name: retry-script-9z9pv[1].retry(0)
+      outputs:
+        exitCode: "2"
+      phase: Failed
+      startedAt: "2021-06-10T22:28:56Z"
+      templateName: retry-script
+      templateScope: local/retry-script-9z9pv
+      type: Pod
+    retry-script-9z9pv-3940097040:
+      boundaryID: retry-script-9z9pv
+      children:
+      - retry-script-9z9pv-734073693
+      displayName: safe-to-retry
+      finishedAt: "2021-06-10T22:28:55Z"
+      id: retry-script-9z9pv-3940097040
+      name: retry-script-9z9pv[0].safe-to-retry
+      outputs:
+        exitCode: "0"
+        result: "true"
+      phase: Succeeded
+      startedAt: "2021-06-10T22:28:49Z"
+      templateName: safe-to-retry
+      templateScope: local/retry-script-9z9pv
+      type: Pod
+  phase: Running
+  startedAt: "2021-06-10T22:28:49Z"
+`
+
+// TestOperatorRetryExpression tests that retryStrategy.when works correctly. In this test, the latest child node has
+// just failed with exit code 2. The retryStrategy's when condition specifies that retries must only be done when the
+// last exit code is NOT 2. We expect the retryStrategy to fail (even though it has 8 tries remainng).
+func TestOperatorRetryExpression(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(operatorRetryExpression)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	retryNode := woc.wf.GetNodeByName("retry-script-9z9pv[1].retry")
+	assert.Equal(t, wfv1.NodeFailed, retryNode.Phase)
+	assert.Equal(t, 2, len(retryNode.Children))
+	assert.Equal(t, "retryStrategy.when evaluated to false", retryNode.Message)
+}
+
+func TestBuildRetryStrategyLocalScope(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(operatorRetryExpression)
+	retryNode := wf.GetNodeByName("retry-script-9z9pv[1].retry")
+
+	localScope := buildRetryStrategyLocalScope(retryNode, wf.Status.Nodes)
+
+	assert.Len(t, localScope, 4)
+	assert.Equal(t, "1", localScope[common.LocalVarRetries])
+	assert.Equal(t, "1", localScope[common.LocalVarRetriesLastExitCode])
+	assert.Equal(t, string(wfv1.NodeFailed), localScope[common.LocalVarRetriesLastStatus])
+	assert.Equal(t, "6", localScope[common.LocalVarRetriesLastDuration])
+}
+
+func TestGetContainerRuntimeExecutor(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	controller.Config.ContainerRuntimeExecutor = "pns"
+	controller.Config.ContainerRuntimeExecutors = config.ContainerRuntimeExecutors{
+		{
+			Name: "emissary",
+			Selector: metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"workflows.argoproj.io/container-runtime-executor": "emissary",
+				},
+			},
+		},
+	}
+	executor := controller.GetContainerRuntimeExecutor(labels.Set{})
+	assert.Equal(t, common.ContainerRuntimeExecutorPNS, executor)
+	executor = controller.GetContainerRuntimeExecutor(labels.Set{"workflows.argoproj.io/container-runtime-executor": "emissary"})
+	assert.Equal(t, common.ContainerRuntimeExecutorEmissary, executor)
+}
+
+var exitHandlerWithRetryNodeParam = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: exit-handler-with-param-xbh52
+  namespace: argo
+spec:
+  arguments: {}
+  entrypoint: main
+  serviceAccountName: argo
+  templates:
+  - inputs: {}
+    metadata: {}
+    name: main
+    outputs: {}
+    steps:
+    - - arguments: {}
+        hooks:
+          exit:
+            arguments:
+              parameters:
+              - name: message
+                value: '{{steps.step-1.outputs.parameters.result}}'
+            template: exit
+        name: step-1
+        template: output
+  - container:
+      args:
+      - echo -n hello world > /tmp/hello_world.txt; exit 1
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: output
+    outputs:
+      parameters:
+      - name: result
+        valueFrom:
+          default: Foobar
+          path: /tmp/hello_world.txt
+    retryStrategy:
+      backoff:
+        duration: 1s
+      limit: "1"
+      retryPolicy: Always
+  - inputs:
+      parameters:
+      - name: message
+        value: GoodValue
+    metadata: {}
+    name: exit
+    outputs: {}
+    script:
+      args:
+      - echo {{inputs.parameters.message}}
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+      source: ""
+status:
+  nodes:
+    exit-handler-with-param-xbh52:
+      children:
+      - exit-handler-with-param-xbh52-3621967439
+      displayName: exit-handler-with-param-xbh52
+      finishedAt: "2021-10-18T03:28:14Z"
+      id: exit-handler-with-param-xbh52
+      name: exit-handler-with-param-xbh52
+      startedAt: "2021-10-18T03:27:44Z"
+      templateName: main
+      templateScope: local/exit-handler-with-param-xbh52
+      type: Steps
+    exit-handler-with-param-xbh52-1429999455:
+      boundaryID: exit-handler-with-param-xbh52
+      displayName: step-1(1)
+      finishedAt: "2021-10-18T03:27:58Z"
+      hostNodeName: smile
+      id: exit-handler-with-param-xbh52-1429999455
+      message: Error (exit code 1)
+      name: exit-handler-with-param-xbh52[0].step-1(1)
+      outputs:
+        exitCode: "1"
+        parameters:
+        - name: result
+          value: hello world
+          valueFrom:
+            default: Foobar
+            path: /tmp/hello_world.txt
+      phase: Failed
+      progress: 1/1
+      resourcesDuration:
+        cpu: 5
+        memory: 5
+      startedAt: "2021-10-18T03:27:54Z"
+      templateName: output
+      templateScope: local/exit-handler-with-param-xbh52
+      type: Pod
+    exit-handler-with-param-xbh52-2034140834:
+      boundaryID: exit-handler-with-param-xbh52
+      displayName: step-1(0)
+      finishedAt: "2021-10-18T03:27:48Z"
+      hostNodeName: smile
+      id: exit-handler-with-param-xbh52-2034140834
+      message: Error (exit code 1)
+      name: exit-handler-with-param-xbh52[0].step-1(0)
+      outputs:
+        exitCode: "1"
+        parameters:
+        - name: result
+          value: hello world
+          valueFrom:
+            default: Foobar
+            path: /tmp/hello_world.txt
+      phase: Failed
+      progress: 1/1
+      resourcesDuration:
+        cpu: 5
+        memory: 5
+      startedAt: "2021-10-18T03:27:44Z"
+      templateName: output
+      templateScope: local/exit-handler-with-param-xbh52
+      type: Pod
+    exit-handler-with-param-xbh52-3203867295:
+      boundaryID: exit-handler-with-param-xbh52
+      children:
+      - exit-handler-with-param-xbh52-2034140834
+      - exit-handler-with-param-xbh52-1429999455
+      displayName: step-1
+      finishedAt: "2021-10-18T03:28:04Z"
+      id: exit-handler-with-param-xbh52-3203867295
+      message: No more retries left
+      name: exit-handler-with-param-xbh52[0].step-1
+      startedAt: "2021-10-18T03:27:44Z"
+      templateName: output
+      templateScope: local/exit-handler-with-param-xbh52
+      type: Retry
+    exit-handler-with-param-xbh52-3621967439:
+      boundaryID: exit-handler-with-param-xbh52
+      children:
+      - exit-handler-with-param-xbh52-3203867295
+      displayName: '[0]'
+      finishedAt: "2021-10-18T03:28:14Z"
+      id: exit-handler-with-param-xbh52-3621967439
+      message: child 'exit-handler-with-param-xbh52-3203867295' failed
+      name: exit-handler-with-param-xbh52[0]
+      startedAt: "2021-10-18T03:27:44Z"
+      templateScope: local/exit-handler-with-param-xbh52
+      type: StepGroup
+  startedAt: "2021-10-18T03:27:44Z"
+`
+
+func TestExitHandlerWithRetryNodeParam(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(exitHandlerWithRetryNodeParam)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+	retryStepNode := woc.wf.GetNodeByName("exit-handler-with-param-xbh52[0].step-1")
+	assert.Equal(t, 1, len(retryStepNode.Outputs.Parameters))
+	assert.Equal(t, "hello world", retryStepNode.Outputs.Parameters[0].Value.String())
+	onExitNode := woc.wf.GetNodeByName("exit-handler-with-param-xbh52[0].step-1.onExit")
+	assert.Equal(t, "hello world", onExitNode.Inputs.Parameters[0].Value.String())
 }

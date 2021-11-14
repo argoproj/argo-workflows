@@ -8,13 +8,13 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
-
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor"
 	osspecific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
@@ -70,7 +70,7 @@ func (e emissary) writeTemplate(t wfv1.Template) error {
 }
 
 func (e emissary) GetFileContents(_ string, sourcePath string) (string, error) {
-	data, err := ioutil.ReadFile(filepath.Join("/var/run/argo/outputs/parameters", sourcePath))
+	data, err := ioutil.ReadFile(filepath.Clean(filepath.Join("/var/run/argo/outputs/parameters", sourcePath)))
 	return string(data), err
 }
 
@@ -78,9 +78,9 @@ func (e emissary) CopyFile(_ string, sourcePath string, destPath string, _ int) 
 	// this implementation is very different, because we expect the emissary binary has already compressed the file
 	// so no compression can or needs to be implemented here
 	// TODO - warn the user we ignored compression?
-	sourceFile := filepath.Join("/var/run/argo/outputs/artifacts", sourcePath+".tgz")
+	sourceFile := filepath.Join("/var/run/argo/outputs/artifacts", strings.TrimSuffix(sourcePath, "/")+".tgz")
 	log.Infof("%s -> %s", sourceFile, destPath)
-	src, err := os.Open(sourceFile)
+	src, err := os.Open(filepath.Clean(sourceFile))
 	if err != nil {
 		// If compressed file does not exist then the source artifact did not exist
 		// and we throw an Argo NotFound error to handle optional artifacts upstream
@@ -109,7 +109,7 @@ func (e emissary) GetOutputStream(_ context.Context, containerName string, combi
 	}
 	var files []io.ReadCloser
 	for _, name := range names {
-		f, err := os.Open("/var/run/argo/ctr/" + containerName + "/" + name)
+		f, err := os.Open(filepath.Clean("/var/run/argo/ctr/" + containerName + "/" + name))
 		if os.IsNotExist(err) {
 			continue
 		} else if err != nil {
@@ -148,7 +148,7 @@ func (e emissary) Kill(ctx context.Context, containerNames []string, termination
 	for _, containerName := range containerNames {
 		// allow write-access by other users, because other containers
 		// should delete the signal after receiving it
-		if err := ioutil.WriteFile("/var/run/argo/ctr/"+containerName+"/signal", []byte(strconv.Itoa(int(syscall.SIGTERM))), 0o666); err != nil {
+		if err := ioutil.WriteFile("/var/run/argo/ctr/"+containerName+"/signal", []byte(strconv.Itoa(int(syscall.SIGTERM))), 0o666); err != nil { //nolint:gosec
 			return err
 		}
 	}
@@ -161,7 +161,7 @@ func (e emissary) Kill(ctx context.Context, containerNames []string, termination
 	for _, containerName := range containerNames {
 		// allow write-access by other users, because other containers
 		// should delete the signal after receiving it
-		if err := ioutil.WriteFile("/var/run/argo/ctr/"+containerName+"/signal", []byte(strconv.Itoa(int(syscall.SIGKILL))), 0o666); err != nil {
+		if err := ioutil.WriteFile("/var/run/argo/ctr/"+containerName+"/signal", []byte(strconv.Itoa(int(syscall.SIGKILL))), 0o666); err != nil { //nolint:gosec
 			return err
 		}
 	}

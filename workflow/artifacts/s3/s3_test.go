@@ -250,7 +250,7 @@ func TestSaveS3Artifact(t *testing.T) {
 	defer os.RemoveAll(tempDir) // clean up
 
 	tempFile := filepath.Join(tempDir, "tmpfile")
-	if err := ioutil.WriteFile(tempFile, []byte("temporary file's content"), 0666); err != nil {
+	if err := ioutil.WriteFile(tempFile, []byte("temporary file's content"), 0o600); err != nil {
 		panic(err)
 	}
 
@@ -345,6 +345,9 @@ func TestSaveS3Artifact(t *testing.T) {
 							S3Bucket: wfv1.S3Bucket{
 								Bucket:                   tc.bucket,
 								CreateBucketIfNotPresent: &wfv1.CreateS3BucketOptions{},
+								EncryptionOptions: &wfv1.S3EncryptionOptions{
+									EnableEncryption: true,
+								},
 							},
 							Key: tc.key,
 						},

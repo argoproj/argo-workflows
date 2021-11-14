@@ -122,16 +122,9 @@ var _ events.EventRecorderManager = &testEventRecorderManager{}
 func newController(options ...interface{}) (context.CancelFunc, *WorkflowController) {
 	// get all the objects and add to the fake
 	var objects []runtime.Object
-	var uns []runtime.Object
 	for _, opt := range options {
 		switch v := opt.(type) {
-		// special case for workflows must be unstructured
 		case *wfv1.Workflow:
-			un, err := util.ToUnstructured(v)
-			if err != nil {
-				panic(err)
-			}
-			uns = append(uns, un)
 			objects = append(objects, v)
 		case runtime.Object:
 			objects = append(objects, v)
@@ -139,7 +132,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 	}
 
 	wfclientset := fakewfclientset.NewSimpleClientset(objects...)
-	dynamicClient := dynamicfake.NewSimpleDynamicClient(scheme.Scheme, uns...)
+	dynamicClient := dynamicfake.NewSimpleDynamicClient(scheme.Scheme, objects...)
 	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 0)
 	ctx, cancel := context.WithCancel(context.Background())
 	kube := fake.NewSimpleClientset()
@@ -191,6 +184,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 	// always compare to WorkflowController.Run to see what this block of code should be doing
 	{
 		wfc.wfInformer = util.NewWorkflowInformer(dynamicClient, "", 0, wfc.tweakListOptions, indexers)
+		wfc.wfTaskSetInformer = informerFactory.Argoproj().V1alpha1().WorkflowTaskSets()
 		wfc.wftmplInformer = informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
 		wfc.addWorkflowInformerHandlers(ctx)
 		wfc.podInformer = wfc.newPodInformer(ctx)
@@ -200,6 +194,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		go wfc.wfInformer.Run(ctx.Done())
 		go wfc.wftmplInformer.Informer().Run(ctx.Done())
 		go wfc.podInformer.Run(ctx.Done())
+		go wfc.wfTaskSetInformer.Informer().Run(ctx.Done())
 		wfc.cwftmplInformer = informerFactory.Argoproj().V1alpha1().ClusterWorkflowTemplates()
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
 		wfc.waitForCacheSync(ctx)

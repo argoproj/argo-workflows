@@ -2,10 +2,6 @@
 
 waits for workflows to complete
 
-### Synopsis
-
-waits for workflows to complete
-
 ```
 argo wait [WORKFLOW...] [flags]
 ```

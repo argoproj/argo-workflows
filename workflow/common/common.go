@@ -1,8 +1,6 @@
 package common
 
 import (
-	"time"
-
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -14,19 +12,13 @@ const (
 	InitContainerName = "init"
 	WaitContainerName = "wait"
 
-	// PodMetadataVolumeName is the volume name defined in a workflow pod spec to expose pod metadata via downward API
-	PodMetadataVolumeName = "podmetadata"
-
-	// PodMetadataAnnotationsVolumePath is volume path for metadata.annotations in the downward API
-	PodMetadataAnnotationsVolumePath = "annotations"
-	// PodMetadataMountPath is the directory mount location for DownwardAPI volume containing pod metadata
-	PodMetadataMountPath = "/argo/" + PodMetadataVolumeName
-	// PodMetadataAnnotationsPath is the file path containing pod metadata annotations. Examined by executor
-	PodMetadataAnnotationsPath = PodMetadataMountPath + "/" + PodMetadataAnnotationsVolumePath
-
 	// DockerSockVolumeName is the volume name for the /var/run/docker.sock host path volume
 	DockerSockVolumeName = "docker-sock"
 
+	// AnnotationKeyNodeID is the ID of the node.
+	// Historically, the pod name was the same as the node ID.
+	// Therefore, if it does not exist, then the node ID is the pod name.
+	AnnotationKeyNodeID = workflow.WorkflowFullName + "/node-id"
 	// AnnotationKeyNodeName is the pod metadata annotation key containing the workflow node name
 	AnnotationKeyNodeName = workflow.WorkflowFullName + "/node-name"
 	// AnnotationKeyNodeName is the node's type
@@ -36,17 +28,16 @@ const (
 	AnnotationKeyRBACRule           = workflow.WorkflowFullName + "/rbac-rule"
 	AnnotationKeyRBACRulePrecedence = workflow.WorkflowFullName + "/rbac-rule-precedence"
 
-	// AnnotationKeyTemplate is the pod metadata annotation key containing the container template as JSON
-	AnnotationKeyTemplate = workflow.WorkflowFullName + "/template"
 	// AnnotationKeyOutputs is the pod metadata annotation key containing the container outputs
 	AnnotationKeyOutputs = workflow.WorkflowFullName + "/outputs"
-	// AnnotationKeyExecutionControl is the pod metadata annotation key containing execution control parameters
-	// set by the controller and obeyed by the executor. For example, the controller will use this annotation to
-	// signal the executors of daemoned containers that it should terminate.
-	AnnotationKeyExecutionControl = workflow.WorkflowFullName + "/execution"
 	// AnnotationKeyCronWfScheduledTime is the workflow metadata annotation key containing the time when the workflow
 	// was scheduled to run by CronWorkflow.
 	AnnotationKeyCronWfScheduledTime = workflow.WorkflowFullName + "/scheduled-time"
+
+	// AnnotationKeyWorkflowName is the name of the workflow
+	AnnotationKeyWorkflowName = workflow.WorkflowFullName + "/workflow-name"
+	// AnnotationKeyWorkflowUID is the uid of the workflow
+	AnnotationKeyWorkflowUID = workflow.WorkflowFullName + "/workflow-uid"
 
 	// LabelKeyControllerInstanceID is the label the controller will carry forward to workflows/pod labels
 	// for the purposes of workflow segregation
@@ -54,7 +45,7 @@ const (
 	// Who created this workflow.
 	LabelKeyCreator      = workflow.WorkflowFullName + "/creator"
 	LabelKeyCreatorEmail = workflow.WorkflowFullName + "/creator-email"
-	// LabelKeyCompleted is the metadata label applied on worfklows and workflow pods to indicates if resource is completed
+	// LabelKeyCompleted is the metadata label applied on workflows and workflow pods to indicates if resource is completed
 	// Workflows and pods with a completed=true label will be ignored by the controller.
 	// See also `LabelKeyWorkflowArchivingStatus`.
 	LabelKeyCompleted = workflow.WorkflowFullName + "/completed"
@@ -102,10 +93,16 @@ const (
 
 	// EnvVarPodName contains the name of the pod (currently unused)
 	EnvVarPodName = "ARGO_POD_NAME"
+	// EnvVarWorkflowName
+	EnvVarWorkflowName = "ARGO_WORKFLOW_NAME"
 	// EnvVarContainerName container the container's name for the current pod
 	EnvVarContainerName = "ARGO_CONTAINER_NAME"
+	// EnvVarDeadline is the deadline for the pod
+	EnvVarDeadline = "ARGO_DEADLINE"
 	// EnvVarIncludeScriptOutput capture the stdout and stderr
 	EnvVarIncludeScriptOutput = "ARGO_INCLUDE_SCRIPT_OUTPUT"
+	// EnvVarTemplate is the template
+	EnvVarTemplate = "ARGO_TEMPLATE"
 	// EnvVarContainerRuntimeExecutor contains the name of the container runtime executor to use, empty is equal to "docker"
 	EnvVarContainerRuntimeExecutor = "ARGO_CONTAINER_RUNTIME_EXECUTOR"
 	// EnvVarDownwardAPINodeIP is the envvar used to get the `status.hostIP`
@@ -170,10 +167,17 @@ const (
 	// LocalVarExitCode is a step level variable (currently only available in metric emission) that tracks the step's exit code
 	LocalVarExitCode = "exitCode"
 
+	// LocalVarRetriesLastExitCode is a variable that references information about the last retry's exit code
+	LocalVarRetriesLastExitCode = "lastRetry.exitCode"
+	// LocalVarRetriesLastStatus is a variable that references information about the last retry's status
+	LocalVarRetriesLastStatus = "lastRetry.status"
+	// LocalVarRetriesLastDuration is a variable that references information about the last retry's duration
+	LocalVarRetriesLastDuration = "lastRetry.duration"
+
 	KubeConfigDefaultMountPath    = "/kube/config"
 	KubeConfigDefaultVolumeName   = "kubeconfig"
-	ServiceAccountTokenMountPath  = "/var/run/secrets/kubernetes.io/serviceaccount"
-	ServiceAccountTokenVolumeName = "exec-sa-token"
+	ServiceAccountTokenMountPath  = "/var/run/secrets/kubernetes.io/serviceaccount" //nolint:gosec
+	ServiceAccountTokenVolumeName = "exec-sa-token"                                 //nolint:gosec
 	SecretVolMountPath            = "/argo/secret"
 )
 
@@ -182,14 +186,6 @@ var AnnotationKeyKillCmd = func(containerName string) string { return workflow.W
 
 // GlobalVarWorkflowRootTags is a list of root tags in workflow which could be used for variable reference
 var GlobalVarValidWorkflowVariablePrefix = []string{"item.", "steps.", "inputs.", "outputs.", "pod.", "workflow.", "tasks."}
-
-// ExecutionControl contains execution control parameters for executor to decide how to execute the container
-type ExecutionControl struct {
-	// Deadline is a max timestamp in which an executor can run the container before terminating it
-	// It is used to signal the executor to terminate a daemoned container. In the future it will be
-	// used to support workflow or steps/dag level timeouts.
-	Deadline *time.Time `json:"deadline,omitempty"`
-}
 
 func UnstructuredHasCompletedLabel(obj interface{}) bool {
 	if wf, ok := obj.(*unstructured.Unstructured); ok {

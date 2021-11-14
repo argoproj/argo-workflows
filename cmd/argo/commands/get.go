@@ -70,7 +70,7 @@ func NewGetCommand() *cobra.Command {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			ctx, apiClient := client.NewAPIClient()
+			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 			for _, name := range args {
@@ -280,7 +280,7 @@ func isNonBoundaryParentNode(node wfv1.NodeType) bool {
 }
 
 func isExecutionNode(node wfv1.NodeType) bool {
-	return (node == wfv1.NodeTypePod) || (node == wfv1.NodeTypeSkipped) || (node == wfv1.NodeTypeSuspend)
+	return (node == wfv1.NodeTypePod) || (node == wfv1.NodeTypeSkipped) || (node == wfv1.NodeTypeSuspend) || (node == wfv1.NodeTypeHTTP)
 }
 
 func insertSorted(wf *wfv1.Workflow, sortedArray []renderNode, item renderNode) []renderNode {

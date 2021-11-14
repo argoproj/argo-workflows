@@ -92,7 +92,7 @@ func tarDir(sourcePath string, tw *tar.Writer) error {
 		if !info.Mode().IsRegular() {
 			return nil
 		}
-		f, err := os.Open(fpath)
+		f, err := os.Open(filepath.Clean(fpath))
 		if err != nil {
 			return errors.InternalWrapError(err)
 		}
@@ -113,7 +113,7 @@ func tarDir(sourcePath string, tw *tar.Writer) error {
 }
 
 func tarFile(sourcePath string, tw *tar.Writer) error {
-	f, err := os.Open(sourcePath)
+	f, err := os.Open(filepath.Clean(sourcePath))
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}

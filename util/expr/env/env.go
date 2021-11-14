@@ -3,7 +3,7 @@ package env
 import (
 	"encoding/json"
 
-	"github.com/Masterminds/sprig"
+	sprig "github.com/Masterminds/sprig/v3"
 	exprpkg "github.com/argoproj/pkg/expr"
 
 	"github.com/argoproj/argo-workflows/v3/util/expand"

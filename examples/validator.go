@@ -44,7 +44,7 @@ func ValidateArgoYamlRecursively(fromPath string, skipFileNames []string) (map[s
 		if filepath.Ext(path) != ".yaml" {
 			return nil
 		}
-		yamlBytes, err := ioutil.ReadFile(path)
+		yamlBytes, err := ioutil.ReadFile(filepath.Clean(path))
 		if err != nil {
 			return err
 		}

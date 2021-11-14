@@ -80,7 +80,7 @@ func Test_listWorkflows(t *testing.T) {
 
 func list(listOptions *metav1.ListOptions, flags listFlags) (wfv1.Workflows, error) {
 	c := &workflowmocks.WorkflowServiceClient{}
-	c.On("ListWorkflows", mock.Anything, &workflow.WorkflowListRequest{ListOptions: listOptions}).Return(&wfv1.WorkflowList{Items: wfv1.Workflows{
+	c.On("ListWorkflows", mock.Anything, &workflow.WorkflowListRequest{ListOptions: listOptions, Fields: defaultFields}).Return(&wfv1.WorkflowList{Items: wfv1.Workflows{
 		{ObjectMeta: metav1.ObjectMeta{Name: "foo-", CreationTimestamp: metav1.Time{Time: time.Now().Add(-2 * time.Hour)}}, Status: wfv1.WorkflowStatus{FinishedAt: metav1.Time{Time: time.Now().Add(-2 * time.Hour)}}},
 		{ObjectMeta: metav1.ObjectMeta{Name: "bar-", CreationTimestamp: metav1.Time{Time: time.Now()}}},
 		{ObjectMeta: metav1.ObjectMeta{
@@ -95,7 +95,7 @@ func list(listOptions *metav1.ListOptions, flags listFlags) (wfv1.Workflows, err
 
 func listEmpty(listOptions *metav1.ListOptions, flags listFlags) (wfv1.Workflows, error) {
 	c := &workflowmocks.WorkflowServiceClient{}
-	c.On("ListWorkflows", mock.Anything, &workflow.WorkflowListRequest{ListOptions: listOptions}).Return(&wfv1.WorkflowList{Items: wfv1.Workflows{}}, nil)
+	c.On("ListWorkflows", mock.Anything, &workflow.WorkflowListRequest{ListOptions: listOptions, Fields: defaultFields}).Return(&wfv1.WorkflowList{Items: wfv1.Workflows{}}, nil)
 	workflows, err := listWorkflows(context.Background(), c, flags)
 	return workflows, err
 }

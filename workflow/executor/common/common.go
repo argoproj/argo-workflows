@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -13,6 +14,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 
+	envutil "github.com/argoproj/argo-workflows/v3/util/env"
 	"github.com/argoproj/argo-workflows/v3/util/slice"
 )
 
@@ -38,7 +40,7 @@ type KubernetesClientInterface interface {
 
 // WaitForTermination of the given containerName, set the timeout to 0 to discard it
 func WaitForTermination(ctx context.Context, c KubernetesClientInterface, containerNames []string, timeout time.Duration) error {
-	ticker := time.NewTicker(time.Second * 5)
+	ticker := time.NewTicker(envutil.LookupEnvDurationOr("WAIT_CONTAINER_STATUS_CHECK_INTERVAL", time.Second*5))
 	defer ticker.Stop()
 	timer := time.NewTimer(timeout)
 	if timeout == 0 {
@@ -150,7 +152,7 @@ func CopyArchive(ctx context.Context, c KubernetesClientInterface, containerName
 	if err != nil {
 		return err
 	}
-	f, err := os.OpenFile(destPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o666)
+	f, err := os.OpenFile(filepath.Clean(destPath), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
 	if err != nil {
 		return err
 	}

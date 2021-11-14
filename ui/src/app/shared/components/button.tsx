@@ -17,7 +17,11 @@ export const Button = ({
     icon?: Icon;
     className?: string;
 }) => (
-    <button className={'argo-button ' + (!outline ? 'argo-button--base' : 'argo-button--base-o') + ' ' + (className || '')} title={title} onClick={onClick}>
+    <button
+        style={{marginBottom: 2, marginRight: 2}}
+        className={'argo-button ' + (!outline ? 'argo-button--base' : 'argo-button--base-o') + ' ' + (className || '')}
+        title={title}
+        onClick={onClick}>
         {icon && <i className={'fa fa-' + icon} />} {children}
     </button>
 );

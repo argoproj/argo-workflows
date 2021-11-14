@@ -2,10 +2,6 @@
 
 list workflow templates
 
-### Synopsis
-
-list workflow templates
-
 ```
 argo template list [flags]
 ```

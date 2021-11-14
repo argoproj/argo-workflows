@@ -453,7 +453,32 @@ func TestStepArtReference(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-var unsatisfiedParam = `
+var paramWithValueFromConfigMapRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+        valueFrom:
+          configMapKeyRef:
+            name: simple-config
+            key: msg
+    container:
+      image: docker/whalesay:latest
+`
+
+func TestParamWithValueFromConfigMapRef(t *testing.T) {
+	_, err := validate(paramWithValueFromConfigMapRef)
+	assert.NoError(t, err)
+}
+
+var paramWithoutValue = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -469,8 +494,8 @@ spec:
       image: docker/whalesay:latest
 `
 
-func TestUnsatisfiedParam(t *testing.T) {
-	_, err := validate(unsatisfiedParam)
+func TestParamWithoutValue(t *testing.T) {
+	_, err := validate(paramWithoutValue)
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "not supplied")
 	}
@@ -552,8 +577,62 @@ spec:
     outputs: {}
 `
 
+var nestedGlobalParam = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: global-output
+spec:
+  entrypoint: global-output
+  templates:
+  - name: global-output
+    steps:
+    - - name: nested
+        template: nested-level1
+    - - name: consume-global
+        template: consume-global
+        arguments:
+          artifacts:
+          - name: art
+            from: "{{workflow.outputs.artifacts.global-art}}"
+
+  - name: nested-level1
+    steps:
+      - - name: nested
+          template: nested-level2
+
+  - name: nested-level2
+    steps:
+      - - name: nested
+          template: output-global
+
+  - name: output-global
+    container:
+      image: alpine:3.7
+      command: [sh, -c]
+      args: ["sleep 1; echo -n art > /tmp/art.txt; echo -n param > /tmp/param.txt"]
+    outputs:
+      artifacts:
+      - name: hello-art
+        path: /tmp/art.txt
+        globalName: global-art
+
+  - name: consume-global
+    inputs:
+      artifacts:
+      - name: art
+        path: /art
+    container:
+      image: alpine:3.7
+      command: [sh, -c]
+      args: ["cat /art"]
+`
+
 func TestGlobalParam(t *testing.T) {
 	_, err := validate(globalParam)
+	assert.NoError(t, err)
+
+	_, err = validate(nestedGlobalParam)
 	assert.NoError(t, err)
 
 	_, err = validate(unsuppliedArgValue)
@@ -1769,6 +1848,7 @@ func TestIncorrectPodGCStrategy(t *testing.T) {
 	}
 }
 
+//nolint:gosec
 var validAutomountServiceAccountTokenUseWfLevel = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -1791,6 +1871,7 @@ spec:
     ServiceAccountName: foo
 `
 
+//nolint:gosec
 var validAutomountServiceAccountTokenUseTmplLevel = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -1807,6 +1888,7 @@ spec:
   automountServiceAccountToken: false
 `
 
+//nolint:gosec
 var invalidAutomountServiceAccountTokenUseWfLevel = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -1821,6 +1903,7 @@ spec:
   automountServiceAccountToken: false
 `
 
+//nolint:gosec
 var invalidAutomountServiceAccountTokenUseTmplLevel = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -2191,7 +2274,7 @@ spec:
       args: ["name: {{inputs.parameters.name}} namespace: {{inputs.parameters.namespace}} serviceAccountName: {{inputs.parameters.serviceAccountName}} uid: {{inputs.parameters.uid}} priority: {{inputs.parameters.priority}} duration: {{inputs.parameters.duration}}"]
 `
 
-func TestWorfklowGlobalVariables(t *testing.T) {
+func TestWorkflowGlobalVariables(t *testing.T) {
 	_, err := validate(globalVariables)
 	assert.NoError(t, err)
 }

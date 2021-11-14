@@ -1,6 +1,7 @@
 package cron
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -35,7 +36,7 @@ func NewCreateCommand() *cobra.Command {
 				os.Exit(1)
 			}
 
-			CreateCronWorkflows(args, &cliCreateOpts, &submitOpts)
+			CreateCronWorkflows(cmd.Context(), args, &cliCreateOpts, &submitOpts)
 		},
 	}
 
@@ -46,8 +47,8 @@ func NewCreateCommand() *cobra.Command {
 	return command
 }
 
-func CreateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts, submitOpts *wfv1.SubmitOpts) {
-	ctx, apiClient := client.NewAPIClient()
+func CreateCronWorkflows(ctx context.Context, filePaths []string, cliOpts *cliCreateOpts, submitOpts *wfv1.SubmitOpts) {
+	ctx, apiClient := client.NewAPIClient(ctx)
 	serviceClient, err := apiClient.NewCronWorkflowServiceClient()
 	if err != nil {
 		log.Fatal(err)
@@ -81,6 +82,17 @@ func CreateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts, submitOpts 
 			log.Fatal(err)
 		}
 		cronWf.Spec.WorkflowSpec = newWf.Spec
+		// We have only copied the workflow spec to the cron workflow but not the metadata
+		// that includes name and generateName. Here we copy the metadata to the cron
+		// workflow's metadata and remove the unnecessary and mutually exclusive part.
+		if generateName := newWf.ObjectMeta.GenerateName; generateName != "" {
+			cronWf.ObjectMeta.GenerateName = generateName
+			cronWf.ObjectMeta.Name = ""
+		}
+		if name := newWf.ObjectMeta.Name; name != "" {
+			cronWf.ObjectMeta.Name = name
+			cronWf.ObjectMeta.GenerateName = ""
+		}
 		if cronWf.Namespace == "" {
 			cronWf.Namespace = client.Namespace()
 		}

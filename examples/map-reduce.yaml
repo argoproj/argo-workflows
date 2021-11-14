@@ -35,13 +35,11 @@ spec:
                 - name: part
                   s3:
                     key: "{{workflow.name}}/parts/{{item}}.json"
-            dependencies:
-              - split
+            depends: "split"
             withParam: '{{tasks.split.outputs.result}}'
           - name: reduce
             template: reduce
-            dependencies:
-              - map
+            depends: "map"
     # The `split` task creates a number of "parts". Each part has a unique ID (index).
     # This task writes one "part file" for each of pieces of processing that needs doing, into to single directory
     # which is then saved as an output artifact.

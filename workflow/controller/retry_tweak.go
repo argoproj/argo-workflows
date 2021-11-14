@@ -2,6 +2,7 @@ package controller
 
 import (
 	apiv1 "k8s.io/api/core/v1"
+	"k8s.io/utils/env"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	wfretry "github.com/argoproj/argo-workflows/v3/workflow/util/retry"
@@ -30,7 +31,7 @@ func RetryOnDifferentHost(retryNodeName string) RetryTweak {
 			return
 		}
 		hostNames := wfretry.GetFailHosts(nodes, retryNodeName)
-		hostLabel := "kubernetes.io/hostname"
+		hostLabel := env.GetString("RETRY_HOST_NAME_LABEL_KEY", "kubernetes.io/hostname")
 		if hostLabel != "" && len(hostNames) > 0 {
 			pod.Spec.Affinity = wfretry.AddHostnamesToAffinity(hostLabel, hostNames, pod.Spec.Affinity)
 		}

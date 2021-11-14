@@ -341,6 +341,20 @@ func (w *When) CreateConfigMap(name string, data map[string]string) *When {
 	return w
 }
 
+func (w *When) UpdateConfigMap(name string, data map[string]string) *When {
+	w.t.Helper()
+
+	ctx := context.Background()
+	_, err := w.kubeClient.CoreV1().ConfigMaps(Namespace).Update(ctx, &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Labels: map[string]string{Label: "true"}},
+		Data:       data,
+	}, metav1.UpdateOptions{})
+	if err != nil {
+		w.t.Fatal(err)
+	}
+	return w
+}
+
 func (w *When) DeleteConfigMap(name string) *When {
 	w.t.Helper()
 	ctx := context.Background()

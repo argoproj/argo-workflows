@@ -3,10 +3,9 @@ package commands
 import (
 	"context"
 
+	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/argoproj/pkg/errors"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
@@ -74,7 +73,7 @@ func NewResubmitCommand() *cobra.Command {
 				cliSubmitOpts.priority = &resubmitOpts.priority
 			}
 
-			ctx, apiClient := client.NewAPIClient()
+			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			resubmitOpts.namespace = client.Namespace()
 			err := resubmitWorkflows(ctx, serviceClient, resubmitOpts, cliSubmitOpts, args)

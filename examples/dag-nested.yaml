@@ -20,17 +20,17 @@ spec:
         arguments:
           parameters: [{name: message, value: A}]
       - name: B
-        dependencies: [A]
+        depends: "A"
         template: nested-diamond
         arguments:
           parameters: [{name: message, value: B}]
       - name: C
-        dependencies: [A]
+        depends: "A"
         template: nested-diamond
         arguments:
           parameters: [{name: message, value: C}]
       - name: D
-        dependencies: [B, C]
+        depends: "B && C"
         template: nested-diamond
         arguments:
           parameters: [{name: message, value: D}]
@@ -45,17 +45,17 @@ spec:
         arguments:
           parameters: [{name: message, value: "{{inputs.parameters.message}}A"}]
       - name: B
-        dependencies: [A]
+        depends: "A"
         template: echo
         arguments:
           parameters: [{name: message, value: "{{inputs.parameters.message}}B"}]
       - name: C
-        dependencies: [A]
+        depends: "A"
         template: echo
         arguments:
           parameters: [{name: message, value: "{{inputs.parameters.message}}C"}]
       - name: D
-        dependencies: [B, C]
+        depends: "B && C"
         template: echo
         arguments:
           parameters: [{name: message, value: "{{inputs.parameters.message}}D"}]
