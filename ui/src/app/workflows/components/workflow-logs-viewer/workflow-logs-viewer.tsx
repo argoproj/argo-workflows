@@ -40,7 +40,12 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
             .getContainerLogs(workflow, podName, nodeId, selectedContainer, grep, archived)
             .map(e => (!podName ? e.podName + ': ' : '') + e.content + '\n')
             // this next line highlights the search term in bold with a yellow background, white text
-            .map(x => x.replace(new RegExp(grep, 'g'), y => '\u001b[1m\u001b[43;1m\u001b[37m' + y + '\u001b[0m'))
+            .map(x => {
+                if (grep !== '') {
+                    return x.replace(new RegExp(grep, 'g'), y => '\u001b[1m\u001b[43;1m\u001b[37m' + y + '\u001b[0m');
+                }
+                return x;
+            })
             .publishReplay()
             .refCount();
         const subscription = source.subscribe(
