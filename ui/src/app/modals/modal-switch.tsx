@@ -1,9 +1,9 @@
 import * as React from 'react';
 import {useEffect, useState} from 'react';
-import {getCookie, setCookie} from './cookie';
-import {FeedbackModal} from './feedback-modal';
-import {FirstTimeUserModal} from './first-time-user-modal';
-import {NewVersionModal} from './new-version-modal';
+import {getCookie, setCookie} from '../shared/cookie';
+import {FeedbackModal} from './feedback/feedback-modal';
+import {FirstTimeUserModal} from './first-time-user/first-time-user-modal';
+import {NewVersionModal} from './new-version/new-version-modal';
 import {majorMinor} from './version';
 
 export const ModalSwitch = ({version, modals}: {version: string; modals: {[key: string]: boolean}}) => {

@@ -1,6 +1,6 @@
 import * as React from 'react';
-import {Modal} from '../shared/components/modal/modal';
-import {SurveyButton} from './survey-button';
+import {Modal} from '../../shared/components/modal/modal';
+import {SurveyButton} from '../../shared/components/survey-button';
 
 require('./new-version-modal.scss');
 /**
@@ -19,7 +19,7 @@ export const NewVersionModal = ({version, dismiss}: {version: string; dismiss: (
             <ul className='new-version-modal-bullets'>
                 <li>
                     Writing workflows <b>without YAML</b> using{' '}
-                    <a href='https://argoproj.github.io/argo-workflows/client-libraries/' target='_blank'>
+                    <a href='https://argoproj.github.io/argo-workflows/client-libraries/?utm_source=argo-ui' target='_blank'>
                         Python and Java SDKs
                     </a>
                     .
@@ -33,14 +33,14 @@ export const NewVersionModal = ({version, dismiss}: {version: string; dismiss: (
                 </li>
                 <li>
                     Interact with third-party systems using{' '}
-                    <a href='https://argoproj.github.io/argo-workflows/http-template/' target='_blank'>
+                    <a href='https://argoproj.github.io/argo-workflows/http-template/?utm_source=argo-ui' target='_blank'>
                         HTTP template
                     </a>
                     .
                 </li>
             </ul>
             <p>
-                <a href='https://blog.argoproj.io/argo-workflows-v3-2-af780a99b362' target='_blank'>
+                <a href='https://blog.argoproj.io/argo-workflows-v3-2-af780a99b362?utm_source=argo-ui' target='_blank'>
                     Learn more
                 </a>
             </p>
@@ -48,28 +48,28 @@ export const NewVersionModal = ({version, dismiss}: {version: string; dismiss: (
             <ul className='new-version-modal-bullets'>
                 <li>
                     Run workflows <b>faster and cheaper</b>{' '}
-                    <a href='https://argoproj.github.io/argo-workflows/container-set-template/' target='_blank'>
+                    <a href='https://argoproj.github.io/argo-workflows/container-set-template/?utm_source=argo-ui' target='_blank'>
                         using container set template and Emissary executor
                     </a>
                     .
                 </li>
                 <li>
                     Run fan-out workflows based on bucket contents using{' '}
-                    <a href='https://argoproj.github.io/argo-workflows/data-sourcing-and-transformation/' target='_blank'>
+                    <a href='https://argoproj.github.io/argo-workflows/data-sourcing-and-transformation/?utm_source=argo-ui' target='_blank'>
                         data templates
                     </a>
                     .
                 </li>
                 <li>
                     Complex and dynamic templating using{' '}
-                    <a href='https://argoproj.github.io/argo-workflows/variables/#expression' target='_blank'>
+                    <a href='https://argoproj.github.io/argo-workflows/variables/?utm_source=argo-ui#expression' target='_blank'>
                         expression tag templates
                     </a>
                     .
                 </li>
             </ul>
             <p>
-                <a href='https://blog.argoproj.io/argo-workflows-v3-1-is-coming-1fb1c1091324' target='_blank'>
+                <a href='https://blog.argoproj.io/argo-workflows-v3-1-is-coming-1fb1c1091324?utm_source=argo-ui' target='_blank'>
                     Learn more
                 </a>
             </p>

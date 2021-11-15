@@ -1,4 +1,4 @@
-import {uiUrl} from '../shared/base';
+import {uiUrl} from './base';
 
 export const getCookie = (name: string) =>
     (
