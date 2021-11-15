@@ -153,7 +153,9 @@ func (woc *wfOperationCtx) getExecutorPlugins() ([]apiv1.Container, []string, er
 				return nil, nil, err
 			}
 			for _, cm := range cms {
-				sidecar := apiv1.Container{}
+				sidecar := apiv1.Container{
+					Name: cm.Name,
+				}
 				container := cm.Data["container"]
 				if err := yaml.Unmarshal([]byte(container), &sidecar); err != nil {
 					return nil, nil, fmt.Errorf("failed to parse %q: %w", container, err)
