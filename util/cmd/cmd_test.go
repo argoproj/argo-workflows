@@ -1,8 +1,13 @@
 package cmd
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 func TestMakeParseLabels(t *testing.T) {
@@ -75,5 +80,31 @@ func TestMakeParseLabels(t *testing.T) {
 		if err == nil {
 			t.Errorf("labels %s expect error, reason: %s, got nil", test.labels, test.name)
 		}
+	}
+
+	warnCases := []struct {
+		name   string
+		labels interface{}
+	}{
+		{
+			name:   "reserved",
+			labels: common.LabelKeyCreatorEmail,
+		},
+	}
+	for _, test := range warnCases {
+		_, err := ParseLabels(test.labels)
+		if err == nil {
+			t.Errorf("labels %s expect error, reason: %s, got nil", test.labels, test.name)
+		}
+	}
+}
+
+func TestReservedLabel(t *testing.T) {
+	reservedLabel := fmt.Sprintf("%s=abc@xyz.com", common.LabelKeyCreatorEmail)
+	labels, err := ParseLabels(reservedLabel)
+
+	if assert.NoError(t, err) {
+		// Label doesn't get parsed because it is reserved
+		assert.Len(t, labels, 0)
 	}
 }

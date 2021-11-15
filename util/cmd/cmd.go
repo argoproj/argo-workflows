@@ -12,6 +12,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 // NewVersionCmd returns a new `version` command to be used as a sub-command to root
@@ -87,6 +88,12 @@ func ParseLabels(labelSpec interface{}) (map[string]string, error) {
 		if len(labelSpec[0]) == 0 {
 			return nil, fmt.Errorf("unexpected empty label key")
 		}
+
+		if _, reserved := common.ReservedWorkflowLabelKeys[labelSpec[0]]; reserved {
+			log.Warnf("Ignoring label with key '%s' as it is reserved", labelSpec[0])
+			continue
+		}
+
 		labels[labelSpec[0]] = labelSpec[1]
 	}
 	return labels, nil

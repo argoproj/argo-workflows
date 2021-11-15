@@ -73,7 +73,7 @@ const (
 	LabelKeyWorkflowTemplate = workflow.WorkflowFullName + "/workflow-template"
 	// LabelKeyWorkflowEventBinding is a label applied to Workflows that are submitted from a WorkflowEventBinding
 	LabelKeyWorkflowEventBinding = workflow.WorkflowFullName + "/workflow-event-binding"
-	// LabelKeyWorkflowTemplate is a label applied to Workflows that are submitted from ClusterWorkflowtemplate
+	// LabelKeyClusterWorkflowTemplate is a label applied to Workflows that are submitted from ClusterWorkflowtemplate
 	LabelKeyClusterWorkflowTemplate = workflow.WorkflowFullName + "/cluster-workflow-template"
 	// LabelKeyOnExit is a label applied to Pods that are run from onExit nodes, so that they are not shut down when stopping a Workflow
 	LabelKeyOnExit = workflow.WorkflowFullName + "/on-exit"
@@ -202,8 +202,27 @@ const (
 // AnnotationKeyKillCmd specifies the command to use to kill to container, useful for injected sidecars
 var AnnotationKeyKillCmd = func(containerName string) string { return workflow.WorkflowFullName + "/kill-cmd-" + containerName }
 
-// GlobalVarWorkflowRootTags is a list of root tags in workflow which could be used for variable reference
+// GlobalVarValidWorkflowVariablePrefix is a list of root tags in workflow which could be used for variable reference
 var GlobalVarValidWorkflowVariablePrefix = []string{"item.", "steps.", "inputs.", "outputs.", "pod.", "workflow.", "tasks."}
+
+// ReservedWorkflowLabelKeys keeps track of workflow label keys that are managed by Argo Workflows, so they cannot be
+// overridden using the CLI. Note that users can still edit these keys directly with K8s... to prevent that appropriate
+// RBAC permissions should be set.
+var ReservedWorkflowLabelKeys = map[string]bool{
+	LabelKeyControllerInstanceID:    true,
+	LabelKeyCreator:                 true,
+	LabelKeyCreatorEmail:            true,
+	LabelKeyCompleted:               true,
+	LabelKeyWorkflowArchivingStatus: true,
+	LabelKeyWorkflow:                true,
+	LabelKeyPhase:                   true,
+	LabelKeyPreviousWorkflowName:    true,
+	LabelKeyCronWorkflow:            true,
+	LabelKeyWorkflowTemplate:        true,
+	LabelKeyWorkflowEventBinding:    true,
+	LabelKeyClusterWorkflowTemplate: true,
+	LabelKeyOnExit:                  true,
+}
 
 func UnstructuredHasCompletedLabel(obj interface{}) bool {
 	if wf, ok := obj.(*unstructured.Unstructured); ok {
