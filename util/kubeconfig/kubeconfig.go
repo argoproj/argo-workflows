@@ -3,6 +3,7 @@ package kubeconfig
 import (
 	"encoding/base64"
 	"fmt"
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -179,8 +180,8 @@ func GetBearerToken(in *restclient.Config, explicitKubeConfigPath string) (strin
 			return "", err
 		}
 
-		println("ALEX", "req=", req)
-		println("ALEX", "resp=", resp)
+		println("ALEX", "resp.statusCode=", resp.StatusCode)
+		println("ALEX", "resp.headers=", v1alpha1.MustMarshallJSON(resp.Header))
 
 		if err := resp.Body.Close(); err != nil {
 			return "", err
