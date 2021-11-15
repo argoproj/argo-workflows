@@ -1,7 +1,7 @@
 package rpc
 
 import (
-	plugins "github.com/argoproj/argo-workflows/v3/pkg/plugins/agent"
+	executorplugins "github.com/argoproj/argo-workflows/v3/pkg/plugins/executor"
 	rpc "github.com/argoproj/argo-workflows/v3/workflow/util/plugins"
 )
 
@@ -11,8 +11,8 @@ func New(address string) *plugin {
 	return &plugin{Plugin: rpc.New(address)}
 }
 
-var _ plugins.TemplateExecutor = &plugin{}
+var _ executorplugins.TemplateExecutor = &plugin{}
 
-func (p *plugin) ExecuteTemplate(args plugins.ExecuteTemplateArgs, reply *plugins.ExecuteTemplateReply) error {
+func (p *plugin) ExecuteTemplate(args executorplugins.ExecuteTemplateArgs, reply *executorplugins.ExecuteTemplateReply) error {
 	return p.Call("template.execute", args, reply)
 }

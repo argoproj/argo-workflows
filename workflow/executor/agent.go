@@ -21,7 +21,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	agentplugins "github.com/argoproj/argo-workflows/v3/pkg/plugins/agent"
+	executorplugins "github.com/argoproj/argo-workflows/v3/pkg/plugins/executor"
 	"github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	argohttp "github.com/argoproj/argo-workflows/v3/workflow/executor/http"
@@ -34,7 +34,7 @@ type AgentExecutor struct {
 	RESTClient        rest.Interface
 	Namespace         string
 	CompleteTask      map[string]struct{}
-	Plugins           []agentplugins.TemplateExecutor
+	Plugins           []executorplugins.TemplateExecutor
 }
 
 type templateExecutor = func(ctx context.Context, tmpl wfv1.Template, reply *wfv1.NodeResult) error
@@ -62,7 +62,7 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 				return apierr.FromObject(event.Object)
 			}
 			if IsWorkflowCompleted(obj) {
-				log.WithField("taskset", ae.WorkflowName).Info("stopped plugins")
+				log.WithField("taskset", ae.WorkflowName).Info("stopped agent")
 				os.Exit(0)
 			}
 			tasks := obj.Spec.Tasks
@@ -147,13 +147,13 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Temp
 }
 
 func (ae *AgentExecutor) executePluginTemplate(_ context.Context, tmpl wfv1.Template, result *wfv1.NodeResult) error {
-	args := agentplugins.ExecuteTemplateArgs{
+	args := executorplugins.ExecuteTemplateArgs{
 		Workflow: &wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{Name: ae.WorkflowName},
 		},
 		Template: &tmpl,
 	}
-	reply := &agentplugins.ExecuteTemplateReply{}
+	reply := &executorplugins.ExecuteTemplateReply{}
 	for _, plug := range ae.Plugins {
 		err := retry.OnError(retry.DefaultBackoff, func(err error) bool {
 			return true
