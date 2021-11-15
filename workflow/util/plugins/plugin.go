@@ -32,7 +32,7 @@ func (p *Plugin) Call(method string, args interface{}, reply interface{}) error 
 	if err != nil {
 		return err
 	}
-	resp, err := http.Post(fmt.Sprintf("%s/%s", p.Address, method), "application/json", bytes.NewBuffer(req))
+	resp, err := http.Post(fmt.Sprintf("%s/api/v1/%s", p.Address, method), "application/json", bytes.NewBuffer(req))
 	if err != nil {
 		return err
 	}

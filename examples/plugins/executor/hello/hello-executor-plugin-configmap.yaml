@@ -31,7 +31,7 @@ data:
               self.end_headers()
 
           def do_POST(self):
-              if self.path == '/template.execute':
+              if self.path == '/api/v1/template.execute':
                   args = self.args()
                   if 'howdy' in args['template']['plugin']:
                       self.reply({'node': {'phase': 'Succeeded', 'message': 'Hello template!'}})

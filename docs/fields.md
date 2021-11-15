@@ -2834,7 +2834,7 @@ Data is a data template
 
 - [`hello-controller-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/hello/hello-controller-plugin-configmap.yaml)
 
-- [`hello-agent-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/hello/hello-agent-plugin-configmap.yaml)
+- [`hello-executor-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/hello/hello-executor-plugin-configmap.yaml)
 
 - [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-delete-with-flags.yaml)
 
@@ -2877,7 +2877,7 @@ _No description available_
 
 - [`hello-controller-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/hello/hello-controller-plugin-configmap.yaml)
 
-- [`hello-agent-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/hello/hello-agent-plugin-configmap.yaml)
+- [`hello-executor-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/hello/hello-executor-plugin-configmap.yaml)
 
 - [`sidecar-nginx.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar-nginx.yaml)
 
@@ -3736,7 +3736,7 @@ HTTPArtifact allows an file served on HTTP to be placed as an input artifact in 
 
 - [`hello-controller-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/hello/hello-controller-plugin-configmap.yaml)
 
-- [`hello-agent-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/hello/hello-agent-plugin-configmap.yaml)
+- [`hello-executor-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/hello/hello-executor-plugin-configmap.yaml)
 
 - [`sidecar-nginx.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar-nginx.yaml)
 
@@ -4001,7 +4001,7 @@ MetricLabel is a single label for a prometheus metric
 
 - [`hello-controller-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/hello/hello-controller-plugin-configmap.yaml)
 
-- [`hello-agent-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/hello/hello-agent-plugin-configmap.yaml)
+- [`hello-executor-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/hello/hello-executor-plugin-configmap.yaml)
 
 - [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy-with-label-selector.yaml)
 
@@ -4983,7 +4983,7 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/hello/hello-workflow.yaml)
 
-- [`hello-agent-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/hello/hello-agent-plugin-configmap.yaml)
+- [`hello-executor-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/hello/hello-executor-plugin-configmap.yaml)
 
 - [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/hello/hello-workflow.yaml)
 

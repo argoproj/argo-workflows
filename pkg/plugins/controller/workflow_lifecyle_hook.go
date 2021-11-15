@@ -7,15 +7,18 @@ import (
 // swagger:parameters workflowPreOperate
 type WorkflowPreOperateRequest struct {
 	// in: body
+	// Required: true
 	Body WorkflowPreOperateArgs
 }
 type WorkflowPreOperateArgs struct {
+	// Required: true
 	Workflow *wfv1.Workflow `json:"workflow"`
 }
 
 // swagger:response workflowPreOperate
 type WorkflowPreOperateResponse struct {
 	// in: body
+	// Required: true
 	Body WorkflowPreOperateReply
 }
 type WorkflowPreOperateReply struct {
@@ -25,11 +28,14 @@ type WorkflowPreOperateReply struct {
 // swagger:parameters workflowPostOperate
 type WorkflowPostOperateRequest struct {
 	// in: body
+	// Required: true
 	Body WorkflowPreOperateArgs
 }
 
 type WorkflowPostOperateArgs struct {
+	// Required: true
 	Old *wfv1.Workflow `json:"old"`
+	// Required: true
 	New *wfv1.Workflow `json:"new"`
 }
 

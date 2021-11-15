@@ -7,11 +7,14 @@ import (
 // swagger:parameters executeTemplate
 type ExecuteTemplateRequest struct {
 	// in: body
+	// Required: true
 	Body ExecuteTemplateArgs
 }
 
 type ExecuteTemplateArgs struct {
+	// Required: true
 	Workflow *wfv1.Workflow `json:"workflow"`
+	// Required: true
 	Template *wfv1.Template `json:"template"`
 }
 

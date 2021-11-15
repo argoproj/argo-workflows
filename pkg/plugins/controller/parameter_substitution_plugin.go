@@ -5,17 +5,21 @@ import wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 // swagger:parameters addParameters
 type ParameterPreSubstitutionRequest struct {
 	// in: body
+	// Required: true
 	Body ParameterPreSubstitutionArgs
 }
 
 // swagger:response addParameters
 type ParameterPreSubstitutionResponse struct {
 	// in: body
+	// Required: true
 	Body ParameterPreSubstitutionReply
 }
 
 type ParameterPreSubstitutionArgs struct {
+	// Required: true
 	Workflow *wfv1.Workflow `json:"workflow"`
+	// Required: true
 	Template *wfv1.Template `json:"template"`
 }
 

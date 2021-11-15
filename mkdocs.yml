@@ -81,6 +81,10 @@ nav:
           - security.md
           - running-at-massive-scale.md
           - plugins.md
+          - executor_plugins.md
+          - executor_swagger.md
+          - controller_plugins.md
+          - controller_swagger.md
       - ide-setup.md
       - Examples: https://github.com/argoproj/argo-workflows/blob/master/examples/README.md
       - Field Reference: fields.md

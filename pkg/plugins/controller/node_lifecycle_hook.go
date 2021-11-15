@@ -7,13 +7,17 @@ import (
 // swagger:parameters nodePreExecute
 type NodePreExecuteRequest struct {
 	// in: body
+	// Required: true
 	Body NodePreExecuteArgs
 }
 
 type NodePreExecuteArgs struct {
-	Workflow *wfv1.Workflow   `json:"workflow"`
-	Template *wfv1.Template   `json:"template"`
-	Node     *wfv1.NodeStatus `json:"node"`
+	// Required: true
+	Workflow *wfv1.Workflow `json:"workflow"`
+	// Required: true
+	Template *wfv1.Template `json:"template"`
+	// Required: true
+	Node *wfv1.NodeStatus `json:"node"`
 }
 
 // swagger:response nodePreExecute
@@ -29,6 +33,7 @@ type NodePreExecuteReply struct {
 // swagger:parameters nodePostExecute
 type NodePostExecuteRequest struct {
 	// in: body
+	// Required: true
 	Body NodePostExecuteArgs
 }
 
