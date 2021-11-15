@@ -81,22 +81,6 @@ func TestMakeParseLabels(t *testing.T) {
 			t.Errorf("labels %s expect error, reason: %s, got nil", test.labels, test.name)
 		}
 	}
-
-	warnCases := []struct {
-		name   string
-		labels interface{}
-	}{
-		{
-			name:   "reserved",
-			labels: common.LabelKeyCreatorEmail,
-		},
-	}
-	for _, test := range warnCases {
-		_, err := ParseLabels(test.labels)
-		if err == nil {
-			t.Errorf("labels %s expect error, reason: %s, got nil", test.labels, test.name)
-		}
-	}
 }
 
 func TestReservedLabel(t *testing.T) {
