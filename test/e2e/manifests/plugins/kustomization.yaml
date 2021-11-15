@@ -3,7 +3,7 @@ kind: Kustomization
 
 resources:
   - ../minimal
-  - ../../../../examples/plugins/executor/hello/hello-agent-plugin-configmap.yaml
+  - ../../../../examples/plugins/executor/hello/hello-executor-plugin-configmap.yaml
   - ../../../../examples/plugins/controller/hello/hello-controller-plugin-configmap.yaml
 
 commonLabels:
