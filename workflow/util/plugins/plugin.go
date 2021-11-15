@@ -41,7 +41,7 @@ func (p *Plugin) Call(method string, args interface{}, reply interface{}) error 
 	case 200:
 		return json.NewDecoder(resp.Body).Decode(reply)
 	case 404:
-		log.WithField("address", p.invalid).
+		log.WithField("address", p.Address).
 			WithField("method", method).
 			Info("method not found, never calling again")
 		p.invalid[method] = true

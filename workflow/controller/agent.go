@@ -153,29 +153,15 @@ func (woc *wfOperationCtx) getExecutorPlugins() ([]apiv1.Container, []string, er
 				return nil, nil, err
 			}
 			for _, cm := range cms {
-				var command, args []string
-				if v, ok := cm.Data["command"]; ok {
-					if err := yaml.Unmarshal([]byte(v), &command); err != nil {
-						return nil, nil, fmt.Errorf("failed to parse %q: %w", v, err)
-					}
+				sidecar := apiv1.Container{}
+				container := cm.Data["container"]
+				if err := yaml.Unmarshal([]byte(container), &sidecar); err != nil {
+					return nil, nil, fmt.Errorf("failed to parse %q: %w", container, err)
 				}
-				if v, ok := cm.Data["args"]; ok {
-					if err := yaml.Unmarshal([]byte(v), &args); err != nil {
-						return nil, nil, fmt.Errorf("failed to parse %q: %w", v, err)
-					}
-				}
-				image, address := cm.Data["image"], cm.Data["address"]
-				log.WithField("command", command).
-					WithField("args", args).
-					WithField("image", image).
-					WithField("address", address).
+				address := cm.Data["address"]
+				log.WithField("sidecar", wfv1.MustMarshallJSON(sidecar)).
 					Debug("adding agent plugins sidecar")
-				sidecars = append(sidecars, apiv1.Container{
-					Name:    cm.Name,
-					Image:   image,
-					Command: command,
-					Args:    args,
-				})
+				sidecars = append(sidecars, sidecar)
 				addresses = append(addresses, address)
 			}
 		}
