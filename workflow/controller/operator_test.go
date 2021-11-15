@@ -7620,3 +7620,33 @@ func TestExitHandlerWithRetryNodeParam(t *testing.T) {
 	onExitNode := woc.wf.GetNodeByName("exit-handler-with-param-xbh52[0].step-1.onExit")
 	assert.Equal(t, "hello world", onExitNode.Inputs.Parameters[0].Value.String())
 }
+
+func TestReOperateCompletedWf(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+metadata:
+  name: my-wf
+  namespace: my-ns
+spec:
+  entrypoint: main
+  templates:
+   - name: main
+     dag:
+       tasks:
+       - name: pod
+         template: pod
+   - name: pod
+     container: 
+       image: my-image
+`)
+	wf.Status.Phase = wfv1.WorkflowError
+	wf.Status.FinishedAt = metav1.Now()
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	assert.NotPanics(t, func() { woc.operate(ctx) })
+	woc.wf.Status.Nodes
+	b, _:= json.Marshal(woc.wf)
+	fmt.Println(string(b))
+}
