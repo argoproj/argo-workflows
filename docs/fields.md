@@ -5587,6 +5587,8 @@ A single application container that you want to run within a pod.
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation.yaml)
 
+- [`hello-executor-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/hello/hello-executor-plugin-configmap.yaml)
+
 - [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy-with-label-selector.yaml)
 
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy.yaml)

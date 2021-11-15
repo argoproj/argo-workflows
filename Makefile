@@ -271,7 +271,7 @@ docs: \
 	rm -Rf vendor v3
 	go mod tidy
 	# `go generate ./...` takes around 10s, so we only run on specific packages.
-	go generate ./persist/sqldb ./pkg/apiclient/workflow ./server/auth ./server/auth/sso ./workflow/executor
+	go generate ./persist/sqldb ./pkg/plugins ./pkg/apiclient/workflow ./server/auth ./server/auth/sso ./workflow/executor
 	./hack/check-env-doc.sh
 
 $(GOPATH)/bin/mockery:
