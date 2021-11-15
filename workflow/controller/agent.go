@@ -81,7 +81,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		}
 	}
 
-	pluginSidecars, pluginAddresses, err := woc.getAgentPlugins()
+	pluginSidecars, pluginAddresses, err := woc.getExecutorPlugins()
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +140,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	return created, nil
 }
 
-func (woc *wfOperationCtx) getAgentPlugins() ([]apiv1.Container, []string, error) {
+func (woc *wfOperationCtx) getExecutorPlugins() ([]apiv1.Container, []string, error) {
 	var sidecars []apiv1.Container
 	var addresses []string
 	if woc.controller.plugins {
@@ -148,7 +148,7 @@ func (woc *wfOperationCtx) getAgentPlugins() ([]apiv1.Container, []string, error
 		namespaces[woc.controller.namespace] = true
 		namespaces[woc.wf.Namespace] = true
 		for namespace := range namespaces {
-			cms, err := woc.controller.getConfigMaps(namespace, "AgentPlugin")
+			cms, err := woc.controller.getConfigMaps(namespace, "ExecutorPlugin")
 			if err != nil {
 				return nil, nil, err
 			}

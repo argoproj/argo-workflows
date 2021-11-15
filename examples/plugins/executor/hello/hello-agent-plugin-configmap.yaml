@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: hello-agent-plugin
   labels:
-    workflows.argoproj.io/configmap-type: AgentPlugin
+    workflows.argoproj.io/configmap-type: ExecutorPlugin
 data:
   address: http://localhost:4355
   image: python:alpine3.6
