@@ -447,8 +447,7 @@ const workflowtmpl = `
     "arguments": {
       "parameters": [
         {
-          "name": "message",
-          "value": "hello world"
+          "name": "message"
         }
       ]
     },
@@ -880,11 +879,25 @@ func TestPodLogs(t *testing.T) {
 
 func TestSubmitWorkflowFromResource(t *testing.T) {
 	server, ctx := getWorkflowServer()
-	t.Run("SubmitFromWorkflowTemplate", func(t *testing.T) {
-		wf, err := server.SubmitWorkflow(ctx, &workflowpkg.WorkflowSubmitRequest{
+	t.Run("SubmitFromWorkflowTemplate fails if missing parameters", func(t *testing.T) {
+		_, err := server.SubmitWorkflow(ctx, &workflowpkg.WorkflowSubmitRequest{
 			Namespace:    "workflows",
 			ResourceKind: "workflowtemplate",
 			ResourceName: "workflow-template-whalesay-template",
+		})
+		assert.EqualError(t, err, "spec.arguments.message.value is required")
+	})
+	t.Run("SubmitFromWorkflowTemplate", func(t *testing.T) {
+		opts := v1alpha1.SubmitOpts{
+			Parameters: []string{
+				"message=hello",
+			},
+		}
+		wf, err := server.SubmitWorkflow(ctx, &workflowpkg.WorkflowSubmitRequest{
+			Namespace:     "workflows",
+			ResourceKind:  "workflowtemplate",
+			ResourceName:  "workflow-template-whalesay-template",
+			SubmitOptions: &opts,
 		})
 		if assert.NoError(t, err) {
 			assert.NotNil(t, wf)

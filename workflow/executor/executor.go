@@ -81,7 +81,7 @@ type WorkflowExecutor struct {
 	errors []error
 
 	// current progress which is synced every `annotationPatchTickDuration` to the pods annotations.
-	progress string
+	progress wfv1.Progress
 
 	annotationPatchTickDuration  time.Duration
 	readProgressFileTickDuration time.Duration
@@ -980,9 +980,11 @@ func (we *WorkflowExecutor) monitorProgress(ctx context.Context, progressFile st
 			log.WithError(ctx.Err()).Info("stopping progress monitor (context done)")
 			return
 		case <-annotationPatchTicker.C:
-			log.WithField("progress", we.progress).Infof("patching pod progress annotation")
-			if err := we.AddAnnotation(ctx, common.AnnotationKeyProgress, we.progress); err != nil {
-				log.WithField("progress", we.progress).WithError(err).Warn("failed to patch progress annotation")
+			if we.progress != "" {
+				log.WithField("progress", we.progress).Infof("patching pod progress annotation")
+				if err := we.AddAnnotation(ctx, common.AnnotationKeyProgress, string(we.progress)); err != nil {
+					log.WithField("progress", we.progress).WithError(err).Warn("failed to patch progress annotation")
+				}
 			}
 		case <-fileTicker.C:
 			data, err := ioutil.ReadFile(progressFile)
@@ -1002,7 +1004,7 @@ func (we *WorkflowExecutor) monitorProgress(ctx context.Context, progressFile st
 
 			if progress, ok := wfv1.ParseProgress(lastLine); ok {
 				log.WithField("progress", progress).Info()
-				we.progress = string(progress)
+				we.progress = progress
 			} else {
 				log.WithField("line", lastLine).Info("unable to parse progress")
 			}
