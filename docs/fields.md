@@ -242,6 +242,8 @@ Workflow is the definition of a workflow resource
 
 - [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/hello/hello-workflow.yaml)
 
+- [`slack-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/slack/slack-workflow.yaml)
+
 - [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy-with-label-selector.yaml)
 
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy.yaml)
@@ -662,6 +664,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/hello/hello-workflow.yaml)
 
 - [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/hello/hello-workflow.yaml)
+
+- [`slack-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/slack/slack-workflow.yaml)
 
 - [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy-with-label-selector.yaml)
 
@@ -1102,6 +1106,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/hello/hello-workflow.yaml)
 
+- [`slack-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/slack/slack-workflow.yaml)
+
 - [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy-with-label-selector.yaml)
 
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy.yaml)
@@ -1496,6 +1502,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/hello/hello-workflow.yaml)
 
 - [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/hello/hello-workflow.yaml)
+
+- [`slack-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/slack/slack-workflow.yaml)
 
 - [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy-with-label-selector.yaml)
 
@@ -2836,6 +2844,8 @@ Data is a data template
 
 - [`hello-executor-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/hello/hello-executor-plugin-configmap.yaml)
 
+- [`slack-executor-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/slack/slack-executor-plugin-configmap.yaml)
+
 - [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-delete-with-flags.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-tmpl-level.yaml)
@@ -2878,6 +2888,8 @@ _No description available_
 - [`hello-controller-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/hello/hello-controller-plugin-configmap.yaml)
 
 - [`hello-executor-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/hello/hello-executor-plugin-configmap.yaml)
+
+- [`slack-executor-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/slack/slack-executor-plugin-configmap.yaml)
 
 - [`sidecar-nginx.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar-nginx.yaml)
 
@@ -3738,6 +3750,8 @@ HTTPArtifact allows an file served on HTTP to be placed as an input artifact in 
 
 - [`hello-executor-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/hello/hello-executor-plugin-configmap.yaml)
 
+- [`slack-executor-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/slack/slack-executor-plugin-configmap.yaml)
+
 - [`sidecar-nginx.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar-nginx.yaml)
 
 - [`sidecar.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar.yaml)
@@ -3860,6 +3874,8 @@ ValueFrom describes a location in which to obtain the value to a parameter
 - [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation-dag.yaml)
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation.yaml)
+
+- [`slack-executor-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/slack/slack-executor-plugin-configmap.yaml)
 
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-spec-from-previous-step.yaml)
 
@@ -4002,6 +4018,8 @@ MetricLabel is a single label for a prometheus metric
 - [`hello-controller-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/hello/hello-controller-plugin-configmap.yaml)
 
 - [`hello-executor-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/hello/hello-executor-plugin-configmap.yaml)
+
+- [`slack-executor-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/slack/slack-executor-plugin-configmap.yaml)
 
 - [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy-with-label-selector.yaml)
 
@@ -4710,6 +4728,8 @@ _No description available_
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation.yaml)
 
+- [`slack-executor-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/slack/slack-executor-plugin-configmap.yaml)
+
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-spec-from-previous-step.yaml)
 
 - [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/secrets.yaml)
@@ -4986,6 +5006,12 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`hello-executor-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/hello/hello-executor-plugin-configmap.yaml)
 
 - [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/hello/hello-workflow.yaml)
+
+- [`slack-executor-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/slack/slack-executor-plugin-configmap.yaml)
+
+- [`slack-executor-plugin-secret.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/slack/slack-executor-plugin-secret.yaml)
+
+- [`slack-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/slack/slack-workflow.yaml)
 
 - [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy-with-label-selector.yaml)
 
@@ -5589,6 +5615,8 @@ A single application container that you want to run within a pod.
 
 - [`hello-executor-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/hello/hello-executor-plugin-configmap.yaml)
 
+- [`slack-executor-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/slack/slack-executor-plugin-configmap.yaml)
+
 - [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy-with-label-selector.yaml)
 
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy.yaml)
@@ -5782,6 +5810,8 @@ EnvVar represents an environment variable present in a Container.
 - [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-destructure-json.yaml)
 
 - [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-reusing-verbose-snippets.yaml)
+
+- [`slack-executor-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/slack/slack-executor-plugin-configmap.yaml)
 
 - [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/secrets.yaml)
 
@@ -6305,6 +6335,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/hello/hello-workflow.yaml)
 
 - [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/hello/hello-workflow.yaml)
+
+- [`slack-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/slack/slack-workflow.yaml)
 
 - [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy-with-label-selector.yaml)
 
@@ -6888,6 +6920,8 @@ EnvVarSource represents a source for the value of an EnvVar.
 - [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation-dag.yaml)
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation.yaml)
+
+- [`slack-executor-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/slack/slack-executor-plugin-configmap.yaml)
 
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-spec-from-previous-step.yaml)
 
