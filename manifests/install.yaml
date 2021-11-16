@@ -485,6 +485,8 @@ rules:
   - list
   - watch
   - delete
+  - patch
+  - update
 - apiGroups:
   - ""
   resources:

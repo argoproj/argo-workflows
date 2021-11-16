@@ -390,6 +390,8 @@ rules:
   - list
   - watch
   - delete
+  - update
+  - patch
 - apiGroups:
   - ""
   resources:
