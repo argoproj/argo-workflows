@@ -62,8 +62,7 @@ definitions:
     title: It's JSON type is just string.
     type: string
   ArchiveStrategy:
-    description: ArchiveStrategy describes how to archive files/directory when saving
-      artifacts
+    description: ArchiveStrategy describes how to archive files/directory when saving artifacts
     properties:
       none:
         $ref: '#/definitions/NoneStrategy'
@@ -97,12 +96,10 @@ definitions:
       artifactory:
         $ref: '#/definitions/ArtifactoryArtifact'
       from:
-        description: From allows an artifact to reference an artifact from a previous
-          step
+        description: From allows an artifact to reference an artifact from a previous step
         type: string
       fromExpression:
-        description: FromExpression, if defined, is evaluated to specify the value
-          for the artifact
+        description: FromExpression, if defined, is evaluated to specify the value for the artifact
         type: string
       gcs:
         $ref: '#/definitions/GCSArtifact'
@@ -137,14 +134,12 @@ definitions:
       raw:
         $ref: '#/definitions/RawArtifact'
       recurseMode:
-        description: If mode is set, apply the permission recursively into the artifact
-          if it is a folder
+        description: If mode is set, apply the permission recursively into the artifact if it is a folder
         type: boolean
       s3:
         $ref: '#/definitions/S3Artifact'
       subPath:
-        description: SubPath allows an artifact to be sourced from a subpath within
-          the specified source
+        description: SubPath allows an artifact to be sourced from a subpath within the specified source
         type: string
     type: object
   ArtifactLocation:
@@ -185,12 +180,10 @@ definitions:
       artifactory:
         $ref: '#/definitions/ArtifactoryArtifact'
       from:
-        description: From allows an artifact to reference an artifact from a previous
-          step
+        description: From allows an artifact to reference an artifact from a previous step
         type: string
       fromExpression:
-        description: FromExpression, if defined, is evaluated to specify the value
-          for the artifact
+        description: FromExpression, if defined, is evaluated to specify the value for the artifact
         type: string
       gcs:
         $ref: '#/definitions/GCSArtifact'
@@ -225,19 +218,16 @@ definitions:
       raw:
         $ref: '#/definitions/RawArtifact'
       recurseMode:
-        description: If mode is set, apply the permission recursively into the artifact
-          if it is a folder
+        description: If mode is set, apply the permission recursively into the artifact if it is a folder
         type: boolean
       s3:
         $ref: '#/definitions/S3Artifact'
       subPath:
-        description: SubPath allows an artifact to be sourced from a subpath within
-          the specified source
+        description: SubPath allows an artifact to be sourced from a subpath within the specified source
         type: string
     type: object
   ArtifactRepository:
-    description: ArtifactRepository represents an artifact repository in which a controller
-      will store its artifacts
+    description: ArtifactRepository represents an artifact repository in which a controller will store its artifacts
     properties:
       archiveLogs:
         description: ArchiveLogs enables log archiving
@@ -260,8 +250,7 @@ definitions:
         description: The name of the config map. Defaults to "artifact-repositories".
         type: string
       key:
-        description: The config map key. Defaults to the value of the "workflows.argoproj.io/default-artifact-repository"
-          annotation.
+        description: The config map key. Defaults to the value of the "workflows.argoproj.io/default-artifact-repository" annotation.
         type: string
     type: object
   ArtifactRepositoryRefStatus:
@@ -273,16 +262,13 @@ definitions:
         description: The name of the config map. Defaults to "artifact-repositories".
         type: string
       default:
-        description: If this ref represents the default artifact repository, rather
-          than a config map.
+        description: If this ref represents the default artifact repository, rather than a config map.
         type: boolean
       key:
-        description: The config map key. Defaults to the value of the "workflows.argoproj.io/default-artifact-repository"
-          annotation.
+        description: The config map key. Defaults to the value of the "workflows.argoproj.io/default-artifact-repository" annotation.
         type: string
       namespace:
-        description: The namespace of the config map. Defaults to the workflow's namespace,
-          or the controller's namespace (if found).
+        description: The namespace of the config map. Defaults to the workflow's namespace, or the controller's namespace (if found).
         type: string
     type: object
   ArtifactoryArtifact:
@@ -297,8 +283,7 @@ definitions:
         $ref: '#/definitions/SecretKeySelector'
     type: object
   ArtifactoryArtifactRepository:
-    description: ArtifactoryArtifactRepository defines the controller configuration
-      for an artifactory artifact repository
+    description: ArtifactoryArtifactRepository defines the controller configuration for an artifactory artifact repository
     properties:
       passwordSecret:
         $ref: '#/definitions/SecretKeySelector'
@@ -341,8 +326,7 @@ definitions:
           the ReadOnly setting in VolumeMounts.
           +optional
         type: boolean
-    title: AzureDisk represents an Azure Data Disk mount on the host and bind mount
-      to the pod.
+    title: AzureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.
     type: object
   AzureFileVolumeSource:
     properties:
@@ -353,32 +337,27 @@ definitions:
           +optional
         type: boolean
       secretName:
-        description: the name of secret that contains Azure Storage Account Name and
-          Key
+        description: the name of secret that contains Azure Storage Account Name and Key
         type: string
       shareName:
         description: Share Name
         type: string
-    title: AzureFile represents an Azure File Service mount on the host and bind mount
-      to the pod.
+    title: AzureFile represents an Azure File Service mount on the host and bind mount to the pod.
     type: object
   Backoff:
     description: Backoff is a backoff strategy to use within retryStrategy
     properties:
       duration:
-        description: Duration is the amount to back off. Default unit is seconds,
-          but could also be a duration (e.g. "2m", "1h")
+        description: Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h")
         type: string
       factor:
         $ref: '#/definitions/IntOrString'
       maxDuration:
-        description: MaxDuration is the maximum amount of time allowed for the backoff
-          strategy
+        description: MaxDuration is the maximum amount of time allowed for the backoff strategy
         type: string
     type: object
   CSIVolumeSource:
-    description: Represents a source location of a volume to mount, managed by an
-      external CSI driver
+    description: Represents a source location of a volume to mount, managed by an external CSI driver
     properties:
       driver:
         description: |-
@@ -1020,8 +999,7 @@ definitions:
         type: array
     type: object
   ContinueOn:
-    description: It can be specified if the workflow should continue when the pod
-      errors, fails or both.
+    description: It can be specified if the workflow should continue when the pod errors, fails or both.
     properties:
       error:
         description: +optional
@@ -1029,8 +1007,7 @@ definitions:
       failed:
         description: +optional
         type: boolean
-    title: ContinueOn defines if a workflow should continue even if a task or step
-      fails/errors.
+    title: ContinueOn defines if a workflow should continue even if a task or step fails/errors.
     type: object
   Counter:
     description: Counter is a Counter prometheus metric
@@ -1040,8 +1017,7 @@ definitions:
         type: string
     type: object
   CreateS3BucketOptions:
-    description: CreateS3BucketOptions options used to determine automatic automatic
-      bucket-creation process
+    description: CreateS3BucketOptions options used to determine automatic automatic bucket-creation process
     properties:
       objectLocking:
         description: ObjectLocking Enable object locking
@@ -1082,12 +1058,10 @@ definitions:
       templateRef:
         $ref: '#/definitions/TemplateRef'
       when:
-        description: When is an expression in which the task should conditionally
-          execute
+        description: When is an expression in which the task should conditionally execute
         type: string
       withItems:
-        description: WithItems expands a task into multiple parallel tasks from the
-          items in the list
+        description: WithItems expands a task into multiple parallel tasks from the items in the list
         items:
           $ref: '#/definitions/Item'
         type: array
@@ -1155,8 +1129,7 @@ definitions:
     title: Represents downward API info for projecting into a projected volume.
     type: object
   DownwardAPIVolumeFile:
-    description: DownwardAPIVolumeFile represents information to create the file containing
-      the pod field
+    description: DownwardAPIVolumeFile represents information to create the file containing the pod field
     properties:
       fieldRef:
         $ref: '#/definitions/ObjectFieldSelector'
@@ -1172,9 +1145,7 @@ definitions:
         format: int32
         type: integer
       path:
-        description: 'Required: Path is  the relative path name of the file to be
-          created. Must not be absolute or contain the ''..'' path. Must be utf-8
-          encoded. The first item of the relative path must not start with ''..'''
+        description: 'Required: Path is  the relative path name of the file to be created. Must not be absolute or contain the ''..'' path. Must be utf-8 encoded. The first item of the relative path must not start with ''..'''
         type: string
       resourceFieldRef:
         $ref: '#/definitions/ResourceFieldSelector'
@@ -1204,9 +1175,14 @@ definitions:
         type: array
     title: DownwardAPIVolumeSource represents a volume containing downward API info.
     type: object
+  Duration:
+    description: |-
+      Duration is a wrapper around time.Duration which supports correct
+      marshaling to YAML and JSON. In particular, it marshals into strings, which
+      can be used as map keys in json.
+    type: object
   EmptyDirVolumeSource:
-    description: Empty directory volumes support ownership management and SELinux
-      relabeling.
+    description: Empty directory volumes support ownership management and SELinux relabeling.
     properties:
       medium:
         $ref: '#/definitions/StorageMedium'
@@ -1299,12 +1275,13 @@ definitions:
     properties:
       node:
         $ref: '#/definitions/NodeResult'
+      requeue:
+        $ref: '#/definitions/Duration'
     type: object
   ExecutorConfig:
     properties:
       serviceAccountName:
-        description: ServiceAccountName specifies the service account name of the
-          executor container.
+        description: ServiceAccountName specifies the service account name of the executor container.
         type: string
     title: ExecutorConfig holds configurations of an executor container.
     type: object
@@ -1362,8 +1339,7 @@ definitions:
 
       The exact format is defined in sigs.k8s.io/structured-merge-diff
       +protobuf.options.(gogoproto.goproto_stringer)=false
-    title: FieldsV1 stores a set of fields in a data structure like a Trie, in JSON
-      format.
+    title: FieldsV1 stores a set of fields in a data structure like a Trie, in JSON format.
     type: object
   FlexVolumeSource:
     description: |-
@@ -1467,15 +1443,13 @@ definitions:
         $ref: '#/definitions/SecretKeySelector'
     type: object
   GCSArtifactRepository:
-    description: GCSArtifactRepository defines the controller configuration for a
-      GCS artifact repository
+    description: GCSArtifactRepository defines the controller configuration for a GCS artifact repository
     properties:
       bucket:
         description: Bucket is the name of the bucket
         type: string
       keyFormat:
-        description: KeyFormat is defines the format of how to store keys. Can reference
-          workflow variables
+        description: KeyFormat is defines the format of how to store keys. Can reference workflow variables
         type: string
       serviceAccountKeySecret:
         $ref: '#/definitions/SecretKeySelector'
@@ -1503,14 +1477,12 @@ definitions:
         description: DisableSubmodules disables submodules during git clone
         type: boolean
       fetch:
-        description: Fetch specifies a number of refs that should be fetched before
-          checkout
+        description: Fetch specifies a number of refs that should be fetched before checkout
         items:
           type: string
         type: array
       insecureIgnoreHostKey:
-        description: InsecureIgnoreHostKey disables SSH strict host key checking during
-          git clone
+        description: InsecureIgnoreHostKey disables SSH strict host key checking during git clone
         type: boolean
       passwordSecret:
         $ref: '#/definitions/SecretKeySelector'
@@ -1553,8 +1525,7 @@ definitions:
       Git repo volumes support SELinux relabeling.
     type: object
   GlusterfsVolumeSource:
-    description: Glusterfs volumes do not support ownership management or SELinux
-      relabeling.
+    description: Glusterfs volumes do not support ownership management or SELinux relabeling.
     properties:
       endpoints:
         description: |-
@@ -1617,8 +1588,7 @@ definitions:
         type: string
     type: object
   HDFSArtifactRepository:
-    description: HDFSArtifactRepository defines the controller configuration for an
-      HDFS artifact repository
+    description: HDFSArtifactRepository defines the controller configuration for an HDFS artifact repository
     properties:
       addresses:
         description: Addresses is accessible addresses of HDFS name nodes
@@ -1655,8 +1625,7 @@ definitions:
           It must be set if keytab is used.
         type: string
       pathFormat:
-        description: PathFormat is defines the format of path to store a file. Can
-          reference workflow variables
+        description: PathFormat is defines the format of path to store a file. Can reference workflow variables
         type: string
     type: object
   HTTP:
@@ -1673,8 +1642,7 @@ definitions:
         description: Method is HTTP methods for HTTP Request
         type: string
       timeoutSeconds:
-        description: TimeoutSeconds is request timeout for HTTP Request. Default is
-          30 seconds
+        description: TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds
         format: int64
         type: integer
       url:
@@ -1682,12 +1650,10 @@ definitions:
         type: string
     type: object
   HTTPArtifact:
-    description: HTTPArtifact allows an file served on HTTP to be placed as an input
-      artifact in a container
+    description: HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container
     properties:
       headers:
-        description: Headers are an optional list of headers to send with HTTP requests
-          for artifacts
+        description: Headers are an optional list of headers to send with HTTP requests for artifacts
         items:
           $ref: '#/definitions/Header'
         type: array
@@ -1748,8 +1714,7 @@ definitions:
         $ref: '#/definitions/TCPSocketAction'
     type: object
   Header:
-    description: Header indicate a key-value request header to be used when fetching
-      artifacts over HTTP
+    description: Header indicate a key-value request header to be used when fetching artifacts over HTTP
     properties:
       name:
         description: Name is the header name
@@ -1787,8 +1752,7 @@ definitions:
   HostPathType:
     type: string
   HostPathVolumeSource:
-    description: Host path volumes do not support ownership management or SELinux
-      relabeling.
+    description: Host path volumes do not support ownership management or SELinux relabeling.
     properties:
       path:
         description: |-
@@ -1868,8 +1832,7 @@ definitions:
     title: Represents an ISCSI disk.
     type: object
   Inputs:
-    description: Inputs are the mechanism for passing parameters, artifacts, volumes
-      from one template to another
+    description: Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
     properties:
       artifacts:
         $ref: '#/definitions/Artifacts'
@@ -1960,8 +1923,7 @@ definitions:
         type: object
     type: object
   LabelSelectorOperator:
-    title: A label selector operator is the set of operators that can be used in a
-      selector requirement.
+    title: A label selector operator is the set of operators that can be used in a selector requirement.
     type: string
   LabelSelectorRequirement:
     description: |-
@@ -2050,8 +2012,7 @@ definitions:
         $ref: '#/definitions/Time'
     type: object
   ManagedFieldsOperationType:
-    title: ManagedFieldsOperationType is the type of operation which lead to a ManagedFieldsEntry
-      being created.
+    title: ManagedFieldsOperationType is the type of operation which lead to a ManagedFieldsEntry being created.
     type: string
   MemoizationStatus:
     description: MemoizationStatus is the status of this memoized node
@@ -2154,8 +2115,7 @@ definitions:
         items:
           $ref: '#/definitions/MutexHolding'
         type: array
-    title: MutexStatus contains which objects hold  mutex locks, and which objects
-      this workflow is waiting on to release locks.
+    title: MutexStatus contains which objects hold  mutex locks, and which objects this workflow is waiting on to release locks.
     type: object
   NFSVolumeSource:
     description: NFS volumes do not support ownership management or SELinux relabeling.
@@ -2274,12 +2234,10 @@ definitions:
         type: array
     type: object
   NodeStatus:
-    description: NodeStatus contains status information about an individual node in
-      the workflow
+    description: NodeStatus contains status information about an individual node in the workflow
     properties:
       boundaryID:
-        description: BoundaryID indicates the node ID of the associated template root
-          node in which this node belongs to
+        description: BoundaryID indicates the node ID of the associated template root node in which this node belongs to
         type: string
       children:
         description: Children is a list of child node IDs
@@ -2287,20 +2245,17 @@ definitions:
           type: string
         type: array
       daemoned:
-        description: Daemoned tracks whether or not this node was daemoned and need
-          to be terminated
+        description: Daemoned tracks whether or not this node was daemoned and need to be terminated
         type: boolean
       displayName:
-        description: DisplayName is a human readable representation of the node. Unique
-          within a template boundary
+        description: DisplayName is a human readable representation of the node. Unique within a template boundary
         type: string
       estimatedDuration:
         $ref: '#/definitions/EstimatedDuration'
       finishedAt:
         $ref: '#/definitions/Time'
       hostNodeName:
-        description: HostNodeName name of the Kubernetes node on which the Pod is
-          running, if applicable
+        description: HostNodeName name of the Kubernetes node on which the Pod is running, if applicable
         type: string
       id:
         description: |-
@@ -2312,12 +2267,10 @@ definitions:
       memoizationStatus:
         $ref: '#/definitions/MemoizationStatus'
       message:
-        description: A human readable message indicating details about why the node
-          is in this condition.
+        description: A human readable message indicating details about why the node is in this condition.
         type: string
       name:
-        description: Name is unique name in the node tree used to generate the node
-          ID
+        description: Name is unique name in the node tree used to generate the node ID
         type: string
       outboundNodes:
         description: |-
@@ -2359,8 +2312,7 @@ definitions:
       templateRef:
         $ref: '#/definitions/TemplateRef'
       templateScope:
-        description: TemplateScope is the template scope in which the template of
-          this node was retrieved.
+        description: TemplateScope is the template scope in which the template of this node was retrieved.
         type: string
       type:
         $ref: '#/definitions/NodeType'
@@ -2394,8 +2346,7 @@ definitions:
         description: Bucket is the name of the bucket
         type: string
       createBucketIfNotPresent:
-        description: CreateBucketIfNotPresent tells the driver to attempt to create
-          the OSS bucket for output artifacts, if it doesn't exist
+        description: CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist
         type: boolean
       endpoint:
         description: Endpoint is the hostname of the bucket endpoint
@@ -2408,13 +2359,11 @@ definitions:
       secretKeySecret:
         $ref: '#/definitions/SecretKeySelector'
       securityToken:
-        description: 'SecurityToken is the user''s temporary security token. For more
-          details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm'
+        description: 'SecurityToken is the user''s temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm'
         type: string
     type: object
   OSSArtifactRepository:
-    description: OSSArtifactRepository defines the controller configuration for an
-      OSS artifact repository
+    description: OSSArtifactRepository defines the controller configuration for an OSS artifact repository
     properties:
       accessKeySecret:
         $ref: '#/definitions/SecretKeySelector'
@@ -2422,36 +2371,31 @@ definitions:
         description: Bucket is the name of the bucket
         type: string
       createBucketIfNotPresent:
-        description: CreateBucketIfNotPresent tells the driver to attempt to create
-          the OSS bucket for output artifacts, if it doesn't exist
+        description: CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist
         type: boolean
       endpoint:
         description: Endpoint is the hostname of the bucket endpoint
         type: string
       keyFormat:
-        description: KeyFormat is defines the format of how to store keys. Can reference
-          workflow variables
+        description: KeyFormat is defines the format of how to store keys. Can reference workflow variables
         type: string
       lifecycleRule:
         $ref: '#/definitions/OSSLifecycleRule'
       secretKeySecret:
         $ref: '#/definitions/SecretKeySelector'
       securityToken:
-        description: 'SecurityToken is the user''s temporary security token. For more
-          details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm'
+        description: 'SecurityToken is the user''s temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm'
         type: string
     type: object
   OSSLifecycleRule:
     description: OSSLifecycleRule specifies how to manage bucket's lifecycle
     properties:
       markDeletionAfterDays:
-        description: MarkDeletionAfterDays is the number of days before we delete
-          objects in the bucket
+        description: MarkDeletionAfterDays is the number of days before we delete objects in the bucket
         format: int32
         type: integer
       markInfrequentAccessAfterDays:
-        description: MarkInfrequentAccessAfterDays is the number of days before we
-          convert the objects in the bucket to Infrequent Access (IA) storage type
+        description: MarkInfrequentAccessAfterDays is the number of days before we convert the objects in the bucket to Infrequent Access (IA) storage type
         format: int32
         type: integer
     type: object
@@ -2531,14 +2475,12 @@ definitions:
     description: +kubebuilder:validation:Type=array
     type: object
   Parameter:
-    description: Parameter indicate a passed string parameter to a service template
-      with an optional default value
+    description: Parameter indicate a passed string parameter to a service template with an optional default value
     properties:
       default:
         $ref: '#/definitions/AnyString'
       enum:
-        description: Enum holds a list of string values to choose from, for the actual
-          value of the parameter
+        description: Enum holds a list of string values to choose from, for the actual value of the parameter
         items:
           $ref: '#/definitions/AnyString'
         type: array
@@ -2558,8 +2500,7 @@ definitions:
   PersistentVolumeAccessMode:
     type: string
   PersistentVolumeClaim:
-    description: PersistentVolumeClaim is a user's request for and claim to a persistent
-      volume
+    description: PersistentVolumeClaim is a user's request for and claim to a persistent volume
     properties:
       annotations:
         additionalProperties:
@@ -2830,8 +2771,7 @@ definitions:
         type: array
       phase:
         $ref: '#/definitions/PersistentVolumeClaimPhase'
-    title: PersistentVolumeClaimStatus is the current status of a persistent volume
-      claim.
+    title: PersistentVolumeClaimStatus is the current status of a persistent volume claim.
     type: object
   PersistentVolumeClaimTemplate:
     description: |-
@@ -3019,12 +2959,10 @@ definitions:
           Default false.
           +optional
         type: boolean
-    title: PersistentVolumeClaimVolumeSource references the user's PVC in the same
-      namespace.
+    title: PersistentVolumeClaimVolumeSource references the user's PVC in the same namespace.
     type: object
   PersistentVolumeMode:
-    title: PersistentVolumeMode describes how a volume is intended to be consumed,
-      either Block or Filesystem.
+    title: PersistentVolumeMode describes how a volume is intended to be consumed, either Block or Filesystem.
     type: string
   PhotonPersistentDiskVolumeSource:
     properties:
@@ -3280,8 +3218,7 @@ definitions:
         type: array
       windowsOptions:
         $ref: '#/definitions/WindowsSecurityContextOptions'
-    title: PodSecurityContext holds pod-level security attributes and common container
-      settings.
+    title: PodSecurityContext holds pod-level security attributes and common container settings.
     type: object
   PortworxVolumeSource:
     properties:
@@ -3310,8 +3247,7 @@ definitions:
       preference:
         $ref: '#/definitions/NodeSelectorTerm'
       weight:
-        description: Weight associated with matching the corresponding nodeSelectorTerm,
-          in the range 1-100.
+        description: Weight associated with matching the corresponding nodeSelectorTerm, in the range 1-100.
         format: int32
         type: integer
     type: object
@@ -3425,13 +3361,11 @@ definitions:
         description: Name is the name of the metric
         type: string
       when:
-        description: When is a conditional statement that decides when to emit the
-          metric
+        description: When is a conditional statement that decides when to emit the metric
         type: string
     type: object
   Protocol:
-    title: Protocol defines network protocols supported for things like container
-      ports.
+    title: Protocol defines network protocols supported for things like container ports.
     type: string
   PullPolicy:
     description: PullPolicy describes a policy for if/when to pull a container image
@@ -3531,8 +3465,7 @@ definitions:
           +optional
         type: string
       volume:
-        description: Volume is a string that references an already created Quobyte
-          volume by name.
+        description: Volume is a string that references an already created Quobyte volume by name.
         type: string
     title: Represents a Quobyte mount that lasts the lifetime of a pod.
     type: object
@@ -3593,8 +3526,7 @@ definitions:
     title: Represents a Rados Block Device mount that lasts the lifetime of a pod.
     type: object
   RawArtifact:
-    description: RawArtifact allows raw string content to be placed as an artifact
-      in a container
+    description: RawArtifact allows raw string content to be placed as an artifact in a container
     properties:
       data:
         description: Data is the string contents of the artifact
@@ -3608,8 +3540,7 @@ definitions:
     title: The amount of requested resource * the duration that request was used.
     type: integer
   ResourceFieldSelector:
-    description: ResourceFieldSelector represents container resources (cpu, memory)
-      and their output format
+    description: ResourceFieldSelector represents container resources (cpu, memory) and their output format
     properties:
       containerName:
         description: |-
@@ -3667,8 +3598,7 @@ definitions:
           Must be one of: strategic, merge, json
         type: string
       setOwnerReference:
-        description: SetOwnerReference sets the reference to the workflow on the OwnerReference
-          of generated resource.
+        description: SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.
         type: boolean
       successCondition:
         description: |-
@@ -3690,8 +3620,7 @@ definitions:
     type: object
   RetryNodeAntiAffinity:
     description: In order to prevent running steps on the same host, it uses "kubernetes.io/hostname".
-    title: RetryNodeAntiAffinity is a placeholder for future expansion, only empty
-      nodeAntiAffinity is allowed.
+    title: RetryNodeAntiAffinity is a placeholder for future expansion, only empty nodeAntiAffinity is allowed.
     type: object
   RetryPolicy:
     type: string
@@ -3742,13 +3671,11 @@ definitions:
       secretKeySecret:
         $ref: '#/definitions/SecretKeySelector'
       useSDKCreds:
-        description: UseSDKCreds tells the driver to figure out credentials based
-          on sdk defaults.
+        description: UseSDKCreds tells the driver to figure out credentials based on sdk defaults.
         type: boolean
     type: object
   S3ArtifactRepository:
-    description: S3ArtifactRepository defines the controller configuration for an
-      S3 artifact repository
+    description: S3ArtifactRepository defines the controller configuration for an S3 artifact repository
     properties:
       accessKeySecret:
         $ref: '#/definitions/SecretKeySelector'
@@ -3766,8 +3693,7 @@ definitions:
         description: Insecure will connect to the service with TLS
         type: boolean
       keyFormat:
-        description: KeyFormat is defines the format of how to store keys. Can reference
-          workflow variables
+        description: KeyFormat is defines the format of how to store keys. Can reference workflow variables
         type: string
       keyPrefix:
         description: |-
@@ -3783,27 +3709,20 @@ definitions:
       secretKeySecret:
         $ref: '#/definitions/SecretKeySelector'
       useSDKCreds:
-        description: UseSDKCreds tells the driver to figure out credentials based
-          on sdk defaults.
+        description: UseSDKCreds tells the driver to figure out credentials based on sdk defaults.
         type: boolean
     type: object
   S3EncryptionOptions:
-    description: S3EncryptionOptions used to determine encryption options during s3
-      operations
+    description: S3EncryptionOptions used to determine encryption options during s3 operations
     properties:
       enableEncryption:
-        description: EnableEncryption tells the driver to encrypt objects if set to
-          true. If kmsKeyId and serverSideCustomerKeySecret are not set, SSE-S3 will
-          be used
+        description: EnableEncryption tells the driver to encrypt objects if set to true. If kmsKeyId and serverSideCustomerKeySecret are not set, SSE-S3 will be used
         type: boolean
       kmsEncryptionContext:
-        description: KmsEncryptionContext is a json blob that contains an encryption
-          context. See https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html#encrypt_context
-          for more information
+        description: KmsEncryptionContext is a json blob that contains an encryption context. See https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html#encrypt_context for more information
         type: string
       kmsKeyId:
-        description: KMSKeyId tells the driver to encrypt the object using the specified
-          KMS Key.
+        description: KMSKeyId tells the driver to encrypt the object using the specified KMS Key.
         type: string
       serverSideCustomerKeySecret:
         $ref: '#/definitions/SecretKeySelector'
@@ -3885,8 +3804,7 @@ definitions:
         type: string
     type: object
   ScriptTemplate:
-    description: ScriptTemplate is a template subtype to enable scripting through
-      code steps
+    description: ScriptTemplate is a template subtype to enable scripting through code steps
     properties:
       args:
         description: |-
@@ -4096,8 +4014,7 @@ definitions:
   SecretKeySelector:
     properties:
       key:
-        description: The key of the secret to select from.  Must be a valid secret
-          key.
+        description: The key of the secret to select from.  Must be a valid secret key.
         type: string
       name:
         description: |-
@@ -4257,8 +4174,7 @@ definitions:
         $ref: '#/definitions/SeccompProfile'
       windowsOptions:
         $ref: '#/definitions/WindowsSecurityContextOptions'
-    title: SecurityContext holds security configuration that will be applied to a
-      container.
+    title: SecurityContext holds security configuration that will be applied to a container.
     type: object
   SemaphoreHolding:
     properties:
@@ -4282,8 +4198,7 @@ definitions:
   SemaphoreStatus:
     properties:
       holding:
-        description: Holding stores the list of resource acquired synchronization
-          lock for workflows.
+        description: Holding stores the list of resource acquired synchronization lock for workflows.
         items:
           $ref: '#/definitions/SemaphoreHolding'
         type: array
@@ -4378,16 +4293,13 @@ definitions:
     title: Represents a StorageOS persistent volume resource.
     type: object
   SuppliedValueFrom:
-    title: SuppliedValueFrom is a placeholder for a value to be filled in directly,
-      either through the CLI, API, etc.
+    title: SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
     type: object
   SuspendTemplate:
-    description: SuspendTemplate is a template subtype to suspend a workflow at a
-      predetermined point in time
+    description: SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
     properties:
       duration:
-        description: Duration is the seconds to wait before automatically resuming
-          a template
+        description: Duration is the seconds to wait before automatically resuming a template
         type: string
     type: object
   Synchronization:
@@ -4428,12 +4340,10 @@ definitions:
         $ref: '#/definitions/IntOrString'
     type: object
   TTLStrategy:
-    description: TTLStrategy is the strategy for the time to live depending on if
-      the workflow succeeded or failed
+    description: TTLStrategy is the strategy for the time to live depending on if the workflow succeeded or failed
     properties:
       secondsAfterCompletion:
-        description: SecondsAfterCompletion is the number of seconds to live after
-          completion
+        description: SecondsAfterCompletion is the number of seconds to live after completion
         format: int32
         type: integer
       secondsAfterFailure:
@@ -4476,8 +4386,7 @@ definitions:
       containerSet:
         $ref: '#/definitions/ContainerSetTemplate'
       daemon:
-        description: Deamon will allow a workflow to proceed to the next step so long
-          as the container reaches readiness
+        description: Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness
         type: boolean
       dag:
         $ref: '#/definitions/DAGTemplate'
@@ -4610,8 +4519,7 @@ definitions:
   TemplateRef:
     properties:
       clusterScope:
-        description: ClusterScope indicates the referred template is cluster scoped
-          (i.e. a ClusterWorkflowTemplate).
+        description: ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
         type: boolean
       name:
         description: Name is the resource name of the template.
@@ -4622,8 +4530,7 @@ definitions:
     title: TemplateRef is a reference of template resource.
     type: object
   TerminationMessagePolicy:
-    title: TerminationMessagePolicy describes how termination messages are retrieved
-      from a container.
+    title: TerminationMessagePolicy describes how termination messages are retrieved from a container.
     type: string
   Time:
     description: |-
@@ -4709,8 +4616,7 @@ definitions:
       intent and helps make sure that UIDs and names do not get conflated.
     type: string
   URIScheme:
-    description: URIScheme identifies the scheme used for connection to a host for
-      Get actions
+    description: URIScheme identifies the scheme used for connection to a host for Get actions
     type: string
   UserContainer:
     properties:
@@ -4884,27 +4790,23 @@ definitions:
     title: UserContainer is a container specified by a user.
     type: object
   ValueFrom:
-    description: ValueFrom describes a location in which to obtain the value to a
-      parameter
+    description: ValueFrom describes a location in which to obtain the value to a parameter
     properties:
       configMapKeyRef:
         $ref: '#/definitions/ConfigMapKeySelector'
       default:
         $ref: '#/definitions/AnyString'
       event:
-        description: Selector (https://github.com/antonmedv/expr) that is evaluated
-          against the event to get the value of the parameter. E.g. `payload.message`
+        description: Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`
         type: string
       expression:
-        description: Expression, if defined, is evaluated to specify the value for
-          the parameter
+        description: Expression, if defined, is evaluated to specify the value for the parameter
         type: string
       jqFilter:
         description: JQFilter expression against the resource object in resource templates
         type: string
       jsonPath:
-        description: JSONPath of a resource to retrieve an output parameter value
-          from in resource templates
+        description: JSONPath of a resource to retrieve an output parameter value from in resource templates
         type: string
       parameter:
         description: |-
@@ -4912,8 +4814,7 @@ definitions:
           (e.g. '{{steps.mystep.outputs.myparam}}')
         type: string
       path:
-        description: Path in the container to retrieve an output parameter value from
-          in container templates
+        description: Path in the container to retrieve an output parameter value from in container templates
         type: string
       supplied:
         $ref: '#/definitions/SuppliedValueFrom'
@@ -4984,8 +4885,7 @@ definitions:
         $ref: '#/definitions/StorageOSVolumeSource'
       vsphereVolume:
         $ref: '#/definitions/VsphereVirtualDiskVolumeSource'
-    title: Volume represents a named volume in a pod that may be accessed by any container
-      in the pod.
+    title: Volume represents a named volume in a pod that may be accessed by any container in the pod.
     type: object
   VolumeClaimGC:
     description: VolumeClaimGC describes how to delete volumes from completed Workflows
@@ -4994,14 +4894,12 @@ definitions:
         $ref: '#/definitions/VolumeClaimGCStrategy'
     type: object
   VolumeClaimGCStrategy:
-    description: VolumeClaimGCStrategy is the strategy to use when deleting volumes
-      from completed workflows
+    description: VolumeClaimGCStrategy is the strategy to use when deleting volumes from completed workflows
     type: string
   VolumeDevice:
     properties:
       devicePath:
-        description: devicePath is the path inside of the container that the device
-          will be mapped to.
+        description: devicePath is the path inside of the container that the device will be mapped to.
         type: string
       name:
         description: name must match the name of a persistentVolumeClaim in the pod
@@ -5043,8 +4941,7 @@ definitions:
     title: VolumeMount describes a mounting of a Volume within a container.
     type: object
   VolumeProjection:
-    description: Projection that may be projected along with other supported volume
-      types
+    description: Projection that may be projected along with other supported volume types
     properties:
       configMap:
         $ref: '#/definitions/ConfigMapProjection'
@@ -5080,8 +4977,7 @@ definitions:
     title: Represents a vSphere volume resource.
     type: object
   WeightedPodAffinityTerm:
-    description: The weights of all of the matched WeightedPodAffinityTerm fields
-      are added per-node to find the most preferred node(s)
+    description: The weights of all of the matched WeightedPodAffinityTerm fields are added per-node to find the most preferred node(s)
     properties:
       podAffinityTerm:
         $ref: '#/definitions/PodAffinityTerm'
@@ -5340,8 +5236,7 @@ definitions:
       dnsPolicy:
         $ref: '#/definitions/DNSPolicy'
       entrypoint:
-        description: Entrypoint is a template reference to the starting point of the
-          workflow.
+        description: Entrypoint is a template reference to the starting point of the workflow.
         type: string
       executor:
         $ref: '#/definitions/ExecutorConfig'
@@ -5383,8 +5278,7 @@ definitions:
           primary workflow.
         type: string
       parallelism:
-        description: Parallelism limits the max total parallel pods that can execute
-          at the same time in a workflow
+        description: Parallelism limits the max total parallel pods that can execute at the same time in a workflow
         format: int64
         type: integer
       podDisruptionBudget:
@@ -5406,9 +5300,7 @@ definitions:
           container fields which are not strings (e.g. resource limits).
         type: string
       priority:
-        description: Priority is used if controller is configured to process limited
-          number of workflows in parallel. Workflows with higher priority are processed
-          first.
+        description: Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.
         format: int32
         type: integer
       retryStrategy:
@@ -5423,14 +5315,12 @@ definitions:
       securityContext:
         $ref: '#/definitions/PodSecurityContext'
       serviceAccountName:
-        description: ServiceAccountName is the name of the ServiceAccount to run all
-          pods of the workflow as.
+        description: ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.
         type: string
       shutdown:
         $ref: '#/definitions/ShutdownStrategy'
       suspend:
-        description: Suspend will suspend the workflow and prevent execution of any
-          future steps in the workflow
+        description: Suspend will suspend the workflow and prevent execution of any future steps in the workflow
         type: boolean
       synchronization:
         $ref: '#/definitions/Synchronization'
@@ -5493,8 +5383,7 @@ definitions:
       finishedAt:
         $ref: '#/definitions/Time'
       message:
-        description: A human readable message indicating details about why the workflow
-          is in this condition.
+        description: A human readable message indicating details about why the workflow is in this condition.
         type: string
       nodes:
         $ref: '#/definitions/Nodes'
@@ -5523,8 +5412,7 @@ definitions:
       storedTemplates:
         additionalProperties:
           $ref: '#/definitions/Template'
-        description: StoredTemplates is a mapping between a template ref and the node's
-          status.
+        description: StoredTemplates is a mapping between a template ref and the node's status.
         type: object
       storedWorkflowTemplateSpec:
         $ref: '#/definitions/WorkflowSpec'
@@ -5534,8 +5422,7 @@ definitions:
   WorkflowTemplateRef:
     properties:
       clusterScope:
-        description: ClusterScope indicates the referred template is cluster scoped
-          (i.e. a ClusterWorkflowTemplate).
+        description: ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
         type: boolean
       name:
         description: Name is the resource name of the workflow template.
@@ -5566,7 +5453,6 @@ produces:
 - application/json
 responses:
   executeTemplate:
-    description: ""
     schema:
       $ref: '#/definitions/ExecuteTemplateReply'
 schemes:

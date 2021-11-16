@@ -28,25 +28,6 @@ Use cases:
 
 * Allow extra placeholders using data from an external system.
 
-## Configuration
-
-Plugins are disabled by default. To enable them, start the controller with `ARGO_PLUGINS=true`, e.g.
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: workflow-controller
-spec:
-  template:
-    spec:
-      containers:
-        - name: workflow-controller
-          env:
-            - name: ARGO_PLUGINS
-              value: "true"
-```
-
 ## A Simple Python Plugin
 
 Lets make a Python plugin that prints "hello" each time the workflow is operated on.
@@ -67,7 +48,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 class Plugin(BaseHTTPRequestHandler):
 
     def do_POST(self):
-        if self.path == "/workflow.preOperate":
+        if self.path == "/api/v1/workflow.preOperate":
             print("hello")
             self.send_response(200)
             self.end_headers()
