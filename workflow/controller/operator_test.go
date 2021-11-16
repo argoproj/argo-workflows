@@ -7456,7 +7456,7 @@ func TestOperatorRetryExpression(t *testing.T) {
 	retryNode := woc.wf.GetNodeByName("retry-script-9z9pv[1].retry")
 	assert.Equal(t, wfv1.NodeFailed, retryNode.Phase)
 	assert.Equal(t, 2, len(retryNode.Children))
-	assert.Equal(t, "retryStrategy.when evaluated to false", retryNode.Message)
+	assert.Equal(t, "retryStrategy.expression evaluated to false", retryNode.Message)
 }
 
 func TestBuildRetryStrategyLocalScope(t *testing.T) {
