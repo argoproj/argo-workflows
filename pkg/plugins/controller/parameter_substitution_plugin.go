@@ -1,6 +1,8 @@
 package controller
 
-import wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+import (
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+)
 
 // swagger:parameters addParameters
 type ParameterPreSubstitutionRequest struct {
@@ -18,7 +20,7 @@ type ParameterPreSubstitutionResponse struct {
 
 type ParameterPreSubstitutionArgs struct {
 	// Required: true
-	Workflow *wfv1.Workflow `json:"workflow"`
+	Workflow *Workflow `json:"workflow"`
 	// Required: true
 	Template *wfv1.Template `json:"template"`
 }

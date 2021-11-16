@@ -1,6 +1,8 @@
 package rpc
 
 import (
+	"time"
+
 	executorplugins "github.com/argoproj/argo-workflows/v3/pkg/plugins/executor"
 	rpc "github.com/argoproj/argo-workflows/v3/workflow/util/plugins"
 )
@@ -8,7 +10,7 @@ import (
 type plugin struct{ rpc.Plugin }
 
 func New(address string) *plugin {
-	return &plugin{Plugin: rpc.New(address)}
+	return &plugin{Plugin: rpc.New(address, 30*time.Second)}
 }
 
 var _ executorplugins.TemplateExecutor = &plugin{}

@@ -15,18 +15,18 @@ import (
 
 type Plugin struct {
 	Address string
+	client  http.Client
 	invalid map[string]bool
 }
 
-func New(address string) Plugin {
+func New(address string, timeout time.Duration) Plugin {
 	return Plugin{
 		Address: address,
+		client: http.Client{
+			Timeout: timeout,
+		},
 		invalid: map[string]bool{},
 	}
-}
-
-var client = http.Client{
-	Timeout: 3 * time.Second,
 }
 
 func (p *Plugin) Call(method string, args interface{}, reply interface{}) error {
@@ -37,11 +37,11 @@ func (p *Plugin) Call(method string, args interface{}, reply interface{}) error 
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/v1/%s", p.Address, method), bytes.NewBuffer(body))
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/api/v1/%s", p.Address, method), bytes.NewBuffer(body))
 	if err != nil {
 		return err
 	}
-	resp, err := client.Do(req)
+	resp, err := p.client.Do(req)
 	if err != nil {
 		return err
 	}

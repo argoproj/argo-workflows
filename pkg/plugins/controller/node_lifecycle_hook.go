@@ -13,7 +13,7 @@ type NodePreExecuteRequest struct {
 
 type NodePreExecuteArgs struct {
 	// Required: true
-	Workflow *wfv1.Workflow `json:"workflow"`
+	Workflow *Workflow `json:"workflow"`
 	// Required: true
 	Template *wfv1.Template `json:"template"`
 	// Required: true
@@ -38,7 +38,7 @@ type NodePostExecuteRequest struct {
 }
 
 type NodePostExecuteArgs struct {
-	Workflow *wfv1.Workflow   `json:"workflow"`
+	Workflow *Workflow        `json:"workflow"`
 	Template *wfv1.Template   `json:"template"`
 	Old      *wfv1.NodeStatus `json:"old"`
 	New      *wfv1.NodeStatus `json:"new"`

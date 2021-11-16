@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"fmt"
+	"time"
 
 	controllerplugins "github.com/argoproj/argo-workflows/v3/pkg/plugins/controller"
 	plugins "github.com/argoproj/argo-workflows/v3/workflow/util/plugins"
@@ -14,7 +15,7 @@ func New(data map[string]string) (*plugin, error) { //nolint:deadcode,unparam
 	if !ok {
 		return nil, fmt.Errorf("address not specfied")
 	}
-	return &plugin{Plugin: plugins.New(address)}, nil
+	return &plugin{Plugin: plugins.New(address, time.Second)}, nil
 }
 
 var _ controllerplugins.WorkflowLifecycleHook = &plugin{}

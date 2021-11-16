@@ -140,20 +140,3 @@ level=info msg="loading plugin" name=hello-controller-plugin
   that shows how to write a plugin template types.
 * Read the [controller plugin API reference](controller_swagger.md) to see what other operations there are.
 
-## Considerations
-
-## Failure Modes
-
-An error in a plugin is typically contained as follows:
-
-* Transient errors are ignored, and reconciliation aborted.
-* For node lifecycle hooks, the node will error. The workflow therefore may fail.
-* Other errors will result in an errored workflow.
-
-### Performance Is Important
-
-Consider a workflows with 100k nodes, and then consider you have 5 plugins:
-
-We'll make num(nodes) x num(plugins) calls.
-
-So we have 500k network calls per loop. 

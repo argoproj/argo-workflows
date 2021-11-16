@@ -32,3 +32,32 @@ spec:
             - name: ARGO_PLUGINS
               value: "true"
 ```
+
+## Considerations
+
+### Failure Modes
+
+A plugin may fail as follows:
+
+* Connection/socket problems.
+* Timeout (1s for controller plugins, 30s for executor plugins).
+* Transient error.
+* 4xx or 5xx error:
+    * 404 error - endpoint will not be invoked again.
+    * 503 error - considered a transient error.
+* Multiple invocations of the same plugin take too long.
+
+Transient errors are retried, all other errors are considered fatal.
+
+Fatal errors are typically contained as follows:
+
+* For node lifecycle hooks, the node will error. The workflow therefore may fail.
+* Other errors will result in an errored workflow.
+
+### Performance Is Important
+
+Consider a workflows with 100k nodes, and then consider you have 5 plugins:
+
+We'll make num(nodes) x num(plugins) calls.
+
+So we have 500k network calls per loop. 

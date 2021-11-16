@@ -17,7 +17,7 @@ type ExecuteTemplateRequest struct {
 
 type ExecuteTemplateArgs struct {
 	// Required: true
-	Workflow *wfv1.Workflow `json:"workflow"`
+	Workflow *Workflow `json:"workflow"`
 	// Required: true
 	Template *wfv1.Template `json:"template"`
 }

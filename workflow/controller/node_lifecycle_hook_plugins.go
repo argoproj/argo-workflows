@@ -11,7 +11,7 @@ func (woc *wfOperationCtx) runNodePreExecutePlugins(tmpl *wfv1.Template, node *w
 	if err != nil {
 		return err
 	}
-	args := controllerplugins.NodePreExecuteArgs{Workflow: woc.wf.Reduced(), Template: tmpl, Node: node}
+	args := controllerplugins.NodePreExecuteArgs{Workflow: &controllerplugins.Workflow{ObjectMeta: woc.wf.ObjectMeta}, Template: tmpl, Node: node}
 	reply := &controllerplugins.NodePreExecuteReply{}
 	for _, sym := range plugs {
 		if plug, ok := sym.(controllerplugins.NodeLifecycleHook); ok {
@@ -34,7 +34,7 @@ func (woc *wfOperationCtx) runNodePostExecutePlugins(tmpl *wfv1.Template, old, n
 	if err != nil {
 		return err
 	}
-	args := controllerplugins.NodePostExecuteArgs{Workflow: woc.wf.Reduced(), Template: tmpl, Old: old, New: new}
+	args := controllerplugins.NodePostExecuteArgs{Workflow: &controllerplugins.Workflow{ObjectMeta: woc.wf.ObjectMeta}, Template: tmpl, Old: old, New: new}
 	reply := &controllerplugins.NodePostExecuteReply{}
 	for _, plug := range plugs {
 		if plug, ok := plug.(controllerplugins.NodeLifecycleHook); ok {

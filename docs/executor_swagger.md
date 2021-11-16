@@ -289,70 +289,6 @@ set when loading input artifacts. |  |
 
 
 
-### <span id="artifact-repository"></span> ArtifactRepository
-
-
-> ArtifactRepository represents an artifact repository in which a controller will store its artifacts
-  
-
-
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| archiveLogs | boolean| `bool` |  | | ArchiveLogs enables log archiving |  |
-| artifactory | [ArtifactoryArtifactRepository](#artifactory-artifact-repository)| `ArtifactoryArtifactRepository` |  | |  |  |
-| gcs | [GCSArtifactRepository](#g-c-s-artifact-repository)| `GCSArtifactRepository` |  | |  |  |
-| hdfs | [HDFSArtifactRepository](#h-d-f-s-artifact-repository)| `HDFSArtifactRepository` |  | |  |  |
-| oss | [OSSArtifactRepository](#o-s-s-artifact-repository)| `OSSArtifactRepository` |  | |  |  |
-| s3 | [S3ArtifactRepository](#s3-artifact-repository)| `S3ArtifactRepository` |  | |  |  |
-
-
-
-### <span id="artifact-repository-ref"></span> ArtifactRepositoryRef
-
-
-> +protobuf.options.(gogoproto.goproto_stringer)=false
-  
-
-
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| configMap | string| `string` |  | | The name of the config map. Defaults to "artifact-repositories". |  |
-| key | string| `string` |  | | The config map key. Defaults to the value of the "workflows.argoproj.io/default-artifact-repository" annotation. |  |
-
-
-
-### <span id="artifact-repository-ref-status"></span> ArtifactRepositoryRefStatus
-
-
-> +protobuf.options.(gogoproto.goproto_stringer)=false
-  
-
-
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| artifactRepository | [ArtifactRepository](#artifact-repository)| `ArtifactRepository` |  | |  |  |
-| configMap | string| `string` |  | | The name of the config map. Defaults to "artifact-repositories". |  |
-| default | boolean| `bool` |  | | If this ref represents the default artifact repository, rather than a config map. |  |
-| key | string| `string` |  | | The config map key. Defaults to the value of the "workflows.argoproj.io/default-artifact-repository" annotation. |  |
-| namespace | string| `string` |  | | The namespace of the config map. Defaults to the workflow's namespace, or the controller's namespace (if found). |  |
-
-
-
 ### <span id="artifactory-artifact"></span> ArtifactoryArtifact
 
 
@@ -369,26 +305,6 @@ set when loading input artifacts. |  |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | passwordSecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 | url | string| `string` |  | | URL of the artifact |  |
-| usernameSecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
-
-
-
-### <span id="artifactory-artifact-repository"></span> ArtifactoryArtifactRepository
-
-
-> ArtifactoryArtifactRepository defines the controller configuration for an artifactory artifact repository
-  
-
-
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| passwordSecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
-| repoURL | string| `string` |  | | RepoURL is the url for artifactory repo. |  |
 | usernameSecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 
 
@@ -629,52 +545,6 @@ More info: https://examples.k8s.io/mysql-cinder-pd/README.md
 More info: https://examples.k8s.io/mysql-cinder-pd/README.md |  |
 
 
-
-### <span id="condition"></span> Condition
-
-
-  
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| message | string| `string` |  | | Message is the condition message |  |
-| status | [ConditionStatus](#condition-status)| `ConditionStatus` |  | |  |  |
-| type | [ConditionType](#condition-type)| `ConditionType` |  | |  |  |
-
-
-
-### <span id="condition-status"></span> ConditionStatus
-
-
-  
-
-| Name | Type | Go type | Default | Description | Example |
-|------|------|---------| ------- |-------------|---------|
-| ConditionStatus | string| string | |  |  |
-
-
-
-### <span id="condition-type"></span> ConditionType
-
-
-  
-
-| Name | Type | Go type | Default | Description | Example |
-|------|------|---------| ------- |-------------|---------|
-| ConditionType | string| string | |  |  |
-
-
-
-### <span id="conditions"></span> Conditions
-
-
-  
-
-[][Condition](#condition)
 
 ### <span id="config-map-env-source"></span> ConfigMapEnvSource
 
@@ -1180,17 +1050,6 @@ More info and example about this feature at https://github.com/argoproj/argo-wor
 
 
 
-### <span id="dns-policy"></span> DNSPolicy
-
-
-  
-
-| Name | Type | Go type | Default | Description | Example |
-|------|------|---------| ------- |-------------|---------|
-| DNSPolicy | string| string | |  |  |
-
-
-
 ### <span id="data"></span> Data
 
 
@@ -1303,6 +1162,18 @@ mode, like fsGroup, and the result can be other mode bits set.
 
 
 
+### <span id="duration"></span> Duration
+
+
+> Duration is a wrapper around time.Duration which supports correct
+marshaling to YAML and JSON. In particular, it marshals into strings, which
+can be used as map keys in json.
+  
+
+
+
+[interface{}](#interface)
+
 ### <span id="empty-dir-volume-source"></span> EmptyDirVolumeSource
 
 
@@ -1401,17 +1272,6 @@ Defaults to "".
 
 
 
-### <span id="estimated-duration"></span> EstimatedDuration
-
-
-  
-
-| Name | Type | Go type | Default | Description | Example |
-|------|------|---------| ------- |-------------|---------|
-| EstimatedDuration | int64 (formatted integer)| int64 | |  |  |
-
-
-
 ### <span id="exec-action"></span> ExecAction
 
 
@@ -1460,6 +1320,7 @@ Exit status of 0 is treated as live/healthy and non-zero is unhealthy.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | node | [NodeResult](#node-result)| `NodeResult` |  | |  |  |
+| requeue | [Duration](#duration)| `Duration` |  | |  |  |
 
 
 
@@ -1640,26 +1501,6 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk
 
 
 
-### <span id="g-c-s-artifact-repository"></span> GCSArtifactRepository
-
-
-> GCSArtifactRepository defines the controller configuration for a GCS artifact repository
-  
-
-
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| bucket | string| `string` |  | | Bucket is the name of the bucket |  |
-| keyFormat | string| `string` |  | | KeyFormat is defines the format of how to store keys. Can reference workflow variables |  |
-| serviceAccountKeySecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
-
-
-
 ### <span id="gauge"></span> Gauge
 
 
@@ -1786,37 +1627,6 @@ It must be set if either ccache or keytab is used. |  |
 | krbUsername | string| `string` |  | | KrbUsername is the Kerberos username used with Kerberos keytab
 It must be set if keytab is used. |  |
 | path | string| `string` |  | | Path is a file path in HDFS |  |
-
-
-
-### <span id="h-d-f-s-artifact-repository"></span> HDFSArtifactRepository
-
-
-> HDFSArtifactRepository defines the controller configuration for an HDFS artifact repository
-  
-
-
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| addresses | []string| `[]string` |  | | Addresses is accessible addresses of HDFS name nodes |  |
-| force | boolean| `bool` |  | | Force copies a file forcibly even if it exists |  |
-| hdfsUser | string| `string` |  | | HDFSUser is the user to access HDFS file system.
-It is ignored if either ccache or keytab is used. |  |
-| krbCCacheSecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
-| krbConfigConfigMap | [ConfigMapKeySelector](#config-map-key-selector)| `ConfigMapKeySelector` |  | |  |  |
-| krbKeytabSecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
-| krbRealm | string| `string` |  | | KrbRealm is the Kerberos realm used with Kerberos keytab
-It must be set if keytab is used. |  |
-| krbServicePrincipalName | string| `string` |  | | KrbServicePrincipalName is the principal name of Kerberos service
-It must be set if either ccache or keytab is used. |  |
-| krbUsername | string| `string` |  | | KrbUsername is the Kerberos username used with Kerberos keytab
-It must be set if keytab is used. |  |
-| pathFormat | string| `string` |  | | PathFormat is defines the format of path to store a file. Can reference workflow variables |  |
 
 
 
@@ -2319,26 +2129,6 @@ There is currently only one possible value: "FieldsV1" |  |
 
 
 
-### <span id="memoization-status"></span> MemoizationStatus
-
-
-> MemoizationStatus is the status of this memoized node
-  
-
-
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| cacheName | string| `string` |  | | Cache is the name of the cache that was used |  |
-| hit | boolean| `bool` |  | | Hit indicates whether this node was created from a cache entry |  |
-| key | string| `string` |  | | Key is the name of the key used for this node's cache |  |
-
-
-
 ### <span id="memoize"></span> Memoize
 
 
@@ -2442,47 +2232,6 @@ than the MaxAge, it will be ignored. |  |
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | name | string| `string` |  | | name of the mutex |  |
-
-
-
-### <span id="mutex-holding"></span> MutexHolding
-
-
-  
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| holder | string| `string` |  | | Holder is a reference to the object which holds the Mutex.
-Holding Scenario:
-1. Current workflow's NodeID which is holding the lock.
-e.g: ${NodeID}
-Waiting Scenario:
-1. Current workflow or other workflow NodeID which is holding the lock.
-e.g: ${WorkflowName}/${NodeID} |  |
-| mutex | string| `string` |  | | Reference for the mutex
-e.g: ${namespace}/mutex/${mutexName} |  |
-
-
-
-### <span id="mutex-status"></span> MutexStatus
-
-
-  
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| holding | [][MutexHolding](#mutex-holding)| `[]*MutexHolding` |  | | Holding is a list of mutexes and their respective objects that are held by mutex lock for this workflow.
-+listType=atomic |  |
-| waiting | [][MutexHolding](#mutex-holding)| `[]*MutexHolding` |  | | Waiting is a list of mutexes and their respective objects this workflow is waiting for.
-+listType=atomic |  |
 
 
 
@@ -2650,99 +2399,6 @@ The TopologySelectorTerm type implements a subset of the NodeSelectorTerm.
 
 
 
-### <span id="node-status"></span> NodeStatus
-
-
-> NodeStatus contains status information about an individual node in the workflow
-  
-
-
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| boundaryID | string| `string` |  | | BoundaryID indicates the node ID of the associated template root node in which this node belongs to |  |
-| children | []string| `[]string` |  | | Children is a list of child node IDs |  |
-| daemoned | boolean| `bool` |  | | Daemoned tracks whether or not this node was daemoned and need to be terminated |  |
-| displayName | string| `string` |  | | DisplayName is a human readable representation of the node. Unique within a template boundary |  |
-| estimatedDuration | [EstimatedDuration](#estimated-duration)| `EstimatedDuration` |  | |  |  |
-| finishedAt | [Time](#time)| `Time` |  | |  |  |
-| hostNodeName | string| `string` |  | | HostNodeName name of the Kubernetes node on which the Pod is running, if applicable |  |
-| id | string| `string` |  | | ID is a unique identifier of a node within the worklow
-It is implemented as a hash of the node name, which makes the ID deterministic |  |
-| inputs | [Inputs](#inputs)| `Inputs` |  | |  |  |
-| memoizationStatus | [MemoizationStatus](#memoization-status)| `MemoizationStatus` |  | |  |  |
-| message | string| `string` |  | | A human readable message indicating details about why the node is in this condition. |  |
-| name | string| `string` |  | | Name is unique name in the node tree used to generate the node ID |  |
-| outboundNodes | []string| `[]string` |  | | OutboundNodes tracks the node IDs which are considered "outbound" nodes to a template invocation.
-For every invocation of a template, there are nodes which we considered as "outbound". Essentially,
-these are last nodes in the execution sequence to run, before the template is considered completed.
-These nodes are then connected as parents to a following step.
-
-In the case of single pod steps (i.e. container, script, resource templates), this list will be nil
-since the pod itself is already considered the "outbound" node.
-In the case of DAGs, outbound nodes are the "target" tasks (tasks with no children).
-In the case of steps, outbound nodes are all the containers involved in the last step group.
-NOTE: since templates are composable, the list of outbound nodes are carried upwards when
-a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of
-a template, will be a superset of the outbound nodes of its last children. |  |
-| outputs | [Outputs](#outputs)| `Outputs` |  | |  |  |
-| phase | [NodePhase](#node-phase)| `NodePhase` |  | |  |  |
-| podIP | string| `string` |  | | PodIP captures the IP of the pod for daemoned steps |  |
-| progress | [Progress](#progress)| `Progress` |  | |  |  |
-| resourcesDuration | [ResourcesDuration](#resources-duration)| `ResourcesDuration` |  | |  |  |
-| startedAt | [Time](#time)| `Time` |  | |  |  |
-| synchronizationStatus | [NodeSynchronizationStatus](#node-synchronization-status)| `NodeSynchronizationStatus` |  | |  |  |
-| templateName | string| `string` |  | | TemplateName is the template name which this node corresponds to.
-Not applicable to virtual nodes (e.g. Retry, StepGroup) |  |
-| templateRef | [TemplateRef](#template-ref)| `TemplateRef` |  | |  |  |
-| templateScope | string| `string` |  | | TemplateScope is the template scope in which the template of this node was retrieved. |  |
-| type | [NodeType](#node-type)| `NodeType` |  | |  |  |
-
-
-
-### <span id="node-synchronization-status"></span> NodeSynchronizationStatus
-
-
-> NodeSynchronizationStatus stores the status of a node
-  
-
-
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| waiting | string| `string` |  | | Waiting is the name of the lock that this node is waiting for |  |
-
-
-
-### <span id="node-type"></span> NodeType
-
-
-> NodeType is the type of a node
-  
-
-
-
-| Name | Type | Go type | Default | Description | Example |
-|------|------|---------| ------- |-------------|---------|
-| NodeType | string| string | | NodeType is the type of a node |  |
-
-
-
-### <span id="nodes"></span> Nodes
-
-
-  
-
-[Nodes](#nodes)
-
 ### <span id="none-strategy"></span> NoneStrategy
 
 
@@ -2774,31 +2430,6 @@ save/load the directory appropriately.
 | createBucketIfNotPresent | boolean| `bool` |  | | CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist |  |
 | endpoint | string| `string` |  | | Endpoint is the hostname of the bucket endpoint |  |
 | key | string| `string` |  | | Key is the path in the bucket where the artifact resides |  |
-| lifecycleRule | [OSSLifecycleRule](#o-s-s-lifecycle-rule)| `OSSLifecycleRule` |  | |  |  |
-| secretKeySecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
-| securityToken | string| `string` |  | | SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm |  |
-
-
-
-### <span id="o-s-s-artifact-repository"></span> OSSArtifactRepository
-
-
-> OSSArtifactRepository defines the controller configuration for an OSS artifact repository
-  
-
-
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| accessKeySecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
-| bucket | string| `string` |  | | Bucket is the name of the bucket |  |
-| createBucketIfNotPresent | boolean| `bool` |  | | CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist |  |
-| endpoint | string| `string` |  | | Endpoint is the hostname of the bucket endpoint |  |
-| keyFormat | string| `string` |  | | KeyFormat is defines the format of how to store keys. Can reference workflow variables |  |
 | lifecycleRule | [OSSLifecycleRule](#o-s-s-lifecycle-rule)| `OSSLifecycleRule` |  | |  |  |
 | secretKeySecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 | securityToken | string| `string` |  | | SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm |  |
@@ -2848,6 +2479,21 @@ save/load the directory appropriately.
 | apiVersion | string| `string` |  | | Version of the schema the FieldPath is written in terms of, defaults to "v1".
 +optional |  |
 | fieldPath | string| `string` |  | | Path of the field to select in the specified API version. |  |
+
+
+
+### <span id="object-meta"></span> ObjectMeta
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| name | string| `string` |  | |  |  |
 
 
 
@@ -2953,195 +2599,6 @@ More info: http://kubernetes.io/docs/user-guide/identifiers#names |  |
 
 
 
-### <span id="persistent-volume-claim"></span> PersistentVolumeClaim
-
-
-> PersistentVolumeClaim is a user's request for and claim to a persistent volume
-  
-
-
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| annotations | map of string| `map[string]string` |  | | Annotations is an unstructured key value map stored with a resource that may be
-set by external tools to store and retrieve arbitrary metadata. They are not
-queryable and should be preserved when modifying objects.
-More info: http://kubernetes.io/docs/user-guide/annotations
-+optional |  |
-| apiVersion | string| `string` |  | | APIVersion defines the versioned schema of this representation of an object.
-Servers should convert recognized schemas to the latest internal value, and
-may reject unrecognized values.
-More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-+optional |  |
-| clusterName | string| `string` |  | | The name of the cluster which the object belongs to.
-This is used to distinguish resources with same name and namespace in different clusters.
-This field is not set anywhere right now and apiserver is going to ignore it if set in create or update request.
-+optional |  |
-| creationTimestamp | [Time](#time)| `Time` |  | |  |  |
-| deletionGracePeriodSeconds | int64 (formatted integer)| `int64` |  | | Number of seconds allowed for this object to gracefully terminate before
-it will be removed from the system. Only set when deletionTimestamp is also set.
-May only be shortened.
-Read-only.
-+optional |  |
-| deletionTimestamp | [Time](#time)| `Time` |  | |  |  |
-| finalizers | []string| `[]string` |  | | Must be empty before the object is deleted from the registry. Each entry
-is an identifier for the responsible component that will remove the entry
-from the list. If the deletionTimestamp of the object is non-nil, entries
-in this list can only be removed.
-Finalizers may be processed and removed in any order.  Order is NOT enforced
-because it introduces significant risk of stuck finalizers.
-finalizers is a shared field, any actor with permission can reorder it.
-If the finalizer list is processed in order, then this can lead to a situation
-in which the component responsible for the first finalizer in the list is
-waiting for a signal (field value, external system, or other) produced by a
-component responsible for a finalizer later in the list, resulting in a deadlock.
-Without enforced ordering finalizers are free to order amongst themselves and
-are not vulnerable to ordering changes in the list.
-+optional
-+patchStrategy=merge |  |
-| generateName | string| `string` |  | | GenerateName is an optional prefix, used by the server, to generate a unique
-name ONLY IF the Name field has not been provided.
-If this field is used, the name returned to the client will be different
-than the name passed. This value will also be combined with a unique suffix.
-The provided value has the same validation rules as the Name field,
-and may be truncated by the length of the suffix required to make the value
-unique on the server.
-
-If this field is specified and the generated name exists, the server will
-NOT return a 409 - instead, it will either return 201 Created or 500 with Reason
-ServerTimeout indicating a unique name could not be found in the time allotted, and the client
-should retry (optionally after the time indicated in the Retry-After header).
-
-Applied only if Name is not specified.
-More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#idempotency
-+optional |  |
-| generation | int64 (formatted integer)| `int64` |  | | A sequence number representing a specific generation of the desired state.
-Populated by the system. Read-only.
-+optional |  |
-| kind | string| `string` |  | | Kind is a string value representing the REST resource this object represents.
-Servers may infer this from the endpoint the client submits requests to.
-Cannot be updated.
-In CamelCase.
-More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-+optional |  |
-| labels | map of string| `map[string]string` |  | | Map of string keys and values that can be used to organize and categorize
-(scope and select) objects. May match selectors of replication controllers
-and services.
-More info: http://kubernetes.io/docs/user-guide/labels
-+optional |  |
-| managedFields | [][ManagedFieldsEntry](#managed-fields-entry)| `[]*ManagedFieldsEntry` |  | | ManagedFields maps workflow-id and version to the set of fields
-that are managed by that workflow. This is mostly for internal
-housekeeping, and users typically shouldn't need to set or
-understand this field. A workflow can be the user's name, a
-controller's name, or the name of a specific apply path like
-"ci-cd". The set of fields is always in the version that the
-workflow used when modifying the object.
-
-+optional |  |
-| name | string| `string` |  | | Name must be unique within a namespace. Is required when creating resources, although
-some resources may allow a client to request the generation of an appropriate name
-automatically. Name is primarily intended for creation idempotence and configuration
-definition.
-Cannot be updated.
-More info: http://kubernetes.io/docs/user-guide/identifiers#names
-+optional |  |
-| namespace | string| `string` |  | | Namespace defines the space within which each name must be unique. An empty namespace is
-equivalent to the "default" namespace, but "default" is the canonical representation.
-Not all objects are required to be scoped to a namespace - the value of this field for
-those objects will be empty.
-
-Must be a DNS_LABEL.
-Cannot be updated.
-More info: http://kubernetes.io/docs/user-guide/namespaces
-+optional |  |
-| ownerReferences | [][OwnerReference](#owner-reference)| `[]*OwnerReference` |  | | List of objects depended by this object. If ALL objects in the list have
-been deleted, this object will be garbage collected. If this object is managed by a controller,
-then an entry in this list will point to this controller, with the controller field set to true.
-There cannot be more than one managing controller.
-+optional
-+patchMergeKey=uid
-+patchStrategy=merge |  |
-| resourceVersion | string| `string` |  | | An opaque value that represents the internal version of this object that can
-be used by clients to determine when objects have changed. May be used for optimistic
-concurrency, change detection, and the watch operation on a resource or set of resources.
-Clients must treat these values as opaque and passed unmodified back to the server.
-They may only be valid for a particular resource or set of resources.
-
-Populated by the system.
-Read-only.
-Value must be treated as opaque by clients and .
-More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
-+optional |  |
-| selfLink | string| `string` |  | | SelfLink is a URL representing this object.
-Populated by the system.
-Read-only.
-
-DEPRECATED
-Kubernetes will stop propagating this field in 1.20 release and the field is planned
-to be removed in 1.21 release.
-+optional |  |
-| spec | [PersistentVolumeClaimSpec](#persistent-volume-claim-spec)| `PersistentVolumeClaimSpec` |  | |  |  |
-| status | [PersistentVolumeClaimStatus](#persistent-volume-claim-status)| `PersistentVolumeClaimStatus` |  | |  |  |
-| uid | [UID](#uid)| `UID` |  | |  |  |
-
-
-
-### <span id="persistent-volume-claim-condition"></span> PersistentVolumeClaimCondition
-
-
-> PersistentVolumeClaimCondition contails details about state of pvc
-  
-
-
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| lastProbeTime | [Time](#time)| `Time` |  | |  |  |
-| lastTransitionTime | [Time](#time)| `Time` |  | |  |  |
-| message | string| `string` |  | | Human-readable message indicating details about last transition.
-+optional |  |
-| reason | string| `string` |  | | Unique, this should be a short, machine understandable string that gives the reason
-for condition's last transition. If it reports "ResizeStarted" that means the underlying
-persistent volume is being resized.
-+optional |  |
-| status | [ConditionStatus](#condition-status)| `ConditionStatus` |  | |  |  |
-| type | [PersistentVolumeClaimConditionType](#persistent-volume-claim-condition-type)| `PersistentVolumeClaimConditionType` |  | |  |  |
-
-
-
-### <span id="persistent-volume-claim-condition-type"></span> PersistentVolumeClaimConditionType
-
-
-> PersistentVolumeClaimConditionType is a valid value of PersistentVolumeClaimCondition.Type
-  
-
-
-
-| Name | Type | Go type | Default | Description | Example |
-|------|------|---------| ------- |-------------|---------|
-| PersistentVolumeClaimConditionType | string| string | | PersistentVolumeClaimConditionType is a valid value of PersistentVolumeClaimCondition.Type |  |
-
-
-
-### <span id="persistent-volume-claim-phase"></span> PersistentVolumeClaimPhase
-
-
-  
-
-| Name | Type | Go type | Default | Description | Example |
-|------|------|---------| ------- |-------------|---------|
-| PersistentVolumeClaimPhase | string| string | |  |  |
-
-
-
 ### <span id="persistent-volume-claim-spec"></span> PersistentVolumeClaimSpec
 
 
@@ -3169,30 +2626,6 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-
 | volumeMode | [PersistentVolumeMode](#persistent-volume-mode)| `PersistentVolumeMode` |  | |  |  |
 | volumeName | string| `string` |  | | VolumeName is the binding reference to the PersistentVolume backing this claim.
 +optional |  |
-
-
-
-### <span id="persistent-volume-claim-status"></span> PersistentVolumeClaimStatus
-
-
-  
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| accessModes | [][PersistentVolumeAccessMode](#persistent-volume-access-mode)| `[]PersistentVolumeAccessMode` |  | | AccessModes contains the actual access modes the volume backing the PVC has.
-More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1
-+optional |  |
-| capacity | [ResourceList](#resource-list)| `ResourceList` |  | |  |  |
-| conditions | [][PersistentVolumeClaimCondition](#persistent-volume-claim-condition)| `[]*PersistentVolumeClaimCondition` |  | | Current Condition of persistent volume claim. If underlying persistent volume is being
-resized then the Condition will be set to 'ResizeStarted'.
-+optional
-+patchMergeKey=type
-+patchStrategy=merge |  |
-| phase | [PersistentVolumeClaimPhase](#persistent-volume-claim-phase)| `PersistentVolumeClaimPhase` |  | |  |  |
 
 
 
@@ -3473,70 +2906,6 @@ podAffinityTerm are intersected, i.e. all terms must be satisfied.
 
 
 
-### <span id="pod-dns-config"></span> PodDNSConfig
-
-
-> PodDNSConfig defines the DNS parameters of a pod in addition to
-those generated from DNSPolicy.
-  
-
-
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| nameservers | []string| `[]string` |  | | A list of DNS name server IP addresses.
-This will be appended to the base nameservers generated from DNSPolicy.
-Duplicated nameservers will be removed.
-+optional |  |
-| options | [][PodDNSConfigOption](#pod-dns-config-option)| `[]*PodDNSConfigOption` |  | | A list of DNS resolver options.
-This will be merged with the base options generated from DNSPolicy.
-Duplicated entries will be removed. Resolution options given in Options
-will override those that appear in the base DNSPolicy.
-+optional |  |
-| searches | []string| `[]string` |  | | A list of DNS search domains for host-name lookup.
-This will be appended to the base search paths generated from DNSPolicy.
-Duplicated search paths will be removed.
-+optional |  |
-
-
-
-### <span id="pod-dns-config-option"></span> PodDNSConfigOption
-
-
-  
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| name | string| `string` |  | | Required. |  |
-| value | string| `string` |  | | +optional |  |
-
-
-
-### <span id="pod-disruption-budget-spec"></span> PodDisruptionBudgetSpec
-
-
-  
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| maxUnavailable | [IntOrString](#int-or-string)| `IntOrString` |  | |  |  |
-| minAvailable | [IntOrString](#int-or-string)| `IntOrString` |  | |  |  |
-| selector | [LabelSelector](#label-selector)| `LabelSelector` |  | |  |  |
-
-
-
 ### <span id="pod-f-s-group-change-policy"></span> PodFSGroupChangePolicy
 
 
@@ -3550,36 +2919,6 @@ when volume is mounted.
 |------|------|---------| ------- |-------------|---------|
 | PodFSGroupChangePolicy | string| string | | PodFSGroupChangePolicy holds policies that will be used for applying fsGroup to a volume
 when volume is mounted. |  |
-
-
-
-### <span id="pod-g-c"></span> PodGC
-
-
-> PodGC describes how to delete completed pods as they complete
-  
-
-
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| labelSelector | [LabelSelector](#label-selector)| `LabelSelector` |  | |  |  |
-| strategy | [PodGCStrategy](#pod-g-c-strategy)| `PodGCStrategy` |  | |  |  |
-
-
-
-### <span id="pod-g-c-strategy"></span> PodGCStrategy
-
-
-  
-
-| Name | Type | Go type | Default | Description | Example |
-|------|------|---------| ------- |-------------|---------|
-| PodGCStrategy | string| string | |  |  |
 
 
 
@@ -3737,17 +3076,6 @@ More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#cont
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
 | ProcMountType | string| string | |  |  |
-
-
-
-### <span id="progress"></span> Progress
-
-
-  
-
-| Name | Type | Go type | Default | Description | Example |
-|------|------|---------| ------- |-------------|---------|
-| Progress | string| string | |  |  |
 
 
 
@@ -3984,22 +3312,6 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
 
 
 
-### <span id="resource-duration"></span> ResourceDuration
-
-
-> This is represented as duration in seconds, so can be converted to and from
-duration (with loss of precision).
-  
-
-
-
-| Name | Type | Go type | Default | Description | Example |
-|------|------|---------| ------- |-------------|---------|
-| ResourceDuration | int64 (formatted integer)| int64 | | This is represented as duration in seconds, so can be converted to and from
-duration (with loss of precision). |  |
-
-
-
 ### <span id="resource-field-selector"></span> ResourceFieldSelector
 
 
@@ -4075,16 +3387,6 @@ Must be one of: strategic, merge, json |  |
 of the k8s resource in which it is acceptable to proceed to the following step |  |
 
 
-
-### <span id="resources-duration"></span> ResourcesDuration
-
-
-> e.g. 100m CPU * 1h, 1Gi memory * 1h
-  
-
-
-
-[ResourcesDuration](#resources-duration)
 
 ### <span id="retry-affinity"></span> RetryAffinity
 
@@ -4166,36 +3468,6 @@ be retried and the retry strategy will be ignored |  |
 | endpoint | string| `string` |  | | Endpoint is the hostname of the bucket endpoint |  |
 | insecure | boolean| `bool` |  | | Insecure will connect to the service with TLS |  |
 | key | string| `string` |  | | Key is the key in the bucket where the artifact resides |  |
-| region | string| `string` |  | | Region contains the optional bucket region |  |
-| roleARN | string| `string` |  | | RoleARN is the Amazon Resource Name (ARN) of the role to assume. |  |
-| secretKeySecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
-| useSDKCreds | boolean| `bool` |  | | UseSDKCreds tells the driver to figure out credentials based on sdk defaults. |  |
-
-
-
-### <span id="s3-artifact-repository"></span> S3ArtifactRepository
-
-
-> S3ArtifactRepository defines the controller configuration for an S3 artifact repository
-  
-
-
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| accessKeySecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
-| bucket | string| `string` |  | | Bucket is the name of the bucket |  |
-| createBucketIfNotPresent | [CreateS3BucketOptions](#create-s3-bucket-options)| `CreateS3BucketOptions` |  | |  |  |
-| encryptionOptions | [S3EncryptionOptions](#s3-encryption-options)| `S3EncryptionOptions` |  | |  |  |
-| endpoint | string| `string` |  | | Endpoint is the hostname of the bucket endpoint |  |
-| insecure | boolean| `bool` |  | | Insecure will connect to the service with TLS |  |
-| keyFormat | string| `string` |  | | KeyFormat is defines the format of how to store keys. Can reference workflow variables |  |
-| keyPrefix | string| `string` |  | | KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.
-DEPRECATED. Use KeyFormat instead |  |
 | region | string| `string` |  | | Region contains the optional bucket region |  |
 | roleARN | string| `string` |  | | RoleARN is the Amazon Resource Name (ARN) of the role to assume. |  |
 | secretKeySecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
@@ -4610,23 +3882,6 @@ PodSecurityContext, the value specified in SecurityContext takes precedence.
 
 
 
-### <span id="semaphore-holding"></span> SemaphoreHolding
-
-
-  
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| holders | []string| `[]string` |  | | Holders stores the list of current holder names in the workflow.
-+listType=atomic |  |
-| semaphore | string| `string` |  | | Semaphore stores the semaphore name. |  |
-
-
-
 ### <span id="semaphore-ref"></span> SemaphoreRef
 
 
@@ -4642,22 +3897,6 @@ PodSecurityContext, the value specified in SecurityContext takes precedence.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | configMapKeyRef | [ConfigMapKeySelector](#config-map-key-selector)| `ConfigMapKeySelector` |  | |  |  |
-
-
-
-### <span id="semaphore-status"></span> SemaphoreStatus
-
-
-  
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| holding | [][SemaphoreHolding](#semaphore-holding)| `[]*SemaphoreHolding` |  | | Holding stores the list of resource acquired synchronization lock for workflows. |  |
-| waiting | [][SemaphoreHolding](#semaphore-holding)| `[]*SemaphoreHolding` |  | | Waiting indicates the list of current synchronization lock holders. |  |
 
 
 
@@ -4713,17 +3952,6 @@ and must be at least 10 minutes.
 +optional |  |
 | path | string| `string` |  | | Path is the path relative to the mount point of the file to project the
 token into. |  |
-
-
-
-### <span id="shutdown-strategy"></span> ShutdownStrategy
-
-
-  
-
-| Name | Type | Go type | Default | Description | Example |
-|------|------|---------| ------- |-------------|---------|
-| ShutdownStrategy | string| string | |  |  |
 
 
 
@@ -4813,22 +4041,6 @@ Namespaces that do not pre-exist within StorageOS will be created.
 
 
 
-### <span id="synchronization-status"></span> SynchronizationStatus
-
-
-  
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| mutex | [MutexStatus](#mutex-status)| `MutexStatus` |  | |  |  |
-| semaphore | [SemaphoreStatus](#semaphore-status)| `SemaphoreStatus` |  | |  |  |
-
-
-
 ### <span id="sysctl"></span> Sysctl
 
 
@@ -4865,26 +4077,6 @@ Namespaces that do not pre-exist within StorageOS will be created.
 | host | string| `string` |  | | Optional: Host name to connect to, defaults to the pod IP.
 +optional |  |
 | port | [IntOrString](#int-or-string)| `IntOrString` |  | |  |  |
-
-
-
-### <span id="ttl-strategy"></span> TTLStrategy
-
-
-> TTLStrategy is the strategy for the time to live depending on if the workflow succeeded or failed
-  
-
-
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| secondsAfterCompletion | int32 (formatted integer)| `int32` |  | | SecondsAfterCompletion is the number of seconds to live after completion |  |
-| secondsAfterFailure | int32 (formatted integer)| `int32` |  | | SecondsAfterFailure is the number of seconds to live after failure |  |
-| secondsAfterSuccess | int32 (formatted integer)| `int32` |  | | SecondsAfterSuccess is the number of seconds to live after success |  |
 
 
 
@@ -5353,38 +4545,6 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 
 
 
-### <span id="volume-claim-g-c"></span> VolumeClaimGC
-
-
-> VolumeClaimGC describes how to delete volumes from completed Workflows
-  
-
-
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| strategy | [VolumeClaimGCStrategy](#volume-claim-g-c-strategy)| `VolumeClaimGCStrategy` |  | |  |  |
-
-
-
-### <span id="volume-claim-g-c-strategy"></span> VolumeClaimGCStrategy
-
-
-> VolumeClaimGCStrategy is the strategy to use when deleting volumes from completed workflows
-  
-
-
-
-| Name | Type | Go type | Default | Description | Example |
-|------|------|---------| ------- |-------------|---------|
-| VolumeClaimGCStrategy | string| string | | VolumeClaimGCStrategy is the strategy to use when deleting volumes from completed workflows |  |
-
-
-
 ### <span id="volume-device"></span> VolumeDevice
 
 
@@ -5522,163 +4682,6 @@ PodSecurityContext, the value specified in SecurityContext takes precedence.
 ### <span id="workflow"></span> Workflow
 
 
-> Workflow is the definition of a workflow resource
-+genclient
-+genclient:noStatus
-+kubebuilder:resource:shortName=wf
-+kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase",description="Status of the workflow"
-+kubebuilder:printcolumn:name="Age",type="date",format="date-time",JSONPath=".status.startedAt",description="When the workflow was started"
-+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-  
-
-
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| annotations | map of string| `map[string]string` |  | | Annotations is an unstructured key value map stored with a resource that may be
-set by external tools to store and retrieve arbitrary metadata. They are not
-queryable and should be preserved when modifying objects.
-More info: http://kubernetes.io/docs/user-guide/annotations
-+optional |  |
-| apiVersion | string| `string` |  | | APIVersion defines the versioned schema of this representation of an object.
-Servers should convert recognized schemas to the latest internal value, and
-may reject unrecognized values.
-More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-+optional |  |
-| clusterName | string| `string` |  | | The name of the cluster which the object belongs to.
-This is used to distinguish resources with same name and namespace in different clusters.
-This field is not set anywhere right now and apiserver is going to ignore it if set in create or update request.
-+optional |  |
-| creationTimestamp | [Time](#time)| `Time` |  | |  |  |
-| deletionGracePeriodSeconds | int64 (formatted integer)| `int64` |  | | Number of seconds allowed for this object to gracefully terminate before
-it will be removed from the system. Only set when deletionTimestamp is also set.
-May only be shortened.
-Read-only.
-+optional |  |
-| deletionTimestamp | [Time](#time)| `Time` |  | |  |  |
-| finalizers | []string| `[]string` |  | | Must be empty before the object is deleted from the registry. Each entry
-is an identifier for the responsible component that will remove the entry
-from the list. If the deletionTimestamp of the object is non-nil, entries
-in this list can only be removed.
-Finalizers may be processed and removed in any order.  Order is NOT enforced
-because it introduces significant risk of stuck finalizers.
-finalizers is a shared field, any actor with permission can reorder it.
-If the finalizer list is processed in order, then this can lead to a situation
-in which the component responsible for the first finalizer in the list is
-waiting for a signal (field value, external system, or other) produced by a
-component responsible for a finalizer later in the list, resulting in a deadlock.
-Without enforced ordering finalizers are free to order amongst themselves and
-are not vulnerable to ordering changes in the list.
-+optional
-+patchStrategy=merge |  |
-| generateName | string| `string` |  | | GenerateName is an optional prefix, used by the server, to generate a unique
-name ONLY IF the Name field has not been provided.
-If this field is used, the name returned to the client will be different
-than the name passed. This value will also be combined with a unique suffix.
-The provided value has the same validation rules as the Name field,
-and may be truncated by the length of the suffix required to make the value
-unique on the server.
-
-If this field is specified and the generated name exists, the server will
-NOT return a 409 - instead, it will either return 201 Created or 500 with Reason
-ServerTimeout indicating a unique name could not be found in the time allotted, and the client
-should retry (optionally after the time indicated in the Retry-After header).
-
-Applied only if Name is not specified.
-More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#idempotency
-+optional |  |
-| generation | int64 (formatted integer)| `int64` |  | | A sequence number representing a specific generation of the desired state.
-Populated by the system. Read-only.
-+optional |  |
-| kind | string| `string` |  | | Kind is a string value representing the REST resource this object represents.
-Servers may infer this from the endpoint the client submits requests to.
-Cannot be updated.
-In CamelCase.
-More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-+optional |  |
-| labels | map of string| `map[string]string` |  | | Map of string keys and values that can be used to organize and categorize
-(scope and select) objects. May match selectors of replication controllers
-and services.
-More info: http://kubernetes.io/docs/user-guide/labels
-+optional |  |
-| managedFields | [][ManagedFieldsEntry](#managed-fields-entry)| `[]*ManagedFieldsEntry` |  | | ManagedFields maps workflow-id and version to the set of fields
-that are managed by that workflow. This is mostly for internal
-housekeeping, and users typically shouldn't need to set or
-understand this field. A workflow can be the user's name, a
-controller's name, or the name of a specific apply path like
-"ci-cd". The set of fields is always in the version that the
-workflow used when modifying the object.
-
-+optional |  |
-| name | string| `string` |  | | Name must be unique within a namespace. Is required when creating resources, although
-some resources may allow a client to request the generation of an appropriate name
-automatically. Name is primarily intended for creation idempotence and configuration
-definition.
-Cannot be updated.
-More info: http://kubernetes.io/docs/user-guide/identifiers#names
-+optional |  |
-| namespace | string| `string` |  | | Namespace defines the space within which each name must be unique. An empty namespace is
-equivalent to the "default" namespace, but "default" is the canonical representation.
-Not all objects are required to be scoped to a namespace - the value of this field for
-those objects will be empty.
-
-Must be a DNS_LABEL.
-Cannot be updated.
-More info: http://kubernetes.io/docs/user-guide/namespaces
-+optional |  |
-| ownerReferences | [][OwnerReference](#owner-reference)| `[]*OwnerReference` |  | | List of objects depended by this object. If ALL objects in the list have
-been deleted, this object will be garbage collected. If this object is managed by a controller,
-then an entry in this list will point to this controller, with the controller field set to true.
-There cannot be more than one managing controller.
-+optional
-+patchMergeKey=uid
-+patchStrategy=merge |  |
-| resourceVersion | string| `string` |  | | An opaque value that represents the internal version of this object that can
-be used by clients to determine when objects have changed. May be used for optimistic
-concurrency, change detection, and the watch operation on a resource or set of resources.
-Clients must treat these values as opaque and passed unmodified back to the server.
-They may only be valid for a particular resource or set of resources.
-
-Populated by the system.
-Read-only.
-Value must be treated as opaque by clients and .
-More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
-+optional |  |
-| selfLink | string| `string` |  | | SelfLink is a URL representing this object.
-Populated by the system.
-Read-only.
-
-DEPRECATED
-Kubernetes will stop propagating this field in 1.20 release and the field is planned
-to be removed in 1.21 release.
-+optional |  |
-| spec | [WorkflowSpec](#workflow-spec)| `WorkflowSpec` |  | |  |  |
-| status | [WorkflowStatus](#workflow-status)| `WorkflowStatus` |  | |  |  |
-| uid | [UID](#uid)| `UID` |  | |  |  |
-
-
-
-### <span id="workflow-phase"></span> WorkflowPhase
-
-
-> the workflow's phase
-  
-
-
-
-| Name | Type | Go type | Default | Description | Example |
-|------|------|---------| ------- |-------------|---------|
-| WorkflowPhase | string| string | | the workflow's phase |  |
-
-
-
-### <span id="workflow-spec"></span> WorkflowSpec
-
-
   
 
 
@@ -5687,124 +4690,7 @@ to be removed in 1.21 release.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| activeDeadlineSeconds | int64 (formatted integer)| `int64` |  | | Optional duration in seconds relative to the workflow start time which the workflow is
-allowed to run before the controller terminates the workflow. A value of zero is used to
-terminate a Running workflow |  |
-| affinity | [Affinity](#affinity)| `Affinity` |  | |  |  |
-| archiveLogs | boolean| `bool` |  | | ArchiveLogs indicates if the container logs should be archived |  |
-| arguments | [Arguments](#arguments)| `Arguments` |  | |  |  |
-| artifactRepositoryRef | [ArtifactRepositoryRef](#artifact-repository-ref)| `ArtifactRepositoryRef` |  | |  |  |
-| automountServiceAccountToken | boolean| `bool` |  | | AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.
-ServiceAccountName of ExecutorConfig must be specified if this value is false. |  |
-| dnsConfig | [PodDNSConfig](#pod-dns-config)| `PodDNSConfig` |  | |  |  |
-| dnsPolicy | [DNSPolicy](#dns-policy)| `DNSPolicy` |  | |  |  |
-| entrypoint | string| `string` |  | | Entrypoint is a template reference to the starting point of the workflow. |  |
-| executor | [ExecutorConfig](#executor-config)| `ExecutorConfig` |  | |  |  |
-| hostAliases | [][HostAlias](#host-alias)| `[]*HostAlias` |  | | +patchStrategy=merge
-+patchMergeKey=ip |  |
-| hostNetwork | boolean| `bool` |  | | Host networking requested for this workflow pod. Default to false. |  |
-| imagePullSecrets | [][LocalObjectReference](#local-object-reference)| `[]*LocalObjectReference` |  | | ImagePullSecrets is a list of references to secrets in the same namespace to use for pulling any images
-in pods that reference this ServiceAccount. ImagePullSecrets are distinct from Secrets because Secrets
-can be mounted in the pod, but ImagePullSecrets are only accessed by the kubelet.
-More info: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
-+patchStrategy=merge
-+patchMergeKey=name |  |
-| metrics | [Metrics](#metrics)| `Metrics` |  | |  |  |
-| nodeSelector | map of string| `map[string]string` |  | | NodeSelector is a selector which will result in all pods of the workflow
-to be scheduled on the selected node(s). This is able to be overridden by
-a nodeSelector specified in the template. |  |
-| onExit | string| `string` |  | | OnExit is a template reference which is invoked at the end of the
-workflow, irrespective of the success, failure, or error of the
-primary workflow. |  |
-| parallelism | int64 (formatted integer)| `int64` |  | | Parallelism limits the max total parallel pods that can execute at the same time in a workflow |  |
-| podDisruptionBudget | [PodDisruptionBudgetSpec](#pod-disruption-budget-spec)| `PodDisruptionBudgetSpec` |  | |  |  |
-| podGC | [PodGC](#pod-g-c)| `PodGC` |  | |  |  |
-| podMetadata | [Metadata](#metadata)| `Metadata` |  | |  |  |
-| podPriority | int32 (formatted integer)| `int32` |  | | Priority to apply to workflow pods. |  |
-| podPriorityClassName | string| `string` |  | | PriorityClassName to apply to workflow pods. |  |
-| podSpecPatch | string| `string` |  | | PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
-container fields which are not strings (e.g. resource limits). |  |
-| priority | int32 (formatted integer)| `int32` |  | | Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first. |  |
-| retryStrategy | [RetryStrategy](#retry-strategy)| `RetryStrategy` |  | |  |  |
-| schedulerName | string| `string` |  | | Set scheduler name for all pods.
-Will be overridden if container/script template's scheduler name is set.
-Default scheduler will be used if neither specified.
-+optional |  |
-| securityContext | [PodSecurityContext](#pod-security-context)| `PodSecurityContext` |  | |  |  |
-| serviceAccountName | string| `string` |  | | ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as. |  |
-| shutdown | [ShutdownStrategy](#shutdown-strategy)| `ShutdownStrategy` |  | |  |  |
-| suspend | boolean| `bool` |  | | Suspend will suspend the workflow and prevent execution of any future steps in the workflow |  |
-| synchronization | [Synchronization](#synchronization)| `Synchronization` |  | |  |  |
-| templateDefaults | [Template](#template)| `Template` |  | |  |  |
-| templates | [][Template](#template)| `[]*Template` |  | | Templates is a list of workflow templates used in a workflow
-+patchStrategy=merge
-+patchMergeKey=name |  |
-| tolerations | [][Toleration](#toleration)| `[]*Toleration` |  | | Tolerations to apply to workflow pods.
-+patchStrategy=merge
-+patchMergeKey=key |  |
-| ttlStrategy | [TTLStrategy](#ttl-strategy)| `TTLStrategy` |  | |  |  |
-| volumeClaimGC | [VolumeClaimGC](#volume-claim-g-c)| `VolumeClaimGC` |  | |  |  |
-| volumeClaimTemplates | [][PersistentVolumeClaim](#persistent-volume-claim)| `[]*PersistentVolumeClaim` |  | | VolumeClaimTemplates is a list of claims that containers are allowed to reference.
-The Workflow controller will create the claims at the beginning of the workflow
-and delete the claims upon completion of the workflow
-+patchStrategy=merge
-+patchMergeKey=name |  |
-| volumes | [][Volume](#volume)| `[]*Volume` |  | | Volumes is a list of volumes that can be mounted by containers in a workflow.
-+patchStrategy=merge
-+patchMergeKey=name |  |
-| workflowTemplateRef | [WorkflowTemplateRef](#workflow-template-ref)| `WorkflowTemplateRef` |  | |  |  |
-
-
-
-### <span id="workflow-status"></span> WorkflowStatus
-
-
-> WorkflowStatus contains overall status information about a workflow
-  
-
-
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| artifactRepositoryRef | [ArtifactRepositoryRefStatus](#artifact-repository-ref-status)| `ArtifactRepositoryRefStatus` |  | |  |  |
-| compressedNodes | string| `string` |  | | Compressed and base64 decoded Nodes map |  |
-| conditions | [Conditions](#conditions)| `Conditions` |  | |  |  |
-| estimatedDuration | [EstimatedDuration](#estimated-duration)| `EstimatedDuration` |  | |  |  |
-| finishedAt | [Time](#time)| `Time` |  | |  |  |
-| message | string| `string` |  | | A human readable message indicating details about why the workflow is in this condition. |  |
-| nodes | [Nodes](#nodes)| `Nodes` |  | |  |  |
-| offloadNodeStatusVersion | string| `string` |  | | Whether on not node status has been offloaded to a database. If exists, then Nodes and CompressedNodes will be empty.
-This will actually be populated with a hash of the offloaded data. |  |
-| outputs | [Outputs](#outputs)| `Outputs` |  | |  |  |
-| persistentVolumeClaims | [][Volume](#volume)| `[]*Volume` |  | | PersistentVolumeClaims tracks all PVCs that were created as part of the workflow.
-The contents of this list are drained at the end of the workflow. |  |
-| phase | [WorkflowPhase](#workflow-phase)| `WorkflowPhase` |  | |  |  |
-| progress | [Progress](#progress)| `Progress` |  | |  |  |
-| resourcesDuration | [ResourcesDuration](#resources-duration)| `ResourcesDuration` |  | |  |  |
-| startedAt | [Time](#time)| `Time` |  | |  |  |
-| storedTemplates | map of [Template](#template)| `map[string]Template` |  | | StoredTemplates is a mapping between a template ref and the node's status. |  |
-| storedWorkflowTemplateSpec | [WorkflowSpec](#workflow-spec)| `WorkflowSpec` |  | |  |  |
-| synchronization | [SynchronizationStatus](#synchronization-status)| `SynchronizationStatus` |  | |  |  |
-
-
-
-### <span id="workflow-template-ref"></span> WorkflowTemplateRef
-
-
-  
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| clusterScope | boolean| `bool` |  | | ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate). |  |
-| name | string| `string` |  | | Name is the resource name of the workflow template. |  |
+| metadata | [ObjectMeta](#object-meta)| `ObjectMeta` | ✓ | |  |  |
 
 
 

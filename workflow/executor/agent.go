@@ -154,8 +154,8 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Temp
 
 func (ae *AgentExecutor) executePluginTemplate(_ context.Context, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error) {
 	args := executorplugins.ExecuteTemplateArgs{
-		Workflow: &wfv1.Workflow{
-			ObjectMeta: metav1.ObjectMeta{Name: ae.WorkflowName},
+		Workflow: &executorplugins.Workflow{
+			ObjectMeta: executorplugins.ObjectMeta{Name: ae.WorkflowName},
 		},
 		Template: &tmpl,
 	}

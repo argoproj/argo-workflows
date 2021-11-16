@@ -1,9 +1,5 @@
 package controller
 
-import (
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-)
-
 // swagger:parameters workflowPreOperate
 type WorkflowPreOperateRequest struct {
 	// in: body
@@ -12,7 +8,7 @@ type WorkflowPreOperateRequest struct {
 }
 type WorkflowPreOperateArgs struct {
 	// Required: true
-	Workflow *wfv1.Workflow `json:"workflow"`
+	Workflow *Workflow `json:"workflow"`
 }
 
 // swagger:response workflowPreOperate
@@ -21,8 +17,9 @@ type WorkflowPreOperateResponse struct {
 	// Required: true
 	Body WorkflowPreOperateReply
 }
+
 type WorkflowPreOperateReply struct {
-	Workflow *wfv1.Workflow `json:"workflow,omitempty"`
+	Workflow *Workflow `json:"workflow,omitempty"`
 }
 
 // swagger:parameters workflowPostOperate
@@ -34,9 +31,9 @@ type WorkflowPostOperateRequest struct {
 
 type WorkflowPostOperateArgs struct {
 	// Required: true
-	Old *wfv1.Workflow `json:"old"`
+	Old *Workflow `json:"old"`
 	// Required: true
-	New *wfv1.Workflow `json:"new"`
+	New *Workflow `json:"new"`
 }
 
 // swagger:response workflowPostOperate
