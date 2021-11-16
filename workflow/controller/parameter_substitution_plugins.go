@@ -5,10 +5,7 @@ import (
 )
 
 func (woc *wfOperationCtx) runParameterSubstitutionPlugins(p map[string]string) error {
-	plugs, err := woc.controller.getControllerPlugins()
-	if err != nil {
-		return err
-	}
+	plugs := woc.controller.getControllerPlugins()
 	args := controllerplugins.ParameterPreSubstitutionArgs{Workflow: &controllerplugins.Workflow{
 		ObjectMeta: woc.wf.ObjectMeta,
 	}}

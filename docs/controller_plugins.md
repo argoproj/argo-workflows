@@ -129,8 +129,7 @@ data:
 Restart your controller and check the logs:
 
 ```
-level=info msg="plugins" plugins=true
-level=info msg="loading plugin" name=hello-controller-plugin
+level=info msg="Plugin added" name=hello-controller-plugin
 ```
 
 ## Next Steps

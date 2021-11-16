@@ -53,6 +53,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/estimation"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/informer"
+	"github.com/argoproj/argo-workflows/v3/workflow/controller/plugins/rpc"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/pod"
 	"github.com/argoproj/argo-workflows/v3/workflow/cron"
 	"github.com/argoproj/argo-workflows/v3/workflow/events"
@@ -120,6 +121,7 @@ type WorkflowController struct {
 	// Default is 3s and can be configured using the env var ARGO_PROGRESS_FILE_TICK_DURATION
 	progressFileTickDuration time.Duration
 	plugins                  bool
+	controllerPlugins        map[string]interface{}
 }
 
 const (
@@ -155,6 +157,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		progressPatchTickDuration:  env.LookupEnvDurationOr(common.EnvVarProgressPatchTickDuration, 1*time.Minute),
 		progressFileTickDuration:   env.LookupEnvDurationOr(common.EnvVarProgressFileTickDuration, 3*time.Second),
 		plugins:                    plugins,
+		controllerPlugins:          map[string]interface{}{},
 	}
 
 	wfc.UpdateConfig(ctx)
@@ -1068,11 +1071,38 @@ func (wfc *WorkflowController) newPodInformer(ctx context.Context) cache.SharedI
 }
 
 func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer {
-	return v1.NewFilteredConfigMapInformer(wfc.kubeclientset, wfc.GetManagedNamespace(), 20*time.Minute, cache.Indexers{
+	indexInformer := v1.NewFilteredConfigMapInformer(wfc.kubeclientset, wfc.GetManagedNamespace(), 20*time.Minute, cache.Indexers{
 		indexes.ConfigMapLabelsIndex: indexes.ConfigMapIndexFunc,
 	}, func(opts *metav1.ListOptions) {
 		opts.LabelSelector = indexes.ConfigMapTypeLabel
 	})
+	log.WithField("plugins", wfc.plugins).Info("Plugins")
+	if wfc.plugins {
+		indexInformer.AddEventHandler(cache.FilteringResourceEventHandler{
+			FilterFunc: func(obj interface{}) bool {
+				cm := obj.(*apiv1.ConfigMap)
+				return cm.GetLabels()[indexes.ConfigMapTypeLabel] == "ControllerPlugin"
+			},
+			Handler: cache.ResourceEventHandlerFuncs{
+				AddFunc: func(obj interface{}) {
+					cm := obj.(*apiv1.ConfigMap)
+					wfc.controllerPlugins[cm.GetName()] = rpc.New(cm.Data["address"])
+					log.WithField("name", cm.GetName()).Info("Controller plugin added")
+				},
+				UpdateFunc: func(_, obj interface{}) {
+					cm := obj.(*apiv1.ConfigMap)
+					wfc.controllerPlugins[cm.GetName()] = rpc.New(cm.Data["address"])
+					log.WithField("name", cm.GetName()).Info("Controller plugin updated")
+				},
+				DeleteFunc: func(obj interface{}) {
+					cm := obj.(metav1.Object)
+					delete(wfc.controllerPlugins, cm.GetName())
+					log.WithField("name", cm.GetName()).Info("Controller plugin removed")
+				},
+			},
+		})
+	}
+	return indexInformer
 }
 
 func (wfc *WorkflowController) getConfigMaps(namespace string, configMapType string) ([]*apiv1.ConfigMap, error) {

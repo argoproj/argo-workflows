@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pageduty-controller-plugin
+  labels:
+    workflows.argoproj.io/configmap-type: ControllerPlugin
+data:
+  address: http://localhost:7243

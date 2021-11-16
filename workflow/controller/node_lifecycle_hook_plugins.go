@@ -7,10 +7,7 @@ import (
 )
 
 func (woc *wfOperationCtx) runNodePreExecutePlugins(tmpl *wfv1.Template, node *wfv1.NodeStatus) error {
-	plugs, err := woc.controller.getControllerPlugins()
-	if err != nil {
-		return err
-	}
+	plugs := woc.controller.getControllerPlugins()
 	args := controllerplugins.NodePreExecuteArgs{Workflow: &controllerplugins.Workflow{ObjectMeta: woc.wf.ObjectMeta}, Template: tmpl, Node: node}
 	reply := &controllerplugins.NodePreExecuteReply{}
 	for _, sym := range plugs {
@@ -30,10 +27,7 @@ func (woc *wfOperationCtx) runNodePreExecutePlugins(tmpl *wfv1.Template, node *w
 }
 
 func (woc *wfOperationCtx) runNodePostExecutePlugins(tmpl *wfv1.Template, old, new *wfv1.NodeStatus) error {
-	plugs, err := woc.controller.getControllerPlugins()
-	if err != nil {
-		return err
-	}
+	plugs := woc.controller.getControllerPlugins()
 	args := controllerplugins.NodePostExecuteArgs{Workflow: &controllerplugins.Workflow{ObjectMeta: woc.wf.ObjectMeta}, Template: tmpl, Old: old, New: new}
 	reply := &controllerplugins.NodePostExecuteReply{}
 	for _, plug := range plugs {

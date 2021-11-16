@@ -1,11 +1,10 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: slack-
+  generateName: pagerduty-
 spec:
   entrypoint: main
   templates:
     - name: main
-      plugin:
-        slack:
-          text: "{{workflow.name}} finished!"
+      container:
+        image: argoproj/argosay:v2

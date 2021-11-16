@@ -205,9 +205,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		return
 	}
 	defer func() {
-		if err := woc.runWorkflowPostOperatePlugins(ctx); err != nil {
-			log.Fatal(err)
-		}
+		woc.runWorkflowPostOperatePlugins(ctx)
 	}()
 
 	// Set the Execute workflow spec for execution
