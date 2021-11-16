@@ -180,6 +180,7 @@ func GetBearerToken(in *restclient.Config, explicitKubeConfigPath string) (strin
 			return "", err
 		}
 
+		println("ALEX", "req.headers=", v1alpha1.MustMarshallJSON(req.Header))
 		println("ALEX", "resp.statusCode=", resp.StatusCode)
 		println("ALEX", "resp.headers=", v1alpha1.MustMarshallJSON(resp.Header))
 
