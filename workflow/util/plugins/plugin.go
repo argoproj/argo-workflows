@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -24,15 +25,23 @@ func New(address string) Plugin {
 	}
 }
 
+var client = http.Client{
+	Timeout: 3 * time.Second,
+}
+
 func (p *Plugin) Call(method string, args interface{}, reply interface{}) error {
 	if p.invalid[method] {
 		return nil
 	}
-	req, err := json.Marshal(args)
+	body, err := json.Marshal(args)
 	if err != nil {
 		return err
 	}
-	resp, err := http.Post(fmt.Sprintf("%s/api/v1/%s", p.Address, method), "application/json", bytes.NewBuffer(req))
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/v1/%s", p.Address, method), bytes.NewBuffer(body))
+	if err != nil {
+		return err
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
