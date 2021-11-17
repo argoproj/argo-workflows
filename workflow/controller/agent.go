@@ -101,6 +101,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 					Command: []string{"argoexec"},
 					Args:    []string{"agent"},
 					Image:   woc.controller.executorImage(),
+					ImagePullPolicy: woc.controller.executorImagePullPolicy(),
 					Env: []apiv1.EnvVar{
 						{Name: common.EnvVarWorkflowName, Value: woc.wf.Name},
 					},
