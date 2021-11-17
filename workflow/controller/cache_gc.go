@@ -20,7 +20,7 @@ import (
 // SyncAllCacheForGC syncs all cache for GC
 func SyncAllCacheForGC(ctx context.Context, configMapInformer cache.SharedIndexInformer, kubeclientset kubernetes.Interface) {
 	gcAfterNotHitDuration := env.LookupEnvDurationOr("CACHE_GC_AFTER_NOT_HIT_DURATION", 30*time.Second)
-	log.Info("Cache GC is enabled. Syncing all cache for GC.")
+	log.WithField("key", "CACHE_GC").Infoln("Cache GC is enabled. Syncing all cache for GC.")
 	configMaps := configMapInformer.GetIndexer().List()
 
 	for _, obj := range configMaps {
