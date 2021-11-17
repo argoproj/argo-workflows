@@ -9,7 +9,6 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **amqp** | [**Map&lt;String, IoArgoprojEventsV1alpha1AMQPEventSource&gt;**](IoArgoprojEventsV1alpha1AMQPEventSource.md) |  |  [optional]
 **azureEventsHub** | [**Map&lt;String, IoArgoprojEventsV1alpha1AzureEventsHubEventSource&gt;**](IoArgoprojEventsV1alpha1AzureEventsHubEventSource.md) |  |  [optional]
-**bitbucketserver** | [**Map&lt;String, IoArgoprojEventsV1alpha1BitbucketServerEventSource&gt;**](IoArgoprojEventsV1alpha1BitbucketServerEventSource.md) |  |  [optional]
 **calendar** | [**Map&lt;String, IoArgoprojEventsV1alpha1CalendarEventSource&gt;**](IoArgoprojEventsV1alpha1CalendarEventSource.md) |  |  [optional]
 **emitter** | [**Map&lt;String, IoArgoprojEventsV1alpha1EmitterEventSource&gt;**](IoArgoprojEventsV1alpha1EmitterEventSource.md) |  |  [optional]
 **eventBusName** | **String** |  |  [optional]
@@ -26,6 +25,7 @@ Name | Type | Description | Notes
 **pubSub** | [**Map&lt;String, IoArgoprojEventsV1alpha1PubSubEventSource&gt;**](IoArgoprojEventsV1alpha1PubSubEventSource.md) |  |  [optional]
 **pulsar** | [**Map&lt;String, IoArgoprojEventsV1alpha1PulsarEventSource&gt;**](IoArgoprojEventsV1alpha1PulsarEventSource.md) |  |  [optional]
 **redis** | [**Map&lt;String, IoArgoprojEventsV1alpha1RedisEventSource&gt;**](IoArgoprojEventsV1alpha1RedisEventSource.md) |  |  [optional]
+**replica** | **Integer** |  |  [optional]
 **replicas** | **Integer** |  |  [optional]
 **resource** | [**Map&lt;String, IoArgoprojEventsV1alpha1ResourceEventSource&gt;**](IoArgoprojEventsV1alpha1ResourceEventSource.md) |  |  [optional]
 **service** | [**IoArgoprojEventsV1alpha1Service**](IoArgoprojEventsV1alpha1Service.md) |  |  [optional]
