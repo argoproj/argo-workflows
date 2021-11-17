@@ -33,6 +33,7 @@ import (
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	apiwatch "k8s.io/client-go/tools/watch"
 	"k8s.io/client-go/util/workqueue"
+	"sigs.k8s.io/yaml"
 	"upper.io/db.v3/lib/sqlbuilder"
 
 	"github.com/argoproj/argo-workflows/v3"
@@ -53,6 +54,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/estimation"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/informer"
+	"github.com/argoproj/argo-workflows/v3/workflow/controller/plugins/rpc"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/pod"
 	"github.com/argoproj/argo-workflows/v3/workflow/cron"
 	"github.com/argoproj/argo-workflows/v3/workflow/events"
@@ -120,6 +122,8 @@ type WorkflowController struct {
 	// Default is 3s and can be configured using the env var ARGO_PROGRESS_FILE_TICK_DURATION
 	progressFileTickDuration time.Duration
 	plugins                  bool
+	executorPlugins          map[string]map[string]executorPlugin // namespace -> name -> plugin
+	controllerPlugins        map[string]interface{}               // name -> plugin
 }
 
 const (
@@ -155,6 +159,8 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		progressPatchTickDuration:  env.LookupEnvDurationOr(common.EnvVarProgressPatchTickDuration, 1*time.Minute),
 		progressFileTickDuration:   env.LookupEnvDurationOr(common.EnvVarProgressFileTickDuration, 3*time.Second),
 		plugins:                    plugins,
+		executorPlugins:            map[string]map[string]executorPlugin{},
+		controllerPlugins:          map[string]interface{}{},
 	}
 
 	wfc.UpdateConfig(ctx)
@@ -1067,24 +1073,93 @@ func (wfc *WorkflowController) newPodInformer(ctx context.Context) cache.SharedI
 	return informer
 }
 
+type executorPlugin struct {
+	address   string
+	container apiv1.Container
+}
+
 func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer {
-	return v1.NewFilteredConfigMapInformer(wfc.kubeclientset, wfc.GetManagedNamespace(), 20*time.Minute, cache.Indexers{
+	indexInformer := v1.NewFilteredConfigMapInformer(wfc.kubeclientset, wfc.GetManagedNamespace(), 20*time.Minute, cache.Indexers{
 		indexes.ConfigMapLabelsIndex: indexes.ConfigMapIndexFunc,
 	}, func(opts *metav1.ListOptions) {
 		opts.LabelSelector = indexes.ConfigMapTypeLabel
 	})
-}
-
-func (wfc *WorkflowController) getConfigMaps(namespace string, configMapType string) ([]*apiv1.ConfigMap, error) {
-	objs, err := wfc.configMapInformer.GetIndexer().ByIndex(indexes.ConfigMapLabelsIndex, indexes.ConfigMapIndexValue(namespace, configMapType))
-	if err != nil {
-		return nil, err
+	log.WithField("plugins", wfc.plugins).Info("Plugins")
+	if wfc.plugins {
+		indexInformer.AddEventHandler(cache.FilteringResourceEventHandler{
+			FilterFunc: func(obj interface{}) bool {
+				cm := obj.(metav1.Object)
+				return cm.GetNamespace() == wfc.namespace && cm.GetLabels()[indexes.ConfigMapTypeLabel] == "ControllerPlugin"
+			},
+			Handler: cache.ResourceEventHandlerFuncs{
+				AddFunc: func(obj interface{}) {
+					cm := obj.(*apiv1.ConfigMap)
+					wfc.controllerPlugins[cm.GetName()] = rpc.New(cm.Data["address"])
+					log.WithField("name", cm.GetName()).Info("Controller plugin added")
+				},
+				UpdateFunc: func(_, obj interface{}) {
+					cm := obj.(*apiv1.ConfigMap)
+					wfc.controllerPlugins[cm.GetName()] = rpc.New(cm.Data["address"])
+					log.WithField("name", cm.GetName()).Info("Controller plugin updated")
+				},
+				DeleteFunc: func(obj interface{}) {
+					cm := obj.(metav1.Object)
+					delete(wfc.controllerPlugins, cm.GetName())
+					log.WithField("name", cm.GetName()).Info("Controller plugin removed")
+				},
+			},
+		})
+		indexInformer.AddEventHandler(cache.FilteringResourceEventHandler{
+			FilterFunc: func(obj interface{}) bool {
+				cm := obj.(metav1.Object)
+				return cm.GetLabels()[indexes.ConfigMapTypeLabel] == "ExecutorPlugin"
+			},
+			Handler: cache.ResourceEventHandlerFuncs{
+				AddFunc: func(obj interface{}) {
+					cm := obj.(*apiv1.ConfigMap)
+					p := executorPlugin{
+						address:   cm.Data["address"],
+						container: apiv1.Container{Name: cm.GetName()},
+					}
+					container := cm.Data["container"]
+					if err := yaml.UnmarshalStrict([]byte(container), &p.container); err != nil {
+						log.WithField("namespace", cm.GetNamespace()).WithField("name", cm.GetName()).
+							WithError(err).
+							Error("failed to parse")
+						return
+					}
+					if _, ok := wfc.executorPlugins[cm.GetNamespace()]; !ok {
+						wfc.executorPlugins[cm.GetNamespace()] = map[string]executorPlugin{}
+					}
+					wfc.executorPlugins[cm.GetNamespace()][cm.GetName()] = p
+					log.WithField("namespace", cm.GetNamespace()).WithField("name", cm.GetName()).Info("Executor plugin added")
+				},
+				UpdateFunc: func(_, obj interface{}) {
+					cm := obj.(*apiv1.ConfigMap)
+					p := executorPlugin{
+						address:   cm.Data["address"],
+						container: apiv1.Container{Name: cm.Name},
+					}
+					container := cm.Data["container"]
+					if err := yaml.UnmarshalStrict([]byte(container), &p.container); err != nil {
+						log.WithField("namespace", cm.GetNamespace()).WithField("name", cm.GetName()).
+							WithError(err).
+							Error("failed to parse")
+						return
+					}
+					wfc.executorPlugins[cm.GetNamespace()][cm.GetName()] = p
+					log.WithField("namespace", cm.GetNamespace()).WithField("name", cm.GetName()).Info("Executor plugin updated")
+				},
+				DeleteFunc: func(obj interface{}) {
+					key, _ := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+					namespace, name, _ := cache.SplitMetaNamespaceKey(key)
+					delete(wfc.executorPlugins[namespace], name)
+					log.WithField("namespace", namespace).WithField("name", name).Info("Executor plugin removed")
+				},
+			},
+		})
 	}
-	cms := make([]*apiv1.ConfigMap, len(objs))
-	for i, obj := range objs {
-		cms[i] = obj.(*apiv1.ConfigMap)
-	}
-	return cms, nil
+	return indexInformer
 }
 
 // call this func whenever the configuration changes, or when the workflow informer changes

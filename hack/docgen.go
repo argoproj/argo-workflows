@@ -229,6 +229,9 @@ func (c *DocGeneratorContext) loadFiles() {
 		panic(err)
 	}
 	for _, fileName := range files {
+		if strings.HasSuffix(fileName, "-configmap.yaml") || strings.HasSuffix(fileName, "-secret.yaml") {
+			continue
+		}
 		bytes, err := ioutil.ReadFile(filepath.Clean(fileName))
 		if err != nil {
 			panic(err)

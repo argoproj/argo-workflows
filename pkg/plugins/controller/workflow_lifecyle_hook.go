@@ -1,36 +1,39 @@
 package controller
 
-import (
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-)
-
 // swagger:parameters workflowPreOperate
 type WorkflowPreOperateRequest struct {
 	// in: body
+	// Required: true
 	Body WorkflowPreOperateArgs
 }
 type WorkflowPreOperateArgs struct {
-	Workflow *wfv1.Workflow `json:"workflow"`
+	// Required: true
+	Workflow *Workflow `json:"workflow"`
 }
 
 // swagger:response workflowPreOperate
 type WorkflowPreOperateResponse struct {
 	// in: body
+	// Required: true
 	Body WorkflowPreOperateReply
 }
+
 type WorkflowPreOperateReply struct {
-	Workflow *wfv1.Workflow `json:"workflow,omitempty"`
+	Workflow *Workflow `json:"workflow,omitempty"`
 }
 
 // swagger:parameters workflowPostOperate
 type WorkflowPostOperateRequest struct {
 	// in: body
+	// Required: true
 	Body WorkflowPreOperateArgs
 }
 
 type WorkflowPostOperateArgs struct {
-	Old *wfv1.Workflow `json:"old"`
-	New *wfv1.Workflow `json:"new"`
+	// Required: true
+	Old *Workflow `json:"old"`
+	// Required: true
+	New *Workflow `json:"new"`
 }
 
 // swagger:response workflowPostOperate

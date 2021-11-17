@@ -12,8 +12,6 @@ Workflow is the definition of a workflow resource
 
 - [`arguments-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-artifacts.yaml)
 
-- [`arguments-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-parameters-from-configmap.yaml)
-
 - [`arguments-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-parameters.yaml)
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-disable-archive.yaml)
@@ -144,8 +142,6 @@ Workflow is the definition of a workflow resource
 
 - [`global-parameters-from-configmap-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters-from-configmap-referenced-as-local-variable.yaml)
 
-- [`global-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters-from-configmap.yaml)
-
 - [`global-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters.yaml)
 
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/handle-large-output-results.yaml)
@@ -240,9 +236,13 @@ Workflow is the definition of a workflow resource
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation.yaml)
 
-- [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/agent/hello/hello-workflow.yaml)
-
 - [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/hello/hello-workflow.yaml)
+
+- [`pagerduty-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/pagerduty/pagerduty-workflow.yaml)
+
+- [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/hello/hello-workflow.yaml)
+
+- [`slack-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/slack/slack-workflow.yaml)
 
 - [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy-with-label-selector.yaml)
 
@@ -423,8 +423,6 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`arguments-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-artifacts.yaml)
 
-- [`arguments-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-parameters-from-configmap.yaml)
-
 - [`arguments-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-parameters.yaml)
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-disable-archive.yaml)
@@ -567,8 +565,6 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`global-parameters-from-configmap-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters-from-configmap-referenced-as-local-variable.yaml)
 
-- [`global-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters-from-configmap.yaml)
-
 - [`global-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters.yaml)
 
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/handle-large-output-results.yaml)
@@ -663,9 +659,13 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation.yaml)
 
-- [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/agent/hello/hello-workflow.yaml)
-
 - [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/hello/hello-workflow.yaml)
+
+- [`pagerduty-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/pagerduty/pagerduty-workflow.yaml)
+
+- [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/hello/hello-workflow.yaml)
+
+- [`slack-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/slack/slack-workflow.yaml)
 
 - [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy-with-label-selector.yaml)
 
@@ -864,8 +864,6 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`arguments-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-artifacts.yaml)
 
-- [`arguments-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-parameters-from-configmap.yaml)
-
 - [`arguments-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-parameters.yaml)
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-disable-archive.yaml)
@@ -1008,8 +1006,6 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`global-parameters-from-configmap-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters-from-configmap-referenced-as-local-variable.yaml)
 
-- [`global-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters-from-configmap.yaml)
-
 - [`global-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters.yaml)
 
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/handle-large-output-results.yaml)
@@ -1104,9 +1100,13 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation.yaml)
 
-- [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/agent/hello/hello-workflow.yaml)
-
 - [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/hello/hello-workflow.yaml)
+
+- [`pagerduty-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/pagerduty/pagerduty-workflow.yaml)
+
+- [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/hello/hello-workflow.yaml)
+
+- [`slack-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/slack/slack-workflow.yaml)
 
 - [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy-with-label-selector.yaml)
 
@@ -1261,8 +1261,6 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`arguments-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-artifacts.yaml)
 
-- [`arguments-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-parameters-from-configmap.yaml)
-
 - [`arguments-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-parameters.yaml)
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-disable-archive.yaml)
@@ -1405,8 +1403,6 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`global-parameters-from-configmap-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters-from-configmap-referenced-as-local-variable.yaml)
 
-- [`global-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters-from-configmap.yaml)
-
 - [`global-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters.yaml)
 
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/handle-large-output-results.yaml)
@@ -1501,9 +1497,13 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation.yaml)
 
-- [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/agent/hello/hello-workflow.yaml)
-
 - [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/hello/hello-workflow.yaml)
+
+- [`pagerduty-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/pagerduty/pagerduty-workflow.yaml)
+
+- [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/hello/hello-workflow.yaml)
+
+- [`slack-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/slack/slack-workflow.yaml)
 
 - [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy-with-label-selector.yaml)
 
@@ -1751,8 +1751,6 @@ Arguments to a template
 - [`global-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-outputs.yaml)
 
 - [`global-parameters-from-configmap-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters-from-configmap-referenced-as-local-variable.yaml)
-
-- [`global-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters-from-configmap.yaml)
 
 - [`global-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters.yaml)
 
@@ -2413,8 +2411,6 @@ Parameter indicate a passed string parameter to a service template with an optio
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`arguments-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-parameters-from-configmap.yaml)
-
 - [`arguments-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-parameters.yaml)
 
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-path-placeholders.yaml)
@@ -2488,8 +2484,6 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`global-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-outputs.yaml)
 
 - [`global-parameters-from-configmap-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters-from-configmap-referenced-as-local-variable.yaml)
-
-- [`global-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters-from-configmap.yaml)
 
 - [`global-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters.yaml)
 
@@ -2832,8 +2826,6 @@ Data is a data template
 
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-path-placeholders.yaml)
 
-- [`simple-parameters-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/configmaps/simple-parameters-configmap.yaml)
-
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
 
 - [`input-artifact-raw.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-raw.yaml)
@@ -2841,10 +2833,6 @@ Data is a data template
 - [`k8s-set-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-set-owner-reference.yaml)
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
-
-- [`hello-agent-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/agent/hello/hello-agent-plugin-configmap.yaml)
-
-- [`hello-controller-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/hello/hello-controller-plugin-configmap.yaml)
 
 - [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-delete-with-flags.yaml)
 
@@ -2886,10 +2874,6 @@ _No description available_
 - [`input-artifact-oss.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-oss.yaml)
 
 - [`lifecycle-hook.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/lifecycle-hook.yaml)
-
-- [`hello-agent-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/agent/hello/hello-agent-plugin-configmap.yaml)
-
-- [`hello-controller-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/hello/hello-controller-plugin-configmap.yaml)
 
 - [`sidecar-nginx.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar-nginx.yaml)
 
@@ -2952,8 +2936,6 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 <br>
 
 - [`arguments-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-artifacts.yaml)
-
-- [`arguments-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-parameters-from-configmap.yaml)
 
 - [`arguments-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-parameters.yaml)
 
@@ -3752,10 +3734,6 @@ HTTPArtifact allows an file served on HTTP to be placed as an input artifact in 
 
 - [`lifecycle-hook.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/lifecycle-hook.yaml)
 
-- [`hello-agent-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/agent/hello/hello-agent-plugin-configmap.yaml)
-
-- [`hello-controller-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/hello/hello-controller-plugin-configmap.yaml)
-
 - [`sidecar-nginx.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar-nginx.yaml)
 
 - [`sidecar.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar.yaml)
@@ -3835,8 +3813,6 @@ ValueFrom describes a location in which to obtain the value to a parameter
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`arguments-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-parameters-from-configmap.yaml)
-
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-path-placeholders.yaml)
 
 - [`conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-parameters.yaml)
@@ -3856,8 +3832,6 @@ ValueFrom describes a location in which to obtain the value to a parameter
 - [`global-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-outputs.yaml)
 
 - [`global-parameters-from-configmap-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters-from-configmap-referenced-as-local-variable.yaml)
-
-- [`global-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters-from-configmap.yaml)
 
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/handle-large-output-results.yaml)
 
@@ -3963,13 +3937,9 @@ MetricLabel is a single label for a prometheus metric
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`arguments-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-parameters-from-configmap.yaml)
-
 - [`conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-artifacts.yaml)
 
 - [`conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-parameters.yaml)
-
-- [`simple-parameters-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/configmaps/simple-parameters-configmap.yaml)
 
 - [`graph-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/container-set-template/graph-workflow.yaml)
 
@@ -4003,8 +3973,6 @@ MetricLabel is a single label for a prometheus metric
 
 - [`global-parameters-from-configmap-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters-from-configmap-referenced-as-local-variable.yaml)
 
-- [`global-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters-from-configmap.yaml)
-
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-world.yaml)
 
 - [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
@@ -4016,10 +3984,6 @@ MetricLabel is a single label for a prometheus metric
 - [`k8s-patch-basic.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch-basic.yaml)
 
 - [`k8s-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch.yaml)
-
-- [`hello-agent-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/agent/hello/hello-agent-plugin-configmap.yaml)
-
-- [`hello-controller-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/hello/hello-controller-plugin-configmap.yaml)
 
 - [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy-with-label-selector.yaml)
 
@@ -4690,8 +4654,6 @@ _No description available_
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`arguments-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-parameters-from-configmap.yaml)
-
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-path-placeholders.yaml)
 
 - [`conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-parameters.yaml)
@@ -4711,8 +4673,6 @@ _No description available_
 - [`global-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-outputs.yaml)
 
 - [`global-parameters-from-configmap-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters-from-configmap-referenced-as-local-variable.yaml)
-
-- [`global-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters-from-configmap.yaml)
 
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/handle-large-output-results.yaml)
 
@@ -4763,8 +4723,6 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`arguments-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-artifacts.yaml)
 
-- [`arguments-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-parameters-from-configmap.yaml)
-
 - [`arguments-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-parameters.yaml)
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-disable-archive.yaml)
@@ -4808,8 +4766,6 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`conditionals-complex.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditionals-complex.yaml)
 
 - [`conditionals.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditionals.yaml)
-
-- [`simple-parameters-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/configmaps/simple-parameters-configmap.yaml)
 
 - [`graph-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/container-set-template/graph-workflow.yaml)
 
@@ -4909,8 +4865,6 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`global-parameters-from-configmap-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters-from-configmap-referenced-as-local-variable.yaml)
 
-- [`global-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters-from-configmap.yaml)
-
 - [`global-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters.yaml)
 
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/handle-large-output-results.yaml)
@@ -5005,13 +4959,13 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation.yaml)
 
-- [`hello-agent-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/agent/hello/hello-agent-plugin-configmap.yaml)
-
-- [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/agent/hello/hello-workflow.yaml)
-
-- [`hello-controller-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/hello/hello-controller-plugin-configmap.yaml)
-
 - [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/hello/hello-workflow.yaml)
+
+- [`pagerduty-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/pagerduty/pagerduty-workflow.yaml)
+
+- [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/hello/hello-workflow.yaml)
+
+- [`slack-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/slack/slack-workflow.yaml)
 
 - [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy-with-label-selector.yaml)
 
@@ -5427,8 +5381,6 @@ A single application container that you want to run within a pod.
 
 - [`arguments-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-artifacts.yaml)
 
-- [`arguments-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-parameters-from-configmap.yaml)
-
 - [`arguments-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-parameters.yaml)
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-disable-archive.yaml)
@@ -5535,8 +5487,6 @@ A single application container that you want to run within a pod.
 
 - [`global-parameters-from-configmap-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters-from-configmap-referenced-as-local-variable.yaml)
 
-- [`global-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters-from-configmap.yaml)
-
 - [`global-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters.yaml)
 
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/handle-large-output-results.yaml)
@@ -5614,6 +5564,8 @@ A single application container that you want to run within a pod.
 - [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation-dag.yaml)
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation.yaml)
+
+- [`pagerduty-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/pagerduty/pagerduty-workflow.yaml)
 
 - [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy-with-label-selector.yaml)
 
@@ -5734,11 +5686,7 @@ Selects a key from a ConfigMap.
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`arguments-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-parameters-from-configmap.yaml)
-
 - [`global-parameters-from-configmap-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters-from-configmap-referenced-as-local-variable.yaml)
-
-- [`global-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters-from-configmap.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-tmpl-level.yaml)
 
@@ -6090,8 +6038,6 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`arguments-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-artifacts.yaml)
 
-- [`arguments-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-parameters-from-configmap.yaml)
-
 - [`arguments-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-parameters.yaml)
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-disable-archive.yaml)
@@ -6234,8 +6180,6 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`global-parameters-from-configmap-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters-from-configmap-referenced-as-local-variable.yaml)
 
-- [`global-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters-from-configmap.yaml)
-
 - [`global-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters.yaml)
 
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/handle-large-output-results.yaml)
@@ -6330,9 +6274,13 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation.yaml)
 
-- [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/agent/hello/hello-workflow.yaml)
-
 - [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/hello/hello-workflow.yaml)
+
+- [`pagerduty-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/controller/pagerduty/pagerduty-workflow.yaml)
+
+- [`hello-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/hello/hello-workflow.yaml)
+
+- [`slack-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/executor/slack/slack-workflow.yaml)
 
 - [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy-with-label-selector.yaml)
 
@@ -6873,8 +6821,6 @@ EnvVarSource represents a source for the value of an EnvVar.
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`arguments-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-parameters-from-configmap.yaml)
-
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-path-placeholders.yaml)
 
 - [`conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-parameters.yaml)
@@ -6894,8 +6840,6 @@ EnvVarSource represents a source for the value of an EnvVar.
 - [`global-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-outputs.yaml)
 
 - [`global-parameters-from-configmap-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters-from-configmap-referenced-as-local-variable.yaml)
-
-- [`global-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters-from-configmap.yaml)
 
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/handle-large-output-results.yaml)
 

@@ -1,5 +1,7 @@
 import json
+import os
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from urllib.request import urlopen, Request
 
 
 class Plugin(BaseHTTPRequestHandler):
@@ -17,10 +19,15 @@ class Plugin(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_POST(self):
-        if self.path == '/template.executeTemplate':
+        if self.path == '/api/v1/template.execute':
             args = self.args()
-            if 'howdy' in args['template']['plugin']:
-                self.reply({'node': {'phase': 'Succeeded', 'message': 'Hello template!'}})
+            if 'slack' in args['template']['plugin']:
+                x = urlopen(
+                    Request(os.getenv('URL'),
+                            data=json.dumps({'text': args['template']['plugin']['slack']['text']}).encode()))
+                if x.status != 200:
+                    raise Exception("not 200")
+                self.reply({'node': {'phase': 'Succeeded', 'message': 'Slack message sent'}})
             else:
                 self.reply({})
         else:
@@ -28,5 +35,5 @@ class Plugin(BaseHTTPRequestHandler):
 
 
 if __name__ == '__main__':
-    httpd = HTTPServer(('', 4355), Plugin)
+    httpd = HTTPServer(('', 7522), Plugin)
     httpd.serve_forever()

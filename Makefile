@@ -271,7 +271,7 @@ docs: \
 	rm -Rf vendor v3
 	go mod tidy
 	# `go generate ./...` takes around 10s, so we only run on specific packages.
-	go generate ./persist/sqldb ./pkg/apiclient/workflow ./server/auth ./server/auth/sso ./workflow/executor
+	go generate ./persist/sqldb ./pkg/plugins ./pkg/apiclient/workflow ./server/auth ./server/auth/sso ./workflow/executor
 	./hack/check-env-doc.sh
 
 $(GOPATH)/bin/mockery:
@@ -293,7 +293,7 @@ $(GOPATH)/bin/protoc-gen-swagger:
 $(GOPATH)/bin/openapi-gen:
 	go install k8s.io/kube-openapi/cmd/openapi-gen@v0.0.0-20210305001622-591a79e4bda7
 $(GOPATH)/bin/swagger:
-	go install github.com/go-swagger/go-swagger/cmd/swagger@v0.25.0
+	go install github.com/go-swagger/go-swagger/cmd/swagger@v0.28.0
 $(GOPATH)/bin/goimports:
 	go install golang.org/x/tools/cmd/goimports@v0.1.6
 

@@ -1,4 +1,4 @@
-// Package controller The API for a controller plugin.
+// Package executor The API for an executor plugin.
 //
 //     Schemes: http
 //     Host: localhost
@@ -11,7 +11,7 @@
 //     Produces:
 //     - application/json
 // swagger:meta
-package controller
+package executor
 
 //go:generate env SWAGGER_GENERATE_EXTENSION=false swagger generate spec -o swagger.yml
-//go:generate env SWAGGER_GENERATE_EXTENSION=false swagger generate markdown -f swagger.yml --output ../../../docs/controller_swagger.md
+//go:generate env SWAGGER_GENERATE_EXTENSION=false swagger generate markdown -f swagger.yml --output ../../../docs/executor_swagger.md

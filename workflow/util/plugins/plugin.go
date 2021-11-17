@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -14,12 +15,16 @@ import (
 
 type Plugin struct {
 	Address string
+	client  http.Client
 	invalid map[string]bool
 }
 
-func New(address string) Plugin {
+func New(address string, timeout time.Duration) Plugin {
 	return Plugin{
 		Address: address,
+		client: http.Client{
+			Timeout: timeout,
+		},
 		invalid: map[string]bool{},
 	}
 }
@@ -28,11 +33,15 @@ func (p *Plugin) Call(method string, args interface{}, reply interface{}) error 
 	if p.invalid[method] {
 		return nil
 	}
-	req, err := json.Marshal(args)
+	body, err := json.Marshal(args)
 	if err != nil {
 		return err
 	}
-	resp, err := http.Post(fmt.Sprintf("%s/%s", p.Address, method), "application/json", bytes.NewBuffer(req))
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/api/v1/%s", p.Address, method), bytes.NewBuffer(body))
+	if err != nil {
+		return err
+	}
+	resp, err := p.client.Do(req)
 	if err != nil {
 		return err
 	}
@@ -41,7 +50,7 @@ func (p *Plugin) Call(method string, args interface{}, reply interface{}) error 
 	case 200:
 		return json.NewDecoder(resp.Body).Decode(reply)
 	case 404:
-		log.WithField("address", p.invalid).
+		log.WithField("address", p.Address).
 			WithField("method", method).
 			Info("method not found, never calling again")
 		p.invalid[method] = true

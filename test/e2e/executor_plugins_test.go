@@ -14,13 +14,13 @@ import (
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
 
-type AgentPluginsSuite struct {
+type ExecutorPluginsSuite struct {
 	fixtures.E2ESuite
 }
 
-func (s *AgentPluginsSuite) TestTemplateExecutor() {
+func (s *ExecutorPluginsSuite) TestTemplateExecutor() {
 	s.Given().
-		Workflow("@testdata/plugins/agent/template-executor-workflow.yaml").
+		Workflow("@testdata/plugins/executor/template-executor-workflow.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
@@ -31,6 +31,6 @@ func (s *AgentPluginsSuite) TestTemplateExecutor() {
 		})
 }
 
-func TestAgentPluginsSuite(t *testing.T) {
-	suite.Run(t, new(AgentPluginsSuite))
+func TestExecutorPluginsSuite(t *testing.T) {
+	suite.Run(t, new(ExecutorPluginsSuite))
 }

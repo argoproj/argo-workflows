@@ -17,14 +17,10 @@ class Plugin(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_POST(self):
-        if self.path == '/api/v1/parameters.add':
-            self.reply({'parameters': {'hello': 'good morning'}})
-        elif self.path == '/api/v1/workflow.preOperate':
-            self.reply({'workflow': {'metadata': {'annotations': {'hello': 'good morning'}}}})
-        elif self.path == '/api/v1/node.preExecute':
+        if self.path == '/api/v1/template.execute':
             args = self.args()
-            if 'plugin' in args['template'] and 'hello' in args['template']['plugin']:
-                self.reply({'node': {'phase': 'Succeeded', 'message': 'Hello workflow!'}})
+            if 'howdy' in args['template']['plugin']:
+                self.reply({'node': {'phase': 'Succeeded', 'message': 'Hello template!'}})
             else:
                 self.reply({})
         else:

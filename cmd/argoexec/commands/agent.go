@@ -13,7 +13,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3"
 	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	agentplugins "github.com/argoproj/argo-workflows/v3/pkg/plugins/agent"
+	executorplugins "github.com/argoproj/argo-workflows/v3/pkg/plugins/executor"
 	"github.com/argoproj/argo-workflows/v3/util/logs"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor"
@@ -57,7 +57,7 @@ func initAgentExecutor() *executor.AgentExecutor {
 	if err := json.Unmarshal([]byte(os.Getenv(common.EnvVarPluginAddresses)), &addresses); err != nil {
 		log.Fatal(err)
 	}
-	var plugins []agentplugins.TemplateExecutor
+	var plugins []executorplugins.TemplateExecutor
 	for _, address := range addresses {
 		plugins = append(plugins, rpc.New(address))
 	}

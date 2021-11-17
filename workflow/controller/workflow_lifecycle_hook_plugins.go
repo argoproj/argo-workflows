@@ -9,11 +9,8 @@ import (
 )
 
 func (woc *wfOperationCtx) runWorkflowPreOperatePlugins() error {
-	plugs, err := woc.controller.getControllerPlugins()
-	if err != nil {
-		return err
-	}
-	args := controllerplugins.WorkflowPreOperateArgs{Workflow: woc.wf}
+	plugs := woc.controller.getControllerPlugins()
+	args := controllerplugins.WorkflowPreOperateArgs{Workflow: &controllerplugins.Workflow{ObjectMeta: woc.wf.ObjectMeta}}
 	reply := &controllerplugins.WorkflowPreOperateReply{}
 	for _, plug := range plugs {
 		if plug, ok := plug.(controllerplugins.WorkflowLifecycleHook); ok {
@@ -29,15 +26,9 @@ func (woc *wfOperationCtx) runWorkflowPreOperatePlugins() error {
 	}
 	return nil
 }
-func (woc *wfOperationCtx) runWorkflowPostOperatePlugins(ctx context.Context) error {
-	if !woc.updated {
-		return nil
-	}
-	plugs, err := woc.controller.getControllerPlugins()
-	if err != nil {
-		return err
-	}
-	args := controllerplugins.WorkflowPostOperateArgs{Old: woc.orig, New: woc.wf}
+func (woc *wfOperationCtx) runWorkflowPostOperatePlugins(ctx context.Context) {
+	plugs := woc.controller.getControllerPlugins()
+	args := controllerplugins.WorkflowPostOperateArgs{Old: &controllerplugins.Workflow{ObjectMeta: woc.orig.ObjectMeta}, New: &controllerplugins.Workflow{ObjectMeta: woc.wf.ObjectMeta}}
 	reply := &controllerplugins.WorkflowPostOperateReply{}
 	for _, plug := range plugs {
 		if plug, ok := plug.(controllerplugins.WorkflowLifecycleHook); ok {
@@ -48,5 +39,4 @@ func (woc *wfOperationCtx) runWorkflowPostOperatePlugins(ctx context.Context) er
 			}
 		}
 	}
-	return nil
 }
