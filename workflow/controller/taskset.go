@@ -79,6 +79,37 @@ func (woc *wfOperationCtx) getWorkflowTaskSet() (*wfv1.WorkflowTaskSet, error) {
 	return taskSet.(*wfv1.WorkflowTaskSet), nil
 }
 
+func (woc *wfOperationCtx) taskSetReconciliation(ctx context.Context) {
+	if err := woc.reconcileTaskSet(ctx); err != nil {
+		woc.log.WithError(err).Error("error in workflowtaskset reconciliation")
+		return
+	}
+	if err := woc.reconcileAgentPod(ctx); err != nil {
+		woc.log.WithError(err).Error("error in agent pod reconciliation")
+		woc.markWorkflowError(ctx, err)
+		return
+	}
+}
+
+func (woc *wfOperationCtx) nodeRequiresTaskSetReconciliation(nodeName string) bool {
+	node := woc.wf.GetNodeByName(nodeName)
+	if node == nil {
+		return false
+	}
+	// If this node is of type HTTP, it will need an HTTP reconciliation
+	if node.Type == wfv1.NodeTypeHTTP || node.Type == wfv1.NodeTypePlugin {
+		return true
+	}
+	for _, child := range node.Children {
+		// If any of the node's children need an HTTP reconciliation, the parent node will also need one
+		if woc.nodeRequiresTaskSetReconciliation(child) {
+			return true
+		}
+	}
+	// If neither of the children need one -- or if there are no children -- no HTTP reconciliation is needed.
+	return false
+}
+
 func (woc *wfOperationCtx) reconcileTaskSet(ctx context.Context) error {
 	workflowTaskSet, err := woc.getWorkflowTaskSet()
 	if err != nil {

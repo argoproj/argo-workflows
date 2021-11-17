@@ -5,9 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"net/http"
-	"os"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -18,7 +16,6 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/util/retry"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -43,6 +40,9 @@ type templateExecutor = func(ctx context.Context, tmpl wfv1.Template, reply *wfv
 
 func (ae *AgentExecutor) Agent(ctx context.Context) error {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+	defer log.Info("stopped agent")
+
+	log := log.WithField("workflow", ae.WorkflowName)
 
 	taskSetInterface := ae.WorkflowInterface.ArgoprojV1alpha1().WorkflowTaskSets(ae.Namespace)
 	for {
@@ -52,7 +52,7 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 		}
 
 		for event := range wfWatch.ResultChan() {
-			log.WithField("taskset", ae.WorkflowName).Infof("watching taskset, %v", event)
+			log.WithField("event", event.Type).Infof("Event")
 
 			if event.Type == watch.Deleted {
 				// We're done if the task set is deleted
@@ -64,8 +64,7 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 				return apierr.FromObject(event.Object)
 			}
 			if IsWorkflowCompleted(obj) {
-				log.WithField("taskset", ae.WorkflowName).Info("stopped agent")
-				os.Exit(0)
+				return nil
 			}
 			tasks := obj.Spec.Tasks
 			for nodeID, tmpl := range tasks {
@@ -85,15 +84,21 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 				}
 
 				result := wfv1.NodeResult{}
+				log := log.WithField("nodeID", nodeID)
 				if requeue, err := executeTemplate(ctx, tmpl, &result); err != nil {
 					result.Phase = wfv1.NodeFailed
 					result.Message = err.Error()
 				} else if requeue > 0 {
 					time.AfterFunc(requeue, func() {
-						log.WithField("nodeID", nodeID).Info("re-queue")
+						log.Info("re-queue")
 						delete(ae.CompleteTask, nodeID)
 					})
 				}
+
+				log.WithField("phase", result.Phase).
+					WithField("message", result.Message).
+					WithField("outputs", result.Outputs).
+					Info("Node result")
 
 				nodeResults := map[string]wfv1.NodeResult{}
 
@@ -105,13 +110,11 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 					return errors.InternalWrapError(err)
 				}
 
-				log.WithFields(log.Fields{"taskset": obj, "workflow": ae.WorkflowName, "namespace": ae.Namespace}).Infof("Patch content, %s", patch)
-
-				obj, err = taskSetInterface.Patch(ctx, ae.WorkflowName, types.MergePatchType, patch, metav1.PatchOptions{})
+				_, err = taskSetInterface.Patch(ctx, ae.WorkflowName, types.MergePatchType, patch, metav1.PatchOptions{})
 				if err != nil {
-					log.WithError(err).WithField("taskset", obj).Errorf("failed to update the taskset")
+					log.WithError(err).Error("failed to update the taskset")
 				}
-				log.WithField("taskset", obj).Infof("updated content, %s", patch)
+				log.Info("updated taskset")
 
 				if result.Fulfilled() {
 					ae.CompleteTask[nodeID] = struct{}{}
@@ -162,19 +165,7 @@ func (ae *AgentExecutor) executePluginTemplate(_ context.Context, tmpl wfv1.Temp
 	}
 	reply := &executorplugins.ExecuteTemplateReply{}
 	for _, plug := range ae.Plugins {
-		err := retry.OnError(wait.Backoff{
-			Duration: time.Millisecond * 10,
-			Factor:   2,
-			Jitter:   1.0,
-			Steps:    20,
-			Cap:      time.Minute,
-		}, func(err error) bool {
-			log.Infof("retrying template execution. Failed with %s", err)
-			return true
-		}, func() error {
-			return plug.ExecuteTemplate(args, reply)
-		})
-		if err != nil {
+		if err := plug.ExecuteTemplate(args, reply); err != nil {
 			return 0, err
 		} else if reply.Node != nil {
 			*result = *reply.Node

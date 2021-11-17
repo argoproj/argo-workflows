@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/util/retry"
 
 	"github.com/argoproj/argo-workflows/v3/util/errors"
 )
@@ -17,15 +20,17 @@ type Plugin struct {
 	Address string
 	client  http.Client
 	invalid map[string]bool
+	backoff wait.Backoff
 }
 
-func New(address string, timeout time.Duration) Plugin {
+func New(address string, timeout time.Duration, backoff wait.Backoff) Plugin {
 	return Plugin{
 		Address: address,
 		client: http.Client{
 			Timeout: timeout,
 		},
 		invalid: map[string]bool{},
+		backoff: backoff,
 	}
 }
 
@@ -37,36 +42,46 @@ func (p *Plugin) Call(method string, args interface{}, reply interface{}) error 
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/api/v1/%s", p.Address, method), bytes.NewBuffer(body))
-	if err != nil {
-		return err
-	}
-	resp, err := p.client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	switch resp.StatusCode {
-	case 200:
-		return json.NewDecoder(resp.Body).Decode(reply)
-	case 404:
-		log.WithField("address", p.Address).
-			WithField("method", method).
-			Info("method not found, never calling again")
-		p.invalid[method] = true
-		_, err := io.Copy(io.Discard, resp.Body)
-		return err
-	case 503:
-		data, err := io.ReadAll(resp.Body)
+	return retry.OnError(p.backoff, func(err error) bool {
+		switch e := err.(type) {
+		case interface{ Temporary() bool }:
+			if e.Temporary() {
+				return true
+			}
+		}
+		return strings.Contains(err.Error(), "connection refused")
+	}, func() error {
+		req, err := http.NewRequest("POST", fmt.Sprintf("%s/api/v1/%s", p.Address, method), bytes.NewBuffer(body))
 		if err != nil {
 			return err
 		}
-		return errors.NewErrTransient(string(data))
-	default:
-		data, err := io.ReadAll(resp.Body)
+		resp, err := p.client.Do(req)
 		if err != nil {
 			return err
 		}
-		return fmt.Errorf("%s: %s", resp.Status, string(data))
-	}
+		defer resp.Body.Close()
+		switch resp.StatusCode {
+		case 200:
+			return json.NewDecoder(resp.Body).Decode(reply)
+		case 404:
+			log.WithField("address", p.Address).
+				WithField("method", method).
+				Info("method not found, never calling again")
+			p.invalid[method] = true
+			_, err := io.Copy(io.Discard, resp.Body)
+			return err
+		case 503:
+			data, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return err
+			}
+			return errors.NewErrTransient(string(data))
+		default:
+			data, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return err
+			}
+			return fmt.Errorf("%s: %s", resp.Status, string(data))
+		}
+	})
 }

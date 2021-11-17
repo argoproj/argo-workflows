@@ -366,6 +366,6 @@ func GenerateOnExitNodeName(parentNodeName string) string {
 	return fmt.Sprintf("%s.onExit", parentNodeName)
 }
 
-func GenerateLifeHookNodeName(parentNodeName string,hookName string) string {
-	return fmt.Sprintf("%s.hooks.%s", parentNodeName,  hookName)
+func GenerateLifeHookNodeName(parentNodeName string, hookName string) string {
+	return fmt.Sprintf("%s.hooks.%s", parentNodeName, hookName)
 }

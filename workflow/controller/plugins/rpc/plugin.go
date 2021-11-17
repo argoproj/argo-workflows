@@ -3,6 +3,8 @@ package rpc
 import (
 	"time"
 
+	"k8s.io/apimachinery/pkg/util/wait"
+
 	controllerplugins "github.com/argoproj/argo-workflows/v3/pkg/plugins/controller"
 	plugins "github.com/argoproj/argo-workflows/v3/workflow/util/plugins"
 )
@@ -10,7 +12,7 @@ import (
 type plugin struct{ plugins.Plugin }
 
 func New(address string) *plugin {
-	return &plugin{Plugin: plugins.New(address, time.Second)}
+	return &plugin{Plugin: plugins.New(address, time.Second, wait.Backoff{})}
 }
 
 var _ controllerplugins.WorkflowLifecycleHook = &plugin{}

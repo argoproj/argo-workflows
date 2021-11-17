@@ -21,7 +21,7 @@ class Plugin(BaseHTTPRequestHandler):
     def do_POST(self):
         if self.path == '/api/v1/template.execute':
             args = self.args()
-            if 'slack' in args['template']['plugin']:
+            if 'slack' in args['template'].get('plugin', {}):
                 x = urlopen(
                     Request(os.getenv('URL'),
                             data=json.dumps({'text': args['template']['plugin']['slack']['text']}).encode()))
