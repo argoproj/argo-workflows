@@ -9,7 +9,6 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
-	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -81,10 +80,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		}
 	}
 
-	pluginSidecars, pluginAddresses, err := woc.getExecutorPlugins()
-	if err != nil {
-		return nil, err
-	}
+	pluginSidecars, pluginAddresses := woc.getExecutorPlugins()
 
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -140,33 +136,17 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	return created, nil
 }
 
-func (woc *wfOperationCtx) getExecutorPlugins() ([]apiv1.Container, []string, error) {
+func (woc *wfOperationCtx) getExecutorPlugins() ([]apiv1.Container, []string) {
 	var sidecars []apiv1.Container
 	var addresses []string
-	if woc.controller.plugins {
-		namespaces := map[string]bool{}
-		namespaces[woc.controller.namespace] = true
-		namespaces[woc.wf.Namespace] = true
-		for namespace := range namespaces {
-			cms, err := woc.controller.getConfigMaps(namespace, "ExecutorPlugin")
-			if err != nil {
-				return nil, nil, err
-			}
-			for _, cm := range cms {
-				sidecar := apiv1.Container{
-					Name: cm.Name,
-				}
-				container := cm.Data["container"]
-				if err := yaml.Unmarshal([]byte(container), &sidecar); err != nil {
-					return nil, nil, fmt.Errorf("failed to parse %q: %w", container, err)
-				}
-				address := cm.Data["address"]
-				log.WithField("sidecar", wfv1.MustMarshallJSON(sidecar)).
-					Debug("adding agent plugins sidecar")
-				sidecars = append(sidecars, sidecar)
-				addresses = append(addresses, address)
-			}
+	namespaces := map[string]bool{}
+	namespaces[woc.controller.namespace] = true
+	namespaces[woc.wf.Namespace] = true
+	for namespace := range namespaces {
+		for _, plug := range woc.controller.executorPlugins[namespace] {
+			sidecars = append(sidecars, plug.container)
+			addresses = append(addresses, plug.address)
 		}
 	}
-	return sidecars, addresses, nil
+	return sidecars, addresses
 }

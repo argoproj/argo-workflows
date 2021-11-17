@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: pageduty-controller-plugin
+  name: pagerduty-controller-plugin
   labels:
     workflows.argoproj.io/configmap-type: ControllerPlugin
 data:
