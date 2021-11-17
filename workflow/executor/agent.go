@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"net/http"
 	"os"
 	"time"
@@ -161,7 +162,14 @@ func (ae *AgentExecutor) executePluginTemplate(_ context.Context, tmpl wfv1.Temp
 	}
 	reply := &executorplugins.ExecuteTemplateReply{}
 	for _, plug := range ae.Plugins {
-		err := retry.OnError(retry.DefaultBackoff, func(err error) bool {
+		err := retry.OnError(wait.Backoff{
+			Duration: time.Millisecond * 10,
+			Factor:   2,
+			Jitter:   1.0,
+			Steps:    20,
+			Cap:      time.Minute,
+		}, func(err error) bool {
+			log.Infof("retrying template execution. Failed with %s", err)
 			return true
 		}, func() error {
 			return plug.ExecuteTemplate(args, reply)
