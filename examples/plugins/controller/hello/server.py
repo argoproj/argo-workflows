@@ -23,7 +23,7 @@ class Plugin(BaseHTTPRequestHandler):
             self.reply({'workflow': {'metadata': {'annotations': {'hello': 'good morning'}}}})
         elif self.path == '/api/v1/node.preExecute':
             args = self.args()
-            if 'plugin' in args['template'] and 'hello' in args['template']['plugin']:
+            if 'hello' in args['template'].get('plugin', {}):
                 self.reply({'node': {'phase': 'Succeeded', 'message': 'Hello workflow!'}})
             else:
                 self.reply({})

@@ -1193,14 +1193,12 @@ func (lchs LifecycleHooks) GetExitHook() *LifecycleHook {
 	return nil
 }
 
-
 type LifecycleHook struct {
 	Template  string    `json:"template," protobuf:"bytes,1,opt,name=template"`
 	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,2,opt,name=arguments"`
 	// Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not
 	// be retried and the retry strategy will be ignored
 	Expression string `json:"expression,omitempty" protobuf:"bytes,3,opt,name=expression"`
-
 }
 
 func (lch *LifecycleHook) WithArgs(args Arguments) *LifecycleHook {
@@ -1226,7 +1224,6 @@ func (step *WorkflowStep) GetExitHook(args Arguments) *LifecycleHook {
 	}
 	return step.Hooks.GetExitHook().WithArgs(args)
 }
-
 
 func (step *WorkflowStep) GetTemplate() *Template {
 	return step.Inline

@@ -365,6 +365,13 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		return
 	}
 
+	// Reconcile TaskSet and Agent for HTTP templates
+	woc.taskSetReconciliation(ctx)
+
+	if node == nil || !node.Fulfilled() {
+		// node can be nil if a workflow created immediately in a parallelism == 0 state
+		return
+	}
 
 	workflowStatus := map[wfv1.NodePhase]wfv1.WorkflowPhase{
 		wfv1.NodePending:   wfv1.WorkflowPending,
@@ -381,7 +388,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	woc.executeWfLifeCycleHook(ctx, tmplCtx)
 
 	// Reconcile TaskSet and Agent for HTTP templates
-	woc.httpReconciliation(ctx)
+	woc.taskSetReconciliation(ctx)
 
 	if node == nil || !node.Fulfilled() {
 		// node can be nil if a workflow created immediately in a parallelism == 0 state
@@ -431,8 +438,8 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		}
 
 		// If the onExit node (or any child of the onExit node) requires HTTP reconciliation, do it here
-		if onExitNode != nil && woc.nodeRequiresHttpReconciliation(onExitNode.Name) {
-			woc.httpReconciliation(ctx)
+		if onExitNode != nil && woc.nodeRequiresTaskSetReconciliation(onExitNode.Name) {
+			woc.taskSetReconciliation(ctx)
 		}
 
 		if onExitNode == nil || !onExitNode.Fulfilled() {
