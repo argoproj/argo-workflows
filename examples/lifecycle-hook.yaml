@@ -1,0 +1,94 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: lifecycle-hook-
+spec:
+  entrypoint: diamond
+  hooks:
+    running:
+      expression: "{{workflow.status}} == Running"
+      template: http
+  templates:
+    - name: diamond
+      dag:
+        tasks:
+          - name: A
+            hooks:
+              exit:
+                template: http
+              success:
+                expression: "{{tasks.A.status}} == Succeeded"
+                template: http
+              failure:
+                expression: "{{tasks.A.status}} == Failed"
+                template: http
+              error:
+                expression: "{{tasks.A.status}} == Error"
+                template: http
+            template: coinflip
+          - name: B
+            hooks:
+              success:
+                expression: "{{tasks.B.status}} == Succeeded"
+                template: http
+            depends: "A"
+            template: coinflip
+          - name: C
+            hooks:
+              success:
+                expression: "{{tasks.C.status}} == Succeeded"
+                template: heads
+            depends: "A"
+            template: coinflip
+          - name: D
+            hooks:
+              success:
+                expression: "{{tasks.D.status}} == Succeeded"
+                template: heads
+            depends: "B && C"
+            template: coinflip
+    
+    - name: coinflip
+      steps:
+        #    - - name: flip-coin-1
+        #        template: prestart
+        - - name: flip-coin
+            hooks:
+              success:
+                expression: "{{steps.flip-coin.status}} == Succeeded"
+                template: http
+              condition:
+                expression: "{{steps.flip-coin.status}} == Succeeded"
+                template: http
+            template: flip-coin
+        - - name: heads
+            hooks:
+              success:
+                expression: "{{steps.flip-coin.outputs.result}} == heads"
+                template: heads
+            template: http
+            when: "{{steps.flip-coin.outputs.result}} == heads"
+          - name: tails
+      
+            template: heads
+            when: "{{steps.flip-coin.outputs.result}} == tails"
+    
+    - name: flip-coin
+      script:
+        image: python:alpine3.6
+        command: [python]
+        source: |
+          import random
+          result = "heads" if random.randint(0,1) == 0 else "tails"
+          print(result)
+    
+    - name: heads
+      container:
+        image: alpine:3.6
+        command: [sh, -c]
+        args: ["echo \"it was heads\""]
+
+    - name: http
+      http:
+        # url: http://dummy.restapiexample.com/api/v1/employees
+        url: "https://raw.githubusercontent.com/argoproj/argo-workflows/4e450e250168e6b4d51a126b784e90b11a0162bc/pkg/apis/workflow/v1alpha1/generated.swagger.json"

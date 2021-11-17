@@ -245,6 +245,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 		targetTasks = strings.Split(tmpl.DAG.Target, " ")
 	}
 
+
 	// kick off execution of each target task asynchronously
 	for _, taskName := range targetTasks {
 		woc.executeDAGTask(ctx, dagCtx, taskName)
@@ -253,6 +254,15 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 		// complete (since the DAG itself will have succeeded). To ensure that their exit handlers are run we also run them here. Note that
 		// calls to runOnExitNode are idempotent: it is fine if they are called more than once for the same task.
 		taskNode := dagCtx.getTaskNode(taskName)
+
+		if taskNode != nil {
+			task := dagCtx.GetTask(taskName)
+			scope, err := woc.buildLocalScopeFromTask(dagCtx, task)
+			if  err != nil{
+				fmt.Println(err)
+			}
+			woc.executeLifeCycleHook(ctx, scope, dagCtx.GetTask(taskName).Hooks, taskNode, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
+		}
 		if taskNode != nil && taskNode.Fulfilled() {
 			if taskNode.Completed() {
 				// Run the node's onExit node, if any. Since this is a target task, we don't need to consider the status
@@ -276,7 +286,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 		return node, nil
 	}
 
-	// set outputs from tasks in order for DAG templates to support outputs
+	//// set outputs from tasks in order for DAG templates to support outputs
 	scope := createScope(tmpl)
 	for _, task := range tmpl.DAG.Tasks {
 		taskNode := dagCtx.getTaskNode(task.Name)
@@ -362,6 +372,16 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 		// Release acquired lock completed task.
 		if tmpl != nil {
 			woc.controller.syncManager.Release(woc.wf, node.ID, tmpl.Synchronization)
+		}
+		if node != nil {
+			task := dagCtx.GetTask(taskName)
+			scope, err := woc.buildLocalScopeFromTask(dagCtx, task)
+			scope.addParamToScope(fmt.Sprintf("tasks.%s.status", task.Name), string(node.Phase))
+
+			if  err != nil{
+				fmt.Println("*****",err)
+			}
+			woc.executeLifeCycleHook(ctx, scope, dagCtx.GetTask(taskName).Hooks, node, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
 		}
 
 		if node.Completed() {

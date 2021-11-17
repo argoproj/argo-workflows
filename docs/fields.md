@@ -196,6 +196,8 @@ Workflow is the definition of a workflow resource
 
 - [`key-only-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/key-only-artifact.yaml)
 
+- [`lifecycle-hook.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/lifecycle-hook.yaml)
+
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
 - [`loops-maps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-maps.yaml)
@@ -616,6 +618,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
 
 - [`key-only-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/key-only-artifact.yaml)
+
+- [`lifecycle-hook.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/lifecycle-hook.yaml)
 
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
@@ -1056,6 +1060,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`key-only-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/key-only-artifact.yaml)
 
+- [`lifecycle-hook.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/lifecycle-hook.yaml)
+
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
 - [`loops-maps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-maps.yaml)
@@ -1450,6 +1456,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
 
 - [`key-only-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/key-only-artifact.yaml)
+
+- [`lifecycle-hook.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/lifecycle-hook.yaml)
 
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
@@ -2788,6 +2796,8 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 
 - [`key-only-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/key-only-artifact.yaml)
 
+- [`lifecycle-hook.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/lifecycle-hook.yaml)
+
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
 - [`map-reduce.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/map-reduce.yaml)
@@ -2874,6 +2884,8 @@ _No description available_
 - [`input-artifact-http.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-http.yaml)
 
 - [`input-artifact-oss.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-oss.yaml)
+
+- [`lifecycle-hook.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/lifecycle-hook.yaml)
 
 - [`hello-agent-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/agent/hello/hello-agent-plugin-configmap.yaml)
 
@@ -3218,6 +3230,8 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
 
+- [`lifecycle-hook.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/lifecycle-hook.yaml)
+
 - [`loops-param-result.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-param-result.yaml)
 
 - [`map-reduce.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/map-reduce.yaml)
@@ -3353,6 +3367,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
+
+- [`lifecycle-hook.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/lifecycle-hook.yaml)
 
 - [`loops-maps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-maps.yaml)
 
@@ -3733,6 +3749,8 @@ HTTPArtifact allows an file served on HTTP to be placed as an input artifact in 
 - [`input-artifact-http.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-http.yaml)
 
 - [`input-artifact-oss.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-oss.yaml)
+
+- [`lifecycle-hook.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/lifecycle-hook.yaml)
 
 - [`hello-agent-plugin-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/plugins/agent/hello/hello-agent-plugin-configmap.yaml)
 
@@ -4140,6 +4158,8 @@ DAGTask represents a node in the graph during DAG execution
 
 - [`key-only-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/key-only-artifact.yaml)
 
+- [`lifecycle-hook.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/lifecycle-hook.yaml)
+
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
 - [`map-reduce.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/map-reduce.yaml)
@@ -4216,6 +4236,8 @@ DataSource sources external data into a data template
 - [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-reusing-verbose-snippets.yaml)
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
+
+- [`lifecycle-hook.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/lifecycle-hook.yaml)
 
 - [`loops-param-result.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-param-result.yaml)
 
@@ -4330,6 +4352,8 @@ _No description available_
 - [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-artifacts.yaml)
 
 - [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
+
+- [`lifecycle-hook.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/lifecycle-hook.yaml)
 </details>
 
 ### Fields
@@ -4936,6 +4960,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
 
 - [`key-only-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/key-only-artifact.yaml)
+
+- [`lifecycle-hook.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/lifecycle-hook.yaml)
 
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
@@ -5548,6 +5574,8 @@ A single application container that you want to run within a pod.
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
 
 - [`key-only-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/key-only-artifact.yaml)
+
+- [`lifecycle-hook.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/lifecycle-hook.yaml)
 
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
@@ -6257,6 +6285,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
 
 - [`key-only-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/key-only-artifact.yaml)
+
+- [`lifecycle-hook.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/lifecycle-hook.yaml)
 
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 

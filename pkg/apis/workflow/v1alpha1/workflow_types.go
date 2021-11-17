@@ -360,6 +360,10 @@ type WorkflowSpec struct {
 
 	// ArchiveLogs indicates if the container logs should be archived
 	ArchiveLogs *bool `json:"archiveLogs,omitempty" protobuf:"varint,40,opt,name=archiveLogs"`
+
+	// Hooks holds the lifecycle hook which is invoked at lifecycle of
+	// step, irrespective of the success, failure, or error status of the primary step
+	Hooks LifecycleHooks `json:"hooks,omitempty" protobuf:"bytes,41,opt,name=hooks"`
 }
 
 // GetVolumeClaimGC returns the VolumeClaimGC that was defined in the workflow spec.  If none was provided, a default value is returned.
@@ -1189,9 +1193,14 @@ func (lchs LifecycleHooks) GetExitHook() *LifecycleHook {
 	return nil
 }
 
+
 type LifecycleHook struct {
 	Template  string    `json:"template," protobuf:"bytes,1,opt,name=template"`
 	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,2,opt,name=arguments"`
+	// Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not
+	// be retried and the retry strategy will be ignored
+	Expression string `json:"expression,omitempty" protobuf:"bytes,3,opt,name=expression"`
+
 }
 
 func (lch *LifecycleHook) WithArgs(args Arguments) *LifecycleHook {
@@ -1217,6 +1226,7 @@ func (step *WorkflowStep) GetExitHook(args Arguments) *LifecycleHook {
 	}
 	return step.Hooks.GetExitHook().WithArgs(args)
 }
+
 
 func (step *WorkflowStep) GetTemplate() *Template {
 	return step.Inline
