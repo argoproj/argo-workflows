@@ -165,9 +165,11 @@ func GetBearerToken(in *restclient.Config, explicitKubeConfigPath string) (strin
 		// This function will return error because of TLS Cert missing,
 		// This code is not making actual request. We can ignore it.
 		err = auth.UpdateTransportConfig(tc)
-		println("ALEX", "err=", err)
+		if err != nil {
+			println("ALEX", "err=", err.Error())
+		}
 
-		rt, err := transport.New(tc)
+		tp, err := transport.New(tc)
 		if err != nil {
 			return "", err
 		}
@@ -175,7 +177,7 @@ func GetBearerToken(in *restclient.Config, explicitKubeConfigPath string) (strin
 		if err != nil {
 			return "", err
 		}
-		resp, err := rt.RoundTrip(req)
+		resp, err := tp.RoundTrip(req)
 		if err != nil {
 			return "", err
 		}
