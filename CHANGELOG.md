@@ -337,6 +337,14 @@
  * meijin
  * wanghong230
 
+## v3.1.15 (2021-11-17)
+
+ * [a0d675692](https://github.com/argoproj/argo-workflows/commit/a0d6756922f7ba89f20b034dd265d0b1e393e70f) fix: add gh ecdsa and ed25519 to known hosts (#7226)
+
+### Contributors
+
+ * Rob Herley
+
 ## v3.1.14 (2021-10-19)
 
  * [f647435b6](https://github.com/argoproj/argo-workflows/commit/f647435b65d5c27e84ba2d2383f0158ec84e6369) fix: do not delete expr tag tmpl values. Fixes #6909 (#6921)
