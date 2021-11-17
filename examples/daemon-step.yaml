@@ -50,9 +50,10 @@ spec:
       readinessProbe:
         httpGet:
           path: /ping
-          port: "8086"
+          port: 8086
         initialDelaySeconds: 5
         timeoutSeconds: 1
+      command: ["/entrypoint.sh", "influxd"]
 
   - name: influxdb-client
     inputs:
