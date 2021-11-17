@@ -81,7 +81,7 @@ func Test_archivedWorkflowServer(t *testing.T) {
 	t.Run("ListArchivedWorkflows", func(t *testing.T) {
 		allowed = false
 		_, err := w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{Limit: 1}})
-		assert.Equal(t, status.Error(codes.PermissionDenied, "caller is not allowed to 'list' argoproj.io/workflows in namespace ''"), err)
+		assert.Equal(t, status.Error(codes.PermissionDenied, "caller is not allowed to 'list' argoproj.io/workflows in cluster"), err)
 		allowed = true
 		resp, err := w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{Limit: 1}})
 		if assert.NoError(t, err) {
@@ -117,7 +117,7 @@ func Test_archivedWorkflowServer(t *testing.T) {
 	t.Run("GetArchivedWorkflow", func(t *testing.T) {
 		allowed = false
 		_, err := w.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: "my-uid"})
-		assert.Equal(t, status.Error(codes.PermissionDenied, "caller is not allowed to 'get' argoproj.io/workflows/my-name in namespace ''"), err)
+		assert.Equal(t, status.Error(codes.PermissionDenied, "caller is not allowed to 'get' argoproj.io/workflows/my-name in cluster"), err)
 		allowed = true
 		_, err = w.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{})
 		assert.Equal(t, err, status.Error(codes.NotFound, "not found"))
@@ -129,7 +129,7 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		allowed = false
 		_, err := w.DeleteArchivedWorkflow(ctx, &workflowarchivepkg.DeleteArchivedWorkflowRequest{Uid: "my-uid"})
 		// note, this is 'get', not 'delete', because `archivedWorkflowServer.DeleteArchivedWorkflow()` attempts to 'get' the workflow before deleting it
-		assert.Equal(t, status.Error(codes.PermissionDenied, "caller is not allowed to 'get' argoproj.io/workflows/my-name in namespace ''"), err)
+		assert.Equal(t, status.Error(codes.PermissionDenied, "caller is not allowed to 'get' argoproj.io/workflows/my-name in cluster"), err)
 		allowed = true
 		_, err = w.DeleteArchivedWorkflow(ctx, &workflowarchivepkg.DeleteArchivedWorkflowRequest{Uid: "my-uid"})
 		assert.NoError(t, err)
