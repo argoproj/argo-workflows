@@ -321,12 +321,14 @@ func (wfc *WorkflowController) startLeading(ctx context.Context, logCtx *log.Ent
 		go wait.Until(wfc.podWorker, time.Second, ctx.Done())
 	}
 	if v, found := os.LookupEnv("CACHE_GC_PERIOD"); found {
-		cacheGCPeriod, err := time.ParseDuration(v)
-		if err != nil {
-			log.WithField("CACHE_GC_PERIOD", v).WithError(err).Panic("failed to parse")
-			return
+		if v != "false" {
+			cacheGCPeriod, err := time.ParseDuration(v)
+			if err != nil {
+				log.WithField("CACHE_GC_PERIOD", v).WithError(err).Panic("failed to parse")
+				return
+			}
+			go wait.JitterUntilWithContext(ctx, wfc.syncAllCacheForGC, cacheGCPeriod, 0.0, true)
 		}
-		go wait.JitterUntilWithContext(ctx, wfc.syncAllCacheForGC, cacheGCPeriod, 0.0, true)
 	}
 }
 
@@ -789,27 +791,21 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 }
 
 func (wfc *WorkflowController) syncAllCacheForGC(ctx context.Context) {
-	if v, found := os.LookupEnv("CACHE_GC_AFTER_NOT_HIT_DURATION"); found {
-		gcAfterNotHitDuration, err := time.ParseDuration(v)
-		if err != nil {
-			log.WithField("CACHE_GC_AFTER_NOT_HIT_DURATION", v).WithError(err).Panic("failed to parse")
-		} else {
-			log.Info("Cache GC is enabled. Syncing all cache for GC.")
-			configMaps := wfc.configMapInformer.GetIndexer().List()
+		gcAfterNotHitDuration := env.LookupEnvDurationOr("CACHE_GC_AFTER_NOT_HIT_DURATION", 30*time.Second)
+		log.Info("Cache GC is enabled. Syncing all cache for GC.")
+		configMaps := wfc.configMapInformer.GetIndexer().List()
 
-			for _, obj := range configMaps {
-				cm, ok := obj.(*apiv1.ConfigMap)
-				if !ok {
-					log.Error("Unable to convert object to configmap when syncing ConfigMaps")
-					continue
-				}
-				if err := wfc.cleanupUnusedCache(ctx, cm, gcAfterNotHitDuration); err != nil {
-					log.WithFields(log.Fields{"key": cm.Name, "error": err}).Errorf("Unable to sync ConfigMap: %s", cm.Name)
-					continue
-				}
+		for _, obj := range configMaps {
+			cm, ok := obj.(*apiv1.ConfigMap)
+			if !ok {
+				log.WithField("configMap", cm.Name).Errorln("Unable to convert object to configmap when syncing ConfigMaps")
+				continue
+			}
+			if err := wfc.cleanupUnusedCache(ctx, cm, gcAfterNotHitDuration); err != nil {
+				log.WithFields(log.Fields{"configMap": cm.Name, "error": err}).Errorln("Unable to sync ConfigMap")
+				continue
 			}
 		}
-	}
 }
 
 func (wfc *WorkflowController) cleanupUnusedCache(ctx context.Context, cm *apiv1.ConfigMap, gcAfterNotHitDuration time.Duration) error {
@@ -823,20 +819,20 @@ func (wfc *WorkflowController) cleanupUnusedCache(ctx context.Context, cm *apiv1
 			return fmt.Errorf("malformed cache entry: could not unmarshal JSON; unable to parse: %w", err)
 		}
 		if time.Since(entry.LastHitTimestamp.Time) > gcAfterNotHitDuration {
-			log.Infof("Deleting entry with key %s in ConfigMap %s since it's not been hit after %s", key, cm.Name, gcAfterNotHitDuration)
+			log.WithFields(log.Fields{"key": key, "configMap": cm.Name, "gcAfterNotHitDuration": gcAfterNotHitDuration}).Infoln("Deleting entry in ConfigMap since it's not been hit")
 			delete(cm.Data, key)
 			modified = true
 		}
 	}
 	if len(cm.Data) == 0 {
-		log.Infof("Deleting ConfigMap %s since it doesn't contain any cache entries", cm.Name)
+		log.WithField("configMap", cm.Name).Infoln("Deleting ConfigMap since it doesn't contain any cache entries")
 		err := wfc.kubeclientset.CoreV1().ConfigMaps(cm.Namespace).Delete(ctx, cm.Name, metav1.DeleteOptions{})
 		if err != nil {
 			return fmt.Errorf("failed to delete ConfigMap %s: %w", cm.Name, err)
 		}
 	} else {
 		if modified {
-			log.Infof("Modified ConfigMap: %s: %v", cm.Name, cm)
+			log.WithField("configMap", cm.Name).Infoln("Updated ConfigMap")
 			_, err := wfc.kubeclientset.CoreV1().ConfigMaps(cm.Namespace).Update(ctx, cm, metav1.UpdateOptions{})
 			if err != nil {
 				return fmt.Errorf("failed to update ConfigMap %s: %w", cm.Name, err)
