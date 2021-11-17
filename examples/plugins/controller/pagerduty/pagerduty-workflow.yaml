@@ -8,3 +8,6 @@ spec:
     - name: main
       container:
         image: argoproj/argosay:v2
+        args:
+          - exit
+          - "1"
