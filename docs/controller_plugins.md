@@ -113,7 +113,7 @@ spec:
           image: python:alpine3.6
 ```
 
-The controller needs to be able discover its plugins. To do this create a config map:
+The controller needs to be able to discover its plugins. To do this create a config map:
 
 ```yaml
 apiVersion: v1
