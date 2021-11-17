@@ -29,7 +29,7 @@ class Plugin(BaseHTTPRequestHandler):
                 x = urlopen(
                     Request(os.getenv('URL', 'https://events.pagerduty.com/generic/2010-04-15/create_event.json'),
                             data=json.dumps({
-                                "service_key": os.getenv("service_key"),
+                                "service_key": os.getenv("SERVICE_KEY"),
                                 "event_type": "trigger",
                                 "incident_key": workflow_name,
                                 "description": "Argo Workflow Failed",
