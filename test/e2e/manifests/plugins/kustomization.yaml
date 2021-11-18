@@ -6,6 +6,9 @@ resources:
   - ../../../../examples/plugins/executor/hello/hello-executor-plugin-configmap.yaml
   - ../../../../examples/plugins/controller/hello/hello-controller-plugin-configmap.yaml
 
+patchesStrategicMerge:
+  - ../../../../examples/plugins/controller/hello/hello-controller-plugin-deployment-patch.yaml
+
 commonLabels:
   app.kubernetes.io/part-of: argo
 namespace: argo
