@@ -30,7 +30,7 @@ func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *
 			if execute {
 				hookNodeName := common.GenerateLifeHookNodeName(woc.wf.ObjectMeta.Name, string(hookName))
 				woc.log.WithField("lifeCycleHook", hookName).WithField("node", hookNodeName).Infof("Running workflow level hooks")
-				_, err := woc.executeTemplate(ctx, hookNodeName, &wfv1.WorkflowStep{Template: hook.Template}, tmplCtx, woc.execWf.Spec.Arguments, &executeTemplateOpts{})
+				_, err := woc.executeTemplate(ctx, hookNodeName, &wfv1.WorkflowStep{Template: hook.Template}, tmplCtx, hook.Arguments, &executeTemplateOpts{})
 				if err != nil {
 					return nil, err
 				}
