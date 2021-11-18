@@ -1,0 +1,14 @@
+kind: ControllerPlugin
+spec:
+  address: http://localhost:7243
+  description: |
+    This plugin archives workflows as JSON when they finish.
+
+    It uses the hard-coded Minio credentials from the quick-start install manifests.
+    ```
+  container:
+    command:
+      - python
+      - -c
+    image: python:3
+    name: s3-archive-controller-plugin

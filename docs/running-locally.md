@@ -5,7 +5,7 @@
 * [Go 1.17](https://golang.org/dl/)
 * [Yarn](https://classic.yarnpkg.com/en/docs/install/#mac-stable)
 * [Docker](https://docs.docker.com/get-docker/)
-* [protoc](http://google.github.io/proto-lens/installing-protoc.html) 
+* [protoc](https://google.github.io/proto-lens/installing-protoc.html) 
 * [`jq`](https://stedolan.github.io/jq/download/)
 * A local Kubernetes cluster
 
