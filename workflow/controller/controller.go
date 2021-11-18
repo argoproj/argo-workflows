@@ -779,24 +779,6 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		if err != nil {
 			log.WithError(err).Warn("error to complete the taskset")
 		}
-		// Send all completed pods to gcPods channel to delete it later depend on the PodGCStrategy.
-		var doPodGC bool
-		if woc.execWf.Spec.PodGC != nil {
-			switch woc.execWf.Spec.PodGC.Strategy {
-			case wfv1.PodGCOnWorkflowCompletion:
-				doPodGC = true
-			case wfv1.PodGCOnWorkflowSuccess:
-				if woc.wf.Status.Successful() {
-					doPodGC = true
-				}
-			}
-		}
-		if doPodGC {
-			for podName := range woc.completedPods {
-				delay := woc.controller.Config.GetPodGCDeleteDelayDuration()
-				woc.controller.queuePodForCleanupAfter(woc.wf.Namespace, podName, deletePod, delay)
-			}
-		}
 	}
 
 	// TODO: operate should return error if it was unable to operate properly

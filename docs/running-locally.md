@@ -9,7 +9,7 @@
 * [`jq`](https://stedolan.github.io/jq/download/)
 * A local Kubernetes cluster
 
-Code must be checked out into `$(GOPATH)/src/github.com/argo-workflows`.
+Code must be checked out into `$(GOPATH)/src/github.com/argoproj/argo-workflows`.
 
 We recommend using [K3D](https://k3d.io/) to set up the local Kubernetes cluster since this will allow you to test RBAC
 set-up and is fast. You can set-up K3D to be part of your default kube config as follows:

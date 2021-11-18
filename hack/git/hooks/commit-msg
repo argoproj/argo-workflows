@@ -11,4 +11,3 @@ grep -qE '^(?:feat|fix|docs|style|refactor|perf|test|chore)\(?(?:\w+|\s|\-|_)?\)
   exit 1
 }
 
-echo 'Your commit message is acceptable'
