@@ -1064,14 +1064,14 @@ func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer 
 	indexInformer := v1.NewFilteredConfigMapInformer(wfc.kubeclientset, wfc.GetManagedNamespace(), 20*time.Minute, cache.Indexers{
 		indexes.ConfigMapLabelsIndex: indexes.ConfigMapIndexFunc,
 	}, func(opts *metav1.ListOptions) {
-		opts.LabelSelector = indexes.ConfigMapTypeLabel
+		opts.LabelSelector = common.LabelKeyConfigMapType
 	})
 	log.WithField("plugins", wfc.plugins).Info("Plugins")
 	if wfc.plugins {
 		indexInformer.AddEventHandler(cache.FilteringResourceEventHandler{
 			FilterFunc: func(obj interface{}) bool {
 				cm := obj.(metav1.Object)
-				return cm.GetNamespace() == wfc.namespace && cm.GetLabels()[indexes.ConfigMapTypeLabel] == "ControllerPlugin"
+				return cm.GetNamespace() == wfc.namespace && cm.GetLabels()[common.LabelKeyConfigMapType] == "ControllerPlugin"
 			},
 			Handler: cache.ResourceEventHandlerFuncs{
 				AddFunc: func(obj interface{}) {
@@ -1094,7 +1094,7 @@ func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer 
 		indexInformer.AddEventHandler(cache.FilteringResourceEventHandler{
 			FilterFunc: func(obj interface{}) bool {
 				cm := obj.(metav1.Object)
-				return cm.GetLabels()[indexes.ConfigMapTypeLabel] == "ExecutorPlugin"
+				return cm.GetLabels()[common.LabelKeyConfigMapType] == "ExecutorPlugin"
 			},
 			Handler: cache.ResourceEventHandlerFuncs{
 				AddFunc: func(obj interface{}) {

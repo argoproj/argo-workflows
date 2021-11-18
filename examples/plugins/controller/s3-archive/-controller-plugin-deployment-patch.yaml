@@ -1,6 +1,6 @@
 # This is an auto-generated file. DO NOT EDIT
 # This is a Kustomize patch that will add the plugin to your controller.
-# Example: kubectl -n argo patch deployment workflow-controller --patch-file pagerduty-controller-plugin-deployment-patch.yaml
+# Example: kubectl -n argo patch deployment workflow-controller --patch-file -controller-plugin-deployment-patch.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -21,10 +21,18 @@ spec:
         resources: {}
       - args:
         - |
+          python3 -m venv /tmp/venv
+          cd /tmp/venv
+          source bin/activate
+
+          pip3 install boto3
+
+          cat <<EOF > server.py
+          import boto3
           import json
-          import os
           from http.server import BaseHTTPRequestHandler, HTTPServer
-          from urllib.request import urlopen, Request
+
+          from botocore.config import Config
 
 
           class Plugin(BaseHTTPRequestHandler):
@@ -46,20 +54,17 @@ spec:
                       args = self.args()
                       before = args['old']['metadata'].get('labels', {}).get('workflows.argoproj.io/phase', '')
                       after = args['new']['metadata'].get('labels', {}).get('workflows.argoproj.io/phase', '')
-                      if before == 'Running' and after == 'Failed':
+                      if before == 'Running' and (after == 'Failed' or after == 'Succeeded'):
+                          s3 = boto3.client('s3',
+                                            endpoint_url='http://minio:9000',
+                                            aws_access_key_id='admin',
+                                            aws_secret_access_key='password',
+                                            config=Config(signature_version='s3v4'),
+                                            region_name='us-east-1')
+                          json_bytes = json.dumps(args['new']).encode()
                           workflow_name = args['new']['metadata']['name']
-                          print("creating alert for " + workflow_name)
-                          x = urlopen(
-                              Request(os.getenv('URL', 'https://events.pagerduty.com/generic/2010-04-15/create_event.json'),
-                                      data=json.dumps({
-                                          "service_key": os.getenv("SERVICE_KEY"),
-                                          "event_type": "trigger",
-                                          "incident_key": workflow_name,
-                                          "description": f"Argo Workflow ${workflow_name} Failed",
-                                          "client": "Argo Workflows",
-                                      }).encode()))
-                          if x.status != 200:
-                              raise Exception("not 2002")
+                          print(json_bytes)
+                          s3.put_object(Body=json_bytes, Bucket='my-bucket', Key=f'workflows/{workflow_name}')
                       self.reply({})
                   else:
                       self.unsupported()
@@ -68,22 +73,14 @@ spec:
           if __name__ == '__main__':
               httpd = HTTPServer(('', 7243), Plugin)
               httpd.serve_forever()
+          EOF
+
+          python3 server.py
         command:
-        - python
+        - sh
         - -c
-        env:
-        - name: URL
-          valueFrom:
-            secretKeyRef:
-              key: URL
-              name: pagerduty-executor-plugin
-        - name: SERVICE_KEY
-          valueFrom:
-            secretKeyRef:
-              key: SERVICE_KEY
-              name: pagerduty-executor-plugin
         image: python:alpine3.6
-        name: pagerduty-controller-plugin
+        name: s3-archive-controller-plugin
         resources: {}
         securityContext:
           runAsNonRoot: true

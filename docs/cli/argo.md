@@ -111,6 +111,7 @@ argo [flags]
 * [argo list](argo_list.md)	 - list workflows
 * [argo logs](argo_logs.md)	 - view logs of a pod or workflow
 * [argo node](argo_node.md)	 - perform action on a node in a workflow
+* [argo plugin](argo_plugin.md)	 - 
 * [argo resubmit](argo_resubmit.md)	 - resubmit one or more workflows
 * [argo resume](argo_resume.md)	 - resume zero or more workflows
 * [argo retry](argo_retry.md)	 - retry zero or more workflows

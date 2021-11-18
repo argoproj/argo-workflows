@@ -1,4 +1,6 @@
 kind: ControllerPlugin
+metadata:
+  name: hello
 spec:
   address: http://localhost:4355
   description: This is the "hello world" plugin

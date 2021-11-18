@@ -26,7 +26,7 @@ data:
           def do_POST(self):
               if self.path == '/api/v1/template.execute':
                   args = self.args()
-                  if 'howdy' in args['template']['plugin']:
+                  if 'howdy' in args['template'].get('plugin', {}):
                       self.reply({'node': {'phase': 'Succeeded', 'message': 'Hello template!'}})
                   else:
                       self.reply({})
@@ -47,6 +47,7 @@ kind: ConfigMap
 metadata:
   annotations:
     workflows.argoproj.io/description: This is the "hello world" plugin
+    workflows.argoproj.io/plugin-name: hello
     workflows.argoproj.io/version: '>= v3.3'
   creationTimestamp: null
   labels:

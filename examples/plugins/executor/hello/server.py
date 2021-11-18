@@ -19,7 +19,7 @@ class Plugin(BaseHTTPRequestHandler):
     def do_POST(self):
         if self.path == '/api/v1/template.execute':
             args = self.args()
-            if 'howdy' in args['template']['plugin']:
+            if 'howdy' in args['template'].get('plugin', {}):
                 self.reply({'node': {'phase': 'Succeeded', 'message': 'Hello template!'}})
             else:
                 self.reply({})

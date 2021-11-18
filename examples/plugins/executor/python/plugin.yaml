@@ -1,4 +1,6 @@
 kind: ExecutorPlugin
+metadata:
+  name: python
 spec:
   address: http://localhost:7984
   description: This plugin allows you to run arbitrary Python code.

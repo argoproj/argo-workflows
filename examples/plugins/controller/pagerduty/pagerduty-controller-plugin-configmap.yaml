@@ -6,7 +6,7 @@ kind: ConfigMap
 metadata:
   annotations:
     workflows.argoproj.io/description: |
-      This plugin sends a PageDuty event when any workflow fails.
+      This plugin sends a PagerDuty event when any workflow fails.
 
       You must create a secret:
 
@@ -19,6 +19,7 @@ metadata:
         URL: https://hooks.slack.com/services/.../.../...
         SERVICE_KEY: ...
       ```
+    workflows.argoproj.io/plugin-name: pagerduty
     workflows.argoproj.io/version: '>= v3.3'
   creationTimestamp: null
   labels:

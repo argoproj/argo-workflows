@@ -11,6 +11,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/clustertemplate"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/cron"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/plugin"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/template"
 	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
 )
@@ -110,6 +111,7 @@ If your server is behind an ingress with a path (you'll be running "argo server 
 	command.AddCommand(template.NewTemplateCommand())
 	command.AddCommand(cron.NewCronWorkflowCommand())
 	command.AddCommand(clustertemplate.NewClusterTemplateCommand())
+	command.AddCommand(plugin.NewPluginCommand())
 
 	client.AddKubectlFlagsToCmd(command)
 	client.AddAPIClientFlagsToCmd(command)

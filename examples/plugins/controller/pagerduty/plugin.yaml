@@ -1,8 +1,10 @@
 kind: ControllerPlugin
+metadata:
+  name: pagerduty
 spec:
   address: http://localhost:7243
   description: |
-    This plugin sends a PageDuty event when any workflow fails.
+    This plugin sends a PagerDuty event when any workflow fails.
 
     You must create a secret:
 
