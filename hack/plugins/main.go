@@ -66,11 +66,24 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		code, err := os.ReadFile(filepath.Join(pluginDir, "server.py"))
+		files, err := filepath.Glob(filepath.Join(pluginDir, "server.*"))
+		if err != nil {
+			panic(err)
+		}
+		if len(files) < 1 {
+			panic(fmt.Sprintf("plugin %s is missing a server.* file", f.Name()))
+		}
+		code, err := os.ReadFile(files[0])
 		if err != nil {
 			panic(err)
 		}
 		plug.Spec.Container.Args = []string{string(code)}
+
+		// Match default security settings for easier patch.
+		runAsNonRoot := true
+		runAsUser := int64(1000)
+		plug.Spec.Container.SecurityContext = &apiv1.SecurityContext{RunAsNonRoot: &runAsNonRoot, RunAsUser: &runAsUser}
+
 		cm := apiv1.ConfigMap{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: "v1",
@@ -115,6 +128,7 @@ func main() {
 					Name: "workflow-controller",
 				},
 				Spec: appsv1.DeploymentSpec{
+					Selector: &metav1.LabelSelector{},  // Selector can't be null for a valid patch.
 					Template: apiv1.PodTemplateSpec{
 						Spec: apiv1.PodSpec{
 							Containers: []apiv1.Container{plug.Spec.Container},
@@ -127,7 +141,8 @@ func main() {
 			}
 			patchPath := filepath.Join(pluginDir, fmt.Sprintf("%s-%s-plugin-deployment-patch.yaml", f.Name(), plug.ShortKind()))
 			log.Printf("- %s\n", patchPath)
-			err = os.WriteFile(patchPath, addCodegenHeader(addHeader(data, "This is a Kustomize patch that will add the plugin to your controller.")), 0666)
+			header := fmt.Sprintf("# This is a Kustomize patch that will add the plugin to your controller.\n# Example: kubectl patch -n argo deployment workflow-controller --patch-file %s", patchPath)
+			err = os.WriteFile(patchPath, addCodegenHeader(addHeader(data, header)), 0666)
 			if err != nil {
 				panic(err)
 			}
