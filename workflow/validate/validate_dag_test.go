@@ -609,7 +609,7 @@ spec:
 
 func TestDAGStatusReference(t *testing.T) {
 	// TODO Need to refactor it
-	t.Skipped()
+	t.Skip()
 	_, err := validate(dagStatusReference)
 	assert.NoError(t, err)
 
