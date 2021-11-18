@@ -40,7 +40,6 @@ class Plugin(BaseHTTPRequestHandler):
                                   region_name='us-east-1')
                 json_bytes = json.dumps(args['new']).encode()
                 workflow_name = args['new']['metadata']['name']
-                print(json_bytes)
                 s3.put_object(Body=json_bytes, Bucket='my-bucket', Key=f'workflows/{workflow_name}')
             self.reply({})
         else:
