@@ -10,6 +10,7 @@ metadata:
 
       It uses the hard-coded Minio credentials from the quick-start install manifests.
       ```
+    workflows.argoproj.io/plugin-name: s3-archive
     workflows.argoproj.io/version: '>= v3.3'
   creationTimestamp: null
   labels:

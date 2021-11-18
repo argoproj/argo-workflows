@@ -1,4 +1,6 @@
 kind: ControllerPlugin
+metadata:
+  name: s3-archive
 spec:
   address: http://localhost:7243
   description: |
