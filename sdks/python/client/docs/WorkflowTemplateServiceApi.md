@@ -272,6 +272,7 @@ with openapi_client.ApiClient() as api_client:
                             ),
                             _from="_from_example",
                             from_expression="from_expression_example",
+                            from_multi="from_multi_example",
                             gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                 bucket="bucket_example",
                                 key="key_example",
@@ -367,6 +368,7 @@ with openapi_client.ApiClient() as api_client:
                                 security_token="security_token_example",
                             ),
                             path="path_example",
+                            path_multi="path_multi_example",
                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                 data="data_example",
                             ),
@@ -1450,6 +1452,7 @@ with openapi_client.ApiClient() as api_client:
                                             ),
                                             _from="_from_example",
                                             from_expression="from_expression_example",
+                                            from_multi="from_multi_example",
                                             gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                 bucket="bucket_example",
                                                 key="key_example",
@@ -1545,6 +1548,7 @@ with openapi_client.ApiClient() as api_client:
                                                 security_token="security_token_example",
                                             ),
                                             path="path_example",
+                                            path_multi="path_multi_example",
                                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                                 data="data_example",
                                             ),
@@ -1647,6 +1651,7 @@ with openapi_client.ApiClient() as api_client:
                                                     ),
                                                     _from="_from_example",
                                                     from_expression="from_expression_example",
+                                                    from_multi="from_multi_example",
                                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                         bucket="bucket_example",
                                                         key="key_example",
@@ -1742,6 +1747,7 @@ with openapi_client.ApiClient() as api_client:
                                                         security_token="security_token_example",
                                                     ),
                                                     path="path_example",
+                                                    path_multi="path_multi_example",
                                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                                         data="data_example",
                                                     ),
@@ -1860,6 +1866,7 @@ with openapi_client.ApiClient() as api_client:
                                 ),
                                 _from="_from_example",
                                 from_expression="from_expression_example",
+                                from_multi="from_multi_example",
                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                     bucket="bucket_example",
                                     key="key_example",
@@ -1955,6 +1962,7 @@ with openapi_client.ApiClient() as api_client:
                                     security_token="security_token_example",
                                 ),
                                 path="path_example",
+                                path_multi="path_multi_example",
                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                     data="data_example",
                                 ),
@@ -2310,6 +2318,7 @@ with openapi_client.ApiClient() as api_client:
                                 ),
                                 _from="_from_example",
                                 from_expression="from_expression_example",
+                                from_multi="from_multi_example",
                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                     bucket="bucket_example",
                                     key="key_example",
@@ -2405,6 +2414,7 @@ with openapi_client.ApiClient() as api_client:
                                     security_token="security_token_example",
                                 ),
                                 path="path_example",
+                                path_multi="path_multi_example",
                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                     data="data_example",
                                 ),
@@ -2548,6 +2558,7 @@ with openapi_client.ApiClient() as api_client:
                                 ),
                                 _from="_from_example",
                                 from_expression="from_expression_example",
+                                from_multi="from_multi_example",
                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                     bucket="bucket_example",
                                     key="key_example",
@@ -2643,6 +2654,7 @@ with openapi_client.ApiClient() as api_client:
                                     security_token="security_token_example",
                                 ),
                                 path="path_example",
+                                path_multi="path_multi_example",
                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                     data="data_example",
                                 ),
@@ -3300,6 +3312,7 @@ with openapi_client.ApiClient() as api_client:
                                             ),
                                             _from="_from_example",
                                             from_expression="from_expression_example",
+                                            from_multi="from_multi_example",
                                             gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                 bucket="bucket_example",
                                                 key="key_example",
@@ -3395,6 +3408,7 @@ with openapi_client.ApiClient() as api_client:
                                                 security_token="security_token_example",
                                             ),
                                             path="path_example",
+                                            path_multi="path_multi_example",
                                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                                 data="data_example",
                                             ),
@@ -3493,6 +3507,7 @@ with openapi_client.ApiClient() as api_client:
                                                     ),
                                                     _from="_from_example",
                                                     from_expression="from_expression_example",
+                                                    from_multi="from_multi_example",
                                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                         bucket="bucket_example",
                                                         key="key_example",
@@ -3588,6 +3603,7 @@ with openapi_client.ApiClient() as api_client:
                                                         security_token="security_token_example",
                                                     ),
                                                     path="path_example",
+                                                    path_multi="path_multi_example",
                                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                                         data="data_example",
                                                     ),
@@ -4835,6 +4851,7 @@ with openapi_client.ApiClient() as api_client:
                                                 ),
                                                 _from="_from_example",
                                                 from_expression="from_expression_example",
+                                                from_multi="from_multi_example",
                                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                     bucket="bucket_example",
                                                     key="key_example",
@@ -4930,6 +4947,7 @@ with openapi_client.ApiClient() as api_client:
                                                     security_token="security_token_example",
                                                 ),
                                                 path="path_example",
+                                                path_multi="path_multi_example",
                                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                                     data="data_example",
                                                 ),
@@ -5032,6 +5050,7 @@ with openapi_client.ApiClient() as api_client:
                                                         ),
                                                         _from="_from_example",
                                                         from_expression="from_expression_example",
+                                                        from_multi="from_multi_example",
                                                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                             bucket="bucket_example",
                                                             key="key_example",
@@ -5127,6 +5146,7 @@ with openapi_client.ApiClient() as api_client:
                                                             security_token="security_token_example",
                                                         ),
                                                         path="path_example",
+                                                        path_multi="path_multi_example",
                                                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                                             data="data_example",
                                                         ),
@@ -5245,6 +5265,7 @@ with openapi_client.ApiClient() as api_client:
                                     ),
                                     _from="_from_example",
                                     from_expression="from_expression_example",
+                                    from_multi="from_multi_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                         bucket="bucket_example",
                                         key="key_example",
@@ -5340,6 +5361,7 @@ with openapi_client.ApiClient() as api_client:
                                         security_token="security_token_example",
                                     ),
                                     path="path_example",
+                                    path_multi="path_multi_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                         data="data_example",
                                     ),
@@ -5695,6 +5717,7 @@ with openapi_client.ApiClient() as api_client:
                                     ),
                                     _from="_from_example",
                                     from_expression="from_expression_example",
+                                    from_multi="from_multi_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                         bucket="bucket_example",
                                         key="key_example",
@@ -5790,6 +5813,7 @@ with openapi_client.ApiClient() as api_client:
                                         security_token="security_token_example",
                                     ),
                                     path="path_example",
+                                    path_multi="path_multi_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                         data="data_example",
                                     ),
@@ -5933,6 +5957,7 @@ with openapi_client.ApiClient() as api_client:
                                     ),
                                     _from="_from_example",
                                     from_expression="from_expression_example",
+                                    from_multi="from_multi_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                         bucket="bucket_example",
                                         key="key_example",
@@ -6028,6 +6053,7 @@ with openapi_client.ApiClient() as api_client:
                                         security_token="security_token_example",
                                     ),
                                     path="path_example",
+                                    path_multi="path_multi_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                         data="data_example",
                                     ),
@@ -6685,6 +6711,7 @@ with openapi_client.ApiClient() as api_client:
                                                 ),
                                                 _from="_from_example",
                                                 from_expression="from_expression_example",
+                                                from_multi="from_multi_example",
                                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                     bucket="bucket_example",
                                                     key="key_example",
@@ -6780,6 +6807,7 @@ with openapi_client.ApiClient() as api_client:
                                                     security_token="security_token_example",
                                                 ),
                                                 path="path_example",
+                                                path_multi="path_multi_example",
                                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                                     data="data_example",
                                                 ),
@@ -6878,6 +6906,7 @@ with openapi_client.ApiClient() as api_client:
                                                         ),
                                                         _from="_from_example",
                                                         from_expression="from_expression_example",
+                                                        from_multi="from_multi_example",
                                                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                             bucket="bucket_example",
                                                             key="key_example",
@@ -6973,6 +7002,7 @@ with openapi_client.ApiClient() as api_client:
                                                             security_token="security_token_example",
                                                         ),
                                                         path="path_example",
+                                                        path_multi="path_multi_example",
                                                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                                             data="data_example",
                                                         ),
@@ -8290,6 +8320,7 @@ with openapi_client.ApiClient() as api_client:
                             ),
                             _from="_from_example",
                             from_expression="from_expression_example",
+                            from_multi="from_multi_example",
                             gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                 bucket="bucket_example",
                                 key="key_example",
@@ -8385,6 +8416,7 @@ with openapi_client.ApiClient() as api_client:
                                 security_token="security_token_example",
                             ),
                             path="path_example",
+                            path_multi="path_multi_example",
                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                 data="data_example",
                             ),
@@ -9468,6 +9500,7 @@ with openapi_client.ApiClient() as api_client:
                                             ),
                                             _from="_from_example",
                                             from_expression="from_expression_example",
+                                            from_multi="from_multi_example",
                                             gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                 bucket="bucket_example",
                                                 key="key_example",
@@ -9563,6 +9596,7 @@ with openapi_client.ApiClient() as api_client:
                                                 security_token="security_token_example",
                                             ),
                                             path="path_example",
+                                            path_multi="path_multi_example",
                                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                                 data="data_example",
                                             ),
@@ -9665,6 +9699,7 @@ with openapi_client.ApiClient() as api_client:
                                                     ),
                                                     _from="_from_example",
                                                     from_expression="from_expression_example",
+                                                    from_multi="from_multi_example",
                                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                         bucket="bucket_example",
                                                         key="key_example",
@@ -9760,6 +9795,7 @@ with openapi_client.ApiClient() as api_client:
                                                         security_token="security_token_example",
                                                     ),
                                                     path="path_example",
+                                                    path_multi="path_multi_example",
                                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                                         data="data_example",
                                                     ),
@@ -9878,6 +9914,7 @@ with openapi_client.ApiClient() as api_client:
                                 ),
                                 _from="_from_example",
                                 from_expression="from_expression_example",
+                                from_multi="from_multi_example",
                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                     bucket="bucket_example",
                                     key="key_example",
@@ -9973,6 +10010,7 @@ with openapi_client.ApiClient() as api_client:
                                     security_token="security_token_example",
                                 ),
                                 path="path_example",
+                                path_multi="path_multi_example",
                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                     data="data_example",
                                 ),
@@ -10328,6 +10366,7 @@ with openapi_client.ApiClient() as api_client:
                                 ),
                                 _from="_from_example",
                                 from_expression="from_expression_example",
+                                from_multi="from_multi_example",
                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                     bucket="bucket_example",
                                     key="key_example",
@@ -10423,6 +10462,7 @@ with openapi_client.ApiClient() as api_client:
                                     security_token="security_token_example",
                                 ),
                                 path="path_example",
+                                path_multi="path_multi_example",
                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                     data="data_example",
                                 ),
@@ -10566,6 +10606,7 @@ with openapi_client.ApiClient() as api_client:
                                 ),
                                 _from="_from_example",
                                 from_expression="from_expression_example",
+                                from_multi="from_multi_example",
                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                     bucket="bucket_example",
                                     key="key_example",
@@ -10661,6 +10702,7 @@ with openapi_client.ApiClient() as api_client:
                                     security_token="security_token_example",
                                 ),
                                 path="path_example",
+                                path_multi="path_multi_example",
                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                     data="data_example",
                                 ),
@@ -11318,6 +11360,7 @@ with openapi_client.ApiClient() as api_client:
                                             ),
                                             _from="_from_example",
                                             from_expression="from_expression_example",
+                                            from_multi="from_multi_example",
                                             gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                 bucket="bucket_example",
                                                 key="key_example",
@@ -11413,6 +11456,7 @@ with openapi_client.ApiClient() as api_client:
                                                 security_token="security_token_example",
                                             ),
                                             path="path_example",
+                                            path_multi="path_multi_example",
                                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                                 data="data_example",
                                             ),
@@ -11511,6 +11555,7 @@ with openapi_client.ApiClient() as api_client:
                                                     ),
                                                     _from="_from_example",
                                                     from_expression="from_expression_example",
+                                                    from_multi="from_multi_example",
                                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                         bucket="bucket_example",
                                                         key="key_example",
@@ -11606,6 +11651,7 @@ with openapi_client.ApiClient() as api_client:
                                                         security_token="security_token_example",
                                                     ),
                                                     path="path_example",
+                                                    path_multi="path_multi_example",
                                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                                         data="data_example",
                                                     ),
@@ -12853,6 +12899,7 @@ with openapi_client.ApiClient() as api_client:
                                                 ),
                                                 _from="_from_example",
                                                 from_expression="from_expression_example",
+                                                from_multi="from_multi_example",
                                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                     bucket="bucket_example",
                                                     key="key_example",
@@ -12948,6 +12995,7 @@ with openapi_client.ApiClient() as api_client:
                                                     security_token="security_token_example",
                                                 ),
                                                 path="path_example",
+                                                path_multi="path_multi_example",
                                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                                     data="data_example",
                                                 ),
@@ -13050,6 +13098,7 @@ with openapi_client.ApiClient() as api_client:
                                                         ),
                                                         _from="_from_example",
                                                         from_expression="from_expression_example",
+                                                        from_multi="from_multi_example",
                                                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                             bucket="bucket_example",
                                                             key="key_example",
@@ -13145,6 +13194,7 @@ with openapi_client.ApiClient() as api_client:
                                                             security_token="security_token_example",
                                                         ),
                                                         path="path_example",
+                                                        path_multi="path_multi_example",
                                                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                                             data="data_example",
                                                         ),
@@ -13263,6 +13313,7 @@ with openapi_client.ApiClient() as api_client:
                                     ),
                                     _from="_from_example",
                                     from_expression="from_expression_example",
+                                    from_multi="from_multi_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                         bucket="bucket_example",
                                         key="key_example",
@@ -13358,6 +13409,7 @@ with openapi_client.ApiClient() as api_client:
                                         security_token="security_token_example",
                                     ),
                                     path="path_example",
+                                    path_multi="path_multi_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                         data="data_example",
                                     ),
@@ -13713,6 +13765,7 @@ with openapi_client.ApiClient() as api_client:
                                     ),
                                     _from="_from_example",
                                     from_expression="from_expression_example",
+                                    from_multi="from_multi_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                         bucket="bucket_example",
                                         key="key_example",
@@ -13808,6 +13861,7 @@ with openapi_client.ApiClient() as api_client:
                                         security_token="security_token_example",
                                     ),
                                     path="path_example",
+                                    path_multi="path_multi_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                         data="data_example",
                                     ),
@@ -13951,6 +14005,7 @@ with openapi_client.ApiClient() as api_client:
                                     ),
                                     _from="_from_example",
                                     from_expression="from_expression_example",
+                                    from_multi="from_multi_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                         bucket="bucket_example",
                                         key="key_example",
@@ -14046,6 +14101,7 @@ with openapi_client.ApiClient() as api_client:
                                         security_token="security_token_example",
                                     ),
                                     path="path_example",
+                                    path_multi="path_multi_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                         data="data_example",
                                     ),
@@ -14703,6 +14759,7 @@ with openapi_client.ApiClient() as api_client:
                                                 ),
                                                 _from="_from_example",
                                                 from_expression="from_expression_example",
+                                                from_multi="from_multi_example",
                                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                     bucket="bucket_example",
                                                     key="key_example",
@@ -14798,6 +14855,7 @@ with openapi_client.ApiClient() as api_client:
                                                     security_token="security_token_example",
                                                 ),
                                                 path="path_example",
+                                                path_multi="path_multi_example",
                                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                                     data="data_example",
                                                 ),
@@ -14896,6 +14954,7 @@ with openapi_client.ApiClient() as api_client:
                                                         ),
                                                         _from="_from_example",
                                                         from_expression="from_expression_example",
+                                                        from_multi="from_multi_example",
                                                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                             bucket="bucket_example",
                                                             key="key_example",
@@ -14991,6 +15050,7 @@ with openapi_client.ApiClient() as api_client:
                                                             security_token="security_token_example",
                                                         ),
                                                         path="path_example",
+                                                        path_multi="path_multi_example",
                                                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                                             data="data_example",
                                                         ),
@@ -16231,6 +16291,7 @@ with openapi_client.ApiClient() as api_client:
                             ),
                             _from="_from_example",
                             from_expression="from_expression_example",
+                            from_multi="from_multi_example",
                             gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                 bucket="bucket_example",
                                 key="key_example",
@@ -16326,6 +16387,7 @@ with openapi_client.ApiClient() as api_client:
                                 security_token="security_token_example",
                             ),
                             path="path_example",
+                            path_multi="path_multi_example",
                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                 data="data_example",
                             ),
@@ -17409,6 +17471,7 @@ with openapi_client.ApiClient() as api_client:
                                             ),
                                             _from="_from_example",
                                             from_expression="from_expression_example",
+                                            from_multi="from_multi_example",
                                             gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                 bucket="bucket_example",
                                                 key="key_example",
@@ -17504,6 +17567,7 @@ with openapi_client.ApiClient() as api_client:
                                                 security_token="security_token_example",
                                             ),
                                             path="path_example",
+                                            path_multi="path_multi_example",
                                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                                 data="data_example",
                                             ),
@@ -17606,6 +17670,7 @@ with openapi_client.ApiClient() as api_client:
                                                     ),
                                                     _from="_from_example",
                                                     from_expression="from_expression_example",
+                                                    from_multi="from_multi_example",
                                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                         bucket="bucket_example",
                                                         key="key_example",
@@ -17701,6 +17766,7 @@ with openapi_client.ApiClient() as api_client:
                                                         security_token="security_token_example",
                                                     ),
                                                     path="path_example",
+                                                    path_multi="path_multi_example",
                                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                                         data="data_example",
                                                     ),
@@ -17819,6 +17885,7 @@ with openapi_client.ApiClient() as api_client:
                                 ),
                                 _from="_from_example",
                                 from_expression="from_expression_example",
+                                from_multi="from_multi_example",
                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                     bucket="bucket_example",
                                     key="key_example",
@@ -17914,6 +17981,7 @@ with openapi_client.ApiClient() as api_client:
                                     security_token="security_token_example",
                                 ),
                                 path="path_example",
+                                path_multi="path_multi_example",
                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                     data="data_example",
                                 ),
@@ -18269,6 +18337,7 @@ with openapi_client.ApiClient() as api_client:
                                 ),
                                 _from="_from_example",
                                 from_expression="from_expression_example",
+                                from_multi="from_multi_example",
                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                     bucket="bucket_example",
                                     key="key_example",
@@ -18364,6 +18433,7 @@ with openapi_client.ApiClient() as api_client:
                                     security_token="security_token_example",
                                 ),
                                 path="path_example",
+                                path_multi="path_multi_example",
                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                     data="data_example",
                                 ),
@@ -18507,6 +18577,7 @@ with openapi_client.ApiClient() as api_client:
                                 ),
                                 _from="_from_example",
                                 from_expression="from_expression_example",
+                                from_multi="from_multi_example",
                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                     bucket="bucket_example",
                                     key="key_example",
@@ -18602,6 +18673,7 @@ with openapi_client.ApiClient() as api_client:
                                     security_token="security_token_example",
                                 ),
                                 path="path_example",
+                                path_multi="path_multi_example",
                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                     data="data_example",
                                 ),
@@ -19259,6 +19331,7 @@ with openapi_client.ApiClient() as api_client:
                                             ),
                                             _from="_from_example",
                                             from_expression="from_expression_example",
+                                            from_multi="from_multi_example",
                                             gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                 bucket="bucket_example",
                                                 key="key_example",
@@ -19354,6 +19427,7 @@ with openapi_client.ApiClient() as api_client:
                                                 security_token="security_token_example",
                                             ),
                                             path="path_example",
+                                            path_multi="path_multi_example",
                                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                                 data="data_example",
                                             ),
@@ -19452,6 +19526,7 @@ with openapi_client.ApiClient() as api_client:
                                                     ),
                                                     _from="_from_example",
                                                     from_expression="from_expression_example",
+                                                    from_multi="from_multi_example",
                                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                         bucket="bucket_example",
                                                         key="key_example",
@@ -19547,6 +19622,7 @@ with openapi_client.ApiClient() as api_client:
                                                         security_token="security_token_example",
                                                     ),
                                                     path="path_example",
+                                                    path_multi="path_multi_example",
                                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                                         data="data_example",
                                                     ),
@@ -20794,6 +20870,7 @@ with openapi_client.ApiClient() as api_client:
                                                 ),
                                                 _from="_from_example",
                                                 from_expression="from_expression_example",
+                                                from_multi="from_multi_example",
                                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                     bucket="bucket_example",
                                                     key="key_example",
@@ -20889,6 +20966,7 @@ with openapi_client.ApiClient() as api_client:
                                                     security_token="security_token_example",
                                                 ),
                                                 path="path_example",
+                                                path_multi="path_multi_example",
                                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                                     data="data_example",
                                                 ),
@@ -20991,6 +21069,7 @@ with openapi_client.ApiClient() as api_client:
                                                         ),
                                                         _from="_from_example",
                                                         from_expression="from_expression_example",
+                                                        from_multi="from_multi_example",
                                                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                             bucket="bucket_example",
                                                             key="key_example",
@@ -21086,6 +21165,7 @@ with openapi_client.ApiClient() as api_client:
                                                             security_token="security_token_example",
                                                         ),
                                                         path="path_example",
+                                                        path_multi="path_multi_example",
                                                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                                             data="data_example",
                                                         ),
@@ -21204,6 +21284,7 @@ with openapi_client.ApiClient() as api_client:
                                     ),
                                     _from="_from_example",
                                     from_expression="from_expression_example",
+                                    from_multi="from_multi_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                         bucket="bucket_example",
                                         key="key_example",
@@ -21299,6 +21380,7 @@ with openapi_client.ApiClient() as api_client:
                                         security_token="security_token_example",
                                     ),
                                     path="path_example",
+                                    path_multi="path_multi_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                         data="data_example",
                                     ),
@@ -21654,6 +21736,7 @@ with openapi_client.ApiClient() as api_client:
                                     ),
                                     _from="_from_example",
                                     from_expression="from_expression_example",
+                                    from_multi="from_multi_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                         bucket="bucket_example",
                                         key="key_example",
@@ -21749,6 +21832,7 @@ with openapi_client.ApiClient() as api_client:
                                         security_token="security_token_example",
                                     ),
                                     path="path_example",
+                                    path_multi="path_multi_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                         data="data_example",
                                     ),
@@ -21892,6 +21976,7 @@ with openapi_client.ApiClient() as api_client:
                                     ),
                                     _from="_from_example",
                                     from_expression="from_expression_example",
+                                    from_multi="from_multi_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                         bucket="bucket_example",
                                         key="key_example",
@@ -21987,6 +22072,7 @@ with openapi_client.ApiClient() as api_client:
                                         security_token="security_token_example",
                                     ),
                                     path="path_example",
+                                    path_multi="path_multi_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                         data="data_example",
                                     ),
@@ -22644,6 +22730,7 @@ with openapi_client.ApiClient() as api_client:
                                                 ),
                                                 _from="_from_example",
                                                 from_expression="from_expression_example",
+                                                from_multi="from_multi_example",
                                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                     bucket="bucket_example",
                                                     key="key_example",
@@ -22739,6 +22826,7 @@ with openapi_client.ApiClient() as api_client:
                                                     security_token="security_token_example",
                                                 ),
                                                 path="path_example",
+                                                path_multi="path_multi_example",
                                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                                     data="data_example",
                                                 ),
@@ -22837,6 +22925,7 @@ with openapi_client.ApiClient() as api_client:
                                                         ),
                                                         _from="_from_example",
                                                         from_expression="from_expression_example",
+                                                        from_multi="from_multi_example",
                                                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                             bucket="bucket_example",
                                                             key="key_example",
@@ -22932,6 +23021,7 @@ with openapi_client.ApiClient() as api_client:
                                                             security_token="security_token_example",
                                                         ),
                                                         path="path_example",
+                                                        path_multi="path_multi_example",
                                                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                                             data="data_example",
                                                         ),

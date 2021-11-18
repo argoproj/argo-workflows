@@ -109,6 +109,7 @@ class IoArgoprojWorkflowV1alpha1Artifact(ModelNormal):
             'artifactory': (IoArgoprojWorkflowV1alpha1ArtifactoryArtifact,),  # noqa: E501
             '_from': (str,),  # noqa: E501
             'from_expression': (str,),  # noqa: E501
+            'from_multi': (str,),  # noqa: E501
             'gcs': (IoArgoprojWorkflowV1alpha1GCSArtifact,),  # noqa: E501
             'git': (IoArgoprojWorkflowV1alpha1GitArtifact,),  # noqa: E501
             'global_name': (str,),  # noqa: E501
@@ -118,6 +119,7 @@ class IoArgoprojWorkflowV1alpha1Artifact(ModelNormal):
             'optional': (bool,),  # noqa: E501
             'oss': (IoArgoprojWorkflowV1alpha1OSSArtifact,),  # noqa: E501
             'path': (str,),  # noqa: E501
+            'path_multi': (str,),  # noqa: E501
             'raw': (IoArgoprojWorkflowV1alpha1RawArtifact,),  # noqa: E501
             'recurse_mode': (bool,),  # noqa: E501
             's3': (IoArgoprojWorkflowV1alpha1S3Artifact,),  # noqa: E501
@@ -136,6 +138,7 @@ class IoArgoprojWorkflowV1alpha1Artifact(ModelNormal):
         'artifactory': 'artifactory',  # noqa: E501
         '_from': 'from',  # noqa: E501
         'from_expression': 'fromExpression',  # noqa: E501
+        'from_multi': 'fromMulti',  # noqa: E501
         'gcs': 'gcs',  # noqa: E501
         'git': 'git',  # noqa: E501
         'global_name': 'globalName',  # noqa: E501
@@ -145,6 +148,7 @@ class IoArgoprojWorkflowV1alpha1Artifact(ModelNormal):
         'optional': 'optional',  # noqa: E501
         'oss': 'oss',  # noqa: E501
         'path': 'path',  # noqa: E501
+        'path_multi': 'pathMulti',  # noqa: E501
         'raw': 'raw',  # noqa: E501
         'recurse_mode': 'recurseMode',  # noqa: E501
         's3': 's3',  # noqa: E501
@@ -200,6 +204,7 @@ class IoArgoprojWorkflowV1alpha1Artifact(ModelNormal):
             artifactory (IoArgoprojWorkflowV1alpha1ArtifactoryArtifact): [optional]  # noqa: E501
             _from (str): From allows an artifact to reference an artifact from a previous step. [optional]  # noqa: E501
             from_expression (str): FromExpression, if defined, is evaluated to specify the value for the artifact. [optional]  # noqa: E501
+            from_multi (str): FromMulti, if defined, allows an artifact to reference multi artifacts from a previous loop step. [optional]  # noqa: E501
             gcs (IoArgoprojWorkflowV1alpha1GCSArtifact): [optional]  # noqa: E501
             git (IoArgoprojWorkflowV1alpha1GitArtifact): [optional]  # noqa: E501
             global_name (str): GlobalName exports an output artifact to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts. [optional]  # noqa: E501
@@ -209,6 +214,7 @@ class IoArgoprojWorkflowV1alpha1Artifact(ModelNormal):
             optional (bool): Make Artifacts optional, if Artifacts doesn't generate or exist. [optional]  # noqa: E501
             oss (IoArgoprojWorkflowV1alpha1OSSArtifact): [optional]  # noqa: E501
             path (str): Path is the container path to the artifact. [optional]  # noqa: E501
+            path_multi (str): PathMulti, if defined, is the container path template with {{index}} to the multi artifacts. [optional]  # noqa: E501
             raw (IoArgoprojWorkflowV1alpha1RawArtifact): [optional]  # noqa: E501
             recurse_mode (bool): If mode is set, apply the permission recursively into the artifact if it is a folder. [optional]  # noqa: E501
             s3 (IoArgoprojWorkflowV1alpha1S3Artifact): [optional]  # noqa: E501
@@ -303,6 +309,7 @@ class IoArgoprojWorkflowV1alpha1Artifact(ModelNormal):
             artifactory (IoArgoprojWorkflowV1alpha1ArtifactoryArtifact): [optional]  # noqa: E501
             _from (str): From allows an artifact to reference an artifact from a previous step. [optional]  # noqa: E501
             from_expression (str): FromExpression, if defined, is evaluated to specify the value for the artifact. [optional]  # noqa: E501
+            from_multi (str): FromMulti, if defined, allows an artifact to reference multi artifacts from a previous loop step. [optional]  # noqa: E501
             gcs (IoArgoprojWorkflowV1alpha1GCSArtifact): [optional]  # noqa: E501
             git (IoArgoprojWorkflowV1alpha1GitArtifact): [optional]  # noqa: E501
             global_name (str): GlobalName exports an output artifact to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts. [optional]  # noqa: E501
@@ -312,6 +319,7 @@ class IoArgoprojWorkflowV1alpha1Artifact(ModelNormal):
             optional (bool): Make Artifacts optional, if Artifacts doesn't generate or exist. [optional]  # noqa: E501
             oss (IoArgoprojWorkflowV1alpha1OSSArtifact): [optional]  # noqa: E501
             path (str): Path is the container path to the artifact. [optional]  # noqa: E501
+            path_multi (str): PathMulti, if defined, is the container path template with {{index}} to the multi artifacts. [optional]  # noqa: E501
             raw (IoArgoprojWorkflowV1alpha1RawArtifact): [optional]  # noqa: E501
             recurse_mode (bool): If mode is set, apply the permission recursively into the artifact if it is a folder. [optional]  # noqa: E501
             s3 (IoArgoprojWorkflowV1alpha1S3Artifact): [optional]  # noqa: E501

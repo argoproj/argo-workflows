@@ -3411,7 +3411,11 @@ metadata:
 spec:
   arguments: {}
   entrypoint: expanded-outputs-artifacts
-
+  templates:
+  - dag:
+      tasks:
+      - arguments:
+          parameters:
           - name: message
             value: '{{item}}'
         name: gen
