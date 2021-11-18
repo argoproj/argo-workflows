@@ -138,5 +138,4 @@ level=info msg="Plugin added" name=hello-controller-plugin
   an [advanced example](https://github.com/argoproj/argo-workflows/tree/dev-plugins/examples/plugins/controller/hello)
   that shows how to write a plugin template types.
 * Read the [controller plugin API reference](controller_swagger.md) to see what other operations there are.
-* Try out the [plugin-tool](plugin-tool.md) for developing plugins.
 

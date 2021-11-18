@@ -103,4 +103,3 @@ data:
 ### What Next?
 
 - Read the [API reference](executor_swagger.md).
-* Try out the [plugin-tool](plugin-tool.md) for developing plugins.
