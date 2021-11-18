@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"sigs.k8s.io/yaml"
+	"strings"
 )
 
 type plugin struct {
@@ -79,10 +80,12 @@ func main() {
 		}
 		plug.Spec.Container.Args = []string{string(code)}
 
-		// Match default security settings for easier patch.
-		runAsNonRoot := true
-		runAsUser := int64(1000)
-		plug.Spec.Container.SecurityContext = &apiv1.SecurityContext{RunAsNonRoot: &runAsNonRoot, RunAsUser: &runAsUser}
+		if strings.Contains(rootDir, "controller") {
+			// Match default security settings for easier patch.
+			runAsNonRoot := true
+			runAsUser := int64(1000)
+			plug.Spec.Container.SecurityContext = &apiv1.SecurityContext{RunAsNonRoot: &runAsNonRoot, RunAsUser: &runAsUser}
+		}
 
 		cm := apiv1.ConfigMap{
 			TypeMeta: metav1.TypeMeta{
@@ -131,7 +134,18 @@ func main() {
 					Selector: &metav1.LabelSelector{},  // Selector can't be null for a valid patch.
 					Template: apiv1.PodTemplateSpec{
 						Spec: apiv1.PodSpec{
-							Containers: []apiv1.Container{plug.Spec.Container},
+							Containers: []apiv1.Container{
+								{
+									Name:                     "workflow-controller",
+									Env:                      []apiv1.EnvVar{
+										{
+											Name:      "ARGO_PLUGINS",
+											Value:     "true",
+										},
+									},
+								},
+								plug.Spec.Container,
+							},
 						},
 					},
 				},

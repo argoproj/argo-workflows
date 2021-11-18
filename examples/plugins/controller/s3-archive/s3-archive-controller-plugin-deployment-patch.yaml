@@ -1,20 +1,33 @@
 # This is an auto-generated file. DO NOT EDIT
-This is a Kustomize patch that will add the plugin to your controller.
+# This is a Kustomize patch that will add the plugin to your controller.
+# Example: kubectl patch -n argo deployment workflow-controller --patch-file examples/plugins/controller/s3-archive/s3-archive-controller-plugin-deployment-patch.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   creationTimestamp: null
   name: workflow-controller
 spec:
-  selector: null
+  selector: {}
   strategy: {}
   template:
     metadata:
       creationTimestamp: null
     spec:
       containers:
+      - env:
+        - name: ARGO_PLUGINS
+          value: "true"
+        name: workflow-controller
+        resources: {}
       - args:
         - |
+          python3 -m venv /tmp/venv
+          cd /tmp/venv
+          source bin/activate
+
+          pip3 install boto3
+
+          cat <<EOF > server.py
           import boto3
           import json
           from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -60,10 +73,16 @@ spec:
           if __name__ == '__main__':
               httpd = HTTPServer(('', 7243), Plugin)
               httpd.serve_forever()
+          EOF
+
+          python3 server.py
         command:
-        - python
+        - sh
         - -c
-        image: python:3
+        image: python:alpine3.6
         name: s3-archive-controller-plugin
         resources: {}
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
 status: {}

@@ -8,7 +8,7 @@ spec:
     ```
   container:
     command:
-      - python
+      - sh
       - -c
-    image: python:3
+    image: python:alpine3.6
     name: s3-archive-controller-plugin

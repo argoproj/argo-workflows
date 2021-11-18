@@ -1,3 +1,10 @@
+python3 -m venv /tmp/venv
+cd /tmp/venv
+source bin/activate
+
+pip3 install boto3
+
+cat <<EOF > server.py
 import boto3
 import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -43,3 +50,6 @@ class Plugin(BaseHTTPRequestHandler):
 if __name__ == '__main__':
     httpd = HTTPServer(('', 7243), Plugin)
     httpd.serve_forever()
+EOF
+
+python3 server.py
