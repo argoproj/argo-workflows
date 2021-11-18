@@ -57,6 +57,7 @@ metadata:
   annotations:
     workflows.argoproj.io/description: This plugin allows you to run arbitrary Python
       code.
+    workflows.argoproj.io/plugin-name: python
     workflows.argoproj.io/version: '>= v3.3'
   creationTimestamp: null
   labels:

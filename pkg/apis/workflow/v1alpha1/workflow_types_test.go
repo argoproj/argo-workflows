@@ -1015,7 +1015,7 @@ func TestTemplateGetType(t *testing.T) {
 	assert.Equal(t, TemplateTypeHTTP, tmpl.GetType())
 }
 
-func TestHasHTTPNodes(t *testing.T) {
+func TestHasTaskSetNodes(t *testing.T) {
 	nodes := Nodes{
 		"test": {
 			Type: NodeTypeHTTP,
@@ -1024,7 +1024,7 @@ func TestHasHTTPNodes(t *testing.T) {
 			Type: NodeTypeContainer,
 		},
 	}
-	assert.True(t, nodes.HasHTTPNodes())
+	assert.True(t, nodes.HasTaskSetNodes())
 	nodes = Nodes{
 		"test": {
 			Type: NodeTypeSteps,
@@ -1033,5 +1033,5 @@ func TestHasHTTPNodes(t *testing.T) {
 			Type: NodeTypeContainer,
 		},
 	}
-	assert.False(t, nodes.HasHTTPNodes())
+	assert.False(t, nodes.HasTaskSetNodes())
 }

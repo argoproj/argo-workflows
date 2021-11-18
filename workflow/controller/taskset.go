@@ -31,7 +31,7 @@ func (woc *wfOperationCtx) patchTaskSet(ctx context.Context, patch interface{}, 
 func (woc *wfOperationCtx) getDeleteTaskAndNodePatch() map[string]interface{} {
 	deletedNode := make(map[string]interface{})
 	for _, node := range woc.wf.Status.Nodes {
-		if node.Type == wfv1.NodeTypeHTTP && node.Fulfilled() {
+		if (node.Type == wfv1.NodeTypeHTTP || node.Type == wfv1.NodeTypePlugin) && node.Fulfilled() {
 			deletedNode[node.ID] = nil
 		}
 	}
@@ -49,14 +49,14 @@ func (woc *wfOperationCtx) getDeleteTaskAndNodePatch() map[string]interface{} {
 }
 
 func (woc *wfOperationCtx) removeCompletedTaskSetStatus(ctx context.Context) error {
-	if !woc.wf.Status.Nodes.HasHTTPNodes() {
+	if !woc.wf.Status.Nodes.HasTaskSetNodes() {
 		return nil
 	}
 	return woc.patchTaskSet(ctx, woc.getDeleteTaskAndNodePatch(), types.MergePatchType)
 }
 
 func (woc *wfOperationCtx) completeTaskSet(ctx context.Context) error {
-	if !woc.wf.Status.Nodes.HasHTTPNodes() {
+	if !woc.wf.Status.Nodes.HasTaskSetNodes() {
 		return nil
 	}
 	patch := woc.getDeleteTaskAndNodePatch()

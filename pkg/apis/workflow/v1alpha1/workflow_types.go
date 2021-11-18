@@ -1380,9 +1380,9 @@ func (n Nodes) Find(f func(NodeStatus) bool) *NodeStatus {
 	return nil
 }
 
-func (n Nodes) HasHTTPNodes() bool {
+func (n Nodes) HasTaskSetNodes() bool {
 	for _, i := range n {
-		if i.Type == NodeTypeHTTP {
+		if i.Type == NodeTypeHTTP || i.Type == NodeTypePlugin {
 			return true
 		}
 	}

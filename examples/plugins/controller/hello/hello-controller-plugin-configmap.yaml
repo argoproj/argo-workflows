@@ -6,6 +6,7 @@ kind: ConfigMap
 metadata:
   annotations:
     workflows.argoproj.io/description: This is the "hello world" plugin
+    workflows.argoproj.io/plugin-name: hello
     workflows.argoproj.io/version: '>= v3.3'
   creationTimestamp: null
   labels:

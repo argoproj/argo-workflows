@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/plugin"
 	"github.com/argoproj/pkg/cli"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -12,6 +11,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/clustertemplate"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/cron"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/plugin"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/template"
 	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
 )

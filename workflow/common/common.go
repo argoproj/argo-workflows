@@ -17,6 +17,8 @@ const (
 
 	// AnnotationKeyDefaultContainer is the annotation that specify container that will be used by default in case of kubectl commands for example
 	AnnotationKeyDefaultContainer = "kubectl.kubernetes.io/default-container"
+	// AnnotationKeyVersion description of this resource
+	AnnotationKeyDescription = workflow.WorkflowFullName + "/description"
 
 	// AnnotationKeyNodeID is the ID of the node.
 	// Historically, the pod name was the same as the node ID.
@@ -47,6 +49,10 @@ const (
 
 	// AnnotationKeyProgress is N/M progress for the node
 	AnnotationKeyProgress = workflow.WorkflowFullName + "/progress"
+	// AnnotationKeyPluginName is the name of the plugin
+	AnnotationKeyPluginName = workflow.WorkflowFullName + "/plugin-name"
+	// AnnotationKeyVersion the required version of workflows to work with this resource
+	AnnotationKeyVersion = workflow.WorkflowFullName + "/version"
 
 	// LabelKeyControllerInstanceID is the label the controller will carry forward to workflows/pod labels
 	// for the purposes of workflow segregation
@@ -59,6 +65,8 @@ const (
 	// Workflows and pods with a completed=true label will be ignored by the controller.
 	// See also `LabelKeyWorkflowArchivingStatus`.
 	LabelKeyCompleted = workflow.WorkflowFullName + "/completed"
+	// LabelKeyConfigMapType the type of the plugin
+	LabelKeyConfigMapType = workflow.WorkflowFullName + "/configmap-type"
 	// LabelKeyWorkflowArchivingStatus indicates if a workflow needs archiving or not:
 	// * `` - does not need archiving ... yet
 	// * `Pending` - pending archiving

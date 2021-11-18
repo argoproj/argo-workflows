@@ -75,6 +75,7 @@ metadata:
       stringData:
         URL: https://hooks.slack.com/services/.../.../...
       ```
+    workflows.argoproj.io/plugin-name: slack
     workflows.argoproj.io/version: '>= v3.3'
   creationTimestamp: null
   labels:

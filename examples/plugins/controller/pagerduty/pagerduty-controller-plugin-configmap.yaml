@@ -19,6 +19,7 @@ metadata:
         URL: https://hooks.slack.com/services/.../.../...
         SERVICE_KEY: ...
       ```
+    workflows.argoproj.io/plugin-name: pagerduty
     workflows.argoproj.io/version: '>= v3.3'
   creationTimestamp: null
   labels:
