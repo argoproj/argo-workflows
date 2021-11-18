@@ -44,9 +44,9 @@ func (s *MetricsSuite) TestMetricsEndpoint() {
 			Body().
 			Contains(`HELP argo_workflows_count`).
 			Contains(`HELP argo_workflows_k8s_request_total`).
-			Contains(`argo_workflows_k8s_request_total{kind="leases",status_code="200",verb="Get"}`).
-			Contains(`argo_workflows_k8s_request_total{kind="workflowtemplates",status_code="200",verb="List"}`).
-			Contains(`argo_workflows_k8s_request_total{kind="workflowtemplates",status_code="200",verb="Watch"}`).
+			Contains(`argo_workflows_k8s_request_total{kind="leases",status_code="200",verb="get"}`).
+			Contains(`argo_workflows_k8s_request_total{kind="workflowtemplates",status_code="200",verb="list"}`).
+			Contains(`argo_workflows_k8s_request_total{kind="workflowtemplates",status_code="200",verb="watch"}`).
 			Contains(`HELP argo_workflows_pods_count`).
 			Contains(`HELP argo_workflows_workers_busy`).
 			Contains(`HELP argo_workflows_workflow_condition`).
