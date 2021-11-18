@@ -371,6 +371,11 @@ type WorkflowSpec struct {
 
 	// ArchiveLogs indicates if the container logs should be archived
 	ArchiveLogs *bool `json:"archiveLogs,omitempty" protobuf:"varint,40,opt,name=archiveLogs"`
+
+	// NodeName is a selector which will result in all pods of the workflow
+	// to be scheduled on the selected node(s). This is able to be overridden by
+	// a nodeName specified in the template.
+	NodeName string `json:"nodeName,omitempty" protobuf:"bytes,41,opt,name=nodeName"`
 }
 
 // GetVolumeClaimGC returns the VolumeClaimGC that was defined in the workflow spec.  If none was provided, a default value is returned.
@@ -651,6 +656,11 @@ type Template struct {
 	// Timout allows to set the total node execution timeout duration counting from the node's start time.
 	// This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
 	Timeout string `json:"timeout,omitempty" protobuf:"bytes,38,opt,name=timeout"`
+
+	// NodeName is a selector which will result in all pods of the workflow
+	// to be scheduled on the selected node(s). This is able to be overridden by
+	// a nodeName specified in the template.
+	NodeName string `json:"nodeName,omitempty" protobuf:"bytes,43,opt,name=nodeName"`
 }
 
 // SetType will set the template object based on template type.
