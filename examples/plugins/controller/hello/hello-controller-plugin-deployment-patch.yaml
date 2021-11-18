@@ -1,12 +1,13 @@
 # This is an auto-generated file. DO NOT EDIT
-This is a Kustomize patch that will add the plugin to your controller.
+# This is a Kustomize patch that will add the plugin to your controller.
+# Example: kubectl patch -n argo deployment workflow-controller --patch-file examples/plugins/controller/hello/hello-controller-plugin-deployment-patch.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   creationTimestamp: null
   name: workflow-controller
 spec:
-  selector: null
+  selector: {}
   strategy: {}
   template:
     metadata:
@@ -57,4 +58,7 @@ spec:
         image: python:alpine3.6
         name: hello-controller-plugin
         resources: {}
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
 status: {}

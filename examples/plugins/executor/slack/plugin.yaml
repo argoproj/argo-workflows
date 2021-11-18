@@ -1,4 +1,6 @@
 kind: ExecutorPlugin
+metadata:
+  name: slack
 spec:
   address: http://localhost:7522
   description: |

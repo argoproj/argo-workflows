@@ -43,6 +43,9 @@ data:
     image: python:alpine3.6
     name: hello-executor-plugin
     resources: {}
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
 kind: ConfigMap
 metadata:
   annotations:

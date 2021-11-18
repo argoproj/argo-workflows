@@ -6,7 +6,7 @@ kind: ConfigMap
 metadata:
   annotations:
     workflows.argoproj.io/description: |
-      This plugin sends a PageDuty event when any workflow fails.
+      This plugin sends a PagerDuty event when any workflow fails.
 
       You must create a secret:
 
