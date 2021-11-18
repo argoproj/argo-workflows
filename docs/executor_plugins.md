@@ -88,6 +88,7 @@ Check your controller logs:
 
 ```
 level=info msg="Executor plugin added" name=hello-controller-plugin
+
 ```
 
 Run this workflow.
