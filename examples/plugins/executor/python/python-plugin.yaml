@@ -1,0 +1,10 @@
+kind: ExecutorPlugin
+spec:
+  address: http://localhost:7984
+  description: This plugin allows you to run arbitrary Python code.
+  container:
+    command:
+      - python
+      - -c
+    image: python:alpine3.6
+    name: python-executor-plugin

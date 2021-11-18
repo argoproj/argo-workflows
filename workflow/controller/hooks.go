@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/template"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -20,7 +21,7 @@ func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *
 				return nil, err
 			}
 			execute, err := shouldExecute(result)
-			if err != nil{
+			if err != nil {
 				return nil, err
 			}
 			if execute {

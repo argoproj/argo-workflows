@@ -1,0 +1,28 @@
+kind: ExecutorPlugin
+spec:
+  address: http://localhost:7522
+  description: |
+    This is an example that sends a Slack message.
+
+    You must create a secret:
+
+    ```yaml
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: slack-executor-plugin
+    stringData:
+      URL: https://hooks.slack.com/services/.../.../...
+    ```
+  container:
+    command:
+      - python
+      - -c
+    env:
+      - name: URL
+        valueFrom:
+          secretKeyRef:
+            name: slack-executor-plugin
+            key: URL
+    image: python:alpine3.6
+    name: slack-executor-plugin

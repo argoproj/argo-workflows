@@ -245,7 +245,6 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 		targetTasks = strings.Split(tmpl.DAG.Target, " ")
 	}
 
-
 	// kick off execution of each target task asynchronously
 	for _, taskName := range targetTasks {
 		woc.executeDAGTask(ctx, dagCtx, taskName)
@@ -258,7 +257,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 		if taskNode != nil {
 			task := dagCtx.GetTask(taskName)
 			scope, err := woc.buildLocalScopeFromTask(dagCtx, task)
-			if  err != nil{
+			if err != nil {
 				fmt.Println(err)
 			}
 			woc.executeLifeCycleHook(ctx, scope, dagCtx.GetTask(taskName).Hooks, taskNode, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
@@ -378,8 +377,8 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 			scope, err := woc.buildLocalScopeFromTask(dagCtx, task)
 			scope.addParamToScope(fmt.Sprintf("tasks.%s.status", task.Name), string(node.Phase))
 
-			if  err != nil{
-				fmt.Println("*****",err)
+			if err != nil {
+				fmt.Println("*****", err)
 			}
 			woc.executeLifeCycleHook(ctx, scope, dagCtx.GetTask(taskName).Hooks, node, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
 		}

@@ -32,7 +32,7 @@ class Plugin(BaseHTTPRequestHandler):
                                 "service_key": os.getenv("SERVICE_KEY"),
                                 "event_type": "trigger",
                                 "incident_key": workflow_name,
-                                "description": "Argo Workflow Failed",
+                                "description": f"Argo Workflow ${workflow_name} Failed",
                                 "client": "Argo Workflows",
                             }).encode()))
                 if x.status != 200:

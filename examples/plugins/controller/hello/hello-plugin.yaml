@@ -1,0 +1,10 @@
+kind: ControllerPlugin
+spec:
+  address: http://localhost:4355
+  description: This is the "hello world" plugin
+  container:
+    command:
+      - python
+      - -c
+    image: python:alpine3.6
+    name: hello-controller-plugin

@@ -1,8 +1,26 @@
+# This is an auto-generated file. DO NOT EDIT
 apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: pagerduty-controller-plugin
-  labels:
-    workflows.argoproj.io/configmap-type: ControllerPlugin
 data:
   address: http://localhost:7243
+kind: ConfigMap
+metadata:
+  annotations:
+    workflows.argoproj.io/description: |
+      This plugin sends a PageDuty event when any workflow fails.
+
+      You must create a secret:
+
+      ```yaml
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: pagerduty-controller-plugin
+      stringData:
+        URL: https://hooks.slack.com/services/.../.../...
+        SERVICE_KEY: ...
+      ```
+    workflows.argoproj.io/version: '>= v3.3'
+  creationTimestamp: null
+  labels:
+    workflows.argoproj.io/configmap-type: ControllerPlugin
+  name: pagerduty-controller-plugin

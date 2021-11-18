@@ -240,6 +240,8 @@ scan-%:
 
 .PHONY: codegen
 codegen: types swagger docs manifests
+	go run ./hack/plugins examples/plugins/executor
+	go run ./hack/plugins examples/plugins/controller
 	make --directory sdks/java generate
 	make --directory sdks/python generate
 

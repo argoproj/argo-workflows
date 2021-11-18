@@ -1,8 +1,13 @@
+# This is an auto-generated file. DO NOT EDIT
 apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: hello-controller-plugin
-  labels:
-    workflows.argoproj.io/configmap-type: ControllerPlugin
 data:
   address: http://localhost:4355
+kind: ConfigMap
+metadata:
+  annotations:
+    workflows.argoproj.io/description: This is the "hello world" plugin
+    workflows.argoproj.io/version: '>= v3.3'
+  creationTimestamp: null
+  labels:
+    workflows.argoproj.io/configmap-type: ControllerPlugin
+  name: hello-controller-plugin

@@ -1,60 +1,79 @@
+# This is an auto-generated file. DO NOT EDIT
 apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: slack-executor-plugin
-  labels:
-    workflows.argoproj.io/configmap-type: ExecutorPlugin
 data:
   address: http://localhost:7522
   container: |
-    image: python:alpine3.6
-    env:
-      - name: URL
-        valueFrom:
-          secretKeyRef:
-            name: slack-executor-plugin
-            key: URL
-    command:
-      - python
-      - -c
     args:
-      - |
-        import json
-        import os
-        from http.server import BaseHTTPRequestHandler, HTTPServer
-        from urllib.request import urlopen, Request
+    - |
+      import json
+      import os
+      from http.server import BaseHTTPRequestHandler, HTTPServer
+      from urllib.request import urlopen, Request
 
 
-        class Plugin(BaseHTTPRequestHandler):
+      class Plugin(BaseHTTPRequestHandler):
 
-            def args(self):
-                return json.loads(self.rfile.read(int(self.headers.get('Content-Length'))))
+          def args(self):
+              return json.loads(self.rfile.read(int(self.headers.get('Content-Length'))))
 
-            def reply(self, reply):
-                self.send_response(200)
-                self.end_headers()
-                self.wfile.write(json.dumps(reply).encode("UTF-8"))
+          def reply(self, reply):
+              self.send_response(200)
+              self.end_headers()
+              self.wfile.write(json.dumps(reply).encode("UTF-8"))
 
-            def unsupported(self):
-                self.send_response(404)
-                self.end_headers()
+          def unsupported(self):
+              self.send_response(404)
+              self.end_headers()
 
-            def do_POST(self):
-                if self.path == '/api/v1/template.execute':
-                    args = self.args()
-                    if 'slack' in args['template'].get('plugin', {}):
-                        x = urlopen(
-                            Request(os.getenv('URL'),
-                                    data=json.dumps({'text': args['template']['plugin']['slack']['text']}).encode()))
-                        if x.status != 200:
-                            raise Exception("not 200")
-                        self.reply({'node': {'phase': 'Succeeded', 'message': 'Slack message sent'}})
-                    else:
-                        self.reply({})
-                else:
-                    self.unsupported()
+          def do_POST(self):
+              if self.path == '/api/v1/template.execute':
+                  args = self.args()
+                  if 'slack' in args['template'].get('plugin', {}):
+                      x = urlopen(
+                          Request(os.getenv('URL'),
+                                  data=json.dumps({'text': args['template']['plugin']['slack']['text']}).encode()))
+                      if x.status != 200:
+                          raise Exception("not 200")
+                      self.reply({'node': {'phase': 'Succeeded', 'message': 'Slack message sent'}})
+                  else:
+                      self.reply({})
+              else:
+                  self.unsupported()
 
 
-        if __name__ == '__main__':
-            httpd = HTTPServer(('', 7522), Plugin)
-            httpd.serve_forever()
+      if __name__ == '__main__':
+          httpd = HTTPServer(('', 7522), Plugin)
+          httpd.serve_forever()
+    command:
+    - python
+    - -c
+    env:
+    - name: URL
+      valueFrom:
+        secretKeyRef:
+          key: URL
+          name: slack-executor-plugin
+    image: python:alpine3.6
+    name: slack-executor-plugin
+    resources: {}
+kind: ConfigMap
+metadata:
+  annotations:
+    workflows.argoproj.io/description: |
+      This is an example that sends a Slack message.
+
+      You must create a secret:
+
+      ```yaml
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: slack-executor-plugin
+      stringData:
+        URL: https://hooks.slack.com/services/.../.../...
+      ```
+    workflows.argoproj.io/version: '>= v3.3'
+  creationTimestamp: null
+  labels:
+    workflows.argoproj.io/configmap-type: ExecutorPlugin
+  name: slack-executor-plugin

@@ -1,0 +1,34 @@
+kind: ControllerPlugin
+spec:
+  address: http://localhost:7243
+  description: |
+    This plugin sends a PageDuty event when any workflow fails.
+
+    You must create a secret:
+
+    ```yaml
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: pagerduty-controller-plugin
+    stringData:
+      URL: https://hooks.slack.com/services/.../.../...
+      SERVICE_KEY: ...
+    ```
+  container:
+    command:
+      - python
+      - -c
+    env:
+      - name: URL
+        valueFrom:
+          secretKeyRef:
+            name: pagerduty-executor-plugin
+            key: URL
+      - name: SERVICE_KEY
+        valueFrom:
+          secretKeyRef:
+            name: pagerduty-executor-plugin
+            key: SERVICE_KEY
+    image: python:alpine3.6
+    name: pagerduty-controller-plugin
