@@ -228,23 +228,27 @@ func (c *DocGeneratorContext) loadFiles() {
 	if err != nil {
 		panic(err)
 	}
+FILES:
 	for _, fileName := range files {
-		if strings.HasSuffix(fileName, "-configmap.yaml") || strings.HasSuffix(fileName, "-secret.yaml") {
-			continue
-		}
 		bytes, err := ioutil.ReadFile(filepath.Clean(fileName))
 		if err != nil {
 			panic(err)
 		}
 
 		r := regexp.MustCompile(`kind: ([a-zA-Z]+)`)
-		kinds := r.FindAllStringSubmatch(string(bytes), -1)
-		for _, kind := range kinds {
-			if set, ok := c.index[kind[1]]; ok {
+		matches := r.FindAllStringSubmatch(string(bytes), -1)
+		for _, m := range matches {
+			kind := m[1]
+			switch kind {
+			case "ClusterWorkflowTemplate", "CronWorkflow", "Workflow", "WorkflowTemplate":
+			default:
+				continue FILES
+			}
+			if set, ok := c.index[kind]; ok {
 				set[fileName] = true
 			} else {
-				c.index[kind[1]] = make(Set)
-				c.index[kind[1]][fileName] = true
+				c.index[kind] = make(Set)
+				c.index[kind][fileName] = true
 			}
 		}
 
