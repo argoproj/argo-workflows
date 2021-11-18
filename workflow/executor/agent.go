@@ -125,9 +125,6 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 }
 
 func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Template, reply *wfv1.NodeResult) (time.Duration, error) {
-	if tmpl.HTTP == nil {
-		return 0, fmt.Errorf("attempting to execute template that is not of type HTTP")
-	}
 	httpTemplate := tmpl.HTTP
 	request, err := http.NewRequest(httpTemplate.Method, httpTemplate.URL, bytes.NewBufferString(httpTemplate.Body))
 	if err != nil {

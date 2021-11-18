@@ -12,7 +12,7 @@ import (
 type plugin struct{ plugins.Plugin }
 
 func New(address string) *plugin {
-	return &plugin{Plugin: plugins.New(address, time.Second, wait.Backoff{})}
+	return &plugin{Plugin: plugins.New(address, time.Second, wait.Backoff{Steps: 1})}
 }
 
 var _ controllerplugins.WorkflowLifecycleHook = &plugin{}

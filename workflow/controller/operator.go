@@ -385,12 +385,15 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	woc.globalParams[common.GlobalVarWorkflowStatus] = string(workflowStatus)
 
-	woc.executeWfLifeCycleHook(ctx, tmplCtx)
+	_, err = woc.executeWfLifeCycleHook(ctx, tmplCtx)
+	if err != nil {
+		woc.markNodeError(node.Name, err)
+	}
 
 	// Reconcile TaskSet and Agent for HTTP templates
 	woc.taskSetReconciliation(ctx)
 
-	if node == nil || !node.Fulfilled() {
+	if !node.Fulfilled() {
 		// node can be nil if a workflow created immediately in a parallelism == 0 state
 		return
 	}
@@ -416,9 +419,9 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			woc.log.Errorf("Error marshalling failed nodes list: %+v", err)
 			// No need to return here
 		}
-
 		// This strconv.Quote is necessary so that the escaped quotes are not removed during parameter substitution
 		woc.globalParams[common.GlobalVarWorkflowFailures] = strconv.Quote(string(failedNodeBytes))
+
 		woc.log.Infof("Running OnExit handler: %s", woc.execWf.Spec.OnExit)
 		onExitNodeName := common.GenerateOnExitNodeName(woc.wf.ObjectMeta.Name)
 		onExitNode, err = woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: woc.execWf.Spec.OnExit}, tmplCtx, woc.execWf.Spec.Arguments, &executeTemplateOpts{onExitTemplate: true})

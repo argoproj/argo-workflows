@@ -16,6 +16,9 @@ func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *
 				return nil, nil
 			}
 			tmpl, err := template.NewTemplate(hook.Expression)
+			if err != nil {
+				return nil, err
+			}
 			result, err := tmpl.Replace(woc.globalParams, false)
 			if err != nil {
 				return nil, err
@@ -52,6 +55,9 @@ func (woc *wfOperationCtx) executeLifeCycleHook(ctx context.Context, scope *wfSc
 			return false, nil, nil
 		}
 		tmpl, err := template.NewTemplate(hook.Expression)
+		if err != nil {
+			return false, nil, err
+		}
 		result, err := tmpl.Replace(woc.globalParams.Merge(scope.getParameters()), false)
 		if err != nil {
 			return false, nil, err
@@ -67,7 +73,7 @@ func (woc *wfOperationCtx) executeLifeCycleHook(ctx context.Context, scope *wfSc
 				outputs = lastChildNode.Outputs
 			}
 			hookNodeName := common.GenerateLifeHookNodeName(parentNode.Name, string(hookName))
-			woc.log.WithField("lifeCycleHook", hookName).WithField("node", hookNodeName).Infof("Running hooks", hookName)
+			woc.log.WithField("lifeCycleHook", hookName).WithField("node", hookNodeName).WithField("hookName", hookName).Info("Running hooks")
 			resolvedArgs := hook.Arguments
 			var err error
 			if !resolvedArgs.IsEmpty() && outputs != nil {

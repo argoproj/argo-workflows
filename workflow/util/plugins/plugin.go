@@ -38,11 +38,13 @@ func (p *Plugin) Call(method string, args interface{}, reply interface{}) error 
 	if p.invalid[method] {
 		return nil
 	}
+	log := log.WithField("address", p.Address).WithField("method", method)
 	body, err := json.Marshal(args)
 	if err != nil {
 		return err
 	}
 	return retry.OnError(p.backoff, func(err error) bool {
+		log.WithError(err).Debug("Plugin returned error")
 		switch e := err.(type) {
 		case interface{ Temporary() bool }:
 			if e.Temporary() {
@@ -51,6 +53,7 @@ func (p *Plugin) Call(method string, args interface{}, reply interface{}) error 
 		}
 		return strings.Contains(err.Error(), "connection refused")
 	}, func() error {
+		log.Debug("Calling plugin")
 		req, err := http.NewRequest("POST", fmt.Sprintf("%s/api/v1/%s", p.Address, method), bytes.NewBuffer(body))
 		if err != nil {
 			return err

@@ -258,9 +258,13 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 			task := dagCtx.GetTask(taskName)
 			scope, err := woc.buildLocalScopeFromTask(dagCtx, task)
 			if err != nil {
-				fmt.Println(err)
+				woc.markNodeError(node.Name, err)
 			}
-			woc.executeLifeCycleHook(ctx, scope, dagCtx.GetTask(taskName).Hooks, taskNode, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
+			_, _, err = woc.executeLifeCycleHook(ctx, scope, dagCtx.GetTask(taskName).Hooks, taskNode, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
+			if err != nil {
+				woc.markNodeError(node.Name, err)
+			}
+
 		}
 		if taskNode != nil && taskNode.Fulfilled() {
 			if taskNode.Completed() {
@@ -372,15 +376,16 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 		if tmpl != nil {
 			woc.controller.syncManager.Release(woc.wf, node.ID, tmpl.Synchronization)
 		}
-		if node != nil {
-			task := dagCtx.GetTask(taskName)
-			scope, err := woc.buildLocalScopeFromTask(dagCtx, task)
-			scope.addParamToScope(fmt.Sprintf("tasks.%s.status", task.Name), string(node.Phase))
 
-			if err != nil {
-				fmt.Println("*****", err)
-			}
-			woc.executeLifeCycleHook(ctx, scope, dagCtx.GetTask(taskName).Hooks, node, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
+		task := dagCtx.GetTask(taskName)
+		scope, err := woc.buildLocalScopeFromTask(dagCtx, task)
+		if err != nil {
+			woc.markNodeError(node.Name, err)
+		}
+		scope.addParamToScope(fmt.Sprintf("tasks.%s.status", task.Name), string(node.Phase))
+		_, _, err = woc.executeLifeCycleHook(ctx, scope, dagCtx.GetTask(taskName).Hooks, node, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
+		if err != nil {
+			woc.markNodeError(node.Name, err)
 		}
 
 		if node.Completed() {
