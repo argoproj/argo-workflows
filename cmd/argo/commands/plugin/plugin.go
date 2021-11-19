@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
@@ -65,13 +64,10 @@ func loadPlugin(pluginDir string) (*loadResult, error) {
 	}
 	plug.Spec.Container.Args = []string{string(code)}
 
-	if strings.Contains(pluginDir, "controller") {
-		// Match default security settings for easier patch.
-		runAsNonRoot := true
-		runAsUser := int64(1000)
-		plug.Spec.Container.SecurityContext = &apiv1.SecurityContext{RunAsNonRoot: &runAsNonRoot, RunAsUser: &runAsUser}
-	}
-
+	// Match default security settings for easier patch.
+	runAsNonRoot := true
+	runAsUser := int64(1000)
+	plug.Spec.Container.SecurityContext = &apiv1.SecurityContext{RunAsNonRoot: &runAsNonRoot, RunAsUser: &runAsUser}
 	cm := &apiv1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
@@ -117,11 +113,11 @@ func loadPlugin(pluginDir string) (*loadResult, error) {
 					Spec: apiv1.PodSpec{
 						Containers: []apiv1.Container{
 							{
-								Name:                     "workflow-controller",
-								Env:                      []apiv1.EnvVar{
+								Name: "workflow-controller",
+								Env: []apiv1.EnvVar{
 									{
-										Name:      "ARGO_PLUGINS",
-										Value:     "true",
+										Name:  "ARGO_PLUGINS",
+										Value: "true",
 									},
 								},
 							},
