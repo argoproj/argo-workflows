@@ -106,6 +106,20 @@ Finally, run any workflow. You'll see "hello" printed in the plugins sidecar's l
 kubectl -n argo logs deployment/workflow-controller -c hello-controller-plugin
 ```
 
+## Security
+
+Besides the [general plugin security considerations](plugins.md#security), controller plugins require careful thought to
+implement securely.
+
+Keep in mind:
+* Since it resides on the same pod as the workflow controller, it shares resources with the workflow controller (cpu, 
+  memory, disk, network). It's important to ensure the plugin cannot overuse resources and degrade the performance of
+  the workflow controller (causing a denial of service).
+* Controller plugins have read/write access to the full workflow definition. Consider how user input might cause 
+  dangerous changes to the workflow (modifying commands or security settings, etc.). 
+  Always validate and sanitize untrusted inputs. Limit how the inputs can affect the plugin to only carefully-chosen, 
+  narrowly-defined affects.
+
 ## Learn More
 
 * Take a look at

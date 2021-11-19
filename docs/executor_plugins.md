@@ -119,3 +119,5 @@ kubectl -n argo logs ${agentPodName} -c hello-executor-plugin
 ### Learn More
 
 - Read the [API reference](executor_swagger.md).
+
+## Security

@@ -35,6 +35,24 @@ spec:
 
 ## Considerations
 
+### Security
+
+Plugins are a powerful way to augment Argo Workflows' capabilities. Plugins also introduce code which may contain 
+vulnerabilities.
+
+Before enabling plugins, consider:
+* Who should be able to install plugins? How will this be enforced (e.g. RBAC rules for creating/modifying ConfigMaps)?
+
+When developing plugins, consider:
+* Is the plugin code itself written securely? The plugin should guard against all the usual relevant vulnerabilities
+  (SQL/OS code injection, hard-coded credentials, logging secrets, etc.). The 
+  [Common Weakness Enumeration Top 25](https://cwe.mitre.org/data/definitions/1337.html) is a good starting point when
+  considering possible weaknesses.
+* What new execution paths does the plugin enable? Plugins can mutate a workflow's structure. Consider how your plugin's
+  mutations might break safeguards built into your existing workflows.
+* Have the particular security considerations of [controller](controller_plugins.md#security) or
+  [executor](executor_plugins.md#security) plugins been addressed?
+
 ### Failure Modes
 
 A plugin may fail as follows:
@@ -60,4 +78,4 @@ Consider a workflows with 100k nodes, and then consider you have 5 plugins:
 
 We'll make num(nodes) x num(plugins) calls.
 
-So we have 500k network calls per loop. 
+So we have 500k network calls per loop.
