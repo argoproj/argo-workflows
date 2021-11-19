@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
@@ -64,10 +65,13 @@ func loadPlugin(pluginDir string) (*loadResult, error) {
 	}
 	plug.Spec.Container.Args = []string{string(code)}
 
-	// Match default security settings for easier patch.
-	runAsNonRoot := true
-	runAsUser := int64(1000)
-	plug.Spec.Container.SecurityContext = &apiv1.SecurityContext{RunAsNonRoot: &runAsNonRoot, RunAsUser: &runAsUser}
+	if strings.Contains(pluginDir, "controller") {
+		// Match default security settings for easier patch.
+		runAsNonRoot := true
+		runAsUser := int64(1000)
+		plug.Spec.Container.SecurityContext = &apiv1.SecurityContext{RunAsNonRoot: &runAsNonRoot, RunAsUser: &runAsUser}
+	}
+
 	cm := &apiv1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
