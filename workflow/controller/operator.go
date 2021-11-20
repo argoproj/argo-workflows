@@ -84,7 +84,7 @@ type wfOperationCtx struct {
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
 	artifactRepository *wfv1.ArtifactRepository
 	// map of completed pods with their corresponding phases
-	completedPods map[string]apiv1.PodPhase
+	completedPods map[string]*apiv1.Pod
 	// deadline is the dealine time in which this operation should relinquish
 	// its hold on the workflow so that an operation does not run for too long
 	// and starve other workqueue items. It also enables workflow progress to
@@ -155,7 +155,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		controller:             wfc,
 		globalParams:           make(map[string]string),
 		volumes:                wf.Spec.DeepCopy().Volumes,
-		completedPods:          make(map[string]apiv1.PodPhase),
+		completedPods:          make(map[string]*apiv1.Pod),
 		deadline:               time.Now().UTC().Add(maxOperationTime),
 		eventRecorder:          wfc.eventRecorderManager.Get(wf.Namespace),
 		preExecutionNodePhases: make(map[string]wfv1.NodePhase),
@@ -641,28 +641,8 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
 	// Failing to do so means we can have inconsistent state.
-	// TODO: The completedPods will be labeled multiple times. I think it would be improved in the future.
-	// Send succeeded pods or completed pods to gcPods channel to delete it later depend on the PodGCStrategy.
-	// Notice we do not need to label the pod if we will delete it later for GC. Otherwise, that may even result in
-	// errors if we label a pod that was deleted already.
-	for podName, podPhase := range woc.completedPods {
-		if woc.execWf.Spec.PodGC != nil {
-			switch woc.execWf.Spec.PodGC.Strategy {
-			case wfv1.PodGCOnPodSuccess:
-				if podPhase == apiv1.PodSucceeded {
-					delay := woc.controller.Config.GetPodGCDeleteDelayDuration()
-					woc.controller.queuePodForCleanupAfter(woc.wf.Namespace, podName, deletePod, delay)
-				}
-			case wfv1.PodGCOnPodCompletion:
-				delay := woc.controller.Config.GetPodGCDeleteDelayDuration()
-				woc.controller.queuePodForCleanupAfter(woc.wf.Namespace, podName, deletePod, delay)
-			}
-		} else {
-			// label pods which will not be deleted
-			woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, labelPodCompleted)
-		}
-	}
-
+	// Pods may be be labeled multiple times.
+	woc.queuePodsForCleanup()
 }
 
 func (woc *wfOperationCtx) writeBackToInformer() error {
@@ -981,15 +961,6 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 				woc.updated = true
 			}
 			node := woc.wf.Status.Nodes[nodeID]
-			match := true
-			if woc.execWf.Spec.PodGC.GetLabelSelector() != nil {
-				var podLabels labels.Set = pod.GetLabels()
-				match, err = woc.execWf.Spec.PodGC.Matches(podLabels)
-				if err != nil {
-					woc.markWorkflowFailed(ctx, fmt.Sprintf("failed to parse label selector %s for pod GC: %v", woc.execWf.Spec.PodGC.LabelSelector, err))
-					return
-				}
-			}
 			if node.Type == wfv1.NodeTypePod {
 				if node.HostNodeName != pod.Spec.NodeName {
 					node.HostNodeName = pod.Spec.NodeName
@@ -1005,18 +976,13 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 				}
 			}
 			if node.Fulfilled() && !node.IsDaemoned() {
-				if pod.GetLabels()[common.LabelKeyCompleted] == "true" {
-					return
-				}
-				if match {
-					woc.completedPods[pod.Name] = pod.Status.Phase
-				}
 				if woc.shouldPrintPodSpec(node) {
 					printPodSpecLog(pod, woc.wf.Name)
 				}
 			}
-			if node.Succeeded() && match {
-				woc.completedPods[pod.Name] = pod.Status.Phase
+			switch pod.Status.Phase {
+			case apiv1.PodSucceeded, apiv1.PodFailed:
+				woc.completedPods[pod.Name] = pod
 			}
 		}
 	}

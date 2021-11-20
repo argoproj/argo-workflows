@@ -14,6 +14,7 @@ type Claims struct {
 	Email              string                 `json:"email,omitempty"`
 	EmailVerified      bool                   `json:"email_verified,omitempty"`
 	ServiceAccountName string                 `json:"service_account_name,omitempty"`
+	PreferredUsername  string                 `json:"preferred_username,omitempty"`
 	RawClaim           map[string]interface{} `json:"-"`
 }
 
