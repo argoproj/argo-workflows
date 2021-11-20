@@ -1034,7 +1034,7 @@ func (wfc *WorkflowController) newPodInformer(ctx context.Context) cache.SharedI
 					return
 				}
 				// Skip initial deadlineExceed process, informer will receive another update after pod fully terminated
-				if newPod.Status.Reason == "DeadlineExceeded" && oldPod.Status.Reason != "DeadlineExceeded" {
+				if newPod.Status.Reason == common.ErrDeadlineExceeded && oldPod.Status.Reason != common.ErrDeadlineExceeded {
 					return
 				}
 				wfc.podQueue.Add(key)
