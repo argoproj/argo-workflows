@@ -46,6 +46,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/intstr"
 	"github.com/argoproj/argo-workflows/v3/util/resource"
 	"github.com/argoproj/argo-workflows/v3/util/retry"
+	"github.com/argoproj/argo-workflows/v3/util/slice"
 	"github.com/argoproj/argo-workflows/v3/util/template"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -1489,6 +1490,21 @@ func (woc *wfOperationCtx) deletePVCs(ctx context.Context) error {
 				if firstErr == nil {
 					firstErr = err
 				}
+			}
+		}
+	}
+	if os.Getenv("ARGO_REMOVE_PVC_PROTECTION_FINALIZER") == "true" {
+		for _, pvc := range woc.wf.Status.PersistentVolumeClaims {
+			woc.log.WithField("claimName", pvc.PersistentVolumeClaim.ClaimName).
+				Info("Removing PVC \"kubernetes.io/pvc-protection\" finalizer")
+			x, err := pvcClient.Get(ctx, pvc.PersistentVolumeClaim.ClaimName, metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
+			x.Finalizers = slice.RemoveString(x.Finalizers, "kubernetes.io/pvc-protection")
+			_, err = pvcClient.Update(ctx, x, metav1.UpdateOptions{})
+			if err != nil {
+				return err
 			}
 		}
 	}
