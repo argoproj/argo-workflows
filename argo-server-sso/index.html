@@ -2405,7 +2405,7 @@
 </blockquote>
 <p>It is possible to use <a href="https://github.com/dexidp/dex">Dex</a> for authentication. <a href="../argo-server-sso-argocd/">This document</a> describes how to set up ArgoWorkflows and ArgoCD so that ArgoWorkflows uses ArgoCD's Dex server for authentication.</p>
 <h2 id="to-start-argo-server-with-sso">To start Argo Server with SSO.<a class="headerlink" href="#to-start-argo-server-with-sso" title="Permanent link">&para;</a></h2>
-<p>Firstly, configure the settings <a href="../workflow-controller-configmap.yaml">workflow-controller-configmap.yaml</a> with the correct OAuth 2 values. If working towards an oidc configuration the ArgoCD project has <a href="https://argoproj.github.io/argo-cd/operator-manual/user-management/#existing-oidc-provider">guides</a> on its similar (though different) process for setting up oidc providers. It also includes examples for specific providers.</p>
+<p>Firstly, configure the settings <a href="../workflow-controller-configmap.yaml">workflow-controller-configmap.yaml</a> with the correct OAuth 2 values. If working towards an oidc configuration the ArgoCD project has <a href="https://argoproj.github.io/argo-cd/operator-manual/user-management/#existing-oidc-provider">guides</a> on its similar (though different) process for setting up oidc providers. It also includes examples for specific providers. The main difference is that the ArgoCD docs mention that their callback address endpoint is <code>/auth/callback</code>.  For ArgoWorkflows, the default format is <code>/oauth2/callback</code> as shown in <a href="https://github.com/argoproj/argo-workflows/blob/93c11a24ff06049c2197149acd787f702e5c1f9b/docs/workflow-controller-configmap.yaml#L329">this comment</a> in the default values.yaml file in the helm chart.</p>
 <p>Next, create the k8s secrets for holding the OAuth2 <code>client-id</code> and <code>client-secret</code>. You may refer to the kubernetes documentation on <a href="https://kubernetes.io/docs/tasks/configmap-secret/">Managing secrets</a>. For example by using kubectl with literals:
 <div class="highlight"><pre><span></span><code>kubectl create secret -n argo generic client-id-secret \
   --from-literal=client-id-key=foo
@@ -2534,7 +2534,7 @@ Make sure that the precedence of the namespace service account is higher than th
   <span class="c1"># Specify custom claim name for OIDC groups.</span>
   <span class="nt">customGroupClaimName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argo_groups</span>
 </code></pre></div>
-<p>If your OIDC provider provides groups information only using the userInfo endpoint (e.g. OKta), you could configure <code>userInfoPath</code> to specify the user info endpoint that contains the groups claim. 
+<p>If your OIDC provider provides groups information only using the userInfo endpoint (e.g. OKta), you could configure <code>userInfoPath</code> to specify the user info endpoint that contains the groups claim.
 <div class="highlight"><pre><span></span><code><span class="nt">sso</span><span class="p">:</span>
   <span class="nt">userInfoPath</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/oauth2/v1/userinfo</span>
 </code></pre></div></p>
