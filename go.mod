@@ -78,10 +78,7 @@ require (
 	upper.io/db.v3 v3.6.3+incompatible
 )
 
-require (
-	github.com/go-git/go-git/v5 v5.3.0
-	sigs.k8s.io/controller-runtime v0.7.0
-)
+require github.com/go-git/go-git/v5 v5.3.0
 
 require (
 	cloud.google.com/go v0.81.0 // indirect
@@ -189,5 +186,6 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 	moul.io/http2curl v1.0.1-0.20190925090545-5cd742060b0e // indirect
+	sigs.k8s.io/controller-runtime v0.7.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.1.2 // indirect
 )
