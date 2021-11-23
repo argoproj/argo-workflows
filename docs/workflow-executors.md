@@ -102,6 +102,7 @@ This is the most fully featured executor.
     * Not yet well-tested
     * Not yet popular
     * Works on GKE Autopilot
+    * Does not require `init` process to kill sub-processes.
 * More secure:
     * No `privileged` access
     * Cannot escape the privileges of the pod's service account
