@@ -9,13 +9,13 @@ pf() {
   ./hack/free-port.sh $port
   echo "port-forward $resource $port"
   kubectl -n argo port-forward "svc/$resource" "$port:$dest_port" > /dev/null &
-	until lsof -i ":$port" > /dev/null ; do sleep 1s ; done
+	until lsof -i ":$port" > /dev/null ; do sleep 1 ; done
 }
 
 wait-for() {
   set -eu -o pipefail
   echo "wait-for $1"
-  kubectl -n argo wait --timeout 1m --for=condition=Available deploy/$1
+  kubectl -n argo wait --timeout 2m --for=condition=Available deploy/$1
 }
 
 wait-for minio

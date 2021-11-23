@@ -26,7 +26,6 @@ type cliSubmitOpts struct {
 	output        string // --output
 	wait          bool   // --wait
 	watch         bool   // --watch
-	verify        bool   // --verify
 	log           bool   // --log
 	strict        bool   // --strict
 	priority      *int32 // --priority
@@ -91,8 +90,6 @@ func NewSubmitCommand() *cobra.Command {
 	command.Flags().StringVarP(&cliSubmitOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
 	command.Flags().BoolVarP(&cliSubmitOpts.wait, "wait", "w", false, "wait for the workflow to complete")
 	command.Flags().BoolVar(&cliSubmitOpts.watch, "watch", false, "watch the workflow until it completes")
-	command.Flags().BoolVar(&cliSubmitOpts.verify, "verify", false, "verify completed workflows by running the Python code in the workflows.argoproj.io/verify.py annotation")
-	errors.CheckError(command.Flags().MarkHidden("verify"))
 	command.Flags().BoolVar(&cliSubmitOpts.log, "log", false, "log the workflow until it completes")
 	command.Flags().BoolVar(&cliSubmitOpts.strict, "strict", true, "perform strict workflow validation")
 	command.Flags().Int32Var(&priority, "priority", 0, "workflow priority")
@@ -258,7 +255,7 @@ func unmarshalWorkflows(wfBytes []byte, strict bool) []wfv1.Workflow {
 func waitWatchOrLog(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace string, workflowNames []string, cliSubmitOpts cliSubmitOpts) {
 	if cliSubmitOpts.log {
 		for _, workflow := range workflowNames {
-			logWorkflow(ctx, serviceClient, namespace, workflow, "", "", &corev1.PodLogOptions{
+			logWorkflow(ctx, serviceClient, namespace, workflow, "", "", "", &corev1.PodLogOptions{
 				Container: common.MainContainerName,
 				Follow:    true,
 				Previous:  false,
@@ -271,8 +268,5 @@ func waitWatchOrLog(ctx context.Context, serviceClient workflowpkg.WorkflowServi
 		for _, workflow := range workflowNames {
 			watchWorkflow(ctx, serviceClient, namespace, workflow, cliSubmitOpts.getArgs)
 		}
-	}
-	if cliSubmitOpts.verify {
-		verifyWorkflows(ctx, serviceClient, namespace, workflowNames)
 	}
 }

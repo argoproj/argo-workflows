@@ -308,6 +308,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		Email:              c.Email,
 		EmailVerified:      c.EmailVerified,
 		ServiceAccountName: c.ServiceAccountName,
+		PreferredUsername:  c.PreferredUsername,
 	}
 
 	raw, err := jwt.Encrypted(s.encrypter).Claims(argoClaims).CompactSerialize()

@@ -12,6 +12,9 @@ spec:
           -   one
           -   two
           -   three
+  workflowMetadata:
+    labels:
+      workflows.argoproj.io/test: "true"
   templates:
     - name: argosay
       inputs:

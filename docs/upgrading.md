@@ -6,7 +6,11 @@ the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summar
 
 ## Upgrading to v3.3
 
-## feat(server)!: Sync dispatch of webhook events by default
+### [93c11a24ff](https://github.com/argoproj/argo-workflows/commit/93c11a24ff06049c2197149acd787f702e5c1f9b) feat: Add TLS to Metrics and Telemetry servers (#7041)
+
+This PR adds the ability to send metrics over TLS with a self-signed certificate. In v3.5 this will be enabled by default, so it is recommended that users enable this functionality now.
+
+### [0758eab11](https://github.com/argoproj/argo-workflows/commit/0758eab11decb8a1e741abef3e0ec08c48a69ab8) feat(server)!: Sync dispatch of webhook events by default
 
 This is not expected to impact users.
 
@@ -17,15 +21,19 @@ too long for your client and you may prefer to revert this behaviour.
 To revert this behaviour, restart Argo Server with `ARGO_EVENT_ASYNC_DISPATCH=true`. Make sure that `asyncDispatch=true`
 is logged.
 
-### [bd49c630328d30206a5c5b78cbc9a00700a28e7d](https://github.com/argoproj/argo-workflows/commit/bd49c630328d30206a5c5b78cbc9a00700a28e7d) fix(artifact)!: default https to any URL missing a scheme. Fixes #6973
+### [bd49c6303](https://github.com/argoproj/argo-workflows/commit/bd49c630328d30206a5c5b78cbc9a00700a28e7d) fix(artifact)!: default https to any URL missing a scheme. Fixes #6973
 
 HTTPArtifact without a scheme will now defaults to https instead of http
 
 user need to explicitly include a http prefix if they want to retrieve HTTPArtifact through http
 
+### chore!: Remove the hidden flag `--verify` from `argo submit`.
+
+The hidden flag `--verify` has been removed from `argo submit`. This is a internal testing flag we don't need anymore.
+
 ## Upgrading to v3.2
 
-## [e5b131a33](https://github.com/argoproj/argo-workflows/commit/e5b131a33) feat: Add template node to pod name. Fixes #1319 (#6712)
+### [e5b131a33](https://github.com/argoproj/argo-workflows/commit/e5b131a33) feat: Add template node to pod name. Fixes #1319 (#6712)
 
 This add the template name to the pod name, to make it easier to understand which pod ran which step. This behaviour can be reverted by setting `POD_NAMES=v1` on the workflow controller. 
 

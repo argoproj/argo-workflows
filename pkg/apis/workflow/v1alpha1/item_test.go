@@ -15,6 +15,7 @@ func TestItem(t *testing.T) {
 		"3.141":                           Number,
 		"true":                            Bool,
 		"\"hello\"":                       String,
+		"\"hell%test%o\"":                 String,
 		"{\"val\":\"123\"}":               Map,
 		"[\"1\",\"2\",\"3\",\"4\",\"5\"]": List,
 	} {

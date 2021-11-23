@@ -2,16 +2,20 @@ package fixtures
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/utils/pointer"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
@@ -43,6 +47,7 @@ func (w *When) SubmitWorkflow() *When {
 	}
 	_, _ = fmt.Println("Submitting workflow", w.wf.Name, w.wf.GenerateName)
 	ctx := context.Background()
+	label(w.wf)
 	wf, err := w.client.Create(ctx, w.wf, metav1.CreateOptions{})
 	if err != nil {
 		w.t.Fatal(err)
@@ -52,11 +57,20 @@ func (w *When) SubmitWorkflow() *When {
 	return w
 }
 
+func label(obj metav1.Object) {
+	labels := obj.GetLabels()
+	if labels[Label] == "" {
+		labels[Label] = "true"
+		obj.SetLabels(labels)
+	}
+}
+
 func (w *When) SubmitWorkflowsFromWorkflowTemplates() *When {
 	w.t.Helper()
 	ctx := context.Background()
 	for _, tmpl := range w.wfTemplates {
 		_, _ = fmt.Println("Submitting workflow from workflow template", tmpl.Name)
+		label(tmpl.Spec.WorkflowMetadata)
 		wf, err := w.client.Create(ctx, common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, false), metav1.CreateOptions{})
 		if err != nil {
 			w.t.Fatal(err)
@@ -72,6 +86,7 @@ func (w *When) SubmitWorkflowsFromClusterWorkflowTemplates() *When {
 	ctx := context.Background()
 	for _, tmpl := range w.cwfTemplates {
 		_, _ = fmt.Println("Submitting workflow from cluster workflow template", tmpl.Name)
+		label(tmpl.Spec.WorkflowMetadata)
 		wf, err := w.client.Create(ctx, common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, true), metav1.CreateOptions{})
 		if err != nil {
 			w.t.Fatal(err)
@@ -86,6 +101,7 @@ func (w *When) SubmitWorkflowsFromCronWorkflows() *When {
 	w.t.Helper()
 	_, _ = fmt.Println("Submitting workflow from cron workflow", w.cronWf.Name)
 	ctx := context.Background()
+	label(w.cronWf)
 	wf, err := w.client.Create(ctx, common.ConvertCronWorkflowToWorkflow(w.cronWf), metav1.CreateOptions{})
 	if err != nil {
 		w.t.Fatal(err)
@@ -102,6 +118,7 @@ func (w *When) CreateWorkflowEventBinding() *When {
 	}
 	_, _ = fmt.Println("Creating workflow event binding")
 	ctx := context.Background()
+	label(w.wfeb)
 	_, err := w.wfebClient.Create(ctx, w.wfeb, metav1.CreateOptions{})
 	if err != nil {
 		w.t.Error(err)
@@ -119,6 +136,7 @@ func (w *When) CreateWorkflowTemplates() *When {
 	ctx := context.Background()
 	for _, wfTmpl := range w.wfTemplates {
 		_, _ = fmt.Println("Creating workflow template", wfTmpl.Name)
+		label(wfTmpl)
 		_, err := w.wfTemplateClient.Create(ctx, wfTmpl, metav1.CreateOptions{})
 		if err != nil {
 			w.t.Fatal(err)
@@ -137,6 +155,7 @@ func (w *When) CreateClusterWorkflowTemplates() *When {
 	ctx := context.Background()
 	for _, cwfTmpl := range w.cwfTemplates {
 		_, _ = fmt.Println("Creating cluster workflow template", cwfTmpl.Name)
+		label(cwfTmpl)
 		_, err := w.cwfTemplateClient.Create(ctx, cwfTmpl, metav1.CreateOptions{})
 		if err != nil {
 			w.t.Fatal(err)
@@ -154,6 +173,7 @@ func (w *When) CreateCronWorkflow() *When {
 	_, _ = fmt.Println("Creating cron workflow", w.cronWf.Name)
 
 	ctx := context.Background()
+	label(w.cronWf)
 	cronWf, err := w.cronClient.Create(ctx, w.cronWf, metav1.CreateOptions{})
 	if err != nil {
 		w.t.Fatal(err)
@@ -290,6 +310,8 @@ func (w *When) hydrateWorkflow(wf *wfv1.Workflow) {
 	}
 }
 
+// Wait creates slow flaky tests
+// DEPRECATED: do not use this
 func (w *When) Wait(timeout time.Duration) *When {
 	w.t.Helper()
 	_, _ = fmt.Println("Waiting for", timeout.String())
@@ -309,6 +331,48 @@ func (w *When) DeleteWorkflow() *When {
 	return w
 }
 
+type PodCondition func(p *corev1.Pod) bool
+
+var (
+	PodCompleted PodCondition = func(p *corev1.Pod) bool {
+		return p.Labels[common.LabelKeyCompleted] == "true"
+	}
+	PodDeleted PodCondition = func(p *corev1.Pod) bool {
+		return !p.DeletionTimestamp.IsZero()
+	}
+)
+
+func (w *When) WaitForPod(condition PodCondition) *When {
+	w.t.Helper()
+	ctx := context.Background()
+	timeout := defaultTimeout
+	watch, err := w.kubeClient.CoreV1().Pods(Namespace).Watch(
+		ctx,
+		metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + w.wf.Name, TimeoutSeconds: pointer.Int64Ptr(int64(timeout.Seconds()))},
+	)
+	if err != nil {
+		w.t.Fatal(err)
+	}
+	defer watch.Stop()
+	for event := range watch.ResultChan() {
+		p := event.Object.(*corev1.Pod)
+		state := p.Status.Phase
+		if p.Labels[common.LabelKeyCompleted] == "true" {
+			state = "Complete"
+		}
+		if !p.DeletionTimestamp.IsZero() {
+			state = "Deleted"
+		}
+		_, _ = fmt.Printf("pod %s: %s\n", p.Name, state)
+		if condition(p) {
+			_, _ = fmt.Printf("Pod condition met\n")
+			return w
+		}
+	}
+	w.t.Fatal(fmt.Errorf("timeout after %v waiting for pod", timeout))
+	return w
+}
+
 func (w *When) And(block func()) *When {
 	w.t.Helper()
 	block()
@@ -324,6 +388,9 @@ func (w *When) Exec(name string, args []string, block func(t *testing.T, output 
 
 func (w *When) RunCli(args []string, block func(t *testing.T, output string, err error)) *When {
 	w.t.Helper()
+	if !strings.HasPrefix(w.t.Name(), "TestCLISuite/") {
+		w.t.Fatal("You cannot use RunCli for tests that are not in TestCLISuite")
+	}
 	return w.Exec("../../dist/argo", append([]string{"-n", Namespace}, args...), block)
 }
 
@@ -358,6 +425,7 @@ func (w *When) UpdateConfigMap(name string, data map[string]string) *When {
 func (w *When) DeleteConfigMap(name string) *When {
 	w.t.Helper()
 	ctx := context.Background()
+	fmt.Printf("deleting configmap %s\n", name)
 	err := w.kubeClient.CoreV1().ConfigMaps(Namespace).Delete(ctx, name, metav1.DeleteOptions{})
 	if err != nil {
 		w.t.Fatal(err)
@@ -419,6 +487,45 @@ func (w *When) deleteResourceQuota(name string) *When {
 	w.t.Helper()
 	ctx := context.Background()
 	err := w.kubeClient.CoreV1().ResourceQuotas(Namespace).Delete(ctx, name, metav1.DeleteOptions{})
+	if err != nil {
+		w.t.Fatal(err)
+	}
+	return w
+}
+
+func (w *When) ResumeCronWorkflow(string) *When {
+	w.t.Helper()
+	return w.setCronWorkflowSuspend(false)
+}
+
+func (w *When) SuspendCronWorkflow() *When {
+	w.t.Helper()
+	return w.setCronWorkflowSuspend(true)
+}
+
+func (w *When) setCronWorkflowSuspend(suspend bool) *When {
+	ctx := context.Background()
+	w.t.Helper()
+	spec := map[string]interface{}{"suspend": suspend}
+	data, err := json.Marshal(map[string]interface{}{"spec": spec})
+	if err != nil {
+		w.t.Fatal(err)
+	}
+	_, err = w.cronClient.Patch(ctx, w.cronWf.Name, types.MergePatchType, data, metav1.PatchOptions{})
+	if err != nil {
+		w.t.Fatal(err)
+	}
+	return w
+}
+
+func (w *When) ShutdownWorkflow(strategy wfv1.ShutdownStrategy) *When {
+	w.t.Helper()
+	ctx := context.Background()
+	data, err := json.Marshal(map[string]interface{}{"spec": map[string]interface{}{"shutdown": strategy}})
+	if err != nil {
+		w.t.Fatal(err)
+	}
+	_, err = w.client.Patch(ctx, w.wf.Name, types.MergePatchType, data, metav1.PatchOptions{})
 	if err != nil {
 		w.t.Fatal(err)
 	}

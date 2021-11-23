@@ -70,7 +70,7 @@ type wfOperationCtx struct {
 	// updated indicates whether or not the workflow object itself was updated
 	// and needs to be persisted back to kubernetes
 	updated bool
-	// log is an logrus logging context to corralate logs with a workflow
+	// log is an logrus logging context to correlate logs with a workflow
 	log *log.Entry
 	// controller reference to workflow controller
 	controller *WorkflowController
@@ -85,7 +85,7 @@ type wfOperationCtx struct {
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
 	artifactRepository *wfv1.ArtifactRepository
 	// map of completed pods with their corresponding phases
-	completedPods map[string]apiv1.PodPhase
+	completedPods map[string]*apiv1.Pod
 	// deadline is the dealine time in which this operation should relinquish
 	// its hold on the workflow so that an operation does not run for too long
 	// and starve other workqueue items. It also enables workflow progress to
@@ -143,6 +143,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 	// You can use DeepCopy() to make a deep copy of original object and modify this copy
 	// Or create a copy manually for better performance
 	wfCopy := wf.DeepCopyObject().(*wfv1.Workflow)
+
 	woc := wfOperationCtx{
 		wf:      wfCopy,
 		orig:    wf,
@@ -155,7 +156,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		controller:             wfc,
 		globalParams:           make(map[string]string),
 		volumes:                wf.Spec.DeepCopy().Volumes,
-		completedPods:          make(map[string]apiv1.PodPhase),
+		completedPods:          make(map[string]*apiv1.Pod),
 		deadline:               time.Now().UTC().Add(maxOperationTime),
 		eventRecorder:          wfc.eventRecorderManager.Get(wf.Namespace),
 		preExecutionNodePhases: make(map[string]wfv1.NodePhase),
@@ -266,6 +267,8 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
 		woc.markWorkflowRunning(ctx)
+		setWfPodNamesAnnotation(woc.wf)
+
 		err := woc.createPDBResource(ctx)
 		if err != nil {
 			msg := fmt.Sprintf("Unable to create PDB resource for workflow, %s error: %s", woc.wf.Name, err)
@@ -355,18 +358,8 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		return
 	}
 
-	err = woc.taskSetReconciliation(ctx)
-	if err != nil {
-		woc.log.WithError(err).Error("error in workflowtaskset reconciliation")
-		return
-	}
-
-	err = woc.reconcileAgentPod(ctx)
-	if err != nil {
-		woc.log.WithError(err).Error("error in agent pod reconciliation")
-		woc.markWorkflowError(ctx, err)
-		return
-	}
+	// Reconcile TaskSet and Agent for HTTP templates
+	woc.httpReconciliation(ctx)
 
 	if node == nil || !node.Fulfilled() {
 		// node can be nil if a workflow created immediately in a parallelism == 0 state
@@ -426,6 +419,12 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			}
 			return
 		}
+
+		// If the onExit node (or any child of the onExit node) requires HTTP reconciliation, do it here
+		if onExitNode != nil && woc.nodeRequiresHttpReconciliation(onExitNode.Name) {
+			woc.httpReconciliation(ctx)
+		}
+
 		if onExitNode == nil || !onExitNode.Fulfilled() {
 			return
 		}
@@ -645,28 +644,8 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
 	// Failing to do so means we can have inconsistent state.
-	// TODO: The completedPods will be labeled multiple times. I think it would be improved in the future.
-	// Send succeeded pods or completed pods to gcPods channel to delete it later depend on the PodGCStrategy.
-	// Notice we do not need to label the pod if we will delete it later for GC. Otherwise, that may even result in
-	// errors if we label a pod that was deleted already.
-	for podName, podPhase := range woc.completedPods {
-		if woc.execWf.Spec.PodGC != nil {
-			switch woc.execWf.Spec.PodGC.Strategy {
-			case wfv1.PodGCOnPodSuccess:
-				if podPhase == apiv1.PodSucceeded {
-					delay := woc.controller.Config.GetPodGCDeleteDelayDuration()
-					woc.controller.queuePodForCleanupAfter(woc.wf.Namespace, podName, deletePod, delay)
-				}
-			case wfv1.PodGCOnPodCompletion:
-				delay := woc.controller.Config.GetPodGCDeleteDelayDuration()
-				woc.controller.queuePodForCleanupAfter(woc.wf.Namespace, podName, deletePod, delay)
-			}
-		} else {
-			// label pods which will not be deleted
-			woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, labelPodCompleted)
-		}
-	}
-
+	// Pods may be be labeled multiple times.
+	woc.queuePodsForCleanup()
 }
 
 func (woc *wfOperationCtx) writeBackToInformer() error {
@@ -806,7 +785,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		}
 
 		if !shouldContinue {
-			return woc.markNodePhase(node.Name, lastChildNode.Phase, "retryStrategy.when evaluated to false"), true, nil
+			return woc.markNodePhase(node.Name, lastChildNode.Phase, "retryStrategy.expression evaluated to false"), true, nil
 		}
 	}
 
@@ -985,35 +964,28 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 				woc.updated = true
 			}
 			node := woc.wf.Status.Nodes[nodeID]
-			match := true
-			if woc.execWf.Spec.PodGC.GetLabelSelector() != nil {
-				var podLabels labels.Set = pod.GetLabels()
-				match, err = woc.execWf.Spec.PodGC.Matches(podLabels)
-				if err != nil {
-					woc.markWorkflowFailed(ctx, fmt.Sprintf("failed to parse label selector %s for pod GC: %v", woc.execWf.Spec.PodGC.LabelSelector, err))
-					return
-				}
-			}
 			if node.Type == wfv1.NodeTypePod {
 				if node.HostNodeName != pod.Spec.NodeName {
 					node.HostNodeName = pod.Spec.NodeName
 					woc.wf.Status.Nodes[nodeID] = node
 					woc.updated = true
 				}
+				podProgress := progress.PodProgress(pod, &node)
+				if podProgress.IsValid() && node.Progress != podProgress {
+					woc.log.WithField("progress", podProgress).Info("pod progress")
+					node.Progress = podProgress
+					woc.wf.Status.Nodes[nodeID] = node
+					woc.updated = true
+				}
 			}
 			if node.Fulfilled() && !node.IsDaemoned() {
-				if pod.GetLabels()[common.LabelKeyCompleted] == "true" {
-					return
-				}
-				if match {
-					woc.completedPods[pod.Name] = pod.Status.Phase
-				}
 				if woc.shouldPrintPodSpec(node) {
 					printPodSpecLog(pod, woc.wf.Name)
 				}
 			}
-			if node.Succeeded() && match {
-				woc.completedPods[pod.Name] = pod.Status.Phase
+			switch pod.Status.Phase {
+			case apiv1.PodSucceeded, apiv1.PodFailed:
+				woc.completedPods[pod.Name] = pod
 			}
 		}
 	}
@@ -2042,6 +2014,21 @@ func (woc *wfOperationCtx) findTemplate(pod *apiv1.Pod) *wfv1.Template {
 	if node == nil {
 		return nil // I don't expect this to happen in production, just in tests
 	}
+	return woc.GetNodeTemplate(node)
+}
+
+func (woc *wfOperationCtx) GetNodeTemplate(node *wfv1.NodeStatus) *wfv1.Template {
+	if node.TemplateRef != nil {
+		tmplCtx, err := woc.createTemplateContext(node.GetTemplateScope())
+		if err != nil {
+			woc.markNodeError(node.Name, err)
+		}
+		tmpl, err := tmplCtx.GetTemplateFromRef(node.TemplateRef)
+		if err != nil {
+			woc.markNodeError(node.Name, err)
+		}
+		return tmpl
+	}
 	return woc.wf.GetTemplateByName(node.TemplateName)
 }
 
@@ -2394,7 +2381,7 @@ func (woc *wfOperationCtx) executeContainer(ctx context.Context, nodeName string
 func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
 	node := woc.wf.Status.Nodes[nodeID]
 	switch node.Type {
-	case wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend:
+	case wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend, wfv1.NodeTypeHTTP:
 		return []string{node.ID}
 	case wfv1.NodeTypePod:
 
@@ -3523,4 +3510,16 @@ func (woc *wfOperationCtx) substituteGlobalVariables() error {
 		return err
 	}
 	return nil
+}
+
+// setWfPodNamesAnnotation sets an annotation on a workflow with the pod naming
+// convention version
+func setWfPodNamesAnnotation(wf *wfv1.Workflow) {
+	podNameVersion := wfutil.GetPodNameVersion()
+
+	if wf.Annotations == nil {
+		wf.Annotations = map[string]string{}
+	}
+
+	wf.Annotations[common.AnnotationKeyPodNameVersion] = podNameVersion.String()
 }

@@ -4,6 +4,7 @@ import * as React from 'react';
 
 import * as models from '../../../../models';
 import {Artifact, NodeStatus, Workflow} from '../../../../models';
+import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
 import {Button} from '../../../shared/components/button';
 import {ClipboardText} from '../../../shared/components/clipboard-text';
 import {DropDownButton} from '../../../shared/components/drop-down-button';
@@ -12,7 +13,7 @@ import {InlineTable} from '../../../shared/components/inline-table/inline-table'
 import {Links} from '../../../shared/components/links';
 import {Phase} from '../../../shared/components/phase';
 import {Timestamp} from '../../../shared/components/timestamp';
-import {getPodName} from '../../../shared/pod-name';
+import {getPodName, getTemplateNameFromNode} from '../../../shared/pod-name';
 import {ResourcesDuration} from '../../../shared/resources-duration';
 import {services} from '../../../shared/services';
 import {getResolvedTemplates} from '../../../shared/template-resolution';
@@ -82,7 +83,14 @@ const AttributeRows = (props: {attributes: {title: string; value: any}[]}) => (
 const WorkflowNodeSummary = (props: Props) => {
     const {workflow, node} = props;
 
-    const podName = getPodName(workflow.metadata.name, node.name, node.templateName, node.id);
+    let annotations: {[name: string]: string} = {};
+    if (typeof workflow.metadata.annotations !== 'undefined') {
+        annotations = workflow.metadata.annotations;
+    }
+    const version = annotations[ANNOTATION_KEY_POD_NAME_VERSION];
+    const templateName = getTemplateNameFromNode(node);
+
+    const podName = getPodName(workflow.metadata.name, node.name, templateName, node.id, version);
 
     const attributes = [
         {title: 'NAME', value: <ClipboardText text={props.node.name} />},
@@ -273,8 +281,8 @@ const WorkflowNodeExitCode = ({exitCode}: {exitCode: number}) =>
         <div className='columns 6 text-center'>No exit code</div>
     );
 
-function hasEnv(container: models.kubernetes.Container | models.Sidecar | models.Script): container is models.kubernetes.Container | models.Sidecar {
-    return (container as models.kubernetes.Container | models.Sidecar).env !== undefined;
+function hasEnv(container: models.kubernetes.Container | models.UserContainer | models.Script): container is models.kubernetes.Container | models.UserContainer {
+    return (container as models.kubernetes.Container | models.UserContainer).env !== undefined;
 }
 
 const EnvVar = (props: {env: models.kubernetes.EnvVar}) => {
@@ -300,7 +308,7 @@ const EnvVar = (props: {env: models.kubernetes.EnvVar}) => {
 
 const WorkflowNodeContainer = (props: {
     nodeId: string;
-    container: models.kubernetes.Container | models.Sidecar | models.Script;
+    container: models.kubernetes.Container | models.UserContainer | models.Script;
     onShowContainerLogs: (nodeId: string, container: string) => any;
     onShowEvents: () => void;
 }) => {

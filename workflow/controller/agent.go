@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"os"
 
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
@@ -14,6 +15,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/executor"
 )
 
 func (woc *wfOperationCtx) getAgentPodName() string {
@@ -69,17 +71,27 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	podName := woc.getAgentPodName()
 
 	obj, exists, err := woc.controller.podInformer.GetStore().Get(cache.ExplicitKey(woc.wf.Namespace + "/" + podName))
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pod from informer store: %w", err)
 	}
-
 	if exists {
 		existing, ok := obj.(*apiv1.Pod)
 		if ok {
 			woc.log.WithField("podPhase", existing.Status.Phase).Debugf("Skipped pod %s  creation: already exists", podName)
 			return existing, nil
 		}
+	}
+
+	envVars := []apiv1.EnvVar{
+		{Name: common.EnvVarWorkflowName, Value: woc.wf.Name},
+	}
+
+	// If the default number of task workers is overridden, then pass it to the agent pod.
+	if taskWorkers, exists := os.LookupEnv(executor.EnvAgentTaskWorkers); exists {
+		envVars = append(envVars, apiv1.EnvVar{
+			Name:  executor.EnvAgentTaskWorkers,
+			Value: taskWorkers,
+		})
 	}
 
 	pod := &apiv1.Pod{
@@ -103,9 +115,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 					Command: []string{"argoexec"},
 					Args:    []string{"agent"},
 					Image:   woc.controller.executorImage(),
-					Env: []apiv1.EnvVar{
-						{Name: common.EnvVarWorkflowName, Value: woc.wf.Name},
-					},
+					Env:     envVars,
 				},
 			},
 		},

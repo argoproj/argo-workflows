@@ -2,7 +2,7 @@ apiVersion: v1
 data:
   sso: |
     issuer: http://dex:5556/dex
-    issuerAlias: http://mydex:5556/dex
+    issuerAlias: http://dex:5556/dex
     clientId:
       name: argo-server-sso
       key: clientID
@@ -13,6 +13,7 @@ data:
     scopes:
     - groups
     - email
+    - profile
     rbac:
       enabled: true
 kind: ConfigMap

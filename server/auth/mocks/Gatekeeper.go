@@ -38,6 +38,29 @@ func (_m *Gatekeeper) Context(ctx context.Context) (context.Context, error) {
 	return r0, r1
 }
 
+// ContextWithRequest provides a mock function with given fields: ctx, req
+func (_m *Gatekeeper) ContextWithRequest(ctx context.Context, req interface{}) (context.Context, error) {
+	ret := _m.Called(ctx, req)
+
+	var r0 context.Context
+	if rf, ok := ret.Get(0).(func(context.Context, interface{}) context.Context); ok {
+		r0 = rf(ctx, req)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(context.Context)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, interface{}) error); ok {
+		r1 = rf(ctx, req)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // StreamServerInterceptor provides a mock function with given fields:
 func (_m *Gatekeeper) StreamServerInterceptor() grpc.StreamServerInterceptor {
 	ret := _m.Called()

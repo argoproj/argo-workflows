@@ -180,6 +180,8 @@ Workflow is the definition of a workflow resource
 
 - [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-jobs.yaml)
 
+- [`k8s-kubeflow-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-kubeflow-jobs.yaml)
+
 - [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
@@ -594,6 +596,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
 
 - [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-jobs.yaml)
+
+- [`k8s-kubeflow-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-kubeflow-jobs.yaml)
 
 - [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
 
@@ -1028,6 +1032,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-jobs.yaml)
 
+- [`k8s-kubeflow-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-kubeflow-jobs.yaml)
+
 - [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
@@ -1416,6 +1422,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
 
 - [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-jobs.yaml)
+
+- [`k8s-kubeflow-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-kubeflow-jobs.yaml)
 
 - [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
 
@@ -2036,7 +2044,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`steps`|`Array<Array<`[`WorkflowStep`](#workflowstep)`>>`|Steps define a series of sequential/parallel workflow steps|
 |`suspend`|[`SuspendTemplate`](#suspendtemplate)|Suspend template subtype which can suspend a workflow when reaching the step|
 |`synchronization`|[`Synchronization`](#synchronization)|Synchronization holds synchronization lock configuration for this template|
-|`timeout`|`string`|Timout allows to set the total node execution timeout duration counting from the node's start time. This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.|
+|`timeout`|`string`|Timeout allows to set the total node execution timeout duration counting from the node's start time. This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.|
 |`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
 |`volumes`|`Array<`[`Volume`](#volume)`>`|Volumes is a list of volumes that can be mounted by containers in a template.|
 
@@ -2216,6 +2224,8 @@ Outputs hold parameters, artifacts, and results from a step
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
 
 - [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-jobs.yaml)
+
+- [`k8s-kubeflow-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-kubeflow-jobs.yaml)
 
 - [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
 
@@ -2466,6 +2476,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
 
 - [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-jobs.yaml)
+
+- [`k8s-kubeflow-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-kubeflow-jobs.yaml)
 
 - [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
 
@@ -3109,6 +3121,8 @@ ResourceTemplate is a template subtype to manipulate kubernetes resources
 - [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemoned-stateful-set-with-service.yaml)
 
 - [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-jobs.yaml)
+
+- [`k8s-kubeflow-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-kubeflow-jobs.yaml)
 
 - [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
 
@@ -3803,6 +3817,8 @@ ValueFrom describes a location in which to obtain the value to a parameter
 
 - [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-jobs.yaml)
 
+- [`k8s-kubeflow-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-kubeflow-jobs.yaml)
+
 - [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
@@ -3947,6 +3963,8 @@ MetricLabel is a single label for a prometheus metric
 
 - [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
 
+- [`k8s-kubeflow-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-kubeflow-jobs.yaml)
+
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
 
 - [`k8s-patch-basic.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch-basic.yaml)
@@ -3964,8 +3982,6 @@ MetricLabel is a single label for a prometheus metric
 - [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
 
 - [`steps-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps-inline-workflow.yaml)
-
-- [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-defaults.yaml)
 </details>
 
 ### Fields
@@ -3999,6 +4015,8 @@ _No description available_
 - [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemoned-stateful-set-with-service.yaml)
 
 - [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-jobs.yaml)
+
+- [`k8s-kubeflow-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-kubeflow-jobs.yaml)
 
 - [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
 
@@ -4644,6 +4662,8 @@ _No description available_
 
 - [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-jobs.yaml)
 
+- [`k8s-kubeflow-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-kubeflow-jobs.yaml)
+
 - [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
@@ -4868,6 +4888,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
 
 - [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-jobs.yaml)
+
+- [`k8s-kubeflow-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-kubeflow-jobs.yaml)
 
 - [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
 
@@ -6180,6 +6202,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-jobs.yaml)
 
+- [`k8s-kubeflow-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-kubeflow-jobs.yaml)
+
 - [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
@@ -6802,6 +6826,8 @@ EnvVarSource represents a source for the value of an EnvVar.
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/handle-large-output-results.yaml)
 
 - [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-jobs.yaml)
+
+- [`k8s-kubeflow-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-kubeflow-jobs.yaml)
 
 - [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
 
