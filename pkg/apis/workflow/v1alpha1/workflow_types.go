@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"hash/fnv"
 	"net/url"
+	"os"
 	"path"
+	"path/filepath"
 	"reflect"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -854,14 +857,34 @@ type Artifact struct {
 	FromExpression string `json:"fromExpression,omitempty" protobuf:"bytes,11,opt,name=fromExpression"`
 }
 
-// ValidatePath verifies that the artifact path is valid.
-func (art Artifact) ValidatePath() error {
-	if art.Path == "" {
-		return argoerrs.InternalErrorf("Artifact %s did not specify a path", art.Name)
+// CleanPath validates and cleans the artifact path.
+func (a *Artifact) CleanPath() error {
+	if a.Path == "" {
+		return argoerrs.InternalErrorf("Artifact '%s' did not specify a path", a.Name)
 	}
-	if strings.Contains(art.Path, "..") {
-		return argoerrs.InternalErrorf("Artifact %s attempted to use a path containing '..'. Directory traversal is not permitted", art.Name)
+
+	// Ensure that the artifact path does not use directory traversal to escape a
+	// "safe" sub-directory, assuming malicious user input is present. For example:
+	// inputs:
+	//    artifacts:
+	//      - name: a1
+	//        path: /tmp/safe/{{ inputs.parameters.user-input }}
+	//
+	// Any resolved path should always be within the /tmp/safe/ directory.
+	safeDir := ""
+	slashDotDotRe := regexp.MustCompile(fmt.Sprintf(`%c..$`, os.PathSeparator))
+	slashDotDotSlash := fmt.Sprintf(`%c..%c`, os.PathSeparator, os.PathSeparator)
+	if strings.Contains(a.Path, slashDotDotSlash) {
+		safeDir = a.Path[:strings.Index(a.Path, slashDotDotSlash)]
+	} else if slashDotDotRe.FindStringIndex(a.Path) != nil {
+		safeDir = a.Path[:len(a.Path)-3]
 	}
+	cleaned := filepath.Clean(a.Path)
+	safeDirWithSlash := fmt.Sprintf(`%s%c`, safeDir, os.PathSeparator)
+	if len(safeDir) > 0 && (!strings.HasPrefix(cleaned, safeDirWithSlash) || len(cleaned) <= len(safeDirWithSlash)) {
+		return argoerrs.InternalErrorf("Artifact '%s' attempted to use a path containing '..'. Directory traversal is not permitted", a.Name)
+	}
+	a.Path = cleaned
 	return nil
 }
 

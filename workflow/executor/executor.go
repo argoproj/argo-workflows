@@ -169,6 +169,10 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 				return argoerrs.Errorf(argoerrs.CodeNotFound, "required artifact '%s' not supplied", art.Name)
 			}
 		}
+		err := art.CleanPath()
+		if err != nil {
+			return err
+		}
 		driverArt, err := we.newDriverArt(&art)
 		if err != nil {
 			return fmt.Errorf("failed to load artifact '%s': %w", art.Name, err)
@@ -178,10 +182,6 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 			return err
 		}
 		// Determine the file path of where to load the artifact
-		err = art.ValidatePath()
-		if err != nil {
-			return err
-		}
 		var artPath string
 		mnt := common.FindOverlappingVolume(&we.Template, art.Path)
 		if mnt == nil {
@@ -301,7 +301,7 @@ func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) error {
 
 func (we *WorkflowExecutor) saveArtifact(ctx context.Context, containerName string, art *wfv1.Artifact) error {
 	// Determine the file path of where to find the artifact
-	err := art.ValidatePath()
+	err := art.CleanPath()
 	if err != nil {
 		return err
 	}

@@ -968,7 +968,7 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 			continue
 		}
 		for _, art := range tmpl.Inputs.Artifacts {
-			err := art.ValidatePath()
+			err := art.CleanPath()
 			if err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "error in inputs.artifacts.%s: %s", art.Name, err.Error())
 			}

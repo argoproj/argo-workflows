@@ -507,7 +507,7 @@ func validateInputs(tmpl *wfv1.Template) (map[string]interface{}, error) {
 		artRef := fmt.Sprintf("inputs.artifacts.%s", art.Name)
 		scope[artRef] = true
 		if tmpl.IsLeaf() {
-			err = art.ValidatePath()
+			err = art.CleanPath()
 			if err != nil {
 				return nil, errors.Errorf(errors.CodeBadRequest, "error in templates.%s.%s: %s", tmpl.Name, artRef, err.Error())
 			}
@@ -935,7 +935,7 @@ func validateOutputs(scope map[string]interface{}, globalParams map[string]strin
 	for _, art := range tmpl.Outputs.Artifacts {
 		artRef := fmt.Sprintf("outputs.artifacts.%s", art.Name)
 		if tmpl.IsLeaf() {
-			err = art.ValidatePath()
+			err = art.CleanPath()
 			if err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "error in templates.%s.%s: %s", tmpl.Name, artRef, err.Error())
 			}
