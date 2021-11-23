@@ -2289,9 +2289,9 @@
                 
                 
                 <h1 id="environment-variables">Environment Variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h1>
-<p>This document outlines the set of environment variables that can be used to customize the behaviours at different levels.
-These environment variables are typically added to test out experimental features and should not be needed by most users.
-Note that these environment variables may be removed at any time.</p>
+<p>This document outlines the set of environment variables that can be used to customize the behaviours at different
+levels. These environment variables are typically added to test out experimental features and should not be needed by
+most users. Note that these environment variables may be removed at any time.</p>
 <h2 id="controller">Controller<a class="headerlink" href="#controller" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -2334,10 +2334,34 @@ Note that these environment variables may be removed at any time.</p>
 <td>Enable pprof endpoints</td>
 </tr>
 <tr>
+<td><code>ARGO_PROGRESS_PATCH_TICK_DURATION</code></td>
+<td><code>time.Duration</code></td>
+<td><code>1m</code></td>
+<td>How often self reported progress is patched into the pod annotations which means how long it takes until the controller picks up the progress change. Set to 0 to disable self reporting progress.</td>
+</tr>
+<tr>
+<td><code>ARGO_PROGRESS_FILE_TICK_DURATION</code></td>
+<td><code>time.Duration</code></td>
+<td><code>3s</code></td>
+<td>How often the progress file is read by the executor. Set to 0 to disable self reporting progress.</td>
+</tr>
+<tr>
+<td><code>ARGO_REMOVE_PVC_PROTECTION_FINALIZER</code></td>
+<td><code>bool</code></td>
+<td><code>false</code></td>
+<td>Remove the <code>kubernetes.io/pvc-protection</code> finalizer from persistent volume claims (PVC) after marking PVCs created for the workflow for deletion, so deleted is not blocked until the pods are deleted.  <a href="https://github.com/argoproj/argo-workflows/issues/6629">#6629</a></td>
+</tr>
+<tr>
 <td><code>ARGO_TRACE</code></td>
 <td><code>string</code></td>
 <td><code>"1"</code></td>
 <td>Whether to enable tracing statements in Argo components.</td>
+</tr>
+<tr>
+<td><code>BUBBLE_ENTRY_TEMPLATE_ERR</code></td>
+<td><code>bool</code></td>
+<td><code>true</code></td>
+<td>Whether to bubble up template errors to workflow.</td>
 </tr>
 <tr>
 <td><code>CRON_SYNC_PERIOD</code></td>
@@ -2358,10 +2382,22 @@ Note that these environment variables may be removed at any time.</p>
 <td>Escape hatch to disable expression templates.</td>
 </tr>
 <tr>
+<td><code>GRPC_MESSAGE_SIZE</code></td>
+<td><code>string</code></td>
+<td>Use different GRPC Max message size for Argo server deployment (supporting huge workflows).</td>
+<td></td>
+</tr>
+<tr>
 <td><code>GZIP_IMPLEMENTATION</code></td>
 <td><code>string</code></td>
 <td><code>"PGZip"</code></td>
 <td>The implementation of compression/decompression. Currently only "PGZip" and "GZip" are supported.</td>
+</tr>
+<tr>
+<td><code>INFORMER_WRITE_BACK</code></td>
+<td><code>bool</code></td>
+<td><code>true</code></td>
+<td>Whether to write back to informer instead of catching up.</td>
 </tr>
 <tr>
 <td><code>HEALTHZ_AGE</code></td>
@@ -2471,39 +2507,10 @@ Note that these environment variables may be removed at any time.</p>
 <td><code>5m</code></td>
 <td>The periodicity for GC of workflows.</td>
 </tr>
-<tr>
-<td><code>BUBBLE_ENTRY_TEMPLATE_ERR</code></td>
-<td><code>bool</code></td>
-<td><code>true</code></td>
-<td>Whether to bubble up template errors to workflow.</td>
-</tr>
-<tr>
-<td><code>INFORMER_WRITE_BACK</code></td>
-<td><code>bool</code></td>
-<td><code>true</code></td>
-<td>Whether to write back to informer instead of catching up.</td>
-</tr>
-<tr>
-<td><code>GRPC_MESSAGE_SIZE</code></td>
-<td><code>string</code></td>
-<td>Use different GRPC Max message size for Argo server deployment (supporting huge workflows).</td>
-<td></td>
-</tr>
-<tr>
-<td><code>ARGO_PROGRESS_PATCH_TICK_DURATION</code></td>
-<td><code>time.Duration</code></td>
-<td><code>1m</code></td>
-<td>How often self reported progress is patched into the pod annotations which means how long it takes until the controller picks up the progress change. Set to 0 to disable self reporting progress.</td>
-</tr>
-<tr>
-<td><code>ARGO_PROGRESS_FILE_TICK_DURATION</code></td>
-<td><code>time.Duration</code></td>
-<td><code>3s</code></td>
-<td>How often the progress file is read by the executor. Set to 0 to disable self reporting progress.</td>
-</tr>
 </tbody>
 </table>
-<p>CLI parameters of the <code>argo-server</code> and <code>workflow-controller</code> can be specified as environment variables with the <code>ARGO_</code> prefix. For example:</p>
+<p>CLI parameters of the <code>argo-server</code> and <code>workflow-controller</code> can be specified as environment variables with the <code>ARGO_</code>
+prefix. For example:</p>
 <div class="highlight"><pre><span></span><code>workflow-controller --managed-namespace=argo
 </code></pre></div>
 <p>Can be expressed as:</p>
@@ -2524,17 +2531,17 @@ Note that these environment variables may be removed at any time.</p>
         <span class="nt">app</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argo-server</span>
     <span class="nt">spec</span><span class="p">:</span>
       <span class="nt">containers</span><span class="p">:</span>
-      <span class="p p-Indicator">-</span> <span class="nt">args</span><span class="p">:</span>
-        <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">server</span>
-        <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj/argocli:latest</span>
-        <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argo-server</span>
-        <span class="nt">env</span><span class="p">:</span>
-        <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">GRPC_MESSAGE_SIZE</span>
-          <span class="nt">value</span><span class="p">:</span> <span class="s">&quot;209715200&quot;</span>
-        <span class="nt">ports</span><span class="p">:</span>
-        <span class="l l-Scalar l-Scalar-Plain">..</span>
-        <span class="l l-Scalar l-Scalar-Plain">...</span>
-        <span class="l l-Scalar l-Scalar-Plain">....</span>
+        <span class="p p-Indicator">-</span> <span class="nt">args</span><span class="p">:</span>
+            <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">server</span>
+          <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj/argocli:latest</span>
+          <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argo-server</span>
+          <span class="nt">env</span><span class="p">:</span>
+            <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">GRPC_MESSAGE_SIZE</span>
+              <span class="nt">value</span><span class="p">:</span> <span class="s">&quot;209715200&quot;</span>
+          <span class="nt">ports</span><span class="p">:</span>
+          <span class="l l-Scalar l-Scalar-Plain">..</span>
+          <span class="l l-Scalar l-Scalar-Plain">...</span>
+          <span class="l l-Scalar l-Scalar-Plain">....</span>
 </code></pre></div>
 <p>You can set the environment variables for controller in controller's container spec like the following:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
@@ -2552,8 +2559,8 @@ Note that these environment variables may be removed at any time.</p>
     <span class="nt">spec</span><span class="p">:</span>
       <span class="nt">containers</span><span class="p">:</span>
         <span class="p p-Indicator">-</span> <span class="nt">env</span><span class="p">:</span>
-          <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">WORKFLOW_GC_PERIOD</span>
-            <span class="nt">value</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">30s</span>
+            <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">WORKFLOW_GC_PERIOD</span>
+              <span class="nt">value</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">30s</span>
 </code></pre></div>
 <h2 id="executor">Executor<a class="headerlink" href="#executor" title="Permanent link">&para;</a></h2>
 <table>
