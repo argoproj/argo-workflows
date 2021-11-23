@@ -7646,7 +7646,4 @@ spec:
 	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
 	assert.NotPanics(t, func() { woc.operate(ctx) })
-	woc.wf.Status.Nodes
-	b, _:= json.Marshal(woc.wf)
-	fmt.Println(string(b))
 }
