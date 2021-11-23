@@ -189,6 +189,36 @@ spec:
 		})
 }
 
+func (s *FunctionalSuite) TestVolumeClaimTemplate() {
+	s.Given().
+		Workflow(`@testdata/volume-claim-template-workflow.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		// test that the PVC was deleted (because the `kubernetes.io/pvc-protection` finalizer was deleted)
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			ticker := time.NewTicker(time.Second)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					t.Error("timeout waiting for PVC to be deleted")
+					t.FailNow()
+				case <-ticker.C:
+					list, err := s.KubeClient.CoreV1().PersistentVolumeClaims(fixtures.Namespace).List(context.Background(), metav1.ListOptions{})
+					if assert.NoError(t, err) {
+						if len(list.Items) == 0 {
+							return
+						}
+					}
+				}
+			}
+		})
+}
+
 func (s *FunctionalSuite) TestEventOnNodeFailSentAsPod() {
 	// Test whether an WorkflowFailed event (with appropriate message) is emitted in case of node failure
 	var uid types.UID

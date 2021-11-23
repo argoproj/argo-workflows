@@ -15,6 +15,8 @@ import (
 	"sync"
 	"time"
 
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
 	"github.com/antonmedv/expr"
 	"github.com/argoproj/pkg/humanize"
 	argokubeerr "github.com/argoproj/pkg/kube/errors"
@@ -32,6 +34,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/pointer"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
@@ -1489,6 +1492,21 @@ func (woc *wfOperationCtx) deletePVCs(ctx context.Context) error {
 				if firstErr == nil {
 					firstErr = err
 				}
+			}
+		}
+	}
+	if os.Getenv("ARGO_REMOVE_PVC_PROTECTION_FINALIZER") == "true" {
+		for _, pvc := range woc.wf.Status.PersistentVolumeClaims {
+			woc.log.WithField("claimName", pvc.PersistentVolumeClaim.ClaimName).
+				Info("Removing PVC \"\"kubernetes.io/pvc-protection\" finalizer")
+			x, err := pvcClient.Get(ctx, pvc.PersistentVolumeClaim.ClaimName, metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
+			controllerutil.RemoveFinalizer(x, "kubernetes.io/pvc-protection")
+			_, err = pvcClient.Update(ctx, x, metav1.UpdateOptions{})
+			if err != nil {
+				return err
 			}
 		}
 	}
