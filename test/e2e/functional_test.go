@@ -198,7 +198,7 @@ func (s *FunctionalSuite) TestVolumeClaimTemplate() {
 		Then().
 		// test that the PVC was deleted (because the `kubernetes.io/pvc-protection` finalizer was deleted)
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 			defer cancel()
 			ticker := time.NewTicker(time.Second)
 			defer ticker.Stop()

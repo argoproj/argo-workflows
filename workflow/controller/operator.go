@@ -1501,7 +1501,7 @@ func (woc *wfOperationCtx) deletePVCs(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
-			slice.RemoveString(x.Finalizers, "kubernetes.io/pvc-protection")
+			x.Finalizers = slice.RemoveString(x.Finalizers, "kubernetes.io/pvc-protection")
 			_, err = pvcClient.Update(ctx, x, metav1.UpdateOptions{})
 			if err != nil {
 				return err
