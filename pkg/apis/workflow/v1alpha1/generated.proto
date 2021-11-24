@@ -1046,7 +1046,7 @@ message RetryStrategy {
   optional RetryAffinity affinity = 4;
 
   // Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not
-  // be retried and the retry strategy will be ignored/
+  // be retried and the retry strategy will be ignored
   optional string expression = 5;
 }
 
@@ -1208,6 +1208,9 @@ message SubmitOpts {
 
   // Annotations adds to metadata.labels
   optional string annotations = 12;
+
+  // Set the podPriorityClassName of the workflow
+  optional string podPriorityClassName = 13;
 }
 
 // SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
@@ -1867,3 +1870,4 @@ message WorkflowTemplateSpec {
 // ZipStrategy will unzip zipped input artifacts
 message ZipStrategy {
 }
+
