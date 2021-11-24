@@ -11,7 +11,6 @@ import (
 	restclient "k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo-workflows/v3"
-	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/util/logs"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor"
@@ -49,14 +48,5 @@ func initAgentExecutor() *executor.AgentExecutor {
 	if !ok {
 		log.Fatalf("Unable to determine workflow name from environment variable %s", common.EnvVarWorkflowName)
 	}
-	agentExecutor := executor.AgentExecutor{
-		ClientSet:         clientSet,
-		RESTClient:        restClient,
-		Namespace:         namespace,
-		WorkflowName:      workflowName,
-		WorkflowInterface: workflow.NewForConfigOrDie(config),
-		CompleteTask:      make(map[string]struct{}),
-	}
-	return &agentExecutor
-
+	return executor.NewAgentExecutor(clientSet, restClient, config, namespace, workflowName)
 }

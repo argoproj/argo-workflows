@@ -281,8 +281,8 @@ const WorkflowNodeExitCode = ({exitCode}: {exitCode: number}) =>
         <div className='columns 6 text-center'>No exit code</div>
     );
 
-function hasEnv(container: models.kubernetes.Container | models.Sidecar | models.Script): container is models.kubernetes.Container | models.Sidecar {
-    return (container as models.kubernetes.Container | models.Sidecar).env !== undefined;
+function hasEnv(container: models.kubernetes.Container | models.UserContainer | models.Script): container is models.kubernetes.Container | models.UserContainer {
+    return (container as models.kubernetes.Container | models.UserContainer).env !== undefined;
 }
 
 const EnvVar = (props: {env: models.kubernetes.EnvVar}) => {
@@ -308,7 +308,7 @@ const EnvVar = (props: {env: models.kubernetes.EnvVar}) => {
 
 const WorkflowNodeContainer = (props: {
     nodeId: string;
-    container: models.kubernetes.Container | models.Sidecar | models.Script;
+    container: models.kubernetes.Container | models.UserContainer | models.Script;
     onShowContainerLogs: (nodeId: string, container: string) => any;
     onShowEvents: () => void;
 }) => {
