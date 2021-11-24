@@ -29,6 +29,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Canva](https://www.canva.com/)
 1. [Capital One](https://www.capitalone.com/tech/)
 1. [CarTrack](https://www.cartrack.com/)
+1. [Casavo](https://casavo.com/)
 1. [CCRi](https://www.ccri.com/)
 1. [CloudSeeds](https://www.cloudseeds.de/)
 1. [Codec](https://www.codec.ai/)
