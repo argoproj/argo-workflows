@@ -151,6 +151,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Workiva](https://www.workiva.com/)
 1. [Voyager](https://investvoyager.com/)
 1. [Zhihu](https://www.zhihu.com/)
+1. [DataRobot](https://www.datarobot.com/)
 
 ### Projects Using Argo
 
