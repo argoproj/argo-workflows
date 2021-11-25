@@ -9,7 +9,7 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
 
 ⚠️Deprecated. 
 
-**default in <= v3.2 **
+**default in <= v3.2**
 
 * Reliability:
     * Most well-tested
@@ -94,7 +94,7 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
 
 > v3.1 and after
 
-**default in >= v3.3 **
+**default in >= v3.3**
 
 This is the most fully featured executor.
 
