@@ -52,6 +52,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Cyrus Biotechnology](https://cyrusbio.com/)
 1. [Data4Risk](https://www.data4risk.com/)
 1. [Datadog](https://www.datadoghq.com/)
+1. [DataRobot](https://www.datarobot.com/)
 1. [DataStax](https://www.datastax.com/)
 1. [DDEV](https://www.ddev.com/)
 1. [Devtron Labs](https://github.com/devtron-labs/devtron)
