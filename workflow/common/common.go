@@ -103,7 +103,7 @@ const (
 
 	// EnvVarPodName contains the name of the pod (currently unused)
 	EnvVarPodName = "ARGO_POD_NAME"
-	// EnvVarWorkflowName
+	// EnvVarWorkflowName is the name of the workflow for which the an agent is responsible for
 	EnvVarWorkflowName = "ARGO_WORKFLOW_NAME"
 	// EnvVarContainerName container the container's name for the current pod
 	EnvVarContainerName = "ARGO_CONTAINER_NAME"
@@ -123,7 +123,6 @@ const (
 	EnvVarKubeletInsecure = "ARGO_KUBELET_INSECURE"
 	// EnvVarArgoTrace is used enable tracing statements in Argo components
 	EnvVarArgoTrace = "ARGO_TRACE"
-
 	// EnvVarProgressPatchTickDuration sets the tick duration for patching pod annotations upon progress changes.
 	// Setting this or EnvVarProgressFileTickDuration to 0 will disable monitoring progress.
 	EnvVarProgressPatchTickDuration = "ARGO_PROGRESS_PATCH_TICK_DURATION"
@@ -132,6 +131,8 @@ const (
 	EnvVarProgressFileTickDuration = "ARGO_PROGRESS_FILE_TICK_DURATION"
 	// EnvVarProgressFile is the file watched for reporting progress
 	EnvVarProgressFile = "ARGO_PROGRESS_FILE"
+	// EnvVarDefaultRequeueTime is the default requeue time for Workflow Informers. For more info, see rate_limiters.go
+	EnvVarDefaultRequeueTime = "DEFAULT_REQUEUE_TIME"
 
 	// ContainerRuntimeExecutorDocker to use docker as container runtime executor
 	ContainerRuntimeExecutorDocker = "docker"

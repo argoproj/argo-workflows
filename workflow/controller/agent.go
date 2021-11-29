@@ -84,6 +84,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 
 	envVars := []apiv1.EnvVar{
 		{Name: common.EnvVarWorkflowName, Value: woc.wf.Name},
+		{Name: common.EnvVarDefaultRequeueTime, Value: GetRequeueTime().String()},
 	}
 
 	// If the default number of task workers is overridden, then pass it to the agent pod.
