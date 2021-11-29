@@ -18,22 +18,27 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 )
 
-// SyncAllCacheForGC syncs all cache for GC
-func (wfc *WorkflowController) SyncAllCacheForGC(ctx context.Context) {
-	gcAfterNotHitDuration := env.LookupEnvDurationOr("CACHE_GC_AFTER_NOT_HIT_DURATION", 30*time.Second)
+var gcAfterNotHitDuration = env.LookupEnvDurationOr("CACHE_GC_AFTER_NOT_HIT_DURATION", 30*time.Second)
+
+func init() {
+	log.Infof("CACHE_GC_AFTER_NOT_HIT_DURATION: %s", gcAfterNotHitDuration)
+}
+
+// syncAllCacheForGC syncs all cache for GC
+func (wfc *WorkflowController) syncAllCacheForGC(ctx context.Context) {
 	configMaps, err := wfc.configMapInformer.GetIndexer().ByIndex(indexes.ConfigMapLabelsIndex, common.LabelValueTypeConfigMapCache)
 	if err != nil {
-		log.WithFields(log.Fields{"error": err}).Errorln("Failed to get configmaps from informer")
+		log.WithError(err).Error("Failed to get configmaps from informer")
 	}
 
 	for _, obj := range configMaps {
 		cm, ok := obj.(*apiv1.ConfigMap)
 		if !ok {
-			log.WithField("configMap", cm.Name).Errorln("Unable to convert object to configmap when syncing ConfigMaps")
+			log.WithField("configMap", cm.Name).Error("Unable to convert object to configmap when syncing ConfigMaps")
 			continue
 		}
 		if err := cleanupUnusedCache(ctx, wfc.kubeclientset, cm, gcAfterNotHitDuration); err != nil {
-			log.WithFields(log.Fields{"configMap": cm.Name, "error": err}).Errorln("Unable to sync ConfigMap")
+			log.WithField("configMap", cm.Name).WithError(err).Error("Unable to sync ConfigMap")
 			continue
 		}
 	}
@@ -47,7 +52,7 @@ func cleanupUnusedCache(ctx context.Context, kubeclientset kubernetes.Interface,
 			return fmt.Errorf("malformed cache entry: could not unmarshal JSON; unable to parse: %w", err)
 		}
 		if time.Since(entry.LastHitTimestamp.Time) > gcAfterNotHitDuration {
-			log.WithFields(log.Fields{"key": key, "configMap": cm.Name, "gcAfterNotHitDuration": gcAfterNotHitDuration}).Infoln("Deleting entry in ConfigMap since it's not been hit")
+			log.WithFields(log.Fields{"key": key, "configMap": cm.Name, "gcAfterNotHitDuration": gcAfterNotHitDuration}).Info("Deleting entry in ConfigMap since it's not been hit")
 			delete(cm.Data, key)
 			modified = true
 		}
