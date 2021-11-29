@@ -1,6 +1,7 @@
 package indexes
 
 import (
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -16,9 +17,9 @@ func TestConfigMapIndexFunc(t *testing.T) {
 	})
 	t.Run("HasLabel", func(t *testing.T) {
 		values, err := ConfigMapIndexFunc(&corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{LabelKeyConfigMapType: LabelValueCacheTypeConfigMap}},
+			ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{common.LabelKeyConfigMapType: common.LabelValueCacheTypeConfigMap}},
 		})
 		assert.NoError(t, err)
-		assert.ElementsMatch(t, values, []string{LabelValueCacheTypeConfigMap})
+		assert.ElementsMatch(t, values, []string{common.LabelValueCacheTypeConfigMap})
 	})
 }

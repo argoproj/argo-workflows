@@ -320,17 +320,11 @@ func (wfc *WorkflowController) startLeading(ctx context.Context, logCtx *log.Ent
 	for i := 0; i < podWorkers; i++ {
 		go wait.Until(wfc.podWorker, time.Second, ctx.Done())
 	}
-	if v, found := os.LookupEnv("CACHE_GC_PERIOD"); found {
-		if v != "false" {
-			cacheGCPeriod, err := time.ParseDuration(v)
-			if err != nil {
-				log.WithField("CACHE_GC_PERIOD", v).WithError(err).Panic("failed to parse")
-				return
-			}
-			go wait.JitterUntilWithContext(ctx, func(ctx context.Context) {
-				SyncAllCacheForGC(ctx, wfc.configMapInformer, wfc.kubeclientset)
-			}, cacheGCPeriod, 0.0, true)
-		}
+	cacheGCPeriod := env.LookupEnvDurationOr("CACHE_GC_PERIOD", 0)
+	if cacheGCPeriod != 0 {
+		go wait.JitterUntilWithContext(ctx, func(ctx context.Context) {
+			wfc.SyncAllCacheForGC(ctx)
+		}, cacheGCPeriod, 0.0, true)
 	}
 }
 
@@ -1063,7 +1057,7 @@ func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer 
 	return v1.NewFilteredConfigMapInformer(wfc.kubeclientset, wfc.GetManagedNamespace(), 20*time.Minute, cache.Indexers{
 		indexes.ConfigMapLabelsIndex: indexes.ConfigMapIndexFunc,
 	}, func(opts *metav1.ListOptions) {
-		opts.LabelSelector = indexes.LabelKeyConfigMapType
+		opts.LabelSelector = common.LabelKeyConfigMapType
 	})
 }
 
