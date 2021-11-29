@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"time"
 
 	"github.com/argoproj/argo-workflows/v3/util/env"
@@ -19,7 +20,7 @@ import (
 // SyncAllCacheForGC syncs all cache for GC
 func (wfc *WorkflowController) SyncAllCacheForGC(ctx context.Context) {
 	gcAfterNotHitDuration := env.LookupEnvDurationOr("CACHE_GC_AFTER_NOT_HIT_DURATION", 30*time.Second)
-	configMaps, err := wfc.configMapInformer.GetIndexer().ByIndex(indexes.ConfigMapLabelsIndex, common.LabelValueCacheTypeConfigMap)
+	configMaps, err := wfc.configMapInformer.GetIndexer().ByIndex(indexes.ConfigMapLabelsIndex, common.LabelValueTypeConfigMapCache)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err}).Errorln("Failed to get configmaps from informer")
 	}
@@ -51,14 +52,15 @@ func cleanupUnusedCache(ctx context.Context, kubeclientset kubernetes.Interface,
 		}
 	}
 	if len(cm.Data) == 0 {
-		log.WithField("configMap", cm.Name).Debugln("Deleting ConfigMap since it doesn't contain any cache entries")
 		err := kubeclientset.CoreV1().ConfigMaps(cm.Namespace).Delete(ctx, cm.Name, metav1.DeleteOptions{})
 		if err != nil {
+			if apierr.IsNotFound(err) {
+				return nil
+			}
 			return fmt.Errorf("failed to delete ConfigMap %s: %w", cm.Name, err)
 		}
 	} else {
 		if modified {
-			log.WithField("configMap", cm.Name).Debugln("Updated ConfigMap")
 			_, err := kubeclientset.CoreV1().ConfigMaps(cm.Namespace).Update(ctx, cm, metav1.UpdateOptions{})
 			if err != nil {
 				return fmt.Errorf("failed to update ConfigMap %s: %w", cm.Name, err)

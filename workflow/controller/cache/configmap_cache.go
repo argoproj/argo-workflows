@@ -118,7 +118,7 @@ func (c *configMapCache) Save(ctx context.Context, key string, nodeId string, va
 	}
 
 	creationTime := time.Now()
-	cache.SetLabels(map[string]string{common.LabelKeyConfigMapType: common.LabelValueCacheTypeConfigMap})
+	cache.SetLabels(map[string]string{common.LabelKeyConfigMapType: common.LabelValueTypeConfigMapCache})
 
 	newEntry := Entry{
 		NodeID:            nodeId,

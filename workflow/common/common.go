@@ -175,10 +175,10 @@ const (
 
 	// LabelKeyConfigMapType is the label key for the type of configmap.
 	LabelKeyConfigMapType = "workflows.argoproj.io/configmap-type"
-	// LabelValueCacheTypeConfigMap is a key for configmaps that are memoization cache.
-	LabelValueCacheTypeConfigMap = "Cache"
-	// LabelValueParameterTypeConfigMap is a key for configmaps that contains parameter values.
-	LabelValueParameterTypeConfigMap = "Parameter"
+	// LabelValueTypeConfigMapCache is a key for configmaps that are memoization cache.
+	LabelValueTypeConfigMapCache = "Cache"
+	// LabelValueTypeConfigMapParameter is a key for configmaps that contains parameter values.
+	LabelValueTypeConfigMapParameter = "Parameter"
 
 	// LocalVarPodName is a step level variable that references the name of the pod
 	LocalVarPodName = "pod.name"
