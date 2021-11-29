@@ -4,7 +4,7 @@
 
 Please report security vulnerabilities by e-mailing:
 
-* [Jesse_Suen@intuit.com](mailto:Jesse_Suen@intuit.com)
+* [jesse@akuity.io](mailto:jesse@akuity.io)
 * [Alex_Collins@intuit.com](mailto:Alex_Collins@intuit.com)
 * [Edward_Lee@intuit.com](mailto:Edward_Lee@intuit.com)
 
