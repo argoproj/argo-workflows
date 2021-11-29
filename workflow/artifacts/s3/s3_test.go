@@ -14,6 +14,8 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
+const transientEnvVarKey = "TRANSIENT_ERROR_PATTERN"
+
 type mockS3Client struct {
 	// files is a map where key is bucket name and value consists of file keys
 	files map[string][]string
@@ -175,6 +177,24 @@ func TestLoadS3Artifact(t *testing.T) {
 			done:      true,
 			errMsg:    "",
 		},
+		"Get File Other Transient Error": {
+			s3client: newMockS3Client(
+				map[string][]string{
+					"my-bucket": []string{
+						"/folder/hello-art-2.tar.gz",
+					},
+				},
+				map[string]error{
+					"GetFile": minio.ErrorResponse{
+						Code: "this error is transient",
+					},
+				}),
+			bucket:    "my-bucket",
+			key:       "/folder/",
+			localPath: "/tmp/folder/",
+			done:      false,
+			errMsg:    "failed to get file: Error response code this error is transient.",
+		},
 		"Test Directory Failed": {
 			s3client: newMockS3Client(
 				map[string][]string{
@@ -219,6 +239,7 @@ func TestLoadS3Artifact(t *testing.T) {
 		},
 	}
 
+	t.Setenv(transientEnvVarKey, "this error is transient")
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			success, err := loadS3Artifact(tc.s3client, &wfv1.Artifact{
@@ -332,9 +353,26 @@ func TestSaveS3Artifact(t *testing.T) {
 			done:      false,
 			errMsg:    "failed to put file: We encountered an internal error, please try again.",
 		},
+		"Save File Other Transient Error": {
+			s3client: newMockS3Client(
+				map[string][]string{
+					"my-bucket": {},
+				},
+				map[string]error{
+					"PutFile": minio.ErrorResponse{
+						Code: "this error is transient",
+					},
+				}),
+			bucket:    "my-bucket",
+			key:       "/folder/hello-art.tar.gz",
+			localPath: tempFile,
+			done:      false,
+			errMsg:    "failed to put file: Error response code this error is transient.",
+		},
 	}
 
 	for name, tc := range tests {
+		t.Setenv(transientEnvVarKey, "this error is transient")
 		t.Run(name, func(t *testing.T) {
 			success, err := saveS3Artifact(
 				tc.s3client,

@@ -3,6 +3,7 @@ package s3
 import (
 	"context"
 	"fmt"
+	envutil "github.com/argoproj/argo-workflows/v3/util/env"
 	"os"
 	"time"
 
@@ -38,7 +39,12 @@ type ArtifactDriver struct {
 
 var (
 	_            artifactscommon.ArtifactDriver = &ArtifactDriver{}
-	defaultRetry                                = wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1}
+	defaultRetry                                = wait.Backoff{
+		Steps:    envutil.LookupEnvIntOr("RETRY_BACKOFF_STEPS", 5),
+		Duration: envutil.LookupEnvDurationOr("RETRY_BACKOFF_DURATION", time.Second*2),
+		Factor:   envutil.LookupEnvFloatOr("RETRY_BACKOFF_FACTOR", 2.0),
+		Jitter:   0.1,
+	}
 )
 
 // newMinioClient instantiates a new minio client object.
@@ -90,7 +96,7 @@ func loadS3Artifact(s3cli argos3.S3Client, inputArtifact *wfv1.Artifact, path st
 		return true, nil
 	}
 	if !argos3.IsS3ErrCode(origErr, "NoSuchKey") {
-		return !errorsutil.IsTransientErr(origErr) || !isTransientS3Err(origErr), fmt.Errorf("failed to get file: %v", origErr)
+		return !(isTransientS3Err(origErr) || errorsutil.IsTransientErr(origErr)), fmt.Errorf("failed to get file: %v", origErr)
 	}
 	// If we get here, the error was a NoSuchKey. The key might be a s3 "directory"
 	isDir, err := s3cli.IsDirectory(inputArtifact.S3.Bucket, inputArtifact.S3.Key)
