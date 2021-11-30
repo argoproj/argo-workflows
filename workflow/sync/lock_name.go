@@ -80,7 +80,7 @@ func StringifySelectors(selectors []v1alpha1.SyncSelector) string {
 	for _, selector := range selectors {
 		// at this point template should be already replaced
 		if selector.Template != "" {
-			//	escape "&,=" chars to decode later
+			// escape "&,=" chars to decode later
 			re := regexp.MustCompile("&|=")
 			escapedSelectorName := re.ReplaceAllString(selector.Name, "-")
 			escapedSelectorValue := re.ReplaceAllString(selector.Template, "-")

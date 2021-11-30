@@ -1087,6 +1087,15 @@ spec:
                     properties:
                       name:
                         type: string
+                      selectors:
+                        items:
+                          properties:
+                            name:
+                              type: string
+                            template:
+                              type: string
+                          type: object
+                        type: array
                     type: object
                   semaphore:
                     properties:
@@ -6858,6 +6867,15 @@ spec:
                         properties:
                           name:
                             type: string
+                          selectors:
+                            items:
+                              properties:
+                                name:
+                                  type: string
+                                template:
+                                  type: string
+                              type: object
+                            type: array
                         type: object
                       semaphore:
                         properties:
@@ -13317,6 +13335,15 @@ spec:
                           properties:
                             name:
                               type: string
+                            selectors:
+                              items:
+                                properties:
+                                  name:
+                                    type: string
+                                  template:
+                                    type: string
+                                type: object
+                              type: array
                           type: object
                         semaphore:
                           properties:
