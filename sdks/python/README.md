@@ -20,6 +20,7 @@ If you want to release a new version of the SDK you have to first create the git
 
 ```shell
 git tag [VERSION]
+git push origin [VERSION]
 ```
 
 As an example, 6.0.0 was tagged using `git tag 6.0.0`.
