@@ -8,6 +8,7 @@
 * [protoc](http://google.github.io/proto-lens/installing-protoc.html) 
 * [`jq`](https://stedolan.github.io/jq/download/)
 * A local Kubernetes cluster
+* Ensure `$(GOPATH)/bin` is available in PATH
 
 Code must be checked out into `$(GOPATH)/src/github.com/argo-workflows`.
 
