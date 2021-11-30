@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -23,8 +24,8 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/util/env"
 	"github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/util/expr/argoexpr"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	argohttp "github.com/argoproj/argo-workflows/v3/workflow/executor/http"
 )
 
 type AgentExecutor struct {
@@ -181,25 +182,59 @@ func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alp
 func (ae *AgentExecutor) processTask(ctx context.Context, tmpl wfv1.Template) (*wfv1.NodeResult, error) {
 	switch {
 	case tmpl.HTTP != nil:
-		var result wfv1.NodeResult
-		if outputs, err := ae.executeHTTPTemplate(ctx, tmpl); err != nil {
-			result.Phase = wfv1.NodeFailed
-			result.Message = err.Error()
-		} else {
-			result.Phase = wfv1.NodeSucceeded
-			result.Outputs = outputs
-		}
-		return &result, nil
+		return ae.executeHTTPTemplate(ctx, tmpl), nil
 	default:
 		return nil, fmt.Errorf("agent cannot execute: unknown task type")
 	}
 }
 
-func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Template) (*wfv1.Outputs, error) {
+func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Template) *wfv1.NodeResult {
 	if tmpl.HTTP == nil {
-		return nil, fmt.Errorf("attempting to execute template that is not of type HTTP")
+		return nil
 	}
-	httpTemplate := tmpl.HTTP
+
+	var result wfv1.NodeResult
+	response, err := ae.executeHTTPTemplateRequest(ctx, tmpl.HTTP)
+	if err != nil {
+		result.Phase = wfv1.NodeError
+		result.Message = err.Error()
+		return &result
+	}
+
+	bodyBytes, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		result.Phase = wfv1.NodeError
+		result.Message = err.Error()
+		return &result
+	}
+
+	outputs := wfv1.Outputs{Parameters: []wfv1.Parameter{{Name: "result", Value: wfv1.AnyStringPtr(string(bodyBytes))}}}
+	success := false
+	if tmpl.HTTP.SuccessCondition == "" {
+		// Default success condition: StatusCode == 2XX
+		success = response.StatusCode >= 200 && response.StatusCode < 300
+	} else {
+		evalScope := map[string]interface{}{
+			"status": response.StatusCode,
+			"body": string(bodyBytes),
+		}
+		success, err = argoexpr.EvalBool(tmpl.HTTP.SuccessCondition, evalScope)
+		if err != nil {
+			result.Phase = wfv1.NodeError
+			result.Message = err.Error()
+			return &result
+		}
+	}
+
+	result.Phase = map[bool]wfv1.NodePhase{
+		true: wfv1.NodeSucceeded,
+		false: wfv1.NodeFailed,
+	}[success]
+	result.Outputs = &outputs
+	return &result
+}
+
+func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTemplate *wfv1.HTTP) (*http.Response, error) {
 	request, err := http.NewRequest(httpTemplate.Method, httpTemplate.URL, bytes.NewBufferString(httpTemplate.Body))
 	if err != nil {
 		return nil, err
@@ -217,14 +252,15 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Temp
 		}
 		request.Header.Add(header.Name, value)
 	}
-	response, err := argohttp.SendHttpRequest(request, httpTemplate.TimeoutSeconds)
+	httpClient := http.DefaultClient
+	if httpTemplate.TimeoutSeconds != nil {
+		httpClient.Timeout = time.Duration(*httpTemplate.TimeoutSeconds) * time.Second
+	}
+	response, err := httpClient.Do(request)
 	if err != nil {
 		return nil, err
 	}
-	outputs := &wfv1.Outputs{}
-	outputs.Parameters = append(outputs.Parameters, wfv1.Parameter{Name: "result", Value: wfv1.AnyStringPtr(response)})
-
-	return outputs, nil
+	return response, nil
 }
 
 func IsWorkflowCompleted(wts *wfv1.WorkflowTaskSet) bool {
