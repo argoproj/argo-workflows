@@ -63,4 +63,6 @@ type SubmitOpts struct {
 	OwnerReference *metav1.OwnerReference `json:"ownerReference,omitempty" protobuf:"bytes,11,opt,name=ownerReference"`
 	// Annotations adds to metadata.labels
 	Annotations string `json:"annotations,omitempty" protobuf:"bytes,12,opt,name=annotations"`
+	// Set the podPriorityClassName of the workflow
+	PodPriorityClassName string `json:"podPriorityClassName,omitempty" protobuf:"bytes,13,opt,name=podPriorityClassName"`
 }
