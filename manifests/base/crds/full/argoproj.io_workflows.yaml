@@ -4162,6 +4162,8 @@ spec:
                         type: array
                       method:
                         type: string
+                      successCondition:
+                        type: string
                       timeoutSeconds:
                         format: int64
                         type: integer
@@ -10611,6 +10613,8 @@ spec:
                             type: object
                           type: array
                         method:
+                          type: string
+                        successCondition:
                           type: string
                         timeoutSeconds:
                           format: int64
@@ -20062,6 +20066,8 @@ spec:
                           type: array
                         method:
                           type: string
+                        successCondition:
+                          type: string
                         timeoutSeconds:
                           format: int64
                           type: integer
@@ -27591,6 +27597,8 @@ spec:
                             type: array
                           method:
                             type: string
+                          successCondition:
+                            type: string
                           timeoutSeconds:
                             format: int64
                             type: integer
@@ -34040,6 +34048,8 @@ spec:
                                 type: object
                               type: array
                             method:
+                              type: string
+                            successCondition:
                               type: string
                             timeoutSeconds:
                               format: int64
