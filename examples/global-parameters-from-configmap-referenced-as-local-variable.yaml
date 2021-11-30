@@ -9,8 +9,6 @@ metadata:
       This example demonstrates global parameter from configmap can be referenced as template local variable.
       Note that the "simple-parameters" ConfigMap (defined in examples/configmaps/simple-parameters-configmap.yaml)
       needs to be created first before submitting this workflow.
-    workflows.argoproj.io/verify.py: |
-      assert status["phase"] == "Succeeded"
 spec:
   serviceAccountName: argo
   entrypoint: whalesay
@@ -27,6 +25,5 @@ spec:
       parameters:
       - name: message
     container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["{{inputs.parameters.message}}"]
+      image: argoproj/argosay:v2
+      args: ["echo", "{{inputs.parameters.message}}"]

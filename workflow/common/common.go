@@ -15,6 +15,9 @@ const (
 	// DockerSockVolumeName is the volume name for the /var/run/docker.sock host path volume
 	DockerSockVolumeName = "docker-sock"
 
+	// AnnotationKeyDefaultContainer is the annotation that specify container that will be used by default in case of kubectl commands for example
+	AnnotationKeyDefaultContainer = "kubectl.kubernetes.io/default-container"
+
 	// AnnotationKeyNodeID is the ID of the node.
 	// Historically, the pod name was the same as the node ID.
 	// Therefore, if it does not exist, then the node ID is the pod name.
@@ -42,12 +45,16 @@ const (
 	// AnnotationKeyPodNameVersion stores the pod naming convention version
 	AnnotationKeyPodNameVersion = workflow.WorkflowFullName + "/pod-name-format"
 
+	// AnnotationKeyProgress is N/M progress for the node
+	AnnotationKeyProgress = workflow.WorkflowFullName + "/progress"
+
 	// LabelKeyControllerInstanceID is the label the controller will carry forward to workflows/pod labels
 	// for the purposes of workflow segregation
 	LabelKeyControllerInstanceID = workflow.WorkflowFullName + "/controller-instanceid"
 	// Who created this workflow.
-	LabelKeyCreator      = workflow.WorkflowFullName + "/creator"
-	LabelKeyCreatorEmail = workflow.WorkflowFullName + "/creator-email"
+	LabelKeyCreator                  = workflow.WorkflowFullName + "/creator"
+	LabelKeyCreatorEmail             = workflow.WorkflowFullName + "/creator-email"
+	LabelKeyCreatorPreferredUsername = workflow.WorkflowFullName + "/creator-preferred-username"
 	// LabelKeyCompleted is the metadata label applied on workflows and workflow pods to indicates if resource is completed
 	// Workflows and pods with a completed=true label will be ignored by the controller.
 	// See also `LabelKeyWorkflowArchivingStatus`.
@@ -117,6 +124,15 @@ const (
 	// EnvVarArgoTrace is used enable tracing statements in Argo components
 	EnvVarArgoTrace = "ARGO_TRACE"
 
+	// EnvVarProgressPatchTickDuration sets the tick duration for patching pod annotations upon progress changes.
+	// Setting this or EnvVarProgressFileTickDuration to 0 will disable monitoring progress.
+	EnvVarProgressPatchTickDuration = "ARGO_PROGRESS_PATCH_TICK_DURATION"
+	// EnvVarProgressFileTickDuration sets the tick duration for reading & parsing the progress file.
+	// Setting this or EnvVarProgressPatchTickDuration to 0 will disable monitoring progress.
+	EnvVarProgressFileTickDuration = "ARGO_PROGRESS_FILE_TICK_DURATION"
+	// EnvVarProgressFile is the file watched for reporting progress
+	EnvVarProgressFile = "ARGO_PROGRESS_FILE"
+
 	// ContainerRuntimeExecutorDocker to use docker as container runtime executor
 	ContainerRuntimeExecutorDocker = "docker"
 
@@ -182,6 +198,9 @@ const (
 	ServiceAccountTokenMountPath  = "/var/run/secrets/kubernetes.io/serviceaccount" //nolint:gosec
 	ServiceAccountTokenVolumeName = "exec-sa-token"                                 //nolint:gosec
 	SecretVolMountPath            = "/argo/secret"
+
+	// ArgoProgressPath defines the path to a file used for self reporting progress
+	ArgoProgressPath = "/var/run/argo/progress"
 )
 
 // AnnotationKeyKillCmd specifies the command to use to kill to container, useful for injected sidecars

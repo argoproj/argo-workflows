@@ -13,8 +13,6 @@ metadata:
       Based on the `when` condition one of step will not execute. The main template's output artifact named "result"
       will be set to the executed step's output.
     workflows.argoproj.io/version: '>= 3.1.0'
-    workflows.argoproj.io/verify.py: |
-      assert status["phase"] == "Succeeded"
 spec:
   entrypoint: main
   templates:

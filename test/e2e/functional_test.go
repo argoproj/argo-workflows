@@ -189,6 +189,36 @@ spec:
 		})
 }
 
+func (s *FunctionalSuite) TestVolumeClaimTemplate() {
+	s.Given().
+		Workflow(`@testdata/volume-claim-template-workflow.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		// test that the PVC was deleted (because the `kubernetes.io/pvc-protection` finalizer was deleted)
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			defer cancel()
+			ticker := time.NewTicker(time.Second)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					t.Error("timeout waiting for PVC to be deleted")
+					t.FailNow()
+				case <-ticker.C:
+					list, err := s.KubeClient.CoreV1().PersistentVolumeClaims(fixtures.Namespace).List(context.Background(), metav1.ListOptions{})
+					if assert.NoError(t, err) {
+						if len(list.Items) == 0 {
+							return
+						}
+					}
+				}
+			}
+		})
+}
+
 func (s *FunctionalSuite) TestEventOnNodeFailSentAsPod() {
 	// Test whether an WorkflowFailed event (with appropriate message) is emitted in case of node failure
 	var uid types.UID
@@ -196,11 +226,14 @@ func (s *FunctionalSuite) TestEventOnNodeFailSentAsPod() {
 	var nodeName string
 	// Update controller config map to set nodeEvents.sendAsPod to true
 	ctx := context.Background()
-	configMap, _ := s.KubeClient.CoreV1().ConfigMaps("argo").Get(
+	configMap, err := s.KubeClient.CoreV1().ConfigMaps(fixtures.Namespace).Get(
 		ctx,
 		"workflow-controller-configmap",
 		metav1.GetOptions{},
 	)
+	if err != nil {
+		s.T().Fatal(err)
+	}
 	originalData := make(map[string]string)
 	for key, value := range configMap.Data {
 		originalData[key] = value
@@ -835,6 +868,37 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
+func (s *FunctionalSuite) TestPauseBefore() {
+	s.Given().
+		Workflow(`@functional/pause-before.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeRunning).
+		Exec("bash", []string{"-c", "sleep 5 &&  kubectl exec -i $(kubectl get pods | awk '/pause-before/ {print $1;exit}') -c main -- bash -c 'touch /proc/1/root/run/argo/ctr/main/before'"}, fixtures.NoError).
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
+func (s *FunctionalSuite) TestPauseAfter() {
+	s.Given().
+		Workflow(`@functional/pause-after.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeRunning).
+		Exec("bash", []string{"-c", "sleep 5 && kubectl exec -i $(kubectl get pods -n argo | awk '/pause-after/ {print $1;exit}') -c main -- bash -c 'touch /proc/1/root/run/argo/ctr/main/after'"}, fixtures.NoError).
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
+func (s *FunctionalSuite) TestPauseAfterAndBefore() {
+	s.Given().
+		Workflow(`@functional/pause-before-after.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeRunning).
+		Exec("bash", []string{"-c", "sleep 5 && kubectl exec -i $(kubectl get pods | awk '/pause-before-after/ {print $1;exit}') -c main -- bash -c 'touch /proc/1/root/run/argo/ctr/main/before'"}, fixtures.NoError).
+		Exec("bash", []string{"-c", "kubectl exec -i $(kubectl get pods | awk '/pause-before-after/ {print $1;exit}') -c main -- bash -c 'touch /proc/1/root/run/argo/ctr/main/after'"}, fixtures.NoError).
 		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 

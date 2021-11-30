@@ -1,11 +1,22 @@
 #!/usr/bin/env bash
 set -eu -o pipefail
 
-./dist/argo delete -l workflows.argoproj.io/test
-
 # Load the configmaps that contains the parameter values used for certain examples.
-kubectl create -n argo -f examples/configmaps/simple-parameters-configmap.yaml
+kubectl apply -f examples/configmaps/simple-parameters-configmap.yaml
+
+echo "Checking for banned images..."
+grep -lR 'workflows.argoproj.io/test' examples/*  | while read f ; do
+  echo " - $f"
+  test 0 == $(grep -o 'image: .*' $f | grep -cv 'argoproj/argosay:v2\|python:alpine3.6')
+done
 
 grep -lR 'workflows.argoproj.io/test' examples/* | while read f ; do
-  ./dist/argo submit --watch --verify $f
+  kubectl delete workflow -l workflows.argoproj.io/test
+  echo "Running $f..."
+  kubectl create -f $f
+  name=$(kubectl get workflow -o name)
+  kubectl wait --for=condition=Completed $name
+  phase="$(kubectl get $name -o 'jsonpath={.status.phase}')"
+  echo " -> $phase"
+  test Succeeded == $phase
 done

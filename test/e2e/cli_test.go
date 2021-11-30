@@ -204,6 +204,15 @@ func (s *CLISuite) TestSubmitDryRun() {
 		})
 }
 
+func (s *CLISuite) TestSubmitInvalidWf() {
+	s.Given().
+		RunCli([]string{"submit", "smoke/basic-invalid.yaml", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
+			if assert.Error(t, err) {
+				assert.Contains(t, output, "yaml file at index 0 is not valid:")
+			}
+		})
+}
+
 func (s *CLISuite) TestSubmitServerDryRun() {
 	s.Given().
 		RunCli([]string{"submit", "smoke/basic.yaml", "--server-dry-run", "-o", "yaml", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
@@ -465,6 +474,17 @@ func (s *CLISuite) TestRoot() {
 				assert.Equal(t, "2006-01-02T15:04:05-07:00", metadata.Annotations["workflows.argoproj.io/scheduled-time"])
 			})
 	})
+}
+
+func (s *CLISuite) TestSubmitClusterWorkflowTemplate() {
+	s.Given().
+		ClusterWorkflowTemplate("@smoke/cluster-workflow-template-whalesay-template.yaml").
+		When().
+		CreateClusterWorkflowTemplates().
+		RunCli([]string{"submit", "--from", "clusterworkflowtemplate/cluster-workflow-template-whalesay-template", "--name", "my-wf", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
+			assert.NoError(t, err)
+		}).
+		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 
 func (s *CLISuite) TestWorkflowSuspendResume() {

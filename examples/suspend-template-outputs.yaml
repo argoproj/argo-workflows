@@ -9,7 +9,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: suspend-outputs
+  name: suspend-outputs
 spec:
   entrypoint: suspend
   templates:

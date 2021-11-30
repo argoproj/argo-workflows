@@ -18,14 +18,9 @@ metadata:
 
     # this workflow will only run on workflows version v3.0.0
     workflows.argoproj.io/version: ">= 3.0.0"
-
-    # this workflow will success because contrary to the default emissary executor,
-    # the pns executor doesn't require an explicit command defined
-    workflows.argoproj.io/verify.py: |
-      assert status["phase"] == "Succeeded"
 spec:
   entrypoint: main
   templates:
     - name: main
       container:
-        image: docker/whalesay
+        image: argoproj/argosay:v2

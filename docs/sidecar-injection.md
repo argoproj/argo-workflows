@@ -16,18 +16,19 @@ See [#1282](https://github.com/argoproj/argo-workflows/issues/1282).
 
 Key:
 
+* Unsupported - this executor is no longer supported
 * Any - we can kill any image
 * KubectlExec - we kill images by running `kubectl exec`
 
 | Executor | Sidecar | Injected Sidecar | 
 |---|---|---| 
-| `docker` | Any | Any | 
+| `docker` | Any | Unsupported | 
 | `emissary` | Any | KubectlExec | 
 | `k8sapi` | Shell | KubectlExec | 
 | `kubelet` | Shell | KubectlExec | 
 | `pns` | Any | Any | 
 
-## How We Kill Sidecars Using `kubect exec`
+## How We Kill Sidecars Using `kubectl exec`
 
 > v3.1 and after
 
@@ -57,6 +58,7 @@ You can override the kill command by using a pod annotation (where `%d` is the s
 spec:
   podMetadata:
     annotations:
+      workflows.argoproj.io/kill-cmd-istio-proxy: '["pilot-agent", "request", "POST", "quitquitquit"]'
       workflows.argoproj.io/kill-cmd-vault-agent: '["sh", "-c", "kill -%d 1"]'
       workflows.argoproj.io/kill-cmd-sidecar: '["sh", "-c", "kill -%d $(pidof entrypoint.sh)"]'
 ```

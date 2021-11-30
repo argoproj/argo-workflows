@@ -20,6 +20,9 @@ GREP_LOGS             := ""
 IMAGE_NAMESPACE       ?= quay.io/argoproj
 DEV_IMAGE             ?= $(shell [ `uname -s` = Darwin ] && echo true || echo false)
 
+# declares which cluster to import to in case it's not the default name
+K3D_CLUSTER_NAME      ?= k3s-default
+
 # The name of the namespace where Kubernetes resources/RBAC will be installed
 KUBE_NAMESPACE        ?= argo
 MANAGED_NAMESPACE     ?= $(KUBE_NAMESPACE)
@@ -41,6 +44,8 @@ STATIC_FILES          ?= $(shell [ $(DEV_BRANCH) = true ] && echo false || echo 
 endif
 
 UI                    ?= false
+# start the Argo Server
+API                   ?= $(UI)
 GOTEST                ?= go test -v
 PROFILE               ?= minimal
 # by keeping this short we speed up the tests
@@ -222,7 +227,7 @@ argoexec-image:
 		--output=type=docker .
 	[ ! -e $* ] || mv $* dist/
 	docker run --rm -t $(IMAGE_NAMESPACE)/$*:$(VERSION) version
-	if [ $(K3D) = true ]; then k3d image import $(IMAGE_NAMESPACE)/$*:$(VERSION); fi
+	if [ $(K3D) = true ]; then k3d image import -c $(K3D_CLUSTER_NAME) $(IMAGE_NAMESPACE)/$*:$(VERSION); fi
 	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$*:$(VERSION) ; fi
 
 scan-images: scan-workflow-controller scan-argoexec scan-argocli
@@ -399,7 +404,7 @@ endif
 argosay:
 	cd test/e2e/images/argosay/v2 && docker build . -t argoproj/argosay:v2
 ifeq ($(K3D),true)
-	k3d image import argoproj/argosay:v2
+	k3d image import -c $(K3D_CLUSTER_NAME) argoproj/argosay:v2
 endif
 ifeq ($(DOCKER_PUSH),true)
 	docker push argoproj/argosay:v2
@@ -423,11 +428,21 @@ $(GOPATH)/bin/goreman:
 
 .PHONY: start
 ifeq ($(RUN_MODE),local)
+ifeq ($(API),true)
 start: install controller cli $(GOPATH)/bin/goreman
+else
+start: install controller $(GOPATH)/bin/goreman
+endif
 else
 start: install
 endif
 	@echo "starting STATIC_FILES=$(STATIC_FILES) (DEV_BRANCH=$(DEV_BRANCH), GIT_BRANCH=$(GIT_BRANCH)), AUTH_MODE=$(AUTH_MODE), RUN_MODE=$(RUN_MODE), MANAGED_NAMESPACE=$(MANAGED_NAMESPACE)"
+ifneq ($(API),true)
+	@echo "⚠️️  not starting API. If you want to test the API, use 'make start API=true' to start it"
+endif
+ifneq ($(UI),true)
+	@echo "⚠️  not starting UI. If you want to test the UI, run 'make start UI=true' to start it"
+endif
 	# Check dex, minio, postgres and mysql are in hosts file
 ifeq ($(AUTH_MODE),sso)
 	grep '127.0.0.1[[:blank:]]*dex' /etc/hosts
@@ -437,7 +452,7 @@ endif
 	grep '127.0.0.1[[:blank:]]*mysql' /etc/hosts
 	./hack/port-forward.sh
 ifeq ($(RUN_MODE),local)
-	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) MANAGED_NAMESPACE=$(MANAGED_NAMESPACE) UI=$(UI) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start $(shell if [ -z $GREP_LOGS ]; then echo; else echo "| grep \"$(GREP_LOGS)\""; fi)
+	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) MANAGED_NAMESPACE=$(MANAGED_NAMESPACE) UI=$(UI) API=$(API) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start $(shell if [ -z $GREP_LOGS ]; then echo; else echo "| grep \"$(GREP_LOGS)\""; fi)
 endif
 
 $(GOPATH)/bin/stern:
@@ -451,8 +466,10 @@ logs: $(GOPATH)/bin/stern
 wait:
 	# Wait for workflow controller
 	until lsof -i :9090 > /dev/null ; do sleep 10s ; done
+ifeq ($(API),true)
 	# Wait for Argo Server
 	until lsof -i :2746 > /dev/null ; do sleep 10s ; done
+endif
 
 .PHONY: postgres-cli
 postgres-cli:
@@ -462,18 +479,13 @@ postgres-cli:
 mysql-cli:
 	kubectl exec -ti `kubectl get pod -l app=mysql -o name|cut -c 5-` -- mysql -u mysql -ppassword argo
 
-start-e2e:
-	$(MAKE) start PROFILE=mysql E2E_EXECUTOR=$(E2E_EXECUTOR) ALWAYS_OFFLOAD_NODE_STATUS=true AUTH_MODE=client
-
-test-e2e: test-api test-cli test-cron test-executor test-functional
-
 test-cli: ./dist/argo
 
 test-%:
-	$(GOTEST) -timeout 15m -count 1 --tags $* -parallel 10 ./test/e2e
+	go test -v -timeout 15m -count 1 --tags $* -parallel 10 ./test/e2e
 
 .PHONY: test-examples
-test-examples: ./dist/argo
+test-examples:
 	./hack/test-examples.sh
 
 # clean
@@ -481,7 +493,7 @@ test-examples: ./dist/argo
 .PHONY: clean
 clean:
 	go clean
-	rm -Rf test-results node_modules vendor v2 argoexec-linux-amd64 dist/* ui/dist
+	rm -Rf test-results node_modules vendor v2 v3 argoexec-linux-amd64 dist/* ui/dist
 
 # swagger
 
@@ -545,10 +557,6 @@ docs/fields.md: api/openapi-spec/swagger.json $(shell find examples -type f) hac
 # generates several other files
 docs/cli/argo.md: $(CLI_PKGS) go.sum server/static/files.go hack/cli/main.go
 	go run ./hack/cli
-
-.PHONY: validate-examples
-validate-examples: api/jsonschema/schema.json
-	cd examples && go test
 
 # pre-push
 

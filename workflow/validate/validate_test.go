@@ -45,9 +45,9 @@ func validateWithOptions(yamlStr string, opts ValidateOpts) (*wfv1.Conditions, e
 
 // validateWorkflowTemplate is a test helper to accept WorkflowTemplate YAML as a string and return
 // its validation result.
-func validateWorkflowTemplate(yamlStr string) error {
+func validateWorkflowTemplate(yamlStr string, opts ValidateOpts) error {
 	wftmpl := unmarshalWftmpl(yamlStr)
-	_, err := ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, wftmpl)
+	_, err := ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, wftmpl, opts)
 	return err
 }
 
@@ -1626,7 +1626,7 @@ func TestBaseImageOutputVerify(t *testing.T) {
 	wfNonPathOutputParam := unmarshalWf(nonPathOutputParameter)
 	var err error
 
-	for _, executor := range []string{common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorPNS, common.ContainerRuntimeExecutorDocker, ""} {
+	for _, executor := range []string{common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorPNS, common.ContainerRuntimeExecutorDocker, common.ContainerRuntimeExecutorDocker, common.ContainerRuntimeExecutorEmissary, ""} {
 		switch executor {
 		case common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorKubelet:
 			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
@@ -1644,7 +1644,7 @@ func TestBaseImageOutputVerify(t *testing.T) {
 			assert.NoError(t, err)
 			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseWithEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.Error(t, err)
-		case common.ContainerRuntimeExecutorDocker, "":
+		case common.ContainerRuntimeExecutorDocker, common.ContainerRuntimeExecutorEmissary, "":
 			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.NoError(t, err)
 			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseOutParam, ValidateOpts{ContainerRuntimeExecutor: executor})
@@ -1671,7 +1671,7 @@ spec:
 `
 
 func TestWorkflowTemplate(t *testing.T) {
-	err := validateWorkflowTemplate(templateRefTarget)
+	err := validateWorkflowTemplate(templateRefTarget, ValidateOpts{})
 	assert.NoError(t, err)
 }
 
@@ -1814,38 +1814,42 @@ func TestInvalidResourceWorkflow(t *testing.T) {
 }
 
 var invalidPodGC = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
 metadata:
   generateName: pod-gc-strategy-unknown-
 spec:
   podGC:
     strategy: Foo
-  entrypoint: whalesay
+  entrypoint: main
   templates:
-  - name: whalesay
+  - name: main
     container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["hello world"]
+      image: docker/whalesay
 `
 
 // TestIncorrectPodGCStrategy verifies pod gc strategy is correct.
 func TestIncorrectPodGCStrategy(t *testing.T) {
 	wf := unmarshalWf(invalidPodGC)
 	_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
-
 	assert.EqualError(t, err, "podGC.strategy unknown strategy 'Foo'")
+}
 
-	for _, start := range []wfv1.PodGCStrategy{wfv1.PodGCOnPodCompletion, wfv1.PodGCOnPodSuccess, wfv1.PodGCOnWorkflowCompletion, wfv1.PodGCOnWorkflowSuccess} {
-		wf.Spec.PodGC.Strategy = start
-		_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
-		assert.NoError(t, err)
-
-		wf.Spec.PodGC.LabelSelector = &metav1.LabelSelector{MatchLabels: map[string]string{"evicted": "true"}}
-		_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
-		assert.NoError(t, err)
-	}
+func TestInvalidPodGCLabelSelector(t *testing.T) {
+	wf := unmarshalWf(`
+metadata:
+  generateName: pod-gc-strategy-unknown-
+spec:
+  podGC:
+    labelSelector:
+      matchExpressions:
+        - {key: environment, operator: InvalidOperator, values: [dev]}
+  entrypoint: main
+  templates:
+  - name: main
+    container:
+      image: docker/whalesay
+`)
+	_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+	assert.EqualError(t, err, "podGC.labelSelector invalid: \"InvalidOperator\" is not a valid pod selector operator")
 }
 
 //nolint:gosec
@@ -2298,7 +2302,7 @@ spec:
 `
 
 func TestWorkflowTemplateWithEntrypoint(t *testing.T) {
-	err := validateWorkflowTemplate(wfTemplateWithEntrypoint)
+	err := validateWorkflowTemplate(wfTemplateWithEntrypoint, ValidateOpts{})
 	assert.NoError(t, err)
 }
 
@@ -2567,7 +2571,7 @@ spec:
 `
 
 func TestWorkflowTemplateLabels(t *testing.T) {
-	err := validateWorkflowTemplate(testWorkflowTemplateLabels)
+	err := validateWorkflowTemplate(testWorkflowTemplateLabels, ValidateOpts{})
 	assert.NoError(t, err)
 }
 
@@ -2733,17 +2737,29 @@ spec:
 `
 
 func TestWorkflowTemplateWithEnumValue(t *testing.T) {
-	err := validateWorkflowTemplate(workflowTeamplateWithEnumValues)
+	err := validateWorkflowTemplate(workflowTeamplateWithEnumValues, ValidateOpts{})
+	assert.NoError(t, err)
+	err = validateWorkflowTemplate(workflowTeamplateWithEnumValues, ValidateOpts{Lint: true})
+	assert.NoError(t, err)
+	err = validateWorkflowTemplate(workflowTeamplateWithEnumValues, ValidateOpts{Submit: true})
 	assert.NoError(t, err)
 }
 
 func TestWorkflowTemplateWithEmptyEnumList(t *testing.T) {
-	err := validateWorkflowTemplate(workflowTemplateWithEmptyEnumList)
+	err := validateWorkflowTemplate(workflowTemplateWithEmptyEnumList, ValidateOpts{})
+	assert.EqualError(t, err, "spec.arguments.message.enum should contain at least one value")
+	err = validateWorkflowTemplate(workflowTemplateWithEmptyEnumList, ValidateOpts{Lint: true})
+	assert.EqualError(t, err, "spec.arguments.message.enum should contain at least one value")
+	err = validateWorkflowTemplate(workflowTemplateWithEmptyEnumList, ValidateOpts{Submit: true})
 	assert.EqualError(t, err, "spec.arguments.message.enum should contain at least one value")
 }
 
 func TestWorkflowTemplateWithArgumentValueNotFromEnumList(t *testing.T) {
-	err := validateWorkflowTemplate(workflowTemplateWithArgumentValueNotFromEnumList)
+	err := validateWorkflowTemplate(workflowTemplateWithArgumentValueNotFromEnumList, ValidateOpts{})
+	assert.EqualError(t, err, "spec.arguments.message.value should be present in spec.arguments.message.enum list")
+	err = validateWorkflowTemplate(workflowTemplateWithArgumentValueNotFromEnumList, ValidateOpts{Lint: true})
+	assert.EqualError(t, err, "spec.arguments.message.value should be present in spec.arguments.message.enum list")
+	err = validateWorkflowTemplate(workflowTemplateWithArgumentValueNotFromEnumList, ValidateOpts{Submit: true})
 	assert.EqualError(t, err, "spec.arguments.message.value should be present in spec.arguments.message.enum list")
 }
 
@@ -2787,7 +2803,7 @@ spec:
 `
 
 func TestValidActiveDeadlineSecondsArgoVariable(t *testing.T) {
-	err := validateWorkflowTemplate(validActiveDeadlineSecondsArgoVariable)
+	err := validateWorkflowTemplate(validActiveDeadlineSecondsArgoVariable, ValidateOpts{})
 	assert.NoError(t, err)
 }
 
@@ -2797,11 +2813,11 @@ func TestMaxLengthName(t *testing.T) {
 	assert.EqualError(t, err, "workflow name \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" must not be more than 63 characters long (currently 70)")
 
 	wftmpl := &wfv1.WorkflowTemplate{ObjectMeta: metav1.ObjectMeta{Name: strings.Repeat("a", 70)}}
-	_, err = ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, wftmpl)
+	_, err = ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, wftmpl, ValidateOpts{})
 	assert.EqualError(t, err, "workflow template name \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" must not be more than 63 characters long (currently 70)")
 
 	cwftmpl := &wfv1.ClusterWorkflowTemplate{ObjectMeta: metav1.ObjectMeta{Name: strings.Repeat("a", 70)}}
-	_, err = ValidateClusterWorkflowTemplate(wftmplGetter, cwftmplGetter, cwftmpl)
+	_, err = ValidateClusterWorkflowTemplate(wftmplGetter, cwftmplGetter, cwftmpl, ValidateOpts{})
 	assert.EqualError(t, err, "cluster workflow template name \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" must not be more than 63 characters long (currently 70)")
 
 	cwf := &wfv1.CronWorkflow{ObjectMeta: metav1.ObjectMeta{Name: strings.Repeat("a", 60)}}
@@ -2904,7 +2920,7 @@ spec:
 		invalidContainerSetTemplateWithOutputParams,
 	}
 	for _, manifest := range invalidManifests {
-		err := validateWorkflowTemplate(manifest)
+		err := validateWorkflowTemplate(manifest, ValidateOpts{})
 		if assert.NotNil(t, err) {
 			assert.Contains(t, err.Error(), "containerSet.containers must have a container named \"main\" for input or output")
 		}
