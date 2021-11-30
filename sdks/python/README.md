@@ -32,6 +32,14 @@ make generate
 
 This will generate the SDK files.
 
+If you have to regenerate the SDK for any reason, you will have to untag the release from a previous commit:
+```shell
+git tag -d [VERSION]
+git tag [VERISON]  # same one, different commit though
+```
+
+Then you can regenerate the SDK.
+
 ## Getting Started
 
 You can submit a workflow from a raw YAML like the following:
