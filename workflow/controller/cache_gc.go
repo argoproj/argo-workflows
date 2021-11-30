@@ -10,7 +10,6 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 
 	"github.com/argoproj/argo-workflows/v3/util/env"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -29,6 +28,7 @@ func (wfc *WorkflowController) syncAllCacheForGC(ctx context.Context) {
 	configMaps, err := wfc.configMapInformer.GetIndexer().ByIndex(indexes.ConfigMapLabelsIndex, common.LabelValueTypeConfigMapCache)
 	if err != nil {
 		log.WithError(err).Error("Failed to get configmaps from informer")
+		return
 	}
 
 	for _, obj := range configMaps {
@@ -37,14 +37,13 @@ func (wfc *WorkflowController) syncAllCacheForGC(ctx context.Context) {
 			log.WithField("configMap", cm.Name).Error("Unable to convert object to configmap when syncing ConfigMaps")
 			continue
 		}
-		if err := cleanupUnusedCache(ctx, wfc.kubeclientset, cm, gcAfterNotHitDuration); err != nil {
+		if err := wfc.cleanupUnusedCache(ctx, cm); err != nil {
 			log.WithField("configMap", cm.Name).WithError(err).Error("Unable to sync ConfigMap")
-			continue
 		}
 	}
 }
 
-func cleanupUnusedCache(ctx context.Context, kubeclientset kubernetes.Interface, cm *apiv1.ConfigMap, gcAfterNotHitDuration time.Duration) error {
+func (wfc *WorkflowController) cleanupUnusedCache(ctx context.Context, cm *apiv1.ConfigMap) error {
 	var modified bool
 	for key, rawEntry := range cm.Data {
 		var entry controllercache.Entry
@@ -58,7 +57,7 @@ func cleanupUnusedCache(ctx context.Context, kubeclientset kubernetes.Interface,
 		}
 	}
 	if len(cm.Data) == 0 {
-		err := kubeclientset.CoreV1().ConfigMaps(cm.Namespace).Delete(ctx, cm.Name, metav1.DeleteOptions{})
+		err := wfc.kubeclientset.CoreV1().ConfigMaps(cm.Namespace).Delete(ctx, cm.Name, metav1.DeleteOptions{})
 		if err != nil {
 			if apierr.IsNotFound(err) {
 				return nil
@@ -67,7 +66,7 @@ func cleanupUnusedCache(ctx context.Context, kubeclientset kubernetes.Interface,
 		}
 	} else {
 		if modified {
-			_, err := kubeclientset.CoreV1().ConfigMaps(cm.Namespace).Update(ctx, cm, metav1.UpdateOptions{})
+			_, err := wfc.kubeclientset.CoreV1().ConfigMaps(cm.Namespace).Update(ctx, cm, metav1.UpdateOptions{})
 			if err != nil {
 				return fmt.Errorf("failed to update ConfigMap %s: %w", cm.Name, err)
 			}
