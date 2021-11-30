@@ -1111,6 +1111,15 @@ spec:
                         required:
                         - key
                         type: object
+                      selectors:
+                        items:
+                          properties:
+                            name:
+                              type: string
+                            template:
+                              type: string
+                          type: object
+                        type: array
                     type: object
                 type: object
               templateDefaults:
@@ -6873,6 +6882,15 @@ spec:
                             required:
                             - key
                             type: object
+                          selectors:
+                            items:
+                              properties:
+                                name:
+                                  type: string
+                                template:
+                                  type: string
+                              type: object
+                            type: array
                         type: object
                     type: object
                   timeout:
@@ -13323,6 +13341,15 @@ spec:
                               required:
                               - key
                               type: object
+                            selectors:
+                              items:
+                                properties:
+                                  name:
+                                    type: string
+                                  template:
+                                    type: string
+                                type: object
+                              type: array
                           type: object
                       type: object
                     timeout:
@@ -22773,6 +22800,15 @@ spec:
                               required:
                               - key
                               type: object
+                            selectors:
+                              items:
+                                properties:
+                                  name:
+                                    type: string
+                                  template:
+                                    type: string
+                                type: object
+                              type: array
                           type: object
                       type: object
                     timeout:
@@ -24540,6 +24576,15 @@ spec:
                             required:
                             - key
                             type: object
+                          selectors:
+                            items:
+                              properties:
+                                name:
+                                  type: string
+                                template:
+                                  type: string
+                              type: object
+                            type: array
                         type: object
                     type: object
                   templateDefaults:
@@ -30302,6 +30347,15 @@ spec:
                                 required:
                                 - key
                                 type: object
+                              selectors:
+                                items:
+                                  properties:
+                                    name:
+                                      type: string
+                                    template:
+                                      type: string
+                                  type: object
+                                type: array
                             type: object
                         type: object
                       timeout:
@@ -36752,6 +36806,15 @@ spec:
                                   required:
                                   - key
                                   type: object
+                                selectors:
+                                  items:
+                                    properties:
+                                      name:
+                                        type: string
+                                      template:
+                                        type: string
+                                    type: object
+                                  type: array
                               type: object
                           type: object
                         timeout:
