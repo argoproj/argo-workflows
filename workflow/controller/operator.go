@@ -181,7 +181,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 // As you must not call `persistUpdates` twice, you must not call `operate` twice.
 func (woc *wfOperationCtx) operate(ctx context.Context) {
 	defer argoruntime.RecoverFromPanic(woc.log)
-	
+
 	defer func() {
 		if woc.wf.Status.Fulfilled() {
 			woc.killDaemonedChildren("")
