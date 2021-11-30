@@ -12,8 +12,11 @@ WD                    := $(shell echo "`pwd`/client")
 DOCKER = docker run --rm -v $(WD):/wd --workdir /wd
 CHOWN = chown -R $(shell id -u):$(shell id -g)
 
-publish: generate
-	echo "TODO: Publish the package to PyPI"
+publish:
+	pip install setuptools twine build
+	python -m build --sdist --wheel --outdir client/dist/ client
+	twine check client/dist/*
+	twine upload dist/* -u __token__ -p $PYPI_API_TOKEN
 
 generate:
 	rm -Rf $(WD)
