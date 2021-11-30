@@ -14,9 +14,9 @@ func RecoverFromPanic(log *log.Entry) {
 		stackTraceBuffer := make([]byte, size)
 		stackSize := runtime.Stack(stackTraceBuffer, false)
 		// Free up the unused spaces
-		stacktrace = stacktrace[:stackSize]
+		stackTraceBuffer = stackTraceBuffer[:stackSize]
 		log.Errorf("recovered from panic %q. Call stack:\n%s",
 			r,
-			stacktrace)
+			stackTraceBuffer)
 	}
 }
