@@ -21,10 +21,10 @@ type LockName struct {
 	ResourceName string
 	Key          string
 	Kind         LockKind
-	Selectors    []v1alpha1.SemaphoreSelector
+	Selectors    []v1alpha1.SyncSelector
 }
 
-func NewLockName(namespace, resourceName, lockKey string, kind LockKind, selectors []v1alpha1.SemaphoreSelector) *LockName {
+func NewLockName(namespace, resourceName, lockKey string, kind LockKind, selectors []v1alpha1.SyncSelector) *LockName {
 	return &LockName{
 		Namespace:    namespace,
 		ResourceName: resourceName,
@@ -42,7 +42,7 @@ func GetLockName(sync *v1alpha1.Synchronization, namespace string) (*LockName, e
 		}
 		return nil, fmt.Errorf("cannot get LockName for a Semaphore without a ConfigMapRef")
 	case v1alpha1.SynchronizationTypeMutex:
-		return NewLockName(namespace, sync.Mutex.Name, "", LockKindMutex, sync.Semaphore.Selectors), nil
+		return NewLockName(namespace, sync.Mutex.Name, "", LockKindMutex, sync.Mutex.Selectors), nil
 	default:
 		return nil, fmt.Errorf("cannot get LockName for a Sync of Unknown type")
 	}
@@ -75,7 +75,7 @@ func DecodeLockName(lockName string) (*LockName, error) {
 	return &lock, nil
 }
 
-func StringifySelectors(selectors []v1alpha1.SemaphoreSelector) string {
+func StringifySelectors(selectors []v1alpha1.SyncSelector) string {
 	joinedSelectors := ""
 	for _, selector := range selectors {
 		// at this point template should be already replaced
@@ -91,14 +91,14 @@ func StringifySelectors(selectors []v1alpha1.SemaphoreSelector) string {
 	return strings.TrimRight(joinedSelectors, "&")
 }
 
-func ParseSelectors(selectors string) []v1alpha1.SemaphoreSelector {
-	parsedSelectors := []v1alpha1.SemaphoreSelector{}
+func ParseSelectors(selectors string) []v1alpha1.SyncSelector {
+	parsedSelectors := []v1alpha1.SyncSelector{}
 	splittedSelectors := strings.Split(selectors, "&")
 
 	for _, selectorStr := range splittedSelectors {
 		keyValPair := strings.Split(selectorStr, "=")
 		if len(keyValPair) == 2 {
-			parsedSelectors = append(parsedSelectors, v1alpha1.SemaphoreSelector{
+			parsedSelectors = append(parsedSelectors, v1alpha1.SyncSelector{
 				Name:     keyValPair[0],
 				Template: keyValPair[1],
 			})
