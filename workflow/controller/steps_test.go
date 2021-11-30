@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -168,6 +169,25 @@ func TestResourceDurationMetric(t *testing.T) {
 	assert.Equal(t, "33", localScope["resourcesDuration.cpu"])
 	assert.Equal(t, "24", localScope["resourcesDuration.memory"])
 	assert.Equal(t, "0", localScope["exitCode"])
+}
+
+func TestResourceDurationMetricUninitializedNode(t *testing.T) {
+	wf := wfv1.Workflow{Status: wfv1.WorkflowStatus{StartedAt: metav1.NewTime(time.Now())}}
+	woc := wfOperationCtx{
+		globalParams: make(common.Parameters),
+		wf:           &wf,
+	}
+
+	localScope, realTimeScope := woc.prepareMetricScope(nil)
+
+	assert.Equal(t, "0", localScope["resourcesDuration.cpu"])
+	assert.Equal(t, "0", localScope["resourcesDuration.memory"])
+	assert.Equal(t, "0", localScope["duration"])
+	assert.Equal(t, "Pending", localScope["status"])
+	assert.Less(t, realTimeScope["workflow.duration"](), 1.0)
+	assert.Equal(t, 0.0, realTimeScope["duration"]())
+	assert.Equal(t, 0.0, realTimeScope["resourcesDuration.cpu"]())
+	assert.Equal(t, 0.0, realTimeScope["resourcesDuration.memory"]())
 }
 
 var optionalArgumentAndParameter = `

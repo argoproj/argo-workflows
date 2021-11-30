@@ -9,6 +9,7 @@ import (
 
 	"github.com/Knetic/govaluate"
 	log "github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -493,6 +494,26 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string]string, map[string]func() float64) {
 	realTimeScope := make(map[string]func() float64)
 	localScope := woc.globalParams.DeepCopy()
+
+	if node == nil {
+		durationCPU := fmt.Sprintf("%s.%s", common.LocalVarResourcesDuration, v1.ResourceCPU)
+		durationMem := fmt.Sprintf("%s.%s", common.LocalVarResourcesDuration, v1.ResourceMemory)
+
+		localScope[common.LocalVarDuration] = "0"
+		localScope[common.LocalVarStatus] = string(wfv1.NodePending)
+		localScope[durationCPU] = "0"
+		localScope[durationMem] = "0"
+
+		realTimeScope = map[string]func() float64{
+			common.GlobalVarWorkflowDuration: func() float64 {
+				return time.Since(woc.wf.Status.StartedAt.Time).Seconds()
+			},
+			common.LocalVarDuration: func() float64 { return 0.0 },
+			durationCPU:             func() float64 { return 0.0 },
+			durationMem:             func() float64 { return 0.0 },
+		}
+		return localScope, realTimeScope
+	}
 
 	if node.Fulfilled() {
 		localScope[common.LocalVarDuration] = fmt.Sprintf("%f", node.FinishedAt.Sub(node.StartedAt.Time).Seconds())
