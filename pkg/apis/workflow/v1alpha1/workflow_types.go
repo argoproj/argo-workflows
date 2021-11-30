@@ -79,8 +79,21 @@ const (
 // PodGCStrategy is the strategy when to delete completed pods for GC.
 type PodGCStrategy string
 
+func (s PodGCStrategy) IsValid() bool {
+	switch s {
+	case PodGCOnPodNone,
+		PodGCOnPodCompletion,
+		PodGCOnPodSuccess,
+		PodGCOnWorkflowCompletion,
+		PodGCOnWorkflowSuccess:
+		return true
+	}
+	return false
+}
+
 // PodGCStrategy
 const (
+	PodGCOnPodNone            PodGCStrategy = ""
 	PodGCOnPodCompletion      PodGCStrategy = "OnPodCompletion"
 	PodGCOnPodSuccess         PodGCStrategy = "OnPodSuccess"
 	PodGCOnWorkflowCompletion PodGCStrategy = "OnWorkflowCompletion"
@@ -635,7 +648,7 @@ type Template struct {
 	// Memoize allows templates to use outputs generated from already executed templates
 	Memoize *Memoize `json:"memoize,omitempty" protobuf:"bytes,37,opt,name=memoize"`
 
-	// Timout allows to set the total node execution timeout duration counting from the node's start time.
+	// Timeout allows to set the total node execution timeout duration counting from the node's start time.
 	// This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
 	Timeout string `json:"timeout,omitempty" protobuf:"bytes,38,opt,name=timeout"`
 }
@@ -848,24 +861,22 @@ type PodGC struct {
 	LabelSelector *metav1.LabelSelector `json:"labelSelector,omitempty" protobuf:"bytes,2,opt,name=labelSelector"`
 }
 
-// Matches returns whether the pod labels match with the label selector specified in podGC.
-func (podGC *PodGC) Matches(labels labels.Set) (bool, error) {
+// GetLabelSelector gets the label selector from podGC.
+func (podGC *PodGC) GetLabelSelector() (labels.Selector, error) {
 	if podGC == nil {
-		return true, nil
+		return labels.Nothing(), nil
 	}
-	selector, err := metav1.LabelSelectorAsSelector(podGC.LabelSelector)
-	if err != nil {
-		return false, err
+	if podGC.LabelSelector == nil {
+		return labels.Everything(), nil
 	}
-	return selector.Matches(labels), nil
+	return metav1.LabelSelectorAsSelector(podGC.LabelSelector)
 }
 
-// GetLabelSelector gets the label selector from podGC.
-func (podGC *PodGC) GetLabelSelector() *metav1.LabelSelector {
-	if podGC != nil && podGC.LabelSelector != nil {
-		return podGC.LabelSelector
+func (podGC *PodGC) GetStrategy() PodGCStrategy {
+	if podGC != nil {
+		return podGC.Strategy
 	}
-	return nil
+	return PodGCOnPodNone
 }
 
 // VolumeClaimGC describes how to delete volumes from completed Workflows

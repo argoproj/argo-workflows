@@ -1046,7 +1046,7 @@ message RetryStrategy {
   optional RetryAffinity affinity = 4;
 
   // Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not
-  // be retried and the retry strategy will be ignored/
+  // be retried and the retry strategy will be ignored
   optional string expression = 5;
 }
 
@@ -1208,6 +1208,9 @@ message SubmitOpts {
 
   // Annotations adds to metadata.labels
   optional string annotations = 12;
+
+  // Set the podPriorityClassName of the workflow
+  optional string podPriorityClassName = 13;
 }
 
 // SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
@@ -1398,7 +1401,7 @@ message Template {
   // Memoize allows templates to use outputs generated from already executed templates
   optional Memoize memoize = 37;
 
-  // Timout allows to set the total node execution timeout duration counting from the node's start time.
+  // Timeout allows to set the total node execution timeout duration counting from the node's start time.
   // This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
   optional string timeout = 38;
 }

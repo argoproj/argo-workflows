@@ -295,7 +295,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
             steps ([IoArgoprojWorkflowV1alpha1ParallelSteps]): Steps define a series of sequential/parallel workflow steps. [optional]  # noqa: E501
             suspend (IoArgoprojWorkflowV1alpha1SuspendTemplate): [optional]  # noqa: E501
             synchronization (IoArgoprojWorkflowV1alpha1Synchronization): [optional]  # noqa: E501
-            timeout (str): Timout allows to set the total node execution timeout duration counting from the node's start time. This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.. [optional]  # noqa: E501
+            timeout (str): Timeout allows to set the total node execution timeout duration counting from the node's start time. This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.. [optional]  # noqa: E501
             tolerations ([Toleration]): Tolerations to apply to workflow pods.. [optional]  # noqa: E501
             volumes ([Volume]): Volumes is a list of volumes that can be mounted by containers in a template.. [optional]  # noqa: E501
         """
@@ -414,7 +414,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
             steps ([IoArgoprojWorkflowV1alpha1ParallelSteps]): Steps define a series of sequential/parallel workflow steps. [optional]  # noqa: E501
             suspend (IoArgoprojWorkflowV1alpha1SuspendTemplate): [optional]  # noqa: E501
             synchronization (IoArgoprojWorkflowV1alpha1Synchronization): [optional]  # noqa: E501
-            timeout (str): Timout allows to set the total node execution timeout duration counting from the node's start time. This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.. [optional]  # noqa: E501
+            timeout (str): Timeout allows to set the total node execution timeout duration counting from the node's start time. This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.. [optional]  # noqa: E501
             tolerations ([Toleration]): Tolerations to apply to workflow pods.. [optional]  # noqa: E501
             volumes ([Volume]): Volumes is a list of volumes that can be mounted by containers in a template.. [optional]  # noqa: E501
         """

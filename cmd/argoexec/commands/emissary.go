@@ -132,6 +132,18 @@ func NewEmissaryCommand() *cobra.Command {
 				command.Stderr = io.MultiWriter(os.Stderr, stderr)
 			}
 
+			if _, ok := os.LookupEnv("ARGO_DEBUG_PAUSE_BEFORE"); ok {
+				for {
+					// User can create the file: /ctr/NAME_OF_THE_CONTAINER/before
+					// in order to break out of the sleep and release the container from
+					// the debugging state.
+					if _, err := os.Stat(varRunArgo + "/ctr/" + containerName + "/before"); os.IsNotExist(err) {
+						time.Sleep(time.Second)
+						continue
+					}
+					break
+				}
+			}
 			if err := command.Start(); err != nil {
 				return err
 			}
@@ -149,6 +161,19 @@ func NewEmissaryCommand() *cobra.Command {
 			}()
 
 			cmdErr := command.Wait()
+
+			if _, ok := os.LookupEnv("ARGO_DEBUG_PAUSE_AFTER"); ok {
+				for {
+					// User can create the file: /ctr/NAME_OF_THE_CONTAINER/after
+					// in order to break out of the sleep and release the container from
+					// the debugging state.
+					if _, err := os.Stat(varRunArgo + "/ctr/" + containerName + "/after"); os.IsNotExist(err) {
+						time.Sleep(time.Second)
+						continue
+					}
+					break
+				}
+			}
 
 			if cmdErr == nil {
 				exitCode = 0

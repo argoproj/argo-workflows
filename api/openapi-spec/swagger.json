@@ -10409,7 +10409,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Backoff"
         },
         "expression": {
-          "description": "Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not be retried and the retry strategy will be ignored/",
+          "description": "Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not be retried and the retry strategy will be ignored",
           "type": "string"
         },
         "limit": {
@@ -10813,6 +10813,10 @@
             "type": "string"
           }
         },
+        "podPriorityClassName": {
+          "description": "Set the podPriorityClassName of the workflow",
+          "type": "string"
+        },
         "serverDryRun": {
           "description": "ServerDryRun validates the workflow on the server-side without creating it",
           "type": "boolean"
@@ -11059,7 +11063,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Synchronization"
         },
         "timeout": {
-          "description": "Timout allows to set the total node execution timeout duration counting from the node's start time. This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.",
+          "description": "Timeout allows to set the total node execution timeout duration counting from the node's start time. This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.",
           "type": "string"
         },
         "tolerations": {
