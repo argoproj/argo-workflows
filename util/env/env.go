@@ -10,7 +10,7 @@ import (
 
 func LookupEnvDurationOr(key string, o time.Duration) time.Duration {
 	v, found := os.LookupEnv(key)
-	if found {
+	if found && v != "" {
 		d, err := time.ParseDuration(v)
 		if err != nil {
 			log.WithField(key, v).WithError(err).Panic("failed to parse")
@@ -23,7 +23,7 @@ func LookupEnvDurationOr(key string, o time.Duration) time.Duration {
 
 func LookupEnvIntOr(key string, o int) int {
 	v, found := os.LookupEnv(key)
-	if found {
+	if found && v != "" {
 		d, err := strconv.Atoi(v)
 		if err != nil {
 			log.WithField(key, v).WithError(err).Panic("failed to convert to int")
@@ -36,7 +36,7 @@ func LookupEnvIntOr(key string, o int) int {
 
 func LookupEnvFloatOr(key string, o float64) float64 {
 	v, found := os.LookupEnv(key)
-	if found {
+	if found && v != "" {
 		d, err := strconv.ParseFloat(v, 64)
 		if err != nil {
 			log.WithField(key, v).WithError(err).Panic("failed to convert to float")
