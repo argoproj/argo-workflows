@@ -64,7 +64,7 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 
 	taskWorkers := env.LookupEnvIntOr(EnvAgentTaskWorkers, 16)
 	requeueTime := env.LookupEnvDurationOr(common.EnvVarDefaultRequeueTime, 10*time.Second)
-	log.WithFields(log.Fields{"task_workers": taskWorkers, "requeue_time": requeueTime}).Info("Starting Agent a3")
+	log.WithFields(log.Fields{"taskWorkers": taskWorkers, "requeueTime": requeueTime}).Info("Starting Agent")
 
 	taskQueue := make(chan task)
 	responseQueue := make(chan response)
