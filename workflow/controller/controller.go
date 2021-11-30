@@ -322,9 +322,7 @@ func (wfc *WorkflowController) startLeading(ctx context.Context, logCtx *log.Ent
 	}
 	cacheGCPeriod := env.LookupEnvDurationOr("CACHE_GC_PERIOD", 0)
 	if cacheGCPeriod != 0 {
-		go wait.JitterUntilWithContext(ctx, func(ctx context.Context) {
-			wfc.syncAllCacheForGC(ctx)
-		}, cacheGCPeriod, 0.0, true)
+		go wait.JitterUntilWithContext(ctx, wfc.syncAllCacheForGC, cacheGCPeriod, 0.0, true)
 	}
 }
 
