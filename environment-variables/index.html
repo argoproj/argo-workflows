@@ -2364,6 +2364,18 @@ most users. Note that these environment variables may be removed at any time.</p
 <td>Whether to bubble up template errors to workflow.</td>
 </tr>
 <tr>
+<td><code>CACHE_GC_PERIOD</code></td>
+<td><code>time.Duration</code></td>
+<td><code>0s</code></td>
+<td>How often to perform memoization cache GC, which is disabled by default and can be enabled by providing a non-zero duration.</td>
+</tr>
+<tr>
+<td><code>CACHE_GC_AFTER_NOT_HIT_DURATION</code></td>
+<td><code>time.Duration</code></td>
+<td><code>30s</code></td>
+<td>When a memoization cache has not been hit after this duration, it will be deleted.</td>
+</tr>
+<tr>
 <td><code>CRON_SYNC_PERIOD</code></td>
 <td><code>time.Duration</code></td>
 <td><code>10s</code></td>
