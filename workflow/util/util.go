@@ -814,12 +814,7 @@ func retryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrato
 			return nil, errors.InternalErrorf("Workflow cannot be retried with node %s in %s phase", node.Name, node.Phase)
 		}
 		if node.Type == wfv1.NodeTypePod {
-			var templateName string
-			if node.TemplateRef != nil {
-				templateName = node.TemplateRef.Template
-			} else {
-				templateName = node.TemplateName
-			}
+			templateName := getTemplateFromNode(node)
 			podName := PodName(wf.Name, node.Name, templateName, node.ID)
 			log.Infof("Deleting pod: %s", podName)
 			err := podIf.Delete(ctx, podName, metav1.DeleteOptions{})
@@ -870,6 +865,13 @@ func retryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrato
 	}
 
 	return wfClient.Update(ctx, newWF, metav1.UpdateOptions{})
+}
+
+func getTemplateFromNode(node wfv1.NodeStatus) string {
+	if node.TemplateRef != nil {
+		return node.TemplateRef.Template
+	}
+	return node.TemplateName
 }
 
 func getNodeIDsToReset(restartSuccessful bool, nodeFieldSelector string, nodes wfv1.Nodes) (map[string]bool, error) {
