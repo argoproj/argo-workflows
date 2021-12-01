@@ -380,6 +380,8 @@ lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 
 	# Lint Go files
 	$(GOPATH)/bin/golangci-lint run --fix --verbose
+	# Lint logging statements
+	./hack/check-logging.sh
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
