@@ -133,6 +133,10 @@ const (
 	EnvVarProgressFile = "ARGO_PROGRESS_FILE"
 	// EnvVarDefaultRequeueTime is the default requeue time for Workflow Informers. For more info, see rate_limiters.go
 	EnvVarDefaultRequeueTime = "DEFAULT_REQUEUE_TIME"
+	// EnvAgentTaskWorkers is the number of task workers for the agent pod
+	EnvAgentTaskWorkers = "ARGO_AGENT_TASK_WORKERS"
+	// EnvAgentPatchRate is the rate that the Argo Agent will patch the Workflow TaskSet
+	EnvAgentPatchRate = "ARGO_AGENT_PATCH_RATE"
 
 	// ContainerRuntimeExecutorDocker to use docker as container runtime executor
 	ContainerRuntimeExecutorDocker = "docker"

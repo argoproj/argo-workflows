@@ -57,16 +57,11 @@ type response struct {
 	Result *wfv1.NodeResult
 }
 
-const (
-	EnvAgentTaskWorkers = "ARGO_AGENT_TASK_WORKERS"
-	EnvAgentPatchRate   = "ARGO_AGENT_PATCH_RATE"
-)
-
 func (ae *AgentExecutor) Agent(ctx context.Context) error {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 
-	taskWorkers := env.LookupEnvIntOr(EnvAgentTaskWorkers, 16)
-	requeueTime := env.LookupEnvDurationOr(EnvAgentPatchRate, 10*time.Second)
+	taskWorkers := env.LookupEnvIntOr(common.EnvAgentTaskWorkers, 16)
+	requeueTime := env.LookupEnvDurationOr(common.EnvAgentPatchRate, 10*time.Second)
 	log.WithFields(log.Fields{"taskWorkers": taskWorkers, "requeueTime": requeueTime}).Info("Starting Agent")
 
 	taskQueue := make(chan task)
