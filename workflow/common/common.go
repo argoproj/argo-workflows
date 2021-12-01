@@ -173,6 +173,13 @@ const (
 	// GlobalVarWorkflowCronScheduleTime is the scheduled timestamp of a Workflow started by a CronWorkflow
 	GlobalVarWorkflowCronScheduleTime = "workflow.scheduledTime"
 
+	// LabelKeyConfigMapType is the label key for the type of configmap.
+	LabelKeyConfigMapType = "workflows.argoproj.io/configmap-type"
+	// LabelValueTypeConfigMapCache is a key for configmaps that are memoization cache.
+	LabelValueTypeConfigMapCache = "Cache"
+	// LabelValueTypeConfigMapParameter is a key for configmaps that contains parameter values.
+	LabelValueTypeConfigMapParameter = "Parameter"
+
 	// LocalVarPodName is a step level variable that references the name of the pod
 	LocalVarPodName = "pod.name"
 	// LocalVarRetries is a step level variable that references the retries number if retryStrategy is specified

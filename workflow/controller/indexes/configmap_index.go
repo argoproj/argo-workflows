@@ -2,9 +2,9 @@ package indexes
 
 import (
 	corev1 "k8s.io/api/core/v1"
-)
 
-const ConfigMapTypeLabel = "workflows.argoproj.io/configmap-type"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+)
 
 func ConfigMapIndexFunc(obj interface{}) ([]string, error) {
 	cm, ok := obj.(*corev1.ConfigMap)
@@ -12,5 +12,5 @@ func ConfigMapIndexFunc(obj interface{}) ([]string, error) {
 	if !ok {
 		return nil, nil
 	}
-	return []string{cm.GetLabels()[ConfigMapTypeLabel]}, nil
+	return []string{cm.GetLabels()[common.LabelKeyConfigMapType]}, nil
 }
