@@ -82,9 +82,14 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		}
 	}
 
+	agentPatchRate := GetRequeueTime().String()
+	if agentPatchRateEnv, exists := os.LookupEnv(executor.EnvAgentPatchRate); exists {
+		agentPatchRate = agentPatchRateEnv
+	}
+
 	envVars := []apiv1.EnvVar{
 		{Name: common.EnvVarWorkflowName, Value: woc.wf.Name},
-		{Name: common.EnvVarDefaultRequeueTime, Value: GetRequeueTime().String()},
+		{Name: executor.EnvAgentPatchRate, Value: agentPatchRate},
 	}
 
 	// If the default number of task workers is overridden, then pass it to the agent pod.
