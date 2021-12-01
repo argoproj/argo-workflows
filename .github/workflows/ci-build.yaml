@@ -206,7 +206,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: cp server/static/files.go.stub server/static/files.go
-      - run: go mod tidy
       - run: ./hack/check-logging.sh
       - uses: golangci/golangci-lint-action@v2
         with:
