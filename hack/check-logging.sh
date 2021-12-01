@@ -21,10 +21,13 @@ set -eu
 
 from=$(git merge-base --fork-point master)
 exitCode=0
-for file in $(git diff --name-only "$from" | grep '\.go$' ); do
-  git diff "$from" -- "$file" | grep '^+' | grep -v '\(fmt\|errors\).Errorf' | grep -c '\(Debug\|Info\|Warn\|Warning\|Error\)f' || exitCode=1
-  # https://github.community/t/annotations-how-to-create-them/18387/2
-  grep -n '\(Debug\|Info\|Warn\|Warning\|Error\)f' "$file" | grep -v '\(fmt\|errors\).Errorf' | cut -f1 -d: | sed "s|\(.*\)|:error file=$file,line=\1,col=0::Infof/Errorf etc are banned. Logging must be structured. Instead, use WithField, WithError, Info, and Error.|"
-done
+exitCode=$(git diff "$from" | grep '^+' | grep -v '\(fmt\|errors\).Errorf' | grep -c '\(Debug\|Info\|Warn\|Warning\|Error\)f' || echo 0)
+if [ $exitCode -gt 0 ]; then
+  for file in $(git diff --name-only "$from" | grep '\.go$' ); do
+    # https://github.community/t/annotations-how-to-create-them/18387/2
+    grep -n '\(Debug\|Info\|Warn\|Warning\|Error\)f' "$file" | grep -v '\(fmt\|errors\).Errorf' | cut -f1 -d: | sed "s|\(.*\)|:error file=$file,line=\1,col=0::Infof/Errorf etc are banned. Logging must be structured. Instead, use WithField, WithError, Info, and Error.|" >&2 || true
+  done
+fi
 
+echo $exitCode
 exit $exitCode
