@@ -20,7 +20,7 @@ func GetConfigMapValue(configMapInformer cache.SharedIndexInformer, namespace, n
 		}
 		if cmType := cm.Labels[LabelKeyConfigMapType]; cmType != LabelValueTypeConfigMapParameter {
 			return "", fmt.Errorf(
-				"ConfigMap '%s' needs to have the label %s: %s for parameters loading",
+				"ConfigMap '%s' needs to have the label %s: %s to load parameters",
 				name, LabelKeyConfigMapType, LabelValueTypeConfigMapParameter)
 		}
 		cmValue, ok := cm.Data[key]
