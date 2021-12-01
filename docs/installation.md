@@ -6,6 +6,8 @@ You can choose one of three common installations:
 * **namespace install** Only execute workflows in the same namespace we install in (typically `argo`).
 * **managed namespace install**: Only execute workflows in a specific namespace ([learn more](managed-namespace.md)).
 
+The manifests for each can be found [here](https://github.com/argoproj/argo-workflows/tree/master/manifests).
+
 ## Recommendations
 
 * Make sure you're using the manifests attached to each Github release. See [this link](https://github.com/argoproj/argo-workflows/releases/latest) for the most recent manifests.
