@@ -576,14 +576,9 @@ validate-examples: api/jsonschema/schema.json
 	cd examples && go test
 
 # pre-push
-
-<<<<<<< HEAD
-.PHONY: pre-commit
-pre-commit: codegen lint test start
-=======
 .git/hooks/commit-msg: hack/git/hooks/commit-msg
 	cp -v hack/git/hooks/commit-msg .git/hooks/commit-msg
->>>>>>> 0fb104481... build: prevent bad commit messages, fix broken builds (#7086)
+
 
 .PHONY: githooks
 githooks: .git/hooks/commit-msg

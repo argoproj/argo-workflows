@@ -75,6 +75,13 @@ const (
 	// LabelKeyOnExit is a label applied to Pods that are run from onExit nodes, so that they are not shut down when stopping a Workflow
 	LabelKeyOnExit = workflow.WorkflowFullName + "/on-exit"
 
+	// LabelKeyConfigMapType is the label key for the type of configmap.
+	LabelKeyConfigMapType = "workflows.argoproj.io/configmap-type"
+	// LabelValueTypeConfigMapCache is a key for configmaps that are memoization cache.
+	LabelValueTypeConfigMapCache = "Cache"
+	// LabelValueTypeConfigMapParameter is a key for configmaps that contains parameter values.
+	LabelValueTypeConfigMapParameter = "Parameter"
+
 	// ExecutorArtifactBaseDir is the base directory in the init container in which artifacts will be copied to.
 	// Each artifact will be named according to its input name (e.g: /argo/inputs/artifacts/CODE)
 	ExecutorArtifactBaseDir = "/argo/inputs/artifacts"
