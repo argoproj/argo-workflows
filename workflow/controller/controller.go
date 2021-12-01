@@ -223,11 +223,14 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	defer wfc.podQueue.ShutDown()
 	defer wfc.podCleanupQueue.ShutDown()
 
-	log.WithField("version", argo.GetVersion().Version).Info("Starting Workflow Controller")
-	log.WithField("wfWorkers", wfWorkers).
-		WithField("podWorkers", podWorkers).
-		WithField("podCleanupWorkers", podCleanupWorkers).
-		Info("Workers")
+	log.WithField("version", argo.GetVersion().Version).
+		WithField("defaultRequeueTime", GetRequeueTime()).
+		Info("Starting Workflow Controller")
+	log.WithField("workflow", wfWorkers).
+		WithField("workflowTtl", workflowTTLWorkers).
+		WithField("pod", podWorkers).
+		WithField("podCleanup", podCleanupWorkers).
+		Info("Current Worker Numbers")
 
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListOptions, indexers)
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)

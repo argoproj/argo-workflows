@@ -110,6 +110,7 @@ export const EventsPanel = ({namespace, name, kind}: {namespace: string; name: s
                         <div className='columns small-5'>Message</div>
                     </div>
                     {events
+                        .filter(e => e && e.lastTimestamp)
                         .sort((a, b) => -a.lastTimestamp.localeCompare(b.lastTimestamp))
                         .map(e => (
                             <div className='row argo-table-list__row' key={e.metadata.uid}>

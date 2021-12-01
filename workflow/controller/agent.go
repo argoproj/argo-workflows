@@ -14,8 +14,8 @@ import (
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/env"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/executor"
 )
 
 func (woc *wfOperationCtx) getAgentPodName() string {
@@ -87,12 +87,13 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 
 	envVars := []apiv1.EnvVar{
 		{Name: common.EnvVarWorkflowName, Value: woc.wf.Name},
+		{Name: common.EnvAgentPatchRate, Value: env.LookupEnvStringOr(common.EnvAgentPatchRate, GetRequeueTime().String())},
 	}
 
 	// If the default number of task workers is overridden, then pass it to the agent pod.
-	if taskWorkers, exists := os.LookupEnv(executor.EnvAgentTaskWorkers); exists {
+	if taskWorkers, exists := os.LookupEnv(common.EnvAgentTaskWorkers); exists {
 		envVars = append(envVars, apiv1.EnvVar{
-			Name:  executor.EnvAgentTaskWorkers,
+			Name:  common.EnvAgentTaskWorkers,
 			Value: taskWorkers,
 		})
 	}
