@@ -110,7 +110,6 @@ func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, re
 	for task := range taskQueue {
 		nodeID, tmpl := task.NodeId, task.Template
 		log := log.WithField("nodeID", nodeID)
-		log.Info("Attempting task")
 
 		// Do not work on tasks that have already been considered once, to prevent calling an endpoint more
 		// than once unintentionally.
@@ -128,7 +127,9 @@ func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, re
 			return
 		}
 
-		log.Info("Sending result")
+		log.WithField("phase", result.Phase).
+			WithField("message", result.Message).
+			Info("Sending result")
 		responseQueue <- response{NodeId: nodeID, Result: result}
 	}
 }

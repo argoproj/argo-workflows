@@ -20,7 +20,7 @@ import (
 var gcAfterNotHitDuration = env.LookupEnvDurationOr("CACHE_GC_AFTER_NOT_HIT_DURATION", 30*time.Second)
 
 func init() {
-	log.WithField("gcAfterNotHitDuration", gcAfterNotHitDuration).Info("Memoization caches will be garbage-collected if they have not been hit after %s", gcAfterNotHitDuration)
+	log.WithField("gcAfterNotHitDuration", gcAfterNotHitDuration).Info("Memoization caches will be garbage-collected if they have not been hit after")
 }
 
 // syncAllCacheForGC syncs all cache for GC

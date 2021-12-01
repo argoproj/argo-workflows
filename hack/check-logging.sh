@@ -10,6 +10,13 @@
 # * You may change debug logging to info.
 # * To encourage best practice.
 #
+# What to do if really must format your log messages.
+#
+# I've tried hard to think of any occasion when I'd prefer unstructured logging. I can't think of any times, but here
+# might be some edge cases.
+#
+# As a last resort, use `log.Info(fmt.Sprintf(""))`.
+
 set -eu
 
 from=$(git merge-base --fork-point master)

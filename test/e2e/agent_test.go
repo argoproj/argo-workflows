@@ -4,6 +4,7 @@
 package e2e
 
 import (
+	"github.com/stretchr/testify/suite"
 	"sort"
 	"testing"
 	"time"
@@ -21,13 +22,9 @@ type AgentSuite struct {
 
 func (s *AgentSuite) TestParallel() {
 	s.Given().
-		Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
+		Workflow(`
 metadata:
-  name: http-template-par
-  workflowMetadata:
-    labels:
-      workflows.argoproj.io/test: "true"
+  generateName: agent-
 spec:
   entrypoint: main
   templates:
@@ -82,4 +79,8 @@ spec:
 				assert.True(t, finishedTimes[3].Sub(finishedTimes[0]) < time.Duration(2)*time.Second)
 			}
 		})
+}
+
+func TestAgentSuite(t *testing.T) {
+	suite.Run(t, new(AgentSuite))
 }
