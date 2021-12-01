@@ -57,19 +57,18 @@ type response struct {
 	Result *wfv1.NodeResult
 }
 
-const EnvAgentTaskWorkers = "ARGO_AGENT_TASK_WORKERS"
-
 func (ae *AgentExecutor) Agent(ctx context.Context) error {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 
-	taskWorkers := env.LookupEnvIntOr(EnvAgentTaskWorkers, 16)
-	log.WithField("task_workers", taskWorkers).Info("Starting Agent s15")
+	taskWorkers := env.LookupEnvIntOr(common.EnvAgentTaskWorkers, 16)
+	requeueTime := env.LookupEnvDurationOr(common.EnvAgentPatchRate, 10*time.Second)
+	log.WithFields(log.Fields{"taskWorkers": taskWorkers, "requeueTime": requeueTime}).Info("Starting Agent")
 
 	taskQueue := make(chan task)
 	responseQueue := make(chan response)
 	taskSetInterface := ae.WorkflowInterface.ArgoprojV1alpha1().WorkflowTaskSets(ae.Namespace)
 
-	go ae.patchWorker(ctx, taskSetInterface, responseQueue)
+	go ae.patchWorker(ctx, taskSetInterface, responseQueue, requeueTime)
 	for i := 0; i < taskWorkers; i++ {
 		go ae.taskWorker(ctx, taskQueue, responseQueue)
 	}
@@ -130,8 +129,8 @@ func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, re
 	}
 }
 
-func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alpha1.WorkflowTaskSetInterface, responseQueue chan response) {
-	ticker := time.NewTicker(1 * time.Second)
+func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alpha1.WorkflowTaskSetInterface, responseQueue chan response, requeueTime time.Duration) {
+	ticker := time.NewTicker(requeueTime)
 	nodeResults := map[string]wfv1.NodeResult{}
 	for {
 		select {
