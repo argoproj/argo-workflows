@@ -377,11 +377,10 @@ lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 	rm -Rf v3 vendor
 	# Tidy Go modules
 	go mod tidy
-
-	# Lint Go files
-	$(GOPATH)/bin/golangci-lint run --fix --verbose
 	# Lint logging statements
 	./hack/check-logging.sh
+	# Lint Go files
+	$(GOPATH)/bin/golangci-lint run --fix --verbose
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
