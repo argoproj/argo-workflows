@@ -1,9 +1,9 @@
 #!/usr/bin/env sh
-# This script will return and error if a branch introduces unstructured logging statements, such as:
+# This script will return an error if the current branch introduces unstructured logging statements, such as:
 #
 # Errorf/Infof/Warningf/Warnf/Debugf
 #
-# Unstructured logging is not machine readable, so it is not possible to build reports from it.
+# Unstructured logging is not machine readable, so it is not possible to build reports from it, or efficiently query on it.
 #
 # Most production system will not be logging at debug level, so why bad Debugf?
 #
@@ -22,9 +22,9 @@ set -eu
 from=$(git merge-base --fork-point master)
 exitCode=0
 for file in $(git diff --name-only "$from" | grep '\.go$' ); do
-  git diff "$from" -- "$file" | grep '^+' | grep -c '\(Debug\|Info\|Warn\|Warning\|Error\)f' || exitCode=1
+  git diff "$from" -- "$file" | grep '^+' | grep -v '\(fmt\|errors\).Errorf' | grep -c '\(Debug\|Info\|Warn\|Warning\|Error\)f' || exitCode=1
   # https://github.community/t/annotations-how-to-create-them/18387/2
-  grep -n '\(Debug\|Info\|Warn\|Warning\|Error\)f' "$file" | cut -f1 -d: | sed "s|\(.*\)|:error file=$file,line=\1,col=0::Infof/Errorf etc are banned. Logging must be structured. Instead, use WithField, WithError, Info, and Error.|"
+  grep -n '\(Debug\|Info\|Warn\|Warning\|Error\)f' "$file" | grep -v '\(fmt\|errors\).Errorf' | cut -f1 -d: | sed "s|\(.*\)|:error file=$file,line=\1,col=0::Infof/Errorf etc are banned. Logging must be structured. Instead, use WithField, WithError, Info, and Error.|"
 done
 
 exit $exitCode
