@@ -80,7 +80,7 @@ func StringifySelectors(selectors []v1alpha1.SyncSelector) string {
 	for _, selector := range selectors {
 		// at this point template should be already replaced
 		if selector.Template != "" {
-			// escape "&,=" chars to decode later
+			// escape & and = chars to decode easily later
 			re := regexp.MustCompile("&|=")
 			escapedSelectorName := re.ReplaceAllString(selector.Name, "-")
 			escapedSelectorValue := re.ReplaceAllString(selector.Template, "-")
@@ -109,10 +109,16 @@ func ParseSelectors(selectors string) []v1alpha1.SyncSelector {
 }
 
 func (ln *LockName) EncodeName() string {
-	if ln.Kind == LockKindMutex {
-		return ln.ValidateEncoding(fmt.Sprintf("%s/%s/%s?%s", ln.Namespace, ln.Kind, ln.ResourceName, StringifySelectors(ln.Selectors)))
+	encodingBuilder := &strings.Builder{}
+
+	encodingBuilder.WriteString(fmt.Sprintf("%s/%s/%s", ln.Namespace, ln.Kind, ln.ResourceName))
+	if ln.Kind == LockKindConfigMap {
+		encodingBuilder.WriteString(fmt.Sprintf("/%s", ln.Key))
 	}
-	return ln.ValidateEncoding(fmt.Sprintf("%s/%s/%s/%s?%s", ln.Namespace, ln.Kind, ln.ResourceName, ln.Key, StringifySelectors(ln.Selectors)))
+	if selectors := StringifySelectors(ln.Selectors); len(selectors) > 0 {
+		encodingBuilder.WriteString(fmt.Sprintf("?%s", selectors))
+	}
+	return ln.ValidateEncoding(encodingBuilder.String())
 }
 
 func (ln *LockName) Validate() error {
