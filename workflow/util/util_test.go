@@ -612,6 +612,12 @@ func TestApplySubmitOpts(t *testing.T) {
 			assert.Equal(t, "81861780812", parameters[0].Value.String())
 		}
 	})
+	t.Run("PodPriorityClassName", func(t *testing.T) {
+		wf := &wfv1.Workflow{}
+		err := ApplySubmitOpts(wf, &wfv1.SubmitOpts{PodPriorityClassName: "abc"})
+		assert.NoError(t, err)
+		assert.Equal(t, "abc", wf.Spec.PodPriorityClassName)
+	})
 }
 
 func TestFormulateResubmitWorkflow(t *testing.T) {

@@ -236,6 +236,10 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 	if opts.ServiceAccount != "" {
 		wf.Spec.ServiceAccountName = opts.ServiceAccount
 	}
+	if opts.PodPriorityClassName != "" {
+		wf.Spec.PodPriorityClassName = opts.PodPriorityClassName
+	}
+
 	wfLabels := wf.GetLabels()
 	if wfLabels == nil {
 		wfLabels = make(map[string]string)
