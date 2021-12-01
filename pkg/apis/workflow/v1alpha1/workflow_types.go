@@ -1297,7 +1297,7 @@ func (s *Synchronization) GetType() SynchronizationType {
 	return SynchronizationTypeUnknown
 }
 
-// Semaphore selector
+// Synchronization selector
 type SyncSelector struct {
 	// Name of the selector
 	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
