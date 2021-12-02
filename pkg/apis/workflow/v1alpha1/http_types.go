@@ -22,7 +22,7 @@ type HTTP struct {
 	// TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds
 	TimeoutSeconds *int64 `json:"timeoutSeconds,omitempty" protobuf:"bytes,4,opt,name=timeoutSeconds"`
 	// SuccessCondition is an expression if evaluated to true is considered successful
-	SuccessCondition string `json:"successCondition,omitempty"`
+	SuccessCondition string `json:"successCondition,omitempty" protobuf:"bytes,6,opt,name=successCondition"`
 	// Body is content of the HTTP Request
 	Body string `json:"body,omitempty" protobuf:"bytes,5,opt,name=body"`
 }

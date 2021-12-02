@@ -2434,6 +2434,13 @@ func schema_pkg_apis_workflow_v1alpha1_HTTP(ref common.ReferenceCallback) common
 							Format:      "int64",
 						},
 					},
+					"successCondition": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SuccessCondition is an expression if evaluated to true is considered successful",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"body": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Body is content of the HTTP Request",
