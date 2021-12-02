@@ -20,7 +20,7 @@
 set -eu
 
 from=$(git merge-base --fork-point origin/master)
-count=$(git diff "$from" -- '*.go' | grep '^+' | grep -v '\(fmt\|errors\).Errorf' | grep -c '\(Debug\|Info\|Warn\|Warning\|Error\)f')
+count=$(git diff "$from" -- '*.go' | grep '^+' | grep -v '\(fmt\|errors\).Errorf' | grep -c '\(Debug\|Info\|Warn\|Warning\|Error\)f' || true)
 
 if [ $count -gt 0 ]; then
   echo 'Errorf/Warningf/Warnf/Infof/Debugf are banned. Use structured logging, e.g. log.WithError(err).Error() or log.WithField().Info().' >&2
