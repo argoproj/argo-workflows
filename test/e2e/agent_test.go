@@ -4,12 +4,14 @@
 package e2e
 
 import (
-	"github.com/stretchr/testify/suite"
 	"sort"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/suite"
+
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
