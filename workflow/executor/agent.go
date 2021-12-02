@@ -200,6 +200,7 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Temp
 		result.Message = err.Error()
 		return &result
 	}
+	defer response.Body.Close()
 
 	bodyBytes, err := ioutil.ReadAll(response.Body)
 	if err != nil {
@@ -220,8 +221,8 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Temp
 	} else {
 		evalScope := map[string]interface{}{
 			"statusCode": response.StatusCode,
-			"body": string(bodyBytes),
-			"headers": response.Header,
+			"body":       string(bodyBytes),
+			"headers":    response.Header,
 		}
 		success, err = argoexpr.EvalBool(tmpl.HTTP.SuccessCondition, evalScope)
 		if err != nil {
@@ -235,7 +236,7 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Temp
 	}
 
 	result.Phase = map[bool]wfv1.NodePhase{
-		true: wfv1.NodeSucceeded,
+		true:  wfv1.NodeSucceeded,
 		false: wfv1.NodeFailed,
 	}[success]
 	result.Message = message
