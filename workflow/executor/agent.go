@@ -210,9 +210,13 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Temp
 
 	outputs := wfv1.Outputs{Parameters: []wfv1.Parameter{{Name: "result", Value: wfv1.AnyStringPtr(string(bodyBytes))}}}
 	success := false
+	message := ""
 	if tmpl.HTTP.SuccessCondition == "" {
-		// Default success condition: StatusCode == 2XX
+		// Default success condition: StatusCode == 2xx
 		success = response.StatusCode >= 200 && response.StatusCode < 300
+		if !success {
+			message = fmt.Sprintf("received non-2xx response code: %d", response.StatusCode)
+		}
 	} else {
 		evalScope := map[string]interface{}{
 			"status": response.StatusCode,
@@ -224,12 +228,16 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Temp
 			result.Message = err.Error()
 			return &result
 		}
+		if !success {
+			message = fmt.Sprintf("successCondition '%s' evaluated false", tmpl.HTTP.SuccessCondition)
+		}
 	}
 
 	result.Phase = map[bool]wfv1.NodePhase{
 		true: wfv1.NodeSucceeded,
 		false: wfv1.NodeFailed,
 	}[success]
+	result.Message = message
 	result.Outputs = &outputs
 	return &result
 }

@@ -4,10 +4,7 @@
 
 `HTTP Template` is a type of template which can execute the HTTP Requests.
 
- ### Agent Architecture
- V3.2 introduced `Agent` architecture to execute the multiple HTTPTemplates in single pod which improve a performance and resource utilization.
- `WorkflowTaskSet` CRD is introduced to exchange the data between Controller and Agent. 
- Agent pod named <workflowname-agent> and WorkflowTaskSet name as WorkflowName.
+### HTTP Template
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -19,16 +16,30 @@ spec:
   templates:
     - name: main
       steps:
-        - - name: good
+        - - name: get-google-homepage
             template: http
             arguments:
-              parameters: [{name: url, value: "https://raw.githubusercontent.com/argoproj/argo-workflows/4e450e250168e6b4d51a126b784e90b11a0162bc/pkg/apis/workflow/v1alpha1/generated.swagger.json"}]
+              parameters: [{name: url, value: "https://www.google.com"}]
     - name: http
       inputs:
         parameters:
           - name: url
       http:
-       # url: http://dummy.restapiexample.com/api/v1/employees
-       url: "{{inputs.parameters.url}}"
-      
+        timeoutSeconds: 20 # Default 30
+        url: "{{inputs.parameters.url}}"
+        method: "GET" # Default GET
+        headers:
+          - name: "x-header-name"
+            value: "test-value"
+        # Template will suceed if evaluated to true, otherwise will fail
+        # Available variables:
+        #  status: int, the response status code
+        #  body: string, the response body
+        successCondition: "body contains \"google\""
+        body: "test body" # Change request body
 ```
+
+### Argo Agent
+HTTP Templates use the Argo Agent, which executes the requests independently of the controller. The Agent and the Workflow
+Controller communicate through the `WorkflowTaskSet` CRD, which is created for each running `Workflow` that requires the use
+of the `Agent`.
