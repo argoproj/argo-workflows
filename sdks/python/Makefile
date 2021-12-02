@@ -12,7 +12,7 @@ WD                    := $(shell echo "`pwd`/client")
 DOCKER = docker run --rm -v $(WD):/wd --workdir /wd
 CHOWN = chown -R $(shell id -u):$(shell id -g)
 
-publish:
+publish: generate
 	echo "TODO: Publish the package to PyPI"
 
 generate:
@@ -41,4 +41,3 @@ generate:
 		--generate-alias-as-model
 	# https://vsupalov.com/docker-shared-permissions/#set-the-docker-user-when-running-your-container
 	$(CHOWN) $(WD) || sudo $(CHOWN) $(WD)
-	rm -rf $(WD)/.gitlab-ci.yml $(WD)/.travis.yml $(WD)/git_push.sh
