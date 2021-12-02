@@ -134,7 +134,7 @@ func (t *Then) ExpectWorkflowList(listOptions metav1.ListOptions, block func(t *
 	return t
 }
 
-func (t *Then) ExpectWorkflowListRetryOnError(listOptions metav1.ListOptions, block func(t *testing.T, client v1alpha1.WorkflowInterface, listOptions metav1.ListOptions)) *Then {
+func (t *Then) WaitForWorkflowList(listOptions metav1.ListOptions, block func(t *testing.T, client v1alpha1.WorkflowInterface, listOptions metav1.ListOptions)) *Then {
 	t.t.Helper()
 	_, _ = fmt.Println("Checking expectation")
 	block(t.t, t.client, listOptions)

@@ -105,7 +105,7 @@ func (s *FunctionalSuite) TestWorkflowRetention() {
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed).
 		Then().
-		ExpectWorkflowListRetryOnError(listOptions, func(t *testing.T, client v1alpha1.WorkflowInterface, listOptions metav1.ListOptions) {
+		WaitForWorkflowList(listOptions, func(t *testing.T, client v1alpha1.WorkflowInterface, listOptions metav1.ListOptions) {
 			err := retrier.New(retrier.ConstantBackoff(30, time.Second), nil).Run(func() error {
 				ctx := context.Background()
 				wfList, err := client.List(ctx, listOptions)
