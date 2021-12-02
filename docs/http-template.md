@@ -35,6 +35,7 @@ spec:
         # Available variables:
         #  statusCode: int, the response status code
         #  body: string, the response body
+        #  headers: map[string][]string, the response headers
         successCondition: "body contains \"google\""
         body: "test body" # Change request body
 ```

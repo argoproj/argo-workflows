@@ -167,8 +167,9 @@ Only available for `successCondition`
 
 | Variable | Description|
 |----------|------------|
-| `statusCode` | Status code of response (`int`) |
-| `body` | Body of response (`string`) |
+| `statusCode` | Response status code (`int`) |
+| `body` | Response body (`string`) |
+| `headers` | Response headers (`map[string][]string`) |
 
 ### RetryStrategy
 
