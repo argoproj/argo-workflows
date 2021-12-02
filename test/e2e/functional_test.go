@@ -809,6 +809,21 @@ func (s *FunctionalSuite) TestDataTransformation() {
 		})
 }
 
+func (s *FunctionalSuite) TestHTTPOutputs() {
+	s.Given().
+		Workflow("@testdata/http-outputs.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			httpNode := status.Nodes.FindByDisplayName("http")
+			assert.NotNil(t, httpNode.Outputs.Result)
+			echoNode := status.Nodes.FindByDisplayName("echo")
+			assert.Equal(t, *httpNode.Outputs.Result, echoNode.Inputs.Parameters[0].Value.String())
+		})
+}
+
 func (s *FunctionalSuite) TestScriptAsNonRoot() {
 	s.Given().
 		Workflow(`
