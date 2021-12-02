@@ -33,7 +33,7 @@ spec:
             value: "test-value"
         # Template will suceed if evaluated to true, otherwise will fail
         # Available variables:
-        #  status: int, the response status code
+        #  statusCode: int, the response status code
         #  body: string, the response body
         successCondition: "body contains \"google\""
         body: "test body" # Change request body

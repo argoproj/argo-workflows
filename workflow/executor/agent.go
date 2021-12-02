@@ -219,7 +219,7 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Temp
 		}
 	} else {
 		evalScope := map[string]interface{}{
-			"status": response.StatusCode,
+			"statusCode": response.StatusCode,
 			"body": string(bodyBytes),
 		}
 		success, err = argoexpr.EvalBool(tmpl.HTTP.SuccessCondition, evalScope)
