@@ -19,7 +19,7 @@
 
 set -eu
 
-from=$(git merge-base --fork-point master)
+from=$(git merge-base --fork-point origin/master)
 count=$(git diff "$from" | grep '^+' | grep -v '\(fmt\|errors\).Errorf' | grep -c '\(Debug\|Info\|Warn\|Warning\|Error\)f' || echo 0)
 
 if [ $count -gt 0 ]; then
