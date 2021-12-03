@@ -1,4 +1,4 @@
-package util
+package common
 
 import (
 	"fmt"
@@ -17,6 +17,11 @@ func GetConfigMapValue(configMapInformer cache.SharedIndexInformer, namespace, n
 		cm, ok := obj.(*apiv1.ConfigMap)
 		if !ok {
 			return "", fmt.Errorf("unable to convert object %s to configmap when syncing ConfigMaps", name)
+		}
+		if cmType := cm.Labels[LabelKeyConfigMapType]; cmType != LabelValueTypeConfigMapParameter {
+			return "", fmt.Errorf(
+				"ConfigMap '%s' needs to have the label %s: %s to load parameters",
+				name, LabelKeyConfigMapType, LabelValueTypeConfigMapParameter)
 		}
 		cmValue, ok := cm.Data[key]
 		if !ok {

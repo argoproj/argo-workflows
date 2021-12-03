@@ -46,3 +46,11 @@ func LookupEnvFloatOr(key string, o float64) float64 {
 	}
 	return o
 }
+
+func LookupEnvStringOr(key string, o string) string {
+	v, found := os.LookupEnv(key)
+	if found && v != "" {
+		return v
+	}
+	return o
+}
