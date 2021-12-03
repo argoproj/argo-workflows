@@ -3,7 +3,6 @@ package s3
 import (
 	"context"
 	"fmt"
-	envutil "github.com/argoproj/argo-workflows/v3/util/env"
 	"os"
 	"time"
 
@@ -15,6 +14,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	envutil "github.com/argoproj/argo-workflows/v3/util/env"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	artifactscommon "github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
