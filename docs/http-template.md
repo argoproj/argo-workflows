@@ -33,10 +33,14 @@ spec:
             value: "test-value"
         # Template will suceed if evaluated to true, otherwise will fail
         # Available variables:
-        #  statusCode: int, the response status code
-        #  body: string, the response body
-        #  headers: map[string][]string, the response headers
-        successCondition: "body contains \"google\""
+        #  request.body: string, the response body
+        #  request.headers: map[string][]string, the response headers
+        #  response.url: string, the request url
+        #  response.method: string, the request method
+        #  response.statusCode: int, the response status code
+        #  response.body: string, the response body
+        #  response.headers: map[string][]string, the response headers
+        successCondition: "response.body contains \"google\""
         body: "test body" # Change request body
 ```
 

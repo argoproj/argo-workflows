@@ -167,9 +167,13 @@ Only available for `successCondition`
 
 | Variable | Description|
 |----------|------------|
-| `statusCode` | Response status code (`int`) |
-| `body` | Response body (`string`) |
-| `headers` | Response headers (`map[string][]string`) |
+| `request.method` | Request method (`string`) |
+| `request.url` | Request URL (`string`) |
+| `request.body` | Request body (`string`) |
+| `request.headers` | Request headers (`map[string][]string`) |
+| `response.statusCode` | Response status code (`int`) |
+| `response.body` | Response body (`string`) |
+| `response.headers` | Response headers (`map[string][]string`) |
 
 ### RetryStrategy
 

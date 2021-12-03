@@ -120,14 +120,14 @@ spec:
         parameters:
           - name: url
       http:
-        successCondition: "statusCode == 201"
+        successCondition: "response.statusCode == 201"
         url: "{{inputs.parameters.url}}"
     - name: http-body-contains-google
       inputs:
         parameters:
           - name: url
       http:
-        successCondition: "body contains \"google\""
+        successCondition: "response.body contains \"google\""
         url: "{{inputs.parameters.url}}"
 `).
 		When().

@@ -17,7 +17,6 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/utils/pointer"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
@@ -221,9 +220,17 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Temp
 		}
 	} else {
 		evalScope := map[string]interface{}{
-			"statusCode": response.StatusCode,
-			"body":       string(bodyBytes),
-			"headers":    response.Header,
+			"request": map[string]interface{}{
+				"method": tmpl.HTTP.Method,
+				"url": tmpl.HTTP.URL,
+				"body": tmpl.HTTP.Body,
+				"headers": tmpl.HTTP.Headers.ToHeader(),
+			},
+			"response": map[string]interface{}{
+				"statusCode": response.StatusCode,
+				"body":       string(bodyBytes),
+				"headers":    response.Header,
+			},
 		}
 		success, err := argoexpr.EvalBool(tmpl.HTTP.SuccessCondition, evalScope)
 		if err != nil {
