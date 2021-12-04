@@ -302,6 +302,36 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 	}
 }
 
+func (w *When) WaitForWorkflowList(listOptions metav1.ListOptions, condition func(list []wfv1.Workflow) bool) *When {
+	w.t.Helper()
+	timeout := defaultTimeout
+	start := time.Now()
+	_, _ = fmt.Println("Waiting", timeout.String(), "for workflows", listOptions)
+	timeoutCh := make(chan bool, 1)
+	go func() {
+		time.Sleep(timeout)
+		timeoutCh <- true
+	}()
+	ctx := context.Background()
+	for {
+		select {
+		case <-timeoutCh:
+			w.t.Errorf("timeout after %v waiting for condition", timeout)
+			return w
+		default:
+			wfList, err := w.client.List(ctx, listOptions)
+			if err != nil {
+				w.t.Error(err)
+				return w
+			}
+			if ok := condition(wfList.Items); ok {
+				_, _ = fmt.Printf("Condition met after %s\n", time.Since(start).Truncate(time.Second))
+				return w
+			}
+		}
+	}
+}
+
 func (w *When) hydrateWorkflow(wf *wfv1.Workflow) {
 	w.t.Helper()
 	err := w.hydrator.Hydrate(wf)

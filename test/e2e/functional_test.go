@@ -104,20 +104,12 @@ func (s *FunctionalSuite) TestWorkflowRetention() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed).
-		Then().
-		WaitForWorkflowList(listOptions, func(t *testing.T, client v1alpha1.WorkflowInterface, listOptions metav1.ListOptions) {
-			err := retrier.New(retrier.ConstantBackoff(30, time.Second), nil).Run(func() error {
-				ctx := context.Background()
-				wfList, err := client.List(ctx, listOptions)
-				if err != nil {
-					return err
-				}
-				if len(wfList.Items) != 2 {
-					return fmt.Errorf("expected 2 workflows, got %d", len(wfList.Items))
-				}
-				return nil
-			})
-			assert.NoError(t, err)
+		When().
+		WaitForWorkflowList(listOptions, func(list []wfv1.Workflow) bool {
+			if len(list) == 2 {
+				return true
+			}
+			return false
 		})
 }
 
