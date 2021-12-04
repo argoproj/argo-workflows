@@ -307,15 +307,11 @@ func (w *When) WaitForWorkflowList(listOptions metav1.ListOptions, condition fun
 	timeout := defaultTimeout
 	start := time.Now()
 	_, _ = fmt.Println("Waiting", timeout.String(), "for workflows", listOptions)
-	timeoutCh := make(chan bool, 1)
-	go func() {
-		time.Sleep(timeout)
-		timeoutCh <- true
-	}()
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
 	for {
 		select {
-		case <-timeoutCh:
+		case <-ctx.Done():
 			w.t.Errorf("timeout after %v waiting for condition", timeout)
 			return w
 		default:
