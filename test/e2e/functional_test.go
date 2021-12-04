@@ -102,10 +102,7 @@ func (s *FunctionalSuite) TestWorkflowRetention() {
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed).
 		WaitForWorkflowList(listOptions, func(list []wfv1.Workflow) bool {
-			if len(list) == 2 {
-				return true
-			}
-			return false
+			return len(list) == 2
 		})
 }
 
