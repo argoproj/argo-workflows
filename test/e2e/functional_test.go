@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/eapache/go-resiliency/retrier"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	apiv1 "k8s.io/api/core/v1"
