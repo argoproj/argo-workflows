@@ -1203,17 +1203,20 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		// we only need to update these values if the container transitions to complete
 		if newPhase.Fulfilled() {
 			// outputs are mixed between the annotation (parameters, artifacts, and result) and the pod's status (exit code)
+			outputs := &wfv1.Outputs{}
 			if outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]; ok {
-				node.Outputs = &wfv1.Outputs{}
 				woc.log.Infof("Setting node %v outputs: %s", node.ID, outputStr)
-				if err := json.Unmarshal([]byte(outputStr), node.Outputs); err != nil { // I don't expect an error to ever happen in production
+				if err := json.Unmarshal([]byte(outputStr), outputs); err != nil { // I don't expect an error to ever happen in production
 					node.Phase = wfv1.NodeError
 					node.Message = err.Error()
 				}
 			}
 			if exitCode := getExitCode(pod); exitCode != nil {
 				woc.log.Infof("Updating node %s exit code %d", node.ID, *exitCode)
-				node.Outputs.ExitCode = pointer.StringPtr(fmt.Sprintf("%d", int(*exitCode)))
+				outputs.ExitCode = pointer.StringPtr(fmt.Sprintf("%d", int(*exitCode)))
+			}
+			if outputs.HasOutputs() {
+				node.Outputs = outputs
 			}
 		}
 
