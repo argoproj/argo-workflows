@@ -1320,7 +1320,7 @@ type Mutex struct {
 	// name of the mutex
 	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
 
-	// Selectors is a list of references to dynamic values (like parameters, labels, annotations) that can be added to semaphore key to make concurrency more customizable
+	// Selectors is a list of references to dynamic values (like parameters, labels, annotations) that can be added to mutex key to make concurrency more customizable
 	Selectors []SyncSelector `json:"selectors,omitempty" protobuf:"bytes,2,opt,name=selectors"`
 }
 
