@@ -1088,6 +1088,15 @@ spec:
                     properties:
                       name:
                         type: string
+                      selectors:
+                        items:
+                          properties:
+                            name:
+                              type: string
+                            template:
+                              type: string
+                          type: object
+                        type: array
                     type: object
                   semaphore:
                     properties:
@@ -1102,6 +1111,15 @@ spec:
                         required:
                         - key
                         type: object
+                      selectors:
+                        items:
+                          properties:
+                            name:
+                              type: string
+                            template:
+                              type: string
+                          type: object
+                        type: array
                     type: object
                 type: object
               templateDefaults:
@@ -6850,6 +6868,15 @@ spec:
                         properties:
                           name:
                             type: string
+                          selectors:
+                            items:
+                              properties:
+                                name:
+                                  type: string
+                                template:
+                                  type: string
+                              type: object
+                            type: array
                         type: object
                       semaphore:
                         properties:
@@ -6864,6 +6891,15 @@ spec:
                             required:
                             - key
                             type: object
+                          selectors:
+                            items:
+                              properties:
+                                name:
+                                  type: string
+                                template:
+                                  type: string
+                              type: object
+                            type: array
                         type: object
                     type: object
                   timeout:
@@ -13300,6 +13336,15 @@ spec:
                           properties:
                             name:
                               type: string
+                            selectors:
+                              items:
+                                properties:
+                                  name:
+                                    type: string
+                                  template:
+                                    type: string
+                                type: object
+                              type: array
                           type: object
                         semaphore:
                           properties:
@@ -13314,6 +13359,15 @@ spec:
                               required:
                               - key
                               type: object
+                            selectors:
+                              items:
+                                properties:
+                                  name:
+                                    type: string
+                                  template:
+                                    type: string
+                                type: object
+                              type: array
                           type: object
                       type: object
                     timeout:
