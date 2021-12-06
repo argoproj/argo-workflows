@@ -85,7 +85,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 		return nil, err
 	}
 	if !allowed {
-		return nil, status.Error(codes.PermissionDenied, "permission denied")
+		return nil, status.Error(codes.PermissionDenied, "Permission denied, you are not allowed to list workflows in namespace \"%s\". Maybe you want to specify a namespace with `listOptions.fieldSelector=metadata.namespace=your-ns`?")
 	}
 
 	// When the zero value is passed, we should treat this as returning all results
