@@ -239,7 +239,7 @@ func TestLoadS3Artifact(t *testing.T) {
 		},
 	}
 
-	t.Setenv(transientEnvVarKey, "this error is transient")
+	os.Setenv(transientEnvVarKey, "this error is transient")
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			success, err := loadS3Artifact(tc.s3client, &wfv1.Artifact{
@@ -260,6 +260,7 @@ func TestLoadS3Artifact(t *testing.T) {
 			}
 		})
 	}
+	os.Unsetenv(transientEnvVarKey)
 }
 
 func TestSaveS3Artifact(t *testing.T) {
@@ -371,8 +372,8 @@ func TestSaveS3Artifact(t *testing.T) {
 		},
 	}
 
+	os.Setenv(transientEnvVarKey, "this error is transient")
 	for name, tc := range tests {
-		t.Setenv(transientEnvVarKey, "this error is transient")
 		t.Run(name, func(t *testing.T) {
 			success, err := saveS3Artifact(
 				tc.s3client,
@@ -399,4 +400,5 @@ func TestSaveS3Artifact(t *testing.T) {
 			}
 		})
 	}
+	os.Unsetenv(transientEnvVarKey)
 }
