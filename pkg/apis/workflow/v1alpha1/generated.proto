@@ -921,6 +921,9 @@ message Metrics {
 message Mutex {
   // name of the mutex
   optional string name = 1;
+
+  // Selectors is a list of references to dynamic values (like parameters, labels, annotations) that can be added to mutex key to make concurrency more customizable
+  repeated SyncSelector selectors = 2;
 }
 
 // MutexHolding describes the mutex and the object which is holding it.
@@ -1384,6 +1387,9 @@ message SemaphoreHolding {
 message SemaphoreRef {
   // ConfigMapKeyRef is configmap selector for Semaphore configuration
   optional k8s.io.api.core.v1.ConfigMapKeySelector configMapKeyRef = 1;
+
+  // Selectors is a list of references to dynamic values (like parameters, labels, annotations) that can be added to semaphore key to make concurrency more customizable
+  repeated SyncSelector selectors = 2;
 }
 
 message SemaphoreStatus {
@@ -1468,6 +1474,15 @@ message SuppliedValueFrom {
 message SuspendTemplate {
   // Duration is the seconds to wait before automatically resuming a template
   optional string duration = 1;
+}
+
+// Synchronization selector
+message SyncSelector {
+  // Name of the selector
+  optional string name = 1;
+
+  // Template replaced with global variables
+  optional string template = 2;
 }
 
 // Synchronization holds synchronization lock configuration

@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 func TestDecodeLockName(t *testing.T) {
@@ -25,6 +27,7 @@ func TestDecodeLockName(t *testing.T) {
 				ResourceName: "test",
 				Key:          "",
 				Kind:         LockKindMutex,
+				Selectors:    []v1alpha1.SyncSelector{},
 			},
 			func(t assert.TestingT, err error, i ...interface{}) bool {
 				return true
@@ -38,6 +41,7 @@ func TestDecodeLockName(t *testing.T) {
 				ResourceName: "test/foo/bar/baz",
 				Key:          "",
 				Kind:         LockKindMutex,
+				Selectors:    []v1alpha1.SyncSelector{},
 			},
 			func(t assert.TestingT, err error, i ...interface{}) bool {
 				return true
@@ -51,6 +55,7 @@ func TestDecodeLockName(t *testing.T) {
 				ResourceName: "foo",
 				Key:          "bar",
 				Kind:         LockKindConfigMap,
+				Selectors:    []v1alpha1.SyncSelector{},
 			},
 			func(t assert.TestingT, err error, i ...interface{}) bool {
 				return true
@@ -62,6 +67,40 @@ func TestDecodeLockName(t *testing.T) {
 			nil,
 			func(t assert.TestingT, err error, i ...interface{}) bool {
 				return err == nil // this should error
+			},
+		},
+		{
+			"TestConfigMapSelectorsParsedCorrectly",
+			args{"default/ConfigMap/foo/bar?selector1=selector1-value&selector2=selector2-value"},
+			&LockName{
+				Namespace:    "default",
+				ResourceName: "foo",
+				Key:          "bar",
+				Kind:         LockKindConfigMap,
+				Selectors: []v1alpha1.SyncSelector{
+					{Name: "selector1", Template: "selector1-value"},
+					{Name: "selector2", Template: "selector2-value"},
+				},
+			},
+			func(t assert.TestingT, err error, i ...interface{}) bool {
+				return true
+			},
+		},
+		{
+			"TestMutexSelectorsParsedCorrectly",
+			args{"default/Mutex/test?selector1=selector1-value&selector2=selector2-value"},
+			&LockName{
+				Namespace:    "default",
+				ResourceName: "test",
+				Key:          "",
+				Kind:         LockKindMutex,
+				Selectors: []v1alpha1.SyncSelector{
+					{Name: "selector1", Template: "selector1-value"},
+					{Name: "selector2", Template: "selector2-value"},
+				},
+			},
+			func(t assert.TestingT, err error, i ...interface{}) bool {
+				return true
 			},
 		},
 	}

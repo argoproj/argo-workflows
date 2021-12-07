@@ -2134,6 +2134,13 @@ definitions:
       name:
         description: name of the mutex
         type: string
+      selectors:
+        description: Selectors is a list of references to dynamic values (like parameters,
+          labels, annotations) that can be added to mutex key to make concurrency
+          more customizable
+        items:
+          $ref: '#/definitions/SyncSelector'
+        type: array
     type: object
   NFSVolumeSource:
     description: NFS volumes do not support ownership management or SELinux relabeling.
@@ -3816,6 +3823,13 @@ definitions:
     properties:
       configMapKeyRef:
         $ref: '#/definitions/ConfigMapKeySelector'
+      selectors:
+        description: Selectors is a list of references to dynamic values (like parameters,
+          labels, annotations) that can be added to semaphore key to make concurrency
+          more customizable
+        items:
+          $ref: '#/definitions/SyncSelector'
+        type: array
     type: object
   Sequence:
     description: Sequence expands a workflow step into numeric range
@@ -3910,6 +3924,16 @@ definitions:
       duration:
         description: Duration is the seconds to wait before automatically resuming
           a template
+        type: string
+    type: object
+  SyncSelector:
+    description: Synchronization selector
+    properties:
+      name:
+        description: Name of the selector
+        type: string
+      template:
+        description: Template replaced with global variables
         type: string
     type: object
   Synchronization:

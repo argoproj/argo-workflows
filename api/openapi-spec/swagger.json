@@ -9282,6 +9282,13 @@
         "name": {
           "description": "name of the mutex",
           "type": "string"
+        },
+        "selectors": {
+          "description": "Selectors is a list of references to dynamic values (like parameters, labels, annotations) that can be added to mutex key to make concurrency more customizable",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SyncSelector"
+          }
         }
       }
     },
@@ -10172,6 +10179,13 @@
         "configMapKeyRef": {
           "description": "ConfigMapKeyRef is configmap selector for Semaphore configuration",
           "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector"
+        },
+        "selectors": {
+          "description": "Selectors is a list of references to dynamic values (like parameters, labels, annotations) that can be added to semaphore key to make concurrency more customizable",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SyncSelector"
+          }
         }
       }
     },
@@ -10303,6 +10317,20 @@
       "properties": {
         "duration": {
           "description": "Duration is the seconds to wait before automatically resuming a template",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.SyncSelector": {
+      "description": "Synchronization selector",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "Name of the selector",
+          "type": "string"
+        },
+        "template": {
+          "description": "Template replaced with global variables",
           "type": "string"
         }
       }

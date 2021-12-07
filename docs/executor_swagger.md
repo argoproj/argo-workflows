@@ -2455,6 +2455,7 @@ than the MaxAge, it will be ignored. |  |
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | name | string| `string` |  | | name of the mutex |  |
+| selectors | [][SyncSelector](#sync-selector)| `[]*SyncSelector` |  | | Selectors is a list of references to dynamic values (like parameters, labels, annotations) that can be added to mutex key to make concurrency more customizable |  |
 
 
 
@@ -4216,6 +4217,7 @@ Note that this field cannot be set when spec.os.name is windows.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | configMapKeyRef | [ConfigMapKeySelector](#config-map-key-selector)| `ConfigMapKeySelector` |  | |  |  |
+| selectors | [][SyncSelector](#sync-selector)| `[]*SyncSelector` |  | | Selectors is a list of references to dynamic values (like parameters, labels, annotations) that can be added to semaphore key to make concurrency more customizable |  |
 
 
 
@@ -4338,6 +4340,25 @@ Namespaces that do not pre-exist within StorageOS will be created.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | duration | string| `string` |  | | Duration is the seconds to wait before automatically resuming a template |  |
+
+
+
+### <span id="sync-selector"></span> SyncSelector
+
+
+> Synchronization selector
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| name | string| `string` |  | | Name of the selector |  |
+| template | string| `string` |  | | Template replaced with global variables |  |
 
 
 

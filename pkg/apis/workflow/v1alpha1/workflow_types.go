@@ -1646,16 +1646,31 @@ func (s *Synchronization) GetType() SynchronizationType {
 	return SynchronizationTypeUnknown
 }
 
+// Synchronization selector
+type SyncSelector struct {
+	// Name of the selector
+	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
+
+	// Template replaced with global variables
+	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
+}
+
 // SemaphoreRef is a reference of Semaphore
 type SemaphoreRef struct {
 	// ConfigMapKeyRef is configmap selector for Semaphore configuration
 	ConfigMapKeyRef *apiv1.ConfigMapKeySelector `json:"configMapKeyRef,omitempty" protobuf:"bytes,1,opt,name=configMapKeyRef"`
+
+	// Selectors is a list of references to dynamic values (like parameters, labels, annotations) that can be added to semaphore key to make concurrency more customizable
+	Selectors []SyncSelector `json:"selectors,omitempty" protobuf:"bytes,2,opt,name=selectors"`
 }
 
 // Mutex holds Mutex configuration
 type Mutex struct {
 	// name of the mutex
 	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
+
+	// Selectors is a list of references to dynamic values (like parameters, labels, annotations) that can be added to mutex key to make concurrency more customizable
+	Selectors []SyncSelector `json:"selectors,omitempty" protobuf:"bytes,2,opt,name=selectors"`
 }
 
 // WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
