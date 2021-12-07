@@ -4,7 +4,7 @@ import {uiUrl} from '../../shared/base';
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {services} from '../../shared/services';
 
-import {Select} from 'argo-ui';
+import {Select, Tooltip} from 'argo-ui';
 import {TagsInput} from '../../shared/components/tags-input/tags-input';
 
 interface Props {
@@ -82,6 +82,11 @@ export class SubmitWorkflowPanel extends React.Component<Props, State> {
                                 {this.state.parameters.map((parameter, index) => (
                                     <div key={parameter.name + '_' + index}>
                                         <label>{parameter.name}</label>
+                                        {parameter.description && (
+                                            <Tooltip content={parameter.description}>
+                                                <i className='fa fa-question-circle' />
+                                            </Tooltip>
+                                        )}
                                         {(parameter.enum && this.displaySelectFieldForEnumValues(parameter)) || this.displayInputFieldForSingleValue(parameter)}
                                     </div>
                                 ))}

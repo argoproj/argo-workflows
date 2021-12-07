@@ -89,6 +89,7 @@ class IoArgoprojWorkflowV1alpha1Parameter(ModelNormal):
         return {
             'name': (str,),  # noqa: E501
             'default': (str,),  # noqa: E501
+            'description': (str,),  # noqa: E501
             'enum': ([str],),  # noqa: E501
             'global_name': (str,),  # noqa: E501
             'value': (str,),  # noqa: E501
@@ -103,6 +104,7 @@ class IoArgoprojWorkflowV1alpha1Parameter(ModelNormal):
     attribute_map = {
         'name': 'name',  # noqa: E501
         'default': 'default',  # noqa: E501
+        'description': 'description',  # noqa: E501
         'enum': 'enum',  # noqa: E501
         'global_name': 'globalName',  # noqa: E501
         'value': 'value',  # noqa: E501
@@ -154,6 +156,7 @@ class IoArgoprojWorkflowV1alpha1Parameter(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             default (str): Default is the default value to use for an input parameter if a value was not supplied. [optional]  # noqa: E501
+            description (str): Description is the parameter description. [optional]  # noqa: E501
             enum ([str]): Enum holds a list of string values to choose from, for the actual value of the parameter. [optional]  # noqa: E501
             global_name (str): GlobalName exports an output parameter to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters. [optional]  # noqa: E501
             value (str): Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values. [optional]  # noqa: E501
@@ -244,6 +247,7 @@ class IoArgoprojWorkflowV1alpha1Parameter(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             default (str): Default is the default value to use for an input parameter if a value was not supplied. [optional]  # noqa: E501
+            description (str): Description is the parameter description. [optional]  # noqa: E501
             enum ([str]): Enum holds a list of string values to choose from, for the actual value of the parameter. [optional]  # noqa: E501
             global_name (str): GlobalName exports an output parameter to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters. [optional]  # noqa: E501
             value (str): Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values. [optional]  # noqa: E501

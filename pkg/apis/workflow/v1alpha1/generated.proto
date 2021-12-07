@@ -948,6 +948,9 @@ message Parameter {
 
   // Enum holds a list of string values to choose from, for the actual value of the parameter
   repeated string enum = 6;
+
+  // Description is the parameter description
+  optional string description = 7;
 }
 
 // PodGC describes how to delete completed pods as they complete

@@ -765,6 +765,9 @@ type Parameter struct {
 
 	// Enum holds a list of string values to choose from, for the actual value of the parameter
 	Enum []AnyString `json:"enum,omitempty" protobuf:"bytes,6,rep,name=enum"`
+
+	// Description is the parameter description
+	Description *AnyString `json:"description,omitempty" protobuf:"bytes,7,opt,name=description"`
 }
 
 // ValueFrom describes a location in which to obtain the value to a parameter
