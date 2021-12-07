@@ -14,7 +14,7 @@ spec:
       serviceAccountName: argo
       containers:
         - name: workflow-controller
-          image: quay.io/codefresh/workflow-controller:latest
+          image: quay.io/codefresh/workflow-controller:v3.2.4-cap-CR-6798-linux-amd64
           securityContext:
             readOnlyRootFilesystem: true
             runAsNonRoot: true
@@ -28,7 +28,7 @@ spec:
             - --configmap
             - workflow-controller-configmap
             - --executor-image
-            - quay.io/codefresh/argoexec:latest
+            - quay.io/codefresh/argoexec:v3.2.4-cap-CR-6798-linux-amd64
           env:
             - name: LEADER_ELECTION_IDENTITY
               valueFrom:

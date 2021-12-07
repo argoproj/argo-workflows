@@ -14,7 +14,7 @@ spec:
       serviceAccountName: argo-server
       containers:
         - name: argo-server
-          image: quay.io/codefresh/argocli:latest
+          image: quay.io/codefresh/argocli:v3.2.4-cap-CR-6798-linux-amd64
           securityContext:
             capabilities:
               drop:
