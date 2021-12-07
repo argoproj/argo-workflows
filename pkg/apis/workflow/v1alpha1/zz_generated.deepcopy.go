@@ -1852,6 +1852,11 @@ func (in *Parameter) DeepCopyInto(out *Parameter) {
 		*out = make([]AnyString, len(*in))
 		copy(*out, *in)
 	}
+	if in.Description != nil {
+		in, out := &in.Description, &out.Description
+		*out = new(AnyString)
+		**out = **in
+	}
 	return
 }
 
