@@ -92,8 +92,14 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, missedExecutionTime.IsZero())
 
-	// Run the same test in a different timezone
+	// Same test, but simulate a change to the schedule immediately prior by setting a different last-used-schedule annotation
+	// In this case, since a schedule change is detected, not workflow should be run
+	woc.cronWf.Annotations[common.AnnotationKeyCronWfLastUsedSchedule] = "0 * * * *"
+	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
+	assert.NoError(t, err)
+	assert.True(t, missedExecutionTime.IsZero())
 
+	// Run the same test in a different timezone
 	testTimezone := "Pacific/Niue"
 	testLocation, err := time.LoadLocation(testTimezone)
 	if err != nil {
@@ -109,6 +115,7 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 		cronWf: &cronWf,
 		log:    logrus.WithFields(logrus.Fields{}),
 	}
+	// Reset last-used-schedule as if the current schedule has been used before
 	woc.annotateLastUsedSchedule()
 	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
 	assert.NoError(t, err)
@@ -122,6 +129,13 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 		cronWf: &cronWf,
 		log:    logrus.WithFields(logrus.Fields{}),
 	}
+	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
+	assert.NoError(t, err)
+	assert.True(t, missedExecutionTime.IsZero())
+
+	// Same test, but simulate a change to the schedule immediately prior by setting a different last-used-schedule annotation
+	// In this case, since a schedule change is detected, not workflow should be run
+	woc.cronWf.Annotations[common.AnnotationKeyCronWfLastUsedSchedule] = "0 * * * *"
 	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
 	assert.NoError(t, err)
 	assert.True(t, missedExecutionTime.IsZero())
