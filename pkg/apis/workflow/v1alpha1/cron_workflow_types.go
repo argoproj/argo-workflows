@@ -76,6 +76,14 @@ func (c *CronWorkflowStatus) HasActiveUID(uid types.UID) bool {
 	return false
 }
 
+func (c *CronWorkflowSpec) GetScheduleString() string {
+	scheduleString := c.Schedule
+	if c.Timezone != "" {
+		scheduleString = "CRON_TZ=" + c.Timezone + " " + scheduleString
+	}
+	return scheduleString
+}
+
 const (
 	// ConditionTypeSubmissionError signifies that there was an error when submitting the CronWorkflow as a Workflow
 	ConditionTypeSubmissionError ConditionType = "SubmissionError"

@@ -15,3 +15,15 @@ func TestCronWorkflowStatus_HasActiveUID(t *testing.T) {
 	assert.True(t, cwfStatus.HasActiveUID("123"))
 	assert.False(t, cwfStatus.HasActiveUID("foo"))
 }
+
+func TestCronWorkflowSpec_GetScheduleString(t *testing.T) {
+	cwfSpec := CronWorkflowSpec{
+		Timezone: "",
+		Schedule: "* * * * *",
+	}
+
+	assert.Equal(t, "* * * * *", cwfSpec.GetScheduleString())
+
+	cwfSpec.Timezone = "America/Los_Angeles"
+	assert.Equal(t, "CRON_TZ=America/Los_Angeles * * * * *", cwfSpec.GetScheduleString())
+}
