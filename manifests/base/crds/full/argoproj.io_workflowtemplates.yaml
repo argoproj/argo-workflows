@@ -725,6 +725,8 @@ spec:
                       properties:
                         default:
                           type: string
+                        description:
+                          type: string
                         enum:
                           items:
                             type: string
@@ -3251,6 +3253,8 @@ spec:
                                     properties:
                                       default:
                                         type: string
+                                      description:
+                                        type: string
                                       enum:
                                         items:
                                           type: string
@@ -3651,6 +3655,8 @@ spec:
                                         items:
                                           properties:
                                             default:
+                                              type: string
+                                            description:
                                               type: string
                                             enum:
                                               items:
@@ -5059,6 +5065,8 @@ spec:
                           properties:
                             default:
                               type: string
+                            description:
+                              type: string
                             enum:
                               items:
                                 type: string
@@ -5549,6 +5557,8 @@ spec:
                         items:
                           properties:
                             default:
+                              type: string
+                            description:
                               type: string
                             enum:
                               items:
@@ -9703,6 +9713,8 @@ spec:
                                       properties:
                                         default:
                                           type: string
+                                        description:
+                                          type: string
                                         enum:
                                           items:
                                             type: string
@@ -10103,6 +10115,8 @@ spec:
                                           items:
                                             properties:
                                               default:
+                                                type: string
+                                              description:
                                                 type: string
                                               enum:
                                                 items:
@@ -11511,6 +11525,8 @@ spec:
                             properties:
                               default:
                                 type: string
+                              description:
+                                type: string
                               enum:
                                 items:
                                   type: string
@@ -12001,6 +12017,8 @@ spec:
                           items:
                             properties:
                               default:
+                                type: string
+                              description:
                                 type: string
                               enum:
                                 items:

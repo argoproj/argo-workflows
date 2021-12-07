@@ -5988,6 +5988,10 @@
           "description": "Default is the default value to use for an input parameter if a value was not supplied",
           "type": "string"
         },
+        "description": {
+          "description": "Description is the parameter description",
+          "type": "string"
+        },
         "enum": {
           "description": "Enum holds a list of string values to choose from, for the actual value of the parameter",
           "items": {

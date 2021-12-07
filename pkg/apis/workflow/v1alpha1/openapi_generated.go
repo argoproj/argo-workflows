@@ -3716,6 +3716,13 @@ func schema_pkg_apis_workflow_v1alpha1_Parameter(ref common.ReferenceCallback) c
 							},
 						},
 					},
+					"description": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Description is the parameter description",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"name"},
 			},
