@@ -9601,6 +9601,10 @@
           "description": "Method is HTTP methods for HTTP Request",
           "type": "string"
         },
+        "successCondition": {
+          "description": "SuccessCondition is an expression if evaluated to true is considered successful",
+          "type": "string"
+        },
         "timeoutSeconds": {
           "description": "TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds",
           "type": "integer"

@@ -91,6 +91,7 @@ class IoArgoprojWorkflowV1alpha1HTTP(ModelNormal):
             'body': (str,),  # noqa: E501
             'headers': ([IoArgoprojWorkflowV1alpha1HTTPHeader],),  # noqa: E501
             'method': (str,),  # noqa: E501
+            'success_condition': (str,),  # noqa: E501
             'timeout_seconds': (int,),  # noqa: E501
         }
 
@@ -104,6 +105,7 @@ class IoArgoprojWorkflowV1alpha1HTTP(ModelNormal):
         'body': 'body',  # noqa: E501
         'headers': 'headers',  # noqa: E501
         'method': 'method',  # noqa: E501
+        'success_condition': 'successCondition',  # noqa: E501
         'timeout_seconds': 'timeoutSeconds',  # noqa: E501
     }
 
@@ -154,6 +156,7 @@ class IoArgoprojWorkflowV1alpha1HTTP(ModelNormal):
             body (str): Body is content of the HTTP Request. [optional]  # noqa: E501
             headers ([IoArgoprojWorkflowV1alpha1HTTPHeader]): Headers are an optional list of headers to send with HTTP requests. [optional]  # noqa: E501
             method (str): Method is HTTP methods for HTTP Request. [optional]  # noqa: E501
+            success_condition (str): SuccessCondition is an expression if evaluated to true is considered successful. [optional]  # noqa: E501
             timeout_seconds (int): TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds. [optional]  # noqa: E501
         """
 
@@ -243,6 +246,7 @@ class IoArgoprojWorkflowV1alpha1HTTP(ModelNormal):
             body (str): Body is content of the HTTP Request. [optional]  # noqa: E501
             headers ([IoArgoprojWorkflowV1alpha1HTTPHeader]): Headers are an optional list of headers to send with HTTP requests. [optional]  # noqa: E501
             method (str): Method is HTTP methods for HTTP Request. [optional]  # noqa: E501
+            success_condition (str): SuccessCondition is an expression if evaluated to true is considered successful. [optional]  # noqa: E501
             timeout_seconds (int): TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds. [optional]  # noqa: E501
         """
 
