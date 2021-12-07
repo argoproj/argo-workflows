@@ -2355,6 +2355,7 @@ spec:
     strategy: OnPodSuccess
   nodeSelector:
     beta.kubernetes.io/arch: "{{inputs.parameters.arch}}"
+  nodeName: my-node
   arguments:
     parameters:
     - name: lines-count
