@@ -200,7 +200,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		}
 	}()
 
-	woc.log.Infof("Processing workflow")
+	woc.log.Info("Processing workflow")
 
 	// Set the Execute workflow spec for execution
 	// ExecWF is a runtime execution spec which merged from Wf, WFT and Wfdefault
@@ -302,7 +302,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	}
 
 	if woc.ShouldSuspend() {
-		woc.log.Infof("workflow suspended")
+		woc.log.Info("workflow suspended")
 		return
 	}
 	if woc.execWf.Spec.Parallelism != nil {
@@ -603,7 +603,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		woc.log.Info("Re-applying updates on latest version and retrying update")
 		wf, err := woc.reapplyUpdate(ctx, wfClient, nodes)
 		if err != nil {
-			woc.log.Infof("Failed to re-apply update: %+v", err)
+			woc.log.WithError(err).Info("Failed to re-apply update")
 			return
 		}
 		woc.wf = wf
@@ -1104,10 +1104,19 @@ func (woc *wfOperationCtx) getAllWorkflowPods() ([]*apiv1.Pod, error) {
 
 func printPodSpecLog(pod *apiv1.Pod, wfName string) {
 	podSpecByte, err := json.Marshal(pod)
+	log := log.WithField("workflow", wfName).
+		WithField("podName", pod.Name).
+		WithField("nodeID", pod.Annotations[common.AnnotationKeyNodeID]).
+		WithField("namespace", pod.Namespace)
 	if err != nil {
-		log.WithField("workflow", wfName).WithField("nodename", pod.Name).WithField("namespace", pod.Namespace).Warnf("Unable to mashal pod spec. %v", err)
+		log.
+			WithError(err).
+			Warn("Unable to marshal pod spec.")
+	} else {
+		log.
+			WithField("spec", string(podSpecByte)).
+			Info("Pod Spec")
 	}
-	log.WithField("workflow", wfName).WithField("nodename", pod.Name).WithField("namespace", pod.Namespace).Infof("Pod Spec: %s", string(podSpecByte))
 }
 
 // assessNodeStatus compares the current state of a pod with its corresponding node
@@ -1971,7 +1980,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 	case wfv1.WorkflowSucceeded, wfv1.WorkflowFailed, wfv1.WorkflowError:
 		// wait for all daemon nodes to get terminated before marking workflow completed
 		if markCompleted && !woc.hasDaemonNodes() {
-			woc.log.Infof("Marking workflow completed")
+			woc.log.Info("Marking workflow completed")
 			woc.wf.Status.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 			woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", woc.wf.Status.FinishedAt.Sub(woc.wf.Status.StartedAt.Time).Seconds())
 			if woc.wf.ObjectMeta.Labels == nil {
@@ -1988,10 +1997,10 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 			}
 			if woc.controller.wfArchive.IsEnabled() {
 				if woc.controller.isArchivable(woc.wf) {
-					woc.log.Infof("Marking workflow as pending archiving")
+					woc.log.Info("Marking workflow as pending archiving")
 					woc.wf.Labels[common.LabelKeyWorkflowArchivingStatus] = "Pending"
 				} else {
-					woc.log.Infof("Doesn't match with archive label selector. Skipping Archive")
+					woc.log.Info("Doesn't match with archive label selector. Skipping Archive")
 				}
 			}
 			woc.updated = true
@@ -2225,7 +2234,7 @@ func (woc *wfOperationCtx) recordNodePhaseEvent(node *wfv1.NodeStatus) {
 	if eventConfig.SendAsPod {
 		pod, err := woc.getPodByNode(node)
 		if err != nil {
-			woc.log.Infof("Error getting pod from workflow node: %s", err)
+			woc.log.WithError(err).Info("Error getting pod from workflow node")
 		}
 		if pod != nil {
 			involvedObject = pod
@@ -3283,7 +3292,7 @@ func (woc *wfOperationCtx) createPDBResource(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	woc.log.Infof("Created PDB resource for workflow.")
+	woc.log.Info("Created PDB resource for workflow.")
 	woc.updated = true
 	return nil
 }
@@ -3303,7 +3312,7 @@ func (woc *wfOperationCtx) deletePDBResource(ctx context.Context) error {
 		woc.log.WithField("err", err).Error("Unable to delete PDB resource for workflow.")
 		return err
 	}
-	woc.log.Infof("Deleted PDB resource for workflow.")
+	woc.log.Info("Deleted PDB resource for workflow.")
 	return nil
 }
 

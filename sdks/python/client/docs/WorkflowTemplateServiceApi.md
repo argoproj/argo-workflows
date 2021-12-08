@@ -409,6 +409,7 @@ with argo_workflows.ApiClient() as api_client:
                     parameters=[
                         IoArgoprojWorkflowV1alpha1Parameter(
                             default="default_example",
+                            description="description_example",
                             enum=[
                                 "enum_example",
                             ],
@@ -1587,6 +1588,7 @@ with argo_workflows.ApiClient() as api_client:
                                     parameters=[
                                         IoArgoprojWorkflowV1alpha1Parameter(
                                             default="default_example",
+                                            description="description_example",
                                             enum=[
                                                 "enum_example",
                                             ],
@@ -1784,6 +1786,7 @@ with argo_workflows.ApiClient() as api_client:
                                             parameters=[
                                                 IoArgoprojWorkflowV1alpha1Parameter(
                                                     default="default_example",
+                                                    description="description_example",
                                                     enum=[
                                                         "enum_example",
                                                     ],
@@ -2447,6 +2450,7 @@ with argo_workflows.ApiClient() as api_client:
                         parameters=[
                             IoArgoprojWorkflowV1alpha1Parameter(
                                 default="default_example",
+                                description="description_example",
                                 enum=[
                                     "enum_example",
                                 ],
@@ -2686,6 +2690,7 @@ with argo_workflows.ApiClient() as api_client:
                         parameters=[
                             IoArgoprojWorkflowV1alpha1Parameter(
                                 default="default_example",
+                                description="description_example",
                                 enum=[
                                     "enum_example",
                                 ],
@@ -3437,6 +3442,7 @@ with argo_workflows.ApiClient() as api_client:
                                     parameters=[
                                         IoArgoprojWorkflowV1alpha1Parameter(
                                             default="default_example",
+                                            description="description_example",
                                             enum=[
                                                 "enum_example",
                                             ],
@@ -3630,6 +3636,7 @@ with argo_workflows.ApiClient() as api_client:
                                             parameters=[
                                                 IoArgoprojWorkflowV1alpha1Parameter(
                                                     default="default_example",
+                                                    description="description_example",
                                                     enum=[
                                                         "enum_example",
                                                     ],
@@ -4972,6 +4979,7 @@ with argo_workflows.ApiClient() as api_client:
                                         parameters=[
                                             IoArgoprojWorkflowV1alpha1Parameter(
                                                 default="default_example",
+                                                description="description_example",
                                                 enum=[
                                                     "enum_example",
                                                 ],
@@ -5169,6 +5177,7 @@ with argo_workflows.ApiClient() as api_client:
                                                 parameters=[
                                                     IoArgoprojWorkflowV1alpha1Parameter(
                                                         default="default_example",
+                                                        description="description_example",
                                                         enum=[
                                                             "enum_example",
                                                         ],
@@ -5832,6 +5841,7 @@ with argo_workflows.ApiClient() as api_client:
                             parameters=[
                                 IoArgoprojWorkflowV1alpha1Parameter(
                                     default="default_example",
+                                    description="description_example",
                                     enum=[
                                         "enum_example",
                                     ],
@@ -6071,6 +6081,7 @@ with argo_workflows.ApiClient() as api_client:
                             parameters=[
                                 IoArgoprojWorkflowV1alpha1Parameter(
                                     default="default_example",
+                                    description="description_example",
                                     enum=[
                                         "enum_example",
                                     ],
@@ -6822,6 +6833,7 @@ with argo_workflows.ApiClient() as api_client:
                                         parameters=[
                                             IoArgoprojWorkflowV1alpha1Parameter(
                                                 default="default_example",
+                                                description="description_example",
                                                 enum=[
                                                     "enum_example",
                                                 ],
@@ -7015,6 +7027,7 @@ with argo_workflows.ApiClient() as api_client:
                                                 parameters=[
                                                     IoArgoprojWorkflowV1alpha1Parameter(
                                                         default="default_example",
+                                                        description="description_example",
                                                         enum=[
                                                             "enum_example",
                                                         ],
@@ -8427,6 +8440,7 @@ with argo_workflows.ApiClient() as api_client:
                     parameters=[
                         IoArgoprojWorkflowV1alpha1Parameter(
                             default="default_example",
+                            description="description_example",
                             enum=[
                                 "enum_example",
                             ],
@@ -9605,6 +9619,7 @@ with argo_workflows.ApiClient() as api_client:
                                     parameters=[
                                         IoArgoprojWorkflowV1alpha1Parameter(
                                             default="default_example",
+                                            description="description_example",
                                             enum=[
                                                 "enum_example",
                                             ],
@@ -9802,6 +9817,7 @@ with argo_workflows.ApiClient() as api_client:
                                             parameters=[
                                                 IoArgoprojWorkflowV1alpha1Parameter(
                                                     default="default_example",
+                                                    description="description_example",
                                                     enum=[
                                                         "enum_example",
                                                     ],
@@ -10465,6 +10481,7 @@ with argo_workflows.ApiClient() as api_client:
                         parameters=[
                             IoArgoprojWorkflowV1alpha1Parameter(
                                 default="default_example",
+                                description="description_example",
                                 enum=[
                                     "enum_example",
                                 ],
@@ -10704,6 +10721,7 @@ with argo_workflows.ApiClient() as api_client:
                         parameters=[
                             IoArgoprojWorkflowV1alpha1Parameter(
                                 default="default_example",
+                                description="description_example",
                                 enum=[
                                     "enum_example",
                                 ],
@@ -11455,6 +11473,7 @@ with argo_workflows.ApiClient() as api_client:
                                     parameters=[
                                         IoArgoprojWorkflowV1alpha1Parameter(
                                             default="default_example",
+                                            description="description_example",
                                             enum=[
                                                 "enum_example",
                                             ],
@@ -11648,6 +11667,7 @@ with argo_workflows.ApiClient() as api_client:
                                             parameters=[
                                                 IoArgoprojWorkflowV1alpha1Parameter(
                                                     default="default_example",
+                                                    description="description_example",
                                                     enum=[
                                                         "enum_example",
                                                     ],
@@ -12990,6 +13010,7 @@ with argo_workflows.ApiClient() as api_client:
                                         parameters=[
                                             IoArgoprojWorkflowV1alpha1Parameter(
                                                 default="default_example",
+                                                description="description_example",
                                                 enum=[
                                                     "enum_example",
                                                 ],
@@ -13187,6 +13208,7 @@ with argo_workflows.ApiClient() as api_client:
                                                 parameters=[
                                                     IoArgoprojWorkflowV1alpha1Parameter(
                                                         default="default_example",
+                                                        description="description_example",
                                                         enum=[
                                                             "enum_example",
                                                         ],
@@ -13850,6 +13872,7 @@ with argo_workflows.ApiClient() as api_client:
                             parameters=[
                                 IoArgoprojWorkflowV1alpha1Parameter(
                                     default="default_example",
+                                    description="description_example",
                                     enum=[
                                         "enum_example",
                                     ],
@@ -14089,6 +14112,7 @@ with argo_workflows.ApiClient() as api_client:
                             parameters=[
                                 IoArgoprojWorkflowV1alpha1Parameter(
                                     default="default_example",
+                                    description="description_example",
                                     enum=[
                                         "enum_example",
                                     ],
@@ -14840,6 +14864,7 @@ with argo_workflows.ApiClient() as api_client:
                                         parameters=[
                                             IoArgoprojWorkflowV1alpha1Parameter(
                                                 default="default_example",
+                                                description="description_example",
                                                 enum=[
                                                     "enum_example",
                                                 ],
@@ -15033,6 +15058,7 @@ with argo_workflows.ApiClient() as api_client:
                                                 parameters=[
                                                     IoArgoprojWorkflowV1alpha1Parameter(
                                                         default="default_example",
+                                                        description="description_example",
                                                         enum=[
                                                             "enum_example",
                                                         ],
@@ -16368,6 +16394,7 @@ with argo_workflows.ApiClient() as api_client:
                     parameters=[
                         IoArgoprojWorkflowV1alpha1Parameter(
                             default="default_example",
+                            description="description_example",
                             enum=[
                                 "enum_example",
                             ],
@@ -17546,6 +17573,7 @@ with argo_workflows.ApiClient() as api_client:
                                     parameters=[
                                         IoArgoprojWorkflowV1alpha1Parameter(
                                             default="default_example",
+                                            description="description_example",
                                             enum=[
                                                 "enum_example",
                                             ],
@@ -17743,6 +17771,7 @@ with argo_workflows.ApiClient() as api_client:
                                             parameters=[
                                                 IoArgoprojWorkflowV1alpha1Parameter(
                                                     default="default_example",
+                                                    description="description_example",
                                                     enum=[
                                                         "enum_example",
                                                     ],
@@ -18406,6 +18435,7 @@ with argo_workflows.ApiClient() as api_client:
                         parameters=[
                             IoArgoprojWorkflowV1alpha1Parameter(
                                 default="default_example",
+                                description="description_example",
                                 enum=[
                                     "enum_example",
                                 ],
@@ -18645,6 +18675,7 @@ with argo_workflows.ApiClient() as api_client:
                         parameters=[
                             IoArgoprojWorkflowV1alpha1Parameter(
                                 default="default_example",
+                                description="description_example",
                                 enum=[
                                     "enum_example",
                                 ],
@@ -19396,6 +19427,7 @@ with argo_workflows.ApiClient() as api_client:
                                     parameters=[
                                         IoArgoprojWorkflowV1alpha1Parameter(
                                             default="default_example",
+                                            description="description_example",
                                             enum=[
                                                 "enum_example",
                                             ],
@@ -19589,6 +19621,7 @@ with argo_workflows.ApiClient() as api_client:
                                             parameters=[
                                                 IoArgoprojWorkflowV1alpha1Parameter(
                                                     default="default_example",
+                                                    description="description_example",
                                                     enum=[
                                                         "enum_example",
                                                     ],
@@ -20931,6 +20964,7 @@ with argo_workflows.ApiClient() as api_client:
                                         parameters=[
                                             IoArgoprojWorkflowV1alpha1Parameter(
                                                 default="default_example",
+                                                description="description_example",
                                                 enum=[
                                                     "enum_example",
                                                 ],
@@ -21128,6 +21162,7 @@ with argo_workflows.ApiClient() as api_client:
                                                 parameters=[
                                                     IoArgoprojWorkflowV1alpha1Parameter(
                                                         default="default_example",
+                                                        description="description_example",
                                                         enum=[
                                                             "enum_example",
                                                         ],
@@ -21791,6 +21826,7 @@ with argo_workflows.ApiClient() as api_client:
                             parameters=[
                                 IoArgoprojWorkflowV1alpha1Parameter(
                                     default="default_example",
+                                    description="description_example",
                                     enum=[
                                         "enum_example",
                                     ],
@@ -22030,6 +22066,7 @@ with argo_workflows.ApiClient() as api_client:
                             parameters=[
                                 IoArgoprojWorkflowV1alpha1Parameter(
                                     default="default_example",
+                                    description="description_example",
                                     enum=[
                                         "enum_example",
                                     ],
@@ -22781,6 +22818,7 @@ with argo_workflows.ApiClient() as api_client:
                                         parameters=[
                                             IoArgoprojWorkflowV1alpha1Parameter(
                                                 default="default_example",
+                                                description="description_example",
                                                 enum=[
                                                     "enum_example",
                                                 ],
@@ -22974,6 +23012,7 @@ with argo_workflows.ApiClient() as api_client:
                                                 parameters=[
                                                     IoArgoprojWorkflowV1alpha1Parameter(
                                                         default="default_example",
+                                                        description="description_example",
                                                         enum=[
                                                             "enum_example",
                                                         ],

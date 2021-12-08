@@ -43,7 +43,7 @@ func (woc *wfOperationCtx) reconcileAgentPod(ctx context.Context) error {
 }
 
 func (woc *wfOperationCtx) updateAgentPodStatus(ctx context.Context, pod *apiv1.Pod) {
-	woc.log.Infof("updateAgentPodStatus")
+	woc.log.Info("updateAgentPodStatus")
 	newPhase, message := assessAgentPodStatus(pod)
 	if newPhase == wfv1.WorkflowFailed || newPhase == wfv1.WorkflowError {
 		woc.markWorkflowError(ctx, fmt.Errorf("agent pod failed with reason %s", message))
@@ -53,7 +53,9 @@ func (woc *wfOperationCtx) updateAgentPodStatus(ctx context.Context, pod *apiv1.
 func assessAgentPodStatus(pod *apiv1.Pod) (wfv1.WorkflowPhase, string) {
 	var newPhase wfv1.WorkflowPhase
 	var message string
-	log.Infof("assessAgentPodStatus")
+	log.WithField("namespace", pod.Namespace).
+		WithField("podName", pod.Name).
+		Info("assessAgentPodStatus")
 	switch pod.Status.Phase {
 	case apiv1.PodSucceeded, apiv1.PodRunning, apiv1.PodPending:
 		return "", ""
@@ -69,6 +71,7 @@ func assessAgentPodStatus(pod *apiv1.Pod) (wfv1.WorkflowPhase, string) {
 
 func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, error) {
 	podName := woc.getAgentPodName()
+	log := woc.log.WithField("podName", podName)
 
 	obj, exists, err := woc.controller.podInformer.GetStore().Get(cache.ExplicitKey(woc.wf.Namespace + "/" + podName))
 	if err != nil {
@@ -77,7 +80,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	if exists {
 		existing, ok := obj.(*apiv1.Pod)
 		if ok {
-			woc.log.WithField("podPhase", existing.Status.Phase).Debugf("Skipped pod %s  creation: already exists", podName)
+			log.WithField("podPhase", existing.Status.Phase).Debug("Skipped pod creation: already exists")
 			return existing, nil
 		}
 	}
@@ -112,11 +115,12 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			ImagePullSecrets: woc.execWf.Spec.ImagePullSecrets,
 			Containers: []apiv1.Container{
 				{
-					Name:    "main",
-					Command: []string{"argoexec"},
-					Args:    []string{"agent"},
-					Image:   woc.controller.executorImage(),
-					Env:     envVars,
+					Name:            "main",
+					Command:         []string{"argoexec"},
+					Args:            []string{"agent"},
+					Image:           woc.controller.executorImage(),
+					ImagePullPolicy: woc.controller.executorImagePullPolicy(),
+					Env:             envVars,
 				},
 			},
 		},
@@ -129,17 +133,16 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		pod.Spec.ServiceAccountName = woc.wf.Spec.ServiceAccountName
 	}
 
-	woc.log.Debugf("Creating Agent Pod: %s", podName)
+	log.Debug("Creating Agent pod")
 
 	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
+		log.WithError(err).Info("Failed to create Agent pod")
 		if apierr.IsAlreadyExists(err) {
-			woc.log.Infof("Agent Pod %s  creation: already exists", podName)
 			return created, nil
 		}
-		woc.log.Infof("Failed to create Agent pod %s: %v", podName, err)
 		return nil, errors.InternalWrapError(fmt.Errorf("failed to create Agent pod. Reason: %v", err))
 	}
-	woc.log.Infof("Created Agent pod: %s", created.Name)
+	log.Info("Created Agent pod")
 	return created, nil
 }

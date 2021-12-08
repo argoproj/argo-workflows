@@ -134,7 +134,7 @@ var cacheGCPeriod = env.LookupEnvDurationOr("CACHE_GC_PERIOD", 0)
 
 func init() {
 	if cacheGCPeriod != 0 {
-		log.WithField("cacheGCPeriod", cacheGCPeriod).Infof("GC for memoization caches will be performed every %s", cacheGCPeriod)
+		log.WithField("cacheGCPeriod", cacheGCPeriod).Info("GC for memoization caches will be performed every")
 	}
 }
 
@@ -230,7 +230,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		WithField("workflowTtl", workflowTTLWorkers).
 		WithField("pod", podWorkers).
 		WithField("podCleanup", podCleanupWorkers).
-		Infof("Current Worker Numbers")
+		Info("Current Worker Numbers")
 
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListOptions, indexers)
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
@@ -597,7 +597,7 @@ func (wfc *WorkflowController) workflowGarbageCollector(stopCh <-chan struct{}) 
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 
 	periodicity := env.LookupEnvDurationOr("WORKFLOW_GC_PERIOD", 5*time.Minute)
-	log.Infof("Performing periodic GC every %v", periodicity)
+	log.WithField("periodicity", periodicity).Info("Performing periodic GC")
 	ticker := time.NewTicker(periodicity)
 	for {
 		select {
