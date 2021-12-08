@@ -1,19 +1,19 @@
-# openapi_client.WorkflowTemplateServiceApi
+# argo_workflows.WorkflowTemplateServiceApi
 
 All URIs are relative to *http://localhost:2746*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**workflow_template_service_create_workflow_template**](WorkflowTemplateServiceApi.md#workflow_template_service_create_workflow_template) | **POST** /api/v1/workflow-templates/{namespace} | 
-[**workflow_template_service_delete_workflow_template**](WorkflowTemplateServiceApi.md#workflow_template_service_delete_workflow_template) | **DELETE** /api/v1/workflow-templates/{namespace}/{name} | 
-[**workflow_template_service_get_workflow_template**](WorkflowTemplateServiceApi.md#workflow_template_service_get_workflow_template) | **GET** /api/v1/workflow-templates/{namespace}/{name} | 
-[**workflow_template_service_lint_workflow_template**](WorkflowTemplateServiceApi.md#workflow_template_service_lint_workflow_template) | **POST** /api/v1/workflow-templates/{namespace}/lint | 
-[**workflow_template_service_list_workflow_templates**](WorkflowTemplateServiceApi.md#workflow_template_service_list_workflow_templates) | **GET** /api/v1/workflow-templates/{namespace} | 
-[**workflow_template_service_update_workflow_template**](WorkflowTemplateServiceApi.md#workflow_template_service_update_workflow_template) | **PUT** /api/v1/workflow-templates/{namespace}/{name} | 
+[**create_workflow_template**](WorkflowTemplateServiceApi.md#create_workflow_template) | **POST** /api/v1/workflow-templates/{namespace} | 
+[**delete_workflow_template**](WorkflowTemplateServiceApi.md#delete_workflow_template) | **DELETE** /api/v1/workflow-templates/{namespace}/{name} | 
+[**get_workflow_template**](WorkflowTemplateServiceApi.md#get_workflow_template) | **GET** /api/v1/workflow-templates/{namespace}/{name} | 
+[**lint_workflow_template**](WorkflowTemplateServiceApi.md#lint_workflow_template) | **POST** /api/v1/workflow-templates/{namespace}/lint | 
+[**list_workflow_templates**](WorkflowTemplateServiceApi.md#list_workflow_templates) | **GET** /api/v1/workflow-templates/{namespace} | 
+[**update_workflow_template**](WorkflowTemplateServiceApi.md#update_workflow_template) | **PUT** /api/v1/workflow-templates/{namespace}/{name} | 
 
 
-# **workflow_template_service_create_workflow_template**
-> IoArgoprojWorkflowV1alpha1WorkflowTemplate workflow_template_service_create_workflow_template(namespace, body)
+# **create_workflow_template**
+> IoArgoprojWorkflowV1alpha1WorkflowTemplate create_workflow_template(namespace, body)
 
 
 
@@ -21,21 +21,21 @@ Method | HTTP request | Description
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import workflow_template_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_template_create_request import IoArgoprojWorkflowV1alpha1WorkflowTemplateCreateRequest
-from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_template import IoArgoprojWorkflowV1alpha1WorkflowTemplate
+import argo_workflows
+from argo_workflows.api import workflow_template_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_template_create_request import IoArgoprojWorkflowV1alpha1WorkflowTemplateCreateRequest
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_template import IoArgoprojWorkflowV1alpha1WorkflowTemplate
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = workflow_template_service_api.WorkflowTemplateServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -7831,10 +7831,10 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.workflow_template_service_create_workflow_template(namespace, body)
+        api_response = api_instance.create_workflow_template(namespace, body)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling WorkflowTemplateServiceApi->workflow_template_service_create_workflow_template: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling WorkflowTemplateServiceApi->create_workflow_template: %s\n" % e)
 ```
 
 
@@ -7867,8 +7867,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **workflow_template_service_delete_workflow_template**
-> bool, date, datetime, dict, float, int, list, str, none_type workflow_template_service_delete_workflow_template(namespace, name)
+# **delete_workflow_template**
+> bool, date, datetime, dict, float, int, list, str, none_type delete_workflow_template(namespace, name)
 
 
 
@@ -7876,19 +7876,19 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import workflow_template_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+import argo_workflows
+from argo_workflows.api import workflow_template_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = workflow_template_service_api.WorkflowTemplateServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -7904,18 +7904,18 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.workflow_template_service_delete_workflow_template(namespace, name)
+        api_response = api_instance.delete_workflow_template(namespace, name)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling WorkflowTemplateServiceApi->workflow_template_service_delete_workflow_template: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling WorkflowTemplateServiceApi->delete_workflow_template: %s\n" % e)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.workflow_template_service_delete_workflow_template(namespace, name, delete_options_grace_period_seconds=delete_options_grace_period_seconds, delete_options_preconditions_uid=delete_options_preconditions_uid, delete_options_preconditions_resource_version=delete_options_preconditions_resource_version, delete_options_orphan_dependents=delete_options_orphan_dependents, delete_options_propagation_policy=delete_options_propagation_policy, delete_options_dry_run=delete_options_dry_run)
+        api_response = api_instance.delete_workflow_template(namespace, name, delete_options_grace_period_seconds=delete_options_grace_period_seconds, delete_options_preconditions_uid=delete_options_preconditions_uid, delete_options_preconditions_resource_version=delete_options_preconditions_resource_version, delete_options_orphan_dependents=delete_options_orphan_dependents, delete_options_propagation_policy=delete_options_propagation_policy, delete_options_dry_run=delete_options_dry_run)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling WorkflowTemplateServiceApi->workflow_template_service_delete_workflow_template: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling WorkflowTemplateServiceApi->delete_workflow_template: %s\n" % e)
 ```
 
 
@@ -7954,8 +7954,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **workflow_template_service_get_workflow_template**
-> IoArgoprojWorkflowV1alpha1WorkflowTemplate workflow_template_service_get_workflow_template(namespace, name)
+# **get_workflow_template**
+> IoArgoprojWorkflowV1alpha1WorkflowTemplate get_workflow_template(namespace, name)
 
 
 
@@ -7963,20 +7963,20 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import workflow_template_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_template import IoArgoprojWorkflowV1alpha1WorkflowTemplate
+import argo_workflows
+from argo_workflows.api import workflow_template_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_template import IoArgoprojWorkflowV1alpha1WorkflowTemplate
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = workflow_template_service_api.WorkflowTemplateServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -7985,18 +7985,18 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.workflow_template_service_get_workflow_template(namespace, name)
+        api_response = api_instance.get_workflow_template(namespace, name)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling WorkflowTemplateServiceApi->workflow_template_service_get_workflow_template: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling WorkflowTemplateServiceApi->get_workflow_template: %s\n" % e)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.workflow_template_service_get_workflow_template(namespace, name, get_options_resource_version=get_options_resource_version)
+        api_response = api_instance.get_workflow_template(namespace, name, get_options_resource_version=get_options_resource_version)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling WorkflowTemplateServiceApi->workflow_template_service_get_workflow_template: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling WorkflowTemplateServiceApi->get_workflow_template: %s\n" % e)
 ```
 
 
@@ -8030,8 +8030,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **workflow_template_service_lint_workflow_template**
-> IoArgoprojWorkflowV1alpha1WorkflowTemplate workflow_template_service_lint_workflow_template(namespace, body)
+# **lint_workflow_template**
+> IoArgoprojWorkflowV1alpha1WorkflowTemplate lint_workflow_template(namespace, body)
 
 
 
@@ -8039,21 +8039,21 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import workflow_template_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_template_lint_request import IoArgoprojWorkflowV1alpha1WorkflowTemplateLintRequest
-from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_template import IoArgoprojWorkflowV1alpha1WorkflowTemplate
+import argo_workflows
+from argo_workflows.api import workflow_template_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_template_lint_request import IoArgoprojWorkflowV1alpha1WorkflowTemplateLintRequest
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_template import IoArgoprojWorkflowV1alpha1WorkflowTemplate
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = workflow_template_service_api.WorkflowTemplateServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -15849,10 +15849,10 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.workflow_template_service_lint_workflow_template(namespace, body)
+        api_response = api_instance.lint_workflow_template(namespace, body)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling WorkflowTemplateServiceApi->workflow_template_service_lint_workflow_template: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling WorkflowTemplateServiceApi->lint_workflow_template: %s\n" % e)
 ```
 
 
@@ -15885,8 +15885,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **workflow_template_service_list_workflow_templates**
-> IoArgoprojWorkflowV1alpha1WorkflowTemplateList workflow_template_service_list_workflow_templates(namespace)
+# **list_workflow_templates**
+> IoArgoprojWorkflowV1alpha1WorkflowTemplateList list_workflow_templates(namespace)
 
 
 
@@ -15894,20 +15894,20 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import workflow_template_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_template_list import IoArgoprojWorkflowV1alpha1WorkflowTemplateList
+import argo_workflows
+from argo_workflows.api import workflow_template_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_template_list import IoArgoprojWorkflowV1alpha1WorkflowTemplateList
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = workflow_template_service_api.WorkflowTemplateServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -15923,18 +15923,18 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.workflow_template_service_list_workflow_templates(namespace)
+        api_response = api_instance.list_workflow_templates(namespace)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling WorkflowTemplateServiceApi->workflow_template_service_list_workflow_templates: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling WorkflowTemplateServiceApi->list_workflow_templates: %s\n" % e)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.workflow_template_service_list_workflow_templates(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue)
+        api_response = api_instance.list_workflow_templates(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling WorkflowTemplateServiceApi->workflow_template_service_list_workflow_templates: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling WorkflowTemplateServiceApi->list_workflow_templates: %s\n" % e)
 ```
 
 
@@ -15975,8 +15975,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **workflow_template_service_update_workflow_template**
-> IoArgoprojWorkflowV1alpha1WorkflowTemplate workflow_template_service_update_workflow_template(namespace, name, body)
+# **update_workflow_template**
+> IoArgoprojWorkflowV1alpha1WorkflowTemplate update_workflow_template(namespace, name, body)
 
 
 
@@ -15984,21 +15984,21 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import workflow_template_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_template import IoArgoprojWorkflowV1alpha1WorkflowTemplate
-from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_template_update_request import IoArgoprojWorkflowV1alpha1WorkflowTemplateUpdateRequest
+import argo_workflows
+from argo_workflows.api import workflow_template_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_template import IoArgoprojWorkflowV1alpha1WorkflowTemplate
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_template_update_request import IoArgoprojWorkflowV1alpha1WorkflowTemplateUpdateRequest
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = workflow_template_service_api.WorkflowTemplateServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -23790,10 +23790,10 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.workflow_template_service_update_workflow_template(namespace, name, body)
+        api_response = api_instance.update_workflow_template(namespace, name, body)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling WorkflowTemplateServiceApi->workflow_template_service_update_workflow_template: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling WorkflowTemplateServiceApi->update_workflow_template: %s\n" % e)
 ```
 
 

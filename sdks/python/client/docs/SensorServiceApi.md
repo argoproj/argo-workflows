@@ -1,20 +1,20 @@
-# openapi_client.SensorServiceApi
+# argo_workflows.SensorServiceApi
 
 All URIs are relative to *http://localhost:2746*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**sensor_service_create_sensor**](SensorServiceApi.md#sensor_service_create_sensor) | **POST** /api/v1/sensors/{namespace} | 
-[**sensor_service_delete_sensor**](SensorServiceApi.md#sensor_service_delete_sensor) | **DELETE** /api/v1/sensors/{namespace}/{name} | 
-[**sensor_service_get_sensor**](SensorServiceApi.md#sensor_service_get_sensor) | **GET** /api/v1/sensors/{namespace}/{name} | 
-[**sensor_service_list_sensors**](SensorServiceApi.md#sensor_service_list_sensors) | **GET** /api/v1/sensors/{namespace} | 
-[**sensor_service_sensors_logs**](SensorServiceApi.md#sensor_service_sensors_logs) | **GET** /api/v1/stream/sensors/{namespace}/logs | 
-[**sensor_service_update_sensor**](SensorServiceApi.md#sensor_service_update_sensor) | **PUT** /api/v1/sensors/{namespace}/{name} | 
-[**sensor_service_watch_sensors**](SensorServiceApi.md#sensor_service_watch_sensors) | **GET** /api/v1/stream/sensors/{namespace} | 
+[**create_sensor**](SensorServiceApi.md#create_sensor) | **POST** /api/v1/sensors/{namespace} | 
+[**delete_sensor**](SensorServiceApi.md#delete_sensor) | **DELETE** /api/v1/sensors/{namespace}/{name} | 
+[**get_sensor**](SensorServiceApi.md#get_sensor) | **GET** /api/v1/sensors/{namespace}/{name} | 
+[**list_sensors**](SensorServiceApi.md#list_sensors) | **GET** /api/v1/sensors/{namespace} | 
+[**sensors_logs**](SensorServiceApi.md#sensors_logs) | **GET** /api/v1/stream/sensors/{namespace}/logs | 
+[**update_sensor**](SensorServiceApi.md#update_sensor) | **PUT** /api/v1/sensors/{namespace}/{name} | 
+[**watch_sensors**](SensorServiceApi.md#watch_sensors) | **GET** /api/v1/stream/sensors/{namespace} | 
 
 
-# **sensor_service_create_sensor**
-> IoArgoprojEventsV1alpha1Sensor sensor_service_create_sensor(namespace, body)
+# **create_sensor**
+> IoArgoprojEventsV1alpha1Sensor create_sensor(namespace, body)
 
 
 
@@ -22,21 +22,21 @@ Method | HTTP request | Description
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import sensor_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.sensor_create_sensor_request import SensorCreateSensorRequest
-from openapi_client.model.io_argoproj_events_v1alpha1_sensor import IoArgoprojEventsV1alpha1Sensor
+import argo_workflows
+from argo_workflows.api import sensor_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_events_v1alpha1_sensor import IoArgoprojEventsV1alpha1Sensor
+from argo_workflows.model.sensor_create_sensor_request import SensorCreateSensorRequest
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = sensor_service_api.SensorServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -1623,10 +1623,10 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.sensor_service_create_sensor(namespace, body)
+        api_response = api_instance.create_sensor(namespace, body)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling SensorServiceApi->sensor_service_create_sensor: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling SensorServiceApi->create_sensor: %s\n" % e)
 ```
 
 
@@ -1659,8 +1659,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **sensor_service_delete_sensor**
-> bool, date, datetime, dict, float, int, list, str, none_type sensor_service_delete_sensor(namespace, name)
+# **delete_sensor**
+> bool, date, datetime, dict, float, int, list, str, none_type delete_sensor(namespace, name)
 
 
 
@@ -1668,19 +1668,19 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import sensor_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+import argo_workflows
+from argo_workflows.api import sensor_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = sensor_service_api.SensorServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -1696,18 +1696,18 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.sensor_service_delete_sensor(namespace, name)
+        api_response = api_instance.delete_sensor(namespace, name)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling SensorServiceApi->sensor_service_delete_sensor: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling SensorServiceApi->delete_sensor: %s\n" % e)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.sensor_service_delete_sensor(namespace, name, delete_options_grace_period_seconds=delete_options_grace_period_seconds, delete_options_preconditions_uid=delete_options_preconditions_uid, delete_options_preconditions_resource_version=delete_options_preconditions_resource_version, delete_options_orphan_dependents=delete_options_orphan_dependents, delete_options_propagation_policy=delete_options_propagation_policy, delete_options_dry_run=delete_options_dry_run)
+        api_response = api_instance.delete_sensor(namespace, name, delete_options_grace_period_seconds=delete_options_grace_period_seconds, delete_options_preconditions_uid=delete_options_preconditions_uid, delete_options_preconditions_resource_version=delete_options_preconditions_resource_version, delete_options_orphan_dependents=delete_options_orphan_dependents, delete_options_propagation_policy=delete_options_propagation_policy, delete_options_dry_run=delete_options_dry_run)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling SensorServiceApi->sensor_service_delete_sensor: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling SensorServiceApi->delete_sensor: %s\n" % e)
 ```
 
 
@@ -1746,8 +1746,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **sensor_service_get_sensor**
-> IoArgoprojEventsV1alpha1Sensor sensor_service_get_sensor(namespace, name)
+# **get_sensor**
+> IoArgoprojEventsV1alpha1Sensor get_sensor(namespace, name)
 
 
 
@@ -1755,20 +1755,20 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import sensor_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_events_v1alpha1_sensor import IoArgoprojEventsV1alpha1Sensor
+import argo_workflows
+from argo_workflows.api import sensor_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_events_v1alpha1_sensor import IoArgoprojEventsV1alpha1Sensor
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = sensor_service_api.SensorServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -1777,18 +1777,18 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.sensor_service_get_sensor(namespace, name)
+        api_response = api_instance.get_sensor(namespace, name)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling SensorServiceApi->sensor_service_get_sensor: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling SensorServiceApi->get_sensor: %s\n" % e)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.sensor_service_get_sensor(namespace, name, get_options_resource_version=get_options_resource_version)
+        api_response = api_instance.get_sensor(namespace, name, get_options_resource_version=get_options_resource_version)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling SensorServiceApi->sensor_service_get_sensor: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling SensorServiceApi->get_sensor: %s\n" % e)
 ```
 
 
@@ -1822,8 +1822,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **sensor_service_list_sensors**
-> IoArgoprojEventsV1alpha1SensorList sensor_service_list_sensors(namespace)
+# **list_sensors**
+> IoArgoprojEventsV1alpha1SensorList list_sensors(namespace)
 
 
 
@@ -1831,20 +1831,20 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import sensor_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_events_v1alpha1_sensor_list import IoArgoprojEventsV1alpha1SensorList
+import argo_workflows
+from argo_workflows.api import sensor_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_events_v1alpha1_sensor_list import IoArgoprojEventsV1alpha1SensorList
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = sensor_service_api.SensorServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -1860,18 +1860,18 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.sensor_service_list_sensors(namespace)
+        api_response = api_instance.list_sensors(namespace)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling SensorServiceApi->sensor_service_list_sensors: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling SensorServiceApi->list_sensors: %s\n" % e)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.sensor_service_list_sensors(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue)
+        api_response = api_instance.list_sensors(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling SensorServiceApi->sensor_service_list_sensors: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling SensorServiceApi->list_sensors: %s\n" % e)
 ```
 
 
@@ -1912,8 +1912,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **sensor_service_sensors_logs**
-> StreamResultOfSensorLogEntry sensor_service_sensors_logs(namespace)
+# **sensors_logs**
+> StreamResultOfSensorLogEntry sensors_logs(namespace)
 
 
 
@@ -1921,20 +1921,20 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import sensor_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.stream_result_of_sensor_log_entry import StreamResultOfSensorLogEntry
+import argo_workflows
+from argo_workflows.api import sensor_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.stream_result_of_sensor_log_entry import StreamResultOfSensorLogEntry
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = sensor_service_api.SensorServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -1954,18 +1954,18 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.sensor_service_sensors_logs(namespace)
+        api_response = api_instance.sensors_logs(namespace)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling SensorServiceApi->sensor_service_sensors_logs: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling SensorServiceApi->sensors_logs: %s\n" % e)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.sensor_service_sensors_logs(namespace, name=name, trigger_name=trigger_name, grep=grep, pod_log_options_container=pod_log_options_container, pod_log_options_follow=pod_log_options_follow, pod_log_options_previous=pod_log_options_previous, pod_log_options_since_seconds=pod_log_options_since_seconds, pod_log_options_since_time_seconds=pod_log_options_since_time_seconds, pod_log_options_since_time_nanos=pod_log_options_since_time_nanos, pod_log_options_timestamps=pod_log_options_timestamps, pod_log_options_tail_lines=pod_log_options_tail_lines, pod_log_options_limit_bytes=pod_log_options_limit_bytes, pod_log_options_insecure_skip_tls_verify_backend=pod_log_options_insecure_skip_tls_verify_backend)
+        api_response = api_instance.sensors_logs(namespace, name=name, trigger_name=trigger_name, grep=grep, pod_log_options_container=pod_log_options_container, pod_log_options_follow=pod_log_options_follow, pod_log_options_previous=pod_log_options_previous, pod_log_options_since_seconds=pod_log_options_since_seconds, pod_log_options_since_time_seconds=pod_log_options_since_time_seconds, pod_log_options_since_time_nanos=pod_log_options_since_time_nanos, pod_log_options_timestamps=pod_log_options_timestamps, pod_log_options_tail_lines=pod_log_options_tail_lines, pod_log_options_limit_bytes=pod_log_options_limit_bytes, pod_log_options_insecure_skip_tls_verify_backend=pod_log_options_insecure_skip_tls_verify_backend)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling SensorServiceApi->sensor_service_sensors_logs: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling SensorServiceApi->sensors_logs: %s\n" % e)
 ```
 
 
@@ -2010,8 +2010,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **sensor_service_update_sensor**
-> IoArgoprojEventsV1alpha1Sensor sensor_service_update_sensor(namespace, name, body)
+# **update_sensor**
+> IoArgoprojEventsV1alpha1Sensor update_sensor(namespace, name, body)
 
 
 
@@ -2019,21 +2019,21 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import sensor_service_api
-from openapi_client.model.sensor_update_sensor_request import SensorUpdateSensorRequest
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_events_v1alpha1_sensor import IoArgoprojEventsV1alpha1Sensor
+import argo_workflows
+from argo_workflows.api import sensor_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_events_v1alpha1_sensor import IoArgoprojEventsV1alpha1Sensor
+from argo_workflows.model.sensor_update_sensor_request import SensorUpdateSensorRequest
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = sensor_service_api.SensorServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -3616,10 +3616,10 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.sensor_service_update_sensor(namespace, name, body)
+        api_response = api_instance.update_sensor(namespace, name, body)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling SensorServiceApi->sensor_service_update_sensor: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling SensorServiceApi->update_sensor: %s\n" % e)
 ```
 
 
@@ -3653,8 +3653,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **sensor_service_watch_sensors**
-> StreamResultOfSensorSensorWatchEvent sensor_service_watch_sensors(namespace)
+# **watch_sensors**
+> StreamResultOfSensorSensorWatchEvent watch_sensors(namespace)
 
 
 
@@ -3662,20 +3662,20 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import sensor_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.stream_result_of_sensor_sensor_watch_event import StreamResultOfSensorSensorWatchEvent
+import argo_workflows
+from argo_workflows.api import sensor_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.stream_result_of_sensor_sensor_watch_event import StreamResultOfSensorSensorWatchEvent
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = sensor_service_api.SensorServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -3691,18 +3691,18 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.sensor_service_watch_sensors(namespace)
+        api_response = api_instance.watch_sensors(namespace)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling SensorServiceApi->sensor_service_watch_sensors: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling SensorServiceApi->watch_sensors: %s\n" % e)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.sensor_service_watch_sensors(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue)
+        api_response = api_instance.watch_sensors(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling SensorServiceApi->sensor_service_watch_sensors: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling SensorServiceApi->watch_sensors: %s\n" % e)
 ```
 
 
