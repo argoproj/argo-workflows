@@ -50,7 +50,7 @@ export const Login = () => (
                 </div>
                 <div className='columns small-4'>
                     <p>
-                        If your organisation has configured <b>client authentication</b>, get your token using <code>kubectl -n argo exec $YOUR_ARGO_SERVER_POD_ID argo auth token</code> and paste in this box:
+                        If your organisation has configured <b>client authentication</b>, get your token following this instructions from <a href="https://argoproj.github.io/argo-workflows/access-token/#token-creation">here</a> and paste in this box:
                     </p>
                     <div>
                         <textarea id='token' cols={32} rows={8} />
