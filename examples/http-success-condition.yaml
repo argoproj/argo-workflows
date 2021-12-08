@@ -12,18 +12,10 @@ spec:
   templates:
     - name: main
       steps:
-        - - name: http-status-is-201-fails
-            template: http-status-is-201
-            arguments:
-              parameters: [{name: url, value: "http://httpstat.us/200"}]  # Returns status code 200
-          - name: http-status-is-201-succeeds
+        - - name: http-status-is-201-succeeds
             template: http-status-is-201
             arguments:
               parameters: [{name: url, value: "http://httpstat.us/201"}]  # Returns status code 201
-          - name: http-body-contains-google-fails
-            template: http-body-contains-google
-            arguments:
-              parameters: [{name: url, value: "http://httpstat.us/200"}]  # Returns empty body
           - name: http-body-contains-google-succeeds
             template: http-body-contains-google
             arguments:
@@ -33,7 +25,7 @@ spec:
         parameters:
           - name: url
       http:
-        successCondition: "http.status == 201" # Succeed only if status is 201, otherwise fail
+        successCondition: "response.statusCode == 201" # Succeed only if status is 201, otherwise fail
         url: "{{inputs.parameters.url}}"
     - name: http-body-contains-google
       inputs:
@@ -42,7 +34,7 @@ spec:
       http:
         successCondition: "response.body contains \"google\"" # Succeed only if body contains "google", otherwise fail
         url: "{{inputs.parameters.url}}"
-    - name: http-headers-contains-google
+    - name: http-headers-contains-cloudflare
       inputs:
         parameters:
           - name: url
