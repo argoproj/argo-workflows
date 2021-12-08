@@ -3,7 +3,7 @@ ifeq ($(GIT_TAG),untagged)
 VERSION               := 0.0.0-latest
 else
 # remove the "v" prefix, not allowed
-VERSION				  := $(subst v,,${GIT_TAG})
+VERSION               := $(subst v,,$(GIT_TAG))
 endif
 
 # work dir
@@ -34,7 +34,6 @@ generate:
 		--additional-properties packageName="argo_workflows" \
 		--additional-properties projectName="argo-workflows" \
 		--additional-properties hideGenerationTimestamp=true \
-		--skip-validate-spec \
 		--remove-operation-id-prefix \
 		--model-name-prefix '' \
 		--model-name-suffix '' \
