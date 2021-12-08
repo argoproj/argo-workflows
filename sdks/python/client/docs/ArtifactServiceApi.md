@@ -17,7 +17,6 @@ Get an input artifact.
 
 ### Example
 
-
 ```python
 import time
 import argo_workflows
@@ -73,7 +72,6 @@ No authorization required
 
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | An artifact file. |  -  |
@@ -87,7 +85,6 @@ No authorization required
 Get an input artifact by UID.
 
 ### Example
-
 
 ```python
 import time
@@ -144,7 +141,6 @@ No authorization required
 
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | An artifact file. |  -  |
@@ -158,7 +154,6 @@ No authorization required
 Get an output artifact.
 
 ### Example
-
 
 ```python
 import time
@@ -215,7 +210,6 @@ No authorization required
 
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | An artifact file. |  -  |
@@ -229,7 +223,6 @@ No authorization required
 Get an output artifact by UID.
 
 ### Example
-
 
 ```python
 import time
@@ -284,7 +277,6 @@ No authorization required
 
 
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | An artifact file. |  -  |
