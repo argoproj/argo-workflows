@@ -3,7 +3,7 @@ ifeq ($(GIT_TAG),untagged)
 VERSION               := 0.0.0-latest
 else
 # remove the "v" prefix, not allowed
-VERSION               := $(GIT_TAG:v=)
+VERSION				  := $(subst v,,${GIT_TAG})
 endif
 
 # work dir
