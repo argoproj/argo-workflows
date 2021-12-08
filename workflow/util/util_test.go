@@ -839,3 +839,34 @@ func TestToUnstructured(t *testing.T) {
 		assert.Equal(t, workflow.Version, gv.Version)
 	}
 }
+
+func TestGetTemplateFromNode(t *testing.T) {
+	cases := []struct {
+		inputNode            wfv1.NodeStatus
+		expectedTemplateName string
+	}{
+		{
+			inputNode: wfv1.NodeStatus{
+				TemplateRef: &wfv1.TemplateRef{
+					Name:         "foo-workflowtemplate",
+					Template:     "foo-template",
+					ClusterScope: false,
+				},
+				TemplateName: "",
+			},
+			expectedTemplateName: "foo-template",
+		},
+		{
+			inputNode: wfv1.NodeStatus{
+				TemplateRef:  nil,
+				TemplateName: "bar-template",
+			},
+			expectedTemplateName: "bar-template",
+		},
+	}
+
+	for _, tc := range cases {
+		actual := getTemplateFromNode(tc.inputNode)
+		assert.Equal(t, tc.expectedTemplateName, actual)
+	}
+}
