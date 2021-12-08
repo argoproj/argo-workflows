@@ -21,6 +21,7 @@ Method | HTTP request | Description
 
 ### Example
 
+
 ```python
 import time
 import argo_workflows
@@ -7905,6 +7906,7 @@ No authorization required
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | A successful response. |  -  |
@@ -7918,6 +7920,7 @@ No authorization required
 
 
 ### Example
+
 
 ```python
 import time
@@ -7992,6 +7995,7 @@ No authorization required
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | A successful response. |  -  |
@@ -8005,6 +8009,7 @@ No authorization required
 
 
 ### Example
+
 
 ```python
 import time
@@ -8068,6 +8073,7 @@ No authorization required
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | A successful response. |  -  |
@@ -8081,6 +8087,7 @@ No authorization required
 
 
 ### Example
+
 
 ```python
 import time
@@ -15960,6 +15967,7 @@ No authorization required
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | A successful response. |  -  |
@@ -15973,6 +15981,7 @@ No authorization required
 
 
 ### Example
+
 
 ```python
 import time
@@ -16050,6 +16059,7 @@ No authorization required
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | A successful response. |  -  |
@@ -16063,6 +16073,7 @@ No authorization required
 
 
 ### Example
+
 
 ```python
 import time
@@ -16122,6 +16133,7 @@ No authorization required
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | A successful response. |  -  |
@@ -16135,6 +16147,7 @@ No authorization required
 
 
 ### Example
+
 
 ```python
 import time
@@ -16194,6 +16207,7 @@ No authorization required
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | A successful response. |  -  |
@@ -16207,6 +16221,7 @@ No authorization required
 
 
 ### Example
+
 
 ```python
 import time
@@ -24089,6 +24104,7 @@ No authorization required
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | A successful response. |  -  |
