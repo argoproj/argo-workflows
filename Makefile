@@ -373,7 +373,7 @@ $(GOPATH)/bin/golangci-lint:
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.42.0
 
 .PHONY: lint
-lint: server/static/files.go $(GOPATH)/bin/golangci-lint
+lint: server/static/files.go $(GOPATH)/bin/golangci-lint $(GOPATH)/bin/goimports
 	rm -Rf v3 vendor
 	# Tidy Go modules
 	go mod tidy
@@ -381,6 +381,8 @@ lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 	./hack/check-logging.sh
 	# Lint Go files
 	$(GOPATH)/bin/golangci-lint run --fix --verbose
+	# Run goimports to lint import order
+	$(GOPATH)/bin/goimports -v -w -local github.com/argoproj/argo-workflows/ ./api ./cmd ./config ./errors ./persist ./server ./test ./util ./workflow
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
