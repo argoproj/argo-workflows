@@ -38,6 +38,14 @@ echo $ARGO_TOKEN
 Bearer ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkltS...
 ```
 
+or if you are having issues with `argo auth token` you can provide your $ARGO_SERVER_ID via:
+
+```sh
+kubectl -n argo exec $YOUR_ARGO_SERVER_POD_ID
+```
+
+after that you Bearer-token will generate and output.
+
 ## Token Usage & Test
 To use that token with the CLI you need to set `ARGO_SERVER` (see `argo --help`).
 
