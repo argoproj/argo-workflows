@@ -37,10 +37,6 @@ const (
 	// was scheduled to run by CronWorkflow.
 	AnnotationKeyCronWfScheduledTime = workflow.WorkflowFullName + "/scheduled-time"
 
-	// AnnotationKeyCronWfLastUsedSchedule records the last applied scheulde for this cron workflow. Used for determining
-	// if schedule changes have been made.
-	AnnotationKeyCronWfLastUsedSchedule = workflow.CronWorkflowFullName + "/last-used-schedule"
-
 	// AnnotationKeyWorkflowName is the name of the workflow
 	AnnotationKeyWorkflowName = workflow.WorkflowFullName + "/workflow-name"
 	// AnnotationKeyWorkflowUID is the uid of the workflow

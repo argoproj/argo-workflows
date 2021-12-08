@@ -4,6 +4,8 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 )
 
 // CronWorkflow is the definition of a scheduled workflow resource
@@ -33,6 +35,8 @@ const (
 	ForbidConcurrent  ConcurrencyPolicy = "Forbid"
 	ReplaceConcurrent ConcurrencyPolicy = "Replace"
 )
+
+const annotationKeyLatestSchedule = workflow.CronWorkflowFullName + "/last-used-schedule"
 
 // CronWorkflowSpec is the specification of a CronWorkflow
 type CronWorkflowSpec struct {
@@ -67,13 +71,22 @@ type CronWorkflowStatus struct {
 	Conditions Conditions `json:"conditions" protobuf:"bytes,3,rep,name=conditions"`
 }
 
-func (c *CronWorkflowStatus) HasActiveUID(uid types.UID) bool {
-	for _, ref := range c.Active {
-		if uid == ref.UID {
-			return true
-		}
+func (c *CronWorkflow) IsUsingNewSchedule() bool {
+	lastUsedSchedule, exists := c.Annotations[annotationKeyLatestSchedule]
+	// If last-used-schedule does not exist, or if it does not match the current schedule then the CronWorkflow schedule
+	// was just updated
+	return !exists || lastUsedSchedule != c.Spec.GetScheduleString()
+}
+
+func (c *CronWorkflow) SetSchedule(schedule string) {
+	if c.Annotations == nil {
+		c.Annotations = map[string]string{}
 	}
-	return false
+	c.Annotations[annotationKeyLatestSchedule] = schedule
+}
+
+func (c *CronWorkflow) GetLatestSchedule() string {
+	return c.Annotations[annotationKeyLatestSchedule]
 }
 
 func (c *CronWorkflowSpec) GetScheduleString() string {
@@ -82,6 +95,15 @@ func (c *CronWorkflowSpec) GetScheduleString() string {
 		scheduleString = "CRON_TZ=" + c.Timezone + " " + scheduleString
 	}
 	return scheduleString
+}
+
+func (c *CronWorkflowStatus) HasActiveUID(uid types.UID) bool {
+	for _, ref := range c.Active {
+		if uid == ref.UID {
+			return true
+		}
+	}
+	return false
 }
 
 const (

@@ -73,7 +73,10 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 
 	woc.log.Infof("Running %s", woc.name)
 
-	woc.annotateLastUsedSchedule()
+	// If the cron workflow has a schedule that was just updated, update its annotation
+	if woc.cronWf.IsUsingNewSchedule() {
+		woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleString())
+	}
 
 	err := woc.validateCronWorkflow()
 	if err != nil {
@@ -216,10 +219,8 @@ func (woc *cronWfOperationCtx) runOutstandingWorkflows(ctx context.Context) (boo
 }
 
 func (woc *cronWfOperationCtx) shouldOutstandingWorkflowsBeRun() (time.Time, error) {
-	// If last-used-schedule does not exist, or if it does not match the current schedule then do not run any outstanding
-	// workflows. This is because the workflow was either just created or just modified its schedule.
-	lastUsedSchedule, exists := woc.cronWf.Annotations[common.AnnotationKeyCronWfLastUsedSchedule]
-	if !exists || lastUsedSchedule != woc.cronWf.Spec.GetScheduleString() {
+	// If the CronWorkflow schedule was just updated, then do not run any outstanding workflows.
+	if woc.cronWf.IsUsingNewSchedule() {
 		return time.Time{}, nil
 	}
 	// If this CronWorkflow has been run before, check if we have missed any scheduled executions
@@ -375,17 +376,6 @@ func (woc *cronWfOperationCtx) reportCronWorkflowError(conditionType v1alpha1.Co
 		woc.metrics.CronWorkflowSpecError()
 	} else {
 		woc.metrics.CronWorkflowSubmissionError()
-	}
-}
-
-func (woc *cronWfOperationCtx) annotateLastUsedSchedule() {
-	lastUsedSchedule, exists := woc.cronWf.Annotations[common.AnnotationKeyCronWfLastUsedSchedule]
-	// If last-used-schedule does not exist, or if it does not match the current schedule, update it
-	if !exists || lastUsedSchedule != woc.cronWf.Spec.GetScheduleString() {
-		if woc.cronWf.Annotations == nil {
-			woc.cronWf.Annotations = map[string]string{}
-		}
-		woc.cronWf.Annotations[common.AnnotationKeyCronWfLastUsedSchedule] = woc.cronWf.Spec.GetScheduleString()
 	}
 }
 

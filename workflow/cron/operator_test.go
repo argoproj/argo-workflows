@@ -75,7 +75,7 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 		cronWf: &cronWf,
 		log:    logrus.WithFields(logrus.Fields{}),
 	}
-	woc.annotateLastUsedSchedule()
+	woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleString())
 	missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun()
 	assert.NoError(t, err)
 	// The missedExecutionTime should be the last complete minute mark, which we can get with inferScheduledTime
@@ -94,7 +94,7 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 
 	// Same test, but simulate a change to the schedule immediately prior by setting a different last-used-schedule annotation
 	// In this case, since a schedule change is detected, not workflow should be run
-	woc.cronWf.Annotations[common.AnnotationKeyCronWfLastUsedSchedule] = "0 * * * *"
+	woc.cronWf.SetSchedule("0 * * * *")
 	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
 	assert.NoError(t, err)
 	assert.True(t, missedExecutionTime.IsZero())
@@ -116,7 +116,7 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 		log:    logrus.WithFields(logrus.Fields{}),
 	}
 	// Reset last-used-schedule as if the current schedule has been used before
-	woc.annotateLastUsedSchedule()
+	woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleString())
 	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
 	assert.NoError(t, err)
 	// The missedExecutionTime should be the last complete minute mark, which we can get with inferScheduledTime
@@ -135,7 +135,7 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 
 	// Same test, but simulate a change to the schedule immediately prior by setting a different last-used-schedule annotation
 	// In this case, since a schedule change is detected, not workflow should be run
-	woc.cronWf.Annotations[common.AnnotationKeyCronWfLastUsedSchedule] = "0 * * * *"
+	woc.cronWf.SetSchedule("0 * * * *")
 	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
 	assert.NoError(t, err)
 	assert.True(t, missedExecutionTime.IsZero())
@@ -324,9 +324,9 @@ func TestLastUsedSchedule(t *testing.T) {
 		assert.Equal(t, time.Time{}, missedExecutionTime)
 	}
 
-	woc.annotateLastUsedSchedule()
+	woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleString())
 
 	if assert.NotNil(t, woc.cronWf.Annotations) {
-		assert.Equal(t, woc.cronWf.Spec.GetScheduleString(), woc.cronWf.Annotations[common.AnnotationKeyCronWfLastUsedSchedule])
+		assert.Equal(t, woc.cronWf.Spec.GetScheduleString(), woc.cronWf.GetLatestSchedule())
 	}
 }
