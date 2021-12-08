@@ -429,7 +429,7 @@ conf = argo_workflows.Configuration(
                "OS: {env}\n"\
                "Python Version: {pyversion}\n"\
                "Version of the API: VERSION\n"\
-               "SDK Package Version: 6.0.0".\
+               "SDK Package Version: 0.0.0-latest".\
                format(env=sys.platform, pyversion=sys.version)
 
     def get_host_settings(self):
