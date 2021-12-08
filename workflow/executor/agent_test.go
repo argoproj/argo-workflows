@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	
+
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
@@ -27,7 +27,7 @@ func TestUnsupportedTemplateTaskWorker(t *testing.T) {
 		},
 	}
 
-	response := <- responseQueue
+	response := <-responseQueue
 	assert.Equal(t, v1alpha1.NodeError, response.Result.Phase)
 	assert.Contains(t, response.Result.Message, "agent cannot execute: unknown task type")
 }
