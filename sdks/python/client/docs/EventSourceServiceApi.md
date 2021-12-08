@@ -1,20 +1,20 @@
-# openapi_client.EventSourceServiceApi
+# argo_workflows.EventSourceServiceApi
 
 All URIs are relative to *http://localhost:2746*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**event_source_service_create_event_source**](EventSourceServiceApi.md#event_source_service_create_event_source) | **POST** /api/v1/event-sources/{namespace} | 
-[**event_source_service_delete_event_source**](EventSourceServiceApi.md#event_source_service_delete_event_source) | **DELETE** /api/v1/event-sources/{namespace}/{name} | 
-[**event_source_service_event_sources_logs**](EventSourceServiceApi.md#event_source_service_event_sources_logs) | **GET** /api/v1/stream/event-sources/{namespace}/logs | 
-[**event_source_service_get_event_source**](EventSourceServiceApi.md#event_source_service_get_event_source) | **GET** /api/v1/event-sources/{namespace}/{name} | 
-[**event_source_service_list_event_sources**](EventSourceServiceApi.md#event_source_service_list_event_sources) | **GET** /api/v1/event-sources/{namespace} | 
-[**event_source_service_update_event_source**](EventSourceServiceApi.md#event_source_service_update_event_source) | **PUT** /api/v1/event-sources/{namespace}/{name} | 
-[**event_source_service_watch_event_sources**](EventSourceServiceApi.md#event_source_service_watch_event_sources) | **GET** /api/v1/stream/event-sources/{namespace} | 
+[**create_event_source**](EventSourceServiceApi.md#create_event_source) | **POST** /api/v1/event-sources/{namespace} | 
+[**delete_event_source**](EventSourceServiceApi.md#delete_event_source) | **DELETE** /api/v1/event-sources/{namespace}/{name} | 
+[**event_sources_logs**](EventSourceServiceApi.md#event_sources_logs) | **GET** /api/v1/stream/event-sources/{namespace}/logs | 
+[**get_event_source**](EventSourceServiceApi.md#get_event_source) | **GET** /api/v1/event-sources/{namespace}/{name} | 
+[**list_event_sources**](EventSourceServiceApi.md#list_event_sources) | **GET** /api/v1/event-sources/{namespace} | 
+[**update_event_source**](EventSourceServiceApi.md#update_event_source) | **PUT** /api/v1/event-sources/{namespace}/{name} | 
+[**watch_event_sources**](EventSourceServiceApi.md#watch_event_sources) | **GET** /api/v1/stream/event-sources/{namespace} | 
 
 
-# **event_source_service_create_event_source**
-> IoArgoprojEventsV1alpha1EventSource event_source_service_create_event_source(namespace, body)
+# **create_event_source**
+> IoArgoprojEventsV1alpha1EventSource create_event_source(namespace, body)
 
 
 
@@ -22,21 +22,21 @@ Method | HTTP request | Description
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import event_source_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_events_v1alpha1_event_source import IoArgoprojEventsV1alpha1EventSource
-from openapi_client.model.eventsource_create_event_source_request import EventsourceCreateEventSourceRequest
+import argo_workflows
+from argo_workflows.api import event_source_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_events_v1alpha1_event_source import IoArgoprojEventsV1alpha1EventSource
+from argo_workflows.model.eventsource_create_event_source_request import EventsourceCreateEventSourceRequest
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = event_source_service_api.EventSourceServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -1876,10 +1876,10 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.event_source_service_create_event_source(namespace, body)
+        api_response = api_instance.create_event_source(namespace, body)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling EventSourceServiceApi->event_source_service_create_event_source: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling EventSourceServiceApi->create_event_source: %s\n" % e)
 ```
 
 
@@ -1912,8 +1912,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **event_source_service_delete_event_source**
-> bool, date, datetime, dict, float, int, list, str, none_type event_source_service_delete_event_source(namespace, name)
+# **delete_event_source**
+> bool, date, datetime, dict, float, int, list, str, none_type delete_event_source(namespace, name)
 
 
 
@@ -1921,19 +1921,19 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import event_source_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+import argo_workflows
+from argo_workflows.api import event_source_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = event_source_service_api.EventSourceServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -1949,18 +1949,18 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.event_source_service_delete_event_source(namespace, name)
+        api_response = api_instance.delete_event_source(namespace, name)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling EventSourceServiceApi->event_source_service_delete_event_source: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling EventSourceServiceApi->delete_event_source: %s\n" % e)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.event_source_service_delete_event_source(namespace, name, delete_options_grace_period_seconds=delete_options_grace_period_seconds, delete_options_preconditions_uid=delete_options_preconditions_uid, delete_options_preconditions_resource_version=delete_options_preconditions_resource_version, delete_options_orphan_dependents=delete_options_orphan_dependents, delete_options_propagation_policy=delete_options_propagation_policy, delete_options_dry_run=delete_options_dry_run)
+        api_response = api_instance.delete_event_source(namespace, name, delete_options_grace_period_seconds=delete_options_grace_period_seconds, delete_options_preconditions_uid=delete_options_preconditions_uid, delete_options_preconditions_resource_version=delete_options_preconditions_resource_version, delete_options_orphan_dependents=delete_options_orphan_dependents, delete_options_propagation_policy=delete_options_propagation_policy, delete_options_dry_run=delete_options_dry_run)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling EventSourceServiceApi->event_source_service_delete_event_source: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling EventSourceServiceApi->delete_event_source: %s\n" % e)
 ```
 
 
@@ -1999,8 +1999,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **event_source_service_event_sources_logs**
-> StreamResultOfEventsourceLogEntry event_source_service_event_sources_logs(namespace)
+# **event_sources_logs**
+> StreamResultOfEventsourceLogEntry event_sources_logs(namespace)
 
 
 
@@ -2008,20 +2008,20 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import event_source_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.stream_result_of_eventsource_log_entry import StreamResultOfEventsourceLogEntry
+import argo_workflows
+from argo_workflows.api import event_source_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.stream_result_of_eventsource_log_entry import StreamResultOfEventsourceLogEntry
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = event_source_service_api.EventSourceServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -2042,18 +2042,18 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.event_source_service_event_sources_logs(namespace)
+        api_response = api_instance.event_sources_logs(namespace)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling EventSourceServiceApi->event_source_service_event_sources_logs: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling EventSourceServiceApi->event_sources_logs: %s\n" % e)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.event_source_service_event_sources_logs(namespace, name=name, event_source_type=event_source_type, event_name=event_name, grep=grep, pod_log_options_container=pod_log_options_container, pod_log_options_follow=pod_log_options_follow, pod_log_options_previous=pod_log_options_previous, pod_log_options_since_seconds=pod_log_options_since_seconds, pod_log_options_since_time_seconds=pod_log_options_since_time_seconds, pod_log_options_since_time_nanos=pod_log_options_since_time_nanos, pod_log_options_timestamps=pod_log_options_timestamps, pod_log_options_tail_lines=pod_log_options_tail_lines, pod_log_options_limit_bytes=pod_log_options_limit_bytes, pod_log_options_insecure_skip_tls_verify_backend=pod_log_options_insecure_skip_tls_verify_backend)
+        api_response = api_instance.event_sources_logs(namespace, name=name, event_source_type=event_source_type, event_name=event_name, grep=grep, pod_log_options_container=pod_log_options_container, pod_log_options_follow=pod_log_options_follow, pod_log_options_previous=pod_log_options_previous, pod_log_options_since_seconds=pod_log_options_since_seconds, pod_log_options_since_time_seconds=pod_log_options_since_time_seconds, pod_log_options_since_time_nanos=pod_log_options_since_time_nanos, pod_log_options_timestamps=pod_log_options_timestamps, pod_log_options_tail_lines=pod_log_options_tail_lines, pod_log_options_limit_bytes=pod_log_options_limit_bytes, pod_log_options_insecure_skip_tls_verify_backend=pod_log_options_insecure_skip_tls_verify_backend)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling EventSourceServiceApi->event_source_service_event_sources_logs: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling EventSourceServiceApi->event_sources_logs: %s\n" % e)
 ```
 
 
@@ -2099,8 +2099,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **event_source_service_get_event_source**
-> IoArgoprojEventsV1alpha1EventSource event_source_service_get_event_source(namespace, name)
+# **get_event_source**
+> IoArgoprojEventsV1alpha1EventSource get_event_source(namespace, name)
 
 
 
@@ -2108,20 +2108,20 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import event_source_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_events_v1alpha1_event_source import IoArgoprojEventsV1alpha1EventSource
+import argo_workflows
+from argo_workflows.api import event_source_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_events_v1alpha1_event_source import IoArgoprojEventsV1alpha1EventSource
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = event_source_service_api.EventSourceServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -2129,10 +2129,10 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.event_source_service_get_event_source(namespace, name)
+        api_response = api_instance.get_event_source(namespace, name)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling EventSourceServiceApi->event_source_service_get_event_source: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling EventSourceServiceApi->get_event_source: %s\n" % e)
 ```
 
 
@@ -2165,8 +2165,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **event_source_service_list_event_sources**
-> IoArgoprojEventsV1alpha1EventSourceList event_source_service_list_event_sources(namespace)
+# **list_event_sources**
+> IoArgoprojEventsV1alpha1EventSourceList list_event_sources(namespace)
 
 
 
@@ -2174,20 +2174,20 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import event_source_service_api
-from openapi_client.model.io_argoproj_events_v1alpha1_event_source_list import IoArgoprojEventsV1alpha1EventSourceList
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+import argo_workflows
+from argo_workflows.api import event_source_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_events_v1alpha1_event_source_list import IoArgoprojEventsV1alpha1EventSourceList
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = event_source_service_api.EventSourceServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -2203,18 +2203,18 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.event_source_service_list_event_sources(namespace)
+        api_response = api_instance.list_event_sources(namespace)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling EventSourceServiceApi->event_source_service_list_event_sources: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling EventSourceServiceApi->list_event_sources: %s\n" % e)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.event_source_service_list_event_sources(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue)
+        api_response = api_instance.list_event_sources(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling EventSourceServiceApi->event_source_service_list_event_sources: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling EventSourceServiceApi->list_event_sources: %s\n" % e)
 ```
 
 
@@ -2255,8 +2255,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **event_source_service_update_event_source**
-> IoArgoprojEventsV1alpha1EventSource event_source_service_update_event_source(namespace, name, body)
+# **update_event_source**
+> IoArgoprojEventsV1alpha1EventSource update_event_source(namespace, name, body)
 
 
 
@@ -2264,21 +2264,21 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import event_source_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_events_v1alpha1_event_source import IoArgoprojEventsV1alpha1EventSource
-from openapi_client.model.eventsource_update_event_source_request import EventsourceUpdateEventSourceRequest
+import argo_workflows
+from argo_workflows.api import event_source_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_events_v1alpha1_event_source import IoArgoprojEventsV1alpha1EventSource
+from argo_workflows.model.eventsource_update_event_source_request import EventsourceUpdateEventSourceRequest
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = event_source_service_api.EventSourceServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -4120,10 +4120,10 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.event_source_service_update_event_source(namespace, name, body)
+        api_response = api_instance.update_event_source(namespace, name, body)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling EventSourceServiceApi->event_source_service_update_event_source: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling EventSourceServiceApi->update_event_source: %s\n" % e)
 ```
 
 
@@ -4157,8 +4157,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **event_source_service_watch_event_sources**
-> StreamResultOfEventsourceEventSourceWatchEvent event_source_service_watch_event_sources(namespace)
+# **watch_event_sources**
+> StreamResultOfEventsourceEventSourceWatchEvent watch_event_sources(namespace)
 
 
 
@@ -4166,20 +4166,20 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import event_source_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.stream_result_of_eventsource_event_source_watch_event import StreamResultOfEventsourceEventSourceWatchEvent
+import argo_workflows
+from argo_workflows.api import event_source_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.stream_result_of_eventsource_event_source_watch_event import StreamResultOfEventsourceEventSourceWatchEvent
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = event_source_service_api.EventSourceServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -4195,18 +4195,18 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.event_source_service_watch_event_sources(namespace)
+        api_response = api_instance.watch_event_sources(namespace)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling EventSourceServiceApi->event_source_service_watch_event_sources: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling EventSourceServiceApi->watch_event_sources: %s\n" % e)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.event_source_service_watch_event_sources(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue)
+        api_response = api_instance.watch_event_sources(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling EventSourceServiceApi->event_source_service_watch_event_sources: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling EventSourceServiceApi->watch_event_sources: %s\n" % e)
 ```
 
 

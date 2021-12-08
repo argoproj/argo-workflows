@@ -1,16 +1,16 @@
-# openapi_client.InfoServiceApi
+# argo_workflows.InfoServiceApi
 
 All URIs are relative to *http://localhost:2746*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**info_service_get_info**](InfoServiceApi.md#info_service_get_info) | **GET** /api/v1/info | 
-[**info_service_get_user_info**](InfoServiceApi.md#info_service_get_user_info) | **GET** /api/v1/userinfo | 
-[**info_service_get_version**](InfoServiceApi.md#info_service_get_version) | **GET** /api/v1/version | 
+[**get_info**](InfoServiceApi.md#get_info) | **GET** /api/v1/info | 
+[**get_user_info**](InfoServiceApi.md#get_user_info) | **GET** /api/v1/userinfo | 
+[**get_version**](InfoServiceApi.md#get_version) | **GET** /api/v1/version | 
 
 
-# **info_service_get_info**
-> IoArgoprojWorkflowV1alpha1InfoResponse info_service_get_info()
+# **get_info**
+> IoArgoprojWorkflowV1alpha1InfoResponse get_info()
 
 
 
@@ -18,29 +18,29 @@ Method | HTTP request | Description
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import info_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_workflow_v1alpha1_info_response import IoArgoprojWorkflowV1alpha1InfoResponse
+import argo_workflows
+from argo_workflows.api import info_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_info_response import IoArgoprojWorkflowV1alpha1InfoResponse
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = info_service_api.InfoServiceApi(api_client)
 
     # example, this endpoint has no required or optional parameters
     try:
-        api_response = api_instance.info_service_get_info()
+        api_response = api_instance.get_info()
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling InfoServiceApi->info_service_get_info: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling InfoServiceApi->get_info: %s\n" % e)
 ```
 
 
@@ -69,8 +69,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **info_service_get_user_info**
-> IoArgoprojWorkflowV1alpha1GetUserInfoResponse info_service_get_user_info()
+# **get_user_info**
+> IoArgoprojWorkflowV1alpha1GetUserInfoResponse get_user_info()
 
 
 
@@ -78,29 +78,29 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import info_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_workflow_v1alpha1_get_user_info_response import IoArgoprojWorkflowV1alpha1GetUserInfoResponse
+import argo_workflows
+from argo_workflows.api import info_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_get_user_info_response import IoArgoprojWorkflowV1alpha1GetUserInfoResponse
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = info_service_api.InfoServiceApi(api_client)
 
     # example, this endpoint has no required or optional parameters
     try:
-        api_response = api_instance.info_service_get_user_info()
+        api_response = api_instance.get_user_info()
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling InfoServiceApi->info_service_get_user_info: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling InfoServiceApi->get_user_info: %s\n" % e)
 ```
 
 
@@ -129,8 +129,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **info_service_get_version**
-> IoArgoprojWorkflowV1alpha1Version info_service_get_version()
+# **get_version**
+> IoArgoprojWorkflowV1alpha1Version get_version()
 
 
 
@@ -138,29 +138,29 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import info_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_workflow_v1alpha1_version import IoArgoprojWorkflowV1alpha1Version
+import argo_workflows
+from argo_workflows.api import info_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_version import IoArgoprojWorkflowV1alpha1Version
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = info_service_api.InfoServiceApi(api_client)
 
     # example, this endpoint has no required or optional parameters
     try:
-        api_response = api_instance.info_service_get_version()
+        api_response = api_instance.get_version()
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling InfoServiceApi->info_service_get_version: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling InfoServiceApi->get_version: %s\n" % e)
 ```
 
 
