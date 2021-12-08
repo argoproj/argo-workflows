@@ -26,7 +26,9 @@ manifest = IoArgoprojWorkflowV1alpha1Workflow(
 
 api_client = argo_workflows.ApiClient(configuration)
 api_instance = workflow_service_api.WorkflowServiceApi(api_client)
-api_response = api_instance.create_workflow(
-    namespace='default',
-    body=IoArgoprojWorkflowV1alpha1WorkflowCreateRequest(workflow=manifest))
-pprint(api_response)
+
+if __name__ == '__main__':
+    api_response = api_instance.create_workflow(
+        namespace='default',
+        body=IoArgoprojWorkflowV1alpha1WorkflowCreateRequest(workflow=manifest))
+    pprint(api_response)

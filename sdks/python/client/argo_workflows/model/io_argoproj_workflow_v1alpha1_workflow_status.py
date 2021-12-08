@@ -237,7 +237,10 @@ class IoArgoprojWorkflowV1alpha1WorkflowStatus(ModelNormal):
                         self.additional_properties_type is None:
                 # discard variable.
                 continue
-            setattr(self, var_name, var_value)
+            if var_name == 'status':
+                setattr(self, var_name, {})
+            else:
+                setattr(self, var_name, var_value)
         return self
 
     required_properties = set([
