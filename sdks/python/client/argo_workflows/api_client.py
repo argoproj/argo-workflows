@@ -321,6 +321,8 @@ class ApiClient(object):
 
         # store our data under the key of 'received_data' so users have some
         # context if they are deserializing a string and the data type is wrong
+
+        # TODO: fix this deserialization hack"
         from datetime import timezone
         now = datetime.now(tz=timezone.utc)
         received_data['status']['startedAt'], received_data['status']['finishedAt'] = now, now

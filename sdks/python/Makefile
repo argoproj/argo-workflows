@@ -43,3 +43,6 @@ generate:
 		--generate-alias-as-model
 	# https://vsupalov.com/docker-shared-permissions/#set-the-docker-user-when-running-your-container
 	$(CHOWN) $(WD) || sudo $(CHOWN) $(WD)
+	# run the SDK fix for the ApiClient
+	$(CHOWN) ./sdk_fix.py
+	@./sdk_fix.py
