@@ -6,9 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"k8s.io/utils/pointer"
 	"net/http"
 	"time"
+
+	"k8s.io/utils/pointer"
 
 	log "github.com/sirupsen/logrus"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
