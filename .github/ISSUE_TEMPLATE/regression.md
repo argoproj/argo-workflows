@@ -27,6 +27,8 @@ What executor are you running? Docker/K8SAPI/Kubelet/PNS/Emissary
 # Logs from the workflow controller:
 kubectl logs -n argo deploy/workflow-controller | grep ${workflow}
 
+# If the workflow's pods have not been created, you can skip the rest of the diagnostics.
+
 # The workflow's pods that are problematic:
 kubectl get pod -o yaml -l workflows.argoproj.io/workflow=${workflow},workflow.argoproj.io/phase!=Succeeded
 
