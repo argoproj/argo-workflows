@@ -125,7 +125,11 @@ func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, re
 		result, err := ae.processTask(ctx, tmpl)
 		if err != nil {
 			log.WithError(err).Error("Error in agent task")
-			return
+			result = &wfv1.NodeResult{
+				Phase:   wfv1.NodeError,
+				Message: fmt.Sprintf("error processing task: %s", err),
+			}
+			// Do not return or continue here, the "errored" result still needs to be propagated to the responseQueue below
 		}
 
 		log.WithField("phase", result.Phase).

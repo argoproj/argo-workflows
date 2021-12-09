@@ -1,19 +1,19 @@
-# openapi_client.ClusterWorkflowTemplateServiceApi
+# argo_workflows.ClusterWorkflowTemplateServiceApi
 
 All URIs are relative to *http://localhost:2746*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**cluster_workflow_template_service_create_cluster_workflow_template**](ClusterWorkflowTemplateServiceApi.md#cluster_workflow_template_service_create_cluster_workflow_template) | **POST** /api/v1/cluster-workflow-templates | 
-[**cluster_workflow_template_service_delete_cluster_workflow_template**](ClusterWorkflowTemplateServiceApi.md#cluster_workflow_template_service_delete_cluster_workflow_template) | **DELETE** /api/v1/cluster-workflow-templates/{name} | 
-[**cluster_workflow_template_service_get_cluster_workflow_template**](ClusterWorkflowTemplateServiceApi.md#cluster_workflow_template_service_get_cluster_workflow_template) | **GET** /api/v1/cluster-workflow-templates/{name} | 
-[**cluster_workflow_template_service_lint_cluster_workflow_template**](ClusterWorkflowTemplateServiceApi.md#cluster_workflow_template_service_lint_cluster_workflow_template) | **POST** /api/v1/cluster-workflow-templates/lint | 
-[**cluster_workflow_template_service_list_cluster_workflow_templates**](ClusterWorkflowTemplateServiceApi.md#cluster_workflow_template_service_list_cluster_workflow_templates) | **GET** /api/v1/cluster-workflow-templates | 
-[**cluster_workflow_template_service_update_cluster_workflow_template**](ClusterWorkflowTemplateServiceApi.md#cluster_workflow_template_service_update_cluster_workflow_template) | **PUT** /api/v1/cluster-workflow-templates/{name} | 
+[**create_cluster_workflow_template**](ClusterWorkflowTemplateServiceApi.md#create_cluster_workflow_template) | **POST** /api/v1/cluster-workflow-templates | 
+[**delete_cluster_workflow_template**](ClusterWorkflowTemplateServiceApi.md#delete_cluster_workflow_template) | **DELETE** /api/v1/cluster-workflow-templates/{name} | 
+[**get_cluster_workflow_template**](ClusterWorkflowTemplateServiceApi.md#get_cluster_workflow_template) | **GET** /api/v1/cluster-workflow-templates/{name} | 
+[**lint_cluster_workflow_template**](ClusterWorkflowTemplateServiceApi.md#lint_cluster_workflow_template) | **POST** /api/v1/cluster-workflow-templates/lint | 
+[**list_cluster_workflow_templates**](ClusterWorkflowTemplateServiceApi.md#list_cluster_workflow_templates) | **GET** /api/v1/cluster-workflow-templates | 
+[**update_cluster_workflow_template**](ClusterWorkflowTemplateServiceApi.md#update_cluster_workflow_template) | **PUT** /api/v1/cluster-workflow-templates/{name} | 
 
 
-# **cluster_workflow_template_service_create_cluster_workflow_template**
-> IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate cluster_workflow_template_service_create_cluster_workflow_template(body)
+# **create_cluster_workflow_template**
+> IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate create_cluster_workflow_template(body)
 
 
 
@@ -21,21 +21,21 @@ Method | HTTP request | Description
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import cluster_workflow_template_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template_create_request import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateCreateRequest
-from openapi_client.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate
+import argo_workflows
+from argo_workflows.api import cluster_workflow_template_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template_create_request import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateCreateRequest
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = cluster_workflow_template_service_api.ClusterWorkflowTemplateServiceApi(api_client)
     body = IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateCreateRequest(
@@ -7844,10 +7844,10 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.cluster_workflow_template_service_create_cluster_workflow_template(body)
+        api_response = api_instance.create_cluster_workflow_template(body)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling ClusterWorkflowTemplateServiceApi->cluster_workflow_template_service_create_cluster_workflow_template: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling ClusterWorkflowTemplateServiceApi->create_cluster_workflow_template: %s\n" % e)
 ```
 
 
@@ -7879,8 +7879,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **cluster_workflow_template_service_delete_cluster_workflow_template**
-> bool, date, datetime, dict, float, int, list, str, none_type cluster_workflow_template_service_delete_cluster_workflow_template(name)
+# **delete_cluster_workflow_template**
+> bool, date, datetime, dict, float, int, list, str, none_type delete_cluster_workflow_template(name)
 
 
 
@@ -7888,19 +7888,19 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import cluster_workflow_template_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+import argo_workflows
+from argo_workflows.api import cluster_workflow_template_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = cluster_workflow_template_service_api.ClusterWorkflowTemplateServiceApi(api_client)
     name = "name_example" # str | 
@@ -7915,18 +7915,18 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.cluster_workflow_template_service_delete_cluster_workflow_template(name)
+        api_response = api_instance.delete_cluster_workflow_template(name)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling ClusterWorkflowTemplateServiceApi->cluster_workflow_template_service_delete_cluster_workflow_template: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling ClusterWorkflowTemplateServiceApi->delete_cluster_workflow_template: %s\n" % e)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.cluster_workflow_template_service_delete_cluster_workflow_template(name, delete_options_grace_period_seconds=delete_options_grace_period_seconds, delete_options_preconditions_uid=delete_options_preconditions_uid, delete_options_preconditions_resource_version=delete_options_preconditions_resource_version, delete_options_orphan_dependents=delete_options_orphan_dependents, delete_options_propagation_policy=delete_options_propagation_policy, delete_options_dry_run=delete_options_dry_run)
+        api_response = api_instance.delete_cluster_workflow_template(name, delete_options_grace_period_seconds=delete_options_grace_period_seconds, delete_options_preconditions_uid=delete_options_preconditions_uid, delete_options_preconditions_resource_version=delete_options_preconditions_resource_version, delete_options_orphan_dependents=delete_options_orphan_dependents, delete_options_propagation_policy=delete_options_propagation_policy, delete_options_dry_run=delete_options_dry_run)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling ClusterWorkflowTemplateServiceApi->cluster_workflow_template_service_delete_cluster_workflow_template: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling ClusterWorkflowTemplateServiceApi->delete_cluster_workflow_template: %s\n" % e)
 ```
 
 
@@ -7964,8 +7964,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **cluster_workflow_template_service_get_cluster_workflow_template**
-> IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate cluster_workflow_template_service_get_cluster_workflow_template(name)
+# **get_cluster_workflow_template**
+> IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate get_cluster_workflow_template(name)
 
 
 
@@ -7973,20 +7973,20 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import cluster_workflow_template_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate
+import argo_workflows
+from argo_workflows.api import cluster_workflow_template_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = cluster_workflow_template_service_api.ClusterWorkflowTemplateServiceApi(api_client)
     name = "name_example" # str | 
@@ -7994,18 +7994,18 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.cluster_workflow_template_service_get_cluster_workflow_template(name)
+        api_response = api_instance.get_cluster_workflow_template(name)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling ClusterWorkflowTemplateServiceApi->cluster_workflow_template_service_get_cluster_workflow_template: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling ClusterWorkflowTemplateServiceApi->get_cluster_workflow_template: %s\n" % e)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.cluster_workflow_template_service_get_cluster_workflow_template(name, get_options_resource_version=get_options_resource_version)
+        api_response = api_instance.get_cluster_workflow_template(name, get_options_resource_version=get_options_resource_version)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling ClusterWorkflowTemplateServiceApi->cluster_workflow_template_service_get_cluster_workflow_template: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling ClusterWorkflowTemplateServiceApi->get_cluster_workflow_template: %s\n" % e)
 ```
 
 
@@ -8038,8 +8038,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **cluster_workflow_template_service_lint_cluster_workflow_template**
-> IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate cluster_workflow_template_service_lint_cluster_workflow_template(body)
+# **lint_cluster_workflow_template**
+> IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate lint_cluster_workflow_template(body)
 
 
 
@@ -8047,21 +8047,21 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import cluster_workflow_template_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template_lint_request import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateLintRequest
-from openapi_client.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate
+import argo_workflows
+from argo_workflows.api import cluster_workflow_template_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template_lint_request import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateLintRequest
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = cluster_workflow_template_service_api.ClusterWorkflowTemplateServiceApi(api_client)
     body = IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateLintRequest(
@@ -15870,10 +15870,10 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.cluster_workflow_template_service_lint_cluster_workflow_template(body)
+        api_response = api_instance.lint_cluster_workflow_template(body)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling ClusterWorkflowTemplateServiceApi->cluster_workflow_template_service_lint_cluster_workflow_template: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling ClusterWorkflowTemplateServiceApi->lint_cluster_workflow_template: %s\n" % e)
 ```
 
 
@@ -15905,8 +15905,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **cluster_workflow_template_service_list_cluster_workflow_templates**
-> IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateList cluster_workflow_template_service_list_cluster_workflow_templates()
+# **list_cluster_workflow_templates**
+> IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateList list_cluster_workflow_templates()
 
 
 
@@ -15914,20 +15914,20 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import cluster_workflow_template_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template_list import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateList
+import argo_workflows
+from argo_workflows.api import cluster_workflow_template_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template_list import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateList
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = cluster_workflow_template_service_api.ClusterWorkflowTemplateServiceApi(api_client)
     list_options_label_selector = "listOptions.labelSelector_example" # str | A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional. (optional)
@@ -15943,10 +15943,10 @@ with openapi_client.ApiClient() as api_client:
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.cluster_workflow_template_service_list_cluster_workflow_templates(list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue)
+        api_response = api_instance.list_cluster_workflow_templates(list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling ClusterWorkflowTemplateServiceApi->cluster_workflow_template_service_list_cluster_workflow_templates: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling ClusterWorkflowTemplateServiceApi->list_cluster_workflow_templates: %s\n" % e)
 ```
 
 
@@ -15986,8 +15986,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **cluster_workflow_template_service_update_cluster_workflow_template**
-> IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate cluster_workflow_template_service_update_cluster_workflow_template(name, body)
+# **update_cluster_workflow_template**
+> IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate update_cluster_workflow_template(name, body)
 
 
 
@@ -15995,21 +15995,21 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import cluster_workflow_template_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template_update_request import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateUpdateRequest
-from openapi_client.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate
+import argo_workflows
+from argo_workflows.api import cluster_workflow_template_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template_update_request import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateUpdateRequest
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = cluster_workflow_template_service_api.ClusterWorkflowTemplateServiceApi(api_client)
     name = "name_example" # str | DEPRECATED: This field is ignored.
@@ -23814,10 +23814,10 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.cluster_workflow_template_service_update_cluster_workflow_template(name, body)
+        api_response = api_instance.update_cluster_workflow_template(name, body)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling ClusterWorkflowTemplateServiceApi->cluster_workflow_template_service_update_cluster_workflow_template: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling ClusterWorkflowTemplateServiceApi->update_cluster_workflow_template: %s\n" % e)
 ```
 
 
