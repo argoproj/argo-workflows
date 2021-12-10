@@ -479,6 +479,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#http-templates" title="HTTP Templates" class="md-nav__link">
+    HTTP Templates
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#retrystrategy" title="RetryStrategy" class="md-nav__link">
     RetryStrategy
   </a>
@@ -2450,6 +2457,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#http-templates" title="HTTP Templates" class="md-nav__link">
+    HTTP Templates
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#retrystrategy" title="RetryStrategy" class="md-nav__link">
     RetryStrategy
   </a>
@@ -2721,6 +2735,46 @@ returns <code>0</code>. Please review the Sprig documentation to understand whic
 <tr>
 <td><code>tasks.&lt;TASKNAME&gt;.outputs.artifacts.&lt;NAME&gt;</code></td>
 <td>Output artifact of any previous task</td>
+</tr>
+</tbody>
+</table>
+<h3 id="http-templates">HTTP Templates<a class="headerlink" href="#http-templates" title="Permanent link">&para;</a></h3>
+<p>Only available for <code>successCondition</code></p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>request.method</code></td>
+<td>Request method (<code>string</code>)</td>
+</tr>
+<tr>
+<td><code>request.url</code></td>
+<td>Request URL (<code>string</code>)</td>
+</tr>
+<tr>
+<td><code>request.body</code></td>
+<td>Request body (<code>string</code>)</td>
+</tr>
+<tr>
+<td><code>request.headers</code></td>
+<td>Request headers (<code>map[string][]string</code>)</td>
+</tr>
+<tr>
+<td><code>response.statusCode</code></td>
+<td>Response status code (<code>int</code>)</td>
+</tr>
+<tr>
+<td><code>response.body</code></td>
+<td>Response body (<code>string</code>)</td>
+</tr>
+<tr>
+<td><code>response.headers</code></td>
+<td>Response headers (<code>map[string][]string</code>)</td>
 </tr>
 </tbody>
 </table>

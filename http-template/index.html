@@ -540,9 +540,45 @@
       
     
     
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        HTTP Template
+      </label>
+    
     <a href="./" title="HTTP Template" class="md-nav__link md-nav__link--active">
       HTTP Template
     </a>
+    
+      
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#http-template_1" title="HTTP Template" class="md-nav__link">
+    HTTP Template
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#argo-agent" title="Argo Agent" class="md-nav__link">
+    Argo Agent
+  </a>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
+</nav>
     
   </li>
 
@@ -2218,6 +2254,29 @@
     
   
   
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#http-template_1" title="HTTP Template" class="md-nav__link">
+    HTTP Template
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#argo-agent" title="Argo Agent" class="md-nav__link">
+    Argo Agent
+  </a>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -2236,10 +2295,7 @@
 <p>v3.2 and after </p>
 </blockquote>
 <p><code>HTTP Template</code> is a type of template which can execute the HTTP Requests.</p>
-<p>### Agent Architecture
- V3.2 introduced <code>Agent</code> architecture to execute the multiple HTTPTemplates in single pod which improve a performance and resource utilization.
- <code>WorkflowTaskSet</code> CRD is introduced to exchange the data between Controller and Agent. 
- Agent pod named <workflowname-agent> and WorkflowTaskSet name as WorkflowName.</p>
+<h3 id="http-template_1">HTTP Template<a class="headerlink" href="#http-template_1" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -2249,18 +2305,37 @@
   <span class="nt">templates</span><span class="p">:</span>
     <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">main</span>
       <span class="nt">steps</span><span class="p">:</span>
-        <span class="p p-Indicator">-</span> <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">good</span>
+        <span class="p p-Indicator">-</span> <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">get-google-homepage</span>
             <span class="nt">template</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">http</span>
             <span class="nt">arguments</span><span class="p">:</span>
-              <span class="nt">parameters</span><span class="p">:</span> <span class="p p-Indicator">[{</span><span class="nt">name</span><span class="p">:</span> <span class="nv">url</span><span class="p p-Indicator">,</span><span class="nt"> value</span><span class="p">:</span> <span class="s">&quot;https://raw.githubusercontent.com/argoproj/argo-workflows/4e450e250168e6b4d51a126b784e90b11a0162bc/pkg/apis/workflow/v1alpha1/generated.swagger.json&quot;</span><span class="p p-Indicator">}]</span>
+              <span class="nt">parameters</span><span class="p">:</span> <span class="p p-Indicator">[{</span><span class="nt">name</span><span class="p">:</span> <span class="nv">url</span><span class="p p-Indicator">,</span><span class="nt"> value</span><span class="p">:</span> <span class="s">&quot;https://www.google.com&quot;</span><span class="p p-Indicator">}]</span>
     <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">http</span>
       <span class="nt">inputs</span><span class="p">:</span>
         <span class="nt">parameters</span><span class="p">:</span>
           <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">url</span>
       <span class="nt">http</span><span class="p">:</span>
-       <span class="c1"># url: http://dummy.restapiexample.com/api/v1/employees</span>
-       <span class="nt">url</span><span class="p">:</span> <span class="s">&quot;{{inputs.parameters.url}}&quot;</span>
+        <span class="nt">timeoutSeconds</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">20</span> <span class="c1"># Default 30</span>
+        <span class="nt">url</span><span class="p">:</span> <span class="s">&quot;{{inputs.parameters.url}}&quot;</span>
+        <span class="nt">method</span><span class="p">:</span> <span class="s">&quot;GET&quot;</span> <span class="c1"># Default GET</span>
+        <span class="nt">headers</span><span class="p">:</span>
+          <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;x-header-name&quot;</span>
+            <span class="nt">value</span><span class="p">:</span> <span class="s">&quot;test-value&quot;</span>
+        <span class="c1"># Template will suceed if evaluated to true, otherwise will fail</span>
+        <span class="c1"># Available variables:</span>
+        <span class="c1">#  request.body: string, the response body</span>
+        <span class="c1">#  request.headers: map[string][]string, the response headers</span>
+        <span class="c1">#  response.url: string, the request url</span>
+        <span class="c1">#  response.method: string, the request method</span>
+        <span class="c1">#  response.statusCode: int, the response status code</span>
+        <span class="c1">#  response.body: string, the response body</span>
+        <span class="c1">#  response.headers: map[string][]string, the response headers</span>
+        <span class="nt">successCondition</span><span class="p">:</span> <span class="s">&quot;response.body</span><span class="nv"> </span><span class="s">contains</span><span class="nv"> </span><span class="s">\&quot;google\&quot;&quot;</span>
+        <span class="nt">body</span><span class="p">:</span> <span class="s">&quot;test</span><span class="nv"> </span><span class="s">body&quot;</span> <span class="c1"># Change request body</span>
 </code></pre></div>
+<h3 id="argo-agent">Argo Agent<a class="headerlink" href="#argo-agent" title="Permanent link">&para;</a></h3>
+<p>HTTP Templates use the Argo Agent, which executes the requests independently of the controller. The Agent and the Workflow
+Controller communicate through the <code>WorkflowTaskSet</code> CRD, which is created for each running <code>Workflow</code> that requires the use
+of the <code>Agent</code>.</p>
                 
                   
                 
