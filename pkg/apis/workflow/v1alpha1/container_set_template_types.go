@@ -4,11 +4,21 @@ import (
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
+	intstr "k8s.io/apimachinery/pkg/util/intstr"
 )
 
 type ContainerSetTemplate struct {
-	Containers   []ContainerNode      `json:"containers" protobuf:"bytes,4,rep,name=containers"`
-	VolumeMounts []corev1.VolumeMount `json:"volumeMounts,omitempty" protobuf:"bytes,3,rep,name=volumeMounts"`
+	Containers    []ContainerNode            `json:"containers" protobuf:"bytes,4,rep,name=containers"`
+	VolumeMounts  []corev1.VolumeMount       `json:"volumeMounts,omitempty" protobuf:"bytes,3,rep,name=volumeMounts"`
+	RetryStrategy *ContainerSetRetryStrategy `json:"retryStrategy,omitempty" protobuf:"bytes,5,opt,name=retryStrategy"`
+}
+
+type ContainerSetRetryStrategy struct {
+	// Limit is the maximum number of attempts when retrying a container
+	Limit *intstr.IntOrString `json:"limit,omitempty" protobuf:"varint,1,opt,name=limit"`
+
+	// Backoff is a backoff strategy
+	Backoff *Backoff `json:"backoff,omitempty" protobuf:"bytes,3,opt,name=backoff,casttype=Backoff"`
 }
 
 func (in *ContainerSetTemplate) GetContainers() []corev1.Container {

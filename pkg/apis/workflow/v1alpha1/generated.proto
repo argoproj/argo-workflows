@@ -244,10 +244,20 @@ message ContainerNode {
   repeated string dependencies = 2;
 }
 
+message ContainerSetRetryStrategy {
+  // Limit is the maximum number of attempts when retrying a container
+  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString limit = 1;
+
+  // Backoff is a backoff strategy
+  optional Backoff backoff = 3;
+}
+
 message ContainerSetTemplate {
   repeated ContainerNode containers = 4;
 
   repeated k8s.io.api.core.v1.VolumeMount volumeMounts = 3;
+
+  optional ContainerSetRetryStrategy retryStrategy = 5;
 }
 
 // ContinueOn defines if a workflow should continue even if a task or step fails/errors.

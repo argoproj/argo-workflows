@@ -3287,6 +3287,26 @@ spec:
                           - name
                           type: object
                         type: array
+                      retryStrategy:
+                        properties:
+                          backoff:
+                            properties:
+                              duration:
+                                type: string
+                              factor:
+                                anyOf:
+                                - type: integer
+                                - type: string
+                                x-kubernetes-int-or-string: true
+                              maxDuration:
+                                type: string
+                            type: object
+                          limit:
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            x-kubernetes-int-or-string: true
+                        type: object
                       volumeMounts:
                         items:
                           properties:
@@ -9760,6 +9780,26 @@ spec:
                             - name
                             type: object
                           type: array
+                        retryStrategy:
+                          properties:
+                            backoff:
+                              properties:
+                                duration:
+                                  type: string
+                                factor:
+                                  anyOf:
+                                  - type: integer
+                                  - type: string
+                                  x-kubernetes-int-or-string: true
+                                maxDuration:
+                                  type: string
+                              type: object
+                            limit:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              x-kubernetes-int-or-string: true
+                          type: object
                         volumeMounts:
                           items:
                             properties:

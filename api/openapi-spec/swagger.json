@@ -8969,6 +8969,19 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.ContainerSetRetryStrategy": {
+      "type": "object",
+      "properties": {
+        "backoff": {
+          "description": "Backoff is a backoff strategy",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Backoff"
+        },
+        "limit": {
+          "description": "Limit is the maximum number of attempts when retrying a container",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.ContainerSetTemplate": {
       "type": "object",
       "required": [
@@ -8980,6 +8993,9 @@
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ContainerNode"
           }
+        },
+        "retryStrategy": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ContainerSetRetryStrategy"
         },
         "volumeMounts": {
           "type": "array",

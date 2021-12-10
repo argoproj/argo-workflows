@@ -1607,6 +1607,14 @@ with argo_workflows.ApiClient() as api_client:
                                 working_dir="working_dir_example",
                             ),
                         ],
+                        retry_strategy=IoArgoprojWorkflowV1alpha1ContainerSetRetryStrategy(
+                            backoff=IoArgoprojWorkflowV1alpha1Backoff(
+                                duration="duration_example",
+                                factor="factor_example",
+                                max_duration="max_duration_example",
+                            ),
+                            limit="limit_example",
+                        ),
                         volume_mounts=[
                             VolumeMount(
                                 mount_path="mount_path_example",
@@ -5012,6 +5020,14 @@ with argo_workflows.ApiClient() as api_client:
                                     working_dir="working_dir_example",
                                 ),
                             ],
+                            retry_strategy=IoArgoprojWorkflowV1alpha1ContainerSetRetryStrategy(
+                                backoff=IoArgoprojWorkflowV1alpha1Backoff(
+                                    duration="duration_example",
+                                    factor="factor_example",
+                                    max_duration="max_duration_example",
+                                ),
+                                limit="limit_example",
+                            ),
                             volume_mounts=[
                                 VolumeMount(
                                     mount_path="mount_path_example",
@@ -9865,6 +9881,14 @@ with argo_workflows.ApiClient() as api_client:
                                 working_dir="working_dir_example",
                             ),
                         ],
+                        retry_strategy=IoArgoprojWorkflowV1alpha1ContainerSetRetryStrategy(
+                            backoff=IoArgoprojWorkflowV1alpha1Backoff(
+                                duration="duration_example",
+                                factor="factor_example",
+                                max_duration="max_duration_example",
+                            ),
+                            limit="limit_example",
+                        ),
                         volume_mounts=[
                             VolumeMount(
                                 mount_path="mount_path_example",
@@ -13270,6 +13294,14 @@ with argo_workflows.ApiClient() as api_client:
                                     working_dir="working_dir_example",
                                 ),
                             ],
+                            retry_strategy=IoArgoprojWorkflowV1alpha1ContainerSetRetryStrategy(
+                                backoff=IoArgoprojWorkflowV1alpha1Backoff(
+                                    duration="duration_example",
+                                    factor="factor_example",
+                                    max_duration="max_duration_example",
+                                ),
+                                limit="limit_example",
+                            ),
                             volume_mounts=[
                                 VolumeMount(
                                     mount_path="mount_path_example",
@@ -18046,6 +18078,14 @@ with argo_workflows.ApiClient() as api_client:
                                 working_dir="working_dir_example",
                             ),
                         ],
+                        retry_strategy=IoArgoprojWorkflowV1alpha1ContainerSetRetryStrategy(
+                            backoff=IoArgoprojWorkflowV1alpha1Backoff(
+                                duration="duration_example",
+                                factor="factor_example",
+                                max_duration="max_duration_example",
+                            ),
+                            limit="limit_example",
+                        ),
                         volume_mounts=[
                             VolumeMount(
                                 mount_path="mount_path_example",
@@ -21451,6 +21491,14 @@ with argo_workflows.ApiClient() as api_client:
                                     working_dir="working_dir_example",
                                 ),
                             ],
+                            retry_strategy=IoArgoprojWorkflowV1alpha1ContainerSetRetryStrategy(
+                                backoff=IoArgoprojWorkflowV1alpha1Backoff(
+                                    duration="duration_example",
+                                    factor="factor_example",
+                                    max_duration="max_duration_example",
+                                ),
+                                limit="limit_example",
+                            ),
                             volume_mounts=[
                                 VolumeMount(
                                     mount_path="mount_path_example",

@@ -2,6 +2,7 @@ package commands
 
 import (
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -17,6 +18,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/util/retry"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/archive"
@@ -79,8 +82,10 @@ func NewEmissaryCommand() *cobra.Command {
 				return fmt.Errorf("failed to unmarshal template: %w", err)
 			}
 
+			var containerSet bool
 			for _, x := range template.ContainerSet.GetGraph() {
 				if x.Name == containerName {
+					containerSet = true
 					for _, y := range x.Dependencies {
 						logger.Infof("waiting for dependency %q", y)
 						for {
@@ -107,31 +112,6 @@ func NewEmissaryCommand() *cobra.Command {
 				return fmt.Errorf("failed to find name in PATH: %w", err)
 			}
 
-			command := exec.Command(name, args...)
-			command.Env = os.Environ()
-			command.SysProcAttr = &syscall.SysProcAttr{}
-			osspecific.Setpgid(command.SysProcAttr)
-			command.Stdout = os.Stdout
-			command.Stderr = os.Stderr
-
-			// this may not be that important an optimisation, except for very long logs we don't want to capture
-			if includeScriptOutput || template.SaveLogsAsArtifact() {
-				logger.Info("capturing logs")
-				stdout, err := os.Create(varRunArgo + "/ctr/" + containerName + "/stdout")
-				if err != nil {
-					return fmt.Errorf("failed to open stdout: %w", err)
-				}
-				defer func() { _ = stdout.Close() }()
-				command.Stdout = io.MultiWriter(os.Stdout, stdout)
-
-				stderr, err := os.Create(varRunArgo + "/ctr/" + containerName + "/stderr")
-				if err != nil {
-					return fmt.Errorf("failed to open stderr: %w", err)
-				}
-				defer func() { _ = stderr.Close() }()
-				command.Stderr = io.MultiWriter(os.Stderr, stderr)
-			}
-
 			if _, ok := os.LookupEnv("ARGO_DEBUG_PAUSE_BEFORE"); ok {
 				for {
 					// User can create the file: /ctr/NAME_OF_THE_CONTAINER/before
@@ -144,23 +124,62 @@ func NewEmissaryCommand() *cobra.Command {
 					break
 				}
 			}
-			if err := command.Start(); err != nil {
-				return err
-			}
 
-			go func() {
-				for {
-					data, _ := ioutil.ReadFile(filepath.Clean(varRunArgo + "/ctr/" + containerName + "/signal"))
-					_ = os.Remove(varRunArgo + "/ctr/" + containerName + "/signal")
-					s, _ := strconv.Atoi(string(data))
-					if s > 0 {
-						_ = osspecific.Kill(command.Process.Pid, syscall.Signal(s))
-					}
-					time.Sleep(2 * time.Second)
+			backoff := wait.Backoff{Steps: 1} // we will not understand the error here really ....
+			// Check here if we are running a container that is part of the container set ..
+			// If not we dont want anything.
+			if containerSet && retrySet(template.ContainerSet.RetryStrategy) {
+				duration, err := time.ParseDuration(template.ContainerSet.RetryStrategy.Backoff.Duration)
+				if err != nil {
+					return fmt.Errorf("failed to parse containerset retry duration: %w", err)
 				}
-			}()
+				backoff = wait.Backoff{
+					Steps:    int(template.ContainerSet.RetryStrategy.Limit.IntVal),
+					Factor:   float64(template.ContainerSet.RetryStrategy.Backoff.Factor.IntVal),
+					Duration: duration,
+				}
+			}
+			var command *exec.Cmd
+			var stdout *os.File
+			var stderr *os.File
+			cmdErr := retry.OnError(backoff, func(error) bool { return true }, func() error {
+				if stdout != nil {
+					stdout.Close()
+				}
+				if stderr != nil {
+					stderr.Close()
+				}
+				command, stdout, stderr, err = createCommand(name, args, template)
+				if err != nil {
+					return fmt.Errorf("failed to create command: %w", err)
+				}
 
-			cmdErr := command.Wait()
+				if err := command.Start(); err != nil {
+					return err
+				}
+
+				ctx, cancel := context.WithCancel(context.Background())
+				defer cancel()
+				go func() {
+					for {
+						select {
+						case <-ctx.Done():
+							return
+						default:
+							data, _ := ioutil.ReadFile(filepath.Clean(varRunArgo + "/ctr/" + containerName + "/signal"))
+							_ = os.Remove(varRunArgo + "/ctr/" + containerName + "/signal")
+							s, _ := strconv.Atoi(string(data))
+							if s > 0 {
+								_ = osspecific.Kill(command.Process.Pid, syscall.Signal(s))
+							}
+							time.Sleep(2 * time.Second)
+						}
+					}
+				}()
+				return command.Wait()
+			})
+			defer stdout.Close()
+			defer stderr.Close()
 
 			if _, ok := os.LookupEnv("ARGO_DEBUG_PAUSE_AFTER"); ok {
 				for {
@@ -203,10 +222,51 @@ func NewEmissaryCommand() *cobra.Command {
 			} else {
 				logger.Info("not saving outputs - not main container")
 			}
-
 			return cmdErr // this is the error returned from cmd.Wait(), which maybe an exitError
 		},
 	}
+}
+
+func createCommand(name string, args []string, template *wfv1.Template) (*exec.Cmd, *os.File, *os.File, error) {
+	command := exec.Command(name, args...)
+	command.Env = os.Environ()
+	command.SysProcAttr = &syscall.SysProcAttr{}
+	osspecific.Setpgid(command.SysProcAttr)
+	command.Stdout = os.Stdout
+	command.Stderr = os.Stderr
+
+	var stdout *os.File
+	var stderr *os.File
+	var err error
+
+	// this may not be that important an optimisation, except for very long logs we don't want to capture
+	if includeScriptOutput || template.SaveLogsAsArtifact() {
+		logger.Info("capturing logs")
+		stdout, err = os.Create(varRunArgo + "/ctr/" + containerName + "/stdout")
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("failed to open stdout: %w", err)
+		}
+		command.Stdout = io.MultiWriter(os.Stdout, stdout)
+
+		stderr, err := os.Create(varRunArgo + "/ctr/" + containerName + "/stderr")
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("failed to open stderr: %w", err)
+		}
+		command.Stderr = io.MultiWriter(os.Stderr, stderr)
+	}
+	return command, stdout, stderr, nil
+}
+
+func retrySet(retryStrategy *wfv1.ContainerSetRetryStrategy) bool {
+	if retryStrategy == nil {
+		logger.Info("retry strategy is nil")
+		return false
+	}
+	if retryStrategy.Backoff != nil && retryStrategy.Backoff.Duration == "" {
+		logger.Infof("We are missing something here: %v", retryStrategy.Backoff.Duration)
+		return false
+	}
+	return true
 }
 
 func saveArtifact(srcPath string) error {

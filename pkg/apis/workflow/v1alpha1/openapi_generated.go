@@ -32,6 +32,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ClusterWorkflowTemplateList":   schema_pkg_apis_workflow_v1alpha1_ClusterWorkflowTemplateList(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Condition":                     schema_pkg_apis_workflow_v1alpha1_Condition(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerNode":                 schema_pkg_apis_workflow_v1alpha1_ContainerNode(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerSetRetryStrategy":     schema_pkg_apis_workflow_v1alpha1_ContainerSetRetryStrategy(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerSetTemplate":          schema_pkg_apis_workflow_v1alpha1_ContainerSetTemplate(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContinueOn":                    schema_pkg_apis_workflow_v1alpha1_ContinueOn(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Counter":                       schema_pkg_apis_workflow_v1alpha1_Counter(ref),
@@ -1251,6 +1252,32 @@ func schema_pkg_apis_workflow_v1alpha1_ContainerNode(ref common.ReferenceCallbac
 	}
 }
 
+func schema_pkg_apis_workflow_v1alpha1_ContainerSetRetryStrategy(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"limit": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Limit is the maximum number of attempts when retrying a container",
+							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
+						},
+					},
+					"backoff": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Backoff is a backoff strategy",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Backoff"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Backoff", "k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
+	}
+}
+
 func schema_pkg_apis_workflow_v1alpha1_ContainerSetTemplate(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -1283,12 +1310,17 @@ func schema_pkg_apis_workflow_v1alpha1_ContainerSetTemplate(ref common.Reference
 							},
 						},
 					},
+					"retryStrategy": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerSetRetryStrategy"),
+						},
+					},
 				},
 				Required: []string{"containers"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerNode", "k8s.io/api/core/v1.VolumeMount"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerNode", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerSetRetryStrategy", "k8s.io/api/core/v1.VolumeMount"},
 	}
 }
 
