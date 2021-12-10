@@ -1405,6 +1405,7 @@ func (s *CLISuite) TestArchive() {
 					assert.Contains(t, lines[1], "argo")
 					assert.Contains(t, lines[1], "basic")
 					assert.Contains(t, lines[1], "Succeeded")
+					assert.Contains(t, lines[1], "UID")
 				}
 			})
 	})

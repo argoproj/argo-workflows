@@ -46,7 +46,7 @@ func NewListCommand() *cobra.Command {
 				listOpts.Continue = resp.Continue
 			}
 			sort.Sort(workflows)
-			err = printer.PrintWorkflows(workflows, os.Stdout, printer.PrintOpts{Output: output, Namespace: true})
+			err = printer.PrintWorkflows(workflows, os.Stdout, printer.PrintOpts{Output: output, Namespace: true, UID: true})
 			errors.CheckError(err)
 		},
 	}
