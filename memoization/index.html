@@ -2319,7 +2319,6 @@
                 
                 
                 <h1 id="step-level-memoization">Step Level Memoization<a class="headerlink" href="#step-level-memoization" title="Permanent link">&para;</a></h1>
-<p><img alt="beta" src="../assets/beta.svg" /></p>
 <blockquote>
 <p>v2.10 and after</p>
 </blockquote>
@@ -2349,6 +2348,10 @@ spec:
 
 ...
 </code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In order to use memoization it is necessary to add the verbs <code>create</code> and <code>update</code> to the <code>configmaps</code> resource for the appropriate (cluster) roles. In the case of a cluster install the <code>argo-cluster-role</code> cluster role should be updated, whilst for a namespace install the <code>argo-role</code> role should be updated.</p>
+</div>
 <h2 id="faqs">FAQs<a class="headerlink" href="#faqs" title="Permanent link">&para;</a></h2>
 <ol>
 <li>If you see errors like <code>"error creating cache entry: ConfigMap \"reuse-task\" is invalid: []: Too long: must have at most 1048576 characters"</code>,
