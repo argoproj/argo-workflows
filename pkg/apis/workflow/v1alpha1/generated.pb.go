@@ -3536,7 +3536,7 @@ func init() {
 }
 
 var fileDescriptor_724696e352c3df5f = []byte{
-	// 8929 bytes of a gzipped FileDescriptorProto
+	// 8913 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xec, 0x7d, 0x5b, 0x70, 0x24, 0xc9,
 	0x71, 0xd8, 0xf5, 0x00, 0x03, 0xcc, 0x24, 0xde, 0xb5, 0xaf, 0x39, 0xdc, 0xdd, 0xe2, 0xd4, 0xa7,
 	0x3b, 0xdf, 0xca, 0x47, 0x40, 0xb7, 0xcb, 0xb3, 0xcf, 0x64, 0x98, 0x22, 0x06, 0x58, 0x3c, 0x0e,
@@ -6285,6 +6285,11 @@ func (m *HTTP) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	i -= len(m.SuccessCondition)
+	copy(dAtA[i:], m.SuccessCondition)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.SuccessCondition)))
+	i--
+	dAtA[i] = 0x32
 	i -= len(m.Body)
 	copy(dAtA[i:], m.Body)
 	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Body)))
@@ -12023,6 +12028,8 @@ func (m *HTTP) Size() (n int) {
 	}
 	l = len(m.Body)
 	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.SuccessCondition)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -14352,6 +14359,7 @@ func (this *HTTP) String() string {
 		`Headers:` + repeatedStringForHeaders + `,`,
 		`TimeoutSeconds:` + valueToStringGenerated(this.TimeoutSeconds) + `,`,
 		`Body:` + fmt.Sprintf("%v", this.Body) + `,`,
+		`SuccessCondition:` + fmt.Sprintf("%v", this.SuccessCondition) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -22244,6 +22252,38 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Body = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SuccessCondition", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SuccessCondition = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

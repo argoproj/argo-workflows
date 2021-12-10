@@ -3080,6 +3080,8 @@ spec:
                           type: array
                         method:
                           type: string
+                        successCondition:
+                          type: string
                         timeoutSeconds:
                           format: int64
                           type: integer
