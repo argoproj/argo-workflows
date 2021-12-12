@@ -1429,6 +1429,12 @@ message TransformationStep {
   optional string expression = 1;
 }
 
+// Ui defines a config for UI
+message Ui {
+  // NavColor is an ui navigation bar theme which switch the design
+  optional string navColor = 1;
+}
+
 // UserContainer is a container specified by a user.
 message UserContainer {
   optional k8s.io.api.core.v1.Container container = 1;

@@ -9710,6 +9710,9 @@
         },
         "managedNamespace": {
           "type": "string"
+        },
+        "ui": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Ui"
         }
       }
     },
@@ -11120,6 +11123,16 @@
       "properties": {
         "expression": {
           "description": "Expression defines an expr expression to apply",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.Ui": {
+      "description": "Ui defines a config for UI",
+      "type": "object",
+      "properties": {
+        "navColor": {
+          "description": "NavColor is an ui navigation bar theme which switch the design",
           "type": "string"
         }
       }

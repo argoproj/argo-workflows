@@ -5447,6 +5447,9 @@
         },
         "managedNamespace": {
           "type": "string"
+        },
+        "ui": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Ui"
         }
       },
       "type": "object"
@@ -6860,6 +6863,16 @@
       "required": [
         "expression"
       ],
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.Ui": {
+      "description": "Ui defines a config for UI",
+      "properties": {
+        "navColor": {
+          "description": "NavColor is an ui navigation bar theme which switch the design",
+          "type": "string"
+        }
+      },
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.UpdateCronWorkflowRequest": {

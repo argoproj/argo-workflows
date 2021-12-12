@@ -11,3 +11,9 @@ type Link struct {
 	// The URL. Can contain "${metadata.namespace}", "${metadata.name}", "${status.startedAt}", "${status.finishedAt}" or any other element in workflow yaml, e.g. "${workflow.metadata.annotations.userDefinedKey}"
 	URL string `json:"url" protobuf:"bytes,3,opt,name=url"`
 }
+
+// Ui defines a config for UI
+type Ui struct {
+	// NavColor is an ui navigation bar theme which switch the design
+	NavColor string `json:"navColor,omitempty" protobuf:"bytes,1,opt,name=navColor"`
+}

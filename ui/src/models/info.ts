@@ -4,9 +4,14 @@ export interface Link {
     url: string;
 }
 
+export interface Ui {
+    navColor?: string;
+}
+
 export interface Info {
     managedNamespace?: string;
     links?: Link[];
+    ui?: Ui;
 }
 
 export interface Version {
