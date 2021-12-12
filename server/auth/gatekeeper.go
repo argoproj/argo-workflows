@@ -8,7 +8,6 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/antonmedv/expr"
 	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
 	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
 	log "github.com/sirupsen/logrus"
@@ -28,6 +27,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
 	"github.com/argoproj/argo-workflows/v3/server/cache"
 	servertypes "github.com/argoproj/argo-workflows/v3/server/types"
+	"github.com/argoproj/argo-workflows/v3/util/expr/argoexpr"
 	jsonutil "github.com/argoproj/argo-workflows/v3/util/json"
 	"github.com/argoproj/argo-workflows/v3/util/kubeconfig"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -240,13 +240,9 @@ func (s *gatekeeper) getServiceAccount(claims *types.Claims, namespace string) (
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshall claims: %w", err)
 		}
-		result, err := expr.Eval(rule, v)
+		allow, err := argoexpr.EvalBool(rule, v)
 		if err != nil {
 			return nil, fmt.Errorf("failed to evaluate rule: %w", err)
-		}
-		allow, ok := result.(bool)
-		if !ok {
-			return nil, fmt.Errorf("failed to evaluate rule: not a boolean")
 		}
 		if !allow {
 			continue

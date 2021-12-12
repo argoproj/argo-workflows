@@ -36,6 +36,7 @@ class IoArgoprojWorkflowV1alpha1HTTP(object):
         'body': 'str',
         'headers': 'list[IoArgoprojWorkflowV1alpha1HTTPHeader]',
         'method': 'str',
+        'success_condition': 'str',
         'timeout_seconds': 'int',
         'url': 'str'
     }
@@ -44,11 +45,12 @@ class IoArgoprojWorkflowV1alpha1HTTP(object):
         'body': 'body',
         'headers': 'headers',
         'method': 'method',
+        'success_condition': 'successCondition',
         'timeout_seconds': 'timeoutSeconds',
         'url': 'url'
     }
 
-    def __init__(self, body=None, headers=None, method=None, timeout_seconds=None, url=None, local_vars_configuration=None):  # noqa: E501
+    def __init__(self, body=None, headers=None, method=None, success_condition=None, timeout_seconds=None, url=None, local_vars_configuration=None):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1HTTP - a model defined in OpenAPI"""  # noqa: E501
         if local_vars_configuration is None:
             local_vars_configuration = Configuration()
@@ -57,6 +59,7 @@ class IoArgoprojWorkflowV1alpha1HTTP(object):
         self._body = None
         self._headers = None
         self._method = None
+        self._success_condition = None
         self._timeout_seconds = None
         self._url = None
         self.discriminator = None
@@ -67,6 +70,8 @@ class IoArgoprojWorkflowV1alpha1HTTP(object):
             self.headers = headers
         if method is not None:
             self.method = method
+        if success_condition is not None:
+            self.success_condition = success_condition
         if timeout_seconds is not None:
             self.timeout_seconds = timeout_seconds
         self.url = url
@@ -139,6 +144,29 @@ class IoArgoprojWorkflowV1alpha1HTTP(object):
         """
 
         self._method = method
+
+    @property
+    def success_condition(self):
+        """Gets the success_condition of this IoArgoprojWorkflowV1alpha1HTTP.  # noqa: E501
+
+        SuccessCondition is an expression if evaluated to true is considered successful  # noqa: E501
+
+        :return: The success_condition of this IoArgoprojWorkflowV1alpha1HTTP.  # noqa: E501
+        :rtype: str
+        """
+        return self._success_condition
+
+    @success_condition.setter
+    def success_condition(self, success_condition):
+        """Sets the success_condition of this IoArgoprojWorkflowV1alpha1HTTP.
+
+        SuccessCondition is an expression if evaluated to true is considered successful  # noqa: E501
+
+        :param success_condition: The success_condition of this IoArgoprojWorkflowV1alpha1HTTP.  # noqa: E501
+        :type: str
+        """
+
+        self._success_condition = success_condition
 
     @property
     def timeout_seconds(self):

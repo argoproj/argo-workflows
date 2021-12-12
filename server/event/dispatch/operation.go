@@ -3,7 +3,6 @@ package dispatch
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -18,6 +17,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/util/expr/argoexpr"
 	exprenv "github.com/argoproj/argo-workflows/v3/util/expr/env"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	jsonutil "github.com/argoproj/argo-workflows/v3/util/json"
@@ -76,16 +76,13 @@ func (o *Operation) Dispatch(ctx context.Context) error {
 
 func (o *Operation) dispatch(ctx context.Context, wfeb wfv1.WorkflowEventBinding) (*wfv1.Workflow, error) {
 	selector := wfeb.Spec.Event.Selector
-	result, err := expr.Eval(selector, o.env)
+	matched, err := argoexpr.EvalBool(selector, o.env)
 	if err != nil {
 		return nil, fmt.Errorf("failed to evaluate workflow template expression: %w", err)
 	}
-	matched, boolExpr := result.(bool)
-	log.WithFields(log.Fields{"namespace": wfeb.Namespace, "event": wfeb.Name, "selector": selector, "matched": matched, "boolExpr": boolExpr}).Debug("Selector evaluation")
+	log.WithFields(log.Fields{"namespace": wfeb.Namespace, "event": wfeb.Name, "selector": selector, "matched": matched}).Debug("Selector evaluation")
 	submit := wfeb.Spec.Submit
-	if !boolExpr {
-		return nil, errors.New("malformed workflow template expression: did not evaluate to boolean")
-	} else if matched && submit != nil {
+	if matched && submit != nil {
 		client := auth.GetWfClient(o.ctx)
 		ref := wfeb.Spec.Submit.WorkflowTemplateRef
 		var tmpl wfv1.WorkflowSpecHolder
