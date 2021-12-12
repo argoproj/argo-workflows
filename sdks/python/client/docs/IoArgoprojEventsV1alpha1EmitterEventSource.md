@@ -1,6 +1,5 @@
 # IoArgoprojEventsV1alpha1EmitterEventSource
 
-
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
@@ -9,11 +8,10 @@ Name | Type | Description | Notes
 **channel_name** | **str** |  | [optional] 
 **connection_backoff** | [**IoArgoprojEventsV1alpha1Backoff**](IoArgoprojEventsV1alpha1Backoff.md) |  | [optional] 
 **json_body** | **bool** |  | [optional] 
-**metadata** | **{str: (str,)}** |  | [optional] 
+**metadata** | **dict(str, str)** |  | [optional] 
 **password** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 
 **tls** | [**IoArgoprojEventsV1alpha1TLSConfig**](IoArgoprojEventsV1alpha1TLSConfig.md) |  | [optional] 
 **username** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 
-**any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

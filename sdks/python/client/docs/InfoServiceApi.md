@@ -17,11 +17,10 @@ Method | HTTP request | Description
 ### Example
 
 ```python
+from __future__ import print_function
 import time
 import argo_workflows
-from argo_workflows.api import info_service_api
-from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from argo_workflows.model.io_argoproj_workflow_v1alpha1_info_response import IoArgoprojWorkflowV1alpha1InfoResponse
+from argo_workflows.rest import ApiException
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
@@ -33,16 +32,14 @@ configuration = argo_workflows.Configuration(
 # Enter a context with an instance of the API client
 with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
-    api_instance = info_service_api.InfoServiceApi(api_client)
-
-    # example, this endpoint has no required or optional parameters
+    api_instance = argo_workflows.InfoServiceApi(api_client)
+    
     try:
         api_response = api_instance.get_info()
         pprint(api_response)
-    except argo_workflows.ApiException as e:
+    except ApiException as e:
         print("Exception when calling InfoServiceApi->get_info: %s\n" % e)
 ```
-
 
 ### Parameters
 This endpoint does not need any parameter.
@@ -60,7 +57,6 @@ No authorization required
  - **Content-Type**: Not defined
  - **Accept**: application/json
 
-
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
@@ -77,11 +73,10 @@ No authorization required
 ### Example
 
 ```python
+from __future__ import print_function
 import time
 import argo_workflows
-from argo_workflows.api import info_service_api
-from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from argo_workflows.model.io_argoproj_workflow_v1alpha1_get_user_info_response import IoArgoprojWorkflowV1alpha1GetUserInfoResponse
+from argo_workflows.rest import ApiException
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
@@ -93,16 +88,14 @@ configuration = argo_workflows.Configuration(
 # Enter a context with an instance of the API client
 with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
-    api_instance = info_service_api.InfoServiceApi(api_client)
-
-    # example, this endpoint has no required or optional parameters
+    api_instance = argo_workflows.InfoServiceApi(api_client)
+    
     try:
         api_response = api_instance.get_user_info()
         pprint(api_response)
-    except argo_workflows.ApiException as e:
+    except ApiException as e:
         print("Exception when calling InfoServiceApi->get_user_info: %s\n" % e)
 ```
-
 
 ### Parameters
 This endpoint does not need any parameter.
@@ -120,7 +113,6 @@ No authorization required
  - **Content-Type**: Not defined
  - **Accept**: application/json
 
-
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
@@ -137,11 +129,10 @@ No authorization required
 ### Example
 
 ```python
+from __future__ import print_function
 import time
 import argo_workflows
-from argo_workflows.api import info_service_api
-from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from argo_workflows.model.io_argoproj_workflow_v1alpha1_version import IoArgoprojWorkflowV1alpha1Version
+from argo_workflows.rest import ApiException
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
@@ -153,16 +144,14 @@ configuration = argo_workflows.Configuration(
 # Enter a context with an instance of the API client
 with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
-    api_instance = info_service_api.InfoServiceApi(api_client)
-
-    # example, this endpoint has no required or optional parameters
+    api_instance = argo_workflows.InfoServiceApi(api_client)
+    
     try:
         api_response = api_instance.get_version()
         pprint(api_response)
-    except argo_workflows.ApiException as e:
+    except ApiException as e:
         print("Exception when calling InfoServiceApi->get_version: %s\n" % e)
 ```
-
 
 ### Parameters
 This endpoint does not need any parameter.
@@ -179,7 +168,6 @@ No authorization required
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
-
 
 ### HTTP response details
 | Status code | Description | Response headers |

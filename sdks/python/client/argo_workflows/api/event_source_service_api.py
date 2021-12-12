@@ -1,3 +1,5 @@
+# coding: utf-8
+
 """
     Argo Server API
 
@@ -8,26 +10,18 @@
 """
 
 
-import re  # noqa: F401
-import sys  # noqa: F401
+from __future__ import absolute_import
 
-from argo_workflows.api_client import ApiClient, Endpoint as _Endpoint
-from argo_workflows.model_utils import (  # noqa: F401
-    check_allowed_values,
-    check_validations,
-    date,
-    datetime,
-    file_type,
-    none_type,
-    validate_and_convert_types
+import re  # noqa: F401
+
+# python 2 and python 3 compatibility library
+import six
+
+from argo_workflows.api_client import ApiClient
+from argo_workflows.exceptions import (  # noqa: F401
+    ApiTypeError,
+    ApiValueError
 )
-from argo_workflows.model.eventsource_create_event_source_request import EventsourceCreateEventSourceRequest
-from argo_workflows.model.eventsource_update_event_source_request import EventsourceUpdateEventSourceRequest
-from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from argo_workflows.model.io_argoproj_events_v1alpha1_event_source import IoArgoprojEventsV1alpha1EventSource
-from argo_workflows.model.io_argoproj_events_v1alpha1_event_source_list import IoArgoprojEventsV1alpha1EventSourceList
-from argo_workflows.model.stream_result_of_eventsource_event_source_watch_event import StreamResultOfEventsourceEventSourceWatchEvent
-from argo_workflows.model.stream_result_of_eventsource_log_entry import StreamResultOfEventsourceLogEntry
 
 
 class EventSourceServiceApi(object):
@@ -42,1095 +36,1030 @@ class EventSourceServiceApi(object):
             api_client = ApiClient()
         self.api_client = api_client
 
-        def __create_event_source(
-            self,
-            namespace,
-            body,
-            **kwargs
-        ):
-            """create_event_source  # noqa: E501
+    def create_event_source(self, namespace, body, **kwargs):  # noqa: E501
+        """create_event_source  # noqa: E501
 
-            This method makes a synchronous HTTP request by default. To make an
-            asynchronous HTTP request, please pass async_req=True
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.create_event_source(namespace, body, async_req=True)
+        >>> result = thread.get()
 
-            >>> thread = api.create_event_source(namespace, body, async_req=True)
-            >>> result = thread.get()
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param EventsourceCreateEventSourceRequest body: (required)
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: IoArgoprojEventsV1alpha1EventSource
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        return self.create_event_source_with_http_info(namespace, body, **kwargs)  # noqa: E501
 
-            Args:
-                namespace (str):
-                body (EventsourceCreateEventSourceRequest):
+    def create_event_source_with_http_info(self, namespace, body, **kwargs):  # noqa: E501
+        """create_event_source  # noqa: E501
 
-            Keyword Args:
-                _return_http_data_only (bool): response data without head status
-                    code and headers. Default is True.
-                _preload_content (bool): if False, the urllib3.HTTPResponse object
-                    will be returned without reading/decoding response data.
-                    Default is True.
-                _request_timeout (int/float/tuple): timeout setting for this request. If
-                    one number provided, it will be total request timeout. It can also
-                    be a pair (tuple) of (connection, read) timeouts.
-                    Default is None.
-                _check_input_type (bool): specifies if type checking
-                    should be done one the data sent to the server.
-                    Default is True.
-                _check_return_type (bool): specifies if type checking
-                    should be done one the data received from the server.
-                    Default is True.
-                _host_index (int/None): specifies the index of the server
-                    that we want to use.
-                    Default is read from the configuration.
-                async_req (bool): execute request asynchronously
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.create_event_source_with_http_info(namespace, body, async_req=True)
+        >>> result = thread.get()
 
-            Returns:
-                IoArgoprojEventsV1alpha1EventSource
-                    If the method is called asynchronously, returns the request
-                    thread.
-            """
-            kwargs['async_req'] = kwargs.get(
-                'async_req', False
-            )
-            kwargs['_return_http_data_only'] = kwargs.get(
-                '_return_http_data_only', True
-            )
-            kwargs['_preload_content'] = kwargs.get(
-                '_preload_content', True
-            )
-            kwargs['_request_timeout'] = kwargs.get(
-                '_request_timeout', None
-            )
-            kwargs['_check_input_type'] = kwargs.get(
-                '_check_input_type', True
-            )
-            kwargs['_check_return_type'] = kwargs.get(
-                '_check_return_type', True
-            )
-            kwargs['_host_index'] = kwargs.get('_host_index')
-            kwargs['namespace'] = \
-                namespace
-            kwargs['body'] = \
-                body
-            return self.call_with_http_info(**kwargs)
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param EventsourceCreateEventSourceRequest body: (required)
+        :param _return_http_data_only: response data without head status code
+                                       and headers
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: tuple(IoArgoprojEventsV1alpha1EventSource, status_code(int), headers(HTTPHeaderDict))
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
 
-        self.create_event_source = _Endpoint(
-            settings={
-                'response_type': (IoArgoprojEventsV1alpha1EventSource,),
-                'auth': [],
-                'endpoint_path': '/api/v1/event-sources/{namespace}',
-                'operation_id': 'create_event_source',
-                'http_method': 'POST',
-                'servers': None,
-            },
-            params_map={
-                'all': [
-                    'namespace',
-                    'body',
-                ],
-                'required': [
-                    'namespace',
-                    'body',
-                ],
-                'nullable': [
-                ],
-                'enum': [
-                ],
-                'validation': [
-                ]
-            },
-            root_map={
-                'validations': {
-                },
-                'allowed_values': {
-                },
-                'openapi_types': {
-                    'namespace':
-                        (str,),
-                    'body':
-                        (EventsourceCreateEventSourceRequest,),
-                },
-                'attribute_map': {
-                    'namespace': 'namespace',
-                },
-                'location_map': {
-                    'namespace': 'path',
-                    'body': 'body',
-                },
-                'collection_format_map': {
-                }
-            },
-            headers_map={
-                'accept': [
-                    'application/json'
-                ],
-                'content_type': [
-                    'application/json'
-                ]
-            },
-            api_client=api_client,
-            callable=__create_event_source
+        local_var_params = locals()
+
+        all_params = [
+            'namespace',
+            'body'
+        ]
+        all_params.extend(
+            [
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout'
+            ]
         )
 
-        def __delete_event_source(
-            self,
-            namespace,
-            name,
-            **kwargs
-        ):
-            """delete_event_source  # noqa: E501
+        for key, val in six.iteritems(local_var_params['kwargs']):
+            if key not in all_params:
+                raise ApiTypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method create_event_source" % key
+                )
+            local_var_params[key] = val
+        del local_var_params['kwargs']
+        # verify the required parameter 'namespace' is set
+        if self.api_client.client_side_validation and ('namespace' not in local_var_params or  # noqa: E501
+                                                        local_var_params['namespace'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `namespace` when calling `create_event_source`")  # noqa: E501
+        # verify the required parameter 'body' is set
+        if self.api_client.client_side_validation and ('body' not in local_var_params or  # noqa: E501
+                                                        local_var_params['body'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `body` when calling `create_event_source`")  # noqa: E501
 
-            This method makes a synchronous HTTP request by default. To make an
-            asynchronous HTTP request, please pass async_req=True
+        collection_formats = {}
 
-            >>> thread = api.delete_event_source(namespace, name, async_req=True)
-            >>> result = thread.get()
+        path_params = {}
+        if 'namespace' in local_var_params:
+            path_params['namespace'] = local_var_params['namespace']  # noqa: E501
 
-            Args:
-                namespace (str):
-                name (str):
+        query_params = []
 
-            Keyword Args:
-                delete_options_grace_period_seconds (str): The duration in seconds before the object should be deleted. Value must be non-negative integer. The value zero indicates delete immediately. If this value is nil, the default grace period for the specified type will be used. Defaults to a per object value if not specified. zero means delete immediately. +optional.. [optional]
-                delete_options_preconditions_uid (str): Specifies the target UID. +optional.. [optional]
-                delete_options_preconditions_resource_version (str): Specifies the target ResourceVersion +optional.. [optional]
-                delete_options_orphan_dependents (bool): Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7. Should the dependent objects be orphaned. If true/false, the \"orphan\" finalizer will be added to/removed from the object's finalizers list. Either this field or PropagationPolicy may be set, but not both. +optional.. [optional]
-                delete_options_propagation_policy (str): Whether and how garbage collection will be performed. Either this field or OrphanDependents may be set, but not both. The default policy is decided by the existing finalizer set in the metadata.finalizers and the resource-specific default policy. Acceptable values are: 'Orphan' - orphan the dependents; 'Background' - allow the garbage collector to delete the dependents in the background; 'Foreground' - a cascading policy that deletes all dependents in the foreground. +optional.. [optional]
-                delete_options_dry_run ([str]): When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed +optional.. [optional]
-                _return_http_data_only (bool): response data without head status
-                    code and headers. Default is True.
-                _preload_content (bool): if False, the urllib3.HTTPResponse object
-                    will be returned without reading/decoding response data.
-                    Default is True.
-                _request_timeout (int/float/tuple): timeout setting for this request. If
-                    one number provided, it will be total request timeout. It can also
-                    be a pair (tuple) of (connection, read) timeouts.
-                    Default is None.
-                _check_input_type (bool): specifies if type checking
-                    should be done one the data sent to the server.
-                    Default is True.
-                _check_return_type (bool): specifies if type checking
-                    should be done one the data received from the server.
-                    Default is True.
-                _host_index (int/None): specifies the index of the server
-                    that we want to use.
-                    Default is read from the configuration.
-                async_req (bool): execute request asynchronously
+        header_params = {}
 
-            Returns:
-                bool, date, datetime, dict, float, int, list, str, none_type
-                    If the method is called asynchronously, returns the request
-                    thread.
-            """
-            kwargs['async_req'] = kwargs.get(
-                'async_req', False
-            )
-            kwargs['_return_http_data_only'] = kwargs.get(
-                '_return_http_data_only', True
-            )
-            kwargs['_preload_content'] = kwargs.get(
-                '_preload_content', True
-            )
-            kwargs['_request_timeout'] = kwargs.get(
-                '_request_timeout', None
-            )
-            kwargs['_check_input_type'] = kwargs.get(
-                '_check_input_type', True
-            )
-            kwargs['_check_return_type'] = kwargs.get(
-                '_check_return_type', True
-            )
-            kwargs['_host_index'] = kwargs.get('_host_index')
-            kwargs['namespace'] = \
-                namespace
-            kwargs['name'] = \
-                name
-            return self.call_with_http_info(**kwargs)
+        form_params = []
+        local_var_files = {}
 
-        self.delete_event_source = _Endpoint(
-            settings={
-                'response_type': (bool, date, datetime, dict, float, int, list, str, none_type,),
-                'auth': [],
-                'endpoint_path': '/api/v1/event-sources/{namespace}/{name}',
-                'operation_id': 'delete_event_source',
-                'http_method': 'DELETE',
-                'servers': None,
-            },
-            params_map={
-                'all': [
-                    'namespace',
-                    'name',
-                    'delete_options_grace_period_seconds',
-                    'delete_options_preconditions_uid',
-                    'delete_options_preconditions_resource_version',
-                    'delete_options_orphan_dependents',
-                    'delete_options_propagation_policy',
-                    'delete_options_dry_run',
-                ],
-                'required': [
-                    'namespace',
-                    'name',
-                ],
-                'nullable': [
-                ],
-                'enum': [
-                ],
-                'validation': [
-                ]
-            },
-            root_map={
-                'validations': {
-                },
-                'allowed_values': {
-                },
-                'openapi_types': {
-                    'namespace':
-                        (str,),
-                    'name':
-                        (str,),
-                    'delete_options_grace_period_seconds':
-                        (str,),
-                    'delete_options_preconditions_uid':
-                        (str,),
-                    'delete_options_preconditions_resource_version':
-                        (str,),
-                    'delete_options_orphan_dependents':
-                        (bool,),
-                    'delete_options_propagation_policy':
-                        (str,),
-                    'delete_options_dry_run':
-                        ([str],),
-                },
-                'attribute_map': {
-                    'namespace': 'namespace',
-                    'name': 'name',
-                    'delete_options_grace_period_seconds': 'deleteOptions.gracePeriodSeconds',
-                    'delete_options_preconditions_uid': 'deleteOptions.preconditions.uid',
-                    'delete_options_preconditions_resource_version': 'deleteOptions.preconditions.resourceVersion',
-                    'delete_options_orphan_dependents': 'deleteOptions.orphanDependents',
-                    'delete_options_propagation_policy': 'deleteOptions.propagationPolicy',
-                    'delete_options_dry_run': 'deleteOptions.dryRun',
-                },
-                'location_map': {
-                    'namespace': 'path',
-                    'name': 'path',
-                    'delete_options_grace_period_seconds': 'query',
-                    'delete_options_preconditions_uid': 'query',
-                    'delete_options_preconditions_resource_version': 'query',
-                    'delete_options_orphan_dependents': 'query',
-                    'delete_options_propagation_policy': 'query',
-                    'delete_options_dry_run': 'query',
-                },
-                'collection_format_map': {
-                    'delete_options_dry_run': 'multi',
-                }
-            },
-            headers_map={
-                'accept': [
-                    'application/json'
-                ],
-                'content_type': [],
-            },
-            api_client=api_client,
-            callable=__delete_event_source
+        body_params = None
+        if 'body' in local_var_params:
+            body_params = local_var_params['body']
+        # HTTP header `Accept`
+        header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # HTTP header `Content-Type`
+        header_params['Content-Type'] = self.api_client.select_header_content_type(  # noqa: E501
+            ['application/json'])  # noqa: E501
+
+        # Authentication setting
+        auth_settings = []  # noqa: E501
+
+        return self.api_client.call_api(
+            '/api/v1/event-sources/{namespace}', 'POST',
+            path_params,
+            query_params,
+            header_params,
+            body=body_params,
+            post_params=form_params,
+            files=local_var_files,
+            response_type='IoArgoprojEventsV1alpha1EventSource',  # noqa: E501
+            auth_settings=auth_settings,
+            async_req=local_var_params.get('async_req'),
+            _return_http_data_only=local_var_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=local_var_params.get('_preload_content', True),
+            _request_timeout=local_var_params.get('_request_timeout'),
+            collection_formats=collection_formats)
+
+    def delete_event_source(self, namespace, name, **kwargs):  # noqa: E501
+        """delete_event_source  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.delete_event_source(namespace, name, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str name: (required)
+        :param str delete_options_grace_period_seconds: The duration in seconds before the object should be deleted. Value must be non-negative integer. The value zero indicates delete immediately. If this value is nil, the default grace period for the specified type will be used. Defaults to a per object value if not specified. zero means delete immediately. +optional.
+        :param str delete_options_preconditions_uid: Specifies the target UID. +optional.
+        :param str delete_options_preconditions_resource_version: Specifies the target ResourceVersion +optional.
+        :param bool delete_options_orphan_dependents: Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7. Should the dependent objects be orphaned. If true/false, the \"orphan\" finalizer will be added to/removed from the object's finalizers list. Either this field or PropagationPolicy may be set, but not both. +optional.
+        :param str delete_options_propagation_policy: Whether and how garbage collection will be performed. Either this field or OrphanDependents may be set, but not both. The default policy is decided by the existing finalizer set in the metadata.finalizers and the resource-specific default policy. Acceptable values are: 'Orphan' - orphan the dependents; 'Background' - allow the garbage collector to delete the dependents in the background; 'Foreground' - a cascading policy that deletes all dependents in the foreground. +optional.
+        :param list[str] delete_options_dry_run: When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed +optional.
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: object
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        return self.delete_event_source_with_http_info(namespace, name, **kwargs)  # noqa: E501
+
+    def delete_event_source_with_http_info(self, namespace, name, **kwargs):  # noqa: E501
+        """delete_event_source  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.delete_event_source_with_http_info(namespace, name, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str name: (required)
+        :param str delete_options_grace_period_seconds: The duration in seconds before the object should be deleted. Value must be non-negative integer. The value zero indicates delete immediately. If this value is nil, the default grace period for the specified type will be used. Defaults to a per object value if not specified. zero means delete immediately. +optional.
+        :param str delete_options_preconditions_uid: Specifies the target UID. +optional.
+        :param str delete_options_preconditions_resource_version: Specifies the target ResourceVersion +optional.
+        :param bool delete_options_orphan_dependents: Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7. Should the dependent objects be orphaned. If true/false, the \"orphan\" finalizer will be added to/removed from the object's finalizers list. Either this field or PropagationPolicy may be set, but not both. +optional.
+        :param str delete_options_propagation_policy: Whether and how garbage collection will be performed. Either this field or OrphanDependents may be set, but not both. The default policy is decided by the existing finalizer set in the metadata.finalizers and the resource-specific default policy. Acceptable values are: 'Orphan' - orphan the dependents; 'Background' - allow the garbage collector to delete the dependents in the background; 'Foreground' - a cascading policy that deletes all dependents in the foreground. +optional.
+        :param list[str] delete_options_dry_run: When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed +optional.
+        :param _return_http_data_only: response data without head status code
+                                       and headers
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: tuple(object, status_code(int), headers(HTTPHeaderDict))
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        local_var_params = locals()
+
+        all_params = [
+            'namespace',
+            'name',
+            'delete_options_grace_period_seconds',
+            'delete_options_preconditions_uid',
+            'delete_options_preconditions_resource_version',
+            'delete_options_orphan_dependents',
+            'delete_options_propagation_policy',
+            'delete_options_dry_run'
+        ]
+        all_params.extend(
+            [
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout'
+            ]
         )
 
-        def __event_sources_logs(
-            self,
-            namespace,
-            **kwargs
-        ):
-            """event_sources_logs  # noqa: E501
+        for key, val in six.iteritems(local_var_params['kwargs']):
+            if key not in all_params:
+                raise ApiTypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method delete_event_source" % key
+                )
+            local_var_params[key] = val
+        del local_var_params['kwargs']
+        # verify the required parameter 'namespace' is set
+        if self.api_client.client_side_validation and ('namespace' not in local_var_params or  # noqa: E501
+                                                        local_var_params['namespace'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `namespace` when calling `delete_event_source`")  # noqa: E501
+        # verify the required parameter 'name' is set
+        if self.api_client.client_side_validation and ('name' not in local_var_params or  # noqa: E501
+                                                        local_var_params['name'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `name` when calling `delete_event_source`")  # noqa: E501
 
-            This method makes a synchronous HTTP request by default. To make an
-            asynchronous HTTP request, please pass async_req=True
+        collection_formats = {}
 
-            >>> thread = api.event_sources_logs(namespace, async_req=True)
-            >>> result = thread.get()
+        path_params = {}
+        if 'namespace' in local_var_params:
+            path_params['namespace'] = local_var_params['namespace']  # noqa: E501
+        if 'name' in local_var_params:
+            path_params['name'] = local_var_params['name']  # noqa: E501
 
-            Args:
-                namespace (str):
+        query_params = []
+        if 'delete_options_grace_period_seconds' in local_var_params and local_var_params['delete_options_grace_period_seconds'] is not None:  # noqa: E501
+            query_params.append(('deleteOptions.gracePeriodSeconds', local_var_params['delete_options_grace_period_seconds']))  # noqa: E501
+        if 'delete_options_preconditions_uid' in local_var_params and local_var_params['delete_options_preconditions_uid'] is not None:  # noqa: E501
+            query_params.append(('deleteOptions.preconditions.uid', local_var_params['delete_options_preconditions_uid']))  # noqa: E501
+        if 'delete_options_preconditions_resource_version' in local_var_params and local_var_params['delete_options_preconditions_resource_version'] is not None:  # noqa: E501
+            query_params.append(('deleteOptions.preconditions.resourceVersion', local_var_params['delete_options_preconditions_resource_version']))  # noqa: E501
+        if 'delete_options_orphan_dependents' in local_var_params and local_var_params['delete_options_orphan_dependents'] is not None:  # noqa: E501
+            query_params.append(('deleteOptions.orphanDependents', local_var_params['delete_options_orphan_dependents']))  # noqa: E501
+        if 'delete_options_propagation_policy' in local_var_params and local_var_params['delete_options_propagation_policy'] is not None:  # noqa: E501
+            query_params.append(('deleteOptions.propagationPolicy', local_var_params['delete_options_propagation_policy']))  # noqa: E501
+        if 'delete_options_dry_run' in local_var_params and local_var_params['delete_options_dry_run'] is not None:  # noqa: E501
+            query_params.append(('deleteOptions.dryRun', local_var_params['delete_options_dry_run']))  # noqa: E501
+            collection_formats['deleteOptions.dryRun'] = 'multi'  # noqa: E501
 
-            Keyword Args:
-                name (str): optional - only return entries for this event source.. [optional]
-                event_source_type (str): optional - only return entries for this event source type (e.g. `webhook`).. [optional]
-                event_name (str): optional - only return entries for this event name (e.g. `example`).. [optional]
-                grep (str): optional - only return entries where `msg` matches this regular expression.. [optional]
-                pod_log_options_container (str): The container for which to stream logs. Defaults to only container if there is one container in the pod. +optional.. [optional]
-                pod_log_options_follow (bool): Follow the log stream of the pod. Defaults to false. +optional.. [optional]
-                pod_log_options_previous (bool): Return previous terminated container logs. Defaults to false. +optional.. [optional]
-                pod_log_options_since_seconds (str): A relative time in seconds before the current time from which to show logs. If this value precedes the time a pod was started, only logs since the pod start will be returned. If this value is in the future, no logs will be returned. Only one of sinceSeconds or sinceTime may be specified. +optional.. [optional]
-                pod_log_options_since_time_seconds (str): Represents seconds of UTC time since Unix epoch 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z inclusive.. [optional]
-                pod_log_options_since_time_nanos (int): Non-negative fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values that count forward in time. Must be from 0 to 999,999,999 inclusive. This field may be limited in precision depending on context.. [optional]
-                pod_log_options_timestamps (bool): If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line of log output. Defaults to false. +optional.. [optional]
-                pod_log_options_tail_lines (str): If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime +optional.. [optional]
-                pod_log_options_limit_bytes (str): If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional.. [optional]
-                pod_log_options_insecure_skip_tls_verify_backend (bool): insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional.. [optional]
-                _return_http_data_only (bool): response data without head status
-                    code and headers. Default is True.
-                _preload_content (bool): if False, the urllib3.HTTPResponse object
-                    will be returned without reading/decoding response data.
-                    Default is True.
-                _request_timeout (int/float/tuple): timeout setting for this request. If
-                    one number provided, it will be total request timeout. It can also
-                    be a pair (tuple) of (connection, read) timeouts.
-                    Default is None.
-                _check_input_type (bool): specifies if type checking
-                    should be done one the data sent to the server.
-                    Default is True.
-                _check_return_type (bool): specifies if type checking
-                    should be done one the data received from the server.
-                    Default is True.
-                _host_index (int/None): specifies the index of the server
-                    that we want to use.
-                    Default is read from the configuration.
-                async_req (bool): execute request asynchronously
+        header_params = {}
 
-            Returns:
-                StreamResultOfEventsourceLogEntry
-                    If the method is called asynchronously, returns the request
-                    thread.
-            """
-            kwargs['async_req'] = kwargs.get(
-                'async_req', False
-            )
-            kwargs['_return_http_data_only'] = kwargs.get(
-                '_return_http_data_only', True
-            )
-            kwargs['_preload_content'] = kwargs.get(
-                '_preload_content', True
-            )
-            kwargs['_request_timeout'] = kwargs.get(
-                '_request_timeout', None
-            )
-            kwargs['_check_input_type'] = kwargs.get(
-                '_check_input_type', True
-            )
-            kwargs['_check_return_type'] = kwargs.get(
-                '_check_return_type', True
-            )
-            kwargs['_host_index'] = kwargs.get('_host_index')
-            kwargs['namespace'] = \
-                namespace
-            return self.call_with_http_info(**kwargs)
+        form_params = []
+        local_var_files = {}
 
-        self.event_sources_logs = _Endpoint(
-            settings={
-                'response_type': (StreamResultOfEventsourceLogEntry,),
-                'auth': [],
-                'endpoint_path': '/api/v1/stream/event-sources/{namespace}/logs',
-                'operation_id': 'event_sources_logs',
-                'http_method': 'GET',
-                'servers': None,
-            },
-            params_map={
-                'all': [
-                    'namespace',
-                    'name',
-                    'event_source_type',
-                    'event_name',
-                    'grep',
-                    'pod_log_options_container',
-                    'pod_log_options_follow',
-                    'pod_log_options_previous',
-                    'pod_log_options_since_seconds',
-                    'pod_log_options_since_time_seconds',
-                    'pod_log_options_since_time_nanos',
-                    'pod_log_options_timestamps',
-                    'pod_log_options_tail_lines',
-                    'pod_log_options_limit_bytes',
-                    'pod_log_options_insecure_skip_tls_verify_backend',
-                ],
-                'required': [
-                    'namespace',
-                ],
-                'nullable': [
-                ],
-                'enum': [
-                ],
-                'validation': [
-                ]
-            },
-            root_map={
-                'validations': {
-                },
-                'allowed_values': {
-                },
-                'openapi_types': {
-                    'namespace':
-                        (str,),
-                    'name':
-                        (str,),
-                    'event_source_type':
-                        (str,),
-                    'event_name':
-                        (str,),
-                    'grep':
-                        (str,),
-                    'pod_log_options_container':
-                        (str,),
-                    'pod_log_options_follow':
-                        (bool,),
-                    'pod_log_options_previous':
-                        (bool,),
-                    'pod_log_options_since_seconds':
-                        (str,),
-                    'pod_log_options_since_time_seconds':
-                        (str,),
-                    'pod_log_options_since_time_nanos':
-                        (int,),
-                    'pod_log_options_timestamps':
-                        (bool,),
-                    'pod_log_options_tail_lines':
-                        (str,),
-                    'pod_log_options_limit_bytes':
-                        (str,),
-                    'pod_log_options_insecure_skip_tls_verify_backend':
-                        (bool,),
-                },
-                'attribute_map': {
-                    'namespace': 'namespace',
-                    'name': 'name',
-                    'event_source_type': 'eventSourceType',
-                    'event_name': 'eventName',
-                    'grep': 'grep',
-                    'pod_log_options_container': 'podLogOptions.container',
-                    'pod_log_options_follow': 'podLogOptions.follow',
-                    'pod_log_options_previous': 'podLogOptions.previous',
-                    'pod_log_options_since_seconds': 'podLogOptions.sinceSeconds',
-                    'pod_log_options_since_time_seconds': 'podLogOptions.sinceTime.seconds',
-                    'pod_log_options_since_time_nanos': 'podLogOptions.sinceTime.nanos',
-                    'pod_log_options_timestamps': 'podLogOptions.timestamps',
-                    'pod_log_options_tail_lines': 'podLogOptions.tailLines',
-                    'pod_log_options_limit_bytes': 'podLogOptions.limitBytes',
-                    'pod_log_options_insecure_skip_tls_verify_backend': 'podLogOptions.insecureSkipTLSVerifyBackend',
-                },
-                'location_map': {
-                    'namespace': 'path',
-                    'name': 'query',
-                    'event_source_type': 'query',
-                    'event_name': 'query',
-                    'grep': 'query',
-                    'pod_log_options_container': 'query',
-                    'pod_log_options_follow': 'query',
-                    'pod_log_options_previous': 'query',
-                    'pod_log_options_since_seconds': 'query',
-                    'pod_log_options_since_time_seconds': 'query',
-                    'pod_log_options_since_time_nanos': 'query',
-                    'pod_log_options_timestamps': 'query',
-                    'pod_log_options_tail_lines': 'query',
-                    'pod_log_options_limit_bytes': 'query',
-                    'pod_log_options_insecure_skip_tls_verify_backend': 'query',
-                },
-                'collection_format_map': {
-                }
-            },
-            headers_map={
-                'accept': [
-                    'application/json'
-                ],
-                'content_type': [],
-            },
-            api_client=api_client,
-            callable=__event_sources_logs
+        body_params = None
+        # HTTP header `Accept`
+        header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # Authentication setting
+        auth_settings = []  # noqa: E501
+
+        return self.api_client.call_api(
+            '/api/v1/event-sources/{namespace}/{name}', 'DELETE',
+            path_params,
+            query_params,
+            header_params,
+            body=body_params,
+            post_params=form_params,
+            files=local_var_files,
+            response_type='object',  # noqa: E501
+            auth_settings=auth_settings,
+            async_req=local_var_params.get('async_req'),
+            _return_http_data_only=local_var_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=local_var_params.get('_preload_content', True),
+            _request_timeout=local_var_params.get('_request_timeout'),
+            collection_formats=collection_formats)
+
+    def event_sources_logs(self, namespace, **kwargs):  # noqa: E501
+        """event_sources_logs  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.event_sources_logs(namespace, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str name: optional - only return entries for this event source.
+        :param str event_source_type: optional - only return entries for this event source type (e.g. `webhook`).
+        :param str event_name: optional - only return entries for this event name (e.g. `example`).
+        :param str grep: optional - only return entries where `msg` matches this regular expression.
+        :param str pod_log_options_container: The container for which to stream logs. Defaults to only container if there is one container in the pod. +optional.
+        :param bool pod_log_options_follow: Follow the log stream of the pod. Defaults to false. +optional.
+        :param bool pod_log_options_previous: Return previous terminated container logs. Defaults to false. +optional.
+        :param str pod_log_options_since_seconds: A relative time in seconds before the current time from which to show logs. If this value precedes the time a pod was started, only logs since the pod start will be returned. If this value is in the future, no logs will be returned. Only one of sinceSeconds or sinceTime may be specified. +optional.
+        :param str pod_log_options_since_time_seconds: Represents seconds of UTC time since Unix epoch 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z inclusive.
+        :param int pod_log_options_since_time_nanos: Non-negative fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values that count forward in time. Must be from 0 to 999,999,999 inclusive. This field may be limited in precision depending on context.
+        :param bool pod_log_options_timestamps: If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line of log output. Defaults to false. +optional.
+        :param str pod_log_options_tail_lines: If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime +optional.
+        :param str pod_log_options_limit_bytes: If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional.
+        :param bool pod_log_options_insecure_skip_tls_verify_backend: insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional.
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: StreamResultOfEventsourceLogEntry
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        return self.event_sources_logs_with_http_info(namespace, **kwargs)  # noqa: E501
+
+    def event_sources_logs_with_http_info(self, namespace, **kwargs):  # noqa: E501
+        """event_sources_logs  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.event_sources_logs_with_http_info(namespace, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str name: optional - only return entries for this event source.
+        :param str event_source_type: optional - only return entries for this event source type (e.g. `webhook`).
+        :param str event_name: optional - only return entries for this event name (e.g. `example`).
+        :param str grep: optional - only return entries where `msg` matches this regular expression.
+        :param str pod_log_options_container: The container for which to stream logs. Defaults to only container if there is one container in the pod. +optional.
+        :param bool pod_log_options_follow: Follow the log stream of the pod. Defaults to false. +optional.
+        :param bool pod_log_options_previous: Return previous terminated container logs. Defaults to false. +optional.
+        :param str pod_log_options_since_seconds: A relative time in seconds before the current time from which to show logs. If this value precedes the time a pod was started, only logs since the pod start will be returned. If this value is in the future, no logs will be returned. Only one of sinceSeconds or sinceTime may be specified. +optional.
+        :param str pod_log_options_since_time_seconds: Represents seconds of UTC time since Unix epoch 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z inclusive.
+        :param int pod_log_options_since_time_nanos: Non-negative fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values that count forward in time. Must be from 0 to 999,999,999 inclusive. This field may be limited in precision depending on context.
+        :param bool pod_log_options_timestamps: If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line of log output. Defaults to false. +optional.
+        :param str pod_log_options_tail_lines: If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime +optional.
+        :param str pod_log_options_limit_bytes: If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional.
+        :param bool pod_log_options_insecure_skip_tls_verify_backend: insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional.
+        :param _return_http_data_only: response data without head status code
+                                       and headers
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: tuple(StreamResultOfEventsourceLogEntry, status_code(int), headers(HTTPHeaderDict))
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        local_var_params = locals()
+
+        all_params = [
+            'namespace',
+            'name',
+            'event_source_type',
+            'event_name',
+            'grep',
+            'pod_log_options_container',
+            'pod_log_options_follow',
+            'pod_log_options_previous',
+            'pod_log_options_since_seconds',
+            'pod_log_options_since_time_seconds',
+            'pod_log_options_since_time_nanos',
+            'pod_log_options_timestamps',
+            'pod_log_options_tail_lines',
+            'pod_log_options_limit_bytes',
+            'pod_log_options_insecure_skip_tls_verify_backend'
+        ]
+        all_params.extend(
+            [
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout'
+            ]
         )
 
-        def __get_event_source(
-            self,
-            namespace,
-            name,
-            **kwargs
-        ):
-            """get_event_source  # noqa: E501
+        for key, val in six.iteritems(local_var_params['kwargs']):
+            if key not in all_params:
+                raise ApiTypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method event_sources_logs" % key
+                )
+            local_var_params[key] = val
+        del local_var_params['kwargs']
+        # verify the required parameter 'namespace' is set
+        if self.api_client.client_side_validation and ('namespace' not in local_var_params or  # noqa: E501
+                                                        local_var_params['namespace'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `namespace` when calling `event_sources_logs`")  # noqa: E501
 
-            This method makes a synchronous HTTP request by default. To make an
-            asynchronous HTTP request, please pass async_req=True
+        collection_formats = {}
 
-            >>> thread = api.get_event_source(namespace, name, async_req=True)
-            >>> result = thread.get()
+        path_params = {}
+        if 'namespace' in local_var_params:
+            path_params['namespace'] = local_var_params['namespace']  # noqa: E501
 
-            Args:
-                namespace (str):
-                name (str):
+        query_params = []
+        if 'name' in local_var_params and local_var_params['name'] is not None:  # noqa: E501
+            query_params.append(('name', local_var_params['name']))  # noqa: E501
+        if 'event_source_type' in local_var_params and local_var_params['event_source_type'] is not None:  # noqa: E501
+            query_params.append(('eventSourceType', local_var_params['event_source_type']))  # noqa: E501
+        if 'event_name' in local_var_params and local_var_params['event_name'] is not None:  # noqa: E501
+            query_params.append(('eventName', local_var_params['event_name']))  # noqa: E501
+        if 'grep' in local_var_params and local_var_params['grep'] is not None:  # noqa: E501
+            query_params.append(('grep', local_var_params['grep']))  # noqa: E501
+        if 'pod_log_options_container' in local_var_params and local_var_params['pod_log_options_container'] is not None:  # noqa: E501
+            query_params.append(('podLogOptions.container', local_var_params['pod_log_options_container']))  # noqa: E501
+        if 'pod_log_options_follow' in local_var_params and local_var_params['pod_log_options_follow'] is not None:  # noqa: E501
+            query_params.append(('podLogOptions.follow', local_var_params['pod_log_options_follow']))  # noqa: E501
+        if 'pod_log_options_previous' in local_var_params and local_var_params['pod_log_options_previous'] is not None:  # noqa: E501
+            query_params.append(('podLogOptions.previous', local_var_params['pod_log_options_previous']))  # noqa: E501
+        if 'pod_log_options_since_seconds' in local_var_params and local_var_params['pod_log_options_since_seconds'] is not None:  # noqa: E501
+            query_params.append(('podLogOptions.sinceSeconds', local_var_params['pod_log_options_since_seconds']))  # noqa: E501
+        if 'pod_log_options_since_time_seconds' in local_var_params and local_var_params['pod_log_options_since_time_seconds'] is not None:  # noqa: E501
+            query_params.append(('podLogOptions.sinceTime.seconds', local_var_params['pod_log_options_since_time_seconds']))  # noqa: E501
+        if 'pod_log_options_since_time_nanos' in local_var_params and local_var_params['pod_log_options_since_time_nanos'] is not None:  # noqa: E501
+            query_params.append(('podLogOptions.sinceTime.nanos', local_var_params['pod_log_options_since_time_nanos']))  # noqa: E501
+        if 'pod_log_options_timestamps' in local_var_params and local_var_params['pod_log_options_timestamps'] is not None:  # noqa: E501
+            query_params.append(('podLogOptions.timestamps', local_var_params['pod_log_options_timestamps']))  # noqa: E501
+        if 'pod_log_options_tail_lines' in local_var_params and local_var_params['pod_log_options_tail_lines'] is not None:  # noqa: E501
+            query_params.append(('podLogOptions.tailLines', local_var_params['pod_log_options_tail_lines']))  # noqa: E501
+        if 'pod_log_options_limit_bytes' in local_var_params and local_var_params['pod_log_options_limit_bytes'] is not None:  # noqa: E501
+            query_params.append(('podLogOptions.limitBytes', local_var_params['pod_log_options_limit_bytes']))  # noqa: E501
+        if 'pod_log_options_insecure_skip_tls_verify_backend' in local_var_params and local_var_params['pod_log_options_insecure_skip_tls_verify_backend'] is not None:  # noqa: E501
+            query_params.append(('podLogOptions.insecureSkipTLSVerifyBackend', local_var_params['pod_log_options_insecure_skip_tls_verify_backend']))  # noqa: E501
 
-            Keyword Args:
-                _return_http_data_only (bool): response data without head status
-                    code and headers. Default is True.
-                _preload_content (bool): if False, the urllib3.HTTPResponse object
-                    will be returned without reading/decoding response data.
-                    Default is True.
-                _request_timeout (int/float/tuple): timeout setting for this request. If
-                    one number provided, it will be total request timeout. It can also
-                    be a pair (tuple) of (connection, read) timeouts.
-                    Default is None.
-                _check_input_type (bool): specifies if type checking
-                    should be done one the data sent to the server.
-                    Default is True.
-                _check_return_type (bool): specifies if type checking
-                    should be done one the data received from the server.
-                    Default is True.
-                _host_index (int/None): specifies the index of the server
-                    that we want to use.
-                    Default is read from the configuration.
-                async_req (bool): execute request asynchronously
+        header_params = {}
 
-            Returns:
-                IoArgoprojEventsV1alpha1EventSource
-                    If the method is called asynchronously, returns the request
-                    thread.
-            """
-            kwargs['async_req'] = kwargs.get(
-                'async_req', False
-            )
-            kwargs['_return_http_data_only'] = kwargs.get(
-                '_return_http_data_only', True
-            )
-            kwargs['_preload_content'] = kwargs.get(
-                '_preload_content', True
-            )
-            kwargs['_request_timeout'] = kwargs.get(
-                '_request_timeout', None
-            )
-            kwargs['_check_input_type'] = kwargs.get(
-                '_check_input_type', True
-            )
-            kwargs['_check_return_type'] = kwargs.get(
-                '_check_return_type', True
-            )
-            kwargs['_host_index'] = kwargs.get('_host_index')
-            kwargs['namespace'] = \
-                namespace
-            kwargs['name'] = \
-                name
-            return self.call_with_http_info(**kwargs)
+        form_params = []
+        local_var_files = {}
 
-        self.get_event_source = _Endpoint(
-            settings={
-                'response_type': (IoArgoprojEventsV1alpha1EventSource,),
-                'auth': [],
-                'endpoint_path': '/api/v1/event-sources/{namespace}/{name}',
-                'operation_id': 'get_event_source',
-                'http_method': 'GET',
-                'servers': None,
-            },
-            params_map={
-                'all': [
-                    'namespace',
-                    'name',
-                ],
-                'required': [
-                    'namespace',
-                    'name',
-                ],
-                'nullable': [
-                ],
-                'enum': [
-                ],
-                'validation': [
-                ]
-            },
-            root_map={
-                'validations': {
-                },
-                'allowed_values': {
-                },
-                'openapi_types': {
-                    'namespace':
-                        (str,),
-                    'name':
-                        (str,),
-                },
-                'attribute_map': {
-                    'namespace': 'namespace',
-                    'name': 'name',
-                },
-                'location_map': {
-                    'namespace': 'path',
-                    'name': 'path',
-                },
-                'collection_format_map': {
-                }
-            },
-            headers_map={
-                'accept': [
-                    'application/json'
-                ],
-                'content_type': [],
-            },
-            api_client=api_client,
-            callable=__get_event_source
+        body_params = None
+        # HTTP header `Accept`
+        header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # Authentication setting
+        auth_settings = []  # noqa: E501
+
+        return self.api_client.call_api(
+            '/api/v1/stream/event-sources/{namespace}/logs', 'GET',
+            path_params,
+            query_params,
+            header_params,
+            body=body_params,
+            post_params=form_params,
+            files=local_var_files,
+            response_type='StreamResultOfEventsourceLogEntry',  # noqa: E501
+            auth_settings=auth_settings,
+            async_req=local_var_params.get('async_req'),
+            _return_http_data_only=local_var_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=local_var_params.get('_preload_content', True),
+            _request_timeout=local_var_params.get('_request_timeout'),
+            collection_formats=collection_formats)
+
+    def get_event_source(self, namespace, name, **kwargs):  # noqa: E501
+        """get_event_source  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.get_event_source(namespace, name, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str name: (required)
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: IoArgoprojEventsV1alpha1EventSource
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        return self.get_event_source_with_http_info(namespace, name, **kwargs)  # noqa: E501
+
+    def get_event_source_with_http_info(self, namespace, name, **kwargs):  # noqa: E501
+        """get_event_source  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.get_event_source_with_http_info(namespace, name, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str name: (required)
+        :param _return_http_data_only: response data without head status code
+                                       and headers
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: tuple(IoArgoprojEventsV1alpha1EventSource, status_code(int), headers(HTTPHeaderDict))
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        local_var_params = locals()
+
+        all_params = [
+            'namespace',
+            'name'
+        ]
+        all_params.extend(
+            [
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout'
+            ]
         )
 
-        def __list_event_sources(
-            self,
-            namespace,
-            **kwargs
-        ):
-            """list_event_sources  # noqa: E501
+        for key, val in six.iteritems(local_var_params['kwargs']):
+            if key not in all_params:
+                raise ApiTypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method get_event_source" % key
+                )
+            local_var_params[key] = val
+        del local_var_params['kwargs']
+        # verify the required parameter 'namespace' is set
+        if self.api_client.client_side_validation and ('namespace' not in local_var_params or  # noqa: E501
+                                                        local_var_params['namespace'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `namespace` when calling `get_event_source`")  # noqa: E501
+        # verify the required parameter 'name' is set
+        if self.api_client.client_side_validation and ('name' not in local_var_params or  # noqa: E501
+                                                        local_var_params['name'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `name` when calling `get_event_source`")  # noqa: E501
 
-            This method makes a synchronous HTTP request by default. To make an
-            asynchronous HTTP request, please pass async_req=True
+        collection_formats = {}
 
-            >>> thread = api.list_event_sources(namespace, async_req=True)
-            >>> result = thread.get()
+        path_params = {}
+        if 'namespace' in local_var_params:
+            path_params['namespace'] = local_var_params['namespace']  # noqa: E501
+        if 'name' in local_var_params:
+            path_params['name'] = local_var_params['name']  # noqa: E501
 
-            Args:
-                namespace (str):
+        query_params = []
 
-            Keyword Args:
-                list_options_label_selector (str): A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional.. [optional]
-                list_options_field_selector (str): A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional.. [optional]
-                list_options_watch (bool): Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional.. [optional]
-                list_options_allow_watch_bookmarks (bool): allowWatchBookmarks requests watch events with type \"BOOKMARK\". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. If the feature gate WatchBookmarks is not enabled in apiserver, this field is ignored. +optional.. [optional]
-                list_options_resource_version (str): resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional. [optional]
-                list_options_resource_version_match (str): resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional. [optional]
-                list_options_timeout_seconds (str): Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional.. [optional]
-                list_options_limit (str): limit is a maximum number of responses to return for a list call. If more items exist, the server will set the `continue` field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.. [optional]
-                list_options_continue (str): The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.. [optional]
-                _return_http_data_only (bool): response data without head status
-                    code and headers. Default is True.
-                _preload_content (bool): if False, the urllib3.HTTPResponse object
-                    will be returned without reading/decoding response data.
-                    Default is True.
-                _request_timeout (int/float/tuple): timeout setting for this request. If
-                    one number provided, it will be total request timeout. It can also
-                    be a pair (tuple) of (connection, read) timeouts.
-                    Default is None.
-                _check_input_type (bool): specifies if type checking
-                    should be done one the data sent to the server.
-                    Default is True.
-                _check_return_type (bool): specifies if type checking
-                    should be done one the data received from the server.
-                    Default is True.
-                _host_index (int/None): specifies the index of the server
-                    that we want to use.
-                    Default is read from the configuration.
-                async_req (bool): execute request asynchronously
+        header_params = {}
 
-            Returns:
-                IoArgoprojEventsV1alpha1EventSourceList
-                    If the method is called asynchronously, returns the request
-                    thread.
-            """
-            kwargs['async_req'] = kwargs.get(
-                'async_req', False
-            )
-            kwargs['_return_http_data_only'] = kwargs.get(
-                '_return_http_data_only', True
-            )
-            kwargs['_preload_content'] = kwargs.get(
-                '_preload_content', True
-            )
-            kwargs['_request_timeout'] = kwargs.get(
-                '_request_timeout', None
-            )
-            kwargs['_check_input_type'] = kwargs.get(
-                '_check_input_type', True
-            )
-            kwargs['_check_return_type'] = kwargs.get(
-                '_check_return_type', True
-            )
-            kwargs['_host_index'] = kwargs.get('_host_index')
-            kwargs['namespace'] = \
-                namespace
-            return self.call_with_http_info(**kwargs)
+        form_params = []
+        local_var_files = {}
 
-        self.list_event_sources = _Endpoint(
-            settings={
-                'response_type': (IoArgoprojEventsV1alpha1EventSourceList,),
-                'auth': [],
-                'endpoint_path': '/api/v1/event-sources/{namespace}',
-                'operation_id': 'list_event_sources',
-                'http_method': 'GET',
-                'servers': None,
-            },
-            params_map={
-                'all': [
-                    'namespace',
-                    'list_options_label_selector',
-                    'list_options_field_selector',
-                    'list_options_watch',
-                    'list_options_allow_watch_bookmarks',
-                    'list_options_resource_version',
-                    'list_options_resource_version_match',
-                    'list_options_timeout_seconds',
-                    'list_options_limit',
-                    'list_options_continue',
-                ],
-                'required': [
-                    'namespace',
-                ],
-                'nullable': [
-                ],
-                'enum': [
-                ],
-                'validation': [
-                ]
-            },
-            root_map={
-                'validations': {
-                },
-                'allowed_values': {
-                },
-                'openapi_types': {
-                    'namespace':
-                        (str,),
-                    'list_options_label_selector':
-                        (str,),
-                    'list_options_field_selector':
-                        (str,),
-                    'list_options_watch':
-                        (bool,),
-                    'list_options_allow_watch_bookmarks':
-                        (bool,),
-                    'list_options_resource_version':
-                        (str,),
-                    'list_options_resource_version_match':
-                        (str,),
-                    'list_options_timeout_seconds':
-                        (str,),
-                    'list_options_limit':
-                        (str,),
-                    'list_options_continue':
-                        (str,),
-                },
-                'attribute_map': {
-                    'namespace': 'namespace',
-                    'list_options_label_selector': 'listOptions.labelSelector',
-                    'list_options_field_selector': 'listOptions.fieldSelector',
-                    'list_options_watch': 'listOptions.watch',
-                    'list_options_allow_watch_bookmarks': 'listOptions.allowWatchBookmarks',
-                    'list_options_resource_version': 'listOptions.resourceVersion',
-                    'list_options_resource_version_match': 'listOptions.resourceVersionMatch',
-                    'list_options_timeout_seconds': 'listOptions.timeoutSeconds',
-                    'list_options_limit': 'listOptions.limit',
-                    'list_options_continue': 'listOptions.continue',
-                },
-                'location_map': {
-                    'namespace': 'path',
-                    'list_options_label_selector': 'query',
-                    'list_options_field_selector': 'query',
-                    'list_options_watch': 'query',
-                    'list_options_allow_watch_bookmarks': 'query',
-                    'list_options_resource_version': 'query',
-                    'list_options_resource_version_match': 'query',
-                    'list_options_timeout_seconds': 'query',
-                    'list_options_limit': 'query',
-                    'list_options_continue': 'query',
-                },
-                'collection_format_map': {
-                }
-            },
-            headers_map={
-                'accept': [
-                    'application/json'
-                ],
-                'content_type': [],
-            },
-            api_client=api_client,
-            callable=__list_event_sources
+        body_params = None
+        # HTTP header `Accept`
+        header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # Authentication setting
+        auth_settings = []  # noqa: E501
+
+        return self.api_client.call_api(
+            '/api/v1/event-sources/{namespace}/{name}', 'GET',
+            path_params,
+            query_params,
+            header_params,
+            body=body_params,
+            post_params=form_params,
+            files=local_var_files,
+            response_type='IoArgoprojEventsV1alpha1EventSource',  # noqa: E501
+            auth_settings=auth_settings,
+            async_req=local_var_params.get('async_req'),
+            _return_http_data_only=local_var_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=local_var_params.get('_preload_content', True),
+            _request_timeout=local_var_params.get('_request_timeout'),
+            collection_formats=collection_formats)
+
+    def list_event_sources(self, namespace, **kwargs):  # noqa: E501
+        """list_event_sources  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.list_event_sources(namespace, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str list_options_label_selector: A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional.
+        :param str list_options_field_selector: A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional.
+        :param bool list_options_watch: Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional.
+        :param bool list_options_allow_watch_bookmarks: allowWatchBookmarks requests watch events with type \"BOOKMARK\". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. If the feature gate WatchBookmarks is not enabled in apiserver, this field is ignored. +optional.
+        :param str list_options_resource_version: resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional
+        :param str list_options_resource_version_match: resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional
+        :param str list_options_timeout_seconds: Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional.
+        :param str list_options_limit: limit is a maximum number of responses to return for a list call. If more items exist, the server will set the `continue` field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.
+        :param str list_options_continue: The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: IoArgoprojEventsV1alpha1EventSourceList
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        return self.list_event_sources_with_http_info(namespace, **kwargs)  # noqa: E501
+
+    def list_event_sources_with_http_info(self, namespace, **kwargs):  # noqa: E501
+        """list_event_sources  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.list_event_sources_with_http_info(namespace, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str list_options_label_selector: A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional.
+        :param str list_options_field_selector: A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional.
+        :param bool list_options_watch: Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional.
+        :param bool list_options_allow_watch_bookmarks: allowWatchBookmarks requests watch events with type \"BOOKMARK\". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. If the feature gate WatchBookmarks is not enabled in apiserver, this field is ignored. +optional.
+        :param str list_options_resource_version: resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional
+        :param str list_options_resource_version_match: resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional
+        :param str list_options_timeout_seconds: Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional.
+        :param str list_options_limit: limit is a maximum number of responses to return for a list call. If more items exist, the server will set the `continue` field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.
+        :param str list_options_continue: The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.
+        :param _return_http_data_only: response data without head status code
+                                       and headers
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: tuple(IoArgoprojEventsV1alpha1EventSourceList, status_code(int), headers(HTTPHeaderDict))
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        local_var_params = locals()
+
+        all_params = [
+            'namespace',
+            'list_options_label_selector',
+            'list_options_field_selector',
+            'list_options_watch',
+            'list_options_allow_watch_bookmarks',
+            'list_options_resource_version',
+            'list_options_resource_version_match',
+            'list_options_timeout_seconds',
+            'list_options_limit',
+            'list_options_continue'
+        ]
+        all_params.extend(
+            [
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout'
+            ]
         )
 
-        def __update_event_source(
-            self,
-            namespace,
-            name,
-            body,
-            **kwargs
-        ):
-            """update_event_source  # noqa: E501
+        for key, val in six.iteritems(local_var_params['kwargs']):
+            if key not in all_params:
+                raise ApiTypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method list_event_sources" % key
+                )
+            local_var_params[key] = val
+        del local_var_params['kwargs']
+        # verify the required parameter 'namespace' is set
+        if self.api_client.client_side_validation and ('namespace' not in local_var_params or  # noqa: E501
+                                                        local_var_params['namespace'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `namespace` when calling `list_event_sources`")  # noqa: E501
 
-            This method makes a synchronous HTTP request by default. To make an
-            asynchronous HTTP request, please pass async_req=True
+        collection_formats = {}
 
-            >>> thread = api.update_event_source(namespace, name, body, async_req=True)
-            >>> result = thread.get()
+        path_params = {}
+        if 'namespace' in local_var_params:
+            path_params['namespace'] = local_var_params['namespace']  # noqa: E501
 
-            Args:
-                namespace (str):
-                name (str):
-                body (EventsourceUpdateEventSourceRequest):
+        query_params = []
+        if 'list_options_label_selector' in local_var_params and local_var_params['list_options_label_selector'] is not None:  # noqa: E501
+            query_params.append(('listOptions.labelSelector', local_var_params['list_options_label_selector']))  # noqa: E501
+        if 'list_options_field_selector' in local_var_params and local_var_params['list_options_field_selector'] is not None:  # noqa: E501
+            query_params.append(('listOptions.fieldSelector', local_var_params['list_options_field_selector']))  # noqa: E501
+        if 'list_options_watch' in local_var_params and local_var_params['list_options_watch'] is not None:  # noqa: E501
+            query_params.append(('listOptions.watch', local_var_params['list_options_watch']))  # noqa: E501
+        if 'list_options_allow_watch_bookmarks' in local_var_params and local_var_params['list_options_allow_watch_bookmarks'] is not None:  # noqa: E501
+            query_params.append(('listOptions.allowWatchBookmarks', local_var_params['list_options_allow_watch_bookmarks']))  # noqa: E501
+        if 'list_options_resource_version' in local_var_params and local_var_params['list_options_resource_version'] is not None:  # noqa: E501
+            query_params.append(('listOptions.resourceVersion', local_var_params['list_options_resource_version']))  # noqa: E501
+        if 'list_options_resource_version_match' in local_var_params and local_var_params['list_options_resource_version_match'] is not None:  # noqa: E501
+            query_params.append(('listOptions.resourceVersionMatch', local_var_params['list_options_resource_version_match']))  # noqa: E501
+        if 'list_options_timeout_seconds' in local_var_params and local_var_params['list_options_timeout_seconds'] is not None:  # noqa: E501
+            query_params.append(('listOptions.timeoutSeconds', local_var_params['list_options_timeout_seconds']))  # noqa: E501
+        if 'list_options_limit' in local_var_params and local_var_params['list_options_limit'] is not None:  # noqa: E501
+            query_params.append(('listOptions.limit', local_var_params['list_options_limit']))  # noqa: E501
+        if 'list_options_continue' in local_var_params and local_var_params['list_options_continue'] is not None:  # noqa: E501
+            query_params.append(('listOptions.continue', local_var_params['list_options_continue']))  # noqa: E501
 
-            Keyword Args:
-                _return_http_data_only (bool): response data without head status
-                    code and headers. Default is True.
-                _preload_content (bool): if False, the urllib3.HTTPResponse object
-                    will be returned without reading/decoding response data.
-                    Default is True.
-                _request_timeout (int/float/tuple): timeout setting for this request. If
-                    one number provided, it will be total request timeout. It can also
-                    be a pair (tuple) of (connection, read) timeouts.
-                    Default is None.
-                _check_input_type (bool): specifies if type checking
-                    should be done one the data sent to the server.
-                    Default is True.
-                _check_return_type (bool): specifies if type checking
-                    should be done one the data received from the server.
-                    Default is True.
-                _host_index (int/None): specifies the index of the server
-                    that we want to use.
-                    Default is read from the configuration.
-                async_req (bool): execute request asynchronously
+        header_params = {}
 
-            Returns:
-                IoArgoprojEventsV1alpha1EventSource
-                    If the method is called asynchronously, returns the request
-                    thread.
-            """
-            kwargs['async_req'] = kwargs.get(
-                'async_req', False
-            )
-            kwargs['_return_http_data_only'] = kwargs.get(
-                '_return_http_data_only', True
-            )
-            kwargs['_preload_content'] = kwargs.get(
-                '_preload_content', True
-            )
-            kwargs['_request_timeout'] = kwargs.get(
-                '_request_timeout', None
-            )
-            kwargs['_check_input_type'] = kwargs.get(
-                '_check_input_type', True
-            )
-            kwargs['_check_return_type'] = kwargs.get(
-                '_check_return_type', True
-            )
-            kwargs['_host_index'] = kwargs.get('_host_index')
-            kwargs['namespace'] = \
-                namespace
-            kwargs['name'] = \
-                name
-            kwargs['body'] = \
-                body
-            return self.call_with_http_info(**kwargs)
+        form_params = []
+        local_var_files = {}
 
-        self.update_event_source = _Endpoint(
-            settings={
-                'response_type': (IoArgoprojEventsV1alpha1EventSource,),
-                'auth': [],
-                'endpoint_path': '/api/v1/event-sources/{namespace}/{name}',
-                'operation_id': 'update_event_source',
-                'http_method': 'PUT',
-                'servers': None,
-            },
-            params_map={
-                'all': [
-                    'namespace',
-                    'name',
-                    'body',
-                ],
-                'required': [
-                    'namespace',
-                    'name',
-                    'body',
-                ],
-                'nullable': [
-                ],
-                'enum': [
-                ],
-                'validation': [
-                ]
-            },
-            root_map={
-                'validations': {
-                },
-                'allowed_values': {
-                },
-                'openapi_types': {
-                    'namespace':
-                        (str,),
-                    'name':
-                        (str,),
-                    'body':
-                        (EventsourceUpdateEventSourceRequest,),
-                },
-                'attribute_map': {
-                    'namespace': 'namespace',
-                    'name': 'name',
-                },
-                'location_map': {
-                    'namespace': 'path',
-                    'name': 'path',
-                    'body': 'body',
-                },
-                'collection_format_map': {
-                }
-            },
-            headers_map={
-                'accept': [
-                    'application/json'
-                ],
-                'content_type': [
-                    'application/json'
-                ]
-            },
-            api_client=api_client,
-            callable=__update_event_source
+        body_params = None
+        # HTTP header `Accept`
+        header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # Authentication setting
+        auth_settings = []  # noqa: E501
+
+        return self.api_client.call_api(
+            '/api/v1/event-sources/{namespace}', 'GET',
+            path_params,
+            query_params,
+            header_params,
+            body=body_params,
+            post_params=form_params,
+            files=local_var_files,
+            response_type='IoArgoprojEventsV1alpha1EventSourceList',  # noqa: E501
+            auth_settings=auth_settings,
+            async_req=local_var_params.get('async_req'),
+            _return_http_data_only=local_var_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=local_var_params.get('_preload_content', True),
+            _request_timeout=local_var_params.get('_request_timeout'),
+            collection_formats=collection_formats)
+
+    def update_event_source(self, namespace, name, body, **kwargs):  # noqa: E501
+        """update_event_source  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.update_event_source(namespace, name, body, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str name: (required)
+        :param EventsourceUpdateEventSourceRequest body: (required)
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: IoArgoprojEventsV1alpha1EventSource
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        return self.update_event_source_with_http_info(namespace, name, body, **kwargs)  # noqa: E501
+
+    def update_event_source_with_http_info(self, namespace, name, body, **kwargs):  # noqa: E501
+        """update_event_source  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.update_event_source_with_http_info(namespace, name, body, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str name: (required)
+        :param EventsourceUpdateEventSourceRequest body: (required)
+        :param _return_http_data_only: response data without head status code
+                                       and headers
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: tuple(IoArgoprojEventsV1alpha1EventSource, status_code(int), headers(HTTPHeaderDict))
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        local_var_params = locals()
+
+        all_params = [
+            'namespace',
+            'name',
+            'body'
+        ]
+        all_params.extend(
+            [
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout'
+            ]
         )
 
-        def __watch_event_sources(
-            self,
-            namespace,
-            **kwargs
-        ):
-            """watch_event_sources  # noqa: E501
+        for key, val in six.iteritems(local_var_params['kwargs']):
+            if key not in all_params:
+                raise ApiTypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method update_event_source" % key
+                )
+            local_var_params[key] = val
+        del local_var_params['kwargs']
+        # verify the required parameter 'namespace' is set
+        if self.api_client.client_side_validation and ('namespace' not in local_var_params or  # noqa: E501
+                                                        local_var_params['namespace'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `namespace` when calling `update_event_source`")  # noqa: E501
+        # verify the required parameter 'name' is set
+        if self.api_client.client_side_validation and ('name' not in local_var_params or  # noqa: E501
+                                                        local_var_params['name'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `name` when calling `update_event_source`")  # noqa: E501
+        # verify the required parameter 'body' is set
+        if self.api_client.client_side_validation and ('body' not in local_var_params or  # noqa: E501
+                                                        local_var_params['body'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `body` when calling `update_event_source`")  # noqa: E501
 
-            This method makes a synchronous HTTP request by default. To make an
-            asynchronous HTTP request, please pass async_req=True
+        collection_formats = {}
 
-            >>> thread = api.watch_event_sources(namespace, async_req=True)
-            >>> result = thread.get()
+        path_params = {}
+        if 'namespace' in local_var_params:
+            path_params['namespace'] = local_var_params['namespace']  # noqa: E501
+        if 'name' in local_var_params:
+            path_params['name'] = local_var_params['name']  # noqa: E501
 
-            Args:
-                namespace (str):
+        query_params = []
 
-            Keyword Args:
-                list_options_label_selector (str): A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional.. [optional]
-                list_options_field_selector (str): A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional.. [optional]
-                list_options_watch (bool): Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional.. [optional]
-                list_options_allow_watch_bookmarks (bool): allowWatchBookmarks requests watch events with type \"BOOKMARK\". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. If the feature gate WatchBookmarks is not enabled in apiserver, this field is ignored. +optional.. [optional]
-                list_options_resource_version (str): resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional. [optional]
-                list_options_resource_version_match (str): resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional. [optional]
-                list_options_timeout_seconds (str): Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional.. [optional]
-                list_options_limit (str): limit is a maximum number of responses to return for a list call. If more items exist, the server will set the `continue` field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.. [optional]
-                list_options_continue (str): The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.. [optional]
-                _return_http_data_only (bool): response data without head status
-                    code and headers. Default is True.
-                _preload_content (bool): if False, the urllib3.HTTPResponse object
-                    will be returned without reading/decoding response data.
-                    Default is True.
-                _request_timeout (int/float/tuple): timeout setting for this request. If
-                    one number provided, it will be total request timeout. It can also
-                    be a pair (tuple) of (connection, read) timeouts.
-                    Default is None.
-                _check_input_type (bool): specifies if type checking
-                    should be done one the data sent to the server.
-                    Default is True.
-                _check_return_type (bool): specifies if type checking
-                    should be done one the data received from the server.
-                    Default is True.
-                _host_index (int/None): specifies the index of the server
-                    that we want to use.
-                    Default is read from the configuration.
-                async_req (bool): execute request asynchronously
+        header_params = {}
 
-            Returns:
-                StreamResultOfEventsourceEventSourceWatchEvent
-                    If the method is called asynchronously, returns the request
-                    thread.
-            """
-            kwargs['async_req'] = kwargs.get(
-                'async_req', False
-            )
-            kwargs['_return_http_data_only'] = kwargs.get(
-                '_return_http_data_only', True
-            )
-            kwargs['_preload_content'] = kwargs.get(
-                '_preload_content', True
-            )
-            kwargs['_request_timeout'] = kwargs.get(
-                '_request_timeout', None
-            )
-            kwargs['_check_input_type'] = kwargs.get(
-                '_check_input_type', True
-            )
-            kwargs['_check_return_type'] = kwargs.get(
-                '_check_return_type', True
-            )
-            kwargs['_host_index'] = kwargs.get('_host_index')
-            kwargs['namespace'] = \
-                namespace
-            return self.call_with_http_info(**kwargs)
+        form_params = []
+        local_var_files = {}
 
-        self.watch_event_sources = _Endpoint(
-            settings={
-                'response_type': (StreamResultOfEventsourceEventSourceWatchEvent,),
-                'auth': [],
-                'endpoint_path': '/api/v1/stream/event-sources/{namespace}',
-                'operation_id': 'watch_event_sources',
-                'http_method': 'GET',
-                'servers': None,
-            },
-            params_map={
-                'all': [
-                    'namespace',
-                    'list_options_label_selector',
-                    'list_options_field_selector',
-                    'list_options_watch',
-                    'list_options_allow_watch_bookmarks',
-                    'list_options_resource_version',
-                    'list_options_resource_version_match',
-                    'list_options_timeout_seconds',
-                    'list_options_limit',
-                    'list_options_continue',
-                ],
-                'required': [
-                    'namespace',
-                ],
-                'nullable': [
-                ],
-                'enum': [
-                ],
-                'validation': [
-                ]
-            },
-            root_map={
-                'validations': {
-                },
-                'allowed_values': {
-                },
-                'openapi_types': {
-                    'namespace':
-                        (str,),
-                    'list_options_label_selector':
-                        (str,),
-                    'list_options_field_selector':
-                        (str,),
-                    'list_options_watch':
-                        (bool,),
-                    'list_options_allow_watch_bookmarks':
-                        (bool,),
-                    'list_options_resource_version':
-                        (str,),
-                    'list_options_resource_version_match':
-                        (str,),
-                    'list_options_timeout_seconds':
-                        (str,),
-                    'list_options_limit':
-                        (str,),
-                    'list_options_continue':
-                        (str,),
-                },
-                'attribute_map': {
-                    'namespace': 'namespace',
-                    'list_options_label_selector': 'listOptions.labelSelector',
-                    'list_options_field_selector': 'listOptions.fieldSelector',
-                    'list_options_watch': 'listOptions.watch',
-                    'list_options_allow_watch_bookmarks': 'listOptions.allowWatchBookmarks',
-                    'list_options_resource_version': 'listOptions.resourceVersion',
-                    'list_options_resource_version_match': 'listOptions.resourceVersionMatch',
-                    'list_options_timeout_seconds': 'listOptions.timeoutSeconds',
-                    'list_options_limit': 'listOptions.limit',
-                    'list_options_continue': 'listOptions.continue',
-                },
-                'location_map': {
-                    'namespace': 'path',
-                    'list_options_label_selector': 'query',
-                    'list_options_field_selector': 'query',
-                    'list_options_watch': 'query',
-                    'list_options_allow_watch_bookmarks': 'query',
-                    'list_options_resource_version': 'query',
-                    'list_options_resource_version_match': 'query',
-                    'list_options_timeout_seconds': 'query',
-                    'list_options_limit': 'query',
-                    'list_options_continue': 'query',
-                },
-                'collection_format_map': {
-                }
-            },
-            headers_map={
-                'accept': [
-                    'application/json'
-                ],
-                'content_type': [],
-            },
-            api_client=api_client,
-            callable=__watch_event_sources
+        body_params = None
+        if 'body' in local_var_params:
+            body_params = local_var_params['body']
+        # HTTP header `Accept`
+        header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # HTTP header `Content-Type`
+        header_params['Content-Type'] = self.api_client.select_header_content_type(  # noqa: E501
+            ['application/json'])  # noqa: E501
+
+        # Authentication setting
+        auth_settings = []  # noqa: E501
+
+        return self.api_client.call_api(
+            '/api/v1/event-sources/{namespace}/{name}', 'PUT',
+            path_params,
+            query_params,
+            header_params,
+            body=body_params,
+            post_params=form_params,
+            files=local_var_files,
+            response_type='IoArgoprojEventsV1alpha1EventSource',  # noqa: E501
+            auth_settings=auth_settings,
+            async_req=local_var_params.get('async_req'),
+            _return_http_data_only=local_var_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=local_var_params.get('_preload_content', True),
+            _request_timeout=local_var_params.get('_request_timeout'),
+            collection_formats=collection_formats)
+
+    def watch_event_sources(self, namespace, **kwargs):  # noqa: E501
+        """watch_event_sources  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.watch_event_sources(namespace, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str list_options_label_selector: A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional.
+        :param str list_options_field_selector: A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional.
+        :param bool list_options_watch: Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional.
+        :param bool list_options_allow_watch_bookmarks: allowWatchBookmarks requests watch events with type \"BOOKMARK\". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. If the feature gate WatchBookmarks is not enabled in apiserver, this field is ignored. +optional.
+        :param str list_options_resource_version: resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional
+        :param str list_options_resource_version_match: resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional
+        :param str list_options_timeout_seconds: Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional.
+        :param str list_options_limit: limit is a maximum number of responses to return for a list call. If more items exist, the server will set the `continue` field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.
+        :param str list_options_continue: The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: StreamResultOfEventsourceEventSourceWatchEvent
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        return self.watch_event_sources_with_http_info(namespace, **kwargs)  # noqa: E501
+
+    def watch_event_sources_with_http_info(self, namespace, **kwargs):  # noqa: E501
+        """watch_event_sources  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.watch_event_sources_with_http_info(namespace, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str list_options_label_selector: A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional.
+        :param str list_options_field_selector: A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional.
+        :param bool list_options_watch: Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional.
+        :param bool list_options_allow_watch_bookmarks: allowWatchBookmarks requests watch events with type \"BOOKMARK\". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. If the feature gate WatchBookmarks is not enabled in apiserver, this field is ignored. +optional.
+        :param str list_options_resource_version: resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional
+        :param str list_options_resource_version_match: resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional
+        :param str list_options_timeout_seconds: Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional.
+        :param str list_options_limit: limit is a maximum number of responses to return for a list call. If more items exist, the server will set the `continue` field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.
+        :param str list_options_continue: The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.
+        :param _return_http_data_only: response data without head status code
+                                       and headers
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: tuple(StreamResultOfEventsourceEventSourceWatchEvent, status_code(int), headers(HTTPHeaderDict))
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        local_var_params = locals()
+
+        all_params = [
+            'namespace',
+            'list_options_label_selector',
+            'list_options_field_selector',
+            'list_options_watch',
+            'list_options_allow_watch_bookmarks',
+            'list_options_resource_version',
+            'list_options_resource_version_match',
+            'list_options_timeout_seconds',
+            'list_options_limit',
+            'list_options_continue'
+        ]
+        all_params.extend(
+            [
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout'
+            ]
         )
+
+        for key, val in six.iteritems(local_var_params['kwargs']):
+            if key not in all_params:
+                raise ApiTypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method watch_event_sources" % key
+                )
+            local_var_params[key] = val
+        del local_var_params['kwargs']
+        # verify the required parameter 'namespace' is set
+        if self.api_client.client_side_validation and ('namespace' not in local_var_params or  # noqa: E501
+                                                        local_var_params['namespace'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `namespace` when calling `watch_event_sources`")  # noqa: E501
+
+        collection_formats = {}
+
+        path_params = {}
+        if 'namespace' in local_var_params:
+            path_params['namespace'] = local_var_params['namespace']  # noqa: E501
+
+        query_params = []
+        if 'list_options_label_selector' in local_var_params and local_var_params['list_options_label_selector'] is not None:  # noqa: E501
+            query_params.append(('listOptions.labelSelector', local_var_params['list_options_label_selector']))  # noqa: E501
+        if 'list_options_field_selector' in local_var_params and local_var_params['list_options_field_selector'] is not None:  # noqa: E501
+            query_params.append(('listOptions.fieldSelector', local_var_params['list_options_field_selector']))  # noqa: E501
+        if 'list_options_watch' in local_var_params and local_var_params['list_options_watch'] is not None:  # noqa: E501
+            query_params.append(('listOptions.watch', local_var_params['list_options_watch']))  # noqa: E501
+        if 'list_options_allow_watch_bookmarks' in local_var_params and local_var_params['list_options_allow_watch_bookmarks'] is not None:  # noqa: E501
+            query_params.append(('listOptions.allowWatchBookmarks', local_var_params['list_options_allow_watch_bookmarks']))  # noqa: E501
+        if 'list_options_resource_version' in local_var_params and local_var_params['list_options_resource_version'] is not None:  # noqa: E501
+            query_params.append(('listOptions.resourceVersion', local_var_params['list_options_resource_version']))  # noqa: E501
+        if 'list_options_resource_version_match' in local_var_params and local_var_params['list_options_resource_version_match'] is not None:  # noqa: E501
+            query_params.append(('listOptions.resourceVersionMatch', local_var_params['list_options_resource_version_match']))  # noqa: E501
+        if 'list_options_timeout_seconds' in local_var_params and local_var_params['list_options_timeout_seconds'] is not None:  # noqa: E501
+            query_params.append(('listOptions.timeoutSeconds', local_var_params['list_options_timeout_seconds']))  # noqa: E501
+        if 'list_options_limit' in local_var_params and local_var_params['list_options_limit'] is not None:  # noqa: E501
+            query_params.append(('listOptions.limit', local_var_params['list_options_limit']))  # noqa: E501
+        if 'list_options_continue' in local_var_params and local_var_params['list_options_continue'] is not None:  # noqa: E501
+            query_params.append(('listOptions.continue', local_var_params['list_options_continue']))  # noqa: E501
+
+        header_params = {}
+
+        form_params = []
+        local_var_files = {}
+
+        body_params = None
+        # HTTP header `Accept`
+        header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # Authentication setting
+        auth_settings = []  # noqa: E501
+
+        return self.api_client.call_api(
+            '/api/v1/stream/event-sources/{namespace}', 'GET',
+            path_params,
+            query_params,
+            header_params,
+            body=body_params,
+            post_params=form_params,
+            files=local_var_files,
+            response_type='StreamResultOfEventsourceEventSourceWatchEvent',  # noqa: E501
+            auth_settings=auth_settings,
+            async_req=local_var_params.get('async_req'),
+            _return_http_data_only=local_var_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=local_var_params.get('_preload_content', True),
+            _request_timeout=local_var_params.get('_request_timeout'),
+            collection_formats=collection_formats)

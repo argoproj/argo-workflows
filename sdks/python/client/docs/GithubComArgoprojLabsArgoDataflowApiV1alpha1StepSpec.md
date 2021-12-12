@@ -1,6 +1,5 @@
 # GithubComArgoprojLabsArgoDataflowApiV1alpha1StepSpec
 
-
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
@@ -14,22 +13,21 @@ Name | Type | Description | Notes
 **flatten** | [**GithubComArgoprojLabsArgoDataflowApiV1alpha1Flatten**](GithubComArgoprojLabsArgoDataflowApiV1alpha1Flatten.md) |  | [optional] 
 **git** | [**GithubComArgoprojLabsArgoDataflowApiV1alpha1Git**](GithubComArgoprojLabsArgoDataflowApiV1alpha1Git.md) |  | [optional] 
 **group** | [**GithubComArgoprojLabsArgoDataflowApiV1alpha1Group**](GithubComArgoprojLabsArgoDataflowApiV1alpha1Group.md) |  | [optional] 
-**image_pull_secrets** | [**[LocalObjectReference]**](LocalObjectReference.md) |  | [optional] 
+**image_pull_secrets** | [**list[LocalObjectReference]**](LocalObjectReference.md) |  | [optional] 
 **map** | [**GithubComArgoprojLabsArgoDataflowApiV1alpha1Map**](GithubComArgoprojLabsArgoDataflowApiV1alpha1Map.md) |  | [optional] 
 **metadata** | [**GithubComArgoprojLabsArgoDataflowApiV1alpha1Metadata**](GithubComArgoprojLabsArgoDataflowApiV1alpha1Metadata.md) |  | [optional] 
 **name** | **str** |  | [optional] 
-**node_selector** | **{str: (str,)}** |  | [optional] 
+**node_selector** | **dict(str, str)** |  | [optional] 
 **replicas** | **int** |  | [optional] 
 **restart_policy** | **str** |  | [optional] 
 **scale** | [**GithubComArgoprojLabsArgoDataflowApiV1alpha1Scale**](GithubComArgoprojLabsArgoDataflowApiV1alpha1Scale.md) |  | [optional] 
 **service_account_name** | **str** |  | [optional] 
 **sidecar** | [**GithubComArgoprojLabsArgoDataflowApiV1alpha1Sidecar**](GithubComArgoprojLabsArgoDataflowApiV1alpha1Sidecar.md) |  | [optional] 
-**sinks** | [**[GithubComArgoprojLabsArgoDataflowApiV1alpha1Sink]**](GithubComArgoprojLabsArgoDataflowApiV1alpha1Sink.md) |  | [optional] 
-**sources** | [**[GithubComArgoprojLabsArgoDataflowApiV1alpha1Source]**](GithubComArgoprojLabsArgoDataflowApiV1alpha1Source.md) |  | [optional] 
+**sinks** | [**list[GithubComArgoprojLabsArgoDataflowApiV1alpha1Sink]**](GithubComArgoprojLabsArgoDataflowApiV1alpha1Sink.md) |  | [optional] 
+**sources** | [**list[GithubComArgoprojLabsArgoDataflowApiV1alpha1Source]**](GithubComArgoprojLabsArgoDataflowApiV1alpha1Source.md) |  | [optional] 
 **terminator** | **bool** |  | [optional] 
-**tolerations** | [**[Toleration]**](Toleration.md) |  | [optional] 
-**volumes** | [**[Volume]**](Volume.md) |  | [optional] 
-**any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
+**tolerations** | [**list[Toleration]**](Toleration.md) |  | [optional] 
+**volumes** | [**list[Volume]**](Volume.md) |  | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

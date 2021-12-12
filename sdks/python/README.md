@@ -26,7 +26,7 @@ import yaml
 
 import argo_workflows
 from argo_workflows.api import workflow_service_api
-from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_create_request import \
+from argo_workflows.models.io_argoproj_workflow_v1alpha1_workflow_create_request import \
     IoArgoprojWorkflowV1alpha1WorkflowCreateRequest
 
 configuration = argo_workflows.Configuration(host="https://127.0.0.1:2746")
@@ -38,16 +38,16 @@ manifest = yaml.safe_load(resp.text)
 api_client = argo_workflows.ApiClient(configuration)
 api_instance = workflow_service_api.WorkflowServiceApi(api_client)
 api_response = api_instance.create_workflow(
-    namespace='argo',
-    body=IoArgoprojWorkflowV1alpha1WorkflowCreateRequest(
-        workflow=manifest, _check_type=False))
+    namespace="argo",
+    body=IoArgoprojWorkflowV1alpha1WorkflowCreateRequest(workflow=manifest))
 pprint(api_response)
 
 ```
 
 Note that `_check_type=False` is required here to avoid type checks against `manifest` which is a Python dictionary.
 
-Alternative, you can submit a workflow with an instance of `IoArgoprojWorkflowV1alpha1Workflow` constructed via the SDK like the following:
+Alternative, you can submit a workflow with an instance of `IoArgoprojWorkflowV1alpha1Workflow` constructed via the SDK
+like the following:
 
 ```python
 from pprint import pprint
@@ -57,9 +57,9 @@ from argo_workflows.api import workflow_service_api
 from argo_workflows.model.container import Container
 from argo_workflows.model.io_argoproj_workflow_v1alpha1_template import IoArgoprojWorkflowV1alpha1Template
 from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
-from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_create_request import \
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_create_request import
     IoArgoprojWorkflowV1alpha1WorkflowCreateRequest
-from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_spec import \
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_spec import
     IoArgoprojWorkflowV1alpha1WorkflowSpec
 from argo_workflows.model.object_meta import ObjectMeta
 

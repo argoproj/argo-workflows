@@ -25,7 +25,7 @@ generate:
 		sed 's/io.k8s.api.core.v1.//' | \
 		sed 's/io.k8s.apimachinery.pkg.apis.meta.v1.//' \
 		> $(WD)/swagger.json
-	$(DOCKER) openapitools/openapi-generator-cli:v5.2.1 \
+	$(DOCKER) openapitools/openapi-generator-cli:v4.3.1 \
 		generate \
 		--input-spec /wd/swagger.json \
 		--generator-name python \
@@ -43,6 +43,3 @@ generate:
 		--generate-alias-as-model
 	# https://vsupalov.com/docker-shared-permissions/#set-the-docker-user-when-running-your-container
 	$(CHOWN) $(WD) || sudo $(CHOWN) $(WD)
-	# run the SDK fix for the ApiClient
-	$(CHOWN) ./sdk_fix.py
-	@./sdk_fix.py

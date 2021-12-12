@@ -1,3 +1,5 @@
+# coding: utf-8
+
 """
     Argo Server API
 
@@ -8,35 +10,18 @@
 """
 
 
-import re  # noqa: F401
-import sys  # noqa: F401
+from __future__ import absolute_import
 
-from argo_workflows.api_client import ApiClient, Endpoint as _Endpoint
-from argo_workflows.model_utils import (  # noqa: F401
-    check_allowed_values,
-    check_validations,
-    date,
-    datetime,
-    file_type,
-    none_type,
-    validate_and_convert_types
+import re  # noqa: F401
+
+# python 2 and python 3 compatibility library
+import six
+
+from argo_workflows.api_client import ApiClient
+from argo_workflows.exceptions import (  # noqa: F401
+    ApiTypeError,
+    ApiValueError
 )
-from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
-from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_create_request import IoArgoprojWorkflowV1alpha1WorkflowCreateRequest
-from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_lint_request import IoArgoprojWorkflowV1alpha1WorkflowLintRequest
-from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_list import IoArgoprojWorkflowV1alpha1WorkflowList
-from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_resubmit_request import IoArgoprojWorkflowV1alpha1WorkflowResubmitRequest
-from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_resume_request import IoArgoprojWorkflowV1alpha1WorkflowResumeRequest
-from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_retry_request import IoArgoprojWorkflowV1alpha1WorkflowRetryRequest
-from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_set_request import IoArgoprojWorkflowV1alpha1WorkflowSetRequest
-from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_stop_request import IoArgoprojWorkflowV1alpha1WorkflowStopRequest
-from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_submit_request import IoArgoprojWorkflowV1alpha1WorkflowSubmitRequest
-from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_suspend_request import IoArgoprojWorkflowV1alpha1WorkflowSuspendRequest
-from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_terminate_request import IoArgoprojWorkflowV1alpha1WorkflowTerminateRequest
-from argo_workflows.model.stream_result_of_event import StreamResultOfEvent
-from argo_workflows.model.stream_result_of_io_argoproj_workflow_v1alpha1_log_entry import StreamResultOfIoArgoprojWorkflowV1alpha1LogEntry
-from argo_workflows.model.stream_result_of_io_argoproj_workflow_v1alpha1_workflow_watch_event import StreamResultOfIoArgoprojWorkflowV1alpha1WorkflowWatchEvent
 
 
 class WorkflowServiceApi(object):
@@ -51,2577 +36,2455 @@ class WorkflowServiceApi(object):
             api_client = ApiClient()
         self.api_client = api_client
 
-        def __create_workflow(
-            self,
-            namespace,
-            body,
-            **kwargs
-        ):
-            """create_workflow  # noqa: E501
+    def create_workflow(self, namespace, body, **kwargs):  # noqa: E501
+        """create_workflow  # noqa: E501
 
-            This method makes a synchronous HTTP request by default. To make an
-            asynchronous HTTP request, please pass async_req=True
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.create_workflow(namespace, body, async_req=True)
+        >>> result = thread.get()
 
-            >>> thread = api.create_workflow(namespace, body, async_req=True)
-            >>> result = thread.get()
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param IoArgoprojWorkflowV1alpha1WorkflowCreateRequest body: (required)
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: IoArgoprojWorkflowV1alpha1Workflow
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        return self.create_workflow_with_http_info(namespace, body, **kwargs)  # noqa: E501
 
-            Args:
-                namespace (str):
-                body (IoArgoprojWorkflowV1alpha1WorkflowCreateRequest):
+    def create_workflow_with_http_info(self, namespace, body, **kwargs):  # noqa: E501
+        """create_workflow  # noqa: E501
 
-            Keyword Args:
-                _return_http_data_only (bool): response data without head status
-                    code and headers. Default is True.
-                _preload_content (bool): if False, the urllib3.HTTPResponse object
-                    will be returned without reading/decoding response data.
-                    Default is True.
-                _request_timeout (int/float/tuple): timeout setting for this request. If
-                    one number provided, it will be total request timeout. It can also
-                    be a pair (tuple) of (connection, read) timeouts.
-                    Default is None.
-                _check_input_type (bool): specifies if type checking
-                    should be done one the data sent to the server.
-                    Default is True.
-                _check_return_type (bool): specifies if type checking
-                    should be done one the data received from the server.
-                    Default is True.
-                _host_index (int/None): specifies the index of the server
-                    that we want to use.
-                    Default is read from the configuration.
-                async_req (bool): execute request asynchronously
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.create_workflow_with_http_info(namespace, body, async_req=True)
+        >>> result = thread.get()
 
-            Returns:
-                IoArgoprojWorkflowV1alpha1Workflow
-                    If the method is called asynchronously, returns the request
-                    thread.
-            """
-            kwargs['async_req'] = kwargs.get(
-                'async_req', False
-            )
-            kwargs['_return_http_data_only'] = kwargs.get(
-                '_return_http_data_only', True
-            )
-            kwargs['_preload_content'] = kwargs.get(
-                '_preload_content', True
-            )
-            kwargs['_request_timeout'] = kwargs.get(
-                '_request_timeout', None
-            )
-            kwargs['_check_input_type'] = kwargs.get(
-                '_check_input_type', True
-            )
-            kwargs['_check_return_type'] = kwargs.get(
-                '_check_return_type', True
-            )
-            kwargs['_host_index'] = kwargs.get('_host_index')
-            kwargs['namespace'] = \
-                namespace
-            kwargs['body'] = \
-                body
-            return self.call_with_http_info(**kwargs)
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param IoArgoprojWorkflowV1alpha1WorkflowCreateRequest body: (required)
+        :param _return_http_data_only: response data without head status code
+                                       and headers
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: tuple(IoArgoprojWorkflowV1alpha1Workflow, status_code(int), headers(HTTPHeaderDict))
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
 
-        self.create_workflow = _Endpoint(
-            settings={
-                'response_type': (IoArgoprojWorkflowV1alpha1Workflow,),
-                'auth': [],
-                'endpoint_path': '/api/v1/workflows/{namespace}',
-                'operation_id': 'create_workflow',
-                'http_method': 'POST',
-                'servers': None,
-            },
-            params_map={
-                'all': [
-                    'namespace',
-                    'body',
-                ],
-                'required': [
-                    'namespace',
-                    'body',
-                ],
-                'nullable': [
-                ],
-                'enum': [
-                ],
-                'validation': [
-                ]
-            },
-            root_map={
-                'validations': {
-                },
-                'allowed_values': {
-                },
-                'openapi_types': {
-                    'namespace':
-                        (str,),
-                    'body':
-                        (IoArgoprojWorkflowV1alpha1WorkflowCreateRequest,),
-                },
-                'attribute_map': {
-                    'namespace': 'namespace',
-                },
-                'location_map': {
-                    'namespace': 'path',
-                    'body': 'body',
-                },
-                'collection_format_map': {
-                }
-            },
-            headers_map={
-                'accept': [
-                    'application/json'
-                ],
-                'content_type': [
-                    'application/json'
-                ]
-            },
-            api_client=api_client,
-            callable=__create_workflow
+        local_var_params = locals()
+
+        all_params = [
+            'namespace',
+            'body'
+        ]
+        all_params.extend(
+            [
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout'
+            ]
         )
 
-        def __delete_workflow(
-            self,
-            namespace,
-            name,
-            **kwargs
-        ):
-            """delete_workflow  # noqa: E501
+        for key, val in six.iteritems(local_var_params['kwargs']):
+            if key not in all_params:
+                raise ApiTypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method create_workflow" % key
+                )
+            local_var_params[key] = val
+        del local_var_params['kwargs']
+        # verify the required parameter 'namespace' is set
+        if self.api_client.client_side_validation and ('namespace' not in local_var_params or  # noqa: E501
+                                                        local_var_params['namespace'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `namespace` when calling `create_workflow`")  # noqa: E501
+        # verify the required parameter 'body' is set
+        if self.api_client.client_side_validation and ('body' not in local_var_params or  # noqa: E501
+                                                        local_var_params['body'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `body` when calling `create_workflow`")  # noqa: E501
 
-            This method makes a synchronous HTTP request by default. To make an
-            asynchronous HTTP request, please pass async_req=True
+        collection_formats = {}
 
-            >>> thread = api.delete_workflow(namespace, name, async_req=True)
-            >>> result = thread.get()
+        path_params = {}
+        if 'namespace' in local_var_params:
+            path_params['namespace'] = local_var_params['namespace']  # noqa: E501
 
-            Args:
-                namespace (str):
-                name (str):
+        query_params = []
 
-            Keyword Args:
-                delete_options_grace_period_seconds (str): The duration in seconds before the object should be deleted. Value must be non-negative integer. The value zero indicates delete immediately. If this value is nil, the default grace period for the specified type will be used. Defaults to a per object value if not specified. zero means delete immediately. +optional.. [optional]
-                delete_options_preconditions_uid (str): Specifies the target UID. +optional.. [optional]
-                delete_options_preconditions_resource_version (str): Specifies the target ResourceVersion +optional.. [optional]
-                delete_options_orphan_dependents (bool): Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7. Should the dependent objects be orphaned. If true/false, the \"orphan\" finalizer will be added to/removed from the object's finalizers list. Either this field or PropagationPolicy may be set, but not both. +optional.. [optional]
-                delete_options_propagation_policy (str): Whether and how garbage collection will be performed. Either this field or OrphanDependents may be set, but not both. The default policy is decided by the existing finalizer set in the metadata.finalizers and the resource-specific default policy. Acceptable values are: 'Orphan' - orphan the dependents; 'Background' - allow the garbage collector to delete the dependents in the background; 'Foreground' - a cascading policy that deletes all dependents in the foreground. +optional.. [optional]
-                delete_options_dry_run ([str]): When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed +optional.. [optional]
-                _return_http_data_only (bool): response data without head status
-                    code and headers. Default is True.
-                _preload_content (bool): if False, the urllib3.HTTPResponse object
-                    will be returned without reading/decoding response data.
-                    Default is True.
-                _request_timeout (int/float/tuple): timeout setting for this request. If
-                    one number provided, it will be total request timeout. It can also
-                    be a pair (tuple) of (connection, read) timeouts.
-                    Default is None.
-                _check_input_type (bool): specifies if type checking
-                    should be done one the data sent to the server.
-                    Default is True.
-                _check_return_type (bool): specifies if type checking
-                    should be done one the data received from the server.
-                    Default is True.
-                _host_index (int/None): specifies the index of the server
-                    that we want to use.
-                    Default is read from the configuration.
-                async_req (bool): execute request asynchronously
+        header_params = {}
 
-            Returns:
-                bool, date, datetime, dict, float, int, list, str, none_type
-                    If the method is called asynchronously, returns the request
-                    thread.
-            """
-            kwargs['async_req'] = kwargs.get(
-                'async_req', False
-            )
-            kwargs['_return_http_data_only'] = kwargs.get(
-                '_return_http_data_only', True
-            )
-            kwargs['_preload_content'] = kwargs.get(
-                '_preload_content', True
-            )
-            kwargs['_request_timeout'] = kwargs.get(
-                '_request_timeout', None
-            )
-            kwargs['_check_input_type'] = kwargs.get(
-                '_check_input_type', True
-            )
-            kwargs['_check_return_type'] = kwargs.get(
-                '_check_return_type', True
-            )
-            kwargs['_host_index'] = kwargs.get('_host_index')
-            kwargs['namespace'] = \
-                namespace
-            kwargs['name'] = \
-                name
-            return self.call_with_http_info(**kwargs)
+        form_params = []
+        local_var_files = {}
 
-        self.delete_workflow = _Endpoint(
-            settings={
-                'response_type': (bool, date, datetime, dict, float, int, list, str, none_type,),
-                'auth': [],
-                'endpoint_path': '/api/v1/workflows/{namespace}/{name}',
-                'operation_id': 'delete_workflow',
-                'http_method': 'DELETE',
-                'servers': None,
-            },
-            params_map={
-                'all': [
-                    'namespace',
-                    'name',
-                    'delete_options_grace_period_seconds',
-                    'delete_options_preconditions_uid',
-                    'delete_options_preconditions_resource_version',
-                    'delete_options_orphan_dependents',
-                    'delete_options_propagation_policy',
-                    'delete_options_dry_run',
-                ],
-                'required': [
-                    'namespace',
-                    'name',
-                ],
-                'nullable': [
-                ],
-                'enum': [
-                ],
-                'validation': [
-                ]
-            },
-            root_map={
-                'validations': {
-                },
-                'allowed_values': {
-                },
-                'openapi_types': {
-                    'namespace':
-                        (str,),
-                    'name':
-                        (str,),
-                    'delete_options_grace_period_seconds':
-                        (str,),
-                    'delete_options_preconditions_uid':
-                        (str,),
-                    'delete_options_preconditions_resource_version':
-                        (str,),
-                    'delete_options_orphan_dependents':
-                        (bool,),
-                    'delete_options_propagation_policy':
-                        (str,),
-                    'delete_options_dry_run':
-                        ([str],),
-                },
-                'attribute_map': {
-                    'namespace': 'namespace',
-                    'name': 'name',
-                    'delete_options_grace_period_seconds': 'deleteOptions.gracePeriodSeconds',
-                    'delete_options_preconditions_uid': 'deleteOptions.preconditions.uid',
-                    'delete_options_preconditions_resource_version': 'deleteOptions.preconditions.resourceVersion',
-                    'delete_options_orphan_dependents': 'deleteOptions.orphanDependents',
-                    'delete_options_propagation_policy': 'deleteOptions.propagationPolicy',
-                    'delete_options_dry_run': 'deleteOptions.dryRun',
-                },
-                'location_map': {
-                    'namespace': 'path',
-                    'name': 'path',
-                    'delete_options_grace_period_seconds': 'query',
-                    'delete_options_preconditions_uid': 'query',
-                    'delete_options_preconditions_resource_version': 'query',
-                    'delete_options_orphan_dependents': 'query',
-                    'delete_options_propagation_policy': 'query',
-                    'delete_options_dry_run': 'query',
-                },
-                'collection_format_map': {
-                    'delete_options_dry_run': 'multi',
-                }
-            },
-            headers_map={
-                'accept': [
-                    'application/json'
-                ],
-                'content_type': [],
-            },
-            api_client=api_client,
-            callable=__delete_workflow
+        body_params = None
+        if 'body' in local_var_params:
+            body_params = local_var_params['body']
+        # HTTP header `Accept`
+        header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # HTTP header `Content-Type`
+        header_params['Content-Type'] = self.api_client.select_header_content_type(  # noqa: E501
+            ['application/json'])  # noqa: E501
+
+        # Authentication setting
+        auth_settings = []  # noqa: E501
+
+        return self.api_client.call_api(
+            '/api/v1/workflows/{namespace}', 'POST',
+            path_params,
+            query_params,
+            header_params,
+            body=body_params,
+            post_params=form_params,
+            files=local_var_files,
+            response_type='IoArgoprojWorkflowV1alpha1Workflow',  # noqa: E501
+            auth_settings=auth_settings,
+            async_req=local_var_params.get('async_req'),
+            _return_http_data_only=local_var_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=local_var_params.get('_preload_content', True),
+            _request_timeout=local_var_params.get('_request_timeout'),
+            collection_formats=collection_formats)
+
+    def delete_workflow(self, namespace, name, **kwargs):  # noqa: E501
+        """delete_workflow  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.delete_workflow(namespace, name, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str name: (required)
+        :param str delete_options_grace_period_seconds: The duration in seconds before the object should be deleted. Value must be non-negative integer. The value zero indicates delete immediately. If this value is nil, the default grace period for the specified type will be used. Defaults to a per object value if not specified. zero means delete immediately. +optional.
+        :param str delete_options_preconditions_uid: Specifies the target UID. +optional.
+        :param str delete_options_preconditions_resource_version: Specifies the target ResourceVersion +optional.
+        :param bool delete_options_orphan_dependents: Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7. Should the dependent objects be orphaned. If true/false, the \"orphan\" finalizer will be added to/removed from the object's finalizers list. Either this field or PropagationPolicy may be set, but not both. +optional.
+        :param str delete_options_propagation_policy: Whether and how garbage collection will be performed. Either this field or OrphanDependents may be set, but not both. The default policy is decided by the existing finalizer set in the metadata.finalizers and the resource-specific default policy. Acceptable values are: 'Orphan' - orphan the dependents; 'Background' - allow the garbage collector to delete the dependents in the background; 'Foreground' - a cascading policy that deletes all dependents in the foreground. +optional.
+        :param list[str] delete_options_dry_run: When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed +optional.
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: object
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        return self.delete_workflow_with_http_info(namespace, name, **kwargs)  # noqa: E501
+
+    def delete_workflow_with_http_info(self, namespace, name, **kwargs):  # noqa: E501
+        """delete_workflow  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.delete_workflow_with_http_info(namespace, name, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str name: (required)
+        :param str delete_options_grace_period_seconds: The duration in seconds before the object should be deleted. Value must be non-negative integer. The value zero indicates delete immediately. If this value is nil, the default grace period for the specified type will be used. Defaults to a per object value if not specified. zero means delete immediately. +optional.
+        :param str delete_options_preconditions_uid: Specifies the target UID. +optional.
+        :param str delete_options_preconditions_resource_version: Specifies the target ResourceVersion +optional.
+        :param bool delete_options_orphan_dependents: Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7. Should the dependent objects be orphaned. If true/false, the \"orphan\" finalizer will be added to/removed from the object's finalizers list. Either this field or PropagationPolicy may be set, but not both. +optional.
+        :param str delete_options_propagation_policy: Whether and how garbage collection will be performed. Either this field or OrphanDependents may be set, but not both. The default policy is decided by the existing finalizer set in the metadata.finalizers and the resource-specific default policy. Acceptable values are: 'Orphan' - orphan the dependents; 'Background' - allow the garbage collector to delete the dependents in the background; 'Foreground' - a cascading policy that deletes all dependents in the foreground. +optional.
+        :param list[str] delete_options_dry_run: When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed +optional.
+        :param _return_http_data_only: response data without head status code
+                                       and headers
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: tuple(object, status_code(int), headers(HTTPHeaderDict))
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        local_var_params = locals()
+
+        all_params = [
+            'namespace',
+            'name',
+            'delete_options_grace_period_seconds',
+            'delete_options_preconditions_uid',
+            'delete_options_preconditions_resource_version',
+            'delete_options_orphan_dependents',
+            'delete_options_propagation_policy',
+            'delete_options_dry_run'
+        ]
+        all_params.extend(
+            [
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout'
+            ]
         )
 
-        def __get_workflow(
-            self,
-            namespace,
-            name,
-            **kwargs
-        ):
-            """get_workflow  # noqa: E501
+        for key, val in six.iteritems(local_var_params['kwargs']):
+            if key not in all_params:
+                raise ApiTypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method delete_workflow" % key
+                )
+            local_var_params[key] = val
+        del local_var_params['kwargs']
+        # verify the required parameter 'namespace' is set
+        if self.api_client.client_side_validation and ('namespace' not in local_var_params or  # noqa: E501
+                                                        local_var_params['namespace'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `namespace` when calling `delete_workflow`")  # noqa: E501
+        # verify the required parameter 'name' is set
+        if self.api_client.client_side_validation and ('name' not in local_var_params or  # noqa: E501
+                                                        local_var_params['name'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `name` when calling `delete_workflow`")  # noqa: E501
 
-            This method makes a synchronous HTTP request by default. To make an
-            asynchronous HTTP request, please pass async_req=True
+        collection_formats = {}
 
-            >>> thread = api.get_workflow(namespace, name, async_req=True)
-            >>> result = thread.get()
+        path_params = {}
+        if 'namespace' in local_var_params:
+            path_params['namespace'] = local_var_params['namespace']  # noqa: E501
+        if 'name' in local_var_params:
+            path_params['name'] = local_var_params['name']  # noqa: E501
 
-            Args:
-                namespace (str):
-                name (str):
+        query_params = []
+        if 'delete_options_grace_period_seconds' in local_var_params and local_var_params['delete_options_grace_period_seconds'] is not None:  # noqa: E501
+            query_params.append(('deleteOptions.gracePeriodSeconds', local_var_params['delete_options_grace_period_seconds']))  # noqa: E501
+        if 'delete_options_preconditions_uid' in local_var_params and local_var_params['delete_options_preconditions_uid'] is not None:  # noqa: E501
+            query_params.append(('deleteOptions.preconditions.uid', local_var_params['delete_options_preconditions_uid']))  # noqa: E501
+        if 'delete_options_preconditions_resource_version' in local_var_params and local_var_params['delete_options_preconditions_resource_version'] is not None:  # noqa: E501
+            query_params.append(('deleteOptions.preconditions.resourceVersion', local_var_params['delete_options_preconditions_resource_version']))  # noqa: E501
+        if 'delete_options_orphan_dependents' in local_var_params and local_var_params['delete_options_orphan_dependents'] is not None:  # noqa: E501
+            query_params.append(('deleteOptions.orphanDependents', local_var_params['delete_options_orphan_dependents']))  # noqa: E501
+        if 'delete_options_propagation_policy' in local_var_params and local_var_params['delete_options_propagation_policy'] is not None:  # noqa: E501
+            query_params.append(('deleteOptions.propagationPolicy', local_var_params['delete_options_propagation_policy']))  # noqa: E501
+        if 'delete_options_dry_run' in local_var_params and local_var_params['delete_options_dry_run'] is not None:  # noqa: E501
+            query_params.append(('deleteOptions.dryRun', local_var_params['delete_options_dry_run']))  # noqa: E501
+            collection_formats['deleteOptions.dryRun'] = 'multi'  # noqa: E501
 
-            Keyword Args:
-                get_options_resource_version (str): resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional. [optional]
-                fields (str): Fields to be included or excluded in the response. e.g. \"spec,status.phase\", \"-status.nodes\".. [optional]
-                _return_http_data_only (bool): response data without head status
-                    code and headers. Default is True.
-                _preload_content (bool): if False, the urllib3.HTTPResponse object
-                    will be returned without reading/decoding response data.
-                    Default is True.
-                _request_timeout (int/float/tuple): timeout setting for this request. If
-                    one number provided, it will be total request timeout. It can also
-                    be a pair (tuple) of (connection, read) timeouts.
-                    Default is None.
-                _check_input_type (bool): specifies if type checking
-                    should be done one the data sent to the server.
-                    Default is True.
-                _check_return_type (bool): specifies if type checking
-                    should be done one the data received from the server.
-                    Default is True.
-                _host_index (int/None): specifies the index of the server
-                    that we want to use.
-                    Default is read from the configuration.
-                async_req (bool): execute request asynchronously
+        header_params = {}
 
-            Returns:
-                IoArgoprojWorkflowV1alpha1Workflow
-                    If the method is called asynchronously, returns the request
-                    thread.
-            """
-            kwargs['async_req'] = kwargs.get(
-                'async_req', False
-            )
-            kwargs['_return_http_data_only'] = kwargs.get(
-                '_return_http_data_only', True
-            )
-            kwargs['_preload_content'] = kwargs.get(
-                '_preload_content', True
-            )
-            kwargs['_request_timeout'] = kwargs.get(
-                '_request_timeout', None
-            )
-            kwargs['_check_input_type'] = kwargs.get(
-                '_check_input_type', True
-            )
-            kwargs['_check_return_type'] = kwargs.get(
-                '_check_return_type', True
-            )
-            kwargs['_host_index'] = kwargs.get('_host_index')
-            kwargs['namespace'] = \
-                namespace
-            kwargs['name'] = \
-                name
-            return self.call_with_http_info(**kwargs)
+        form_params = []
+        local_var_files = {}
 
-        self.get_workflow = _Endpoint(
-            settings={
-                'response_type': (IoArgoprojWorkflowV1alpha1Workflow,),
-                'auth': [],
-                'endpoint_path': '/api/v1/workflows/{namespace}/{name}',
-                'operation_id': 'get_workflow',
-                'http_method': 'GET',
-                'servers': None,
-            },
-            params_map={
-                'all': [
-                    'namespace',
-                    'name',
-                    'get_options_resource_version',
-                    'fields',
-                ],
-                'required': [
-                    'namespace',
-                    'name',
-                ],
-                'nullable': [
-                ],
-                'enum': [
-                ],
-                'validation': [
-                ]
-            },
-            root_map={
-                'validations': {
-                },
-                'allowed_values': {
-                },
-                'openapi_types': {
-                    'namespace':
-                        (str,),
-                    'name':
-                        (str,),
-                    'get_options_resource_version':
-                        (str,),
-                    'fields':
-                        (str,),
-                },
-                'attribute_map': {
-                    'namespace': 'namespace',
-                    'name': 'name',
-                    'get_options_resource_version': 'getOptions.resourceVersion',
-                    'fields': 'fields',
-                },
-                'location_map': {
-                    'namespace': 'path',
-                    'name': 'path',
-                    'get_options_resource_version': 'query',
-                    'fields': 'query',
-                },
-                'collection_format_map': {
-                }
-            },
-            headers_map={
-                'accept': [
-                    'application/json'
-                ],
-                'content_type': [],
-            },
-            api_client=api_client,
-            callable=__get_workflow
+        body_params = None
+        # HTTP header `Accept`
+        header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # Authentication setting
+        auth_settings = []  # noqa: E501
+
+        return self.api_client.call_api(
+            '/api/v1/workflows/{namespace}/{name}', 'DELETE',
+            path_params,
+            query_params,
+            header_params,
+            body=body_params,
+            post_params=form_params,
+            files=local_var_files,
+            response_type='object',  # noqa: E501
+            auth_settings=auth_settings,
+            async_req=local_var_params.get('async_req'),
+            _return_http_data_only=local_var_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=local_var_params.get('_preload_content', True),
+            _request_timeout=local_var_params.get('_request_timeout'),
+            collection_formats=collection_formats)
+
+    def get_workflow(self, namespace, name, **kwargs):  # noqa: E501
+        """get_workflow  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.get_workflow(namespace, name, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str name: (required)
+        :param str get_options_resource_version: resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional
+        :param str fields: Fields to be included or excluded in the response. e.g. \"spec,status.phase\", \"-status.nodes\".
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: IoArgoprojWorkflowV1alpha1Workflow
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        return self.get_workflow_with_http_info(namespace, name, **kwargs)  # noqa: E501
+
+    def get_workflow_with_http_info(self, namespace, name, **kwargs):  # noqa: E501
+        """get_workflow  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.get_workflow_with_http_info(namespace, name, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str name: (required)
+        :param str get_options_resource_version: resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional
+        :param str fields: Fields to be included or excluded in the response. e.g. \"spec,status.phase\", \"-status.nodes\".
+        :param _return_http_data_only: response data without head status code
+                                       and headers
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: tuple(IoArgoprojWorkflowV1alpha1Workflow, status_code(int), headers(HTTPHeaderDict))
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        local_var_params = locals()
+
+        all_params = [
+            'namespace',
+            'name',
+            'get_options_resource_version',
+            'fields'
+        ]
+        all_params.extend(
+            [
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout'
+            ]
         )
 
-        def __lint_workflow(
-            self,
-            namespace,
-            body,
-            **kwargs
-        ):
-            """lint_workflow  # noqa: E501
+        for key, val in six.iteritems(local_var_params['kwargs']):
+            if key not in all_params:
+                raise ApiTypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method get_workflow" % key
+                )
+            local_var_params[key] = val
+        del local_var_params['kwargs']
+        # verify the required parameter 'namespace' is set
+        if self.api_client.client_side_validation and ('namespace' not in local_var_params or  # noqa: E501
+                                                        local_var_params['namespace'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `namespace` when calling `get_workflow`")  # noqa: E501
+        # verify the required parameter 'name' is set
+        if self.api_client.client_side_validation and ('name' not in local_var_params or  # noqa: E501
+                                                        local_var_params['name'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `name` when calling `get_workflow`")  # noqa: E501
 
-            This method makes a synchronous HTTP request by default. To make an
-            asynchronous HTTP request, please pass async_req=True
+        collection_formats = {}
 
-            >>> thread = api.lint_workflow(namespace, body, async_req=True)
-            >>> result = thread.get()
+        path_params = {}
+        if 'namespace' in local_var_params:
+            path_params['namespace'] = local_var_params['namespace']  # noqa: E501
+        if 'name' in local_var_params:
+            path_params['name'] = local_var_params['name']  # noqa: E501
 
-            Args:
-                namespace (str):
-                body (IoArgoprojWorkflowV1alpha1WorkflowLintRequest):
+        query_params = []
+        if 'get_options_resource_version' in local_var_params and local_var_params['get_options_resource_version'] is not None:  # noqa: E501
+            query_params.append(('getOptions.resourceVersion', local_var_params['get_options_resource_version']))  # noqa: E501
+        if 'fields' in local_var_params and local_var_params['fields'] is not None:  # noqa: E501
+            query_params.append(('fields', local_var_params['fields']))  # noqa: E501
 
-            Keyword Args:
-                _return_http_data_only (bool): response data without head status
-                    code and headers. Default is True.
-                _preload_content (bool): if False, the urllib3.HTTPResponse object
-                    will be returned without reading/decoding response data.
-                    Default is True.
-                _request_timeout (int/float/tuple): timeout setting for this request. If
-                    one number provided, it will be total request timeout. It can also
-                    be a pair (tuple) of (connection, read) timeouts.
-                    Default is None.
-                _check_input_type (bool): specifies if type checking
-                    should be done one the data sent to the server.
-                    Default is True.
-                _check_return_type (bool): specifies if type checking
-                    should be done one the data received from the server.
-                    Default is True.
-                _host_index (int/None): specifies the index of the server
-                    that we want to use.
-                    Default is read from the configuration.
-                async_req (bool): execute request asynchronously
+        header_params = {}
 
-            Returns:
-                IoArgoprojWorkflowV1alpha1Workflow
-                    If the method is called asynchronously, returns the request
-                    thread.
-            """
-            kwargs['async_req'] = kwargs.get(
-                'async_req', False
-            )
-            kwargs['_return_http_data_only'] = kwargs.get(
-                '_return_http_data_only', True
-            )
-            kwargs['_preload_content'] = kwargs.get(
-                '_preload_content', True
-            )
-            kwargs['_request_timeout'] = kwargs.get(
-                '_request_timeout', None
-            )
-            kwargs['_check_input_type'] = kwargs.get(
-                '_check_input_type', True
-            )
-            kwargs['_check_return_type'] = kwargs.get(
-                '_check_return_type', True
-            )
-            kwargs['_host_index'] = kwargs.get('_host_index')
-            kwargs['namespace'] = \
-                namespace
-            kwargs['body'] = \
-                body
-            return self.call_with_http_info(**kwargs)
+        form_params = []
+        local_var_files = {}
 
-        self.lint_workflow = _Endpoint(
-            settings={
-                'response_type': (IoArgoprojWorkflowV1alpha1Workflow,),
-                'auth': [],
-                'endpoint_path': '/api/v1/workflows/{namespace}/lint',
-                'operation_id': 'lint_workflow',
-                'http_method': 'POST',
-                'servers': None,
-            },
-            params_map={
-                'all': [
-                    'namespace',
-                    'body',
-                ],
-                'required': [
-                    'namespace',
-                    'body',
-                ],
-                'nullable': [
-                ],
-                'enum': [
-                ],
-                'validation': [
-                ]
-            },
-            root_map={
-                'validations': {
-                },
-                'allowed_values': {
-                },
-                'openapi_types': {
-                    'namespace':
-                        (str,),
-                    'body':
-                        (IoArgoprojWorkflowV1alpha1WorkflowLintRequest,),
-                },
-                'attribute_map': {
-                    'namespace': 'namespace',
-                },
-                'location_map': {
-                    'namespace': 'path',
-                    'body': 'body',
-                },
-                'collection_format_map': {
-                }
-            },
-            headers_map={
-                'accept': [
-                    'application/json'
-                ],
-                'content_type': [
-                    'application/json'
-                ]
-            },
-            api_client=api_client,
-            callable=__lint_workflow
+        body_params = None
+        # HTTP header `Accept`
+        header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # Authentication setting
+        auth_settings = []  # noqa: E501
+
+        return self.api_client.call_api(
+            '/api/v1/workflows/{namespace}/{name}', 'GET',
+            path_params,
+            query_params,
+            header_params,
+            body=body_params,
+            post_params=form_params,
+            files=local_var_files,
+            response_type='IoArgoprojWorkflowV1alpha1Workflow',  # noqa: E501
+            auth_settings=auth_settings,
+            async_req=local_var_params.get('async_req'),
+            _return_http_data_only=local_var_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=local_var_params.get('_preload_content', True),
+            _request_timeout=local_var_params.get('_request_timeout'),
+            collection_formats=collection_formats)
+
+    def lint_workflow(self, namespace, body, **kwargs):  # noqa: E501
+        """lint_workflow  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.lint_workflow(namespace, body, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param IoArgoprojWorkflowV1alpha1WorkflowLintRequest body: (required)
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: IoArgoprojWorkflowV1alpha1Workflow
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        return self.lint_workflow_with_http_info(namespace, body, **kwargs)  # noqa: E501
+
+    def lint_workflow_with_http_info(self, namespace, body, **kwargs):  # noqa: E501
+        """lint_workflow  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.lint_workflow_with_http_info(namespace, body, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param IoArgoprojWorkflowV1alpha1WorkflowLintRequest body: (required)
+        :param _return_http_data_only: response data without head status code
+                                       and headers
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: tuple(IoArgoprojWorkflowV1alpha1Workflow, status_code(int), headers(HTTPHeaderDict))
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        local_var_params = locals()
+
+        all_params = [
+            'namespace',
+            'body'
+        ]
+        all_params.extend(
+            [
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout'
+            ]
         )
 
-        def __list_workflows(
-            self,
-            namespace,
-            **kwargs
-        ):
-            """list_workflows  # noqa: E501
+        for key, val in six.iteritems(local_var_params['kwargs']):
+            if key not in all_params:
+                raise ApiTypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method lint_workflow" % key
+                )
+            local_var_params[key] = val
+        del local_var_params['kwargs']
+        # verify the required parameter 'namespace' is set
+        if self.api_client.client_side_validation and ('namespace' not in local_var_params or  # noqa: E501
+                                                        local_var_params['namespace'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `namespace` when calling `lint_workflow`")  # noqa: E501
+        # verify the required parameter 'body' is set
+        if self.api_client.client_side_validation and ('body' not in local_var_params or  # noqa: E501
+                                                        local_var_params['body'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `body` when calling `lint_workflow`")  # noqa: E501
 
-            This method makes a synchronous HTTP request by default. To make an
-            asynchronous HTTP request, please pass async_req=True
+        collection_formats = {}
 
-            >>> thread = api.list_workflows(namespace, async_req=True)
-            >>> result = thread.get()
+        path_params = {}
+        if 'namespace' in local_var_params:
+            path_params['namespace'] = local_var_params['namespace']  # noqa: E501
 
-            Args:
-                namespace (str):
+        query_params = []
 
-            Keyword Args:
-                list_options_label_selector (str): A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional.. [optional]
-                list_options_field_selector (str): A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional.. [optional]
-                list_options_watch (bool): Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional.. [optional]
-                list_options_allow_watch_bookmarks (bool): allowWatchBookmarks requests watch events with type \"BOOKMARK\". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. If the feature gate WatchBookmarks is not enabled in apiserver, this field is ignored. +optional.. [optional]
-                list_options_resource_version (str): resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional. [optional]
-                list_options_resource_version_match (str): resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional. [optional]
-                list_options_timeout_seconds (str): Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional.. [optional]
-                list_options_limit (str): limit is a maximum number of responses to return for a list call. If more items exist, the server will set the `continue` field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.. [optional]
-                list_options_continue (str): The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.. [optional]
-                fields (str): Fields to be included or excluded in the response. e.g. \"items.spec,items.status.phase\", \"-items.status.nodes\".. [optional]
-                _return_http_data_only (bool): response data without head status
-                    code and headers. Default is True.
-                _preload_content (bool): if False, the urllib3.HTTPResponse object
-                    will be returned without reading/decoding response data.
-                    Default is True.
-                _request_timeout (int/float/tuple): timeout setting for this request. If
-                    one number provided, it will be total request timeout. It can also
-                    be a pair (tuple) of (connection, read) timeouts.
-                    Default is None.
-                _check_input_type (bool): specifies if type checking
-                    should be done one the data sent to the server.
-                    Default is True.
-                _check_return_type (bool): specifies if type checking
-                    should be done one the data received from the server.
-                    Default is True.
-                _host_index (int/None): specifies the index of the server
-                    that we want to use.
-                    Default is read from the configuration.
-                async_req (bool): execute request asynchronously
+        header_params = {}
 
-            Returns:
-                IoArgoprojWorkflowV1alpha1WorkflowList
-                    If the method is called asynchronously, returns the request
-                    thread.
-            """
-            kwargs['async_req'] = kwargs.get(
-                'async_req', False
-            )
-            kwargs['_return_http_data_only'] = kwargs.get(
-                '_return_http_data_only', True
-            )
-            kwargs['_preload_content'] = kwargs.get(
-                '_preload_content', True
-            )
-            kwargs['_request_timeout'] = kwargs.get(
-                '_request_timeout', None
-            )
-            kwargs['_check_input_type'] = kwargs.get(
-                '_check_input_type', True
-            )
-            kwargs['_check_return_type'] = kwargs.get(
-                '_check_return_type', True
-            )
-            kwargs['_host_index'] = kwargs.get('_host_index')
-            kwargs['namespace'] = \
-                namespace
-            return self.call_with_http_info(**kwargs)
+        form_params = []
+        local_var_files = {}
 
-        self.list_workflows = _Endpoint(
-            settings={
-                'response_type': (IoArgoprojWorkflowV1alpha1WorkflowList,),
-                'auth': [],
-                'endpoint_path': '/api/v1/workflows/{namespace}',
-                'operation_id': 'list_workflows',
-                'http_method': 'GET',
-                'servers': None,
-            },
-            params_map={
-                'all': [
-                    'namespace',
-                    'list_options_label_selector',
-                    'list_options_field_selector',
-                    'list_options_watch',
-                    'list_options_allow_watch_bookmarks',
-                    'list_options_resource_version',
-                    'list_options_resource_version_match',
-                    'list_options_timeout_seconds',
-                    'list_options_limit',
-                    'list_options_continue',
-                    'fields',
-                ],
-                'required': [
-                    'namespace',
-                ],
-                'nullable': [
-                ],
-                'enum': [
-                ],
-                'validation': [
-                ]
-            },
-            root_map={
-                'validations': {
-                },
-                'allowed_values': {
-                },
-                'openapi_types': {
-                    'namespace':
-                        (str,),
-                    'list_options_label_selector':
-                        (str,),
-                    'list_options_field_selector':
-                        (str,),
-                    'list_options_watch':
-                        (bool,),
-                    'list_options_allow_watch_bookmarks':
-                        (bool,),
-                    'list_options_resource_version':
-                        (str,),
-                    'list_options_resource_version_match':
-                        (str,),
-                    'list_options_timeout_seconds':
-                        (str,),
-                    'list_options_limit':
-                        (str,),
-                    'list_options_continue':
-                        (str,),
-                    'fields':
-                        (str,),
-                },
-                'attribute_map': {
-                    'namespace': 'namespace',
-                    'list_options_label_selector': 'listOptions.labelSelector',
-                    'list_options_field_selector': 'listOptions.fieldSelector',
-                    'list_options_watch': 'listOptions.watch',
-                    'list_options_allow_watch_bookmarks': 'listOptions.allowWatchBookmarks',
-                    'list_options_resource_version': 'listOptions.resourceVersion',
-                    'list_options_resource_version_match': 'listOptions.resourceVersionMatch',
-                    'list_options_timeout_seconds': 'listOptions.timeoutSeconds',
-                    'list_options_limit': 'listOptions.limit',
-                    'list_options_continue': 'listOptions.continue',
-                    'fields': 'fields',
-                },
-                'location_map': {
-                    'namespace': 'path',
-                    'list_options_label_selector': 'query',
-                    'list_options_field_selector': 'query',
-                    'list_options_watch': 'query',
-                    'list_options_allow_watch_bookmarks': 'query',
-                    'list_options_resource_version': 'query',
-                    'list_options_resource_version_match': 'query',
-                    'list_options_timeout_seconds': 'query',
-                    'list_options_limit': 'query',
-                    'list_options_continue': 'query',
-                    'fields': 'query',
-                },
-                'collection_format_map': {
-                }
-            },
-            headers_map={
-                'accept': [
-                    'application/json'
-                ],
-                'content_type': [],
-            },
-            api_client=api_client,
-            callable=__list_workflows
+        body_params = None
+        if 'body' in local_var_params:
+            body_params = local_var_params['body']
+        # HTTP header `Accept`
+        header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # HTTP header `Content-Type`
+        header_params['Content-Type'] = self.api_client.select_header_content_type(  # noqa: E501
+            ['application/json'])  # noqa: E501
+
+        # Authentication setting
+        auth_settings = []  # noqa: E501
+
+        return self.api_client.call_api(
+            '/api/v1/workflows/{namespace}/lint', 'POST',
+            path_params,
+            query_params,
+            header_params,
+            body=body_params,
+            post_params=form_params,
+            files=local_var_files,
+            response_type='IoArgoprojWorkflowV1alpha1Workflow',  # noqa: E501
+            auth_settings=auth_settings,
+            async_req=local_var_params.get('async_req'),
+            _return_http_data_only=local_var_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=local_var_params.get('_preload_content', True),
+            _request_timeout=local_var_params.get('_request_timeout'),
+            collection_formats=collection_formats)
+
+    def list_workflows(self, namespace, **kwargs):  # noqa: E501
+        """list_workflows  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.list_workflows(namespace, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str list_options_label_selector: A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional.
+        :param str list_options_field_selector: A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional.
+        :param bool list_options_watch: Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional.
+        :param bool list_options_allow_watch_bookmarks: allowWatchBookmarks requests watch events with type \"BOOKMARK\". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. If the feature gate WatchBookmarks is not enabled in apiserver, this field is ignored. +optional.
+        :param str list_options_resource_version: resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional
+        :param str list_options_resource_version_match: resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional
+        :param str list_options_timeout_seconds: Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional.
+        :param str list_options_limit: limit is a maximum number of responses to return for a list call. If more items exist, the server will set the `continue` field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.
+        :param str list_options_continue: The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.
+        :param str fields: Fields to be included or excluded in the response. e.g. \"items.spec,items.status.phase\", \"-items.status.nodes\".
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: IoArgoprojWorkflowV1alpha1WorkflowList
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        return self.list_workflows_with_http_info(namespace, **kwargs)  # noqa: E501
+
+    def list_workflows_with_http_info(self, namespace, **kwargs):  # noqa: E501
+        """list_workflows  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.list_workflows_with_http_info(namespace, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str list_options_label_selector: A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional.
+        :param str list_options_field_selector: A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional.
+        :param bool list_options_watch: Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional.
+        :param bool list_options_allow_watch_bookmarks: allowWatchBookmarks requests watch events with type \"BOOKMARK\". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. If the feature gate WatchBookmarks is not enabled in apiserver, this field is ignored. +optional.
+        :param str list_options_resource_version: resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional
+        :param str list_options_resource_version_match: resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional
+        :param str list_options_timeout_seconds: Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional.
+        :param str list_options_limit: limit is a maximum number of responses to return for a list call. If more items exist, the server will set the `continue` field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.
+        :param str list_options_continue: The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.
+        :param str fields: Fields to be included or excluded in the response. e.g. \"items.spec,items.status.phase\", \"-items.status.nodes\".
+        :param _return_http_data_only: response data without head status code
+                                       and headers
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: tuple(IoArgoprojWorkflowV1alpha1WorkflowList, status_code(int), headers(HTTPHeaderDict))
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        local_var_params = locals()
+
+        all_params = [
+            'namespace',
+            'list_options_label_selector',
+            'list_options_field_selector',
+            'list_options_watch',
+            'list_options_allow_watch_bookmarks',
+            'list_options_resource_version',
+            'list_options_resource_version_match',
+            'list_options_timeout_seconds',
+            'list_options_limit',
+            'list_options_continue',
+            'fields'
+        ]
+        all_params.extend(
+            [
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout'
+            ]
         )
 
-        def __pod_logs(
-            self,
-            namespace,
-            name,
-            pod_name,
-            **kwargs
-        ):
-            """DEPRECATED: Cannot work via HTTP if podName is an empty string. Use WorkflowLogs.  # noqa: E501
+        for key, val in six.iteritems(local_var_params['kwargs']):
+            if key not in all_params:
+                raise ApiTypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method list_workflows" % key
+                )
+            local_var_params[key] = val
+        del local_var_params['kwargs']
+        # verify the required parameter 'namespace' is set
+        if self.api_client.client_side_validation and ('namespace' not in local_var_params or  # noqa: E501
+                                                        local_var_params['namespace'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `namespace` when calling `list_workflows`")  # noqa: E501
 
-            This method makes a synchronous HTTP request by default. To make an
-            asynchronous HTTP request, please pass async_req=True
+        collection_formats = {}
 
-            >>> thread = api.pod_logs(namespace, name, pod_name, async_req=True)
-            >>> result = thread.get()
+        path_params = {}
+        if 'namespace' in local_var_params:
+            path_params['namespace'] = local_var_params['namespace']  # noqa: E501
 
-            Args:
-                namespace (str):
-                name (str):
-                pod_name (str):
+        query_params = []
+        if 'list_options_label_selector' in local_var_params and local_var_params['list_options_label_selector'] is not None:  # noqa: E501
+            query_params.append(('listOptions.labelSelector', local_var_params['list_options_label_selector']))  # noqa: E501
+        if 'list_options_field_selector' in local_var_params and local_var_params['list_options_field_selector'] is not None:  # noqa: E501
+            query_params.append(('listOptions.fieldSelector', local_var_params['list_options_field_selector']))  # noqa: E501
+        if 'list_options_watch' in local_var_params and local_var_params['list_options_watch'] is not None:  # noqa: E501
+            query_params.append(('listOptions.watch', local_var_params['list_options_watch']))  # noqa: E501
+        if 'list_options_allow_watch_bookmarks' in local_var_params and local_var_params['list_options_allow_watch_bookmarks'] is not None:  # noqa: E501
+            query_params.append(('listOptions.allowWatchBookmarks', local_var_params['list_options_allow_watch_bookmarks']))  # noqa: E501
+        if 'list_options_resource_version' in local_var_params and local_var_params['list_options_resource_version'] is not None:  # noqa: E501
+            query_params.append(('listOptions.resourceVersion', local_var_params['list_options_resource_version']))  # noqa: E501
+        if 'list_options_resource_version_match' in local_var_params and local_var_params['list_options_resource_version_match'] is not None:  # noqa: E501
+            query_params.append(('listOptions.resourceVersionMatch', local_var_params['list_options_resource_version_match']))  # noqa: E501
+        if 'list_options_timeout_seconds' in local_var_params and local_var_params['list_options_timeout_seconds'] is not None:  # noqa: E501
+            query_params.append(('listOptions.timeoutSeconds', local_var_params['list_options_timeout_seconds']))  # noqa: E501
+        if 'list_options_limit' in local_var_params and local_var_params['list_options_limit'] is not None:  # noqa: E501
+            query_params.append(('listOptions.limit', local_var_params['list_options_limit']))  # noqa: E501
+        if 'list_options_continue' in local_var_params and local_var_params['list_options_continue'] is not None:  # noqa: E501
+            query_params.append(('listOptions.continue', local_var_params['list_options_continue']))  # noqa: E501
+        if 'fields' in local_var_params and local_var_params['fields'] is not None:  # noqa: E501
+            query_params.append(('fields', local_var_params['fields']))  # noqa: E501
 
-            Keyword Args:
-                log_options_container (str): The container for which to stream logs. Defaults to only container if there is one container in the pod. +optional.. [optional]
-                log_options_follow (bool): Follow the log stream of the pod. Defaults to false. +optional.. [optional]
-                log_options_previous (bool): Return previous terminated container logs. Defaults to false. +optional.. [optional]
-                log_options_since_seconds (str): A relative time in seconds before the current time from which to show logs. If this value precedes the time a pod was started, only logs since the pod start will be returned. If this value is in the future, no logs will be returned. Only one of sinceSeconds or sinceTime may be specified. +optional.. [optional]
-                log_options_since_time_seconds (str): Represents seconds of UTC time since Unix epoch 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z inclusive.. [optional]
-                log_options_since_time_nanos (int): Non-negative fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values that count forward in time. Must be from 0 to 999,999,999 inclusive. This field may be limited in precision depending on context.. [optional]
-                log_options_timestamps (bool): If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line of log output. Defaults to false. +optional.. [optional]
-                log_options_tail_lines (str): If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime +optional.. [optional]
-                log_options_limit_bytes (str): If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional.. [optional]
-                log_options_insecure_skip_tls_verify_backend (bool): insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional.. [optional]
-                grep (str): [optional]
-                selector (str): [optional]
-                _return_http_data_only (bool): response data without head status
-                    code and headers. Default is True.
-                _preload_content (bool): if False, the urllib3.HTTPResponse object
-                    will be returned without reading/decoding response data.
-                    Default is True.
-                _request_timeout (int/float/tuple): timeout setting for this request. If
-                    one number provided, it will be total request timeout. It can also
-                    be a pair (tuple) of (connection, read) timeouts.
-                    Default is None.
-                _check_input_type (bool): specifies if type checking
-                    should be done one the data sent to the server.
-                    Default is True.
-                _check_return_type (bool): specifies if type checking
-                    should be done one the data received from the server.
-                    Default is True.
-                _host_index (int/None): specifies the index of the server
-                    that we want to use.
-                    Default is read from the configuration.
-                async_req (bool): execute request asynchronously
+        header_params = {}
 
-            Returns:
-                StreamResultOfIoArgoprojWorkflowV1alpha1LogEntry
-                    If the method is called asynchronously, returns the request
-                    thread.
-            """
-            kwargs['async_req'] = kwargs.get(
-                'async_req', False
-            )
-            kwargs['_return_http_data_only'] = kwargs.get(
-                '_return_http_data_only', True
-            )
-            kwargs['_preload_content'] = kwargs.get(
-                '_preload_content', True
-            )
-            kwargs['_request_timeout'] = kwargs.get(
-                '_request_timeout', None
-            )
-            kwargs['_check_input_type'] = kwargs.get(
-                '_check_input_type', True
-            )
-            kwargs['_check_return_type'] = kwargs.get(
-                '_check_return_type', True
-            )
-            kwargs['_host_index'] = kwargs.get('_host_index')
-            kwargs['namespace'] = \
-                namespace
-            kwargs['name'] = \
-                name
-            kwargs['pod_name'] = \
-                pod_name
-            return self.call_with_http_info(**kwargs)
+        form_params = []
+        local_var_files = {}
 
-        self.pod_logs = _Endpoint(
-            settings={
-                'response_type': (StreamResultOfIoArgoprojWorkflowV1alpha1LogEntry,),
-                'auth': [],
-                'endpoint_path': '/api/v1/workflows/{namespace}/{name}/{podName}/log',
-                'operation_id': 'pod_logs',
-                'http_method': 'GET',
-                'servers': None,
-            },
-            params_map={
-                'all': [
-                    'namespace',
-                    'name',
-                    'pod_name',
-                    'log_options_container',
-                    'log_options_follow',
-                    'log_options_previous',
-                    'log_options_since_seconds',
-                    'log_options_since_time_seconds',
-                    'log_options_since_time_nanos',
-                    'log_options_timestamps',
-                    'log_options_tail_lines',
-                    'log_options_limit_bytes',
-                    'log_options_insecure_skip_tls_verify_backend',
-                    'grep',
-                    'selector',
-                ],
-                'required': [
-                    'namespace',
-                    'name',
-                    'pod_name',
-                ],
-                'nullable': [
-                ],
-                'enum': [
-                ],
-                'validation': [
-                ]
-            },
-            root_map={
-                'validations': {
-                },
-                'allowed_values': {
-                },
-                'openapi_types': {
-                    'namespace':
-                        (str,),
-                    'name':
-                        (str,),
-                    'pod_name':
-                        (str,),
-                    'log_options_container':
-                        (str,),
-                    'log_options_follow':
-                        (bool,),
-                    'log_options_previous':
-                        (bool,),
-                    'log_options_since_seconds':
-                        (str,),
-                    'log_options_since_time_seconds':
-                        (str,),
-                    'log_options_since_time_nanos':
-                        (int,),
-                    'log_options_timestamps':
-                        (bool,),
-                    'log_options_tail_lines':
-                        (str,),
-                    'log_options_limit_bytes':
-                        (str,),
-                    'log_options_insecure_skip_tls_verify_backend':
-                        (bool,),
-                    'grep':
-                        (str,),
-                    'selector':
-                        (str,),
-                },
-                'attribute_map': {
-                    'namespace': 'namespace',
-                    'name': 'name',
-                    'pod_name': 'podName',
-                    'log_options_container': 'logOptions.container',
-                    'log_options_follow': 'logOptions.follow',
-                    'log_options_previous': 'logOptions.previous',
-                    'log_options_since_seconds': 'logOptions.sinceSeconds',
-                    'log_options_since_time_seconds': 'logOptions.sinceTime.seconds',
-                    'log_options_since_time_nanos': 'logOptions.sinceTime.nanos',
-                    'log_options_timestamps': 'logOptions.timestamps',
-                    'log_options_tail_lines': 'logOptions.tailLines',
-                    'log_options_limit_bytes': 'logOptions.limitBytes',
-                    'log_options_insecure_skip_tls_verify_backend': 'logOptions.insecureSkipTLSVerifyBackend',
-                    'grep': 'grep',
-                    'selector': 'selector',
-                },
-                'location_map': {
-                    'namespace': 'path',
-                    'name': 'path',
-                    'pod_name': 'path',
-                    'log_options_container': 'query',
-                    'log_options_follow': 'query',
-                    'log_options_previous': 'query',
-                    'log_options_since_seconds': 'query',
-                    'log_options_since_time_seconds': 'query',
-                    'log_options_since_time_nanos': 'query',
-                    'log_options_timestamps': 'query',
-                    'log_options_tail_lines': 'query',
-                    'log_options_limit_bytes': 'query',
-                    'log_options_insecure_skip_tls_verify_backend': 'query',
-                    'grep': 'query',
-                    'selector': 'query',
-                },
-                'collection_format_map': {
-                }
-            },
-            headers_map={
-                'accept': [
-                    'application/json'
-                ],
-                'content_type': [],
-            },
-            api_client=api_client,
-            callable=__pod_logs
+        body_params = None
+        # HTTP header `Accept`
+        header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # Authentication setting
+        auth_settings = []  # noqa: E501
+
+        return self.api_client.call_api(
+            '/api/v1/workflows/{namespace}', 'GET',
+            path_params,
+            query_params,
+            header_params,
+            body=body_params,
+            post_params=form_params,
+            files=local_var_files,
+            response_type='IoArgoprojWorkflowV1alpha1WorkflowList',  # noqa: E501
+            auth_settings=auth_settings,
+            async_req=local_var_params.get('async_req'),
+            _return_http_data_only=local_var_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=local_var_params.get('_preload_content', True),
+            _request_timeout=local_var_params.get('_request_timeout'),
+            collection_formats=collection_formats)
+
+    def pod_logs(self, namespace, name, pod_name, **kwargs):  # noqa: E501
+        """DEPRECATED: Cannot work via HTTP if podName is an empty string. Use WorkflowLogs.  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.pod_logs(namespace, name, pod_name, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str name: (required)
+        :param str pod_name: (required)
+        :param str log_options_container: The container for which to stream logs. Defaults to only container if there is one container in the pod. +optional.
+        :param bool log_options_follow: Follow the log stream of the pod. Defaults to false. +optional.
+        :param bool log_options_previous: Return previous terminated container logs. Defaults to false. +optional.
+        :param str log_options_since_seconds: A relative time in seconds before the current time from which to show logs. If this value precedes the time a pod was started, only logs since the pod start will be returned. If this value is in the future, no logs will be returned. Only one of sinceSeconds or sinceTime may be specified. +optional.
+        :param str log_options_since_time_seconds: Represents seconds of UTC time since Unix epoch 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z inclusive.
+        :param int log_options_since_time_nanos: Non-negative fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values that count forward in time. Must be from 0 to 999,999,999 inclusive. This field may be limited in precision depending on context.
+        :param bool log_options_timestamps: If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line of log output. Defaults to false. +optional.
+        :param str log_options_tail_lines: If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime +optional.
+        :param str log_options_limit_bytes: If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional.
+        :param bool log_options_insecure_skip_tls_verify_backend: insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional.
+        :param str grep:
+        :param str selector:
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: StreamResultOfIoArgoprojWorkflowV1alpha1LogEntry
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        return self.pod_logs_with_http_info(namespace, name, pod_name, **kwargs)  # noqa: E501
+
+    def pod_logs_with_http_info(self, namespace, name, pod_name, **kwargs):  # noqa: E501
+        """DEPRECATED: Cannot work via HTTP if podName is an empty string. Use WorkflowLogs.  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.pod_logs_with_http_info(namespace, name, pod_name, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str name: (required)
+        :param str pod_name: (required)
+        :param str log_options_container: The container for which to stream logs. Defaults to only container if there is one container in the pod. +optional.
+        :param bool log_options_follow: Follow the log stream of the pod. Defaults to false. +optional.
+        :param bool log_options_previous: Return previous terminated container logs. Defaults to false. +optional.
+        :param str log_options_since_seconds: A relative time in seconds before the current time from which to show logs. If this value precedes the time a pod was started, only logs since the pod start will be returned. If this value is in the future, no logs will be returned. Only one of sinceSeconds or sinceTime may be specified. +optional.
+        :param str log_options_since_time_seconds: Represents seconds of UTC time since Unix epoch 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z inclusive.
+        :param int log_options_since_time_nanos: Non-negative fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values that count forward in time. Must be from 0 to 999,999,999 inclusive. This field may be limited in precision depending on context.
+        :param bool log_options_timestamps: If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line of log output. Defaults to false. +optional.
+        :param str log_options_tail_lines: If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime +optional.
+        :param str log_options_limit_bytes: If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional.
+        :param bool log_options_insecure_skip_tls_verify_backend: insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional.
+        :param str grep:
+        :param str selector:
+        :param _return_http_data_only: response data without head status code
+                                       and headers
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: tuple(StreamResultOfIoArgoprojWorkflowV1alpha1LogEntry, status_code(int), headers(HTTPHeaderDict))
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        local_var_params = locals()
+
+        all_params = [
+            'namespace',
+            'name',
+            'pod_name',
+            'log_options_container',
+            'log_options_follow',
+            'log_options_previous',
+            'log_options_since_seconds',
+            'log_options_since_time_seconds',
+            'log_options_since_time_nanos',
+            'log_options_timestamps',
+            'log_options_tail_lines',
+            'log_options_limit_bytes',
+            'log_options_insecure_skip_tls_verify_backend',
+            'grep',
+            'selector'
+        ]
+        all_params.extend(
+            [
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout'
+            ]
         )
 
-        def __resubmit_workflow(
-            self,
-            namespace,
-            name,
-            body,
-            **kwargs
-        ):
-            """resubmit_workflow  # noqa: E501
+        for key, val in six.iteritems(local_var_params['kwargs']):
+            if key not in all_params:
+                raise ApiTypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method pod_logs" % key
+                )
+            local_var_params[key] = val
+        del local_var_params['kwargs']
+        # verify the required parameter 'namespace' is set
+        if self.api_client.client_side_validation and ('namespace' not in local_var_params or  # noqa: E501
+                                                        local_var_params['namespace'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `namespace` when calling `pod_logs`")  # noqa: E501
+        # verify the required parameter 'name' is set
+        if self.api_client.client_side_validation and ('name' not in local_var_params or  # noqa: E501
+                                                        local_var_params['name'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `name` when calling `pod_logs`")  # noqa: E501
+        # verify the required parameter 'pod_name' is set
+        if self.api_client.client_side_validation and ('pod_name' not in local_var_params or  # noqa: E501
+                                                        local_var_params['pod_name'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `pod_name` when calling `pod_logs`")  # noqa: E501
 
-            This method makes a synchronous HTTP request by default. To make an
-            asynchronous HTTP request, please pass async_req=True
+        collection_formats = {}
 
-            >>> thread = api.resubmit_workflow(namespace, name, body, async_req=True)
-            >>> result = thread.get()
+        path_params = {}
+        if 'namespace' in local_var_params:
+            path_params['namespace'] = local_var_params['namespace']  # noqa: E501
+        if 'name' in local_var_params:
+            path_params['name'] = local_var_params['name']  # noqa: E501
+        if 'pod_name' in local_var_params:
+            path_params['podName'] = local_var_params['pod_name']  # noqa: E501
 
-            Args:
-                namespace (str):
-                name (str):
-                body (IoArgoprojWorkflowV1alpha1WorkflowResubmitRequest):
+        query_params = []
+        if 'log_options_container' in local_var_params and local_var_params['log_options_container'] is not None:  # noqa: E501
+            query_params.append(('logOptions.container', local_var_params['log_options_container']))  # noqa: E501
+        if 'log_options_follow' in local_var_params and local_var_params['log_options_follow'] is not None:  # noqa: E501
+            query_params.append(('logOptions.follow', local_var_params['log_options_follow']))  # noqa: E501
+        if 'log_options_previous' in local_var_params and local_var_params['log_options_previous'] is not None:  # noqa: E501
+            query_params.append(('logOptions.previous', local_var_params['log_options_previous']))  # noqa: E501
+        if 'log_options_since_seconds' in local_var_params and local_var_params['log_options_since_seconds'] is not None:  # noqa: E501
+            query_params.append(('logOptions.sinceSeconds', local_var_params['log_options_since_seconds']))  # noqa: E501
+        if 'log_options_since_time_seconds' in local_var_params and local_var_params['log_options_since_time_seconds'] is not None:  # noqa: E501
+            query_params.append(('logOptions.sinceTime.seconds', local_var_params['log_options_since_time_seconds']))  # noqa: E501
+        if 'log_options_since_time_nanos' in local_var_params and local_var_params['log_options_since_time_nanos'] is not None:  # noqa: E501
+            query_params.append(('logOptions.sinceTime.nanos', local_var_params['log_options_since_time_nanos']))  # noqa: E501
+        if 'log_options_timestamps' in local_var_params and local_var_params['log_options_timestamps'] is not None:  # noqa: E501
+            query_params.append(('logOptions.timestamps', local_var_params['log_options_timestamps']))  # noqa: E501
+        if 'log_options_tail_lines' in local_var_params and local_var_params['log_options_tail_lines'] is not None:  # noqa: E501
+            query_params.append(('logOptions.tailLines', local_var_params['log_options_tail_lines']))  # noqa: E501
+        if 'log_options_limit_bytes' in local_var_params and local_var_params['log_options_limit_bytes'] is not None:  # noqa: E501
+            query_params.append(('logOptions.limitBytes', local_var_params['log_options_limit_bytes']))  # noqa: E501
+        if 'log_options_insecure_skip_tls_verify_backend' in local_var_params and local_var_params['log_options_insecure_skip_tls_verify_backend'] is not None:  # noqa: E501
+            query_params.append(('logOptions.insecureSkipTLSVerifyBackend', local_var_params['log_options_insecure_skip_tls_verify_backend']))  # noqa: E501
+        if 'grep' in local_var_params and local_var_params['grep'] is not None:  # noqa: E501
+            query_params.append(('grep', local_var_params['grep']))  # noqa: E501
+        if 'selector' in local_var_params and local_var_params['selector'] is not None:  # noqa: E501
+            query_params.append(('selector', local_var_params['selector']))  # noqa: E501
 
-            Keyword Args:
-                _return_http_data_only (bool): response data without head status
-                    code and headers. Default is True.
-                _preload_content (bool): if False, the urllib3.HTTPResponse object
-                    will be returned without reading/decoding response data.
-                    Default is True.
-                _request_timeout (int/float/tuple): timeout setting for this request. If
-                    one number provided, it will be total request timeout. It can also
-                    be a pair (tuple) of (connection, read) timeouts.
-                    Default is None.
-                _check_input_type (bool): specifies if type checking
-                    should be done one the data sent to the server.
-                    Default is True.
-                _check_return_type (bool): specifies if type checking
-                    should be done one the data received from the server.
-                    Default is True.
-                _host_index (int/None): specifies the index of the server
-                    that we want to use.
-                    Default is read from the configuration.
-                async_req (bool): execute request asynchronously
+        header_params = {}
 
-            Returns:
-                IoArgoprojWorkflowV1alpha1Workflow
-                    If the method is called asynchronously, returns the request
-                    thread.
-            """
-            kwargs['async_req'] = kwargs.get(
-                'async_req', False
-            )
-            kwargs['_return_http_data_only'] = kwargs.get(
-                '_return_http_data_only', True
-            )
-            kwargs['_preload_content'] = kwargs.get(
-                '_preload_content', True
-            )
-            kwargs['_request_timeout'] = kwargs.get(
-                '_request_timeout', None
-            )
-            kwargs['_check_input_type'] = kwargs.get(
-                '_check_input_type', True
-            )
-            kwargs['_check_return_type'] = kwargs.get(
-                '_check_return_type', True
-            )
-            kwargs['_host_index'] = kwargs.get('_host_index')
-            kwargs['namespace'] = \
-                namespace
-            kwargs['name'] = \
-                name
-            kwargs['body'] = \
-                body
-            return self.call_with_http_info(**kwargs)
+        form_params = []
+        local_var_files = {}
 
-        self.resubmit_workflow = _Endpoint(
-            settings={
-                'response_type': (IoArgoprojWorkflowV1alpha1Workflow,),
-                'auth': [],
-                'endpoint_path': '/api/v1/workflows/{namespace}/{name}/resubmit',
-                'operation_id': 'resubmit_workflow',
-                'http_method': 'PUT',
-                'servers': None,
-            },
-            params_map={
-                'all': [
-                    'namespace',
-                    'name',
-                    'body',
-                ],
-                'required': [
-                    'namespace',
-                    'name',
-                    'body',
-                ],
-                'nullable': [
-                ],
-                'enum': [
-                ],
-                'validation': [
-                ]
-            },
-            root_map={
-                'validations': {
-                },
-                'allowed_values': {
-                },
-                'openapi_types': {
-                    'namespace':
-                        (str,),
-                    'name':
-                        (str,),
-                    'body':
-                        (IoArgoprojWorkflowV1alpha1WorkflowResubmitRequest,),
-                },
-                'attribute_map': {
-                    'namespace': 'namespace',
-                    'name': 'name',
-                },
-                'location_map': {
-                    'namespace': 'path',
-                    'name': 'path',
-                    'body': 'body',
-                },
-                'collection_format_map': {
-                }
-            },
-            headers_map={
-                'accept': [
-                    'application/json'
-                ],
-                'content_type': [
-                    'application/json'
-                ]
-            },
-            api_client=api_client,
-            callable=__resubmit_workflow
+        body_params = None
+        # HTTP header `Accept`
+        header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # Authentication setting
+        auth_settings = []  # noqa: E501
+
+        return self.api_client.call_api(
+            '/api/v1/workflows/{namespace}/{name}/{podName}/log', 'GET',
+            path_params,
+            query_params,
+            header_params,
+            body=body_params,
+            post_params=form_params,
+            files=local_var_files,
+            response_type='StreamResultOfIoArgoprojWorkflowV1alpha1LogEntry',  # noqa: E501
+            auth_settings=auth_settings,
+            async_req=local_var_params.get('async_req'),
+            _return_http_data_only=local_var_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=local_var_params.get('_preload_content', True),
+            _request_timeout=local_var_params.get('_request_timeout'),
+            collection_formats=collection_formats)
+
+    def resubmit_workflow(self, namespace, name, body, **kwargs):  # noqa: E501
+        """resubmit_workflow  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.resubmit_workflow(namespace, name, body, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str name: (required)
+        :param IoArgoprojWorkflowV1alpha1WorkflowResubmitRequest body: (required)
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: IoArgoprojWorkflowV1alpha1Workflow
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        return self.resubmit_workflow_with_http_info(namespace, name, body, **kwargs)  # noqa: E501
+
+    def resubmit_workflow_with_http_info(self, namespace, name, body, **kwargs):  # noqa: E501
+        """resubmit_workflow  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.resubmit_workflow_with_http_info(namespace, name, body, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str name: (required)
+        :param IoArgoprojWorkflowV1alpha1WorkflowResubmitRequest body: (required)
+        :param _return_http_data_only: response data without head status code
+                                       and headers
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: tuple(IoArgoprojWorkflowV1alpha1Workflow, status_code(int), headers(HTTPHeaderDict))
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        local_var_params = locals()
+
+        all_params = [
+            'namespace',
+            'name',
+            'body'
+        ]
+        all_params.extend(
+            [
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout'
+            ]
         )
 
-        def __resume_workflow(
-            self,
-            namespace,
-            name,
-            body,
-            **kwargs
-        ):
-            """resume_workflow  # noqa: E501
+        for key, val in six.iteritems(local_var_params['kwargs']):
+            if key not in all_params:
+                raise ApiTypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method resubmit_workflow" % key
+                )
+            local_var_params[key] = val
+        del local_var_params['kwargs']
+        # verify the required parameter 'namespace' is set
+        if self.api_client.client_side_validation and ('namespace' not in local_var_params or  # noqa: E501
+                                                        local_var_params['namespace'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `namespace` when calling `resubmit_workflow`")  # noqa: E501
+        # verify the required parameter 'name' is set
+        if self.api_client.client_side_validation and ('name' not in local_var_params or  # noqa: E501
+                                                        local_var_params['name'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `name` when calling `resubmit_workflow`")  # noqa: E501
+        # verify the required parameter 'body' is set
+        if self.api_client.client_side_validation and ('body' not in local_var_params or  # noqa: E501
+                                                        local_var_params['body'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `body` when calling `resubmit_workflow`")  # noqa: E501
 
-            This method makes a synchronous HTTP request by default. To make an
-            asynchronous HTTP request, please pass async_req=True
+        collection_formats = {}
 
-            >>> thread = api.resume_workflow(namespace, name, body, async_req=True)
-            >>> result = thread.get()
+        path_params = {}
+        if 'namespace' in local_var_params:
+            path_params['namespace'] = local_var_params['namespace']  # noqa: E501
+        if 'name' in local_var_params:
+            path_params['name'] = local_var_params['name']  # noqa: E501
 
-            Args:
-                namespace (str):
-                name (str):
-                body (IoArgoprojWorkflowV1alpha1WorkflowResumeRequest):
+        query_params = []
 
-            Keyword Args:
-                _return_http_data_only (bool): response data without head status
-                    code and headers. Default is True.
-                _preload_content (bool): if False, the urllib3.HTTPResponse object
-                    will be returned without reading/decoding response data.
-                    Default is True.
-                _request_timeout (int/float/tuple): timeout setting for this request. If
-                    one number provided, it will be total request timeout. It can also
-                    be a pair (tuple) of (connection, read) timeouts.
-                    Default is None.
-                _check_input_type (bool): specifies if type checking
-                    should be done one the data sent to the server.
-                    Default is True.
-                _check_return_type (bool): specifies if type checking
-                    should be done one the data received from the server.
-                    Default is True.
-                _host_index (int/None): specifies the index of the server
-                    that we want to use.
-                    Default is read from the configuration.
-                async_req (bool): execute request asynchronously
+        header_params = {}
 
-            Returns:
-                IoArgoprojWorkflowV1alpha1Workflow
-                    If the method is called asynchronously, returns the request
-                    thread.
-            """
-            kwargs['async_req'] = kwargs.get(
-                'async_req', False
-            )
-            kwargs['_return_http_data_only'] = kwargs.get(
-                '_return_http_data_only', True
-            )
-            kwargs['_preload_content'] = kwargs.get(
-                '_preload_content', True
-            )
-            kwargs['_request_timeout'] = kwargs.get(
-                '_request_timeout', None
-            )
-            kwargs['_check_input_type'] = kwargs.get(
-                '_check_input_type', True
-            )
-            kwargs['_check_return_type'] = kwargs.get(
-                '_check_return_type', True
-            )
-            kwargs['_host_index'] = kwargs.get('_host_index')
-            kwargs['namespace'] = \
-                namespace
-            kwargs['name'] = \
-                name
-            kwargs['body'] = \
-                body
-            return self.call_with_http_info(**kwargs)
+        form_params = []
+        local_var_files = {}
 
-        self.resume_workflow = _Endpoint(
-            settings={
-                'response_type': (IoArgoprojWorkflowV1alpha1Workflow,),
-                'auth': [],
-                'endpoint_path': '/api/v1/workflows/{namespace}/{name}/resume',
-                'operation_id': 'resume_workflow',
-                'http_method': 'PUT',
-                'servers': None,
-            },
-            params_map={
-                'all': [
-                    'namespace',
-                    'name',
-                    'body',
-                ],
-                'required': [
-                    'namespace',
-                    'name',
-                    'body',
-                ],
-                'nullable': [
-                ],
-                'enum': [
-                ],
-                'validation': [
-                ]
-            },
-            root_map={
-                'validations': {
-                },
-                'allowed_values': {
-                },
-                'openapi_types': {
-                    'namespace':
-                        (str,),
-                    'name':
-                        (str,),
-                    'body':
-                        (IoArgoprojWorkflowV1alpha1WorkflowResumeRequest,),
-                },
-                'attribute_map': {
-                    'namespace': 'namespace',
-                    'name': 'name',
-                },
-                'location_map': {
-                    'namespace': 'path',
-                    'name': 'path',
-                    'body': 'body',
-                },
-                'collection_format_map': {
-                }
-            },
-            headers_map={
-                'accept': [
-                    'application/json'
-                ],
-                'content_type': [
-                    'application/json'
-                ]
-            },
-            api_client=api_client,
-            callable=__resume_workflow
+        body_params = None
+        if 'body' in local_var_params:
+            body_params = local_var_params['body']
+        # HTTP header `Accept`
+        header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # HTTP header `Content-Type`
+        header_params['Content-Type'] = self.api_client.select_header_content_type(  # noqa: E501
+            ['application/json'])  # noqa: E501
+
+        # Authentication setting
+        auth_settings = []  # noqa: E501
+
+        return self.api_client.call_api(
+            '/api/v1/workflows/{namespace}/{name}/resubmit', 'PUT',
+            path_params,
+            query_params,
+            header_params,
+            body=body_params,
+            post_params=form_params,
+            files=local_var_files,
+            response_type='IoArgoprojWorkflowV1alpha1Workflow',  # noqa: E501
+            auth_settings=auth_settings,
+            async_req=local_var_params.get('async_req'),
+            _return_http_data_only=local_var_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=local_var_params.get('_preload_content', True),
+            _request_timeout=local_var_params.get('_request_timeout'),
+            collection_formats=collection_formats)
+
+    def resume_workflow(self, namespace, name, body, **kwargs):  # noqa: E501
+        """resume_workflow  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.resume_workflow(namespace, name, body, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str name: (required)
+        :param IoArgoprojWorkflowV1alpha1WorkflowResumeRequest body: (required)
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: IoArgoprojWorkflowV1alpha1Workflow
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        return self.resume_workflow_with_http_info(namespace, name, body, **kwargs)  # noqa: E501
+
+    def resume_workflow_with_http_info(self, namespace, name, body, **kwargs):  # noqa: E501
+        """resume_workflow  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.resume_workflow_with_http_info(namespace, name, body, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str name: (required)
+        :param IoArgoprojWorkflowV1alpha1WorkflowResumeRequest body: (required)
+        :param _return_http_data_only: response data without head status code
+                                       and headers
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: tuple(IoArgoprojWorkflowV1alpha1Workflow, status_code(int), headers(HTTPHeaderDict))
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        local_var_params = locals()
+
+        all_params = [
+            'namespace',
+            'name',
+            'body'
+        ]
+        all_params.extend(
+            [
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout'
+            ]
         )
 
-        def __retry_workflow(
-            self,
-            namespace,
-            name,
-            body,
-            **kwargs
-        ):
-            """retry_workflow  # noqa: E501
+        for key, val in six.iteritems(local_var_params['kwargs']):
+            if key not in all_params:
+                raise ApiTypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method resume_workflow" % key
+                )
+            local_var_params[key] = val
+        del local_var_params['kwargs']
+        # verify the required parameter 'namespace' is set
+        if self.api_client.client_side_validation and ('namespace' not in local_var_params or  # noqa: E501
+                                                        local_var_params['namespace'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `namespace` when calling `resume_workflow`")  # noqa: E501
+        # verify the required parameter 'name' is set
+        if self.api_client.client_side_validation and ('name' not in local_var_params or  # noqa: E501
+                                                        local_var_params['name'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `name` when calling `resume_workflow`")  # noqa: E501
+        # verify the required parameter 'body' is set
+        if self.api_client.client_side_validation and ('body' not in local_var_params or  # noqa: E501
+                                                        local_var_params['body'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `body` when calling `resume_workflow`")  # noqa: E501
 
-            This method makes a synchronous HTTP request by default. To make an
-            asynchronous HTTP request, please pass async_req=True
+        collection_formats = {}
 
-            >>> thread = api.retry_workflow(namespace, name, body, async_req=True)
-            >>> result = thread.get()
+        path_params = {}
+        if 'namespace' in local_var_params:
+            path_params['namespace'] = local_var_params['namespace']  # noqa: E501
+        if 'name' in local_var_params:
+            path_params['name'] = local_var_params['name']  # noqa: E501
 
-            Args:
-                namespace (str):
-                name (str):
-                body (IoArgoprojWorkflowV1alpha1WorkflowRetryRequest):
+        query_params = []
 
-            Keyword Args:
-                _return_http_data_only (bool): response data without head status
-                    code and headers. Default is True.
-                _preload_content (bool): if False, the urllib3.HTTPResponse object
-                    will be returned without reading/decoding response data.
-                    Default is True.
-                _request_timeout (int/float/tuple): timeout setting for this request. If
-                    one number provided, it will be total request timeout. It can also
-                    be a pair (tuple) of (connection, read) timeouts.
-                    Default is None.
-                _check_input_type (bool): specifies if type checking
-                    should be done one the data sent to the server.
-                    Default is True.
-                _check_return_type (bool): specifies if type checking
-                    should be done one the data received from the server.
-                    Default is True.
-                _host_index (int/None): specifies the index of the server
-                    that we want to use.
-                    Default is read from the configuration.
-                async_req (bool): execute request asynchronously
+        header_params = {}
 
-            Returns:
-                IoArgoprojWorkflowV1alpha1Workflow
-                    If the method is called asynchronously, returns the request
-                    thread.
-            """
-            kwargs['async_req'] = kwargs.get(
-                'async_req', False
-            )
-            kwargs['_return_http_data_only'] = kwargs.get(
-                '_return_http_data_only', True
-            )
-            kwargs['_preload_content'] = kwargs.get(
-                '_preload_content', True
-            )
-            kwargs['_request_timeout'] = kwargs.get(
-                '_request_timeout', None
-            )
-            kwargs['_check_input_type'] = kwargs.get(
-                '_check_input_type', True
-            )
-            kwargs['_check_return_type'] = kwargs.get(
-                '_check_return_type', True
-            )
-            kwargs['_host_index'] = kwargs.get('_host_index')
-            kwargs['namespace'] = \
-                namespace
-            kwargs['name'] = \
-                name
-            kwargs['body'] = \
-                body
-            return self.call_with_http_info(**kwargs)
+        form_params = []
+        local_var_files = {}
 
-        self.retry_workflow = _Endpoint(
-            settings={
-                'response_type': (IoArgoprojWorkflowV1alpha1Workflow,),
-                'auth': [],
-                'endpoint_path': '/api/v1/workflows/{namespace}/{name}/retry',
-                'operation_id': 'retry_workflow',
-                'http_method': 'PUT',
-                'servers': None,
-            },
-            params_map={
-                'all': [
-                    'namespace',
-                    'name',
-                    'body',
-                ],
-                'required': [
-                    'namespace',
-                    'name',
-                    'body',
-                ],
-                'nullable': [
-                ],
-                'enum': [
-                ],
-                'validation': [
-                ]
-            },
-            root_map={
-                'validations': {
-                },
-                'allowed_values': {
-                },
-                'openapi_types': {
-                    'namespace':
-                        (str,),
-                    'name':
-                        (str,),
-                    'body':
-                        (IoArgoprojWorkflowV1alpha1WorkflowRetryRequest,),
-                },
-                'attribute_map': {
-                    'namespace': 'namespace',
-                    'name': 'name',
-                },
-                'location_map': {
-                    'namespace': 'path',
-                    'name': 'path',
-                    'body': 'body',
-                },
-                'collection_format_map': {
-                }
-            },
-            headers_map={
-                'accept': [
-                    'application/json'
-                ],
-                'content_type': [
-                    'application/json'
-                ]
-            },
-            api_client=api_client,
-            callable=__retry_workflow
+        body_params = None
+        if 'body' in local_var_params:
+            body_params = local_var_params['body']
+        # HTTP header `Accept`
+        header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # HTTP header `Content-Type`
+        header_params['Content-Type'] = self.api_client.select_header_content_type(  # noqa: E501
+            ['application/json'])  # noqa: E501
+
+        # Authentication setting
+        auth_settings = []  # noqa: E501
+
+        return self.api_client.call_api(
+            '/api/v1/workflows/{namespace}/{name}/resume', 'PUT',
+            path_params,
+            query_params,
+            header_params,
+            body=body_params,
+            post_params=form_params,
+            files=local_var_files,
+            response_type='IoArgoprojWorkflowV1alpha1Workflow',  # noqa: E501
+            auth_settings=auth_settings,
+            async_req=local_var_params.get('async_req'),
+            _return_http_data_only=local_var_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=local_var_params.get('_preload_content', True),
+            _request_timeout=local_var_params.get('_request_timeout'),
+            collection_formats=collection_formats)
+
+    def retry_workflow(self, namespace, name, body, **kwargs):  # noqa: E501
+        """retry_workflow  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.retry_workflow(namespace, name, body, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str name: (required)
+        :param IoArgoprojWorkflowV1alpha1WorkflowRetryRequest body: (required)
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: IoArgoprojWorkflowV1alpha1Workflow
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        return self.retry_workflow_with_http_info(namespace, name, body, **kwargs)  # noqa: E501
+
+    def retry_workflow_with_http_info(self, namespace, name, body, **kwargs):  # noqa: E501
+        """retry_workflow  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.retry_workflow_with_http_info(namespace, name, body, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str name: (required)
+        :param IoArgoprojWorkflowV1alpha1WorkflowRetryRequest body: (required)
+        :param _return_http_data_only: response data without head status code
+                                       and headers
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: tuple(IoArgoprojWorkflowV1alpha1Workflow, status_code(int), headers(HTTPHeaderDict))
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        local_var_params = locals()
+
+        all_params = [
+            'namespace',
+            'name',
+            'body'
+        ]
+        all_params.extend(
+            [
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout'
+            ]
         )
 
-        def __set_workflow(
-            self,
-            namespace,
-            name,
-            body,
-            **kwargs
-        ):
-            """set_workflow  # noqa: E501
+        for key, val in six.iteritems(local_var_params['kwargs']):
+            if key not in all_params:
+                raise ApiTypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method retry_workflow" % key
+                )
+            local_var_params[key] = val
+        del local_var_params['kwargs']
+        # verify the required parameter 'namespace' is set
+        if self.api_client.client_side_validation and ('namespace' not in local_var_params or  # noqa: E501
+                                                        local_var_params['namespace'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `namespace` when calling `retry_workflow`")  # noqa: E501
+        # verify the required parameter 'name' is set
+        if self.api_client.client_side_validation and ('name' not in local_var_params or  # noqa: E501
+                                                        local_var_params['name'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `name` when calling `retry_workflow`")  # noqa: E501
+        # verify the required parameter 'body' is set
+        if self.api_client.client_side_validation and ('body' not in local_var_params or  # noqa: E501
+                                                        local_var_params['body'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `body` when calling `retry_workflow`")  # noqa: E501
 
-            This method makes a synchronous HTTP request by default. To make an
-            asynchronous HTTP request, please pass async_req=True
+        collection_formats = {}
 
-            >>> thread = api.set_workflow(namespace, name, body, async_req=True)
-            >>> result = thread.get()
+        path_params = {}
+        if 'namespace' in local_var_params:
+            path_params['namespace'] = local_var_params['namespace']  # noqa: E501
+        if 'name' in local_var_params:
+            path_params['name'] = local_var_params['name']  # noqa: E501
 
-            Args:
-                namespace (str):
-                name (str):
-                body (IoArgoprojWorkflowV1alpha1WorkflowSetRequest):
+        query_params = []
 
-            Keyword Args:
-                _return_http_data_only (bool): response data without head status
-                    code and headers. Default is True.
-                _preload_content (bool): if False, the urllib3.HTTPResponse object
-                    will be returned without reading/decoding response data.
-                    Default is True.
-                _request_timeout (int/float/tuple): timeout setting for this request. If
-                    one number provided, it will be total request timeout. It can also
-                    be a pair (tuple) of (connection, read) timeouts.
-                    Default is None.
-                _check_input_type (bool): specifies if type checking
-                    should be done one the data sent to the server.
-                    Default is True.
-                _check_return_type (bool): specifies if type checking
-                    should be done one the data received from the server.
-                    Default is True.
-                _host_index (int/None): specifies the index of the server
-                    that we want to use.
-                    Default is read from the configuration.
-                async_req (bool): execute request asynchronously
+        header_params = {}
 
-            Returns:
-                IoArgoprojWorkflowV1alpha1Workflow
-                    If the method is called asynchronously, returns the request
-                    thread.
-            """
-            kwargs['async_req'] = kwargs.get(
-                'async_req', False
-            )
-            kwargs['_return_http_data_only'] = kwargs.get(
-                '_return_http_data_only', True
-            )
-            kwargs['_preload_content'] = kwargs.get(
-                '_preload_content', True
-            )
-            kwargs['_request_timeout'] = kwargs.get(
-                '_request_timeout', None
-            )
-            kwargs['_check_input_type'] = kwargs.get(
-                '_check_input_type', True
-            )
-            kwargs['_check_return_type'] = kwargs.get(
-                '_check_return_type', True
-            )
-            kwargs['_host_index'] = kwargs.get('_host_index')
-            kwargs['namespace'] = \
-                namespace
-            kwargs['name'] = \
-                name
-            kwargs['body'] = \
-                body
-            return self.call_with_http_info(**kwargs)
+        form_params = []
+        local_var_files = {}
 
-        self.set_workflow = _Endpoint(
-            settings={
-                'response_type': (IoArgoprojWorkflowV1alpha1Workflow,),
-                'auth': [],
-                'endpoint_path': '/api/v1/workflows/{namespace}/{name}/set',
-                'operation_id': 'set_workflow',
-                'http_method': 'PUT',
-                'servers': None,
-            },
-            params_map={
-                'all': [
-                    'namespace',
-                    'name',
-                    'body',
-                ],
-                'required': [
-                    'namespace',
-                    'name',
-                    'body',
-                ],
-                'nullable': [
-                ],
-                'enum': [
-                ],
-                'validation': [
-                ]
-            },
-            root_map={
-                'validations': {
-                },
-                'allowed_values': {
-                },
-                'openapi_types': {
-                    'namespace':
-                        (str,),
-                    'name':
-                        (str,),
-                    'body':
-                        (IoArgoprojWorkflowV1alpha1WorkflowSetRequest,),
-                },
-                'attribute_map': {
-                    'namespace': 'namespace',
-                    'name': 'name',
-                },
-                'location_map': {
-                    'namespace': 'path',
-                    'name': 'path',
-                    'body': 'body',
-                },
-                'collection_format_map': {
-                }
-            },
-            headers_map={
-                'accept': [
-                    'application/json'
-                ],
-                'content_type': [
-                    'application/json'
-                ]
-            },
-            api_client=api_client,
-            callable=__set_workflow
+        body_params = None
+        if 'body' in local_var_params:
+            body_params = local_var_params['body']
+        # HTTP header `Accept`
+        header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # HTTP header `Content-Type`
+        header_params['Content-Type'] = self.api_client.select_header_content_type(  # noqa: E501
+            ['application/json'])  # noqa: E501
+
+        # Authentication setting
+        auth_settings = []  # noqa: E501
+
+        return self.api_client.call_api(
+            '/api/v1/workflows/{namespace}/{name}/retry', 'PUT',
+            path_params,
+            query_params,
+            header_params,
+            body=body_params,
+            post_params=form_params,
+            files=local_var_files,
+            response_type='IoArgoprojWorkflowV1alpha1Workflow',  # noqa: E501
+            auth_settings=auth_settings,
+            async_req=local_var_params.get('async_req'),
+            _return_http_data_only=local_var_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=local_var_params.get('_preload_content', True),
+            _request_timeout=local_var_params.get('_request_timeout'),
+            collection_formats=collection_formats)
+
+    def set_workflow(self, namespace, name, body, **kwargs):  # noqa: E501
+        """set_workflow  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.set_workflow(namespace, name, body, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str name: (required)
+        :param IoArgoprojWorkflowV1alpha1WorkflowSetRequest body: (required)
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: IoArgoprojWorkflowV1alpha1Workflow
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        return self.set_workflow_with_http_info(namespace, name, body, **kwargs)  # noqa: E501
+
+    def set_workflow_with_http_info(self, namespace, name, body, **kwargs):  # noqa: E501
+        """set_workflow  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.set_workflow_with_http_info(namespace, name, body, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str name: (required)
+        :param IoArgoprojWorkflowV1alpha1WorkflowSetRequest body: (required)
+        :param _return_http_data_only: response data without head status code
+                                       and headers
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: tuple(IoArgoprojWorkflowV1alpha1Workflow, status_code(int), headers(HTTPHeaderDict))
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        local_var_params = locals()
+
+        all_params = [
+            'namespace',
+            'name',
+            'body'
+        ]
+        all_params.extend(
+            [
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout'
+            ]
         )
 
-        def __stop_workflow(
-            self,
-            namespace,
-            name,
-            body,
-            **kwargs
-        ):
-            """stop_workflow  # noqa: E501
+        for key, val in six.iteritems(local_var_params['kwargs']):
+            if key not in all_params:
+                raise ApiTypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method set_workflow" % key
+                )
+            local_var_params[key] = val
+        del local_var_params['kwargs']
+        # verify the required parameter 'namespace' is set
+        if self.api_client.client_side_validation and ('namespace' not in local_var_params or  # noqa: E501
+                                                        local_var_params['namespace'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `namespace` when calling `set_workflow`")  # noqa: E501
+        # verify the required parameter 'name' is set
+        if self.api_client.client_side_validation and ('name' not in local_var_params or  # noqa: E501
+                                                        local_var_params['name'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `name` when calling `set_workflow`")  # noqa: E501
+        # verify the required parameter 'body' is set
+        if self.api_client.client_side_validation and ('body' not in local_var_params or  # noqa: E501
+                                                        local_var_params['body'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `body` when calling `set_workflow`")  # noqa: E501
 
-            This method makes a synchronous HTTP request by default. To make an
-            asynchronous HTTP request, please pass async_req=True
+        collection_formats = {}
 
-            >>> thread = api.stop_workflow(namespace, name, body, async_req=True)
-            >>> result = thread.get()
+        path_params = {}
+        if 'namespace' in local_var_params:
+            path_params['namespace'] = local_var_params['namespace']  # noqa: E501
+        if 'name' in local_var_params:
+            path_params['name'] = local_var_params['name']  # noqa: E501
 
-            Args:
-                namespace (str):
-                name (str):
-                body (IoArgoprojWorkflowV1alpha1WorkflowStopRequest):
+        query_params = []
 
-            Keyword Args:
-                _return_http_data_only (bool): response data without head status
-                    code and headers. Default is True.
-                _preload_content (bool): if False, the urllib3.HTTPResponse object
-                    will be returned without reading/decoding response data.
-                    Default is True.
-                _request_timeout (int/float/tuple): timeout setting for this request. If
-                    one number provided, it will be total request timeout. It can also
-                    be a pair (tuple) of (connection, read) timeouts.
-                    Default is None.
-                _check_input_type (bool): specifies if type checking
-                    should be done one the data sent to the server.
-                    Default is True.
-                _check_return_type (bool): specifies if type checking
-                    should be done one the data received from the server.
-                    Default is True.
-                _host_index (int/None): specifies the index of the server
-                    that we want to use.
-                    Default is read from the configuration.
-                async_req (bool): execute request asynchronously
+        header_params = {}
 
-            Returns:
-                IoArgoprojWorkflowV1alpha1Workflow
-                    If the method is called asynchronously, returns the request
-                    thread.
-            """
-            kwargs['async_req'] = kwargs.get(
-                'async_req', False
-            )
-            kwargs['_return_http_data_only'] = kwargs.get(
-                '_return_http_data_only', True
-            )
-            kwargs['_preload_content'] = kwargs.get(
-                '_preload_content', True
-            )
-            kwargs['_request_timeout'] = kwargs.get(
-                '_request_timeout', None
-            )
-            kwargs['_check_input_type'] = kwargs.get(
-                '_check_input_type', True
-            )
-            kwargs['_check_return_type'] = kwargs.get(
-                '_check_return_type', True
-            )
-            kwargs['_host_index'] = kwargs.get('_host_index')
-            kwargs['namespace'] = \
-                namespace
-            kwargs['name'] = \
-                name
-            kwargs['body'] = \
-                body
-            return self.call_with_http_info(**kwargs)
+        form_params = []
+        local_var_files = {}
 
-        self.stop_workflow = _Endpoint(
-            settings={
-                'response_type': (IoArgoprojWorkflowV1alpha1Workflow,),
-                'auth': [],
-                'endpoint_path': '/api/v1/workflows/{namespace}/{name}/stop',
-                'operation_id': 'stop_workflow',
-                'http_method': 'PUT',
-                'servers': None,
-            },
-            params_map={
-                'all': [
-                    'namespace',
-                    'name',
-                    'body',
-                ],
-                'required': [
-                    'namespace',
-                    'name',
-                    'body',
-                ],
-                'nullable': [
-                ],
-                'enum': [
-                ],
-                'validation': [
-                ]
-            },
-            root_map={
-                'validations': {
-                },
-                'allowed_values': {
-                },
-                'openapi_types': {
-                    'namespace':
-                        (str,),
-                    'name':
-                        (str,),
-                    'body':
-                        (IoArgoprojWorkflowV1alpha1WorkflowStopRequest,),
-                },
-                'attribute_map': {
-                    'namespace': 'namespace',
-                    'name': 'name',
-                },
-                'location_map': {
-                    'namespace': 'path',
-                    'name': 'path',
-                    'body': 'body',
-                },
-                'collection_format_map': {
-                }
-            },
-            headers_map={
-                'accept': [
-                    'application/json'
-                ],
-                'content_type': [
-                    'application/json'
-                ]
-            },
-            api_client=api_client,
-            callable=__stop_workflow
+        body_params = None
+        if 'body' in local_var_params:
+            body_params = local_var_params['body']
+        # HTTP header `Accept`
+        header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # HTTP header `Content-Type`
+        header_params['Content-Type'] = self.api_client.select_header_content_type(  # noqa: E501
+            ['application/json'])  # noqa: E501
+
+        # Authentication setting
+        auth_settings = []  # noqa: E501
+
+        return self.api_client.call_api(
+            '/api/v1/workflows/{namespace}/{name}/set', 'PUT',
+            path_params,
+            query_params,
+            header_params,
+            body=body_params,
+            post_params=form_params,
+            files=local_var_files,
+            response_type='IoArgoprojWorkflowV1alpha1Workflow',  # noqa: E501
+            auth_settings=auth_settings,
+            async_req=local_var_params.get('async_req'),
+            _return_http_data_only=local_var_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=local_var_params.get('_preload_content', True),
+            _request_timeout=local_var_params.get('_request_timeout'),
+            collection_formats=collection_formats)
+
+    def stop_workflow(self, namespace, name, body, **kwargs):  # noqa: E501
+        """stop_workflow  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.stop_workflow(namespace, name, body, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str name: (required)
+        :param IoArgoprojWorkflowV1alpha1WorkflowStopRequest body: (required)
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: IoArgoprojWorkflowV1alpha1Workflow
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        return self.stop_workflow_with_http_info(namespace, name, body, **kwargs)  # noqa: E501
+
+    def stop_workflow_with_http_info(self, namespace, name, body, **kwargs):  # noqa: E501
+        """stop_workflow  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.stop_workflow_with_http_info(namespace, name, body, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str name: (required)
+        :param IoArgoprojWorkflowV1alpha1WorkflowStopRequest body: (required)
+        :param _return_http_data_only: response data without head status code
+                                       and headers
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: tuple(IoArgoprojWorkflowV1alpha1Workflow, status_code(int), headers(HTTPHeaderDict))
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        local_var_params = locals()
+
+        all_params = [
+            'namespace',
+            'name',
+            'body'
+        ]
+        all_params.extend(
+            [
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout'
+            ]
         )
 
-        def __submit_workflow(
-            self,
-            namespace,
-            body,
-            **kwargs
-        ):
-            """submit_workflow  # noqa: E501
+        for key, val in six.iteritems(local_var_params['kwargs']):
+            if key not in all_params:
+                raise ApiTypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method stop_workflow" % key
+                )
+            local_var_params[key] = val
+        del local_var_params['kwargs']
+        # verify the required parameter 'namespace' is set
+        if self.api_client.client_side_validation and ('namespace' not in local_var_params or  # noqa: E501
+                                                        local_var_params['namespace'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `namespace` when calling `stop_workflow`")  # noqa: E501
+        # verify the required parameter 'name' is set
+        if self.api_client.client_side_validation and ('name' not in local_var_params or  # noqa: E501
+                                                        local_var_params['name'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `name` when calling `stop_workflow`")  # noqa: E501
+        # verify the required parameter 'body' is set
+        if self.api_client.client_side_validation and ('body' not in local_var_params or  # noqa: E501
+                                                        local_var_params['body'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `body` when calling `stop_workflow`")  # noqa: E501
 
-            This method makes a synchronous HTTP request by default. To make an
-            asynchronous HTTP request, please pass async_req=True
+        collection_formats = {}
 
-            >>> thread = api.submit_workflow(namespace, body, async_req=True)
-            >>> result = thread.get()
+        path_params = {}
+        if 'namespace' in local_var_params:
+            path_params['namespace'] = local_var_params['namespace']  # noqa: E501
+        if 'name' in local_var_params:
+            path_params['name'] = local_var_params['name']  # noqa: E501
 
-            Args:
-                namespace (str):
-                body (IoArgoprojWorkflowV1alpha1WorkflowSubmitRequest):
+        query_params = []
 
-            Keyword Args:
-                _return_http_data_only (bool): response data without head status
-                    code and headers. Default is True.
-                _preload_content (bool): if False, the urllib3.HTTPResponse object
-                    will be returned without reading/decoding response data.
-                    Default is True.
-                _request_timeout (int/float/tuple): timeout setting for this request. If
-                    one number provided, it will be total request timeout. It can also
-                    be a pair (tuple) of (connection, read) timeouts.
-                    Default is None.
-                _check_input_type (bool): specifies if type checking
-                    should be done one the data sent to the server.
-                    Default is True.
-                _check_return_type (bool): specifies if type checking
-                    should be done one the data received from the server.
-                    Default is True.
-                _host_index (int/None): specifies the index of the server
-                    that we want to use.
-                    Default is read from the configuration.
-                async_req (bool): execute request asynchronously
+        header_params = {}
 
-            Returns:
-                IoArgoprojWorkflowV1alpha1Workflow
-                    If the method is called asynchronously, returns the request
-                    thread.
-            """
-            kwargs['async_req'] = kwargs.get(
-                'async_req', False
-            )
-            kwargs['_return_http_data_only'] = kwargs.get(
-                '_return_http_data_only', True
-            )
-            kwargs['_preload_content'] = kwargs.get(
-                '_preload_content', True
-            )
-            kwargs['_request_timeout'] = kwargs.get(
-                '_request_timeout', None
-            )
-            kwargs['_check_input_type'] = kwargs.get(
-                '_check_input_type', True
-            )
-            kwargs['_check_return_type'] = kwargs.get(
-                '_check_return_type', True
-            )
-            kwargs['_host_index'] = kwargs.get('_host_index')
-            kwargs['namespace'] = \
-                namespace
-            kwargs['body'] = \
-                body
-            return self.call_with_http_info(**kwargs)
+        form_params = []
+        local_var_files = {}
 
-        self.submit_workflow = _Endpoint(
-            settings={
-                'response_type': (IoArgoprojWorkflowV1alpha1Workflow,),
-                'auth': [],
-                'endpoint_path': '/api/v1/workflows/{namespace}/submit',
-                'operation_id': 'submit_workflow',
-                'http_method': 'POST',
-                'servers': None,
-            },
-            params_map={
-                'all': [
-                    'namespace',
-                    'body',
-                ],
-                'required': [
-                    'namespace',
-                    'body',
-                ],
-                'nullable': [
-                ],
-                'enum': [
-                ],
-                'validation': [
-                ]
-            },
-            root_map={
-                'validations': {
-                },
-                'allowed_values': {
-                },
-                'openapi_types': {
-                    'namespace':
-                        (str,),
-                    'body':
-                        (IoArgoprojWorkflowV1alpha1WorkflowSubmitRequest,),
-                },
-                'attribute_map': {
-                    'namespace': 'namespace',
-                },
-                'location_map': {
-                    'namespace': 'path',
-                    'body': 'body',
-                },
-                'collection_format_map': {
-                }
-            },
-            headers_map={
-                'accept': [
-                    'application/json'
-                ],
-                'content_type': [
-                    'application/json'
-                ]
-            },
-            api_client=api_client,
-            callable=__submit_workflow
+        body_params = None
+        if 'body' in local_var_params:
+            body_params = local_var_params['body']
+        # HTTP header `Accept`
+        header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # HTTP header `Content-Type`
+        header_params['Content-Type'] = self.api_client.select_header_content_type(  # noqa: E501
+            ['application/json'])  # noqa: E501
+
+        # Authentication setting
+        auth_settings = []  # noqa: E501
+
+        return self.api_client.call_api(
+            '/api/v1/workflows/{namespace}/{name}/stop', 'PUT',
+            path_params,
+            query_params,
+            header_params,
+            body=body_params,
+            post_params=form_params,
+            files=local_var_files,
+            response_type='IoArgoprojWorkflowV1alpha1Workflow',  # noqa: E501
+            auth_settings=auth_settings,
+            async_req=local_var_params.get('async_req'),
+            _return_http_data_only=local_var_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=local_var_params.get('_preload_content', True),
+            _request_timeout=local_var_params.get('_request_timeout'),
+            collection_formats=collection_formats)
+
+    def submit_workflow(self, namespace, body, **kwargs):  # noqa: E501
+        """submit_workflow  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.submit_workflow(namespace, body, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param IoArgoprojWorkflowV1alpha1WorkflowSubmitRequest body: (required)
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: IoArgoprojWorkflowV1alpha1Workflow
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        return self.submit_workflow_with_http_info(namespace, body, **kwargs)  # noqa: E501
+
+    def submit_workflow_with_http_info(self, namespace, body, **kwargs):  # noqa: E501
+        """submit_workflow  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.submit_workflow_with_http_info(namespace, body, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param IoArgoprojWorkflowV1alpha1WorkflowSubmitRequest body: (required)
+        :param _return_http_data_only: response data without head status code
+                                       and headers
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: tuple(IoArgoprojWorkflowV1alpha1Workflow, status_code(int), headers(HTTPHeaderDict))
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        local_var_params = locals()
+
+        all_params = [
+            'namespace',
+            'body'
+        ]
+        all_params.extend(
+            [
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout'
+            ]
         )
 
-        def __suspend_workflow(
-            self,
-            namespace,
-            name,
-            body,
-            **kwargs
-        ):
-            """suspend_workflow  # noqa: E501
+        for key, val in six.iteritems(local_var_params['kwargs']):
+            if key not in all_params:
+                raise ApiTypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method submit_workflow" % key
+                )
+            local_var_params[key] = val
+        del local_var_params['kwargs']
+        # verify the required parameter 'namespace' is set
+        if self.api_client.client_side_validation and ('namespace' not in local_var_params or  # noqa: E501
+                                                        local_var_params['namespace'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `namespace` when calling `submit_workflow`")  # noqa: E501
+        # verify the required parameter 'body' is set
+        if self.api_client.client_side_validation and ('body' not in local_var_params or  # noqa: E501
+                                                        local_var_params['body'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `body` when calling `submit_workflow`")  # noqa: E501
 
-            This method makes a synchronous HTTP request by default. To make an
-            asynchronous HTTP request, please pass async_req=True
+        collection_formats = {}
 
-            >>> thread = api.suspend_workflow(namespace, name, body, async_req=True)
-            >>> result = thread.get()
+        path_params = {}
+        if 'namespace' in local_var_params:
+            path_params['namespace'] = local_var_params['namespace']  # noqa: E501
 
-            Args:
-                namespace (str):
-                name (str):
-                body (IoArgoprojWorkflowV1alpha1WorkflowSuspendRequest):
+        query_params = []
 
-            Keyword Args:
-                _return_http_data_only (bool): response data without head status
-                    code and headers. Default is True.
-                _preload_content (bool): if False, the urllib3.HTTPResponse object
-                    will be returned without reading/decoding response data.
-                    Default is True.
-                _request_timeout (int/float/tuple): timeout setting for this request. If
-                    one number provided, it will be total request timeout. It can also
-                    be a pair (tuple) of (connection, read) timeouts.
-                    Default is None.
-                _check_input_type (bool): specifies if type checking
-                    should be done one the data sent to the server.
-                    Default is True.
-                _check_return_type (bool): specifies if type checking
-                    should be done one the data received from the server.
-                    Default is True.
-                _host_index (int/None): specifies the index of the server
-                    that we want to use.
-                    Default is read from the configuration.
-                async_req (bool): execute request asynchronously
+        header_params = {}
 
-            Returns:
-                IoArgoprojWorkflowV1alpha1Workflow
-                    If the method is called asynchronously, returns the request
-                    thread.
-            """
-            kwargs['async_req'] = kwargs.get(
-                'async_req', False
-            )
-            kwargs['_return_http_data_only'] = kwargs.get(
-                '_return_http_data_only', True
-            )
-            kwargs['_preload_content'] = kwargs.get(
-                '_preload_content', True
-            )
-            kwargs['_request_timeout'] = kwargs.get(
-                '_request_timeout', None
-            )
-            kwargs['_check_input_type'] = kwargs.get(
-                '_check_input_type', True
-            )
-            kwargs['_check_return_type'] = kwargs.get(
-                '_check_return_type', True
-            )
-            kwargs['_host_index'] = kwargs.get('_host_index')
-            kwargs['namespace'] = \
-                namespace
-            kwargs['name'] = \
-                name
-            kwargs['body'] = \
-                body
-            return self.call_with_http_info(**kwargs)
+        form_params = []
+        local_var_files = {}
 
-        self.suspend_workflow = _Endpoint(
-            settings={
-                'response_type': (IoArgoprojWorkflowV1alpha1Workflow,),
-                'auth': [],
-                'endpoint_path': '/api/v1/workflows/{namespace}/{name}/suspend',
-                'operation_id': 'suspend_workflow',
-                'http_method': 'PUT',
-                'servers': None,
-            },
-            params_map={
-                'all': [
-                    'namespace',
-                    'name',
-                    'body',
-                ],
-                'required': [
-                    'namespace',
-                    'name',
-                    'body',
-                ],
-                'nullable': [
-                ],
-                'enum': [
-                ],
-                'validation': [
-                ]
-            },
-            root_map={
-                'validations': {
-                },
-                'allowed_values': {
-                },
-                'openapi_types': {
-                    'namespace':
-                        (str,),
-                    'name':
-                        (str,),
-                    'body':
-                        (IoArgoprojWorkflowV1alpha1WorkflowSuspendRequest,),
-                },
-                'attribute_map': {
-                    'namespace': 'namespace',
-                    'name': 'name',
-                },
-                'location_map': {
-                    'namespace': 'path',
-                    'name': 'path',
-                    'body': 'body',
-                },
-                'collection_format_map': {
-                }
-            },
-            headers_map={
-                'accept': [
-                    'application/json'
-                ],
-                'content_type': [
-                    'application/json'
-                ]
-            },
-            api_client=api_client,
-            callable=__suspend_workflow
+        body_params = None
+        if 'body' in local_var_params:
+            body_params = local_var_params['body']
+        # HTTP header `Accept`
+        header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # HTTP header `Content-Type`
+        header_params['Content-Type'] = self.api_client.select_header_content_type(  # noqa: E501
+            ['application/json'])  # noqa: E501
+
+        # Authentication setting
+        auth_settings = []  # noqa: E501
+
+        return self.api_client.call_api(
+            '/api/v1/workflows/{namespace}/submit', 'POST',
+            path_params,
+            query_params,
+            header_params,
+            body=body_params,
+            post_params=form_params,
+            files=local_var_files,
+            response_type='IoArgoprojWorkflowV1alpha1Workflow',  # noqa: E501
+            auth_settings=auth_settings,
+            async_req=local_var_params.get('async_req'),
+            _return_http_data_only=local_var_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=local_var_params.get('_preload_content', True),
+            _request_timeout=local_var_params.get('_request_timeout'),
+            collection_formats=collection_formats)
+
+    def suspend_workflow(self, namespace, name, body, **kwargs):  # noqa: E501
+        """suspend_workflow  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.suspend_workflow(namespace, name, body, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str name: (required)
+        :param IoArgoprojWorkflowV1alpha1WorkflowSuspendRequest body: (required)
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: IoArgoprojWorkflowV1alpha1Workflow
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        return self.suspend_workflow_with_http_info(namespace, name, body, **kwargs)  # noqa: E501
+
+    def suspend_workflow_with_http_info(self, namespace, name, body, **kwargs):  # noqa: E501
+        """suspend_workflow  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.suspend_workflow_with_http_info(namespace, name, body, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str name: (required)
+        :param IoArgoprojWorkflowV1alpha1WorkflowSuspendRequest body: (required)
+        :param _return_http_data_only: response data without head status code
+                                       and headers
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: tuple(IoArgoprojWorkflowV1alpha1Workflow, status_code(int), headers(HTTPHeaderDict))
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        local_var_params = locals()
+
+        all_params = [
+            'namespace',
+            'name',
+            'body'
+        ]
+        all_params.extend(
+            [
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout'
+            ]
         )
 
-        def __terminate_workflow(
-            self,
-            namespace,
-            name,
-            body,
-            **kwargs
-        ):
-            """terminate_workflow  # noqa: E501
+        for key, val in six.iteritems(local_var_params['kwargs']):
+            if key not in all_params:
+                raise ApiTypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method suspend_workflow" % key
+                )
+            local_var_params[key] = val
+        del local_var_params['kwargs']
+        # verify the required parameter 'namespace' is set
+        if self.api_client.client_side_validation and ('namespace' not in local_var_params or  # noqa: E501
+                                                        local_var_params['namespace'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `namespace` when calling `suspend_workflow`")  # noqa: E501
+        # verify the required parameter 'name' is set
+        if self.api_client.client_side_validation and ('name' not in local_var_params or  # noqa: E501
+                                                        local_var_params['name'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `name` when calling `suspend_workflow`")  # noqa: E501
+        # verify the required parameter 'body' is set
+        if self.api_client.client_side_validation and ('body' not in local_var_params or  # noqa: E501
+                                                        local_var_params['body'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `body` when calling `suspend_workflow`")  # noqa: E501
 
-            This method makes a synchronous HTTP request by default. To make an
-            asynchronous HTTP request, please pass async_req=True
+        collection_formats = {}
 
-            >>> thread = api.terminate_workflow(namespace, name, body, async_req=True)
-            >>> result = thread.get()
+        path_params = {}
+        if 'namespace' in local_var_params:
+            path_params['namespace'] = local_var_params['namespace']  # noqa: E501
+        if 'name' in local_var_params:
+            path_params['name'] = local_var_params['name']  # noqa: E501
 
-            Args:
-                namespace (str):
-                name (str):
-                body (IoArgoprojWorkflowV1alpha1WorkflowTerminateRequest):
+        query_params = []
 
-            Keyword Args:
-                _return_http_data_only (bool): response data without head status
-                    code and headers. Default is True.
-                _preload_content (bool): if False, the urllib3.HTTPResponse object
-                    will be returned without reading/decoding response data.
-                    Default is True.
-                _request_timeout (int/float/tuple): timeout setting for this request. If
-                    one number provided, it will be total request timeout. It can also
-                    be a pair (tuple) of (connection, read) timeouts.
-                    Default is None.
-                _check_input_type (bool): specifies if type checking
-                    should be done one the data sent to the server.
-                    Default is True.
-                _check_return_type (bool): specifies if type checking
-                    should be done one the data received from the server.
-                    Default is True.
-                _host_index (int/None): specifies the index of the server
-                    that we want to use.
-                    Default is read from the configuration.
-                async_req (bool): execute request asynchronously
+        header_params = {}
 
-            Returns:
-                IoArgoprojWorkflowV1alpha1Workflow
-                    If the method is called asynchronously, returns the request
-                    thread.
-            """
-            kwargs['async_req'] = kwargs.get(
-                'async_req', False
-            )
-            kwargs['_return_http_data_only'] = kwargs.get(
-                '_return_http_data_only', True
-            )
-            kwargs['_preload_content'] = kwargs.get(
-                '_preload_content', True
-            )
-            kwargs['_request_timeout'] = kwargs.get(
-                '_request_timeout', None
-            )
-            kwargs['_check_input_type'] = kwargs.get(
-                '_check_input_type', True
-            )
-            kwargs['_check_return_type'] = kwargs.get(
-                '_check_return_type', True
-            )
-            kwargs['_host_index'] = kwargs.get('_host_index')
-            kwargs['namespace'] = \
-                namespace
-            kwargs['name'] = \
-                name
-            kwargs['body'] = \
-                body
-            return self.call_with_http_info(**kwargs)
+        form_params = []
+        local_var_files = {}
 
-        self.terminate_workflow = _Endpoint(
-            settings={
-                'response_type': (IoArgoprojWorkflowV1alpha1Workflow,),
-                'auth': [],
-                'endpoint_path': '/api/v1/workflows/{namespace}/{name}/terminate',
-                'operation_id': 'terminate_workflow',
-                'http_method': 'PUT',
-                'servers': None,
-            },
-            params_map={
-                'all': [
-                    'namespace',
-                    'name',
-                    'body',
-                ],
-                'required': [
-                    'namespace',
-                    'name',
-                    'body',
-                ],
-                'nullable': [
-                ],
-                'enum': [
-                ],
-                'validation': [
-                ]
-            },
-            root_map={
-                'validations': {
-                },
-                'allowed_values': {
-                },
-                'openapi_types': {
-                    'namespace':
-                        (str,),
-                    'name':
-                        (str,),
-                    'body':
-                        (IoArgoprojWorkflowV1alpha1WorkflowTerminateRequest,),
-                },
-                'attribute_map': {
-                    'namespace': 'namespace',
-                    'name': 'name',
-                },
-                'location_map': {
-                    'namespace': 'path',
-                    'name': 'path',
-                    'body': 'body',
-                },
-                'collection_format_map': {
-                }
-            },
-            headers_map={
-                'accept': [
-                    'application/json'
-                ],
-                'content_type': [
-                    'application/json'
-                ]
-            },
-            api_client=api_client,
-            callable=__terminate_workflow
+        body_params = None
+        if 'body' in local_var_params:
+            body_params = local_var_params['body']
+        # HTTP header `Accept`
+        header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # HTTP header `Content-Type`
+        header_params['Content-Type'] = self.api_client.select_header_content_type(  # noqa: E501
+            ['application/json'])  # noqa: E501
+
+        # Authentication setting
+        auth_settings = []  # noqa: E501
+
+        return self.api_client.call_api(
+            '/api/v1/workflows/{namespace}/{name}/suspend', 'PUT',
+            path_params,
+            query_params,
+            header_params,
+            body=body_params,
+            post_params=form_params,
+            files=local_var_files,
+            response_type='IoArgoprojWorkflowV1alpha1Workflow',  # noqa: E501
+            auth_settings=auth_settings,
+            async_req=local_var_params.get('async_req'),
+            _return_http_data_only=local_var_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=local_var_params.get('_preload_content', True),
+            _request_timeout=local_var_params.get('_request_timeout'),
+            collection_formats=collection_formats)
+
+    def terminate_workflow(self, namespace, name, body, **kwargs):  # noqa: E501
+        """terminate_workflow  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.terminate_workflow(namespace, name, body, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str name: (required)
+        :param IoArgoprojWorkflowV1alpha1WorkflowTerminateRequest body: (required)
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: IoArgoprojWorkflowV1alpha1Workflow
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        return self.terminate_workflow_with_http_info(namespace, name, body, **kwargs)  # noqa: E501
+
+    def terminate_workflow_with_http_info(self, namespace, name, body, **kwargs):  # noqa: E501
+        """terminate_workflow  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.terminate_workflow_with_http_info(namespace, name, body, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str name: (required)
+        :param IoArgoprojWorkflowV1alpha1WorkflowTerminateRequest body: (required)
+        :param _return_http_data_only: response data without head status code
+                                       and headers
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: tuple(IoArgoprojWorkflowV1alpha1Workflow, status_code(int), headers(HTTPHeaderDict))
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        local_var_params = locals()
+
+        all_params = [
+            'namespace',
+            'name',
+            'body'
+        ]
+        all_params.extend(
+            [
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout'
+            ]
         )
 
-        def __watch_events(
-            self,
-            namespace,
-            **kwargs
-        ):
-            """watch_events  # noqa: E501
+        for key, val in six.iteritems(local_var_params['kwargs']):
+            if key not in all_params:
+                raise ApiTypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method terminate_workflow" % key
+                )
+            local_var_params[key] = val
+        del local_var_params['kwargs']
+        # verify the required parameter 'namespace' is set
+        if self.api_client.client_side_validation and ('namespace' not in local_var_params or  # noqa: E501
+                                                        local_var_params['namespace'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `namespace` when calling `terminate_workflow`")  # noqa: E501
+        # verify the required parameter 'name' is set
+        if self.api_client.client_side_validation and ('name' not in local_var_params or  # noqa: E501
+                                                        local_var_params['name'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `name` when calling `terminate_workflow`")  # noqa: E501
+        # verify the required parameter 'body' is set
+        if self.api_client.client_side_validation and ('body' not in local_var_params or  # noqa: E501
+                                                        local_var_params['body'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `body` when calling `terminate_workflow`")  # noqa: E501
 
-            This method makes a synchronous HTTP request by default. To make an
-            asynchronous HTTP request, please pass async_req=True
+        collection_formats = {}
 
-            >>> thread = api.watch_events(namespace, async_req=True)
-            >>> result = thread.get()
+        path_params = {}
+        if 'namespace' in local_var_params:
+            path_params['namespace'] = local_var_params['namespace']  # noqa: E501
+        if 'name' in local_var_params:
+            path_params['name'] = local_var_params['name']  # noqa: E501
 
-            Args:
-                namespace (str):
+        query_params = []
 
-            Keyword Args:
-                list_options_label_selector (str): A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional.. [optional]
-                list_options_field_selector (str): A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional.. [optional]
-                list_options_watch (bool): Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional.. [optional]
-                list_options_allow_watch_bookmarks (bool): allowWatchBookmarks requests watch events with type \"BOOKMARK\". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. If the feature gate WatchBookmarks is not enabled in apiserver, this field is ignored. +optional.. [optional]
-                list_options_resource_version (str): resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional. [optional]
-                list_options_resource_version_match (str): resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional. [optional]
-                list_options_timeout_seconds (str): Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional.. [optional]
-                list_options_limit (str): limit is a maximum number of responses to return for a list call. If more items exist, the server will set the `continue` field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.. [optional]
-                list_options_continue (str): The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.. [optional]
-                _return_http_data_only (bool): response data without head status
-                    code and headers. Default is True.
-                _preload_content (bool): if False, the urllib3.HTTPResponse object
-                    will be returned without reading/decoding response data.
-                    Default is True.
-                _request_timeout (int/float/tuple): timeout setting for this request. If
-                    one number provided, it will be total request timeout. It can also
-                    be a pair (tuple) of (connection, read) timeouts.
-                    Default is None.
-                _check_input_type (bool): specifies if type checking
-                    should be done one the data sent to the server.
-                    Default is True.
-                _check_return_type (bool): specifies if type checking
-                    should be done one the data received from the server.
-                    Default is True.
-                _host_index (int/None): specifies the index of the server
-                    that we want to use.
-                    Default is read from the configuration.
-                async_req (bool): execute request asynchronously
+        header_params = {}
 
-            Returns:
-                StreamResultOfEvent
-                    If the method is called asynchronously, returns the request
-                    thread.
-            """
-            kwargs['async_req'] = kwargs.get(
-                'async_req', False
-            )
-            kwargs['_return_http_data_only'] = kwargs.get(
-                '_return_http_data_only', True
-            )
-            kwargs['_preload_content'] = kwargs.get(
-                '_preload_content', True
-            )
-            kwargs['_request_timeout'] = kwargs.get(
-                '_request_timeout', None
-            )
-            kwargs['_check_input_type'] = kwargs.get(
-                '_check_input_type', True
-            )
-            kwargs['_check_return_type'] = kwargs.get(
-                '_check_return_type', True
-            )
-            kwargs['_host_index'] = kwargs.get('_host_index')
-            kwargs['namespace'] = \
-                namespace
-            return self.call_with_http_info(**kwargs)
+        form_params = []
+        local_var_files = {}
 
-        self.watch_events = _Endpoint(
-            settings={
-                'response_type': (StreamResultOfEvent,),
-                'auth': [],
-                'endpoint_path': '/api/v1/stream/events/{namespace}',
-                'operation_id': 'watch_events',
-                'http_method': 'GET',
-                'servers': None,
-            },
-            params_map={
-                'all': [
-                    'namespace',
-                    'list_options_label_selector',
-                    'list_options_field_selector',
-                    'list_options_watch',
-                    'list_options_allow_watch_bookmarks',
-                    'list_options_resource_version',
-                    'list_options_resource_version_match',
-                    'list_options_timeout_seconds',
-                    'list_options_limit',
-                    'list_options_continue',
-                ],
-                'required': [
-                    'namespace',
-                ],
-                'nullable': [
-                ],
-                'enum': [
-                ],
-                'validation': [
-                ]
-            },
-            root_map={
-                'validations': {
-                },
-                'allowed_values': {
-                },
-                'openapi_types': {
-                    'namespace':
-                        (str,),
-                    'list_options_label_selector':
-                        (str,),
-                    'list_options_field_selector':
-                        (str,),
-                    'list_options_watch':
-                        (bool,),
-                    'list_options_allow_watch_bookmarks':
-                        (bool,),
-                    'list_options_resource_version':
-                        (str,),
-                    'list_options_resource_version_match':
-                        (str,),
-                    'list_options_timeout_seconds':
-                        (str,),
-                    'list_options_limit':
-                        (str,),
-                    'list_options_continue':
-                        (str,),
-                },
-                'attribute_map': {
-                    'namespace': 'namespace',
-                    'list_options_label_selector': 'listOptions.labelSelector',
-                    'list_options_field_selector': 'listOptions.fieldSelector',
-                    'list_options_watch': 'listOptions.watch',
-                    'list_options_allow_watch_bookmarks': 'listOptions.allowWatchBookmarks',
-                    'list_options_resource_version': 'listOptions.resourceVersion',
-                    'list_options_resource_version_match': 'listOptions.resourceVersionMatch',
-                    'list_options_timeout_seconds': 'listOptions.timeoutSeconds',
-                    'list_options_limit': 'listOptions.limit',
-                    'list_options_continue': 'listOptions.continue',
-                },
-                'location_map': {
-                    'namespace': 'path',
-                    'list_options_label_selector': 'query',
-                    'list_options_field_selector': 'query',
-                    'list_options_watch': 'query',
-                    'list_options_allow_watch_bookmarks': 'query',
-                    'list_options_resource_version': 'query',
-                    'list_options_resource_version_match': 'query',
-                    'list_options_timeout_seconds': 'query',
-                    'list_options_limit': 'query',
-                    'list_options_continue': 'query',
-                },
-                'collection_format_map': {
-                }
-            },
-            headers_map={
-                'accept': [
-                    'application/json'
-                ],
-                'content_type': [],
-            },
-            api_client=api_client,
-            callable=__watch_events
+        body_params = None
+        if 'body' in local_var_params:
+            body_params = local_var_params['body']
+        # HTTP header `Accept`
+        header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # HTTP header `Content-Type`
+        header_params['Content-Type'] = self.api_client.select_header_content_type(  # noqa: E501
+            ['application/json'])  # noqa: E501
+
+        # Authentication setting
+        auth_settings = []  # noqa: E501
+
+        return self.api_client.call_api(
+            '/api/v1/workflows/{namespace}/{name}/terminate', 'PUT',
+            path_params,
+            query_params,
+            header_params,
+            body=body_params,
+            post_params=form_params,
+            files=local_var_files,
+            response_type='IoArgoprojWorkflowV1alpha1Workflow',  # noqa: E501
+            auth_settings=auth_settings,
+            async_req=local_var_params.get('async_req'),
+            _return_http_data_only=local_var_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=local_var_params.get('_preload_content', True),
+            _request_timeout=local_var_params.get('_request_timeout'),
+            collection_formats=collection_formats)
+
+    def watch_events(self, namespace, **kwargs):  # noqa: E501
+        """watch_events  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.watch_events(namespace, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str list_options_label_selector: A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional.
+        :param str list_options_field_selector: A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional.
+        :param bool list_options_watch: Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional.
+        :param bool list_options_allow_watch_bookmarks: allowWatchBookmarks requests watch events with type \"BOOKMARK\". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. If the feature gate WatchBookmarks is not enabled in apiserver, this field is ignored. +optional.
+        :param str list_options_resource_version: resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional
+        :param str list_options_resource_version_match: resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional
+        :param str list_options_timeout_seconds: Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional.
+        :param str list_options_limit: limit is a maximum number of responses to return for a list call. If more items exist, the server will set the `continue` field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.
+        :param str list_options_continue: The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: StreamResultOfEvent
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        return self.watch_events_with_http_info(namespace, **kwargs)  # noqa: E501
+
+    def watch_events_with_http_info(self, namespace, **kwargs):  # noqa: E501
+        """watch_events  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.watch_events_with_http_info(namespace, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str list_options_label_selector: A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional.
+        :param str list_options_field_selector: A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional.
+        :param bool list_options_watch: Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional.
+        :param bool list_options_allow_watch_bookmarks: allowWatchBookmarks requests watch events with type \"BOOKMARK\". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. If the feature gate WatchBookmarks is not enabled in apiserver, this field is ignored. +optional.
+        :param str list_options_resource_version: resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional
+        :param str list_options_resource_version_match: resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional
+        :param str list_options_timeout_seconds: Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional.
+        :param str list_options_limit: limit is a maximum number of responses to return for a list call. If more items exist, the server will set the `continue` field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.
+        :param str list_options_continue: The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.
+        :param _return_http_data_only: response data without head status code
+                                       and headers
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: tuple(StreamResultOfEvent, status_code(int), headers(HTTPHeaderDict))
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        local_var_params = locals()
+
+        all_params = [
+            'namespace',
+            'list_options_label_selector',
+            'list_options_field_selector',
+            'list_options_watch',
+            'list_options_allow_watch_bookmarks',
+            'list_options_resource_version',
+            'list_options_resource_version_match',
+            'list_options_timeout_seconds',
+            'list_options_limit',
+            'list_options_continue'
+        ]
+        all_params.extend(
+            [
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout'
+            ]
         )
 
-        def __watch_workflows(
-            self,
-            namespace,
-            **kwargs
-        ):
-            """watch_workflows  # noqa: E501
+        for key, val in six.iteritems(local_var_params['kwargs']):
+            if key not in all_params:
+                raise ApiTypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method watch_events" % key
+                )
+            local_var_params[key] = val
+        del local_var_params['kwargs']
+        # verify the required parameter 'namespace' is set
+        if self.api_client.client_side_validation and ('namespace' not in local_var_params or  # noqa: E501
+                                                        local_var_params['namespace'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `namespace` when calling `watch_events`")  # noqa: E501
 
-            This method makes a synchronous HTTP request by default. To make an
-            asynchronous HTTP request, please pass async_req=True
+        collection_formats = {}
 
-            >>> thread = api.watch_workflows(namespace, async_req=True)
-            >>> result = thread.get()
+        path_params = {}
+        if 'namespace' in local_var_params:
+            path_params['namespace'] = local_var_params['namespace']  # noqa: E501
 
-            Args:
-                namespace (str):
+        query_params = []
+        if 'list_options_label_selector' in local_var_params and local_var_params['list_options_label_selector'] is not None:  # noqa: E501
+            query_params.append(('listOptions.labelSelector', local_var_params['list_options_label_selector']))  # noqa: E501
+        if 'list_options_field_selector' in local_var_params and local_var_params['list_options_field_selector'] is not None:  # noqa: E501
+            query_params.append(('listOptions.fieldSelector', local_var_params['list_options_field_selector']))  # noqa: E501
+        if 'list_options_watch' in local_var_params and local_var_params['list_options_watch'] is not None:  # noqa: E501
+            query_params.append(('listOptions.watch', local_var_params['list_options_watch']))  # noqa: E501
+        if 'list_options_allow_watch_bookmarks' in local_var_params and local_var_params['list_options_allow_watch_bookmarks'] is not None:  # noqa: E501
+            query_params.append(('listOptions.allowWatchBookmarks', local_var_params['list_options_allow_watch_bookmarks']))  # noqa: E501
+        if 'list_options_resource_version' in local_var_params and local_var_params['list_options_resource_version'] is not None:  # noqa: E501
+            query_params.append(('listOptions.resourceVersion', local_var_params['list_options_resource_version']))  # noqa: E501
+        if 'list_options_resource_version_match' in local_var_params and local_var_params['list_options_resource_version_match'] is not None:  # noqa: E501
+            query_params.append(('listOptions.resourceVersionMatch', local_var_params['list_options_resource_version_match']))  # noqa: E501
+        if 'list_options_timeout_seconds' in local_var_params and local_var_params['list_options_timeout_seconds'] is not None:  # noqa: E501
+            query_params.append(('listOptions.timeoutSeconds', local_var_params['list_options_timeout_seconds']))  # noqa: E501
+        if 'list_options_limit' in local_var_params and local_var_params['list_options_limit'] is not None:  # noqa: E501
+            query_params.append(('listOptions.limit', local_var_params['list_options_limit']))  # noqa: E501
+        if 'list_options_continue' in local_var_params and local_var_params['list_options_continue'] is not None:  # noqa: E501
+            query_params.append(('listOptions.continue', local_var_params['list_options_continue']))  # noqa: E501
 
-            Keyword Args:
-                list_options_label_selector (str): A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional.. [optional]
-                list_options_field_selector (str): A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional.. [optional]
-                list_options_watch (bool): Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional.. [optional]
-                list_options_allow_watch_bookmarks (bool): allowWatchBookmarks requests watch events with type \"BOOKMARK\". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. If the feature gate WatchBookmarks is not enabled in apiserver, this field is ignored. +optional.. [optional]
-                list_options_resource_version (str): resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional. [optional]
-                list_options_resource_version_match (str): resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional. [optional]
-                list_options_timeout_seconds (str): Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional.. [optional]
-                list_options_limit (str): limit is a maximum number of responses to return for a list call. If more items exist, the server will set the `continue` field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.. [optional]
-                list_options_continue (str): The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.. [optional]
-                fields (str): [optional]
-                _return_http_data_only (bool): response data without head status
-                    code and headers. Default is True.
-                _preload_content (bool): if False, the urllib3.HTTPResponse object
-                    will be returned without reading/decoding response data.
-                    Default is True.
-                _request_timeout (int/float/tuple): timeout setting for this request. If
-                    one number provided, it will be total request timeout. It can also
-                    be a pair (tuple) of (connection, read) timeouts.
-                    Default is None.
-                _check_input_type (bool): specifies if type checking
-                    should be done one the data sent to the server.
-                    Default is True.
-                _check_return_type (bool): specifies if type checking
-                    should be done one the data received from the server.
-                    Default is True.
-                _host_index (int/None): specifies the index of the server
-                    that we want to use.
-                    Default is read from the configuration.
-                async_req (bool): execute request asynchronously
+        header_params = {}
 
-            Returns:
-                StreamResultOfIoArgoprojWorkflowV1alpha1WorkflowWatchEvent
-                    If the method is called asynchronously, returns the request
-                    thread.
-            """
-            kwargs['async_req'] = kwargs.get(
-                'async_req', False
-            )
-            kwargs['_return_http_data_only'] = kwargs.get(
-                '_return_http_data_only', True
-            )
-            kwargs['_preload_content'] = kwargs.get(
-                '_preload_content', True
-            )
-            kwargs['_request_timeout'] = kwargs.get(
-                '_request_timeout', None
-            )
-            kwargs['_check_input_type'] = kwargs.get(
-                '_check_input_type', True
-            )
-            kwargs['_check_return_type'] = kwargs.get(
-                '_check_return_type', True
-            )
-            kwargs['_host_index'] = kwargs.get('_host_index')
-            kwargs['namespace'] = \
-                namespace
-            return self.call_with_http_info(**kwargs)
+        form_params = []
+        local_var_files = {}
 
-        self.watch_workflows = _Endpoint(
-            settings={
-                'response_type': (StreamResultOfIoArgoprojWorkflowV1alpha1WorkflowWatchEvent,),
-                'auth': [],
-                'endpoint_path': '/api/v1/workflow-events/{namespace}',
-                'operation_id': 'watch_workflows',
-                'http_method': 'GET',
-                'servers': None,
-            },
-            params_map={
-                'all': [
-                    'namespace',
-                    'list_options_label_selector',
-                    'list_options_field_selector',
-                    'list_options_watch',
-                    'list_options_allow_watch_bookmarks',
-                    'list_options_resource_version',
-                    'list_options_resource_version_match',
-                    'list_options_timeout_seconds',
-                    'list_options_limit',
-                    'list_options_continue',
-                    'fields',
-                ],
-                'required': [
-                    'namespace',
-                ],
-                'nullable': [
-                ],
-                'enum': [
-                ],
-                'validation': [
-                ]
-            },
-            root_map={
-                'validations': {
-                },
-                'allowed_values': {
-                },
-                'openapi_types': {
-                    'namespace':
-                        (str,),
-                    'list_options_label_selector':
-                        (str,),
-                    'list_options_field_selector':
-                        (str,),
-                    'list_options_watch':
-                        (bool,),
-                    'list_options_allow_watch_bookmarks':
-                        (bool,),
-                    'list_options_resource_version':
-                        (str,),
-                    'list_options_resource_version_match':
-                        (str,),
-                    'list_options_timeout_seconds':
-                        (str,),
-                    'list_options_limit':
-                        (str,),
-                    'list_options_continue':
-                        (str,),
-                    'fields':
-                        (str,),
-                },
-                'attribute_map': {
-                    'namespace': 'namespace',
-                    'list_options_label_selector': 'listOptions.labelSelector',
-                    'list_options_field_selector': 'listOptions.fieldSelector',
-                    'list_options_watch': 'listOptions.watch',
-                    'list_options_allow_watch_bookmarks': 'listOptions.allowWatchBookmarks',
-                    'list_options_resource_version': 'listOptions.resourceVersion',
-                    'list_options_resource_version_match': 'listOptions.resourceVersionMatch',
-                    'list_options_timeout_seconds': 'listOptions.timeoutSeconds',
-                    'list_options_limit': 'listOptions.limit',
-                    'list_options_continue': 'listOptions.continue',
-                    'fields': 'fields',
-                },
-                'location_map': {
-                    'namespace': 'path',
-                    'list_options_label_selector': 'query',
-                    'list_options_field_selector': 'query',
-                    'list_options_watch': 'query',
-                    'list_options_allow_watch_bookmarks': 'query',
-                    'list_options_resource_version': 'query',
-                    'list_options_resource_version_match': 'query',
-                    'list_options_timeout_seconds': 'query',
-                    'list_options_limit': 'query',
-                    'list_options_continue': 'query',
-                    'fields': 'query',
-                },
-                'collection_format_map': {
-                }
-            },
-            headers_map={
-                'accept': [
-                    'application/json'
-                ],
-                'content_type': [],
-            },
-            api_client=api_client,
-            callable=__watch_workflows
+        body_params = None
+        # HTTP header `Accept`
+        header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # Authentication setting
+        auth_settings = []  # noqa: E501
+
+        return self.api_client.call_api(
+            '/api/v1/stream/events/{namespace}', 'GET',
+            path_params,
+            query_params,
+            header_params,
+            body=body_params,
+            post_params=form_params,
+            files=local_var_files,
+            response_type='StreamResultOfEvent',  # noqa: E501
+            auth_settings=auth_settings,
+            async_req=local_var_params.get('async_req'),
+            _return_http_data_only=local_var_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=local_var_params.get('_preload_content', True),
+            _request_timeout=local_var_params.get('_request_timeout'),
+            collection_formats=collection_formats)
+
+    def watch_workflows(self, namespace, **kwargs):  # noqa: E501
+        """watch_workflows  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.watch_workflows(namespace, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str list_options_label_selector: A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional.
+        :param str list_options_field_selector: A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional.
+        :param bool list_options_watch: Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional.
+        :param bool list_options_allow_watch_bookmarks: allowWatchBookmarks requests watch events with type \"BOOKMARK\". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. If the feature gate WatchBookmarks is not enabled in apiserver, this field is ignored. +optional.
+        :param str list_options_resource_version: resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional
+        :param str list_options_resource_version_match: resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional
+        :param str list_options_timeout_seconds: Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional.
+        :param str list_options_limit: limit is a maximum number of responses to return for a list call. If more items exist, the server will set the `continue` field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.
+        :param str list_options_continue: The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.
+        :param str fields:
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: StreamResultOfIoArgoprojWorkflowV1alpha1WorkflowWatchEvent
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        return self.watch_workflows_with_http_info(namespace, **kwargs)  # noqa: E501
+
+    def watch_workflows_with_http_info(self, namespace, **kwargs):  # noqa: E501
+        """watch_workflows  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.watch_workflows_with_http_info(namespace, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str list_options_label_selector: A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional.
+        :param str list_options_field_selector: A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional.
+        :param bool list_options_watch: Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional.
+        :param bool list_options_allow_watch_bookmarks: allowWatchBookmarks requests watch events with type \"BOOKMARK\". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. If the feature gate WatchBookmarks is not enabled in apiserver, this field is ignored. +optional.
+        :param str list_options_resource_version: resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional
+        :param str list_options_resource_version_match: resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional
+        :param str list_options_timeout_seconds: Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional.
+        :param str list_options_limit: limit is a maximum number of responses to return for a list call. If more items exist, the server will set the `continue` field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.
+        :param str list_options_continue: The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.
+        :param str fields:
+        :param _return_http_data_only: response data without head status code
+                                       and headers
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: tuple(StreamResultOfIoArgoprojWorkflowV1alpha1WorkflowWatchEvent, status_code(int), headers(HTTPHeaderDict))
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        local_var_params = locals()
+
+        all_params = [
+            'namespace',
+            'list_options_label_selector',
+            'list_options_field_selector',
+            'list_options_watch',
+            'list_options_allow_watch_bookmarks',
+            'list_options_resource_version',
+            'list_options_resource_version_match',
+            'list_options_timeout_seconds',
+            'list_options_limit',
+            'list_options_continue',
+            'fields'
+        ]
+        all_params.extend(
+            [
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout'
+            ]
         )
 
-        def __workflow_logs(
-            self,
-            namespace,
-            name,
-            **kwargs
-        ):
-            """workflow_logs  # noqa: E501
+        for key, val in six.iteritems(local_var_params['kwargs']):
+            if key not in all_params:
+                raise ApiTypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method watch_workflows" % key
+                )
+            local_var_params[key] = val
+        del local_var_params['kwargs']
+        # verify the required parameter 'namespace' is set
+        if self.api_client.client_side_validation and ('namespace' not in local_var_params or  # noqa: E501
+                                                        local_var_params['namespace'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `namespace` when calling `watch_workflows`")  # noqa: E501
 
-            This method makes a synchronous HTTP request by default. To make an
-            asynchronous HTTP request, please pass async_req=True
+        collection_formats = {}
 
-            >>> thread = api.workflow_logs(namespace, name, async_req=True)
-            >>> result = thread.get()
+        path_params = {}
+        if 'namespace' in local_var_params:
+            path_params['namespace'] = local_var_params['namespace']  # noqa: E501
 
-            Args:
-                namespace (str):
-                name (str):
+        query_params = []
+        if 'list_options_label_selector' in local_var_params and local_var_params['list_options_label_selector'] is not None:  # noqa: E501
+            query_params.append(('listOptions.labelSelector', local_var_params['list_options_label_selector']))  # noqa: E501
+        if 'list_options_field_selector' in local_var_params and local_var_params['list_options_field_selector'] is not None:  # noqa: E501
+            query_params.append(('listOptions.fieldSelector', local_var_params['list_options_field_selector']))  # noqa: E501
+        if 'list_options_watch' in local_var_params and local_var_params['list_options_watch'] is not None:  # noqa: E501
+            query_params.append(('listOptions.watch', local_var_params['list_options_watch']))  # noqa: E501
+        if 'list_options_allow_watch_bookmarks' in local_var_params and local_var_params['list_options_allow_watch_bookmarks'] is not None:  # noqa: E501
+            query_params.append(('listOptions.allowWatchBookmarks', local_var_params['list_options_allow_watch_bookmarks']))  # noqa: E501
+        if 'list_options_resource_version' in local_var_params and local_var_params['list_options_resource_version'] is not None:  # noqa: E501
+            query_params.append(('listOptions.resourceVersion', local_var_params['list_options_resource_version']))  # noqa: E501
+        if 'list_options_resource_version_match' in local_var_params and local_var_params['list_options_resource_version_match'] is not None:  # noqa: E501
+            query_params.append(('listOptions.resourceVersionMatch', local_var_params['list_options_resource_version_match']))  # noqa: E501
+        if 'list_options_timeout_seconds' in local_var_params and local_var_params['list_options_timeout_seconds'] is not None:  # noqa: E501
+            query_params.append(('listOptions.timeoutSeconds', local_var_params['list_options_timeout_seconds']))  # noqa: E501
+        if 'list_options_limit' in local_var_params and local_var_params['list_options_limit'] is not None:  # noqa: E501
+            query_params.append(('listOptions.limit', local_var_params['list_options_limit']))  # noqa: E501
+        if 'list_options_continue' in local_var_params and local_var_params['list_options_continue'] is not None:  # noqa: E501
+            query_params.append(('listOptions.continue', local_var_params['list_options_continue']))  # noqa: E501
+        if 'fields' in local_var_params and local_var_params['fields'] is not None:  # noqa: E501
+            query_params.append(('fields', local_var_params['fields']))  # noqa: E501
 
-            Keyword Args:
-                pod_name (str): [optional]
-                log_options_container (str): The container for which to stream logs. Defaults to only container if there is one container in the pod. +optional.. [optional]
-                log_options_follow (bool): Follow the log stream of the pod. Defaults to false. +optional.. [optional]
-                log_options_previous (bool): Return previous terminated container logs. Defaults to false. +optional.. [optional]
-                log_options_since_seconds (str): A relative time in seconds before the current time from which to show logs. If this value precedes the time a pod was started, only logs since the pod start will be returned. If this value is in the future, no logs will be returned. Only one of sinceSeconds or sinceTime may be specified. +optional.. [optional]
-                log_options_since_time_seconds (str): Represents seconds of UTC time since Unix epoch 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z inclusive.. [optional]
-                log_options_since_time_nanos (int): Non-negative fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values that count forward in time. Must be from 0 to 999,999,999 inclusive. This field may be limited in precision depending on context.. [optional]
-                log_options_timestamps (bool): If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line of log output. Defaults to false. +optional.. [optional]
-                log_options_tail_lines (str): If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime +optional.. [optional]
-                log_options_limit_bytes (str): If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional.. [optional]
-                log_options_insecure_skip_tls_verify_backend (bool): insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional.. [optional]
-                grep (str): [optional]
-                selector (str): [optional]
-                _return_http_data_only (bool): response data without head status
-                    code and headers. Default is True.
-                _preload_content (bool): if False, the urllib3.HTTPResponse object
-                    will be returned without reading/decoding response data.
-                    Default is True.
-                _request_timeout (int/float/tuple): timeout setting for this request. If
-                    one number provided, it will be total request timeout. It can also
-                    be a pair (tuple) of (connection, read) timeouts.
-                    Default is None.
-                _check_input_type (bool): specifies if type checking
-                    should be done one the data sent to the server.
-                    Default is True.
-                _check_return_type (bool): specifies if type checking
-                    should be done one the data received from the server.
-                    Default is True.
-                _host_index (int/None): specifies the index of the server
-                    that we want to use.
-                    Default is read from the configuration.
-                async_req (bool): execute request asynchronously
+        header_params = {}
 
-            Returns:
-                StreamResultOfIoArgoprojWorkflowV1alpha1LogEntry
-                    If the method is called asynchronously, returns the request
-                    thread.
-            """
-            kwargs['async_req'] = kwargs.get(
-                'async_req', False
-            )
-            kwargs['_return_http_data_only'] = kwargs.get(
-                '_return_http_data_only', True
-            )
-            kwargs['_preload_content'] = kwargs.get(
-                '_preload_content', True
-            )
-            kwargs['_request_timeout'] = kwargs.get(
-                '_request_timeout', None
-            )
-            kwargs['_check_input_type'] = kwargs.get(
-                '_check_input_type', True
-            )
-            kwargs['_check_return_type'] = kwargs.get(
-                '_check_return_type', True
-            )
-            kwargs['_host_index'] = kwargs.get('_host_index')
-            kwargs['namespace'] = \
-                namespace
-            kwargs['name'] = \
-                name
-            return self.call_with_http_info(**kwargs)
+        form_params = []
+        local_var_files = {}
 
-        self.workflow_logs = _Endpoint(
-            settings={
-                'response_type': (StreamResultOfIoArgoprojWorkflowV1alpha1LogEntry,),
-                'auth': [],
-                'endpoint_path': '/api/v1/workflows/{namespace}/{name}/log',
-                'operation_id': 'workflow_logs',
-                'http_method': 'GET',
-                'servers': None,
-            },
-            params_map={
-                'all': [
-                    'namespace',
-                    'name',
-                    'pod_name',
-                    'log_options_container',
-                    'log_options_follow',
-                    'log_options_previous',
-                    'log_options_since_seconds',
-                    'log_options_since_time_seconds',
-                    'log_options_since_time_nanos',
-                    'log_options_timestamps',
-                    'log_options_tail_lines',
-                    'log_options_limit_bytes',
-                    'log_options_insecure_skip_tls_verify_backend',
-                    'grep',
-                    'selector',
-                ],
-                'required': [
-                    'namespace',
-                    'name',
-                ],
-                'nullable': [
-                ],
-                'enum': [
-                ],
-                'validation': [
-                ]
-            },
-            root_map={
-                'validations': {
-                },
-                'allowed_values': {
-                },
-                'openapi_types': {
-                    'namespace':
-                        (str,),
-                    'name':
-                        (str,),
-                    'pod_name':
-                        (str,),
-                    'log_options_container':
-                        (str,),
-                    'log_options_follow':
-                        (bool,),
-                    'log_options_previous':
-                        (bool,),
-                    'log_options_since_seconds':
-                        (str,),
-                    'log_options_since_time_seconds':
-                        (str,),
-                    'log_options_since_time_nanos':
-                        (int,),
-                    'log_options_timestamps':
-                        (bool,),
-                    'log_options_tail_lines':
-                        (str,),
-                    'log_options_limit_bytes':
-                        (str,),
-                    'log_options_insecure_skip_tls_verify_backend':
-                        (bool,),
-                    'grep':
-                        (str,),
-                    'selector':
-                        (str,),
-                },
-                'attribute_map': {
-                    'namespace': 'namespace',
-                    'name': 'name',
-                    'pod_name': 'podName',
-                    'log_options_container': 'logOptions.container',
-                    'log_options_follow': 'logOptions.follow',
-                    'log_options_previous': 'logOptions.previous',
-                    'log_options_since_seconds': 'logOptions.sinceSeconds',
-                    'log_options_since_time_seconds': 'logOptions.sinceTime.seconds',
-                    'log_options_since_time_nanos': 'logOptions.sinceTime.nanos',
-                    'log_options_timestamps': 'logOptions.timestamps',
-                    'log_options_tail_lines': 'logOptions.tailLines',
-                    'log_options_limit_bytes': 'logOptions.limitBytes',
-                    'log_options_insecure_skip_tls_verify_backend': 'logOptions.insecureSkipTLSVerifyBackend',
-                    'grep': 'grep',
-                    'selector': 'selector',
-                },
-                'location_map': {
-                    'namespace': 'path',
-                    'name': 'path',
-                    'pod_name': 'query',
-                    'log_options_container': 'query',
-                    'log_options_follow': 'query',
-                    'log_options_previous': 'query',
-                    'log_options_since_seconds': 'query',
-                    'log_options_since_time_seconds': 'query',
-                    'log_options_since_time_nanos': 'query',
-                    'log_options_timestamps': 'query',
-                    'log_options_tail_lines': 'query',
-                    'log_options_limit_bytes': 'query',
-                    'log_options_insecure_skip_tls_verify_backend': 'query',
-                    'grep': 'query',
-                    'selector': 'query',
-                },
-                'collection_format_map': {
-                }
-            },
-            headers_map={
-                'accept': [
-                    'application/json'
-                ],
-                'content_type': [],
-            },
-            api_client=api_client,
-            callable=__workflow_logs
+        body_params = None
+        # HTTP header `Accept`
+        header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # Authentication setting
+        auth_settings = []  # noqa: E501
+
+        return self.api_client.call_api(
+            '/api/v1/workflow-events/{namespace}', 'GET',
+            path_params,
+            query_params,
+            header_params,
+            body=body_params,
+            post_params=form_params,
+            files=local_var_files,
+            response_type='StreamResultOfIoArgoprojWorkflowV1alpha1WorkflowWatchEvent',  # noqa: E501
+            auth_settings=auth_settings,
+            async_req=local_var_params.get('async_req'),
+            _return_http_data_only=local_var_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=local_var_params.get('_preload_content', True),
+            _request_timeout=local_var_params.get('_request_timeout'),
+            collection_formats=collection_formats)
+
+    def workflow_logs(self, namespace, name, **kwargs):  # noqa: E501
+        """workflow_logs  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.workflow_logs(namespace, name, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str name: (required)
+        :param str pod_name:
+        :param str log_options_container: The container for which to stream logs. Defaults to only container if there is one container in the pod. +optional.
+        :param bool log_options_follow: Follow the log stream of the pod. Defaults to false. +optional.
+        :param bool log_options_previous: Return previous terminated container logs. Defaults to false. +optional.
+        :param str log_options_since_seconds: A relative time in seconds before the current time from which to show logs. If this value precedes the time a pod was started, only logs since the pod start will be returned. If this value is in the future, no logs will be returned. Only one of sinceSeconds or sinceTime may be specified. +optional.
+        :param str log_options_since_time_seconds: Represents seconds of UTC time since Unix epoch 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z inclusive.
+        :param int log_options_since_time_nanos: Non-negative fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values that count forward in time. Must be from 0 to 999,999,999 inclusive. This field may be limited in precision depending on context.
+        :param bool log_options_timestamps: If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line of log output. Defaults to false. +optional.
+        :param str log_options_tail_lines: If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime +optional.
+        :param str log_options_limit_bytes: If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional.
+        :param bool log_options_insecure_skip_tls_verify_backend: insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional.
+        :param str grep:
+        :param str selector:
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: StreamResultOfIoArgoprojWorkflowV1alpha1LogEntry
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        return self.workflow_logs_with_http_info(namespace, name, **kwargs)  # noqa: E501
+
+    def workflow_logs_with_http_info(self, namespace, name, **kwargs):  # noqa: E501
+        """workflow_logs  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.workflow_logs_with_http_info(namespace, name, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool: execute request asynchronously
+        :param str namespace: (required)
+        :param str name: (required)
+        :param str pod_name:
+        :param str log_options_container: The container for which to stream logs. Defaults to only container if there is one container in the pod. +optional.
+        :param bool log_options_follow: Follow the log stream of the pod. Defaults to false. +optional.
+        :param bool log_options_previous: Return previous terminated container logs. Defaults to false. +optional.
+        :param str log_options_since_seconds: A relative time in seconds before the current time from which to show logs. If this value precedes the time a pod was started, only logs since the pod start will be returned. If this value is in the future, no logs will be returned. Only one of sinceSeconds or sinceTime may be specified. +optional.
+        :param str log_options_since_time_seconds: Represents seconds of UTC time since Unix epoch 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z inclusive.
+        :param int log_options_since_time_nanos: Non-negative fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values that count forward in time. Must be from 0 to 999,999,999 inclusive. This field may be limited in precision depending on context.
+        :param bool log_options_timestamps: If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line of log output. Defaults to false. +optional.
+        :param str log_options_tail_lines: If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime +optional.
+        :param str log_options_limit_bytes: If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional.
+        :param bool log_options_insecure_skip_tls_verify_backend: insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional.
+        :param str grep:
+        :param str selector:
+        :param _return_http_data_only: response data without head status code
+                                       and headers
+        :param _preload_content: if False, the urllib3.HTTPResponse object will
+                                 be returned without reading/decoding response
+                                 data. Default is True.
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: tuple(StreamResultOfIoArgoprojWorkflowV1alpha1LogEntry, status_code(int), headers(HTTPHeaderDict))
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        local_var_params = locals()
+
+        all_params = [
+            'namespace',
+            'name',
+            'pod_name',
+            'log_options_container',
+            'log_options_follow',
+            'log_options_previous',
+            'log_options_since_seconds',
+            'log_options_since_time_seconds',
+            'log_options_since_time_nanos',
+            'log_options_timestamps',
+            'log_options_tail_lines',
+            'log_options_limit_bytes',
+            'log_options_insecure_skip_tls_verify_backend',
+            'grep',
+            'selector'
+        ]
+        all_params.extend(
+            [
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout'
+            ]
         )
+
+        for key, val in six.iteritems(local_var_params['kwargs']):
+            if key not in all_params:
+                raise ApiTypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method workflow_logs" % key
+                )
+            local_var_params[key] = val
+        del local_var_params['kwargs']
+        # verify the required parameter 'namespace' is set
+        if self.api_client.client_side_validation and ('namespace' not in local_var_params or  # noqa: E501
+                                                        local_var_params['namespace'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `namespace` when calling `workflow_logs`")  # noqa: E501
+        # verify the required parameter 'name' is set
+        if self.api_client.client_side_validation and ('name' not in local_var_params or  # noqa: E501
+                                                        local_var_params['name'] is None):  # noqa: E501
+            raise ApiValueError("Missing the required parameter `name` when calling `workflow_logs`")  # noqa: E501
+
+        collection_formats = {}
+
+        path_params = {}
+        if 'namespace' in local_var_params:
+            path_params['namespace'] = local_var_params['namespace']  # noqa: E501
+        if 'name' in local_var_params:
+            path_params['name'] = local_var_params['name']  # noqa: E501
+
+        query_params = []
+        if 'pod_name' in local_var_params and local_var_params['pod_name'] is not None:  # noqa: E501
+            query_params.append(('podName', local_var_params['pod_name']))  # noqa: E501
+        if 'log_options_container' in local_var_params and local_var_params['log_options_container'] is not None:  # noqa: E501
+            query_params.append(('logOptions.container', local_var_params['log_options_container']))  # noqa: E501
+        if 'log_options_follow' in local_var_params and local_var_params['log_options_follow'] is not None:  # noqa: E501
+            query_params.append(('logOptions.follow', local_var_params['log_options_follow']))  # noqa: E501
+        if 'log_options_previous' in local_var_params and local_var_params['log_options_previous'] is not None:  # noqa: E501
+            query_params.append(('logOptions.previous', local_var_params['log_options_previous']))  # noqa: E501
+        if 'log_options_since_seconds' in local_var_params and local_var_params['log_options_since_seconds'] is not None:  # noqa: E501
+            query_params.append(('logOptions.sinceSeconds', local_var_params['log_options_since_seconds']))  # noqa: E501
+        if 'log_options_since_time_seconds' in local_var_params and local_var_params['log_options_since_time_seconds'] is not None:  # noqa: E501
+            query_params.append(('logOptions.sinceTime.seconds', local_var_params['log_options_since_time_seconds']))  # noqa: E501
+        if 'log_options_since_time_nanos' in local_var_params and local_var_params['log_options_since_time_nanos'] is not None:  # noqa: E501
+            query_params.append(('logOptions.sinceTime.nanos', local_var_params['log_options_since_time_nanos']))  # noqa: E501
+        if 'log_options_timestamps' in local_var_params and local_var_params['log_options_timestamps'] is not None:  # noqa: E501
+            query_params.append(('logOptions.timestamps', local_var_params['log_options_timestamps']))  # noqa: E501
+        if 'log_options_tail_lines' in local_var_params and local_var_params['log_options_tail_lines'] is not None:  # noqa: E501
+            query_params.append(('logOptions.tailLines', local_var_params['log_options_tail_lines']))  # noqa: E501
+        if 'log_options_limit_bytes' in local_var_params and local_var_params['log_options_limit_bytes'] is not None:  # noqa: E501
+            query_params.append(('logOptions.limitBytes', local_var_params['log_options_limit_bytes']))  # noqa: E501
+        if 'log_options_insecure_skip_tls_verify_backend' in local_var_params and local_var_params['log_options_insecure_skip_tls_verify_backend'] is not None:  # noqa: E501
+            query_params.append(('logOptions.insecureSkipTLSVerifyBackend', local_var_params['log_options_insecure_skip_tls_verify_backend']))  # noqa: E501
+        if 'grep' in local_var_params and local_var_params['grep'] is not None:  # noqa: E501
+            query_params.append(('grep', local_var_params['grep']))  # noqa: E501
+        if 'selector' in local_var_params and local_var_params['selector'] is not None:  # noqa: E501
+            query_params.append(('selector', local_var_params['selector']))  # noqa: E501
+
+        header_params = {}
+
+        form_params = []
+        local_var_files = {}
+
+        body_params = None
+        # HTTP header `Accept`
+        header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # Authentication setting
+        auth_settings = []  # noqa: E501
+
+        return self.api_client.call_api(
+            '/api/v1/workflows/{namespace}/{name}/log', 'GET',
+            path_params,
+            query_params,
+            header_params,
+            body=body_params,
+            post_params=form_params,
+            files=local_var_files,
+            response_type='StreamResultOfIoArgoprojWorkflowV1alpha1LogEntry',  # noqa: E501
+            auth_settings=auth_settings,
+            async_req=local_var_params.get('async_req'),
+            _return_http_data_only=local_var_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=local_var_params.get('_preload_content', True),
+            _request_timeout=local_var_params.get('_request_timeout'),
+            collection_formats=collection_formats)

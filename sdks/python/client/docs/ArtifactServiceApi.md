@@ -18,10 +18,10 @@ Get an input artifact.
 ### Example
 
 ```python
+from __future__ import print_function
 import time
 import argo_workflows
-from argo_workflows.api import artifact_service_api
-from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.rest import ApiException
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
@@ -33,29 +33,27 @@ configuration = argo_workflows.Configuration(
 # Enter a context with an instance of the API client
 with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
-    api_instance = artifact_service_api.ArtifactServiceApi(api_client)
-    namespace = "namespace_example" # str | 
-    name = "name_example" # str | 
-    pod_name = "podName_example" # str | 
-    artifact_name = "artifactName_example" # str | 
+    api_instance = argo_workflows.ArtifactServiceApi(api_client)
+    namespace = 'namespace_example' # str | 
+name = 'name_example' # str | 
+pod_name = 'pod_name_example' # str | 
+artifact_name = 'artifact_name_example' # str | 
 
-    # example passing only required values which don't have defaults set
     try:
         # Get an input artifact.
         api_instance.get_input_artifact(namespace, name, pod_name, artifact_name)
-    except argo_workflows.ApiException as e:
+    except ApiException as e:
         print("Exception when calling ArtifactServiceApi->get_input_artifact: %s\n" % e)
 ```
-
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **namespace** | **str**|  |
- **name** | **str**|  |
- **pod_name** | **str**|  |
- **artifact_name** | **str**|  |
+ **namespace** | **str**|  | 
+ **name** | **str**|  | 
+ **pod_name** | **str**|  | 
+ **artifact_name** | **str**|  | 
 
 ### Return type
 
@@ -69,7 +67,6 @@ No authorization required
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
-
 
 ### HTTP response details
 | Status code | Description | Response headers |
@@ -87,10 +84,10 @@ Get an input artifact by UID.
 ### Example
 
 ```python
+from __future__ import print_function
 import time
 import argo_workflows
-from argo_workflows.api import artifact_service_api
-from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.rest import ApiException
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
@@ -102,29 +99,27 @@ configuration = argo_workflows.Configuration(
 # Enter a context with an instance of the API client
 with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
-    api_instance = artifact_service_api.ArtifactServiceApi(api_client)
-    namespace = "namespace_example" # str | 
-    uid = "uid_example" # str | 
-    pod_name = "podName_example" # str | 
-    artifact_name = "artifactName_example" # str | 
+    api_instance = argo_workflows.ArtifactServiceApi(api_client)
+    namespace = 'namespace_example' # str | 
+uid = 'uid_example' # str | 
+pod_name = 'pod_name_example' # str | 
+artifact_name = 'artifact_name_example' # str | 
 
-    # example passing only required values which don't have defaults set
     try:
         # Get an input artifact by UID.
         api_instance.get_input_artifact_by_uid(namespace, uid, pod_name, artifact_name)
-    except argo_workflows.ApiException as e:
+    except ApiException as e:
         print("Exception when calling ArtifactServiceApi->get_input_artifact_by_uid: %s\n" % e)
 ```
-
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **namespace** | **str**|  |
- **uid** | **str**|  |
- **pod_name** | **str**|  |
- **artifact_name** | **str**|  |
+ **namespace** | **str**|  | 
+ **uid** | **str**|  | 
+ **pod_name** | **str**|  | 
+ **artifact_name** | **str**|  | 
 
 ### Return type
 
@@ -138,7 +133,6 @@ No authorization required
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
-
 
 ### HTTP response details
 | Status code | Description | Response headers |
@@ -156,10 +150,10 @@ Get an output artifact.
 ### Example
 
 ```python
+from __future__ import print_function
 import time
 import argo_workflows
-from argo_workflows.api import artifact_service_api
-from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.rest import ApiException
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
@@ -171,29 +165,27 @@ configuration = argo_workflows.Configuration(
 # Enter a context with an instance of the API client
 with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
-    api_instance = artifact_service_api.ArtifactServiceApi(api_client)
-    namespace = "namespace_example" # str | 
-    name = "name_example" # str | 
-    pod_name = "podName_example" # str | 
-    artifact_name = "artifactName_example" # str | 
+    api_instance = argo_workflows.ArtifactServiceApi(api_client)
+    namespace = 'namespace_example' # str | 
+name = 'name_example' # str | 
+pod_name = 'pod_name_example' # str | 
+artifact_name = 'artifact_name_example' # str | 
 
-    # example passing only required values which don't have defaults set
     try:
         # Get an output artifact.
         api_instance.get_output_artifact(namespace, name, pod_name, artifact_name)
-    except argo_workflows.ApiException as e:
+    except ApiException as e:
         print("Exception when calling ArtifactServiceApi->get_output_artifact: %s\n" % e)
 ```
-
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **namespace** | **str**|  |
- **name** | **str**|  |
- **pod_name** | **str**|  |
- **artifact_name** | **str**|  |
+ **namespace** | **str**|  | 
+ **name** | **str**|  | 
+ **pod_name** | **str**|  | 
+ **artifact_name** | **str**|  | 
 
 ### Return type
 
@@ -207,7 +199,6 @@ No authorization required
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
-
 
 ### HTTP response details
 | Status code | Description | Response headers |
@@ -225,10 +216,10 @@ Get an output artifact by UID.
 ### Example
 
 ```python
+from __future__ import print_function
 import time
 import argo_workflows
-from argo_workflows.api import artifact_service_api
-from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.rest import ApiException
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
@@ -240,27 +231,25 @@ configuration = argo_workflows.Configuration(
 # Enter a context with an instance of the API client
 with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
-    api_instance = artifact_service_api.ArtifactServiceApi(api_client)
-    uid = "uid_example" # str | 
-    pod_name = "podName_example" # str | 
-    artifact_name = "artifactName_example" # str | 
+    api_instance = argo_workflows.ArtifactServiceApi(api_client)
+    uid = 'uid_example' # str | 
+pod_name = 'pod_name_example' # str | 
+artifact_name = 'artifact_name_example' # str | 
 
-    # example passing only required values which don't have defaults set
     try:
         # Get an output artifact by UID.
         api_instance.get_output_artifact_by_uid(uid, pod_name, artifact_name)
-    except argo_workflows.ApiException as e:
+    except ApiException as e:
         print("Exception when calling ArtifactServiceApi->get_output_artifact_by_uid: %s\n" % e)
 ```
-
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **uid** | **str**|  |
- **pod_name** | **str**|  |
- **artifact_name** | **str**|  |
+ **uid** | **str**|  | 
+ **pod_name** | **str**|  | 
+ **artifact_name** | **str**|  | 
 
 ### Return type
 
@@ -274,7 +263,6 @@ No authorization required
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
-
 
 ### HTTP response details
 | Status code | Description | Response headers |
