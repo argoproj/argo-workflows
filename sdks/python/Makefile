@@ -16,7 +16,7 @@ publish: generate
 	pip install setuptools twine build
 	python -m build --sdist --wheel --outdir client/dist/ client
 	twine check client/dist/*
-	twine upload dist/* -u __token__ -p $PYPI_API_TOKEN
+	twine upload --repository testpypi dist/* -u __token__ -p $PYPI_API_TOKEN
 
 generate:
 	rm -Rf $(WD)
