@@ -13,13 +13,9 @@ Mentors and mentees must abide by the [code of conduct](https://github.com/cncf/
 
 ## How To Get A Mentor
 
-Create a pull request which changes this page to add you to this list:
+Create an issue with the title "I would like a mentor".
 
-Mentees:
-
-* Add your name here!
-
-We'll find the right mentor for you, and let you know who to add to your PR. Then, your mentor will approve and merge your PR!
+We'll find the right mentor for you.
 
 ## How To Become A Mentor
 
