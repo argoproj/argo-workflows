@@ -43,4 +43,13 @@ type HTTP struct {
 	SuccessCondition string `json:"successCondition,omitempty" protobuf:"bytes,6,opt,name=successCondition"`
 	// Body is content of the HTTP Request
 	Body string `json:"body,omitempty" protobuf:"bytes,5,opt,name=body"`
+	// TLSConfig are configuration options for TLS
+	TLSConfig *TLSConfig `json:"tlsConfig,omitempty"`
+}
+
+type TLSConfig struct {
+	// Insecure is a flag to allow insecure connections
+	Insecure bool `json:"insecure,omitempty"`
+	// CACertificateKeyRef is a secret key reference to RootCA certificates
+	CACertificateKeyRef *v1.SecretKeySelector `json:"caCertificateKeyRef,omitempty"`
 }

@@ -576,6 +576,9 @@ message HTTP {
 
   // Body is content of the HTTP Request
   optional string body = 5;
+
+  // TLSConfig are configuration options for TLS
+  optional TLSConfig tlsConfig = 7;
 }
 
 // HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container
@@ -1245,6 +1248,14 @@ message SynchronizationStatus {
 
   // Mutex stores this workflow's mutex holder details
   optional MutexStatus mutex = 2;
+}
+
+message TLSConfig {
+  // Insecure is a flag to allow insecure connections
+  optional bool insecure = 1;
+
+  // CACertificateKeyRef is a secret key reference to RootCA certificates
+  optional k8s.io.api.core.v1.SecretKeySelector caCertificateKeyRef = 2;
 }
 
 // TTLStrategy is the strategy for the time to live depending on if the workflow succeeded or failed

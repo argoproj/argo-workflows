@@ -3,6 +3,8 @@ package executor
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -283,6 +285,26 @@ func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTem
 	if httpTemplate.TimeoutSeconds != nil {
 		httpClient.Timeout = time.Duration(*httpTemplate.TimeoutSeconds) * time.Second
 	}
+
+	if httpTemplate.TLSConfig != nil {
+		var tlsConfig tls.Config
+		if httpTemplate.TLSConfig.Insecure {
+			tlsConfig.InsecureSkipVerify = true
+		}
+		if httpTemplate.TLSConfig.CACertificateKeyRef != nil {
+			caCertificate, err := util.GetSecrets(ctx, ae.ClientSet, ae.Namespace, httpTemplate.TLSConfig.CACertificateKeyRef.Name, httpTemplate.TLSConfig.CACertificateKeyRef.Key)
+			if err != nil {
+				return nil, err
+			}
+			pool := x509.NewCertPool()
+			pool.AppendCertsFromPEM(caCertificate)
+			tlsConfig.RootCAs = pool
+		}
+		httpClient.Transport = &http.Transport{
+			TLSClientConfig: &tlsConfig,
+		}
+	}
+
 	response, err := httpClient.Do(request)
 	if err != nil {
 		return nil, err

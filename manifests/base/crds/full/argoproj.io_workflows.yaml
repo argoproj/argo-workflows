@@ -4173,6 +4173,22 @@ spec:
                       timeoutSeconds:
                         format: int64
                         type: integer
+                      tlsConfig:
+                        properties:
+                          caCertificateKeyRef:
+                            properties:
+                              key:
+                                type: string
+                              name:
+                                type: string
+                              optional:
+                                type: boolean
+                            required:
+                            - key
+                            type: object
+                          insecure:
+                            type: boolean
+                        type: object
                       url:
                         type: string
                     required:
@@ -10633,6 +10649,22 @@ spec:
                         timeoutSeconds:
                           format: int64
                           type: integer
+                        tlsConfig:
+                          properties:
+                            caCertificateKeyRef:
+                              properties:
+                                key:
+                                  type: string
+                                name:
+                                  type: string
+                                optional:
+                                  type: boolean
+                              required:
+                              - key
+                              type: object
+                            insecure:
+                              type: boolean
+                          type: object
                         url:
                           type: string
                       required:
@@ -20099,6 +20131,22 @@ spec:
                         timeoutSeconds:
                           format: int64
                           type: integer
+                        tlsConfig:
+                          properties:
+                            caCertificateKeyRef:
+                              properties:
+                                key:
+                                  type: string
+                                name:
+                                  type: string
+                                optional:
+                                  type: boolean
+                              required:
+                              - key
+                              type: object
+                            insecure:
+                              type: boolean
+                          type: object
                         url:
                           type: string
                       required:
@@ -27640,6 +27688,22 @@ spec:
                           timeoutSeconds:
                             format: int64
                             type: integer
+                          tlsConfig:
+                            properties:
+                              caCertificateKeyRef:
+                                properties:
+                                  key:
+                                    type: string
+                                  name:
+                                    type: string
+                                  optional:
+                                    type: boolean
+                                required:
+                                - key
+                                type: object
+                              insecure:
+                                type: boolean
+                            type: object
                           url:
                             type: string
                         required:
@@ -34100,6 +34164,22 @@ spec:
                             timeoutSeconds:
                               format: int64
                               type: integer
+                            tlsConfig:
+                              properties:
+                                caCertificateKeyRef:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
+                                insecure:
+                                  type: boolean
+                              type: object
                             url:
                               type: string
                           required:
