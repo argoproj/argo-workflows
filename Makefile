@@ -297,13 +297,15 @@ $(GOPATH)/bin/goimports:
 	go install golang.org/x/tools/cmd/goimports@v0.1.6
 
 pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(PROTO_BINARIES) $(TYPES) $(GOPATH)/src/github.com/gogo/protobuf
+	# These files are generated on a v3/ folder by the tool. Link them to the root folder
+	[ -e ./v3 ] || ln -s . v3
 	$(GOPATH)/bin/go-to-protobuf \
 		--go-header-file=./hack/custom-boilerplate.go.txt \
 		--packages=github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
 		--apimachinery-packages=+k8s.io/apimachinery/pkg/util/intstr,+k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime/schema,+k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/api/core/v1,k8s.io/api/policy/v1beta1 \
 		--proto-import $(GOPATH)/src
-	# These files are generated on a v3/ folder. Move them to the root folder
-	rsync -a -v v3/ ./ --remove-source-files
+	# Delete the link
+	[ -e ./v3 ] && rm -rf v3
 	touch pkg/apis/workflow/v1alpha1/generated.proto
 
 # this target will also create a .pb.go and a .pb.gw.go file, but in Make 3 we cannot use _grouped target_, instead we must choose
@@ -501,24 +503,28 @@ clean:
 # swagger
 
 pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYPES)
+	# These files are generated on a v3/ folder by the tool. Link them to the root folder
+	[ -e ./v3 ] || ln -s . v3
 	$(GOPATH)/bin/openapi-gen \
 	  --go-header-file ./hack/custom-boilerplate.go.txt \
 	  --input-dirs github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
 	  --output-package github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
 	  --report-filename pkg/apis/api-rules/violation_exceptions.list
-	# These files are generated on a v3/ folder. Move them to the root folder
-	rsync -a -v v3/ ./ --remove-source-files
+	# Delete the link
+	[ -e ./v3 ] && rm -rf v3
 
 
 # generates many other files (listers, informers, client etc).
 pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES)
+	# These files are generated on a v3/ folder by the tool. Link them to the root folder
+	[ -e ./v3 ] || ln -s . v3
 	bash $(GOPATH)/pkg/mod/k8s.io/code-generator@v0.21.5/generate-groups.sh \
 	    "deepcopy,client,informer,lister" \
 	    github.com/argoproj/argo-workflows/v3/pkg/client github.com/argoproj/argo-workflows/v3/pkg/apis \
 	    workflow:v1alpha1 \
 	    --go-header-file ./hack/custom-boilerplate.go.txt
-	# These files are generated on a v3/ folder. Move them to the root folder
-	rsync -a -v v3/ ./ --remove-source-files
+	# Delete the link
+	[ -e ./v3 ] && rm -rf v3
 
 dist/kubernetes.swagger.json:
 	@mkdir -p dist
