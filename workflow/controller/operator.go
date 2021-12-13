@@ -539,8 +539,16 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 			return fmt.Errorf("either value or valueFrom must be specified in order to set global parameter %s", param.Name)
 		}
 	}
+
+	if workflowLabels, err := json.Marshal(woc.wf.ObjectMeta.Labels); err == nil {
+		woc.globalParams[common.GlobalVarWorkflowLabels] = string(workflowLabels)
+	}
 	for k, v := range woc.wf.ObjectMeta.Annotations {
 		woc.globalParams["workflow.annotations."+k] = v
+	}
+
+	if workflowAnnotations, err := json.Marshal(woc.wf.ObjectMeta.Annotations); err == nil {
+		woc.globalParams[common.GlobalVarWorkflowAnnotations] = string(workflowAnnotations)
 	}
 	for k, v := range woc.wf.ObjectMeta.Labels {
 		woc.globalParams["workflow.labels."+k] = v
