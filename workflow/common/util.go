@@ -17,6 +17,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -352,4 +353,10 @@ func GetTemplateHolderString(tmplHolder wfv1.TemplateReferenceHolder) string {
 
 func GenerateOnExitNodeName(parentNodeName string) string {
 	return fmt.Sprintf("%s.onExit", parentNodeName)
+}
+
+func IsDone(un *unstructured.Unstructured) bool {
+	return un.GetDeletionTimestamp() == nil &&
+		un.GetLabels()[LabelKeyCompleted] == "true" &&
+		un.GetLabels()[LabelKeyWorkflowArchivingStatus] != "Pending"
 }

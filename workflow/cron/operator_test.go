@@ -32,7 +32,6 @@ var scheduledWf = `
     schedule: '* * * * *'
     startingDeadlineSeconds: 30
     workflowSpec:
-      
       entrypoint: whalesay
       templates:
       - container:
@@ -76,6 +75,7 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 		cronWf: &cronWf,
 		log:    logrus.WithFields(logrus.Fields{}),
 	}
+	woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleString())
 	missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun()
 	assert.NoError(t, err)
 	// The missedExecutionTime should be the last complete minute mark, which we can get with inferScheduledTime
@@ -92,8 +92,14 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, missedExecutionTime.IsZero())
 
-	// Run the same test in a different timezone
+	// Same test, but simulate a change to the schedule immediately prior by setting a different last-used-schedule annotation
+	// In this case, since a schedule change is detected, not workflow should be run
+	woc.cronWf.SetSchedule("0 * * * *")
+	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
+	assert.NoError(t, err)
+	assert.True(t, missedExecutionTime.IsZero())
 
+	// Run the same test in a different timezone
 	testTimezone := "Pacific/Niue"
 	testLocation, err := time.LoadLocation(testTimezone)
 	if err != nil {
@@ -109,6 +115,8 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 		cronWf: &cronWf,
 		log:    logrus.WithFields(logrus.Fields{}),
 	}
+	// Reset last-used-schedule as if the current schedule has been used before
+	woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleString())
 	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
 	assert.NoError(t, err)
 	// The missedExecutionTime should be the last complete minute mark, which we can get with inferScheduledTime
@@ -121,6 +129,13 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 		cronWf: &cronWf,
 		log:    logrus.WithFields(logrus.Fields{}),
 	}
+	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
+	assert.NoError(t, err)
+	assert.True(t, missedExecutionTime.IsZero())
+
+	// Same test, but simulate a change to the schedule immediately prior by setting a different last-used-schedule annotation
+	// In this case, since a schedule change is detected, not workflow should be run
+	woc.cronWf.SetSchedule("0 * * * *")
 	missedExecutionTime, err = woc.shouldOutstandingWorkflowsBeRun()
 	assert.NoError(t, err)
 	assert.True(t, missedExecutionTime.IsZero())
@@ -144,7 +159,6 @@ var invalidWf = `
     schedule: '* * * * *'
     startingDeadlineSeconds: 30
     workflowSpec:
-      
       entrypoint: whalesay
       templates:
       - container:
@@ -262,4 +276,57 @@ func TestScheduleTimeParam(t *testing.T) {
 	assert.NotNil(t, wf)
 	assert.Len(t, wf.GetAnnotations(), 1)
 	assert.NotEmpty(t, wf.GetAnnotations()[common.AnnotationKeyCronWfScheduledTime])
+}
+
+const lastUsedSchedule = `apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: test
+spec:
+  concurrencyPolicy: Forbid
+  failedJobsHistoryLimit: 1
+  schedule: 41 12 * * *
+  successfulJobsHistoryLimit: 1
+  timezone: America/New_York
+  workflowSpec:
+    arguments: {}
+    entrypoint: job
+    templates:
+    - container:
+        args:
+        - /bin/echo "hello argo"
+        command:
+        - /bin/sh
+        - -c
+        image: alpine
+        imagePullPolicy: Always
+      name: job
+`
+
+func TestLastUsedSchedule(t *testing.T) {
+	var cronWf v1alpha1.CronWorkflow
+	v1alpha1.MustUnmarshal([]byte(lastUsedSchedule), &cronWf)
+
+	cs := fake.NewSimpleClientset()
+	testMetrics := metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{})
+	woc := &cronWfOperationCtx{
+		wfClientset:       cs,
+		wfClient:          cs.ArgoprojV1alpha1().Workflows(""),
+		cronWfIf:          cs.ArgoprojV1alpha1().CronWorkflows(""),
+		cronWf:            &cronWf,
+		log:               logrus.WithFields(logrus.Fields{}),
+		metrics:           testMetrics,
+		scheduledTimeFunc: inferScheduledTime,
+	}
+
+	missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun()
+	if assert.NoError(t, err) {
+		assert.Equal(t, time.Time{}, missedExecutionTime)
+	}
+
+	woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleString())
+
+	if assert.NotNil(t, woc.cronWf.Annotations) {
+		assert.Equal(t, woc.cronWf.Spec.GetScheduleString(), woc.cronWf.GetLatestSchedule())
+	}
 }
