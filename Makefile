@@ -506,6 +506,8 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYP
 	  --input-dirs github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
 	  --output-package github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
 	  --report-filename pkg/apis/api-rules/violation_exceptions.list
+	# These files are generated on a v3/ folder. Move them to the root folder
+	rsync -a -v v3/ ./ --remove-source-files
 
 
 # generates many other files (listers, informers, client etc).
@@ -515,6 +517,8 @@ pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES)
 	    github.com/argoproj/argo-workflows/v3/pkg/client github.com/argoproj/argo-workflows/v3/pkg/apis \
 	    workflow:v1alpha1 \
 	    --go-header-file ./hack/custom-boilerplate.go.txt
+	# These files are generated on a v3/ folder. Move them to the root folder
+	rsync -a -v v3/ ./ --remove-source-files
 
 dist/kubernetes.swagger.json:
 	@mkdir -p dist
