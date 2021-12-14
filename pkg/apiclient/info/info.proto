@@ -12,7 +12,7 @@ message GetInfoRequest {
 message InfoResponse {
     string managedNamespace = 1;
     repeated github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.Link links = 2;
-    github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.UI ui = 3;
+    string navColor = 3;
 }
 
 message GetVersionRequest {

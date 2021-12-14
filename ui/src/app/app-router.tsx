@@ -66,7 +66,7 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
             .then(info => {
                 Utils.managedNamespace = info.managedNamespace;
                 setNamespace(Utils.currentNamespace);
-                setNavBarBackgroundColor(info.ui.navColor);
+                setNavBarBackgroundColor(info.navColor);
             })
             .then(() => services.info.getVersion())
             .then(setVersion)

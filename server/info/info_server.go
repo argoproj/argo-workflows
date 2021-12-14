@@ -12,7 +12,7 @@ import (
 type infoServer struct {
 	managedNamespace string
 	links            []*wfv1.Link
-	ui               *wfv1.UI
+	navColor         string
 }
 
 func (i *infoServer) GetUserInfo(ctx context.Context, _ *infopkg.GetUserInfoRequest) (*infopkg.GetUserInfoResponse, error) {
@@ -31,7 +31,7 @@ func (i *infoServer) GetUserInfo(ctx context.Context, _ *infopkg.GetUserInfoRequ
 }
 
 func (i *infoServer) GetInfo(context.Context, *infopkg.GetInfoRequest) (*infopkg.InfoResponse, error) {
-	return &infopkg.InfoResponse{ManagedNamespace: i.managedNamespace, Links: i.links, Ui: i.ui}, nil
+	return &infopkg.InfoResponse{ManagedNamespace: i.managedNamespace, Links: i.links, NavColor: i.navColor}, nil
 }
 
 func (i *infoServer) GetVersion(context.Context, *infopkg.GetVersionRequest) (*wfv1.Version, error) {
@@ -39,6 +39,6 @@ func (i *infoServer) GetVersion(context.Context, *infopkg.GetVersionRequest) (*w
 	return &version, nil
 }
 
-func NewInfoServer(managedNamespace string, links []*wfv1.Link, ui *wfv1.UI) infopkg.InfoServiceServer {
-	return &infoServer{managedNamespace, links, ui}
+func NewInfoServer(managedNamespace string, links []*wfv1.Link, navColor string) infopkg.InfoServiceServer {
+	return &infoServer{managedNamespace, links, navColor}
 }
