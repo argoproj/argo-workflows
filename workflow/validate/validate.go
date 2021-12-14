@@ -313,7 +313,7 @@ func ValidateCronWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamesp
 func (ctx *templateValidationCtx) validateInitContainers(containers []wfv1.UserContainer) error {
 	for _, container := range containers {
 		if len(container.Container.Name) == 0 {
-			return errors.Errorf(errors.CodeBadRequest, "initContainer does not have a name")
+			return errors.Errorf(errors.CodeBadRequest, "initContainers must all have container name")
 		}
 	}
 	return nil
