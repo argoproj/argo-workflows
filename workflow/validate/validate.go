@@ -329,10 +329,8 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 		return err
 	}
 
-	if len(tmpl.InitContainers) > 0 {
-		if err := ctx.validateInitContainers(tmpl.InitContainers); err != nil {
-			return err
-		}
+	if err := ctx.validateInitContainers(tmpl.InitContainers); err != nil {
+		return err
 	}
 
 	localParams := make(map[string]string)
