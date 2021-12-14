@@ -310,6 +310,15 @@ func ValidateCronWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamesp
 	return nil
 }
 
+func (ctx *templateValidationCtx) validateInitContainers(containers []wfv1.UserContainer) error {
+	for _, container := range containers {
+		if len(container.Container.Name) == 0 {
+			return errors.Errorf(errors.CodeBadRequest, "initContainer does not have a name")
+		}
+	}
+	return nil
+}
+
 func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx *templateresolution.Context, args wfv1.ArgumentsProvider) error {
 	if err := validateTemplateType(tmpl); err != nil {
 		return err
@@ -318,6 +327,12 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 	scope, err := validateInputs(tmpl)
 	if err != nil {
 		return err
+	}
+
+	if len(tmpl.InitContainers) > 0 {
+		if err := ctx.validateInitContainers(tmpl.InitContainers); err != nil {
+			return err
+		}
 	}
 
 	localParams := make(map[string]string)
