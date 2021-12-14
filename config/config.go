@@ -125,8 +125,7 @@ type Config struct {
 	// https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary
 	Images map[string]Image `json:"images,omitempty"`
 
-	// UI defines a config for UI
-	UI *wfv1.UI `json:"ui,omitempty"`
+	RetentionPolicy *RetentionPolicy `json:"retentionPolicy,omitempty"`
 }
 
 func (c Config) GetContainerRuntimeExecutor(labels labels.Labels) (string, error) {

@@ -17,7 +17,7 @@
 #
 # As a last resort, use `log.Info(fmt.Sprintf(""))`.
 
-set -eu
+set -eux
 
 from=$(git merge-base --fork-point origin/master)
 count=$(git diff "$from" -- '*.go' | grep '^+' | grep -v '\(fmt\|errors\).Errorf' | grep -c '\(Debug\|Info\|Warn\|Warning\|Error\)f' || true)

@@ -1,4 +1,4 @@
-package ttlcontroller
+package gccontroller
 
 import (
 	"context"
