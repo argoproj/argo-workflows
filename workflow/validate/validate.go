@@ -413,6 +413,9 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 			if metric.Help == "" {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s metric '%s' must contain a help string under 'help: ' field", tmpl.Name, metric.Name)
 			}
+			if err := metrics.ValidateMetricGauge(metric.Gauge); err != nil {
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s metric '%s' gauge error: %s", tmpl.Name, metric.Name, err)
+			}
 		}
 	}
 	return nil

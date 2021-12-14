@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -219,6 +220,21 @@ func getWorkersBusy(name string) prometheus.Gauge {
 
 func IsValidMetricName(name string) bool {
 	return model.IsValidMetricName(model.LabelValue(name))
+}
+
+func ValidateMetricGauge(gauge *wfv1.Gauge) error {
+	if gauge == nil {
+		return errors.New("gauge is nil")
+	}
+	if gauge.Value == "" {
+		return errors.New("missing gauge.value")
+	}
+	if gauge.Realtime != nil && *gauge.Realtime {
+		if strings.Contains(gauge.Value, "resourcesDuration.") {
+			return errors.New("'resourcesDuration.*' metrics cannot be used in real-time")
+		}
+	}
+	return nil
 }
 
 func ValidateMetricLabels(metrics map[string]string) error {
