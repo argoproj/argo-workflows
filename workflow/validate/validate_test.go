@@ -3138,3 +3138,40 @@ func TestStepsOutputParametersForContainerSet(t *testing.T) {
 	_, err := validate(stepsOutputParametersForContainerSet)
 	assert.NoError(t, err)
 }
+
+var testInitContainerHasName = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: spurious-
+spec:
+  entrypoint: main
+
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: spurious
+        template: spurious
+
+  - name: spurious
+    retryStrategy:
+      retryPolicy: Always
+    initContainers:
+    - image: alpine:latest
+      # name: sleep
+      command:
+      - sleep
+      - "15"
+    container:
+      image: alpine:latest
+      command:
+      - echo
+      - "i am running"
+`
+
+func TestInitContainerHasName(t *testing.T) {
+
+	_, err := validate(testInitContainerHasName)
+	assert.EqualError(t, err, "templates.main.tasks.spurious initContainers must all have container name")
+}
