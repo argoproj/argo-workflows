@@ -1429,8 +1429,8 @@ message TransformationStep {
   optional string expression = 1;
 }
 
-// Ui defines a config for UI
-message Ui {
+// UI defines a config for UI
+message UI {
   // NavColor is an ui navigation bar theme which switch the design
   optional string navColor = 1;
 }

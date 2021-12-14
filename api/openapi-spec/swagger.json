@@ -9712,7 +9712,7 @@
           "type": "string"
         },
         "ui": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Ui"
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.UI"
         }
       }
     },
@@ -11127,8 +11127,8 @@
         }
       }
     },
-    "io.argoproj.workflow.v1alpha1.Ui": {
-      "description": "Ui defines a config for UI",
+    "io.argoproj.workflow.v1alpha1.UI": {
+      "description": "UI defines a config for UI",
       "type": "object",
       "properties": {
         "navColor": {

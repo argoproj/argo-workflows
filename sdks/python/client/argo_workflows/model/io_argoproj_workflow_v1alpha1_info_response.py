@@ -31,9 +31,9 @@ from argo_workflows.exceptions import ApiAttributeError
 
 def lazy_import():
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_link import IoArgoprojWorkflowV1alpha1Link
-    from argo_workflows.model.io_argoproj_workflow_v1alpha1_ui import IoArgoprojWorkflowV1alpha1Ui
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_ui import IoArgoprojWorkflowV1alpha1UI
     globals()['IoArgoprojWorkflowV1alpha1Link'] = IoArgoprojWorkflowV1alpha1Link
-    globals()['IoArgoprojWorkflowV1alpha1Ui'] = IoArgoprojWorkflowV1alpha1Ui
+    globals()['IoArgoprojWorkflowV1alpha1UI'] = IoArgoprojWorkflowV1alpha1UI
 
 
 class IoArgoprojWorkflowV1alpha1InfoResponse(ModelNormal):
@@ -91,7 +91,7 @@ class IoArgoprojWorkflowV1alpha1InfoResponse(ModelNormal):
         return {
             'links': ([IoArgoprojWorkflowV1alpha1Link],),  # noqa: E501
             'managed_namespace': (str,),  # noqa: E501
-            'ui': (IoArgoprojWorkflowV1alpha1Ui,),  # noqa: E501
+            'ui': (IoArgoprojWorkflowV1alpha1UI,),  # noqa: E501
         }
 
     @cached_property
@@ -148,7 +148,7 @@ class IoArgoprojWorkflowV1alpha1InfoResponse(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             links ([IoArgoprojWorkflowV1alpha1Link]): [optional]  # noqa: E501
             managed_namespace (str): [optional]  # noqa: E501
-            ui (IoArgoprojWorkflowV1alpha1Ui): [optional]  # noqa: E501
+            ui (IoArgoprojWorkflowV1alpha1UI): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -232,7 +232,7 @@ class IoArgoprojWorkflowV1alpha1InfoResponse(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             links ([IoArgoprojWorkflowV1alpha1Link]): [optional]  # noqa: E501
             managed_namespace (str): [optional]  # noqa: E501
-            ui (IoArgoprojWorkflowV1alpha1Ui): [optional]  # noqa: E501
+            ui (IoArgoprojWorkflowV1alpha1UI): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

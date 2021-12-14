@@ -1,8 +1,8 @@
 
 
-# IoArgoprojWorkflowV1alpha1Ui
+# IoArgoprojWorkflowV1alpha1UI
 
-Ui defines a config for UI
+UI defines a config for UI
 
 ## Properties
 

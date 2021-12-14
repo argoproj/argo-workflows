@@ -113,7 +113,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template":                      schema_pkg_apis_workflow_v1alpha1_Template(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TemplateRef":                   schema_pkg_apis_workflow_v1alpha1_TemplateRef(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TransformationStep":            schema_pkg_apis_workflow_v1alpha1_TransformationStep(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Ui":                            schema_pkg_apis_workflow_v1alpha1_Ui(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.UI":                            schema_pkg_apis_workflow_v1alpha1_UI(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.UserContainer":                 schema_pkg_apis_workflow_v1alpha1_UserContainer(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ValueFrom":                     schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Version":                       schema_pkg_apis_workflow_v1alpha1_Version(ref),
@@ -5382,11 +5382,11 @@ func schema_pkg_apis_workflow_v1alpha1_TransformationStep(ref common.ReferenceCa
 	}
 }
 
-func schema_pkg_apis_workflow_v1alpha1_Ui(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_workflow_v1alpha1_UI(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Ui defines a config for UI",
+				Description: "UI defines a config for UI",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"navColor": {

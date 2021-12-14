@@ -12,8 +12,8 @@ type Link struct {
 	URL string `json:"url" protobuf:"bytes,3,opt,name=url"`
 }
 
-// Ui defines a config for UI
-type Ui struct {
+// UI defines a config for UI
+type UI struct {
 	// NavColor is an ui navigation bar theme which switch the design
 	NavColor string `json:"navColor,omitempty" protobuf:"bytes,1,opt,name=navColor"`
 }
