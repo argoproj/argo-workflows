@@ -161,6 +161,7 @@ nav:
       - environment-variables.md
   - Developer Guide:
       - CONTRIBUTING.md
+      - mentoring.md
       - architecture.md
       - running-locally.md
       - versioning.md
