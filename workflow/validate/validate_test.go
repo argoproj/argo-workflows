@@ -2256,30 +2256,7 @@ spec:
 
 func TestInvalidMetricGauge(t *testing.T) {
 	_, err := validate(invalidRealtimeMetricGauge)
-	assert.EqualError(t, err, "templates.whalesay metric 'metric_name' gauge error: 'resourcesDuration.*' metrics cannot be used in real-time")
-}
-
-var invalidNilMetricGauge = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: hello-world-
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    metrics:
-      prometheus:
-        - name: metric_name
-          help: please
-          gauge:
-    container:
-      image: docker/whalesay:latest
-`
-
-func TestInvalidNilMetricGauge(t *testing.T) {
-	_, err := validate(invalidNilMetricGauge)
-	assert.EqualError(t, err, "templates.whalesay metric 'metric_name' gauge error: gauge is nil")
+	assert.EqualError(t, err, "templates.whalesay metric 'metric_name' error: 'resourcesDuration.*' metrics cannot be used in real-time")
 }
 
 var invalidNoValueMetricGauge = `
@@ -2303,7 +2280,7 @@ spec:
 
 func TestInvalidNoValueMetricGauge(t *testing.T) {
 	_, err := validate(invalidNoValueMetricGauge)
-	assert.EqualError(t, err, "templates.whalesay metric 'metric_name' gauge error: missing gauge.value")
+	assert.EqualError(t, err, "templates.whalesay metric 'metric_name' error: missing gauge.value")
 }
 
 var validMetricGauges = `

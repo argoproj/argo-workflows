@@ -222,17 +222,22 @@ func IsValidMetricName(name string) bool {
 	return model.IsValidMetricName(model.LabelValue(name))
 }
 
-func ValidateMetricGauge(gauge *wfv1.Gauge) error {
-	if gauge == nil {
-		return errors.New("gauge is nil")
-	}
-	if gauge.Value == "" {
-		return errors.New("missing gauge.value")
-	}
-	if gauge.Realtime != nil && *gauge.Realtime {
-		if strings.Contains(gauge.Value, "resourcesDuration.") {
-			return errors.New("'resourcesDuration.*' metrics cannot be used in real-time")
+func ValidateMetricValues(metric *wfv1.Prometheus) error {
+	if metric.Gauge != nil {
+		if metric.Gauge.Value == "" {
+			return errors.New("missing gauge.value")
 		}
+		if metric.Gauge.Realtime != nil && *metric.Gauge.Realtime {
+			if strings.Contains(metric.Gauge.Value, "resourcesDuration.") {
+				return errors.New("'resourcesDuration.*' metrics cannot be used in real-time")
+			}
+		}
+	}
+	if metric.Counter != nil && metric.Counter.Value == "" {
+		return errors.New("missing counter.value")
+	}
+	if metric.Histogram != nil && metric.Histogram.Value == "" {
+		return errors.New("missing histogram.value")
 	}
 	return nil
 }
