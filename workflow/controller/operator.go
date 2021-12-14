@@ -260,7 +260,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	}
 
 	if woc.execWf.Spec.Metrics != nil {
-		localScope, realTimeScope := woc.prepareMetricScope(nil)
+		localScope, realTimeScope := woc.prepareDefaultMetricScope()
 		woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, localScope, realTimeScope, true)
 	}
 
