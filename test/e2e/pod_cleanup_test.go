@@ -133,30 +133,6 @@ spec:
 }
 
 func (s *PodCleanupSuite) TestOnPodSuccess() {
-	s.Run("SucceededPod", func() {
-		s.Given().
-			Workflow(`
-metadata:
-  generateName: test-pod-cleanup-on-pod-completion-label-selected-
-spec:
-  podGC:
-    strategy: OnPodCompletion
-    labelSelector:
-      matchLabels:
-        evicted: true
-  entrypoint: main
-  templates:
-    - name: main
-      container:
-        image: argoproj/argosay:v2
-`).
-			When().
-			SubmitWorkflow().
-			WaitForPod(fixtures.PodCompleted)
-	})
-}
-
-func (s *PodCleanupSuite) TestOnPodSuccess() {
 	s.Run("FailedPod", func() {
 		s.Given().
 			Workflow(`
