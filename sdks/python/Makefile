@@ -25,7 +25,7 @@ generate:
 		sed 's/io.k8s.api.core.v1.//' | \
 		sed 's/io.k8s.apimachinery.pkg.apis.meta.v1.//' \
 		> $(WD)/swagger.json
-	$(DOCKER) openapitools/openapi-generator-cli:v4.3.1 \
+	$(DOCKER) openapitools/openapi-generator-cli:v5.2.1 \
 		generate \
 		--input-spec /wd/swagger.json \
 		--generator-name python \

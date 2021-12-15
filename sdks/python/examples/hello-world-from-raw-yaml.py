@@ -2,7 +2,7 @@ from pprint import pprint
 
 import argo_workflows
 from argo_workflows.api import workflow_service_api
-from argo_workflows.models.io_argoproj_workflow_v1alpha1_workflow_create_request import \
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_create_request import \
     IoArgoprojWorkflowV1alpha1WorkflowCreateRequest
 import requests
 import yaml

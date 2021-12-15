@@ -1,5 +1,6 @@
 # IoArgoprojEventsV1alpha1AMQPEventSource
 
+
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
@@ -10,13 +11,14 @@ Name | Type | Description | Notes
 **exchange_name** | **str** |  | [optional] 
 **exchange_type** | **str** |  | [optional] 
 **json_body** | **bool** |  | [optional] 
-**metadata** | **dict(str, str)** |  | [optional] 
+**metadata** | **{str: (str,)}** |  | [optional] 
 **queue_bind** | [**IoArgoprojEventsV1alpha1AMQPQueueBindConfig**](IoArgoprojEventsV1alpha1AMQPQueueBindConfig.md) |  | [optional] 
 **queue_declare** | [**IoArgoprojEventsV1alpha1AMQPQueueDeclareConfig**](IoArgoprojEventsV1alpha1AMQPQueueDeclareConfig.md) |  | [optional] 
 **routing_key** | **str** |  | [optional] 
 **tls** | [**IoArgoprojEventsV1alpha1TLSConfig**](IoArgoprojEventsV1alpha1TLSConfig.md) |  | [optional] 
 **url** | **str** |  | [optional] 
 **url_secret** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 
+**any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

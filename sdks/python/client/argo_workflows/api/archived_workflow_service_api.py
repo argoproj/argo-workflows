@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
     Argo Server API
 
@@ -10,18 +8,24 @@
 """
 
 
-from __future__ import absolute_import
-
 import re  # noqa: F401
+import sys  # noqa: F401
 
-# python 2 and python 3 compatibility library
-import six
-
-from argo_workflows.api_client import ApiClient
-from argo_workflows.exceptions import (  # noqa: F401
-    ApiTypeError,
-    ApiValueError
+from argo_workflows.api_client import ApiClient, Endpoint as _Endpoint
+from argo_workflows.model_utils import (  # noqa: F401
+    check_allowed_values,
+    check_validations,
+    date,
+    datetime,
+    file_type,
+    none_type,
+    validate_and_convert_types
 )
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_label_keys import IoArgoprojWorkflowV1alpha1LabelKeys
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_label_values import IoArgoprojWorkflowV1alpha1LabelValues
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_list import IoArgoprojWorkflowV1alpha1WorkflowList
 
 
 class ArchivedWorkflowServiceApi(object):
@@ -36,630 +40,660 @@ class ArchivedWorkflowServiceApi(object):
             api_client = ApiClient()
         self.api_client = api_client
 
-    def delete_archived_workflow(self, uid, **kwargs):  # noqa: E501
-        """delete_archived_workflow  # noqa: E501
+        def __delete_archived_workflow(
+            self,
+            uid,
+            **kwargs
+        ):
+            """delete_archived_workflow  # noqa: E501
 
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.delete_archived_workflow(uid, async_req=True)
-        >>> result = thread.get()
+            This method makes a synchronous HTTP request by default. To make an
+            asynchronous HTTP request, please pass async_req=True
 
-        :param async_req bool: execute request asynchronously
-        :param str uid: (required)
-        :param _preload_content: if False, the urllib3.HTTPResponse object will
-                                 be returned without reading/decoding response
-                                 data. Default is True.
-        :param _request_timeout: timeout setting for this request. If one
-                                 number provided, it will be total request
-                                 timeout. It can also be a pair (tuple) of
-                                 (connection, read) timeouts.
-        :return: object
-                 If the method is called asynchronously,
-                 returns the request thread.
-        """
-        kwargs['_return_http_data_only'] = True
-        return self.delete_archived_workflow_with_http_info(uid, **kwargs)  # noqa: E501
+            >>> thread = api.delete_archived_workflow(uid, async_req=True)
+            >>> result = thread.get()
 
-    def delete_archived_workflow_with_http_info(self, uid, **kwargs):  # noqa: E501
-        """delete_archived_workflow  # noqa: E501
+            Args:
+                uid (str):
 
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.delete_archived_workflow_with_http_info(uid, async_req=True)
-        >>> result = thread.get()
+            Keyword Args:
+                _return_http_data_only (bool): response data without head status
+                    code and headers. Default is True.
+                _preload_content (bool): if False, the urllib3.HTTPResponse object
+                    will be returned without reading/decoding response data.
+                    Default is True.
+                _request_timeout (int/float/tuple): timeout setting for this request. If
+                    one number provided, it will be total request timeout. It can also
+                    be a pair (tuple) of (connection, read) timeouts.
+                    Default is None.
+                _check_input_type (bool): specifies if type checking
+                    should be done one the data sent to the server.
+                    Default is True.
+                _check_return_type (bool): specifies if type checking
+                    should be done one the data received from the server.
+                    Default is True.
+                _host_index (int/None): specifies the index of the server
+                    that we want to use.
+                    Default is read from the configuration.
+                async_req (bool): execute request asynchronously
 
-        :param async_req bool: execute request asynchronously
-        :param str uid: (required)
-        :param _return_http_data_only: response data without head status code
-                                       and headers
-        :param _preload_content: if False, the urllib3.HTTPResponse object will
-                                 be returned without reading/decoding response
-                                 data. Default is True.
-        :param _request_timeout: timeout setting for this request. If one
-                                 number provided, it will be total request
-                                 timeout. It can also be a pair (tuple) of
-                                 (connection, read) timeouts.
-        :return: tuple(object, status_code(int), headers(HTTPHeaderDict))
-                 If the method is called asynchronously,
-                 returns the request thread.
-        """
+            Returns:
+                bool, date, datetime, dict, float, int, list, str, none_type
+                    If the method is called asynchronously, returns the request
+                    thread.
+            """
+            kwargs['async_req'] = kwargs.get(
+                'async_req', False
+            )
+            kwargs['_return_http_data_only'] = kwargs.get(
+                '_return_http_data_only', True
+            )
+            kwargs['_preload_content'] = kwargs.get(
+                '_preload_content', True
+            )
+            kwargs['_request_timeout'] = kwargs.get(
+                '_request_timeout', None
+            )
+            kwargs['_check_input_type'] = kwargs.get(
+                '_check_input_type', True
+            )
+            kwargs['_check_return_type'] = kwargs.get(
+                '_check_return_type', True
+            )
+            kwargs['_host_index'] = kwargs.get('_host_index')
+            kwargs['uid'] = \
+                uid
+            return self.call_with_http_info(**kwargs)
 
-        local_var_params = locals()
-
-        all_params = [
-            'uid'
-        ]
-        all_params.extend(
-            [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout'
-            ]
+        self.delete_archived_workflow = _Endpoint(
+            settings={
+                'response_type': (bool, date, datetime, dict, float, int, list, str, none_type,),
+                'auth': [],
+                'endpoint_path': '/api/v1/archived-workflows/{uid}',
+                'operation_id': 'delete_archived_workflow',
+                'http_method': 'DELETE',
+                'servers': None,
+            },
+            params_map={
+                'all': [
+                    'uid',
+                ],
+                'required': [
+                    'uid',
+                ],
+                'nullable': [
+                ],
+                'enum': [
+                ],
+                'validation': [
+                ]
+            },
+            root_map={
+                'validations': {
+                },
+                'allowed_values': {
+                },
+                'openapi_types': {
+                    'uid':
+                        (str,),
+                },
+                'attribute_map': {
+                    'uid': 'uid',
+                },
+                'location_map': {
+                    'uid': 'path',
+                },
+                'collection_format_map': {
+                }
+            },
+            headers_map={
+                'accept': [
+                    'application/json'
+                ],
+                'content_type': [],
+            },
+            api_client=api_client,
+            callable=__delete_archived_workflow
         )
 
-        for key, val in six.iteritems(local_var_params['kwargs']):
-            if key not in all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method delete_archived_workflow" % key
-                )
-            local_var_params[key] = val
-        del local_var_params['kwargs']
-        # verify the required parameter 'uid' is set
-        if self.api_client.client_side_validation and ('uid' not in local_var_params or  # noqa: E501
-                                                        local_var_params['uid'] is None):  # noqa: E501
-            raise ApiValueError("Missing the required parameter `uid` when calling `delete_archived_workflow`")  # noqa: E501
+        def __get_archived_workflow(
+            self,
+            uid,
+            **kwargs
+        ):
+            """get_archived_workflow  # noqa: E501
 
-        collection_formats = {}
+            This method makes a synchronous HTTP request by default. To make an
+            asynchronous HTTP request, please pass async_req=True
 
-        path_params = {}
-        if 'uid' in local_var_params:
-            path_params['uid'] = local_var_params['uid']  # noqa: E501
+            >>> thread = api.get_archived_workflow(uid, async_req=True)
+            >>> result = thread.get()
 
-        query_params = []
+            Args:
+                uid (str):
 
-        header_params = {}
+            Keyword Args:
+                _return_http_data_only (bool): response data without head status
+                    code and headers. Default is True.
+                _preload_content (bool): if False, the urllib3.HTTPResponse object
+                    will be returned without reading/decoding response data.
+                    Default is True.
+                _request_timeout (int/float/tuple): timeout setting for this request. If
+                    one number provided, it will be total request timeout. It can also
+                    be a pair (tuple) of (connection, read) timeouts.
+                    Default is None.
+                _check_input_type (bool): specifies if type checking
+                    should be done one the data sent to the server.
+                    Default is True.
+                _check_return_type (bool): specifies if type checking
+                    should be done one the data received from the server.
+                    Default is True.
+                _host_index (int/None): specifies the index of the server
+                    that we want to use.
+                    Default is read from the configuration.
+                async_req (bool): execute request asynchronously
 
-        form_params = []
-        local_var_files = {}
+            Returns:
+                IoArgoprojWorkflowV1alpha1Workflow
+                    If the method is called asynchronously, returns the request
+                    thread.
+            """
+            kwargs['async_req'] = kwargs.get(
+                'async_req', False
+            )
+            kwargs['_return_http_data_only'] = kwargs.get(
+                '_return_http_data_only', True
+            )
+            kwargs['_preload_content'] = kwargs.get(
+                '_preload_content', True
+            )
+            kwargs['_request_timeout'] = kwargs.get(
+                '_request_timeout', None
+            )
+            kwargs['_check_input_type'] = kwargs.get(
+                '_check_input_type', True
+            )
+            kwargs['_check_return_type'] = kwargs.get(
+                '_check_return_type', True
+            )
+            kwargs['_host_index'] = kwargs.get('_host_index')
+            kwargs['uid'] = \
+                uid
+            return self.call_with_http_info(**kwargs)
 
-        body_params = None
-        # HTTP header `Accept`
-        header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
-
-        # Authentication setting
-        auth_settings = []  # noqa: E501
-
-        return self.api_client.call_api(
-            '/api/v1/archived-workflows/{uid}', 'DELETE',
-            path_params,
-            query_params,
-            header_params,
-            body=body_params,
-            post_params=form_params,
-            files=local_var_files,
-            response_type='object',  # noqa: E501
-            auth_settings=auth_settings,
-            async_req=local_var_params.get('async_req'),
-            _return_http_data_only=local_var_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=local_var_params.get('_preload_content', True),
-            _request_timeout=local_var_params.get('_request_timeout'),
-            collection_formats=collection_formats)
-
-    def get_archived_workflow(self, uid, **kwargs):  # noqa: E501
-        """get_archived_workflow  # noqa: E501
-
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.get_archived_workflow(uid, async_req=True)
-        >>> result = thread.get()
-
-        :param async_req bool: execute request asynchronously
-        :param str uid: (required)
-        :param _preload_content: if False, the urllib3.HTTPResponse object will
-                                 be returned without reading/decoding response
-                                 data. Default is True.
-        :param _request_timeout: timeout setting for this request. If one
-                                 number provided, it will be total request
-                                 timeout. It can also be a pair (tuple) of
-                                 (connection, read) timeouts.
-        :return: IoArgoprojWorkflowV1alpha1Workflow
-                 If the method is called asynchronously,
-                 returns the request thread.
-        """
-        kwargs['_return_http_data_only'] = True
-        return self.get_archived_workflow_with_http_info(uid, **kwargs)  # noqa: E501
-
-    def get_archived_workflow_with_http_info(self, uid, **kwargs):  # noqa: E501
-        """get_archived_workflow  # noqa: E501
-
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.get_archived_workflow_with_http_info(uid, async_req=True)
-        >>> result = thread.get()
-
-        :param async_req bool: execute request asynchronously
-        :param str uid: (required)
-        :param _return_http_data_only: response data without head status code
-                                       and headers
-        :param _preload_content: if False, the urllib3.HTTPResponse object will
-                                 be returned without reading/decoding response
-                                 data. Default is True.
-        :param _request_timeout: timeout setting for this request. If one
-                                 number provided, it will be total request
-                                 timeout. It can also be a pair (tuple) of
-                                 (connection, read) timeouts.
-        :return: tuple(IoArgoprojWorkflowV1alpha1Workflow, status_code(int), headers(HTTPHeaderDict))
-                 If the method is called asynchronously,
-                 returns the request thread.
-        """
-
-        local_var_params = locals()
-
-        all_params = [
-            'uid'
-        ]
-        all_params.extend(
-            [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout'
-            ]
+        self.get_archived_workflow = _Endpoint(
+            settings={
+                'response_type': (IoArgoprojWorkflowV1alpha1Workflow,),
+                'auth': [],
+                'endpoint_path': '/api/v1/archived-workflows/{uid}',
+                'operation_id': 'get_archived_workflow',
+                'http_method': 'GET',
+                'servers': None,
+            },
+            params_map={
+                'all': [
+                    'uid',
+                ],
+                'required': [
+                    'uid',
+                ],
+                'nullable': [
+                ],
+                'enum': [
+                ],
+                'validation': [
+                ]
+            },
+            root_map={
+                'validations': {
+                },
+                'allowed_values': {
+                },
+                'openapi_types': {
+                    'uid':
+                        (str,),
+                },
+                'attribute_map': {
+                    'uid': 'uid',
+                },
+                'location_map': {
+                    'uid': 'path',
+                },
+                'collection_format_map': {
+                }
+            },
+            headers_map={
+                'accept': [
+                    'application/json'
+                ],
+                'content_type': [],
+            },
+            api_client=api_client,
+            callable=__get_archived_workflow
         )
 
-        for key, val in six.iteritems(local_var_params['kwargs']):
-            if key not in all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method get_archived_workflow" % key
-                )
-            local_var_params[key] = val
-        del local_var_params['kwargs']
-        # verify the required parameter 'uid' is set
-        if self.api_client.client_side_validation and ('uid' not in local_var_params or  # noqa: E501
-                                                        local_var_params['uid'] is None):  # noqa: E501
-            raise ApiValueError("Missing the required parameter `uid` when calling `get_archived_workflow`")  # noqa: E501
+        def __list_archived_workflow_label_keys(
+            self,
+            **kwargs
+        ):
+            """list_archived_workflow_label_keys  # noqa: E501
 
-        collection_formats = {}
+            This method makes a synchronous HTTP request by default. To make an
+            asynchronous HTTP request, please pass async_req=True
 
-        path_params = {}
-        if 'uid' in local_var_params:
-            path_params['uid'] = local_var_params['uid']  # noqa: E501
+            >>> thread = api.list_archived_workflow_label_keys(async_req=True)
+            >>> result = thread.get()
 
-        query_params = []
 
-        header_params = {}
+            Keyword Args:
+                _return_http_data_only (bool): response data without head status
+                    code and headers. Default is True.
+                _preload_content (bool): if False, the urllib3.HTTPResponse object
+                    will be returned without reading/decoding response data.
+                    Default is True.
+                _request_timeout (int/float/tuple): timeout setting for this request. If
+                    one number provided, it will be total request timeout. It can also
+                    be a pair (tuple) of (connection, read) timeouts.
+                    Default is None.
+                _check_input_type (bool): specifies if type checking
+                    should be done one the data sent to the server.
+                    Default is True.
+                _check_return_type (bool): specifies if type checking
+                    should be done one the data received from the server.
+                    Default is True.
+                _host_index (int/None): specifies the index of the server
+                    that we want to use.
+                    Default is read from the configuration.
+                async_req (bool): execute request asynchronously
 
-        form_params = []
-        local_var_files = {}
+            Returns:
+                IoArgoprojWorkflowV1alpha1LabelKeys
+                    If the method is called asynchronously, returns the request
+                    thread.
+            """
+            kwargs['async_req'] = kwargs.get(
+                'async_req', False
+            )
+            kwargs['_return_http_data_only'] = kwargs.get(
+                '_return_http_data_only', True
+            )
+            kwargs['_preload_content'] = kwargs.get(
+                '_preload_content', True
+            )
+            kwargs['_request_timeout'] = kwargs.get(
+                '_request_timeout', None
+            )
+            kwargs['_check_input_type'] = kwargs.get(
+                '_check_input_type', True
+            )
+            kwargs['_check_return_type'] = kwargs.get(
+                '_check_return_type', True
+            )
+            kwargs['_host_index'] = kwargs.get('_host_index')
+            return self.call_with_http_info(**kwargs)
 
-        body_params = None
-        # HTTP header `Accept`
-        header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
-
-        # Authentication setting
-        auth_settings = []  # noqa: E501
-
-        return self.api_client.call_api(
-            '/api/v1/archived-workflows/{uid}', 'GET',
-            path_params,
-            query_params,
-            header_params,
-            body=body_params,
-            post_params=form_params,
-            files=local_var_files,
-            response_type='IoArgoprojWorkflowV1alpha1Workflow',  # noqa: E501
-            auth_settings=auth_settings,
-            async_req=local_var_params.get('async_req'),
-            _return_http_data_only=local_var_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=local_var_params.get('_preload_content', True),
-            _request_timeout=local_var_params.get('_request_timeout'),
-            collection_formats=collection_formats)
-
-    def list_archived_workflow_label_keys(self, **kwargs):  # noqa: E501
-        """list_archived_workflow_label_keys  # noqa: E501
-
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.list_archived_workflow_label_keys(async_req=True)
-        >>> result = thread.get()
-
-        :param async_req bool: execute request asynchronously
-        :param _preload_content: if False, the urllib3.HTTPResponse object will
-                                 be returned without reading/decoding response
-                                 data. Default is True.
-        :param _request_timeout: timeout setting for this request. If one
-                                 number provided, it will be total request
-                                 timeout. It can also be a pair (tuple) of
-                                 (connection, read) timeouts.
-        :return: IoArgoprojWorkflowV1alpha1LabelKeys
-                 If the method is called asynchronously,
-                 returns the request thread.
-        """
-        kwargs['_return_http_data_only'] = True
-        return self.list_archived_workflow_label_keys_with_http_info(**kwargs)  # noqa: E501
-
-    def list_archived_workflow_label_keys_with_http_info(self, **kwargs):  # noqa: E501
-        """list_archived_workflow_label_keys  # noqa: E501
-
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.list_archived_workflow_label_keys_with_http_info(async_req=True)
-        >>> result = thread.get()
-
-        :param async_req bool: execute request asynchronously
-        :param _return_http_data_only: response data without head status code
-                                       and headers
-        :param _preload_content: if False, the urllib3.HTTPResponse object will
-                                 be returned without reading/decoding response
-                                 data. Default is True.
-        :param _request_timeout: timeout setting for this request. If one
-                                 number provided, it will be total request
-                                 timeout. It can also be a pair (tuple) of
-                                 (connection, read) timeouts.
-        :return: tuple(IoArgoprojWorkflowV1alpha1LabelKeys, status_code(int), headers(HTTPHeaderDict))
-                 If the method is called asynchronously,
-                 returns the request thread.
-        """
-
-        local_var_params = locals()
-
-        all_params = [
-        ]
-        all_params.extend(
-            [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout'
-            ]
+        self.list_archived_workflow_label_keys = _Endpoint(
+            settings={
+                'response_type': (IoArgoprojWorkflowV1alpha1LabelKeys,),
+                'auth': [],
+                'endpoint_path': '/api/v1/archived-workflows-label-keys',
+                'operation_id': 'list_archived_workflow_label_keys',
+                'http_method': 'GET',
+                'servers': None,
+            },
+            params_map={
+                'all': [
+                ],
+                'required': [],
+                'nullable': [
+                ],
+                'enum': [
+                ],
+                'validation': [
+                ]
+            },
+            root_map={
+                'validations': {
+                },
+                'allowed_values': {
+                },
+                'openapi_types': {
+                },
+                'attribute_map': {
+                },
+                'location_map': {
+                },
+                'collection_format_map': {
+                }
+            },
+            headers_map={
+                'accept': [
+                    'application/json'
+                ],
+                'content_type': [],
+            },
+            api_client=api_client,
+            callable=__list_archived_workflow_label_keys
         )
 
-        for key, val in six.iteritems(local_var_params['kwargs']):
-            if key not in all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method list_archived_workflow_label_keys" % key
-                )
-            local_var_params[key] = val
-        del local_var_params['kwargs']
+        def __list_archived_workflow_label_values(
+            self,
+            **kwargs
+        ):
+            """list_archived_workflow_label_values  # noqa: E501
 
-        collection_formats = {}
+            This method makes a synchronous HTTP request by default. To make an
+            asynchronous HTTP request, please pass async_req=True
 
-        path_params = {}
+            >>> thread = api.list_archived_workflow_label_values(async_req=True)
+            >>> result = thread.get()
 
-        query_params = []
 
-        header_params = {}
+            Keyword Args:
+                list_options_label_selector (str): A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional.. [optional]
+                list_options_field_selector (str): A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional.. [optional]
+                list_options_watch (bool): Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional.. [optional]
+                list_options_allow_watch_bookmarks (bool): allowWatchBookmarks requests watch events with type \"BOOKMARK\". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. If the feature gate WatchBookmarks is not enabled in apiserver, this field is ignored. +optional.. [optional]
+                list_options_resource_version (str): resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional. [optional]
+                list_options_resource_version_match (str): resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional. [optional]
+                list_options_timeout_seconds (str): Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional.. [optional]
+                list_options_limit (str): limit is a maximum number of responses to return for a list call. If more items exist, the server will set the `continue` field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.. [optional]
+                list_options_continue (str): The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.. [optional]
+                _return_http_data_only (bool): response data without head status
+                    code and headers. Default is True.
+                _preload_content (bool): if False, the urllib3.HTTPResponse object
+                    will be returned without reading/decoding response data.
+                    Default is True.
+                _request_timeout (int/float/tuple): timeout setting for this request. If
+                    one number provided, it will be total request timeout. It can also
+                    be a pair (tuple) of (connection, read) timeouts.
+                    Default is None.
+                _check_input_type (bool): specifies if type checking
+                    should be done one the data sent to the server.
+                    Default is True.
+                _check_return_type (bool): specifies if type checking
+                    should be done one the data received from the server.
+                    Default is True.
+                _host_index (int/None): specifies the index of the server
+                    that we want to use.
+                    Default is read from the configuration.
+                async_req (bool): execute request asynchronously
 
-        form_params = []
-        local_var_files = {}
+            Returns:
+                IoArgoprojWorkflowV1alpha1LabelValues
+                    If the method is called asynchronously, returns the request
+                    thread.
+            """
+            kwargs['async_req'] = kwargs.get(
+                'async_req', False
+            )
+            kwargs['_return_http_data_only'] = kwargs.get(
+                '_return_http_data_only', True
+            )
+            kwargs['_preload_content'] = kwargs.get(
+                '_preload_content', True
+            )
+            kwargs['_request_timeout'] = kwargs.get(
+                '_request_timeout', None
+            )
+            kwargs['_check_input_type'] = kwargs.get(
+                '_check_input_type', True
+            )
+            kwargs['_check_return_type'] = kwargs.get(
+                '_check_return_type', True
+            )
+            kwargs['_host_index'] = kwargs.get('_host_index')
+            return self.call_with_http_info(**kwargs)
 
-        body_params = None
-        # HTTP header `Accept`
-        header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
-
-        # Authentication setting
-        auth_settings = []  # noqa: E501
-
-        return self.api_client.call_api(
-            '/api/v1/archived-workflows-label-keys', 'GET',
-            path_params,
-            query_params,
-            header_params,
-            body=body_params,
-            post_params=form_params,
-            files=local_var_files,
-            response_type='IoArgoprojWorkflowV1alpha1LabelKeys',  # noqa: E501
-            auth_settings=auth_settings,
-            async_req=local_var_params.get('async_req'),
-            _return_http_data_only=local_var_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=local_var_params.get('_preload_content', True),
-            _request_timeout=local_var_params.get('_request_timeout'),
-            collection_formats=collection_formats)
-
-    def list_archived_workflow_label_values(self, **kwargs):  # noqa: E501
-        """list_archived_workflow_label_values  # noqa: E501
-
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.list_archived_workflow_label_values(async_req=True)
-        >>> result = thread.get()
-
-        :param async_req bool: execute request asynchronously
-        :param str list_options_label_selector: A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional.
-        :param str list_options_field_selector: A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional.
-        :param bool list_options_watch: Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional.
-        :param bool list_options_allow_watch_bookmarks: allowWatchBookmarks requests watch events with type \"BOOKMARK\". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. If the feature gate WatchBookmarks is not enabled in apiserver, this field is ignored. +optional.
-        :param str list_options_resource_version: resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional
-        :param str list_options_resource_version_match: resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional
-        :param str list_options_timeout_seconds: Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional.
-        :param str list_options_limit: limit is a maximum number of responses to return for a list call. If more items exist, the server will set the `continue` field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.
-        :param str list_options_continue: The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.
-        :param _preload_content: if False, the urllib3.HTTPResponse object will
-                                 be returned without reading/decoding response
-                                 data. Default is True.
-        :param _request_timeout: timeout setting for this request. If one
-                                 number provided, it will be total request
-                                 timeout. It can also be a pair (tuple) of
-                                 (connection, read) timeouts.
-        :return: IoArgoprojWorkflowV1alpha1LabelValues
-                 If the method is called asynchronously,
-                 returns the request thread.
-        """
-        kwargs['_return_http_data_only'] = True
-        return self.list_archived_workflow_label_values_with_http_info(**kwargs)  # noqa: E501
-
-    def list_archived_workflow_label_values_with_http_info(self, **kwargs):  # noqa: E501
-        """list_archived_workflow_label_values  # noqa: E501
-
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.list_archived_workflow_label_values_with_http_info(async_req=True)
-        >>> result = thread.get()
-
-        :param async_req bool: execute request asynchronously
-        :param str list_options_label_selector: A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional.
-        :param str list_options_field_selector: A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional.
-        :param bool list_options_watch: Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional.
-        :param bool list_options_allow_watch_bookmarks: allowWatchBookmarks requests watch events with type \"BOOKMARK\". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. If the feature gate WatchBookmarks is not enabled in apiserver, this field is ignored. +optional.
-        :param str list_options_resource_version: resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional
-        :param str list_options_resource_version_match: resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional
-        :param str list_options_timeout_seconds: Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional.
-        :param str list_options_limit: limit is a maximum number of responses to return for a list call. If more items exist, the server will set the `continue` field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.
-        :param str list_options_continue: The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.
-        :param _return_http_data_only: response data without head status code
-                                       and headers
-        :param _preload_content: if False, the urllib3.HTTPResponse object will
-                                 be returned without reading/decoding response
-                                 data. Default is True.
-        :param _request_timeout: timeout setting for this request. If one
-                                 number provided, it will be total request
-                                 timeout. It can also be a pair (tuple) of
-                                 (connection, read) timeouts.
-        :return: tuple(IoArgoprojWorkflowV1alpha1LabelValues, status_code(int), headers(HTTPHeaderDict))
-                 If the method is called asynchronously,
-                 returns the request thread.
-        """
-
-        local_var_params = locals()
-
-        all_params = [
-            'list_options_label_selector',
-            'list_options_field_selector',
-            'list_options_watch',
-            'list_options_allow_watch_bookmarks',
-            'list_options_resource_version',
-            'list_options_resource_version_match',
-            'list_options_timeout_seconds',
-            'list_options_limit',
-            'list_options_continue'
-        ]
-        all_params.extend(
-            [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout'
-            ]
+        self.list_archived_workflow_label_values = _Endpoint(
+            settings={
+                'response_type': (IoArgoprojWorkflowV1alpha1LabelValues,),
+                'auth': [],
+                'endpoint_path': '/api/v1/archived-workflows-label-values',
+                'operation_id': 'list_archived_workflow_label_values',
+                'http_method': 'GET',
+                'servers': None,
+            },
+            params_map={
+                'all': [
+                    'list_options_label_selector',
+                    'list_options_field_selector',
+                    'list_options_watch',
+                    'list_options_allow_watch_bookmarks',
+                    'list_options_resource_version',
+                    'list_options_resource_version_match',
+                    'list_options_timeout_seconds',
+                    'list_options_limit',
+                    'list_options_continue',
+                ],
+                'required': [],
+                'nullable': [
+                ],
+                'enum': [
+                ],
+                'validation': [
+                ]
+            },
+            root_map={
+                'validations': {
+                },
+                'allowed_values': {
+                },
+                'openapi_types': {
+                    'list_options_label_selector':
+                        (str,),
+                    'list_options_field_selector':
+                        (str,),
+                    'list_options_watch':
+                        (bool,),
+                    'list_options_allow_watch_bookmarks':
+                        (bool,),
+                    'list_options_resource_version':
+                        (str,),
+                    'list_options_resource_version_match':
+                        (str,),
+                    'list_options_timeout_seconds':
+                        (str,),
+                    'list_options_limit':
+                        (str,),
+                    'list_options_continue':
+                        (str,),
+                },
+                'attribute_map': {
+                    'list_options_label_selector': 'listOptions.labelSelector',
+                    'list_options_field_selector': 'listOptions.fieldSelector',
+                    'list_options_watch': 'listOptions.watch',
+                    'list_options_allow_watch_bookmarks': 'listOptions.allowWatchBookmarks',
+                    'list_options_resource_version': 'listOptions.resourceVersion',
+                    'list_options_resource_version_match': 'listOptions.resourceVersionMatch',
+                    'list_options_timeout_seconds': 'listOptions.timeoutSeconds',
+                    'list_options_limit': 'listOptions.limit',
+                    'list_options_continue': 'listOptions.continue',
+                },
+                'location_map': {
+                    'list_options_label_selector': 'query',
+                    'list_options_field_selector': 'query',
+                    'list_options_watch': 'query',
+                    'list_options_allow_watch_bookmarks': 'query',
+                    'list_options_resource_version': 'query',
+                    'list_options_resource_version_match': 'query',
+                    'list_options_timeout_seconds': 'query',
+                    'list_options_limit': 'query',
+                    'list_options_continue': 'query',
+                },
+                'collection_format_map': {
+                }
+            },
+            headers_map={
+                'accept': [
+                    'application/json'
+                ],
+                'content_type': [],
+            },
+            api_client=api_client,
+            callable=__list_archived_workflow_label_values
         )
 
-        for key, val in six.iteritems(local_var_params['kwargs']):
-            if key not in all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method list_archived_workflow_label_values" % key
-                )
-            local_var_params[key] = val
-        del local_var_params['kwargs']
+        def __list_archived_workflows(
+            self,
+            **kwargs
+        ):
+            """list_archived_workflows  # noqa: E501
 
-        collection_formats = {}
+            This method makes a synchronous HTTP request by default. To make an
+            asynchronous HTTP request, please pass async_req=True
 
-        path_params = {}
+            >>> thread = api.list_archived_workflows(async_req=True)
+            >>> result = thread.get()
 
-        query_params = []
-        if 'list_options_label_selector' in local_var_params and local_var_params['list_options_label_selector'] is not None:  # noqa: E501
-            query_params.append(('listOptions.labelSelector', local_var_params['list_options_label_selector']))  # noqa: E501
-        if 'list_options_field_selector' in local_var_params and local_var_params['list_options_field_selector'] is not None:  # noqa: E501
-            query_params.append(('listOptions.fieldSelector', local_var_params['list_options_field_selector']))  # noqa: E501
-        if 'list_options_watch' in local_var_params and local_var_params['list_options_watch'] is not None:  # noqa: E501
-            query_params.append(('listOptions.watch', local_var_params['list_options_watch']))  # noqa: E501
-        if 'list_options_allow_watch_bookmarks' in local_var_params and local_var_params['list_options_allow_watch_bookmarks'] is not None:  # noqa: E501
-            query_params.append(('listOptions.allowWatchBookmarks', local_var_params['list_options_allow_watch_bookmarks']))  # noqa: E501
-        if 'list_options_resource_version' in local_var_params and local_var_params['list_options_resource_version'] is not None:  # noqa: E501
-            query_params.append(('listOptions.resourceVersion', local_var_params['list_options_resource_version']))  # noqa: E501
-        if 'list_options_resource_version_match' in local_var_params and local_var_params['list_options_resource_version_match'] is not None:  # noqa: E501
-            query_params.append(('listOptions.resourceVersionMatch', local_var_params['list_options_resource_version_match']))  # noqa: E501
-        if 'list_options_timeout_seconds' in local_var_params and local_var_params['list_options_timeout_seconds'] is not None:  # noqa: E501
-            query_params.append(('listOptions.timeoutSeconds', local_var_params['list_options_timeout_seconds']))  # noqa: E501
-        if 'list_options_limit' in local_var_params and local_var_params['list_options_limit'] is not None:  # noqa: E501
-            query_params.append(('listOptions.limit', local_var_params['list_options_limit']))  # noqa: E501
-        if 'list_options_continue' in local_var_params and local_var_params['list_options_continue'] is not None:  # noqa: E501
-            query_params.append(('listOptions.continue', local_var_params['list_options_continue']))  # noqa: E501
 
-        header_params = {}
+            Keyword Args:
+                list_options_label_selector (str): A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional.. [optional]
+                list_options_field_selector (str): A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional.. [optional]
+                list_options_watch (bool): Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional.. [optional]
+                list_options_allow_watch_bookmarks (bool): allowWatchBookmarks requests watch events with type \"BOOKMARK\". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. If the feature gate WatchBookmarks is not enabled in apiserver, this field is ignored. +optional.. [optional]
+                list_options_resource_version (str): resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional. [optional]
+                list_options_resource_version_match (str): resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional. [optional]
+                list_options_timeout_seconds (str): Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional.. [optional]
+                list_options_limit (str): limit is a maximum number of responses to return for a list call. If more items exist, the server will set the `continue` field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.. [optional]
+                list_options_continue (str): The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.. [optional]
+                name_prefix (str): [optional]
+                _return_http_data_only (bool): response data without head status
+                    code and headers. Default is True.
+                _preload_content (bool): if False, the urllib3.HTTPResponse object
+                    will be returned without reading/decoding response data.
+                    Default is True.
+                _request_timeout (int/float/tuple): timeout setting for this request. If
+                    one number provided, it will be total request timeout. It can also
+                    be a pair (tuple) of (connection, read) timeouts.
+                    Default is None.
+                _check_input_type (bool): specifies if type checking
+                    should be done one the data sent to the server.
+                    Default is True.
+                _check_return_type (bool): specifies if type checking
+                    should be done one the data received from the server.
+                    Default is True.
+                _host_index (int/None): specifies the index of the server
+                    that we want to use.
+                    Default is read from the configuration.
+                async_req (bool): execute request asynchronously
 
-        form_params = []
-        local_var_files = {}
+            Returns:
+                IoArgoprojWorkflowV1alpha1WorkflowList
+                    If the method is called asynchronously, returns the request
+                    thread.
+            """
+            kwargs['async_req'] = kwargs.get(
+                'async_req', False
+            )
+            kwargs['_return_http_data_only'] = kwargs.get(
+                '_return_http_data_only', True
+            )
+            kwargs['_preload_content'] = kwargs.get(
+                '_preload_content', True
+            )
+            kwargs['_request_timeout'] = kwargs.get(
+                '_request_timeout', None
+            )
+            kwargs['_check_input_type'] = kwargs.get(
+                '_check_input_type', True
+            )
+            kwargs['_check_return_type'] = kwargs.get(
+                '_check_return_type', True
+            )
+            kwargs['_host_index'] = kwargs.get('_host_index')
+            return self.call_with_http_info(**kwargs)
 
-        body_params = None
-        # HTTP header `Accept`
-        header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
-
-        # Authentication setting
-        auth_settings = []  # noqa: E501
-
-        return self.api_client.call_api(
-            '/api/v1/archived-workflows-label-values', 'GET',
-            path_params,
-            query_params,
-            header_params,
-            body=body_params,
-            post_params=form_params,
-            files=local_var_files,
-            response_type='IoArgoprojWorkflowV1alpha1LabelValues',  # noqa: E501
-            auth_settings=auth_settings,
-            async_req=local_var_params.get('async_req'),
-            _return_http_data_only=local_var_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=local_var_params.get('_preload_content', True),
-            _request_timeout=local_var_params.get('_request_timeout'),
-            collection_formats=collection_formats)
-
-    def list_archived_workflows(self, **kwargs):  # noqa: E501
-        """list_archived_workflows  # noqa: E501
-
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.list_archived_workflows(async_req=True)
-        >>> result = thread.get()
-
-        :param async_req bool: execute request asynchronously
-        :param str list_options_label_selector: A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional.
-        :param str list_options_field_selector: A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional.
-        :param bool list_options_watch: Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional.
-        :param bool list_options_allow_watch_bookmarks: allowWatchBookmarks requests watch events with type \"BOOKMARK\". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. If the feature gate WatchBookmarks is not enabled in apiserver, this field is ignored. +optional.
-        :param str list_options_resource_version: resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional
-        :param str list_options_resource_version_match: resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional
-        :param str list_options_timeout_seconds: Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional.
-        :param str list_options_limit: limit is a maximum number of responses to return for a list call. If more items exist, the server will set the `continue` field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.
-        :param str list_options_continue: The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.
-        :param str name_prefix:
-        :param _preload_content: if False, the urllib3.HTTPResponse object will
-                                 be returned without reading/decoding response
-                                 data. Default is True.
-        :param _request_timeout: timeout setting for this request. If one
-                                 number provided, it will be total request
-                                 timeout. It can also be a pair (tuple) of
-                                 (connection, read) timeouts.
-        :return: IoArgoprojWorkflowV1alpha1WorkflowList
-                 If the method is called asynchronously,
-                 returns the request thread.
-        """
-        kwargs['_return_http_data_only'] = True
-        return self.list_archived_workflows_with_http_info(**kwargs)  # noqa: E501
-
-    def list_archived_workflows_with_http_info(self, **kwargs):  # noqa: E501
-        """list_archived_workflows  # noqa: E501
-
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.list_archived_workflows_with_http_info(async_req=True)
-        >>> result = thread.get()
-
-        :param async_req bool: execute request asynchronously
-        :param str list_options_label_selector: A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional.
-        :param str list_options_field_selector: A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional.
-        :param bool list_options_watch: Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional.
-        :param bool list_options_allow_watch_bookmarks: allowWatchBookmarks requests watch events with type \"BOOKMARK\". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. If the feature gate WatchBookmarks is not enabled in apiserver, this field is ignored. +optional.
-        :param str list_options_resource_version: resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional
-        :param str list_options_resource_version_match: resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional
-        :param str list_options_timeout_seconds: Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional.
-        :param str list_options_limit: limit is a maximum number of responses to return for a list call. If more items exist, the server will set the `continue` field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.
-        :param str list_options_continue: The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \"next key\".  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.
-        :param str name_prefix:
-        :param _return_http_data_only: response data without head status code
-                                       and headers
-        :param _preload_content: if False, the urllib3.HTTPResponse object will
-                                 be returned without reading/decoding response
-                                 data. Default is True.
-        :param _request_timeout: timeout setting for this request. If one
-                                 number provided, it will be total request
-                                 timeout. It can also be a pair (tuple) of
-                                 (connection, read) timeouts.
-        :return: tuple(IoArgoprojWorkflowV1alpha1WorkflowList, status_code(int), headers(HTTPHeaderDict))
-                 If the method is called asynchronously,
-                 returns the request thread.
-        """
-
-        local_var_params = locals()
-
-        all_params = [
-            'list_options_label_selector',
-            'list_options_field_selector',
-            'list_options_watch',
-            'list_options_allow_watch_bookmarks',
-            'list_options_resource_version',
-            'list_options_resource_version_match',
-            'list_options_timeout_seconds',
-            'list_options_limit',
-            'list_options_continue',
-            'name_prefix'
-        ]
-        all_params.extend(
-            [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout'
-            ]
+        self.list_archived_workflows = _Endpoint(
+            settings={
+                'response_type': (IoArgoprojWorkflowV1alpha1WorkflowList,),
+                'auth': [],
+                'endpoint_path': '/api/v1/archived-workflows',
+                'operation_id': 'list_archived_workflows',
+                'http_method': 'GET',
+                'servers': None,
+            },
+            params_map={
+                'all': [
+                    'list_options_label_selector',
+                    'list_options_field_selector',
+                    'list_options_watch',
+                    'list_options_allow_watch_bookmarks',
+                    'list_options_resource_version',
+                    'list_options_resource_version_match',
+                    'list_options_timeout_seconds',
+                    'list_options_limit',
+                    'list_options_continue',
+                    'name_prefix',
+                ],
+                'required': [],
+                'nullable': [
+                ],
+                'enum': [
+                ],
+                'validation': [
+                ]
+            },
+            root_map={
+                'validations': {
+                },
+                'allowed_values': {
+                },
+                'openapi_types': {
+                    'list_options_label_selector':
+                        (str,),
+                    'list_options_field_selector':
+                        (str,),
+                    'list_options_watch':
+                        (bool,),
+                    'list_options_allow_watch_bookmarks':
+                        (bool,),
+                    'list_options_resource_version':
+                        (str,),
+                    'list_options_resource_version_match':
+                        (str,),
+                    'list_options_timeout_seconds':
+                        (str,),
+                    'list_options_limit':
+                        (str,),
+                    'list_options_continue':
+                        (str,),
+                    'name_prefix':
+                        (str,),
+                },
+                'attribute_map': {
+                    'list_options_label_selector': 'listOptions.labelSelector',
+                    'list_options_field_selector': 'listOptions.fieldSelector',
+                    'list_options_watch': 'listOptions.watch',
+                    'list_options_allow_watch_bookmarks': 'listOptions.allowWatchBookmarks',
+                    'list_options_resource_version': 'listOptions.resourceVersion',
+                    'list_options_resource_version_match': 'listOptions.resourceVersionMatch',
+                    'list_options_timeout_seconds': 'listOptions.timeoutSeconds',
+                    'list_options_limit': 'listOptions.limit',
+                    'list_options_continue': 'listOptions.continue',
+                    'name_prefix': 'namePrefix',
+                },
+                'location_map': {
+                    'list_options_label_selector': 'query',
+                    'list_options_field_selector': 'query',
+                    'list_options_watch': 'query',
+                    'list_options_allow_watch_bookmarks': 'query',
+                    'list_options_resource_version': 'query',
+                    'list_options_resource_version_match': 'query',
+                    'list_options_timeout_seconds': 'query',
+                    'list_options_limit': 'query',
+                    'list_options_continue': 'query',
+                    'name_prefix': 'query',
+                },
+                'collection_format_map': {
+                }
+            },
+            headers_map={
+                'accept': [
+                    'application/json'
+                ],
+                'content_type': [],
+            },
+            api_client=api_client,
+            callable=__list_archived_workflows
         )
-
-        for key, val in six.iteritems(local_var_params['kwargs']):
-            if key not in all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method list_archived_workflows" % key
-                )
-            local_var_params[key] = val
-        del local_var_params['kwargs']
-
-        collection_formats = {}
-
-        path_params = {}
-
-        query_params = []
-        if 'list_options_label_selector' in local_var_params and local_var_params['list_options_label_selector'] is not None:  # noqa: E501
-            query_params.append(('listOptions.labelSelector', local_var_params['list_options_label_selector']))  # noqa: E501
-        if 'list_options_field_selector' in local_var_params and local_var_params['list_options_field_selector'] is not None:  # noqa: E501
-            query_params.append(('listOptions.fieldSelector', local_var_params['list_options_field_selector']))  # noqa: E501
-        if 'list_options_watch' in local_var_params and local_var_params['list_options_watch'] is not None:  # noqa: E501
-            query_params.append(('listOptions.watch', local_var_params['list_options_watch']))  # noqa: E501
-        if 'list_options_allow_watch_bookmarks' in local_var_params and local_var_params['list_options_allow_watch_bookmarks'] is not None:  # noqa: E501
-            query_params.append(('listOptions.allowWatchBookmarks', local_var_params['list_options_allow_watch_bookmarks']))  # noqa: E501
-        if 'list_options_resource_version' in local_var_params and local_var_params['list_options_resource_version'] is not None:  # noqa: E501
-            query_params.append(('listOptions.resourceVersion', local_var_params['list_options_resource_version']))  # noqa: E501
-        if 'list_options_resource_version_match' in local_var_params and local_var_params['list_options_resource_version_match'] is not None:  # noqa: E501
-            query_params.append(('listOptions.resourceVersionMatch', local_var_params['list_options_resource_version_match']))  # noqa: E501
-        if 'list_options_timeout_seconds' in local_var_params and local_var_params['list_options_timeout_seconds'] is not None:  # noqa: E501
-            query_params.append(('listOptions.timeoutSeconds', local_var_params['list_options_timeout_seconds']))  # noqa: E501
-        if 'list_options_limit' in local_var_params and local_var_params['list_options_limit'] is not None:  # noqa: E501
-            query_params.append(('listOptions.limit', local_var_params['list_options_limit']))  # noqa: E501
-        if 'list_options_continue' in local_var_params and local_var_params['list_options_continue'] is not None:  # noqa: E501
-            query_params.append(('listOptions.continue', local_var_params['list_options_continue']))  # noqa: E501
-        if 'name_prefix' in local_var_params and local_var_params['name_prefix'] is not None:  # noqa: E501
-            query_params.append(('namePrefix', local_var_params['name_prefix']))  # noqa: E501
-
-        header_params = {}
-
-        form_params = []
-        local_var_files = {}
-
-        body_params = None
-        # HTTP header `Accept`
-        header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
-
-        # Authentication setting
-        auth_settings = []  # noqa: E501
-
-        return self.api_client.call_api(
-            '/api/v1/archived-workflows', 'GET',
-            path_params,
-            query_params,
-            header_params,
-            body=body_params,
-            post_params=form_params,
-            files=local_var_files,
-            response_type='IoArgoprojWorkflowV1alpha1WorkflowList',  # noqa: E501
-            auth_settings=auth_settings,
-            async_req=local_var_params.get('async_req'),
-            _return_http_data_only=local_var_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=local_var_params.get('_preload_content', True),
-            _request_timeout=local_var_params.get('_request_timeout'),
-            collection_formats=collection_formats)
