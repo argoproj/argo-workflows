@@ -3,8 +3,6 @@ on:
   push:
     tags:
       - v*
-    branches:
-      - master
 jobs:
   sdk:
     if: github.repository == 'argoproj/argo-workflows'
