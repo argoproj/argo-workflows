@@ -130,8 +130,12 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 		}
 		// overwrite value from argument (if supplied)
 		argParam := args.GetParameterByName(inParam.Name)
-		if argParam != nil && argParam.Value != nil {
-			inParam.Value = argParam.Value
+		if argParam != nil {
+			if argParam.Value != nil {
+				inParam.Value = argParam.Value
+			} else {
+				inParam.ValueFrom = argParam.ValueFrom
+			}
 		}
 		if inParam.ValueFrom != nil && inParam.ValueFrom.ConfigMapKeyRef != nil {
 			if configMapInformer != nil {
