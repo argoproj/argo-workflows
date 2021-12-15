@@ -20,3 +20,4 @@ jobs:
       - run: make --directory sdks/${{matrix.name}} publish -B
         env:
           JAVA_SDK_MAVEN_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+          PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
