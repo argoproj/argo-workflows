@@ -262,10 +262,6 @@ func retrySet(retryStrategy *wfv1.ContainerSetRetryStrategy) bool {
 		logger.Info("retry strategy is nil")
 		return false
 	}
-	if retryStrategy.Backoff != nil && retryStrategy.Backoff.Duration == "" {
-		logger.Infof("We are missing something here: %v", retryStrategy.Backoff.Duration)
-		return false
-	}
 	return true
 }
 
