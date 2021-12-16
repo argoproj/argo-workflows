@@ -3168,6 +3168,7 @@ spec:
 func TestResolveAnnotationsAndLabelsJSson(t *testing.T) {
 	_, err := validate(globalAnnotationsAndLabels)
 	assert.NoError(t, err)
+}
 
 var testInitContainerHasName = `
 apiVersion: argoproj.io/v1alpha1
