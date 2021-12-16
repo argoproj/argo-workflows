@@ -7,7 +7,10 @@ WD := $(shell echo "`pwd`/client")
 DOCKER = docker run --rm -v $(WD):/wd --workdir /wd
 CHOWN = chown -R $(shell id -u):$(shell id -g)
 
-publish: generate
+verify_version:
+	@if [ ${VERSION} == "FAILED" ]; then echo "Failed to obtain a valid version from the SDK versioning script! Version: ${VERSION}"; exit 1; fi
+
+publish: verify_version generate
 	pip install setuptools twine build
 	python -m build --sdist --wheel --outdir client/dist/ client
 	twine check client/dist/*

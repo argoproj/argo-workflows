@@ -10,22 +10,41 @@ takes the major version, adds 3 to it, and prints to stdout the new version, whi
 """
 
 import os
-import sys
 
 VERSION_PREFIX = 'v'
 VERSION_INCREMENT = 3
 MAJOR_VERSION_INDEX = 0
 UNTAGGED = 'untagged'
+FAILED = 'FAILED'  # indicator captured by the makefile to know when something failed
 UNTAGGED_VERSION = '0.0.0-latest'
 
 git_tag_cmd = 'git describe --exact-match --tags --abbrev=0 2> /dev/null || echo untagged'
-git_tag = os.popen(git_tag_cmd).read().strip()
+
+git_tag = None
+try:
+    git_tag = os.popen(git_tag_cmd).read().strip()
+except ValueError:
+    print(FAILED)
+    exit(1)
+
 if git_tag == UNTAGGED:
     print(UNTAGGED_VERSION)  # this goes to sys.stdout, so it's captured by the Makefile
-    sys.exit(0)
+    exit(1)
 
-version_digits = [int(i) for i in git_tag.replace(VERSION_PREFIX, '').split('.')]
+version_digits = None
+try:
+    version_digits = [int(i) for i in git_tag.replace(VERSION_PREFIX, '').split('.')]
+except ValueError:
+    print(FAILED)
+    exit(1)
+
 version_digits[MAJOR_VERSION_INDEX] += VERSION_INCREMENT
 
-version = '.'.join([str(i) for i in version_digits])
+version = None
+try:
+    version = '.'.join([str(i) for i in version_digits])
+except ValueError:
+    print(FAILED)
+    exit(1)
+
 print(version)
