@@ -644,7 +644,7 @@ func Test_createWorkflowPod_rateLimited(t *testing.T) {
 
 func Test_createWorkflowPod_containerName(t *testing.T) {
 	woc := newWoc()
-	pod, err := woc.createWorkflowPod(context.Background(), "", []apiv1.Container{{Name: "invalid"}}, &wfv1.Template{}, &createWorkflowPodOpts{})
+	pod, err := woc.createWorkflowPod(context.Background(), "", []apiv1.Container{{Name: "invalid", Command: []string{""}}}, &wfv1.Template{}, &createWorkflowPodOpts{})
 	assert.NoError(t, err)
 	assert.Equal(t, common.MainContainerName, pod.Spec.Containers[1].Name)
 }
@@ -1015,15 +1015,16 @@ func TestInitContainers(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Equal(t, 1, len(pod.Spec.InitContainers))
-	assert.Equal(t, "init-foo", pod.Spec.InitContainers[0].Name)
+	assert.Equal(t, 2, len(pod.Spec.InitContainers))
+	foo := pod.Spec.InitContainers[1]
+	assert.Equal(t, "init-foo", foo.Name)
 	for _, v := range volumes {
 		assert.Contains(t, pod.Spec.Volumes, v)
 	}
-	assert.Equal(t, 3, len(pod.Spec.InitContainers[0].VolumeMounts))
-	assert.Equal(t, "init-volume-name", pod.Spec.InitContainers[0].VolumeMounts[0].Name)
-	assert.Equal(t, "volume-name", pod.Spec.InitContainers[0].VolumeMounts[1].Name)
-	assert.Equal(t, "var-run-argo", pod.Spec.InitContainers[0].VolumeMounts[2].Name)
+	assert.Equal(t, 3, len(foo.VolumeMounts))
+	assert.Equal(t, "init-volume-name", foo.VolumeMounts[0].Name)
+	assert.Equal(t, "volume-name", foo.VolumeMounts[1].Name)
+	assert.Equal(t, "var-run-argo", foo.VolumeMounts[2].Name)
 }
 
 // TestSidecars verifies the ability to set up sidecars
@@ -1066,6 +1067,7 @@ func TestSidecars(t *testing.T) {
 			Container: apiv1.Container{
 				Name:         "side-foo",
 				VolumeMounts: sidecarVolumeMounts,
+				Image:        "argoproj/argosay:v2",
 			},
 		},
 	}

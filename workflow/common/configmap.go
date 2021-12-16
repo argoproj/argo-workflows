@@ -29,5 +29,6 @@ func GetConfigMapValue(configMapInformer cache.SharedIndexInformer, namespace, n
 		}
 		return cmValue, nil
 	}
-	return "", fmt.Errorf("ConfigMap '%s' does not exist", name)
+	return "", fmt.Errorf("ConfigMap '%s' does not exist. Please make sure it has the label %s: %s to be detectable by the controller",
+		name, LabelKeyConfigMapType, LabelValueTypeConfigMapParameter)
 }

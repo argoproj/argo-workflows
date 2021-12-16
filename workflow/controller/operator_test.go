@@ -2766,7 +2766,7 @@ spec:
       - name: text
         path: /outputs/text/data
     container:
-      image: busybox
+      image: argoproj/argosay:v2
       command: [sh, -c, 'head -n {{inputs.parameters.lines-count}} <"{{inputs.artifacts.text.path}}" | tee "{{outputs.artifacts.text.path}}" | wc -l > "{{outputs.parameters.actual-lines-count.path}}"']
 `
 
@@ -2780,7 +2780,7 @@ func TestResolveIOPathPlaceholders(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
 
-	assert.Equal(t, []string{"sh", "-c", "head -n 3 <\"/inputs/text/data\" | tee \"/outputs/text/data\" | wc -l > \"/outputs/actual-lines-count/data\""}, pods.Items[0].Spec.Containers[1].Command)
+	assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary", "--", "sh", "-c", "head -n 3 <\"/inputs/text/data\" | tee \"/outputs/text/data\" | wc -l > \"/outputs/actual-lines-count/data\""}, pods.Items[0].Spec.Containers[1].Command)
 }
 
 var outputValuePlaceholders = `
@@ -2797,7 +2797,7 @@ spec:
       - name: pod-name
         value: "{{pod.name}}"
     container:
-      image: busybox
+      image: argoproj/argosay:v2
 `
 
 func TestResolvePlaceholdersInOutputValues(t *testing.T) {
@@ -2833,7 +2833,7 @@ spec:
       - name: pod-name
         value: "{{pod.name}}"
     container:
-      image: busybox
+      image: argoproj/argosay:v2
 `
 
 func TestResolvePodNameInRetries(t *testing.T) {
@@ -3610,8 +3610,8 @@ spec:
 	// Pod node should return a pod
 	podNode := woc.wf.GetNodeByName("dag-events.a")
 	pod, err = woc.getPodByNode(podNode)
+	assert.NoError(t, err)
 	assert.NotNil(t, pod)
-	assert.Nil(t, err)
 	// Invalid node should not return a pod
 	invalidNode := wfv1.NodeStatus{Type: wfv1.NodeTypePod, Name: "doesnt-exist"}
 	pod, err = woc.getPodByNode(&invalidNode)
@@ -4836,7 +4836,7 @@ spec:
   entrypoint: main
   templates:
   - container:
-      image: whalesay
+      image: docker/whalesay:latest
     name: main
 `)
 	cancel, controller := newController(wf)
@@ -7477,6 +7477,15 @@ func TestBuildRetryStrategyLocalScope(t *testing.T) {
 func TestGetContainerRuntimeExecutor(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
+	t.Run("Default", func(t *testing.T) {
+		executor := controller.GetContainerRuntimeExecutor(labels.Set{})
+		assert.Equal(t, common.ContainerRuntimeExecutorEmissary, executor)
+	})
+	t.Run("CLIParameter", func(t *testing.T) {
+		controller.containerRuntimeExecutor = common.ContainerRuntimeExecutorKubelet
+		executor := controller.GetContainerRuntimeExecutor(labels.Set{})
+		assert.Equal(t, common.ContainerRuntimeExecutorKubelet, executor)
+	})
 	controller.Config.ContainerRuntimeExecutor = "pns"
 	controller.Config.ContainerRuntimeExecutors = config.ContainerRuntimeExecutors{
 		{
@@ -7488,10 +7497,14 @@ func TestGetContainerRuntimeExecutor(t *testing.T) {
 			},
 		},
 	}
-	executor := controller.GetContainerRuntimeExecutor(labels.Set{})
-	assert.Equal(t, common.ContainerRuntimeExecutorPNS, executor)
-	executor = controller.GetContainerRuntimeExecutor(labels.Set{"workflows.argoproj.io/container-runtime-executor": "emissary"})
-	assert.Equal(t, common.ContainerRuntimeExecutorEmissary, executor)
+	t.Run("Configuration", func(t *testing.T) {
+		executor := controller.GetContainerRuntimeExecutor(labels.Set{})
+		assert.Equal(t, common.ContainerRuntimeExecutorPNS, executor)
+	})
+	t.Run("Labels", func(t *testing.T) {
+		executor := controller.GetContainerRuntimeExecutor(labels.Set{"workflows.argoproj.io/container-runtime-executor": "emissary"})
+		assert.Equal(t, common.ContainerRuntimeExecutorEmissary, executor)
+	})
 }
 
 var exitHandlerWithRetryNodeParam = `
