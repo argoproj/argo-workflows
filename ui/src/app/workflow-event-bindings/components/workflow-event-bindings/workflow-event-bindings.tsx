@@ -3,7 +3,7 @@ import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router-dom';
 import {WorkflowEventBinding} from '../../../../models';
-import {uiUrl} from '../../../shared/base';
+import {apiUrl, uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {InfoIcon} from '../../../shared/components/fa-icons';
 import {GraphPanel} from '../../../shared/components/graph/graph-panel';
@@ -106,8 +106,8 @@ export const WorkflowEventBindings = ({match, location, history}: RouteComponent
                     </p>
                     <p>
                         <code>
-                            curl '{document.location.protocol}//{document.location.host}/api/v1/events/{namespace}/-' -H 'Content-Type: application/json' -H 'Authorization:
-                            $ARGO_TOKEN' -d '&#123;&#125;'
+                            curl '{document.location.protocol}//{document.location.host}
+                            {apiUrl(`api/v1/events/${namespace}/-`)}' -H 'Content-Type: application/json' -H 'Authorization: $ARGO_TOKEN' -d '&#123;&#125;'
                         </code>
                     </p>
                     <p>
