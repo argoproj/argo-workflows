@@ -1,6 +1,6 @@
-function baseUrl(): string {
+export function baseUrl(): string {
     const base = document.querySelector('base');
-    return base ? base.getAttribute('href') : '/';
+    return base && base.getAttribute('href') ? base.getAttribute('href') : '/';
 }
 
 export function uiUrl(uiPath: string): string {

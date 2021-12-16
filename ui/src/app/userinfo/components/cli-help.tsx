@@ -1,13 +1,11 @@
 import * as React from 'react';
 import {createRef, useState} from 'react';
+import {baseUrl} from '../../shared/base';
 import {Notice} from '../../shared/components/notice';
 
 export const CliHelp = () => {
     const argoSecure = document.location.protocol === 'https:';
-    const argoBaseHref = document
-        .getElementsByTagName('base')[0]
-        .href.toString()
-        .replace(document.location.protocol + '//' + document.location.host + '/', '');
+    const argoBaseHref = baseUrl();
     const argoToken = (
         decodeURIComponent(document.cookie)
             .split(';')
