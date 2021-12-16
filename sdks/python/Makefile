@@ -1,13 +1,8 @@
-GIT_TAG               := $(shell git describe --exact-match --tags --abbrev=0 2> /dev/null || echo untagged)
-ifeq ($(GIT_TAG),untagged)
-VERSION               := 0.0.0-latest
-else
-# remove the "v" prefix, not allowed
-VERSION               := $(subst v,,$(GIT_TAG))
-endif
+# SDK version
+VERSION := $(shell ./sdk_version.py)
 
 # work dir
-WD                    := $(shell echo "`pwd`/client")
+WD := $(shell echo "`pwd`/client")
 
 DOCKER = docker run --rm -v $(WD):/wd --workdir /wd
 CHOWN = chown -R $(shell id -u):$(shell id -g)
