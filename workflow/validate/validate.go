@@ -180,9 +180,12 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	for k := range wf.ObjectMeta.Annotations {
 		ctx.globalParams["workflow.annotations."+k] = placeholderGenerator.NextPlaceholder()
 	}
+	ctx.globalParams[common.GlobalVarWorkflowAnnotations] = placeholderGenerator.NextPlaceholder()
+
 	for k := range wf.ObjectMeta.Labels {
 		ctx.globalParams["workflow.labels."+k] = placeholderGenerator.NextPlaceholder()
 	}
+	ctx.globalParams[common.GlobalVarWorkflowLabels] = placeholderGenerator.NextPlaceholder()
 
 	if wf.Spec.Priority != nil {
 		ctx.globalParams[common.GlobalVarWorkflowPriority] = strconv.Itoa(int(*wf.Spec.Priority))
