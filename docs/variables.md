@@ -163,6 +163,8 @@ returns `0`. Please review the Sprig documentation to understand which functions
 
 ### HTTP Templates
 
+> Since v3.3
+
 Only available for `successCondition`
 
 | Variable | Description|
