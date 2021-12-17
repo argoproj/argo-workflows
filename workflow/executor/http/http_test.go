@@ -26,11 +26,11 @@ func TestSendHttpRequest(t *testing.T) {
 	})
 	t.Run("TimeoutRequest", func(t *testing.T) {
 		// Request sleeps for 4 seconds, but timeout is 2
-		request, err := http.NewRequest(http.MethodGet, "http://httpstat.us/200?sleep=4000", bytes.NewBuffer([]byte{}))
+		request, err := http.NewRequest(http.MethodGet, "https://httpstat.us/200?sleep=4000", bytes.NewBuffer([]byte{}))
 		assert.NoError(t, err)
 		response, err := SendHttpRequest(request, pointer.Int64Ptr(2))
 		assert.Error(t, err)
 		assert.Empty(t, response)
-		assert.Equal(t, `Get "http://httpstat.us/200?sleep=4000": context deadline exceeded (Client.Timeout exceeded while awaiting headers)`, err.Error())
+		assert.Equal(t, `Get "https://httpstat.us/200?sleep=4000": context deadline exceeded (Client.Timeout exceeded while awaiting headers)`, err.Error())
 	})
 }
