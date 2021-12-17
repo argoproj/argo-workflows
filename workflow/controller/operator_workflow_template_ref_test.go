@@ -533,3 +533,30 @@ func TestWFTWithVol(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pvc.Items, 0)
 }
+
+const wfTmp = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: cluster-workflow-template-hello-world-
+spec:
+  entrypoint: whalesay-template
+  arguments:
+    parameters:
+      - name: message
+        value: "hello world"
+  workflowTemplateRef:
+    name: cluster-workflow-template-whalesay-template
+    clusterScope: true
+`
+
+func TestSubmitWorkflowTemplateRefWithoutRBAC(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(wfTmp)
+	cancel, controller := newController(wf, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl))
+	defer cancel()
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.controller.cwftmplInformer = nil
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+}
