@@ -1,5 +1,13 @@
 # Changelog
 
+## v3.2.6 (2021-12-17)
+
+ * [2a9fb7067](https://github.com/argoproj/argo-workflows/commit/2a9fb706714744eff7f70dbf56703bcc67ea67e0) Revert "fix(controller): default volume/mount to emissary (#7125)"
+
+### Contributors
+
+ * Alex Collins
+
 ## v3.2.5 (2021-12-15)
 
  * [fc4c3d51e](https://github.com/argoproj/argo-workflows/commit/fc4c3d51e93858c2119124bbb3cb2ba1c35debcb) fix: lint
