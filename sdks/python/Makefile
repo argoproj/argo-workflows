@@ -1,5 +1,7 @@
-# SDK version
 VERSION := $(shell ./sdk_version.py)
+ifndef VERSION
+  $(error "Failed to obtain a valid version for the SDK")
+endif
 
 # work dir
 WD := $(shell echo "`pwd`/client")
@@ -7,10 +9,7 @@ WD := $(shell echo "`pwd`/client")
 DOCKER = docker run --rm -v $(WD):/wd --workdir /wd
 CHOWN = chown -R $(shell id -u):$(shell id -g)
 
-verify_version:
-	@if [ ${VERSION} == "FAILED" ]; then echo "Failed to obtain a valid version from the SDK versioning script! Version: ${VERSION}"; exit 1; fi
-
-publish: verify_version generate
+publish: generate
 	pip install setuptools twine build
 	python -m build --sdist --wheel --outdir client/dist/ client
 	twine check client/dist/*
