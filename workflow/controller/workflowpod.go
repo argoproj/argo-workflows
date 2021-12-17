@@ -535,7 +535,7 @@ func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) *apiv1.Containe
 			// in order to SIGTERM/SIGKILL the pid
 			ctr.SecurityContext.Privileged = pointer.BoolPtr(true)
 		}
-	case common.ContainerRuntimeExecutorDocker:
+	case "", common.ContainerRuntimeExecutorDocker:
 		ctr.VolumeMounts = append(ctr.VolumeMounts, woc.getVolumeMountDockerSock(tmpl))
 	}
 	return ctr
@@ -638,10 +638,10 @@ func (woc *wfOperationCtx) createVolumes(tmpl *wfv1.Template) []apiv1.Volume {
 	}
 	switch woc.getContainerRuntimeExecutor() {
 	case common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorPNS:
-	case common.ContainerRuntimeExecutorDocker:
-		volumes = append(volumes, woc.getVolumeDockerSock(tmpl))
-	default:
+	case common.ContainerRuntimeExecutorEmissary:
 		volumes = append(volumes, volumeVarArgo)
+	default:
+		volumes = append(volumes, woc.getVolumeDockerSock(tmpl))
 	}
 	volumes = append(volumes, tmpl.Volumes...)
 	return volumes
