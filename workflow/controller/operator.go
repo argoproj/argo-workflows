@@ -3350,6 +3350,10 @@ func (woc *wfOperationCtx) fetchWorkflowSpec() (wfv1.WorkflowSpecHolder, error) 
 	var err error
 	// Logic for workflow refers Workflow template
 	if woc.wf.Spec.WorkflowTemplateRef.ClusterScope {
+		if woc.controller.cwftmplInformer == nil {
+			woc.log.Errorf("clusterWorkflowTemplate RBAC is missing")
+			return nil, fmt.Errorf("cannot get resource clusterWorkflowTemplate at cluster scope")
+		}
 		specHolder, err = woc.controller.cwftmplInformer.Lister().Get(woc.wf.Spec.WorkflowTemplateRef.Name)
 	} else {
 		specHolder, err = woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace).Get(woc.wf.Spec.WorkflowTemplateRef.Name)
