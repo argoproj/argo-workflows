@@ -182,6 +182,8 @@ Workflow is the definition of a workflow resource
 
 - [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-jobs.yaml)
 
+- [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-json-patch-workflow.yaml)
+
 - [`k8s-kubeflow-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-kubeflow-jobs.yaml)
 
 - [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
@@ -590,6 +592,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`input-artifact-raw.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-raw.yaml)
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
+
+- [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-json-patch-workflow.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
 
@@ -1000,6 +1004,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
 
+- [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-json-patch-workflow.yaml)
+
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
 
 - [`k8s-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch.yaml)
@@ -1364,6 +1370,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`input-artifact-raw.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-raw.yaml)
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
+
+- [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-json-patch-workflow.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
 
@@ -2974,6 +2982,8 @@ ResourceTemplate is a template subtype to manipulate kubernetes resources
 <br>
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cron-backfill.yaml)
+
+- [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-json-patch-workflow.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
 
@@ -4671,6 +4681,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
 
+- [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-json-patch-workflow.yaml)
+
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
 
 - [`k8s-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch.yaml)
@@ -5927,6 +5939,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`input-artifact-raw.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-raw.yaml)
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
+
+- [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-json-patch-workflow.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
 
