@@ -2889,6 +2889,8 @@ spec:
                           - name
                           type: object
                         type: array
+                      sharedProcessNamespace:
+                        type: boolean
                       volumeMounts:
                         items:
                           properties:
@@ -9349,6 +9351,8 @@ spec:
                             - name
                             type: object
                           type: array
+                        sharedProcessNamespace:
+                          type: boolean
                         volumeMounts:
                           items:
                             properties:
@@ -18815,6 +18819,8 @@ spec:
                             - name
                             type: object
                           type: array
+                        sharedProcessNamespace:
+                          type: boolean
                         volumeMounts:
                           items:
                             properties:
@@ -26356,6 +26362,8 @@ spec:
                               - name
                               type: object
                             type: array
+                          sharedProcessNamespace:
+                            type: boolean
                           volumeMounts:
                             items:
                               properties:
@@ -32816,6 +32824,8 @@ spec:
                                 - name
                                 type: object
                               type: array
+                            sharedProcessNamespace:
+                              type: boolean
                             volumeMounts:
                               items:
                                 properties:

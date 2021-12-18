@@ -149,6 +149,8 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	tmpl = tmpl.DeepCopy()
 	wfSpec := woc.execWf.Spec.DeepCopy()
 
+	var shareProcessNamespace *bool
+
 	for i, c := range mainCtrs {
 		if c.Name == "" || tmpl.GetType() != wfv1.TemplateTypeContainerSet {
 			c.Name = common.MainContainerName
@@ -168,7 +170,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 				c.Resources = *tmpl.Script.Resources.DeepCopy()
 			}
 		case wfv1.TemplateTypeContainerSet:
-
+			shareProcessNamespace = &tmpl.ContainerSet.SharedProcessNamespace
 		}
 
 		mainCtrs[i] = c
@@ -223,6 +225,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			Volumes:               woc.createVolumes(tmpl),
 			ActiveDeadlineSeconds: activeDeadlineSeconds,
 			ImagePullSecrets:      woc.execWf.Spec.ImagePullSecrets,
+			ShareProcessNamespace: shareProcessNamespace,
 		},
 	}
 
