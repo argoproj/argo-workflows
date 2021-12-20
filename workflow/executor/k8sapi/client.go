@@ -20,6 +20,7 @@ import (
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/executor"
 	execcommon "github.com/argoproj/argo-workflows/v3/workflow/executor/common"
 )
 
@@ -110,11 +111,17 @@ func (c *k8sAPIClient) GetContainerStatuses(ctx context.Context) (*corev1.Pod, [
 
 func (c *k8sAPIClient) KillContainer(pod *corev1.Pod, container *corev1.ContainerStatus, sig syscall.Signal) error {
 	command := []string{"/bin/sh", "-c", fmt.Sprintf("kill -%d 1", sig)}
-	exec, err := common.ExecPodContainer(c.config, c.namespace, c.podName, container.Name, true, true, command...)
-	if err != nil {
-		return err
-	}
-	_, _, err = common.GetExecutorOutput(exec)
+	err := wait.ExponentialBackoff(executor.ExecutorRetry, func() (bool, error) {
+		exec, err := common.ExecPodContainer(c.config, c.namespace, c.podName, container.Name, true, true, command...)
+		if err != nil {
+			return false, nil
+		}
+		_, _, err = common.GetExecutorOutput(exec)
+		if err != nil {
+			return false, err
+		}
+		return true, nil
+	})
 	return err
 }
 

@@ -7,6 +7,10 @@ import (
 	"github.com/argoproj/pkg/stats"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/util/wait"
+
+	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/workflow/executor"
 )
 
 func NewWaitCommand() *cobra.Command {
@@ -31,7 +35,18 @@ func waitContainer(ctx context.Context) error {
 	stats.StartStatsTicker(5 * time.Minute)
 
 	defer func() {
-		if err := wfExecutor.KillSidecars(ctx); err != nil {
+		// Killing sidecar containers
+		err := wait.ExponentialBackoff(executor.ExecutorRetry, func() (bool, error) {
+			err := wfExecutor.KillSidecars(ctx)
+			if err == nil {
+				return true, nil
+			}
+			if errorsutil.IsTransientErr(err) {
+				return false, nil
+			}
+			return false, err
+		})
+		if err != nil {
 			wfExecutor.AddError(err)
 		}
 	}()
