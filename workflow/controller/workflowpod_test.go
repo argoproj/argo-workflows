@@ -1731,15 +1731,16 @@ func TestPodDefaultContainer(t *testing.T) {
 	template := woc.execWf.Spec.Templates[0]
 	pod, _ := woc.createWorkflowPod(ctx, wf.Name, template.ContainerSet.GetContainers(), &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	assert.Equal(t, common.MainContainerName, pod.ObjectMeta.Annotations[common.AnnotationKeyDefaultContainer])
-	assert.False(t, wf.Spec.Templates[0].ContainerSet.SharedProcessNamespace)
+	assert.Nil(t, pod.Spec.ShareProcessNamespace)
 
 	wf = wfv1.MustUnmarshalWorkflow(wfWithContainerSet)
-	wf.Spec.Templates[0].ContainerSet.SharedProcessNamespace = true
+	sharedProcessNamespace := true
+	wf.Spec.Templates[0].ContainerSet.SharedProcessNamespace = &sharedProcessNamespace
 	woc = newWoc(*wf)
 	template = woc.execWf.Spec.Templates[0]
 	pod, _ = woc.createWorkflowPod(ctx, wf.Name, template.ContainerSet.GetContainers(), &template, &createWorkflowPodOpts{})
 	assert.Equal(t, "b", pod.ObjectMeta.Annotations[common.AnnotationKeyDefaultContainer])
-	assert.True(t, wf.Spec.Templates[0].ContainerSet.SharedProcessNamespace)
+	assert.True(t, *pod.Spec.ShareProcessNamespace)
 }
 
 func TestGetDeadline(t *testing.T) {

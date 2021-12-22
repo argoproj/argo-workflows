@@ -170,7 +170,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 				c.Resources = *tmpl.Script.Resources.DeepCopy()
 			}
 		case wfv1.TemplateTypeContainerSet:
-			shareProcessNamespace = &tmpl.ContainerSet.SharedProcessNamespace
+			shareProcessNamespace = tmpl.ContainerSet.SharedProcessNamespace
 		}
 
 		mainCtrs[i] = c

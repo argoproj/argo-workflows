@@ -9,7 +9,7 @@ import (
 type ContainerSetTemplate struct {
 	Containers             []ContainerNode      `json:"containers" protobuf:"bytes,4,rep,name=containers"`
 	VolumeMounts           []corev1.VolumeMount `json:"volumeMounts,omitempty" protobuf:"bytes,3,rep,name=volumeMounts"`
-	SharedProcessNamespace bool                 `json:"sharedProcessNamespace,omitempty" protobuf:"bytes,5,rep,name=sharedProcessNamespace"`
+	SharedProcessNamespace *bool                `json:"sharedProcessNamespace,omitempty" protobuf:"bytes,5,rep,name=sharedProcessNamespace"`
 }
 
 func (in *ContainerSetTemplate) GetContainers() []corev1.Container {
