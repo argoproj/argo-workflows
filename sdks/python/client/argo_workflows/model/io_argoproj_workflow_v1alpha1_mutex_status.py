@@ -142,8 +142,8 @@ class IoArgoprojWorkflowV1alpha1MutexStatus(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            holding ([IoArgoprojWorkflowV1alpha1MutexHolding]): Holding is a list of mutexes and their respective objects that are held by mutex lock for this io.argoproj.workflow.v1alpha1.. [optional]  # noqa: E501
-            waiting ([IoArgoprojWorkflowV1alpha1MutexHolding]): Waiting is a list of mutexes and their respective objects this workflow is waiting for.. [optional]  # noqa: E501
+            holding ([IoArgoprojWorkflowV1alpha1MutexHolding]): [optional]  # noqa: E501
+            waiting ([IoArgoprojWorkflowV1alpha1MutexHolding]): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -225,8 +225,8 @@ class IoArgoprojWorkflowV1alpha1MutexStatus(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            holding ([IoArgoprojWorkflowV1alpha1MutexHolding]): Holding is a list of mutexes and their respective objects that are held by mutex lock for this io.argoproj.workflow.v1alpha1.. [optional]  # noqa: E501
-            waiting ([IoArgoprojWorkflowV1alpha1MutexHolding]): Waiting is a list of mutexes and their respective objects this workflow is waiting for.. [optional]  # noqa: E501
+            holding ([IoArgoprojWorkflowV1alpha1MutexHolding]): [optional]  # noqa: E501
+            waiting ([IoArgoprojWorkflowV1alpha1MutexHolding]): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

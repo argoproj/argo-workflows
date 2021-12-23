@@ -22,6 +22,7 @@ from argo_workflows.model_utils import (  # noqa: F401
     validate_and_convert_types
 )
 from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_item import IoArgoprojWorkflowV1alpha1Item
 from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_event_binding_list import IoArgoprojWorkflowV1alpha1WorkflowEventBindingList
 
 
@@ -225,7 +226,7 @@ class EventServiceApi(object):
             Args:
                 namespace (str): The namespace for the io.argoproj.workflow.v1alpha1. This can be empty if the client has cluster scoped permissions. If empty, then the event is \"broadcast\" to workflow event binding in all namespaces.
                 discriminator (str): Optional discriminator for the io.argoproj.workflow.v1alpha1. This should almost always be empty. Used for edge-cases where the event payload alone is not provide enough information to discriminate the event. This MUST NOT be used as security mechanism, e.g. to allow two clients to use the same access token, or to support webhooks on unsecured server. Instead, use access tokens. This is made available as `discriminator` in the event binding selector (`/spec/event/selector)`
-                body (bool, date, datetime, dict, float, int, list, str, none_type): The event itself can be any data.
+                body (IoArgoprojWorkflowV1alpha1Item): The event itself can be any data.
 
             Keyword Args:
                 _return_http_data_only (bool): response data without head status
@@ -318,7 +319,7 @@ class EventServiceApi(object):
                     'discriminator':
                         (str,),
                     'body':
-                        (bool, date, datetime, dict, float, int, list, str, none_type,),
+                        (IoArgoprojWorkflowV1alpha1Item,),
                 },
                 'attribute_map': {
                     'namespace': 'namespace',

@@ -31,23 +31,9 @@ from argo_workflows.exceptions import ApiAttributeError
 
 def lazy_import():
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_archive_strategy import IoArgoprojWorkflowV1alpha1ArchiveStrategy
-    from argo_workflows.model.io_argoproj_workflow_v1alpha1_artifactory_artifact import IoArgoprojWorkflowV1alpha1ArtifactoryArtifact
-    from argo_workflows.model.io_argoproj_workflow_v1alpha1_gcs_artifact import IoArgoprojWorkflowV1alpha1GCSArtifact
-    from argo_workflows.model.io_argoproj_workflow_v1alpha1_git_artifact import IoArgoprojWorkflowV1alpha1GitArtifact
-    from argo_workflows.model.io_argoproj_workflow_v1alpha1_hdfs_artifact import IoArgoprojWorkflowV1alpha1HDFSArtifact
-    from argo_workflows.model.io_argoproj_workflow_v1alpha1_http_artifact import IoArgoprojWorkflowV1alpha1HTTPArtifact
-    from argo_workflows.model.io_argoproj_workflow_v1alpha1_oss_artifact import IoArgoprojWorkflowV1alpha1OSSArtifact
-    from argo_workflows.model.io_argoproj_workflow_v1alpha1_raw_artifact import IoArgoprojWorkflowV1alpha1RawArtifact
-    from argo_workflows.model.io_argoproj_workflow_v1alpha1_s3_artifact import IoArgoprojWorkflowV1alpha1S3Artifact
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_artifact_location import IoArgoprojWorkflowV1alpha1ArtifactLocation
     globals()['IoArgoprojWorkflowV1alpha1ArchiveStrategy'] = IoArgoprojWorkflowV1alpha1ArchiveStrategy
-    globals()['IoArgoprojWorkflowV1alpha1ArtifactoryArtifact'] = IoArgoprojWorkflowV1alpha1ArtifactoryArtifact
-    globals()['IoArgoprojWorkflowV1alpha1GCSArtifact'] = IoArgoprojWorkflowV1alpha1GCSArtifact
-    globals()['IoArgoprojWorkflowV1alpha1GitArtifact'] = IoArgoprojWorkflowV1alpha1GitArtifact
-    globals()['IoArgoprojWorkflowV1alpha1HDFSArtifact'] = IoArgoprojWorkflowV1alpha1HDFSArtifact
-    globals()['IoArgoprojWorkflowV1alpha1HTTPArtifact'] = IoArgoprojWorkflowV1alpha1HTTPArtifact
-    globals()['IoArgoprojWorkflowV1alpha1OSSArtifact'] = IoArgoprojWorkflowV1alpha1OSSArtifact
-    globals()['IoArgoprojWorkflowV1alpha1RawArtifact'] = IoArgoprojWorkflowV1alpha1RawArtifact
-    globals()['IoArgoprojWorkflowV1alpha1S3Artifact'] = IoArgoprojWorkflowV1alpha1S3Artifact
+    globals()['IoArgoprojWorkflowV1alpha1ArtifactLocation'] = IoArgoprojWorkflowV1alpha1ArtifactLocation
 
 
 class IoArgoprojWorkflowV1alpha1Artifact(ModelNormal):
@@ -103,24 +89,16 @@ class IoArgoprojWorkflowV1alpha1Artifact(ModelNormal):
         """
         lazy_import()
         return {
-            'name': (str,),  # noqa: E501
             'archive': (IoArgoprojWorkflowV1alpha1ArchiveStrategy,),  # noqa: E501
-            'archive_logs': (bool,),  # noqa: E501
-            'artifactory': (IoArgoprojWorkflowV1alpha1ArtifactoryArtifact,),  # noqa: E501
+            'artifact_location': (IoArgoprojWorkflowV1alpha1ArtifactLocation,),  # noqa: E501
             '_from': (str,),  # noqa: E501
             'from_expression': (str,),  # noqa: E501
-            'gcs': (IoArgoprojWorkflowV1alpha1GCSArtifact,),  # noqa: E501
-            'git': (IoArgoprojWorkflowV1alpha1GitArtifact,),  # noqa: E501
             'global_name': (str,),  # noqa: E501
-            'hdfs': (IoArgoprojWorkflowV1alpha1HDFSArtifact,),  # noqa: E501
-            'http': (IoArgoprojWorkflowV1alpha1HTTPArtifact,),  # noqa: E501
             'mode': (int,),  # noqa: E501
+            'name': (str,),  # noqa: E501
             'optional': (bool,),  # noqa: E501
-            'oss': (IoArgoprojWorkflowV1alpha1OSSArtifact,),  # noqa: E501
             'path': (str,),  # noqa: E501
-            'raw': (IoArgoprojWorkflowV1alpha1RawArtifact,),  # noqa: E501
             'recurse_mode': (bool,),  # noqa: E501
-            's3': (IoArgoprojWorkflowV1alpha1S3Artifact,),  # noqa: E501
             'sub_path': (str,),  # noqa: E501
         }
 
@@ -130,24 +108,16 @@ class IoArgoprojWorkflowV1alpha1Artifact(ModelNormal):
 
 
     attribute_map = {
-        'name': 'name',  # noqa: E501
         'archive': 'archive',  # noqa: E501
-        'archive_logs': 'archiveLogs',  # noqa: E501
-        'artifactory': 'artifactory',  # noqa: E501
+        'artifact_location': 'artifactLocation',  # noqa: E501
         '_from': 'from',  # noqa: E501
         'from_expression': 'fromExpression',  # noqa: E501
-        'gcs': 'gcs',  # noqa: E501
-        'git': 'git',  # noqa: E501
         'global_name': 'globalName',  # noqa: E501
-        'hdfs': 'hdfs',  # noqa: E501
-        'http': 'http',  # noqa: E501
         'mode': 'mode',  # noqa: E501
+        'name': 'name',  # noqa: E501
         'optional': 'optional',  # noqa: E501
-        'oss': 'oss',  # noqa: E501
         'path': 'path',  # noqa: E501
-        'raw': 'raw',  # noqa: E501
         'recurse_mode': 'recurseMode',  # noqa: E501
-        's3': 's3',  # noqa: E501
         'sub_path': 'subPath',  # noqa: E501
     }
 
@@ -158,11 +128,8 @@ class IoArgoprojWorkflowV1alpha1Artifact(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, name, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1Artifact - a model defined in OpenAPI
-
-        Args:
-            name (str): name of the artifact. must be unique within a template's inputs/outputs.
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -196,23 +163,16 @@ class IoArgoprojWorkflowV1alpha1Artifact(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             archive (IoArgoprojWorkflowV1alpha1ArchiveStrategy): [optional]  # noqa: E501
-            archive_logs (bool): ArchiveLogs indicates if the container logs should be archived. [optional]  # noqa: E501
-            artifactory (IoArgoprojWorkflowV1alpha1ArtifactoryArtifact): [optional]  # noqa: E501
-            _from (str): From allows an artifact to reference an artifact from a previous step. [optional]  # noqa: E501
-            from_expression (str): FromExpression, if defined, is evaluated to specify the value for the artifact. [optional]  # noqa: E501
-            gcs (IoArgoprojWorkflowV1alpha1GCSArtifact): [optional]  # noqa: E501
-            git (IoArgoprojWorkflowV1alpha1GitArtifact): [optional]  # noqa: E501
-            global_name (str): GlobalName exports an output artifact to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts. [optional]  # noqa: E501
-            hdfs (IoArgoprojWorkflowV1alpha1HDFSArtifact): [optional]  # noqa: E501
-            http (IoArgoprojWorkflowV1alpha1HTTPArtifact): [optional]  # noqa: E501
+            artifact_location (IoArgoprojWorkflowV1alpha1ArtifactLocation): [optional]  # noqa: E501
+            _from (str): [optional]  # noqa: E501
+            from_expression (str): [optional]  # noqa: E501
+            global_name (str): [optional]  # noqa: E501
             mode (int): mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.. [optional]  # noqa: E501
-            optional (bool): Make Artifacts optional, if Artifacts doesn't generate or exist. [optional]  # noqa: E501
-            oss (IoArgoprojWorkflowV1alpha1OSSArtifact): [optional]  # noqa: E501
-            path (str): Path is the container path to the artifact. [optional]  # noqa: E501
-            raw (IoArgoprojWorkflowV1alpha1RawArtifact): [optional]  # noqa: E501
-            recurse_mode (bool): If mode is set, apply the permission recursively into the artifact if it is a folder. [optional]  # noqa: E501
-            s3 (IoArgoprojWorkflowV1alpha1S3Artifact): [optional]  # noqa: E501
-            sub_path (str): SubPath allows an artifact to be sourced from a subpath within the specified source. [optional]  # noqa: E501
+            name (str): name of the artifact. must be unique within a template's inputs/outputs.. [optional]  # noqa: E501
+            optional (bool): [optional]  # noqa: E501
+            path (str): [optional]  # noqa: E501
+            recurse_mode (bool): [optional]  # noqa: E501
+            sub_path (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -240,7 +200,6 @@ class IoArgoprojWorkflowV1alpha1Artifact(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.name = name
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -261,11 +220,8 @@ class IoArgoprojWorkflowV1alpha1Artifact(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, name, *args, **kwargs):  # noqa: E501
+    def __init__(self, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1Artifact - a model defined in OpenAPI
-
-        Args:
-            name (str): name of the artifact. must be unique within a template's inputs/outputs.
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -299,23 +255,16 @@ class IoArgoprojWorkflowV1alpha1Artifact(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             archive (IoArgoprojWorkflowV1alpha1ArchiveStrategy): [optional]  # noqa: E501
-            archive_logs (bool): ArchiveLogs indicates if the container logs should be archived. [optional]  # noqa: E501
-            artifactory (IoArgoprojWorkflowV1alpha1ArtifactoryArtifact): [optional]  # noqa: E501
-            _from (str): From allows an artifact to reference an artifact from a previous step. [optional]  # noqa: E501
-            from_expression (str): FromExpression, if defined, is evaluated to specify the value for the artifact. [optional]  # noqa: E501
-            gcs (IoArgoprojWorkflowV1alpha1GCSArtifact): [optional]  # noqa: E501
-            git (IoArgoprojWorkflowV1alpha1GitArtifact): [optional]  # noqa: E501
-            global_name (str): GlobalName exports an output artifact to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts. [optional]  # noqa: E501
-            hdfs (IoArgoprojWorkflowV1alpha1HDFSArtifact): [optional]  # noqa: E501
-            http (IoArgoprojWorkflowV1alpha1HTTPArtifact): [optional]  # noqa: E501
+            artifact_location (IoArgoprojWorkflowV1alpha1ArtifactLocation): [optional]  # noqa: E501
+            _from (str): [optional]  # noqa: E501
+            from_expression (str): [optional]  # noqa: E501
+            global_name (str): [optional]  # noqa: E501
             mode (int): mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.. [optional]  # noqa: E501
-            optional (bool): Make Artifacts optional, if Artifacts doesn't generate or exist. [optional]  # noqa: E501
-            oss (IoArgoprojWorkflowV1alpha1OSSArtifact): [optional]  # noqa: E501
-            path (str): Path is the container path to the artifact. [optional]  # noqa: E501
-            raw (IoArgoprojWorkflowV1alpha1RawArtifact): [optional]  # noqa: E501
-            recurse_mode (bool): If mode is set, apply the permission recursively into the artifact if it is a folder. [optional]  # noqa: E501
-            s3 (IoArgoprojWorkflowV1alpha1S3Artifact): [optional]  # noqa: E501
-            sub_path (str): SubPath allows an artifact to be sourced from a subpath within the specified source. [optional]  # noqa: E501
+            name (str): name of the artifact. must be unique within a template's inputs/outputs.. [optional]  # noqa: E501
+            optional (bool): [optional]  # noqa: E501
+            path (str): [optional]  # noqa: E501
+            recurse_mode (bool): [optional]  # noqa: E501
+            sub_path (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -341,7 +290,6 @@ class IoArgoprojWorkflowV1alpha1Artifact(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.name = name
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

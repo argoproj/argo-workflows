@@ -1,11 +1,10 @@
 # IoArgoprojWorkflowV1alpha1ArtifactRepository
 
-ArtifactRepository represents an artifact repository in which a controller will store its artifacts
 
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**archive_logs** | **bool** | ArchiveLogs enables log archiving | [optional] 
+**archive_logs** | **bool** |  | [optional] 
 **artifactory** | [**IoArgoprojWorkflowV1alpha1ArtifactoryArtifactRepository**](IoArgoprojWorkflowV1alpha1ArtifactoryArtifactRepository.md) |  | [optional] 
 **gcs** | [**IoArgoprojWorkflowV1alpha1GCSArtifactRepository**](IoArgoprojWorkflowV1alpha1GCSArtifactRepository.md) |  | [optional] 
 **hdfs** | [**IoArgoprojWorkflowV1alpha1HDFSArtifactRepository**](IoArgoprojWorkflowV1alpha1HDFSArtifactRepository.md) |  | [optional] 

@@ -110,7 +110,7 @@ public class Example {
     EventServiceApi apiInstance = new EventServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | The namespace for the io.argoproj.workflow.v1alpha1. This can be empty if the client has cluster scoped permissions. If empty, then the event is \"broadcast\" to workflow event binding in all namespaces.
     String discriminator = "discriminator_example"; // String | Optional discriminator for the io.argoproj.workflow.v1alpha1. This should almost always be empty. Used for edge-cases where the event payload alone is not provide enough information to discriminate the event. This MUST NOT be used as security mechanism, e.g. to allow two clients to use the same access token, or to support webhooks on unsecured server. Instead, use access tokens. This is made available as `discriminator` in the event binding selector (`/spec/event/selector)`
-    Object body = null; // Object | The event itself can be any data.
+    IoArgoprojWorkflowV1alpha1Item body = new IoArgoprojWorkflowV1alpha1Item(); // IoArgoprojWorkflowV1alpha1Item | The event itself can be any data.
     try {
       Object result = apiInstance.eventServiceReceiveEvent(namespace, discriminator, body);
       System.out.println(result);
@@ -131,7 +131,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **namespace** | **String**| The namespace for the io.argoproj.workflow.v1alpha1. This can be empty if the client has cluster scoped permissions. If empty, then the event is \&quot;broadcast\&quot; to workflow event binding in all namespaces. |
  **discriminator** | **String**| Optional discriminator for the io.argoproj.workflow.v1alpha1. This should almost always be empty. Used for edge-cases where the event payload alone is not provide enough information to discriminate the event. This MUST NOT be used as security mechanism, e.g. to allow two clients to use the same access token, or to support webhooks on unsecured server. Instead, use access tokens. This is made available as &#x60;discriminator&#x60; in the event binding selector (&#x60;/spec/event/selector)&#x60; |
- **body** | **Object**| The event itself can be any data. |
+ **body** | [**IoArgoprojWorkflowV1alpha1Item**](IoArgoprojWorkflowV1alpha1Item.md)| The event itself can be any data. |
 
 ### Return type
 

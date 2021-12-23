@@ -152,9 +152,9 @@ class IoArgoprojWorkflowV1alpha1RetryStrategy(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             affinity (IoArgoprojWorkflowV1alpha1RetryAffinity): [optional]  # noqa: E501
             backoff (IoArgoprojWorkflowV1alpha1Backoff): [optional]  # noqa: E501
-            expression (str): Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not be retried and the retry strategy will be ignored. [optional]  # noqa: E501
+            expression (str): [optional]  # noqa: E501
             limit (str): [optional]  # noqa: E501
-            retry_policy (str): RetryPolicy is a policy of NodePhase statuses that will be retried. [optional]  # noqa: E501
+            retry_policy (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -238,9 +238,9 @@ class IoArgoprojWorkflowV1alpha1RetryStrategy(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             affinity (IoArgoprojWorkflowV1alpha1RetryAffinity): [optional]  # noqa: E501
             backoff (IoArgoprojWorkflowV1alpha1Backoff): [optional]  # noqa: E501
-            expression (str): Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not be retried and the retry strategy will be ignored. [optional]  # noqa: E501
+            expression (str): [optional]  # noqa: E501
             limit (str): [optional]  # noqa: E501
-            retry_policy (str): RetryPolicy is a policy of NodePhase statuses that will be retried. [optional]  # noqa: E501
+            retry_policy (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

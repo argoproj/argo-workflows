@@ -170,7 +170,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactLocation(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            archive_logs (bool): ArchiveLogs indicates if the container logs should be archived. [optional]  # noqa: E501
+            archive_logs (bool): [optional]  # noqa: E501
             artifactory (IoArgoprojWorkflowV1alpha1ArtifactoryArtifact): [optional]  # noqa: E501
             gcs (IoArgoprojWorkflowV1alpha1GCSArtifact): [optional]  # noqa: E501
             git (IoArgoprojWorkflowV1alpha1GitArtifact): [optional]  # noqa: E501
@@ -260,7 +260,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactLocation(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            archive_logs (bool): ArchiveLogs indicates if the container logs should be archived. [optional]  # noqa: E501
+            archive_logs (bool): [optional]  # noqa: E501
             artifactory (IoArgoprojWorkflowV1alpha1ArtifactoryArtifact): [optional]  # noqa: E501
             gcs (IoArgoprojWorkflowV1alpha1GCSArtifact): [optional]  # noqa: E501
             git (IoArgoprojWorkflowV1alpha1GitArtifact): [optional]  # noqa: E501

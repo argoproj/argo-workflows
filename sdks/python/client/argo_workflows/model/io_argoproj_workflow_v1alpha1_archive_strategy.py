@@ -146,7 +146,7 @@ class IoArgoprojWorkflowV1alpha1ArchiveStrategy(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             _none (bool, date, datetime, dict, float, int, list, str, none_type): NoneStrategy indicates to skip tar process and upload the files or directory tree as independent files. Note that if the artifact is a directory, the artifact driver must support the ability to save/load the directory appropriately.. [optional]  # noqa: E501
             tar (IoArgoprojWorkflowV1alpha1TarStrategy): [optional]  # noqa: E501
-            zip (bool, date, datetime, dict, float, int, list, str, none_type): ZipStrategy will unzip zipped input artifacts. [optional]  # noqa: E501
+            zip (bool, date, datetime, dict, float, int, list, str, none_type): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -230,7 +230,7 @@ class IoArgoprojWorkflowV1alpha1ArchiveStrategy(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             _none (bool, date, datetime, dict, float, int, list, str, none_type): NoneStrategy indicates to skip tar process and upload the files or directory tree as independent files. Note that if the artifact is a directory, the artifact driver must support the ability to save/load the directory appropriately.. [optional]  # noqa: E501
             tar (IoArgoprojWorkflowV1alpha1TarStrategy): [optional]  # noqa: E501
-            zip (bool, date, datetime, dict, float, int, list, str, none_type): ZipStrategy will unzip zipped input artifacts. [optional]  # noqa: E501
+            zip (bool, date, datetime, dict, float, int, list, str, none_type): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

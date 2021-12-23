@@ -138,9 +138,9 @@ class IoArgoprojWorkflowV1alpha1Condition(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            message (str): Message is the condition message. [optional]  # noqa: E501
-            status (str): Status is the status of the condition. [optional]  # noqa: E501
-            type (str): Type is the type of condition. [optional]  # noqa: E501
+            message (str): [optional]  # noqa: E501
+            status (str): [optional]  # noqa: E501
+            type (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -222,9 +222,9 @@ class IoArgoprojWorkflowV1alpha1Condition(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            message (str): Message is the condition message. [optional]  # noqa: E501
-            status (str): Status is the status of the condition. [optional]  # noqa: E501
-            type (str): Type is the type of condition. [optional]  # noqa: E501
+            message (str): [optional]  # noqa: E501
+            status (str): [optional]  # noqa: E501
+            type (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

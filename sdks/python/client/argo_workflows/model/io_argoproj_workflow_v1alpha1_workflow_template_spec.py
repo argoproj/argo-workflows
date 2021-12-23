@@ -30,50 +30,10 @@ from argo_workflows.exceptions import ApiAttributeError
 
 
 def lazy_import():
-    from argo_workflows.model.affinity import Affinity
-    from argo_workflows.model.host_alias import HostAlias
-    from argo_workflows.model.io_argoproj_workflow_v1alpha1_arguments import IoArgoprojWorkflowV1alpha1Arguments
-    from argo_workflows.model.io_argoproj_workflow_v1alpha1_artifact_repository_ref import IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef
-    from argo_workflows.model.io_argoproj_workflow_v1alpha1_executor_config import IoArgoprojWorkflowV1alpha1ExecutorConfig
-    from argo_workflows.model.io_argoproj_workflow_v1alpha1_metadata import IoArgoprojWorkflowV1alpha1Metadata
-    from argo_workflows.model.io_argoproj_workflow_v1alpha1_metrics import IoArgoprojWorkflowV1alpha1Metrics
-    from argo_workflows.model.io_argoproj_workflow_v1alpha1_pod_gc import IoArgoprojWorkflowV1alpha1PodGC
-    from argo_workflows.model.io_argoproj_workflow_v1alpha1_retry_strategy import IoArgoprojWorkflowV1alpha1RetryStrategy
-    from argo_workflows.model.io_argoproj_workflow_v1alpha1_synchronization import IoArgoprojWorkflowV1alpha1Synchronization
-    from argo_workflows.model.io_argoproj_workflow_v1alpha1_template import IoArgoprojWorkflowV1alpha1Template
-    from argo_workflows.model.io_argoproj_workflow_v1alpha1_ttl_strategy import IoArgoprojWorkflowV1alpha1TTLStrategy
-    from argo_workflows.model.io_argoproj_workflow_v1alpha1_volume_claim_gc import IoArgoprojWorkflowV1alpha1VolumeClaimGC
-    from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_template_ref import IoArgoprojWorkflowV1alpha1WorkflowTemplateRef
-    from argo_workflows.model.io_k8s_api_policy_v1beta1_pod_disruption_budget_spec import IoK8sApiPolicyV1beta1PodDisruptionBudgetSpec
-    from argo_workflows.model.local_object_reference import LocalObjectReference
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_spec import IoArgoprojWorkflowV1alpha1WorkflowSpec
     from argo_workflows.model.object_meta import ObjectMeta
-    from argo_workflows.model.persistent_volume_claim import PersistentVolumeClaim
-    from argo_workflows.model.pod_dns_config import PodDNSConfig
-    from argo_workflows.model.pod_security_context import PodSecurityContext
-    from argo_workflows.model.toleration import Toleration
-    from argo_workflows.model.volume import Volume
-    globals()['Affinity'] = Affinity
-    globals()['HostAlias'] = HostAlias
-    globals()['IoArgoprojWorkflowV1alpha1Arguments'] = IoArgoprojWorkflowV1alpha1Arguments
-    globals()['IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef'] = IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef
-    globals()['IoArgoprojWorkflowV1alpha1ExecutorConfig'] = IoArgoprojWorkflowV1alpha1ExecutorConfig
-    globals()['IoArgoprojWorkflowV1alpha1Metadata'] = IoArgoprojWorkflowV1alpha1Metadata
-    globals()['IoArgoprojWorkflowV1alpha1Metrics'] = IoArgoprojWorkflowV1alpha1Metrics
-    globals()['IoArgoprojWorkflowV1alpha1PodGC'] = IoArgoprojWorkflowV1alpha1PodGC
-    globals()['IoArgoprojWorkflowV1alpha1RetryStrategy'] = IoArgoprojWorkflowV1alpha1RetryStrategy
-    globals()['IoArgoprojWorkflowV1alpha1Synchronization'] = IoArgoprojWorkflowV1alpha1Synchronization
-    globals()['IoArgoprojWorkflowV1alpha1TTLStrategy'] = IoArgoprojWorkflowV1alpha1TTLStrategy
-    globals()['IoArgoprojWorkflowV1alpha1Template'] = IoArgoprojWorkflowV1alpha1Template
-    globals()['IoArgoprojWorkflowV1alpha1VolumeClaimGC'] = IoArgoprojWorkflowV1alpha1VolumeClaimGC
-    globals()['IoArgoprojWorkflowV1alpha1WorkflowTemplateRef'] = IoArgoprojWorkflowV1alpha1WorkflowTemplateRef
-    globals()['IoK8sApiPolicyV1beta1PodDisruptionBudgetSpec'] = IoK8sApiPolicyV1beta1PodDisruptionBudgetSpec
-    globals()['LocalObjectReference'] = LocalObjectReference
+    globals()['IoArgoprojWorkflowV1alpha1WorkflowSpec'] = IoArgoprojWorkflowV1alpha1WorkflowSpec
     globals()['ObjectMeta'] = ObjectMeta
-    globals()['PersistentVolumeClaim'] = PersistentVolumeClaim
-    globals()['PodDNSConfig'] = PodDNSConfig
-    globals()['PodSecurityContext'] = PodSecurityContext
-    globals()['Toleration'] = Toleration
-    globals()['Volume'] = Volume
 
 
 class IoArgoprojWorkflowV1alpha1WorkflowTemplateSpec(ModelNormal):
@@ -129,46 +89,8 @@ class IoArgoprojWorkflowV1alpha1WorkflowTemplateSpec(ModelNormal):
         """
         lazy_import()
         return {
-            'active_deadline_seconds': (int,),  # noqa: E501
-            'affinity': (Affinity,),  # noqa: E501
-            'archive_logs': (bool,),  # noqa: E501
-            'arguments': (IoArgoprojWorkflowV1alpha1Arguments,),  # noqa: E501
-            'artifact_repository_ref': (IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef,),  # noqa: E501
-            'automount_service_account_token': (bool,),  # noqa: E501
-            'dns_config': (PodDNSConfig,),  # noqa: E501
-            'dns_policy': (str,),  # noqa: E501
-            'entrypoint': (str,),  # noqa: E501
-            'executor': (IoArgoprojWorkflowV1alpha1ExecutorConfig,),  # noqa: E501
-            'host_aliases': ([HostAlias],),  # noqa: E501
-            'host_network': (bool,),  # noqa: E501
-            'image_pull_secrets': ([LocalObjectReference],),  # noqa: E501
-            'metrics': (IoArgoprojWorkflowV1alpha1Metrics,),  # noqa: E501
-            'node_selector': ({str: (str,)},),  # noqa: E501
-            'on_exit': (str,),  # noqa: E501
-            'parallelism': (int,),  # noqa: E501
-            'pod_disruption_budget': (IoK8sApiPolicyV1beta1PodDisruptionBudgetSpec,),  # noqa: E501
-            'pod_gc': (IoArgoprojWorkflowV1alpha1PodGC,),  # noqa: E501
-            'pod_metadata': (IoArgoprojWorkflowV1alpha1Metadata,),  # noqa: E501
-            'pod_priority': (int,),  # noqa: E501
-            'pod_priority_class_name': (str,),  # noqa: E501
-            'pod_spec_patch': (str,),  # noqa: E501
-            'priority': (int,),  # noqa: E501
-            'retry_strategy': (IoArgoprojWorkflowV1alpha1RetryStrategy,),  # noqa: E501
-            'scheduler_name': (str,),  # noqa: E501
-            'security_context': (PodSecurityContext,),  # noqa: E501
-            'service_account_name': (str,),  # noqa: E501
-            'shutdown': (str,),  # noqa: E501
-            'suspend': (bool,),  # noqa: E501
-            'synchronization': (IoArgoprojWorkflowV1alpha1Synchronization,),  # noqa: E501
-            'template_defaults': (IoArgoprojWorkflowV1alpha1Template,),  # noqa: E501
-            'templates': ([IoArgoprojWorkflowV1alpha1Template],),  # noqa: E501
-            'tolerations': ([Toleration],),  # noqa: E501
-            'ttl_strategy': (IoArgoprojWorkflowV1alpha1TTLStrategy,),  # noqa: E501
-            'volume_claim_gc': (IoArgoprojWorkflowV1alpha1VolumeClaimGC,),  # noqa: E501
-            'volume_claim_templates': ([PersistentVolumeClaim],),  # noqa: E501
-            'volumes': ([Volume],),  # noqa: E501
-            'workflow_metadata': (ObjectMeta,),  # noqa: E501
-            'workflow_template_ref': (IoArgoprojWorkflowV1alpha1WorkflowTemplateRef,),  # noqa: E501
+            'workflow_meta': (ObjectMeta,),  # noqa: E501
+            'workflow_spec': (IoArgoprojWorkflowV1alpha1WorkflowSpec,),  # noqa: E501
         }
 
     @cached_property
@@ -177,46 +99,8 @@ class IoArgoprojWorkflowV1alpha1WorkflowTemplateSpec(ModelNormal):
 
 
     attribute_map = {
-        'active_deadline_seconds': 'activeDeadlineSeconds',  # noqa: E501
-        'affinity': 'affinity',  # noqa: E501
-        'archive_logs': 'archiveLogs',  # noqa: E501
-        'arguments': 'arguments',  # noqa: E501
-        'artifact_repository_ref': 'artifactRepositoryRef',  # noqa: E501
-        'automount_service_account_token': 'automountServiceAccountToken',  # noqa: E501
-        'dns_config': 'dnsConfig',  # noqa: E501
-        'dns_policy': 'dnsPolicy',  # noqa: E501
-        'entrypoint': 'entrypoint',  # noqa: E501
-        'executor': 'executor',  # noqa: E501
-        'host_aliases': 'hostAliases',  # noqa: E501
-        'host_network': 'hostNetwork',  # noqa: E501
-        'image_pull_secrets': 'imagePullSecrets',  # noqa: E501
-        'metrics': 'metrics',  # noqa: E501
-        'node_selector': 'nodeSelector',  # noqa: E501
-        'on_exit': 'onExit',  # noqa: E501
-        'parallelism': 'parallelism',  # noqa: E501
-        'pod_disruption_budget': 'podDisruptionBudget',  # noqa: E501
-        'pod_gc': 'podGC',  # noqa: E501
-        'pod_metadata': 'podMetadata',  # noqa: E501
-        'pod_priority': 'podPriority',  # noqa: E501
-        'pod_priority_class_name': 'podPriorityClassName',  # noqa: E501
-        'pod_spec_patch': 'podSpecPatch',  # noqa: E501
-        'priority': 'priority',  # noqa: E501
-        'retry_strategy': 'retryStrategy',  # noqa: E501
-        'scheduler_name': 'schedulerName',  # noqa: E501
-        'security_context': 'securityContext',  # noqa: E501
-        'service_account_name': 'serviceAccountName',  # noqa: E501
-        'shutdown': 'shutdown',  # noqa: E501
-        'suspend': 'suspend',  # noqa: E501
-        'synchronization': 'synchronization',  # noqa: E501
-        'template_defaults': 'templateDefaults',  # noqa: E501
-        'templates': 'templates',  # noqa: E501
-        'tolerations': 'tolerations',  # noqa: E501
-        'ttl_strategy': 'ttlStrategy',  # noqa: E501
-        'volume_claim_gc': 'volumeClaimGC',  # noqa: E501
-        'volume_claim_templates': 'volumeClaimTemplates',  # noqa: E501
-        'volumes': 'volumes',  # noqa: E501
-        'workflow_metadata': 'workflowMetadata',  # noqa: E501
-        'workflow_template_ref': 'workflowTemplateRef',  # noqa: E501
+        'workflow_meta': 'workflowMeta',  # noqa: E501
+        'workflow_spec': 'workflowSpec',  # noqa: E501
     }
 
     read_only_vars = {
@@ -260,46 +144,8 @@ class IoArgoprojWorkflowV1alpha1WorkflowTemplateSpec(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            active_deadline_seconds (int): Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the io.argoproj.workflow.v1alpha1. A value of zero is used to terminate a Running workflow. [optional]  # noqa: E501
-            affinity (Affinity): [optional]  # noqa: E501
-            archive_logs (bool): ArchiveLogs indicates if the container logs should be archived. [optional]  # noqa: E501
-            arguments (IoArgoprojWorkflowV1alpha1Arguments): [optional]  # noqa: E501
-            artifact_repository_ref (IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef): [optional]  # noqa: E501
-            automount_service_account_token (bool): AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.. [optional]  # noqa: E501
-            dns_config (PodDNSConfig): [optional]  # noqa: E501
-            dns_policy (str): Set DNS policy for the pod. Defaults to \"ClusterFirst\". Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'. DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy. To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'.. [optional]  # noqa: E501
-            entrypoint (str): Entrypoint is a template reference to the starting point of the io.argoproj.workflow.v1alpha1.. [optional]  # noqa: E501
-            executor (IoArgoprojWorkflowV1alpha1ExecutorConfig): [optional]  # noqa: E501
-            host_aliases ([HostAlias]): [optional]  # noqa: E501
-            host_network (bool): Host networking requested for this workflow pod. Default to false.. [optional]  # noqa: E501
-            image_pull_secrets ([LocalObjectReference]): ImagePullSecrets is a list of references to secrets in the same namespace to use for pulling any images in pods that reference this ServiceAccount. ImagePullSecrets are distinct from Secrets because Secrets can be mounted in the pod, but ImagePullSecrets are only accessed by the kubelet. More info: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod. [optional]  # noqa: E501
-            metrics (IoArgoprojWorkflowV1alpha1Metrics): [optional]  # noqa: E501
-            node_selector ({str: (str,)}): NodeSelector is a selector which will result in all pods of the workflow to be scheduled on the selected node(s). This is able to be overridden by a nodeSelector specified in the template.. [optional]  # noqa: E501
-            on_exit (str): OnExit is a template reference which is invoked at the end of the workflow, irrespective of the success, failure, or error of the primary io.argoproj.workflow.v1alpha1.. [optional]  # noqa: E501
-            parallelism (int): Parallelism limits the max total parallel pods that can execute at the same time in a workflow. [optional]  # noqa: E501
-            pod_disruption_budget (IoK8sApiPolicyV1beta1PodDisruptionBudgetSpec): [optional]  # noqa: E501
-            pod_gc (IoArgoprojWorkflowV1alpha1PodGC): [optional]  # noqa: E501
-            pod_metadata (IoArgoprojWorkflowV1alpha1Metadata): [optional]  # noqa: E501
-            pod_priority (int): Priority to apply to workflow pods.. [optional]  # noqa: E501
-            pod_priority_class_name (str): PriorityClassName to apply to workflow pods.. [optional]  # noqa: E501
-            pod_spec_patch (str): PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).. [optional]  # noqa: E501
-            priority (int): Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.. [optional]  # noqa: E501
-            retry_strategy (IoArgoprojWorkflowV1alpha1RetryStrategy): [optional]  # noqa: E501
-            scheduler_name (str): Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither specified.. [optional]  # noqa: E501
-            security_context (PodSecurityContext): [optional]  # noqa: E501
-            service_account_name (str): ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.. [optional]  # noqa: E501
-            shutdown (str): Shutdown will shutdown the workflow according to its ShutdownStrategy. [optional]  # noqa: E501
-            suspend (bool): Suspend will suspend the workflow and prevent execution of any future steps in the workflow. [optional]  # noqa: E501
-            synchronization (IoArgoprojWorkflowV1alpha1Synchronization): [optional]  # noqa: E501
-            template_defaults (IoArgoprojWorkflowV1alpha1Template): [optional]  # noqa: E501
-            templates ([IoArgoprojWorkflowV1alpha1Template]): Templates is a list of workflow templates used in a workflow. [optional]  # noqa: E501
-            tolerations ([Toleration]): Tolerations to apply to workflow pods.. [optional]  # noqa: E501
-            ttl_strategy (IoArgoprojWorkflowV1alpha1TTLStrategy): [optional]  # noqa: E501
-            volume_claim_gc (IoArgoprojWorkflowV1alpha1VolumeClaimGC): [optional]  # noqa: E501
-            volume_claim_templates ([PersistentVolumeClaim]): VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow. [optional]  # noqa: E501
-            volumes ([Volume]): Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1.. [optional]  # noqa: E501
-            workflow_metadata (ObjectMeta): [optional]  # noqa: E501
-            workflow_template_ref (IoArgoprojWorkflowV1alpha1WorkflowTemplateRef): [optional]  # noqa: E501
+            workflow_meta (ObjectMeta): [optional]  # noqa: E501
+            workflow_spec (IoArgoprojWorkflowV1alpha1WorkflowSpec): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -381,46 +227,8 @@ class IoArgoprojWorkflowV1alpha1WorkflowTemplateSpec(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            active_deadline_seconds (int): Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the io.argoproj.workflow.v1alpha1. A value of zero is used to terminate a Running workflow. [optional]  # noqa: E501
-            affinity (Affinity): [optional]  # noqa: E501
-            archive_logs (bool): ArchiveLogs indicates if the container logs should be archived. [optional]  # noqa: E501
-            arguments (IoArgoprojWorkflowV1alpha1Arguments): [optional]  # noqa: E501
-            artifact_repository_ref (IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef): [optional]  # noqa: E501
-            automount_service_account_token (bool): AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.. [optional]  # noqa: E501
-            dns_config (PodDNSConfig): [optional]  # noqa: E501
-            dns_policy (str): Set DNS policy for the pod. Defaults to \"ClusterFirst\". Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'. DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy. To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'.. [optional]  # noqa: E501
-            entrypoint (str): Entrypoint is a template reference to the starting point of the io.argoproj.workflow.v1alpha1.. [optional]  # noqa: E501
-            executor (IoArgoprojWorkflowV1alpha1ExecutorConfig): [optional]  # noqa: E501
-            host_aliases ([HostAlias]): [optional]  # noqa: E501
-            host_network (bool): Host networking requested for this workflow pod. Default to false.. [optional]  # noqa: E501
-            image_pull_secrets ([LocalObjectReference]): ImagePullSecrets is a list of references to secrets in the same namespace to use for pulling any images in pods that reference this ServiceAccount. ImagePullSecrets are distinct from Secrets because Secrets can be mounted in the pod, but ImagePullSecrets are only accessed by the kubelet. More info: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod. [optional]  # noqa: E501
-            metrics (IoArgoprojWorkflowV1alpha1Metrics): [optional]  # noqa: E501
-            node_selector ({str: (str,)}): NodeSelector is a selector which will result in all pods of the workflow to be scheduled on the selected node(s). This is able to be overridden by a nodeSelector specified in the template.. [optional]  # noqa: E501
-            on_exit (str): OnExit is a template reference which is invoked at the end of the workflow, irrespective of the success, failure, or error of the primary io.argoproj.workflow.v1alpha1.. [optional]  # noqa: E501
-            parallelism (int): Parallelism limits the max total parallel pods that can execute at the same time in a workflow. [optional]  # noqa: E501
-            pod_disruption_budget (IoK8sApiPolicyV1beta1PodDisruptionBudgetSpec): [optional]  # noqa: E501
-            pod_gc (IoArgoprojWorkflowV1alpha1PodGC): [optional]  # noqa: E501
-            pod_metadata (IoArgoprojWorkflowV1alpha1Metadata): [optional]  # noqa: E501
-            pod_priority (int): Priority to apply to workflow pods.. [optional]  # noqa: E501
-            pod_priority_class_name (str): PriorityClassName to apply to workflow pods.. [optional]  # noqa: E501
-            pod_spec_patch (str): PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).. [optional]  # noqa: E501
-            priority (int): Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.. [optional]  # noqa: E501
-            retry_strategy (IoArgoprojWorkflowV1alpha1RetryStrategy): [optional]  # noqa: E501
-            scheduler_name (str): Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither specified.. [optional]  # noqa: E501
-            security_context (PodSecurityContext): [optional]  # noqa: E501
-            service_account_name (str): ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.. [optional]  # noqa: E501
-            shutdown (str): Shutdown will shutdown the workflow according to its ShutdownStrategy. [optional]  # noqa: E501
-            suspend (bool): Suspend will suspend the workflow and prevent execution of any future steps in the workflow. [optional]  # noqa: E501
-            synchronization (IoArgoprojWorkflowV1alpha1Synchronization): [optional]  # noqa: E501
-            template_defaults (IoArgoprojWorkflowV1alpha1Template): [optional]  # noqa: E501
-            templates ([IoArgoprojWorkflowV1alpha1Template]): Templates is a list of workflow templates used in a workflow. [optional]  # noqa: E501
-            tolerations ([Toleration]): Tolerations to apply to workflow pods.. [optional]  # noqa: E501
-            ttl_strategy (IoArgoprojWorkflowV1alpha1TTLStrategy): [optional]  # noqa: E501
-            volume_claim_gc (IoArgoprojWorkflowV1alpha1VolumeClaimGC): [optional]  # noqa: E501
-            volume_claim_templates ([PersistentVolumeClaim]): VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow. [optional]  # noqa: E501
-            volumes ([Volume]): Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1.. [optional]  # noqa: E501
-            workflow_metadata (ObjectMeta): [optional]  # noqa: E501
-            workflow_template_ref (IoArgoprojWorkflowV1alpha1WorkflowTemplateRef): [optional]  # noqa: E501
+            workflow_meta (ObjectMeta): [optional]  # noqa: E501
+            workflow_spec (IoArgoprojWorkflowV1alpha1WorkflowSpec): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

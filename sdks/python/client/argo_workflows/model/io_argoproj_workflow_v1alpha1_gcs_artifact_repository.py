@@ -30,8 +30,8 @@ from argo_workflows.exceptions import ApiAttributeError
 
 
 def lazy_import():
-    from argo_workflows.model.secret_key_selector import SecretKeySelector
-    globals()['SecretKeySelector'] = SecretKeySelector
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_gcs_bucket import IoArgoprojWorkflowV1alpha1GCSBucket
+    globals()['IoArgoprojWorkflowV1alpha1GCSBucket'] = IoArgoprojWorkflowV1alpha1GCSBucket
 
 
 class IoArgoprojWorkflowV1alpha1GCSArtifactRepository(ModelNormal):
@@ -87,9 +87,8 @@ class IoArgoprojWorkflowV1alpha1GCSArtifactRepository(ModelNormal):
         """
         lazy_import()
         return {
-            'bucket': (str,),  # noqa: E501
+            'g_cs_bucket': (IoArgoprojWorkflowV1alpha1GCSBucket,),  # noqa: E501
             'key_format': (str,),  # noqa: E501
-            'service_account_key_secret': (SecretKeySelector,),  # noqa: E501
         }
 
     @cached_property
@@ -98,9 +97,8 @@ class IoArgoprojWorkflowV1alpha1GCSArtifactRepository(ModelNormal):
 
 
     attribute_map = {
-        'bucket': 'bucket',  # noqa: E501
+        'g_cs_bucket': 'gCSBucket',  # noqa: E501
         'key_format': 'keyFormat',  # noqa: E501
-        'service_account_key_secret': 'serviceAccountKeySecret',  # noqa: E501
     }
 
     read_only_vars = {
@@ -144,9 +142,8 @@ class IoArgoprojWorkflowV1alpha1GCSArtifactRepository(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            bucket (str): Bucket is the name of the bucket. [optional]  # noqa: E501
-            key_format (str): KeyFormat is defines the format of how to store keys. Can reference workflow variables. [optional]  # noqa: E501
-            service_account_key_secret (SecretKeySelector): [optional]  # noqa: E501
+            g_cs_bucket (IoArgoprojWorkflowV1alpha1GCSBucket): [optional]  # noqa: E501
+            key_format (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -228,9 +225,8 @@ class IoArgoprojWorkflowV1alpha1GCSArtifactRepository(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            bucket (str): Bucket is the name of the bucket. [optional]  # noqa: E501
-            key_format (str): KeyFormat is defines the format of how to store keys. Can reference workflow variables. [optional]  # noqa: E501
-            service_account_key_secret (SecretKeySelector): [optional]  # noqa: E501
+            g_cs_bucket (IoArgoprojWorkflowV1alpha1GCSBucket): [optional]  # noqa: E501
+            key_format (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

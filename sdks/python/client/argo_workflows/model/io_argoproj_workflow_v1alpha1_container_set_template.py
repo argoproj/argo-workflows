@@ -110,11 +110,8 @@ class IoArgoprojWorkflowV1alpha1ContainerSetTemplate(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, containers, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1ContainerSetTemplate - a model defined in OpenAPI
-
-        Args:
-            containers ([IoArgoprojWorkflowV1alpha1ContainerNode]):
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -147,6 +144,7 @@ class IoArgoprojWorkflowV1alpha1ContainerSetTemplate(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            containers ([IoArgoprojWorkflowV1alpha1ContainerNode]): [optional]  # noqa: E501
             volume_mounts ([VolumeMount]): [optional]  # noqa: E501
         """
 
@@ -175,7 +173,6 @@ class IoArgoprojWorkflowV1alpha1ContainerSetTemplate(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.containers = containers
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -196,11 +193,8 @@ class IoArgoprojWorkflowV1alpha1ContainerSetTemplate(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, containers, *args, **kwargs):  # noqa: E501
+    def __init__(self, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1ContainerSetTemplate - a model defined in OpenAPI
-
-        Args:
-            containers ([IoArgoprojWorkflowV1alpha1ContainerNode]):
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -233,6 +227,7 @@ class IoArgoprojWorkflowV1alpha1ContainerSetTemplate(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            containers ([IoArgoprojWorkflowV1alpha1ContainerNode]): [optional]  # noqa: E501
             volume_mounts ([VolumeMount]): [optional]  # noqa: E501
         """
 
@@ -259,7 +254,6 @@ class IoArgoprojWorkflowV1alpha1ContainerSetTemplate(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.containers = containers
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

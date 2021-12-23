@@ -136,8 +136,8 @@ class IoArgoprojWorkflowV1alpha1OSSLifecycleRule(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            mark_deletion_after_days (int): MarkDeletionAfterDays is the number of days before we delete objects in the bucket. [optional]  # noqa: E501
-            mark_infrequent_access_after_days (int): MarkInfrequentAccessAfterDays is the number of days before we convert the objects in the bucket to Infrequent Access (IA) storage type. [optional]  # noqa: E501
+            mark_deletion_after_days (int): [optional]  # noqa: E501
+            mark_infrequent_access_after_days (int): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -219,8 +219,8 @@ class IoArgoprojWorkflowV1alpha1OSSLifecycleRule(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            mark_deletion_after_days (int): MarkDeletionAfterDays is the number of days before we delete objects in the bucket. [optional]  # noqa: E501
-            mark_infrequent_access_after_days (int): MarkInfrequentAccessAfterDays is the number of days before we convert the objects in the bucket to Infrequent Access (IA) storage type. [optional]  # noqa: E501
+            mark_deletion_after_days (int): [optional]  # noqa: E501
+            mark_infrequent_access_after_days (int): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

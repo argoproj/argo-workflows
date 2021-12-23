@@ -146,8 +146,8 @@ class IoArgoprojWorkflowV1alpha1S3EncryptionOptions(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            enable_encryption (bool): EnableEncryption tells the driver to encrypt objects if set to true. If kmsKeyId and serverSideCustomerKeySecret are not set, SSE-S3 will be used. [optional]  # noqa: E501
-            kms_encryption_context (str): KmsEncryptionContext is a json blob that contains an encryption context. See https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html#encrypt_context for more information. [optional]  # noqa: E501
+            enable_encryption (bool): [optional]  # noqa: E501
+            kms_encryption_context (str): [optional]  # noqa: E501
             kms_key_id (str): KMSKeyId tells the driver to encrypt the object using the specified KMS Key.. [optional]  # noqa: E501
             server_side_customer_key_secret (SecretKeySelector): [optional]  # noqa: E501
         """
@@ -231,8 +231,8 @@ class IoArgoprojWorkflowV1alpha1S3EncryptionOptions(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            enable_encryption (bool): EnableEncryption tells the driver to encrypt objects if set to true. If kmsKeyId and serverSideCustomerKeySecret are not set, SSE-S3 will be used. [optional]  # noqa: E501
-            kms_encryption_context (str): KmsEncryptionContext is a json blob that contains an encryption context. See https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html#encrypt_context for more information. [optional]  # noqa: E501
+            enable_encryption (bool): [optional]  # noqa: E501
+            kms_encryption_context (str): [optional]  # noqa: E501
             kms_key_id (str): KMSKeyId tells the driver to encrypt the object using the specified KMS Key.. [optional]  # noqa: E501
             server_side_customer_key_secret (SecretKeySelector): [optional]  # noqa: E501
         """

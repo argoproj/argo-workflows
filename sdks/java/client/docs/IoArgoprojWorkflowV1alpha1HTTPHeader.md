@@ -7,7 +7,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**name** | **String** |  | 
+**name** | **String** |  |  [optional]
 **value** | **String** |  |  [optional]
 **valueFrom** | [**IoArgoprojWorkflowV1alpha1HTTPHeaderSource**](IoArgoprojWorkflowV1alpha1HTTPHeaderSource.md) |  |  [optional]
 

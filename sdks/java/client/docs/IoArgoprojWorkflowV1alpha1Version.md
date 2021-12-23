@@ -7,14 +7,14 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**buildDate** | **String** |  | 
-**compiler** | **String** |  | 
-**gitCommit** | **String** |  | 
-**gitTag** | **String** |  | 
-**gitTreeState** | **String** |  | 
-**goVersion** | **String** |  | 
-**platform** | **String** |  | 
-**version** | **String** |  | 
+**buildDate** | **String** |  |  [optional]
+**compiler** | **String** |  |  [optional]
+**gitCommit** | **String** |  |  [optional]
+**gitTag** | **String** |  |  [optional]
+**gitTreeState** | **String** |  |  [optional]
+**goVersion** | **String** |  |  [optional]
+**platform** | **String** |  |  [optional]
+**version** | **String** |  |  [optional]
 
 
 

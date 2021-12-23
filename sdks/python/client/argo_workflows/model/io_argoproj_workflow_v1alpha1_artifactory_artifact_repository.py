@@ -30,8 +30,8 @@ from argo_workflows.exceptions import ApiAttributeError
 
 
 def lazy_import():
-    from argo_workflows.model.secret_key_selector import SecretKeySelector
-    globals()['SecretKeySelector'] = SecretKeySelector
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_artifactory_auth import IoArgoprojWorkflowV1alpha1ArtifactoryAuth
+    globals()['IoArgoprojWorkflowV1alpha1ArtifactoryAuth'] = IoArgoprojWorkflowV1alpha1ArtifactoryAuth
 
 
 class IoArgoprojWorkflowV1alpha1ArtifactoryArtifactRepository(ModelNormal):
@@ -87,9 +87,8 @@ class IoArgoprojWorkflowV1alpha1ArtifactoryArtifactRepository(ModelNormal):
         """
         lazy_import()
         return {
-            'password_secret': (SecretKeySelector,),  # noqa: E501
+            'artifactory_auth': (IoArgoprojWorkflowV1alpha1ArtifactoryAuth,),  # noqa: E501
             'repo_url': (str,),  # noqa: E501
-            'username_secret': (SecretKeySelector,),  # noqa: E501
         }
 
     @cached_property
@@ -98,9 +97,8 @@ class IoArgoprojWorkflowV1alpha1ArtifactoryArtifactRepository(ModelNormal):
 
 
     attribute_map = {
-        'password_secret': 'passwordSecret',  # noqa: E501
+        'artifactory_auth': 'artifactoryAuth',  # noqa: E501
         'repo_url': 'repoURL',  # noqa: E501
-        'username_secret': 'usernameSecret',  # noqa: E501
     }
 
     read_only_vars = {
@@ -144,9 +142,8 @@ class IoArgoprojWorkflowV1alpha1ArtifactoryArtifactRepository(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            password_secret (SecretKeySelector): [optional]  # noqa: E501
+            artifactory_auth (IoArgoprojWorkflowV1alpha1ArtifactoryAuth): [optional]  # noqa: E501
             repo_url (str): RepoURL is the url for artifactory repo.. [optional]  # noqa: E501
-            username_secret (SecretKeySelector): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -228,9 +225,8 @@ class IoArgoprojWorkflowV1alpha1ArtifactoryArtifactRepository(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            password_secret (SecretKeySelector): [optional]  # noqa: E501
+            artifactory_auth (IoArgoprojWorkflowV1alpha1ArtifactoryAuth): [optional]  # noqa: E501
             repo_url (str): RepoURL is the url for artifactory repo.. [optional]  # noqa: E501
-            username_secret (SecretKeySelector): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

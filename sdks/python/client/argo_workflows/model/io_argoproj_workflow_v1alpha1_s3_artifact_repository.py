@@ -30,12 +30,8 @@ from argo_workflows.exceptions import ApiAttributeError
 
 
 def lazy_import():
-    from argo_workflows.model.io_argoproj_workflow_v1alpha1_create_s3_bucket_options import IoArgoprojWorkflowV1alpha1CreateS3BucketOptions
-    from argo_workflows.model.io_argoproj_workflow_v1alpha1_s3_encryption_options import IoArgoprojWorkflowV1alpha1S3EncryptionOptions
-    from argo_workflows.model.secret_key_selector import SecretKeySelector
-    globals()['IoArgoprojWorkflowV1alpha1CreateS3BucketOptions'] = IoArgoprojWorkflowV1alpha1CreateS3BucketOptions
-    globals()['IoArgoprojWorkflowV1alpha1S3EncryptionOptions'] = IoArgoprojWorkflowV1alpha1S3EncryptionOptions
-    globals()['SecretKeySelector'] = SecretKeySelector
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_s3_bucket import IoArgoprojWorkflowV1alpha1S3Bucket
+    globals()['IoArgoprojWorkflowV1alpha1S3Bucket'] = IoArgoprojWorkflowV1alpha1S3Bucket
 
 
 class IoArgoprojWorkflowV1alpha1S3ArtifactRepository(ModelNormal):
@@ -91,18 +87,9 @@ class IoArgoprojWorkflowV1alpha1S3ArtifactRepository(ModelNormal):
         """
         lazy_import()
         return {
-            'access_key_secret': (SecretKeySelector,),  # noqa: E501
-            'bucket': (str,),  # noqa: E501
-            'create_bucket_if_not_present': (IoArgoprojWorkflowV1alpha1CreateS3BucketOptions,),  # noqa: E501
-            'encryption_options': (IoArgoprojWorkflowV1alpha1S3EncryptionOptions,),  # noqa: E501
-            'endpoint': (str,),  # noqa: E501
-            'insecure': (bool,),  # noqa: E501
             'key_format': (str,),  # noqa: E501
             'key_prefix': (str,),  # noqa: E501
-            'region': (str,),  # noqa: E501
-            'role_arn': (str,),  # noqa: E501
-            'secret_key_secret': (SecretKeySelector,),  # noqa: E501
-            'use_sdk_creds': (bool,),  # noqa: E501
+            's3_bucket': (IoArgoprojWorkflowV1alpha1S3Bucket,),  # noqa: E501
         }
 
     @cached_property
@@ -111,18 +98,9 @@ class IoArgoprojWorkflowV1alpha1S3ArtifactRepository(ModelNormal):
 
 
     attribute_map = {
-        'access_key_secret': 'accessKeySecret',  # noqa: E501
-        'bucket': 'bucket',  # noqa: E501
-        'create_bucket_if_not_present': 'createBucketIfNotPresent',  # noqa: E501
-        'encryption_options': 'encryptionOptions',  # noqa: E501
-        'endpoint': 'endpoint',  # noqa: E501
-        'insecure': 'insecure',  # noqa: E501
         'key_format': 'keyFormat',  # noqa: E501
         'key_prefix': 'keyPrefix',  # noqa: E501
-        'region': 'region',  # noqa: E501
-        'role_arn': 'roleARN',  # noqa: E501
-        'secret_key_secret': 'secretKeySecret',  # noqa: E501
-        'use_sdk_creds': 'useSDKCreds',  # noqa: E501
+        's3_bucket': 's3Bucket',  # noqa: E501
     }
 
     read_only_vars = {
@@ -166,18 +144,9 @@ class IoArgoprojWorkflowV1alpha1S3ArtifactRepository(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            access_key_secret (SecretKeySelector): [optional]  # noqa: E501
-            bucket (str): Bucket is the name of the bucket. [optional]  # noqa: E501
-            create_bucket_if_not_present (IoArgoprojWorkflowV1alpha1CreateS3BucketOptions): [optional]  # noqa: E501
-            encryption_options (IoArgoprojWorkflowV1alpha1S3EncryptionOptions): [optional]  # noqa: E501
-            endpoint (str): Endpoint is the hostname of the bucket endpoint. [optional]  # noqa: E501
-            insecure (bool): Insecure will connect to the service with TLS. [optional]  # noqa: E501
-            key_format (str): KeyFormat is defines the format of how to store keys. Can reference workflow variables. [optional]  # noqa: E501
-            key_prefix (str): KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts. DEPRECATED. Use KeyFormat instead. [optional]  # noqa: E501
-            region (str): Region contains the optional bucket region. [optional]  # noqa: E501
-            role_arn (str): RoleARN is the Amazon Resource Name (ARN) of the role to assume.. [optional]  # noqa: E501
-            secret_key_secret (SecretKeySelector): [optional]  # noqa: E501
-            use_sdk_creds (bool): UseSDKCreds tells the driver to figure out credentials based on sdk defaults.. [optional]  # noqa: E501
+            key_format (str): [optional]  # noqa: E501
+            key_prefix (str): [optional]  # noqa: E501
+            s3_bucket (IoArgoprojWorkflowV1alpha1S3Bucket): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -259,18 +228,9 @@ class IoArgoprojWorkflowV1alpha1S3ArtifactRepository(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            access_key_secret (SecretKeySelector): [optional]  # noqa: E501
-            bucket (str): Bucket is the name of the bucket. [optional]  # noqa: E501
-            create_bucket_if_not_present (IoArgoprojWorkflowV1alpha1CreateS3BucketOptions): [optional]  # noqa: E501
-            encryption_options (IoArgoprojWorkflowV1alpha1S3EncryptionOptions): [optional]  # noqa: E501
-            endpoint (str): Endpoint is the hostname of the bucket endpoint. [optional]  # noqa: E501
-            insecure (bool): Insecure will connect to the service with TLS. [optional]  # noqa: E501
-            key_format (str): KeyFormat is defines the format of how to store keys. Can reference workflow variables. [optional]  # noqa: E501
-            key_prefix (str): KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts. DEPRECATED. Use KeyFormat instead. [optional]  # noqa: E501
-            region (str): Region contains the optional bucket region. [optional]  # noqa: E501
-            role_arn (str): RoleARN is the Amazon Resource Name (ARN) of the role to assume.. [optional]  # noqa: E501
-            secret_key_secret (SecretKeySelector): [optional]  # noqa: E501
-            use_sdk_creds (bool): UseSDKCreds tells the driver to figure out credentials based on sdk defaults.. [optional]  # noqa: E501
+            key_format (str): [optional]  # noqa: E501
+            key_prefix (str): [optional]  # noqa: E501
+            s3_bucket (IoArgoprojWorkflowV1alpha1S3Bucket): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

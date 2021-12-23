@@ -2,15 +2,13 @@
 
 # IoArgoprojWorkflowV1alpha1ArtifactoryArtifact
 
-ArtifactoryArtifact is the location of an artifactory artifact
 
 ## Properties
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**passwordSecret** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
-**url** | **String** | URL of the artifact | 
-**usernameSecret** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
+**artifactoryAuth** | [**IoArgoprojWorkflowV1alpha1ArtifactoryAuth**](IoArgoprojWorkflowV1alpha1ArtifactoryAuth.md) |  |  [optional]
+**url** | **String** |  |  [optional]
 
 
 

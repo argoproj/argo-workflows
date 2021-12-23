@@ -4,7 +4,7 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**holders** | **[str]** | Holders stores the list of current holder names in the io.argoproj.workflow.v1alpha1. | [optional] 
+**holders** | **[str]** |  | [optional] 
 **semaphore** | **str** | Semaphore stores the semaphore name. | [optional] 
 **any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 

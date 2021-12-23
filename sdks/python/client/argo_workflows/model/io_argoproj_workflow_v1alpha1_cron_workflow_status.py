@@ -112,13 +112,8 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowStatus(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, active, conditions, last_scheduled_time, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1CronWorkflowStatus - a model defined in OpenAPI
-
-        Args:
-            active ([ObjectReference]): Active is a list of active workflows stemming from this CronWorkflow
-            conditions ([IoArgoprojWorkflowV1alpha1Condition]): Conditions is a list of conditions the CronWorkflow may have
-            last_scheduled_time (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -151,6 +146,9 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowStatus(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            active ([ObjectReference]): [optional]  # noqa: E501
+            conditions ([IoArgoprojWorkflowV1alpha1Condition]): [optional]  # noqa: E501
+            last_scheduled_time (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -178,9 +176,6 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowStatus(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.active = active
-        self.conditions = conditions
-        self.last_scheduled_time = last_scheduled_time
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -201,13 +196,8 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowStatus(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, active, conditions, last_scheduled_time, *args, **kwargs):  # noqa: E501
+    def __init__(self, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1CronWorkflowStatus - a model defined in OpenAPI
-
-        Args:
-            active ([ObjectReference]): Active is a list of active workflows stemming from this CronWorkflow
-            conditions ([IoArgoprojWorkflowV1alpha1Condition]): Conditions is a list of conditions the CronWorkflow may have
-            last_scheduled_time (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -240,6 +230,9 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowStatus(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            active ([ObjectReference]): [optional]  # noqa: E501
+            conditions ([IoArgoprojWorkflowV1alpha1Condition]): [optional]  # noqa: E501
+            last_scheduled_time (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -265,9 +258,6 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowStatus(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.active = active
-        self.conditions = conditions
-        self.last_scheduled_time = last_scheduled_time
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

@@ -110,13 +110,8 @@ class IoArgoprojWorkflowV1alpha1Memoize(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, cache, key, max_age, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1Memoize - a model defined in OpenAPI
-
-        Args:
-            cache (IoArgoprojWorkflowV1alpha1Cache):
-            key (str): Key is the key to use as the caching key
-            max_age (str): MaxAge is the maximum age (e.g. \"180s\", \"24h\") of an entry that is still considered valid. If an entry is older than the MaxAge, it will be ignored.
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -149,6 +144,9 @@ class IoArgoprojWorkflowV1alpha1Memoize(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            cache (IoArgoprojWorkflowV1alpha1Cache): [optional]  # noqa: E501
+            key (str): [optional]  # noqa: E501
+            max_age (str): MaxAge is the maximum age (e.g. \"180s\", \"24h\") of an entry that is still considered valid. If an entry is older than the MaxAge, it will be ignored.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -176,9 +174,6 @@ class IoArgoprojWorkflowV1alpha1Memoize(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.cache = cache
-        self.key = key
-        self.max_age = max_age
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -199,13 +194,8 @@ class IoArgoprojWorkflowV1alpha1Memoize(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, cache, key, max_age, *args, **kwargs):  # noqa: E501
+    def __init__(self, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1Memoize - a model defined in OpenAPI
-
-        Args:
-            cache (IoArgoprojWorkflowV1alpha1Cache):
-            key (str): Key is the key to use as the caching key
-            max_age (str): MaxAge is the maximum age (e.g. \"180s\", \"24h\") of an entry that is still considered valid. If an entry is older than the MaxAge, it will be ignored.
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -238,6 +228,9 @@ class IoArgoprojWorkflowV1alpha1Memoize(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            cache (IoArgoprojWorkflowV1alpha1Cache): [optional]  # noqa: E501
+            key (str): [optional]  # noqa: E501
+            max_age (str): MaxAge is the maximum age (e.g. \"180s\", \"24h\") of an entry that is still considered valid. If an entry is older than the MaxAge, it will be ignored.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -263,9 +256,6 @@ class IoArgoprojWorkflowV1alpha1Memoize(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.cache = cache
-        self.key = key
-        self.max_age = max_age
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

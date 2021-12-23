@@ -95,30 +95,30 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
         """
         lazy_import()
         return {
-            'id': (str,),  # noqa: E501
-            'name': (str,),  # noqa: E501
-            'type': (str,),  # noqa: E501
             'boundary_id': (str,),  # noqa: E501
             'children': ([str],),  # noqa: E501
             'daemoned': (bool,),  # noqa: E501
             'display_name': (str,),  # noqa: E501
-            'estimated_duration': (int,),  # noqa: E501
+            'estimated_duration': (str,),  # noqa: E501
             'finished_at': (datetime,),  # noqa: E501
             'host_node_name': (str,),  # noqa: E501
+            'id': (str,),  # noqa: E501
             'inputs': (IoArgoprojWorkflowV1alpha1Inputs,),  # noqa: E501
             'memoization_status': (IoArgoprojWorkflowV1alpha1MemoizationStatus,),  # noqa: E501
             'message': (str,),  # noqa: E501
+            'name': (str,),  # noqa: E501
             'outbound_nodes': ([str],),  # noqa: E501
             'outputs': (IoArgoprojWorkflowV1alpha1Outputs,),  # noqa: E501
             'phase': (str,),  # noqa: E501
             'pod_ip': (str,),  # noqa: E501
             'progress': (str,),  # noqa: E501
-            'resources_duration': ({str: (int,)},),  # noqa: E501
+            'resources_duration': ({str: (str,)},),  # noqa: E501
             'started_at': (datetime,),  # noqa: E501
             'synchronization_status': (IoArgoprojWorkflowV1alpha1NodeSynchronizationStatus,),  # noqa: E501
             'template_name': (str,),  # noqa: E501
             'template_ref': (IoArgoprojWorkflowV1alpha1TemplateRef,),  # noqa: E501
             'template_scope': (str,),  # noqa: E501
+            'type': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -127,9 +127,6 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
 
 
     attribute_map = {
-        'id': 'id',  # noqa: E501
-        'name': 'name',  # noqa: E501
-        'type': 'type',  # noqa: E501
         'boundary_id': 'boundaryID',  # noqa: E501
         'children': 'children',  # noqa: E501
         'daemoned': 'daemoned',  # noqa: E501
@@ -137,9 +134,11 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
         'estimated_duration': 'estimatedDuration',  # noqa: E501
         'finished_at': 'finishedAt',  # noqa: E501
         'host_node_name': 'hostNodeName',  # noqa: E501
+        'id': 'id',  # noqa: E501
         'inputs': 'inputs',  # noqa: E501
         'memoization_status': 'memoizationStatus',  # noqa: E501
         'message': 'message',  # noqa: E501
+        'name': 'name',  # noqa: E501
         'outbound_nodes': 'outboundNodes',  # noqa: E501
         'outputs': 'outputs',  # noqa: E501
         'phase': 'phase',  # noqa: E501
@@ -151,6 +150,7 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
         'template_name': 'templateName',  # noqa: E501
         'template_ref': 'templateRef',  # noqa: E501
         'template_scope': 'templateScope',  # noqa: E501
+        'type': 'type',  # noqa: E501
     }
 
     read_only_vars = {
@@ -160,13 +160,8 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, id, name, type, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1NodeStatus - a model defined in OpenAPI
-
-        Args:
-            id (str): ID is a unique identifier of a node within the worklow It is implemented as a hash of the node name, which makes the ID deterministic
-            name (str): Name is unique name in the node tree used to generate the node ID
-            type (str): Type indicates type of node
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -199,27 +194,30 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            boundary_id (str): BoundaryID indicates the node ID of the associated template root node in which this node belongs to. [optional]  # noqa: E501
-            children ([str]): Children is a list of child node IDs. [optional]  # noqa: E501
-            daemoned (bool): Daemoned tracks whether or not this node was daemoned and need to be terminated. [optional]  # noqa: E501
-            display_name (str): DisplayName is a human readable representation of the node. Unique within a template boundary. [optional]  # noqa: E501
-            estimated_duration (int): EstimatedDuration in seconds.. [optional]  # noqa: E501
+            boundary_id (str): [optional]  # noqa: E501
+            children ([str]): [optional]  # noqa: E501
+            daemoned (bool): [optional]  # noqa: E501
+            display_name (str): [optional]  # noqa: E501
+            estimated_duration (str): EstimatedDuration in seconds.. [optional]  # noqa: E501
             finished_at (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
-            host_node_name (str): HostNodeName name of the Kubernetes node on which the Pod is running, if applicable. [optional]  # noqa: E501
+            host_node_name (str): [optional]  # noqa: E501
+            id (str): [optional]  # noqa: E501
             inputs (IoArgoprojWorkflowV1alpha1Inputs): [optional]  # noqa: E501
             memoization_status (IoArgoprojWorkflowV1alpha1MemoizationStatus): [optional]  # noqa: E501
             message (str): A human readable message indicating details about why the node is in this condition.. [optional]  # noqa: E501
+            name (str): [optional]  # noqa: E501
             outbound_nodes ([str]): OutboundNodes tracks the node IDs which are considered \"outbound\" nodes to a template invocation. For every invocation of a template, there are nodes which we considered as \"outbound\". Essentially, these are last nodes in the execution sequence to run, before the template is considered completed. These nodes are then connected as parents to a following step.  In the case of single pod steps (i.e. container, script, resource templates), this list will be nil since the pod itself is already considered the \"outbound\" node. In the case of DAGs, outbound nodes are the \"target\" tasks (tasks with no children). In the case of steps, outbound nodes are all the containers involved in the last step group. NOTE: since templates are composable, the list of outbound nodes are carried upwards when a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of a template, will be a superset of the outbound nodes of its last children.. [optional]  # noqa: E501
             outputs (IoArgoprojWorkflowV1alpha1Outputs): [optional]  # noqa: E501
             phase (str): Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine.. [optional]  # noqa: E501
-            pod_ip (str): PodIP captures the IP of the pod for daemoned steps. [optional]  # noqa: E501
-            progress (str): Progress to completion. [optional]  # noqa: E501
-            resources_duration ({str: (int,)}): ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.. [optional]  # noqa: E501
+            pod_ip (str): [optional]  # noqa: E501
+            progress (str): [optional]  # noqa: E501
+            resources_duration ({str: (str,)}): ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.. [optional]  # noqa: E501
             started_at (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
             synchronization_status (IoArgoprojWorkflowV1alpha1NodeSynchronizationStatus): [optional]  # noqa: E501
-            template_name (str): TemplateName is the template name which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup). [optional]  # noqa: E501
+            template_name (str): [optional]  # noqa: E501
             template_ref (IoArgoprojWorkflowV1alpha1TemplateRef): [optional]  # noqa: E501
             template_scope (str): TemplateScope is the template scope in which the template of this node was retrieved.. [optional]  # noqa: E501
+            type (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -247,9 +245,6 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.id = id
-        self.name = name
-        self.type = type
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -270,13 +265,8 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, id, name, type, *args, **kwargs):  # noqa: E501
+    def __init__(self, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1NodeStatus - a model defined in OpenAPI
-
-        Args:
-            id (str): ID is a unique identifier of a node within the worklow It is implemented as a hash of the node name, which makes the ID deterministic
-            name (str): Name is unique name in the node tree used to generate the node ID
-            type (str): Type indicates type of node
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -309,27 +299,30 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            boundary_id (str): BoundaryID indicates the node ID of the associated template root node in which this node belongs to. [optional]  # noqa: E501
-            children ([str]): Children is a list of child node IDs. [optional]  # noqa: E501
-            daemoned (bool): Daemoned tracks whether or not this node was daemoned and need to be terminated. [optional]  # noqa: E501
-            display_name (str): DisplayName is a human readable representation of the node. Unique within a template boundary. [optional]  # noqa: E501
-            estimated_duration (int): EstimatedDuration in seconds.. [optional]  # noqa: E501
+            boundary_id (str): [optional]  # noqa: E501
+            children ([str]): [optional]  # noqa: E501
+            daemoned (bool): [optional]  # noqa: E501
+            display_name (str): [optional]  # noqa: E501
+            estimated_duration (str): EstimatedDuration in seconds.. [optional]  # noqa: E501
             finished_at (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
-            host_node_name (str): HostNodeName name of the Kubernetes node on which the Pod is running, if applicable. [optional]  # noqa: E501
+            host_node_name (str): [optional]  # noqa: E501
+            id (str): [optional]  # noqa: E501
             inputs (IoArgoprojWorkflowV1alpha1Inputs): [optional]  # noqa: E501
             memoization_status (IoArgoprojWorkflowV1alpha1MemoizationStatus): [optional]  # noqa: E501
             message (str): A human readable message indicating details about why the node is in this condition.. [optional]  # noqa: E501
+            name (str): [optional]  # noqa: E501
             outbound_nodes ([str]): OutboundNodes tracks the node IDs which are considered \"outbound\" nodes to a template invocation. For every invocation of a template, there are nodes which we considered as \"outbound\". Essentially, these are last nodes in the execution sequence to run, before the template is considered completed. These nodes are then connected as parents to a following step.  In the case of single pod steps (i.e. container, script, resource templates), this list will be nil since the pod itself is already considered the \"outbound\" node. In the case of DAGs, outbound nodes are the \"target\" tasks (tasks with no children). In the case of steps, outbound nodes are all the containers involved in the last step group. NOTE: since templates are composable, the list of outbound nodes are carried upwards when a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of a template, will be a superset of the outbound nodes of its last children.. [optional]  # noqa: E501
             outputs (IoArgoprojWorkflowV1alpha1Outputs): [optional]  # noqa: E501
             phase (str): Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine.. [optional]  # noqa: E501
-            pod_ip (str): PodIP captures the IP of the pod for daemoned steps. [optional]  # noqa: E501
-            progress (str): Progress to completion. [optional]  # noqa: E501
-            resources_duration ({str: (int,)}): ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.. [optional]  # noqa: E501
+            pod_ip (str): [optional]  # noqa: E501
+            progress (str): [optional]  # noqa: E501
+            resources_duration ({str: (str,)}): ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.. [optional]  # noqa: E501
             started_at (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
             synchronization_status (IoArgoprojWorkflowV1alpha1NodeSynchronizationStatus): [optional]  # noqa: E501
-            template_name (str): TemplateName is the template name which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup). [optional]  # noqa: E501
+            template_name (str): [optional]  # noqa: E501
             template_ref (IoArgoprojWorkflowV1alpha1TemplateRef): [optional]  # noqa: E501
             template_scope (str): TemplateScope is the template scope in which the template of this node was retrieved.. [optional]  # noqa: E501
+            type (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -355,9 +348,6 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.id = id
-        self.name = name
-        self.type = type
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

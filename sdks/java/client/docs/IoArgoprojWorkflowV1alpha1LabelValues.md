@@ -2,7 +2,6 @@
 
 # IoArgoprojWorkflowV1alpha1LabelValues
 
-Labels is list of workflow labels
 
 ## Properties
 

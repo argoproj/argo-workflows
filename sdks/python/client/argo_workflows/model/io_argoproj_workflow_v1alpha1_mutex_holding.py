@@ -136,8 +136,8 @@ class IoArgoprojWorkflowV1alpha1MutexHolding(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            holder (str): Holder is a reference to the object which holds the Mutex. Holding Scenario:   1. Current workflow's NodeID which is holding the lock.      e.g: ${NodeID} Waiting Scenario:   1. Current workflow or other workflow NodeID which is holding the lock.      e.g: ${WorkflowName}/${NodeID}. [optional]  # noqa: E501
-            mutex (str): Reference for the mutex e.g: ${namespace}/mutex/${mutexName}. [optional]  # noqa: E501
+            holder (str): [optional]  # noqa: E501
+            mutex (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -219,8 +219,8 @@ class IoArgoprojWorkflowV1alpha1MutexHolding(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            holder (str): Holder is a reference to the object which holds the Mutex. Holding Scenario:   1. Current workflow's NodeID which is holding the lock.      e.g: ${NodeID} Waiting Scenario:   1. Current workflow or other workflow NodeID which is holding the lock.      e.g: ${WorkflowName}/${NodeID}. [optional]  # noqa: E501
-            mutex (str): Reference for the mutex e.g: ${namespace}/mutex/${mutexName}. [optional]  # noqa: E501
+            holder (str): [optional]  # noqa: E501
+            mutex (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

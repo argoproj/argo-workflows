@@ -114,18 +114,8 @@ class IoArgoprojWorkflowV1alpha1Version(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, build_date, compiler, git_commit, git_tag, git_tree_state, go_version, platform, version, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1Version - a model defined in OpenAPI
-
-        Args:
-            build_date (str):
-            compiler (str):
-            git_commit (str):
-            git_tag (str):
-            git_tree_state (str):
-            go_version (str):
-            platform (str):
-            version (str):
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -158,6 +148,14 @@ class IoArgoprojWorkflowV1alpha1Version(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            build_date (str): [optional]  # noqa: E501
+            compiler (str): [optional]  # noqa: E501
+            git_commit (str): [optional]  # noqa: E501
+            git_tag (str): [optional]  # noqa: E501
+            git_tree_state (str): [optional]  # noqa: E501
+            go_version (str): [optional]  # noqa: E501
+            platform (str): [optional]  # noqa: E501
+            version (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -185,14 +183,6 @@ class IoArgoprojWorkflowV1alpha1Version(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.build_date = build_date
-        self.compiler = compiler
-        self.git_commit = git_commit
-        self.git_tag = git_tag
-        self.git_tree_state = git_tree_state
-        self.go_version = go_version
-        self.platform = platform
-        self.version = version
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -213,18 +203,8 @@ class IoArgoprojWorkflowV1alpha1Version(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, build_date, compiler, git_commit, git_tag, git_tree_state, go_version, platform, version, *args, **kwargs):  # noqa: E501
+    def __init__(self, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1Version - a model defined in OpenAPI
-
-        Args:
-            build_date (str):
-            compiler (str):
-            git_commit (str):
-            git_tag (str):
-            git_tree_state (str):
-            go_version (str):
-            platform (str):
-            version (str):
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -257,6 +237,14 @@ class IoArgoprojWorkflowV1alpha1Version(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            build_date (str): [optional]  # noqa: E501
+            compiler (str): [optional]  # noqa: E501
+            git_commit (str): [optional]  # noqa: E501
+            git_tag (str): [optional]  # noqa: E501
+            git_tree_state (str): [optional]  # noqa: E501
+            go_version (str): [optional]  # noqa: E501
+            platform (str): [optional]  # noqa: E501
+            version (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -282,14 +270,6 @@ class IoArgoprojWorkflowV1alpha1Version(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.build_date = build_date
-        self.compiler = compiler
-        self.git_commit = git_commit
-        self.git_tag = git_tag
-        self.git_tree_state = git_tree_state
-        self.go_version = go_version
-        self.platform = platform
-        self.version = version
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

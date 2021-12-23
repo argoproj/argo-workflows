@@ -136,7 +136,7 @@ class IoArgoprojWorkflowV1alpha1SemaphoreHolding(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            holders ([str]): Holders stores the list of current holder names in the io.argoproj.workflow.v1alpha1.. [optional]  # noqa: E501
+            holders ([str]): [optional]  # noqa: E501
             semaphore (str): Semaphore stores the semaphore name.. [optional]  # noqa: E501
         """
 
@@ -219,7 +219,7 @@ class IoArgoprojWorkflowV1alpha1SemaphoreHolding(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            holders ([str]): Holders stores the list of current holder names in the io.argoproj.workflow.v1alpha1.. [optional]  # noqa: E501
+            holders ([str]): [optional]  # noqa: E501
             semaphore (str): Semaphore stores the semaphore name.. [optional]  # noqa: E501
         """
 

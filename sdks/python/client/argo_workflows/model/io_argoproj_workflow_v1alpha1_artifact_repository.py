@@ -158,7 +158,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactRepository(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            archive_logs (bool): ArchiveLogs enables log archiving. [optional]  # noqa: E501
+            archive_logs (bool): [optional]  # noqa: E501
             artifactory (IoArgoprojWorkflowV1alpha1ArtifactoryArtifactRepository): [optional]  # noqa: E501
             gcs (IoArgoprojWorkflowV1alpha1GCSArtifactRepository): [optional]  # noqa: E501
             hdfs (IoArgoprojWorkflowV1alpha1HDFSArtifactRepository): [optional]  # noqa: E501
@@ -245,7 +245,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactRepository(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            archive_logs (bool): ArchiveLogs enables log archiving. [optional]  # noqa: E501
+            archive_logs (bool): [optional]  # noqa: E501
             artifactory (IoArgoprojWorkflowV1alpha1ArtifactoryArtifactRepository): [optional]  # noqa: E501
             gcs (IoArgoprojWorkflowV1alpha1GCSArtifactRepository): [optional]  # noqa: E501
             hdfs (IoArgoprojWorkflowV1alpha1HDFSArtifactRepository): [optional]  # noqa: E501

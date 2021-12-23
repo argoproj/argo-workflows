@@ -30,8 +30,8 @@ from argo_workflows.exceptions import ApiAttributeError
 
 
 def lazy_import():
-    from argo_workflows.model.secret_key_selector import SecretKeySelector
-    globals()['SecretKeySelector'] = SecretKeySelector
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_gcs_bucket import IoArgoprojWorkflowV1alpha1GCSBucket
+    globals()['IoArgoprojWorkflowV1alpha1GCSBucket'] = IoArgoprojWorkflowV1alpha1GCSBucket
 
 
 class IoArgoprojWorkflowV1alpha1GCSArtifact(ModelNormal):
@@ -87,9 +87,8 @@ class IoArgoprojWorkflowV1alpha1GCSArtifact(ModelNormal):
         """
         lazy_import()
         return {
+            'g_cs_bucket': (IoArgoprojWorkflowV1alpha1GCSBucket,),  # noqa: E501
             'key': (str,),  # noqa: E501
-            'bucket': (str,),  # noqa: E501
-            'service_account_key_secret': (SecretKeySelector,),  # noqa: E501
         }
 
     @cached_property
@@ -98,9 +97,8 @@ class IoArgoprojWorkflowV1alpha1GCSArtifact(ModelNormal):
 
 
     attribute_map = {
+        'g_cs_bucket': 'gCSBucket',  # noqa: E501
         'key': 'key',  # noqa: E501
-        'bucket': 'bucket',  # noqa: E501
-        'service_account_key_secret': 'serviceAccountKeySecret',  # noqa: E501
     }
 
     read_only_vars = {
@@ -110,11 +108,8 @@ class IoArgoprojWorkflowV1alpha1GCSArtifact(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, key, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1GCSArtifact - a model defined in OpenAPI
-
-        Args:
-            key (str): Key is the path in the bucket where the artifact resides
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -147,8 +142,8 @@ class IoArgoprojWorkflowV1alpha1GCSArtifact(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            bucket (str): Bucket is the name of the bucket. [optional]  # noqa: E501
-            service_account_key_secret (SecretKeySelector): [optional]  # noqa: E501
+            g_cs_bucket (IoArgoprojWorkflowV1alpha1GCSBucket): [optional]  # noqa: E501
+            key (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -176,7 +171,6 @@ class IoArgoprojWorkflowV1alpha1GCSArtifact(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.key = key
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -197,11 +191,8 @@ class IoArgoprojWorkflowV1alpha1GCSArtifact(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, key, *args, **kwargs):  # noqa: E501
+    def __init__(self, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1GCSArtifact - a model defined in OpenAPI
-
-        Args:
-            key (str): Key is the path in the bucket where the artifact resides
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -234,8 +225,8 @@ class IoArgoprojWorkflowV1alpha1GCSArtifact(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            bucket (str): Bucket is the name of the bucket. [optional]  # noqa: E501
-            service_account_key_secret (SecretKeySelector): [optional]  # noqa: E501
+            g_cs_bucket (IoArgoprojWorkflowV1alpha1GCSBucket): [optional]  # noqa: E501
+            key (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -261,7 +252,6 @@ class IoArgoprojWorkflowV1alpha1GCSArtifact(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.key = key
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

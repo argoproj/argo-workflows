@@ -4,7 +4,7 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**event** | [**IoArgoprojWorkflowV1alpha1Event**](IoArgoprojWorkflowV1alpha1Event.md) |  | 
+**event** | [**IoArgoprojWorkflowV1alpha1Event**](IoArgoprojWorkflowV1alpha1Event.md) |  | [optional] 
 **submit** | [**IoArgoprojWorkflowV1alpha1Submit**](IoArgoprojWorkflowV1alpha1Submit.md) |  | [optional] 
 **any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 

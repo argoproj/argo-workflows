@@ -91,9 +91,9 @@ class IoArgoprojWorkflowV1alpha1Submit(ModelNormal):
         """
         lazy_import()
         return {
-            'workflow_template_ref': (IoArgoprojWorkflowV1alpha1WorkflowTemplateRef,),  # noqa: E501
             'arguments': (IoArgoprojWorkflowV1alpha1Arguments,),  # noqa: E501
             'metadata': (ObjectMeta,),  # noqa: E501
+            'workflow_template_ref': (IoArgoprojWorkflowV1alpha1WorkflowTemplateRef,),  # noqa: E501
         }
 
     @cached_property
@@ -102,9 +102,9 @@ class IoArgoprojWorkflowV1alpha1Submit(ModelNormal):
 
 
     attribute_map = {
-        'workflow_template_ref': 'workflowTemplateRef',  # noqa: E501
         'arguments': 'arguments',  # noqa: E501
         'metadata': 'metadata',  # noqa: E501
+        'workflow_template_ref': 'workflowTemplateRef',  # noqa: E501
     }
 
     read_only_vars = {
@@ -114,11 +114,8 @@ class IoArgoprojWorkflowV1alpha1Submit(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, workflow_template_ref, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1Submit - a model defined in OpenAPI
-
-        Args:
-            workflow_template_ref (IoArgoprojWorkflowV1alpha1WorkflowTemplateRef):
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -153,6 +150,7 @@ class IoArgoprojWorkflowV1alpha1Submit(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             arguments (IoArgoprojWorkflowV1alpha1Arguments): [optional]  # noqa: E501
             metadata (ObjectMeta): [optional]  # noqa: E501
+            workflow_template_ref (IoArgoprojWorkflowV1alpha1WorkflowTemplateRef): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -180,7 +178,6 @@ class IoArgoprojWorkflowV1alpha1Submit(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.workflow_template_ref = workflow_template_ref
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -201,11 +198,8 @@ class IoArgoprojWorkflowV1alpha1Submit(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, workflow_template_ref, *args, **kwargs):  # noqa: E501
+    def __init__(self, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1Submit - a model defined in OpenAPI
-
-        Args:
-            workflow_template_ref (IoArgoprojWorkflowV1alpha1WorkflowTemplateRef):
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -240,6 +234,7 @@ class IoArgoprojWorkflowV1alpha1Submit(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             arguments (IoArgoprojWorkflowV1alpha1Arguments): [optional]  # noqa: E501
             metadata (ObjectMeta): [optional]  # noqa: E501
+            workflow_template_ref (IoArgoprojWorkflowV1alpha1WorkflowTemplateRef): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -265,7 +260,6 @@ class IoArgoprojWorkflowV1alpha1Submit(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.workflow_template_ref = workflow_template_ref
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

@@ -154,7 +154,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
             'name': (str,),  # noqa: E501
             'node_selector': ({str: (str,)},),  # noqa: E501
             'outputs': (IoArgoprojWorkflowV1alpha1Outputs,),  # noqa: E501
-            'parallelism': (int,),  # noqa: E501
+            'parallelism': (str,),  # noqa: E501
             'pod_spec_patch': (str,),  # noqa: E501
             'priority': (int,),  # noqa: E501
             'priority_class_name': (str,),  # noqa: E501
@@ -266,38 +266,38 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
             automount_service_account_token (bool): AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.. [optional]  # noqa: E501
             container (Container): [optional]  # noqa: E501
             container_set (IoArgoprojWorkflowV1alpha1ContainerSetTemplate): [optional]  # noqa: E501
-            daemon (bool): Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness. [optional]  # noqa: E501
+            daemon (bool): [optional]  # noqa: E501
             dag (IoArgoprojWorkflowV1alpha1DAGTemplate): [optional]  # noqa: E501
             data (IoArgoprojWorkflowV1alpha1Data): [optional]  # noqa: E501
             executor (IoArgoprojWorkflowV1alpha1ExecutorConfig): [optional]  # noqa: E501
             fail_fast (bool): FailFast, if specified, will fail this template if any of its child pods has failed. This is useful for when this template is expanded with `withItems`, etc.. [optional]  # noqa: E501
-            host_aliases ([HostAlias]): HostAliases is an optional list of hosts and IPs that will be injected into the pod spec. [optional]  # noqa: E501
+            host_aliases ([HostAlias]): [optional]  # noqa: E501
             http (IoArgoprojWorkflowV1alpha1HTTP): [optional]  # noqa: E501
-            init_containers ([IoArgoprojWorkflowV1alpha1UserContainer]): InitContainers is a list of containers which run before the main container.. [optional]  # noqa: E501
+            init_containers ([IoArgoprojWorkflowV1alpha1UserContainer]): [optional]  # noqa: E501
             inputs (IoArgoprojWorkflowV1alpha1Inputs): [optional]  # noqa: E501
             memoize (IoArgoprojWorkflowV1alpha1Memoize): [optional]  # noqa: E501
             metadata (IoArgoprojWorkflowV1alpha1Metadata): [optional]  # noqa: E501
             metrics (IoArgoprojWorkflowV1alpha1Metrics): [optional]  # noqa: E501
-            name (str): Name is the name of the template. [optional]  # noqa: E501
+            name (str): [optional]  # noqa: E501
             node_selector ({str: (str,)}): NodeSelector is a selector to schedule this step of the workflow to be run on the selected node(s). Overrides the selector set at the workflow level.. [optional]  # noqa: E501
             outputs (IoArgoprojWorkflowV1alpha1Outputs): [optional]  # noqa: E501
-            parallelism (int): Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.. [optional]  # noqa: E501
+            parallelism (str): Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.. [optional]  # noqa: E501
             pod_spec_patch (str): PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).. [optional]  # noqa: E501
             priority (int): Priority to apply to workflow pods.. [optional]  # noqa: E501
             priority_class_name (str): PriorityClassName to apply to workflow pods.. [optional]  # noqa: E501
             resource (IoArgoprojWorkflowV1alpha1ResourceTemplate): [optional]  # noqa: E501
             retry_strategy (IoArgoprojWorkflowV1alpha1RetryStrategy): [optional]  # noqa: E501
-            scheduler_name (str): If specified, the pod will be dispatched by specified scheduler. Or it will be dispatched by workflow scope scheduler if specified. If neither specified, the pod will be dispatched by default scheduler.. [optional]  # noqa: E501
+            scheduler_name (str): [optional]  # noqa: E501
             script (IoArgoprojWorkflowV1alpha1ScriptTemplate): [optional]  # noqa: E501
             security_context (PodSecurityContext): [optional]  # noqa: E501
-            service_account_name (str): ServiceAccountName to apply to workflow pods. [optional]  # noqa: E501
-            sidecars ([IoArgoprojWorkflowV1alpha1UserContainer]): Sidecars is a list of containers which run alongside the main container Sidecars are automatically killed when the main container completes. [optional]  # noqa: E501
-            steps ([IoArgoprojWorkflowV1alpha1ParallelSteps]): Steps define a series of sequential/parallel workflow steps. [optional]  # noqa: E501
+            service_account_name (str): [optional]  # noqa: E501
+            sidecars ([IoArgoprojWorkflowV1alpha1UserContainer]): [optional]  # noqa: E501
+            steps ([IoArgoprojWorkflowV1alpha1ParallelSteps]): [optional]  # noqa: E501
             suspend (IoArgoprojWorkflowV1alpha1SuspendTemplate): [optional]  # noqa: E501
             synchronization (IoArgoprojWorkflowV1alpha1Synchronization): [optional]  # noqa: E501
             timeout (str): Timeout allows to set the total node execution timeout duration counting from the node's start time. This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.. [optional]  # noqa: E501
-            tolerations ([Toleration]): Tolerations to apply to workflow pods.. [optional]  # noqa: E501
-            volumes ([Volume]): Volumes is a list of volumes that can be mounted by containers in a template.. [optional]  # noqa: E501
+            tolerations ([Toleration]): [optional]  # noqa: E501
+            volumes ([Volume]): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -385,38 +385,38 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
             automount_service_account_token (bool): AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.. [optional]  # noqa: E501
             container (Container): [optional]  # noqa: E501
             container_set (IoArgoprojWorkflowV1alpha1ContainerSetTemplate): [optional]  # noqa: E501
-            daemon (bool): Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness. [optional]  # noqa: E501
+            daemon (bool): [optional]  # noqa: E501
             dag (IoArgoprojWorkflowV1alpha1DAGTemplate): [optional]  # noqa: E501
             data (IoArgoprojWorkflowV1alpha1Data): [optional]  # noqa: E501
             executor (IoArgoprojWorkflowV1alpha1ExecutorConfig): [optional]  # noqa: E501
             fail_fast (bool): FailFast, if specified, will fail this template if any of its child pods has failed. This is useful for when this template is expanded with `withItems`, etc.. [optional]  # noqa: E501
-            host_aliases ([HostAlias]): HostAliases is an optional list of hosts and IPs that will be injected into the pod spec. [optional]  # noqa: E501
+            host_aliases ([HostAlias]): [optional]  # noqa: E501
             http (IoArgoprojWorkflowV1alpha1HTTP): [optional]  # noqa: E501
-            init_containers ([IoArgoprojWorkflowV1alpha1UserContainer]): InitContainers is a list of containers which run before the main container.. [optional]  # noqa: E501
+            init_containers ([IoArgoprojWorkflowV1alpha1UserContainer]): [optional]  # noqa: E501
             inputs (IoArgoprojWorkflowV1alpha1Inputs): [optional]  # noqa: E501
             memoize (IoArgoprojWorkflowV1alpha1Memoize): [optional]  # noqa: E501
             metadata (IoArgoprojWorkflowV1alpha1Metadata): [optional]  # noqa: E501
             metrics (IoArgoprojWorkflowV1alpha1Metrics): [optional]  # noqa: E501
-            name (str): Name is the name of the template. [optional]  # noqa: E501
+            name (str): [optional]  # noqa: E501
             node_selector ({str: (str,)}): NodeSelector is a selector to schedule this step of the workflow to be run on the selected node(s). Overrides the selector set at the workflow level.. [optional]  # noqa: E501
             outputs (IoArgoprojWorkflowV1alpha1Outputs): [optional]  # noqa: E501
-            parallelism (int): Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.. [optional]  # noqa: E501
+            parallelism (str): Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.. [optional]  # noqa: E501
             pod_spec_patch (str): PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).. [optional]  # noqa: E501
             priority (int): Priority to apply to workflow pods.. [optional]  # noqa: E501
             priority_class_name (str): PriorityClassName to apply to workflow pods.. [optional]  # noqa: E501
             resource (IoArgoprojWorkflowV1alpha1ResourceTemplate): [optional]  # noqa: E501
             retry_strategy (IoArgoprojWorkflowV1alpha1RetryStrategy): [optional]  # noqa: E501
-            scheduler_name (str): If specified, the pod will be dispatched by specified scheduler. Or it will be dispatched by workflow scope scheduler if specified. If neither specified, the pod will be dispatched by default scheduler.. [optional]  # noqa: E501
+            scheduler_name (str): [optional]  # noqa: E501
             script (IoArgoprojWorkflowV1alpha1ScriptTemplate): [optional]  # noqa: E501
             security_context (PodSecurityContext): [optional]  # noqa: E501
-            service_account_name (str): ServiceAccountName to apply to workflow pods. [optional]  # noqa: E501
-            sidecars ([IoArgoprojWorkflowV1alpha1UserContainer]): Sidecars is a list of containers which run alongside the main container Sidecars are automatically killed when the main container completes. [optional]  # noqa: E501
-            steps ([IoArgoprojWorkflowV1alpha1ParallelSteps]): Steps define a series of sequential/parallel workflow steps. [optional]  # noqa: E501
+            service_account_name (str): [optional]  # noqa: E501
+            sidecars ([IoArgoprojWorkflowV1alpha1UserContainer]): [optional]  # noqa: E501
+            steps ([IoArgoprojWorkflowV1alpha1ParallelSteps]): [optional]  # noqa: E501
             suspend (IoArgoprojWorkflowV1alpha1SuspendTemplate): [optional]  # noqa: E501
             synchronization (IoArgoprojWorkflowV1alpha1Synchronization): [optional]  # noqa: E501
             timeout (str): Timeout allows to set the total node execution timeout duration counting from the node's start time. This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.. [optional]  # noqa: E501
-            tolerations ([Toleration]): Tolerations to apply to workflow pods.. [optional]  # noqa: E501
-            volumes ([Volume]): Volumes is a list of volumes that can be mounted by containers in a template.. [optional]  # noqa: E501
+            tolerations ([Toleration]): [optional]  # noqa: E501
+            volumes ([Volume]): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

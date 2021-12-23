@@ -110,6 +110,7 @@ import time
 import argo_workflows
 from argo_workflows.api import event_service_api
 from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_item import IoArgoprojWorkflowV1alpha1Item
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
@@ -124,7 +125,9 @@ with argo_workflows.ApiClient() as api_client:
     api_instance = event_service_api.EventServiceApi(api_client)
     namespace = "namespace_example" # str | The namespace for the io.argoproj.workflow.v1alpha1. This can be empty if the client has cluster scoped permissions. If empty, then the event is \"broadcast\" to workflow event binding in all namespaces.
     discriminator = "discriminator_example" # str | Optional discriminator for the io.argoproj.workflow.v1alpha1. This should almost always be empty. Used for edge-cases where the event payload alone is not provide enough information to discriminate the event. This MUST NOT be used as security mechanism, e.g. to allow two clients to use the same access token, or to support webhooks on unsecured server. Instead, use access tokens. This is made available as `discriminator` in the event binding selector (`/spec/event/selector)`
-    body = {} # bool, date, datetime, dict, float, int, list, str, none_type | The event itself can be any data.
+    body = IoArgoprojWorkflowV1alpha1Item(
+        value='YQ==',
+    ) # IoArgoprojWorkflowV1alpha1Item | The event itself can be any data.
 
     # example passing only required values which don't have defaults set
     try:
@@ -141,7 +144,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **namespace** | **str**| The namespace for the io.argoproj.workflow.v1alpha1. This can be empty if the client has cluster scoped permissions. If empty, then the event is \&quot;broadcast\&quot; to workflow event binding in all namespaces. |
  **discriminator** | **str**| Optional discriminator for the io.argoproj.workflow.v1alpha1. This should almost always be empty. Used for edge-cases where the event payload alone is not provide enough information to discriminate the event. This MUST NOT be used as security mechanism, e.g. to allow two clients to use the same access token, or to support webhooks on unsecured server. Instead, use access tokens. This is made available as &#x60;discriminator&#x60; in the event binding selector (&#x60;/spec/event/selector)&#x60; |
- **body** | **bool, date, datetime, dict, float, int, list, str, none_type**| The event itself can be any data. |
+ **body** | [**IoArgoprojWorkflowV1alpha1Item**](IoArgoprojWorkflowV1alpha1Item.md)| The event itself can be any data. |
 
 ### Return type
 

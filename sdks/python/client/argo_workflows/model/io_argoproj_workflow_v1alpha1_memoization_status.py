@@ -104,13 +104,8 @@ class IoArgoprojWorkflowV1alpha1MemoizationStatus(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, cache_name, hit, key, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1MemoizationStatus - a model defined in OpenAPI
-
-        Args:
-            cache_name (str): Cache is the name of the cache that was used
-            hit (bool): Hit indicates whether this node was created from a cache entry
-            key (str): Key is the name of the key used for this node's cache
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -143,6 +138,9 @@ class IoArgoprojWorkflowV1alpha1MemoizationStatus(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            cache_name (str): [optional]  # noqa: E501
+            hit (bool): [optional]  # noqa: E501
+            key (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -170,9 +168,6 @@ class IoArgoprojWorkflowV1alpha1MemoizationStatus(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.cache_name = cache_name
-        self.hit = hit
-        self.key = key
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -193,13 +188,8 @@ class IoArgoprojWorkflowV1alpha1MemoizationStatus(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, cache_name, hit, key, *args, **kwargs):  # noqa: E501
+    def __init__(self, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1MemoizationStatus - a model defined in OpenAPI
-
-        Args:
-            cache_name (str): Cache is the name of the cache that was used
-            hit (bool): Hit indicates whether this node was created from a cache entry
-            key (str): Key is the name of the key used for this node's cache
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -232,6 +222,9 @@ class IoArgoprojWorkflowV1alpha1MemoizationStatus(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            cache_name (str): [optional]  # noqa: E501
+            hit (bool): [optional]  # noqa: E501
+            key (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -257,9 +250,6 @@ class IoArgoprojWorkflowV1alpha1MemoizationStatus(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.cache_name = cache_name
-        self.hit = hit
-        self.key = key
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

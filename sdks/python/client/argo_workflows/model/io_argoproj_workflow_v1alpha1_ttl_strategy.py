@@ -138,9 +138,9 @@ class IoArgoprojWorkflowV1alpha1TTLStrategy(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            seconds_after_completion (int): SecondsAfterCompletion is the number of seconds to live after completion. [optional]  # noqa: E501
-            seconds_after_failure (int): SecondsAfterFailure is the number of seconds to live after failure. [optional]  # noqa: E501
-            seconds_after_success (int): SecondsAfterSuccess is the number of seconds to live after success. [optional]  # noqa: E501
+            seconds_after_completion (int): [optional]  # noqa: E501
+            seconds_after_failure (int): [optional]  # noqa: E501
+            seconds_after_success (int): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -222,9 +222,9 @@ class IoArgoprojWorkflowV1alpha1TTLStrategy(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            seconds_after_completion (int): SecondsAfterCompletion is the number of seconds to live after completion. [optional]  # noqa: E501
-            seconds_after_failure (int): SecondsAfterFailure is the number of seconds to live after failure. [optional]  # noqa: E501
-            seconds_after_success (int): SecondsAfterSuccess is the number of seconds to live after success. [optional]  # noqa: E501
+            seconds_after_completion (int): [optional]  # noqa: E501
+            seconds_after_failure (int): [optional]  # noqa: E501
+            seconds_after_success (int): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

@@ -104,13 +104,8 @@ class IoArgoprojWorkflowV1alpha1Link(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, name, scope, url, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1Link - a model defined in OpenAPI
-
-        Args:
-            name (str): The name of the link, E.g. \"Workflow Logs\" or \"Pod Logs\"
-            scope (str): \"workflow\", \"pod\", \"pod-logs\", \"event-source-logs\", \"sensor-logs\" or \"chat\"
-            url (str): The URL. Can contain \"${metadata.namespace}\", \"${metadata.name}\", \"${status.startedAt}\", \"${status.finishedAt}\" or any other element in workflow yaml, e.g. \"${io.argoproj.workflow.v1alpha1.metadata.annotations.userDefinedKey}\"
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -143,6 +138,9 @@ class IoArgoprojWorkflowV1alpha1Link(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            name (str): [optional]  # noqa: E501
+            scope (str): [optional]  # noqa: E501
+            url (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -170,9 +168,6 @@ class IoArgoprojWorkflowV1alpha1Link(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.name = name
-        self.scope = scope
-        self.url = url
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -193,13 +188,8 @@ class IoArgoprojWorkflowV1alpha1Link(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, name, scope, url, *args, **kwargs):  # noqa: E501
+    def __init__(self, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1Link - a model defined in OpenAPI
-
-        Args:
-            name (str): The name of the link, E.g. \"Workflow Logs\" or \"Pod Logs\"
-            scope (str): \"workflow\", \"pod\", \"pod-logs\", \"event-source-logs\", \"sensor-logs\" or \"chat\"
-            url (str): The URL. Can contain \"${metadata.namespace}\", \"${metadata.name}\", \"${status.startedAt}\", \"${status.finishedAt}\" or any other element in workflow yaml, e.g. \"${io.argoproj.workflow.v1alpha1.metadata.annotations.userDefinedKey}\"
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -232,6 +222,9 @@ class IoArgoprojWorkflowV1alpha1Link(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            name (str): [optional]  # noqa: E501
+            scope (str): [optional]  # noqa: E501
+            url (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -257,9 +250,6 @@ class IoArgoprojWorkflowV1alpha1Link(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.name = name
-        self.scope = scope
-        self.url = url
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

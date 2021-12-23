@@ -31,7 +31,9 @@ from argo_workflows.exceptions import ApiAttributeError
 
 def lazy_import():
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_artifact_repository import IoArgoprojWorkflowV1alpha1ArtifactRepository
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_artifact_repository_ref import IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef
     globals()['IoArgoprojWorkflowV1alpha1ArtifactRepository'] = IoArgoprojWorkflowV1alpha1ArtifactRepository
+    globals()['IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef'] = IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef
 
 
 class IoArgoprojWorkflowV1alpha1ArtifactRepositoryRefStatus(ModelNormal):
@@ -88,9 +90,8 @@ class IoArgoprojWorkflowV1alpha1ArtifactRepositoryRefStatus(ModelNormal):
         lazy_import()
         return {
             'artifact_repository': (IoArgoprojWorkflowV1alpha1ArtifactRepository,),  # noqa: E501
-            'config_map': (str,),  # noqa: E501
+            'artifact_repository_ref': (IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef,),  # noqa: E501
             'default': (bool,),  # noqa: E501
-            'key': (str,),  # noqa: E501
             'namespace': (str,),  # noqa: E501
         }
 
@@ -101,9 +102,8 @@ class IoArgoprojWorkflowV1alpha1ArtifactRepositoryRefStatus(ModelNormal):
 
     attribute_map = {
         'artifact_repository': 'artifactRepository',  # noqa: E501
-        'config_map': 'configMap',  # noqa: E501
+        'artifact_repository_ref': 'artifactRepositoryRef',  # noqa: E501
         'default': 'default',  # noqa: E501
-        'key': 'key',  # noqa: E501
         'namespace': 'namespace',  # noqa: E501
     }
 
@@ -149,9 +149,8 @@ class IoArgoprojWorkflowV1alpha1ArtifactRepositoryRefStatus(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             artifact_repository (IoArgoprojWorkflowV1alpha1ArtifactRepository): [optional]  # noqa: E501
-            config_map (str): The name of the config map. Defaults to \"artifact-repositories\".. [optional]  # noqa: E501
+            artifact_repository_ref (IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef): [optional]  # noqa: E501
             default (bool): If this ref represents the default artifact repository, rather than a config map.. [optional]  # noqa: E501
-            key (str): The config map key. Defaults to the value of the \"workflows.argoproj.io/default-artifact-repository\" annotation.. [optional]  # noqa: E501
             namespace (str): The namespace of the config map. Defaults to the workflow's namespace, or the controller's namespace (if found).. [optional]  # noqa: E501
         """
 
@@ -235,9 +234,8 @@ class IoArgoprojWorkflowV1alpha1ArtifactRepositoryRefStatus(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             artifact_repository (IoArgoprojWorkflowV1alpha1ArtifactRepository): [optional]  # noqa: E501
-            config_map (str): The name of the config map. Defaults to \"artifact-repositories\".. [optional]  # noqa: E501
+            artifact_repository_ref (IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef): [optional]  # noqa: E501
             default (bool): If this ref represents the default artifact repository, rather than a config map.. [optional]  # noqa: E501
-            key (str): The config map key. Defaults to the value of the \"workflows.argoproj.io/default-artifact-repository\" annotation.. [optional]  # noqa: E501
             namespace (str): The namespace of the config map. Defaults to the workflow's namespace, or the controller's namespace (if found).. [optional]  # noqa: E501
         """
 

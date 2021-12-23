@@ -134,7 +134,7 @@ class IoArgoprojWorkflowV1alpha1SuspendTemplate(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            duration (str): Duration is the seconds to wait before automatically resuming a template. [optional]  # noqa: E501
+            duration (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -216,7 +216,7 @@ class IoArgoprojWorkflowV1alpha1SuspendTemplate(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            duration (str): Duration is the seconds to wait before automatically resuming a template. [optional]  # noqa: E501
+            duration (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

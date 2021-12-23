@@ -89,15 +89,15 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowSpec(ModelNormal):
         """
         lazy_import()
         return {
-            'schedule': (str,),  # noqa: E501
-            'workflow_spec': (IoArgoprojWorkflowV1alpha1WorkflowSpec,),  # noqa: E501
             'concurrency_policy': (str,),  # noqa: E501
             'failed_jobs_history_limit': (int,),  # noqa: E501
-            'starting_deadline_seconds': (int,),  # noqa: E501
+            'schedule': (str,),  # noqa: E501
+            'starting_deadline_seconds': (str,),  # noqa: E501
             'successful_jobs_history_limit': (int,),  # noqa: E501
             'suspend': (bool,),  # noqa: E501
             'timezone': (str,),  # noqa: E501
-            'workflow_metadata': (ObjectMeta,),  # noqa: E501
+            'workflow_meta': (ObjectMeta,),  # noqa: E501
+            'workflow_spec': (IoArgoprojWorkflowV1alpha1WorkflowSpec,),  # noqa: E501
         }
 
     @cached_property
@@ -106,15 +106,15 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowSpec(ModelNormal):
 
 
     attribute_map = {
-        'schedule': 'schedule',  # noqa: E501
-        'workflow_spec': 'workflowSpec',  # noqa: E501
         'concurrency_policy': 'concurrencyPolicy',  # noqa: E501
         'failed_jobs_history_limit': 'failedJobsHistoryLimit',  # noqa: E501
+        'schedule': 'schedule',  # noqa: E501
         'starting_deadline_seconds': 'startingDeadlineSeconds',  # noqa: E501
         'successful_jobs_history_limit': 'successfulJobsHistoryLimit',  # noqa: E501
         'suspend': 'suspend',  # noqa: E501
         'timezone': 'timezone',  # noqa: E501
-        'workflow_metadata': 'workflowMetadata',  # noqa: E501
+        'workflow_meta': 'workflowMeta',  # noqa: E501
+        'workflow_spec': 'workflowSpec',  # noqa: E501
     }
 
     read_only_vars = {
@@ -124,12 +124,8 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowSpec(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, schedule, workflow_spec, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1CronWorkflowSpec - a model defined in OpenAPI
-
-        Args:
-            schedule (str): Schedule is a schedule to run the Workflow in Cron format
-            workflow_spec (IoArgoprojWorkflowV1alpha1WorkflowSpec):
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -162,13 +158,15 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowSpec(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            concurrency_policy (str): ConcurrencyPolicy is the K8s-style concurrency policy that will be used. [optional]  # noqa: E501
-            failed_jobs_history_limit (int): FailedJobsHistoryLimit is the number of failed jobs to be kept at a time. [optional]  # noqa: E501
-            starting_deadline_seconds (int): StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its original scheduled time if it is missed.. [optional]  # noqa: E501
-            successful_jobs_history_limit (int): SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time. [optional]  # noqa: E501
-            suspend (bool): Suspend is a flag that will stop new CronWorkflows from running if set to true. [optional]  # noqa: E501
+            concurrency_policy (str): [optional]  # noqa: E501
+            failed_jobs_history_limit (int): [optional]  # noqa: E501
+            schedule (str): [optional]  # noqa: E501
+            starting_deadline_seconds (str): StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its original scheduled time if it is missed.. [optional]  # noqa: E501
+            successful_jobs_history_limit (int): [optional]  # noqa: E501
+            suspend (bool): [optional]  # noqa: E501
             timezone (str): Timezone is the timezone against which the cron schedule will be calculated, e.g. \"Asia/Tokyo\". Default is machine's local time.. [optional]  # noqa: E501
-            workflow_metadata (ObjectMeta): [optional]  # noqa: E501
+            workflow_meta (ObjectMeta): [optional]  # noqa: E501
+            workflow_spec (IoArgoprojWorkflowV1alpha1WorkflowSpec): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -196,8 +194,6 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowSpec(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.schedule = schedule
-        self.workflow_spec = workflow_spec
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -218,12 +214,8 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowSpec(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, schedule, workflow_spec, *args, **kwargs):  # noqa: E501
+    def __init__(self, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1CronWorkflowSpec - a model defined in OpenAPI
-
-        Args:
-            schedule (str): Schedule is a schedule to run the Workflow in Cron format
-            workflow_spec (IoArgoprojWorkflowV1alpha1WorkflowSpec):
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -256,13 +248,15 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowSpec(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            concurrency_policy (str): ConcurrencyPolicy is the K8s-style concurrency policy that will be used. [optional]  # noqa: E501
-            failed_jobs_history_limit (int): FailedJobsHistoryLimit is the number of failed jobs to be kept at a time. [optional]  # noqa: E501
-            starting_deadline_seconds (int): StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its original scheduled time if it is missed.. [optional]  # noqa: E501
-            successful_jobs_history_limit (int): SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time. [optional]  # noqa: E501
-            suspend (bool): Suspend is a flag that will stop new CronWorkflows from running if set to true. [optional]  # noqa: E501
+            concurrency_policy (str): [optional]  # noqa: E501
+            failed_jobs_history_limit (int): [optional]  # noqa: E501
+            schedule (str): [optional]  # noqa: E501
+            starting_deadline_seconds (str): StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its original scheduled time if it is missed.. [optional]  # noqa: E501
+            successful_jobs_history_limit (int): [optional]  # noqa: E501
+            suspend (bool): [optional]  # noqa: E501
             timezone (str): Timezone is the timezone against which the cron schedule will be calculated, e.g. \"Asia/Tokyo\". Default is machine's local time.. [optional]  # noqa: E501
-            workflow_metadata (ObjectMeta): [optional]  # noqa: E501
+            workflow_meta (ObjectMeta): [optional]  # noqa: E501
+            workflow_spec (IoArgoprojWorkflowV1alpha1WorkflowSpec): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -288,8 +282,6 @@ class IoArgoprojWorkflowV1alpha1CronWorkflowSpec(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.schedule = schedule
-        self.workflow_spec = workflow_spec
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

@@ -91,8 +91,6 @@ class IoArgoprojWorkflowV1alpha1WorkflowTemplate(ModelNormal):
         return {
             'metadata': (ObjectMeta,),  # noqa: E501
             'spec': (IoArgoprojWorkflowV1alpha1WorkflowTemplateSpec,),  # noqa: E501
-            'api_version': (str,),  # noqa: E501
-            'kind': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -103,8 +101,6 @@ class IoArgoprojWorkflowV1alpha1WorkflowTemplate(ModelNormal):
     attribute_map = {
         'metadata': 'metadata',  # noqa: E501
         'spec': 'spec',  # noqa: E501
-        'api_version': 'apiVersion',  # noqa: E501
-        'kind': 'kind',  # noqa: E501
     }
 
     read_only_vars = {
@@ -114,12 +110,8 @@ class IoArgoprojWorkflowV1alpha1WorkflowTemplate(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, metadata, spec, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1WorkflowTemplate - a model defined in OpenAPI
-
-        Args:
-            metadata (ObjectMeta):
-            spec (IoArgoprojWorkflowV1alpha1WorkflowTemplateSpec):
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -152,8 +144,8 @@ class IoArgoprojWorkflowV1alpha1WorkflowTemplate(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            api_version (str): APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#resources. [optional]  # noqa: E501
-            kind (str): Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#types-kinds. [optional]  # noqa: E501
+            metadata (ObjectMeta): [optional]  # noqa: E501
+            spec (IoArgoprojWorkflowV1alpha1WorkflowTemplateSpec): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -181,8 +173,6 @@ class IoArgoprojWorkflowV1alpha1WorkflowTemplate(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.metadata = metadata
-        self.spec = spec
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -203,12 +193,8 @@ class IoArgoprojWorkflowV1alpha1WorkflowTemplate(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, metadata, spec, *args, **kwargs):  # noqa: E501
+    def __init__(self, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1WorkflowTemplate - a model defined in OpenAPI
-
-        Args:
-            metadata (ObjectMeta):
-            spec (IoArgoprojWorkflowV1alpha1WorkflowTemplateSpec):
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -241,8 +227,8 @@ class IoArgoprojWorkflowV1alpha1WorkflowTemplate(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            api_version (str): APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#resources. [optional]  # noqa: E501
-            kind (str): Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#types-kinds. [optional]  # noqa: E501
+            metadata (ObjectMeta): [optional]  # noqa: E501
+            spec (IoArgoprojWorkflowV1alpha1WorkflowTemplateSpec): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -268,8 +254,6 @@ class IoArgoprojWorkflowV1alpha1WorkflowTemplate(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.metadata = metadata
-        self.spec = spec
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

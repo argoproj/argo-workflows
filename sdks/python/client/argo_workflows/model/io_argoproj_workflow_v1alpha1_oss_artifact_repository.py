@@ -30,10 +30,8 @@ from argo_workflows.exceptions import ApiAttributeError
 
 
 def lazy_import():
-    from argo_workflows.model.io_argoproj_workflow_v1alpha1_oss_lifecycle_rule import IoArgoprojWorkflowV1alpha1OSSLifecycleRule
-    from argo_workflows.model.secret_key_selector import SecretKeySelector
-    globals()['IoArgoprojWorkflowV1alpha1OSSLifecycleRule'] = IoArgoprojWorkflowV1alpha1OSSLifecycleRule
-    globals()['SecretKeySelector'] = SecretKeySelector
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_oss_bucket import IoArgoprojWorkflowV1alpha1OSSBucket
+    globals()['IoArgoprojWorkflowV1alpha1OSSBucket'] = IoArgoprojWorkflowV1alpha1OSSBucket
 
 
 class IoArgoprojWorkflowV1alpha1OSSArtifactRepository(ModelNormal):
@@ -89,14 +87,8 @@ class IoArgoprojWorkflowV1alpha1OSSArtifactRepository(ModelNormal):
         """
         lazy_import()
         return {
-            'access_key_secret': (SecretKeySelector,),  # noqa: E501
-            'bucket': (str,),  # noqa: E501
-            'create_bucket_if_not_present': (bool,),  # noqa: E501
-            'endpoint': (str,),  # noqa: E501
             'key_format': (str,),  # noqa: E501
-            'lifecycle_rule': (IoArgoprojWorkflowV1alpha1OSSLifecycleRule,),  # noqa: E501
-            'secret_key_secret': (SecretKeySelector,),  # noqa: E501
-            'security_token': (str,),  # noqa: E501
+            'o_ss_bucket': (IoArgoprojWorkflowV1alpha1OSSBucket,),  # noqa: E501
         }
 
     @cached_property
@@ -105,14 +97,8 @@ class IoArgoprojWorkflowV1alpha1OSSArtifactRepository(ModelNormal):
 
 
     attribute_map = {
-        'access_key_secret': 'accessKeySecret',  # noqa: E501
-        'bucket': 'bucket',  # noqa: E501
-        'create_bucket_if_not_present': 'createBucketIfNotPresent',  # noqa: E501
-        'endpoint': 'endpoint',  # noqa: E501
         'key_format': 'keyFormat',  # noqa: E501
-        'lifecycle_rule': 'lifecycleRule',  # noqa: E501
-        'secret_key_secret': 'secretKeySecret',  # noqa: E501
-        'security_token': 'securityToken',  # noqa: E501
+        'o_ss_bucket': 'oSSBucket',  # noqa: E501
     }
 
     read_only_vars = {
@@ -156,14 +142,8 @@ class IoArgoprojWorkflowV1alpha1OSSArtifactRepository(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            access_key_secret (SecretKeySelector): [optional]  # noqa: E501
-            bucket (str): Bucket is the name of the bucket. [optional]  # noqa: E501
-            create_bucket_if_not_present (bool): CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist. [optional]  # noqa: E501
-            endpoint (str): Endpoint is the hostname of the bucket endpoint. [optional]  # noqa: E501
-            key_format (str): KeyFormat is defines the format of how to store keys. Can reference workflow variables. [optional]  # noqa: E501
-            lifecycle_rule (IoArgoprojWorkflowV1alpha1OSSLifecycleRule): [optional]  # noqa: E501
-            secret_key_secret (SecretKeySelector): [optional]  # noqa: E501
-            security_token (str): SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm. [optional]  # noqa: E501
+            key_format (str): [optional]  # noqa: E501
+            o_ss_bucket (IoArgoprojWorkflowV1alpha1OSSBucket): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -245,14 +225,8 @@ class IoArgoprojWorkflowV1alpha1OSSArtifactRepository(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            access_key_secret (SecretKeySelector): [optional]  # noqa: E501
-            bucket (str): Bucket is the name of the bucket. [optional]  # noqa: E501
-            create_bucket_if_not_present (bool): CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist. [optional]  # noqa: E501
-            endpoint (str): Endpoint is the hostname of the bucket endpoint. [optional]  # noqa: E501
-            key_format (str): KeyFormat is defines the format of how to store keys. Can reference workflow variables. [optional]  # noqa: E501
-            lifecycle_rule (IoArgoprojWorkflowV1alpha1OSSLifecycleRule): [optional]  # noqa: E501
-            secret_key_secret (SecretKeySelector): [optional]  # noqa: E501
-            security_token (str): SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm. [optional]  # noqa: E501
+            key_format (str): [optional]  # noqa: E501
+            o_ss_bucket (IoArgoprojWorkflowV1alpha1OSSBucket): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

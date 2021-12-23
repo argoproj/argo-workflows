@@ -30,10 +30,8 @@ from argo_workflows.exceptions import ApiAttributeError
 
 
 def lazy_import():
-    from argo_workflows.model.config_map_key_selector import ConfigMapKeySelector
-    from argo_workflows.model.secret_key_selector import SecretKeySelector
-    globals()['ConfigMapKeySelector'] = ConfigMapKeySelector
-    globals()['SecretKeySelector'] = SecretKeySelector
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_hdfs_config import IoArgoprojWorkflowV1alpha1HDFSConfig
+    globals()['IoArgoprojWorkflowV1alpha1HDFSConfig'] = IoArgoprojWorkflowV1alpha1HDFSConfig
 
 
 class IoArgoprojWorkflowV1alpha1HDFSArtifactRepository(ModelNormal):
@@ -89,15 +87,8 @@ class IoArgoprojWorkflowV1alpha1HDFSArtifactRepository(ModelNormal):
         """
         lazy_import()
         return {
-            'addresses': ([str],),  # noqa: E501
             'force': (bool,),  # noqa: E501
-            'hdfs_user': (str,),  # noqa: E501
-            'krb_c_cache_secret': (SecretKeySelector,),  # noqa: E501
-            'krb_config_config_map': (ConfigMapKeySelector,),  # noqa: E501
-            'krb_keytab_secret': (SecretKeySelector,),  # noqa: E501
-            'krb_realm': (str,),  # noqa: E501
-            'krb_service_principal_name': (str,),  # noqa: E501
-            'krb_username': (str,),  # noqa: E501
+            'h_dfs_config': (IoArgoprojWorkflowV1alpha1HDFSConfig,),  # noqa: E501
             'path_format': (str,),  # noqa: E501
         }
 
@@ -107,15 +98,8 @@ class IoArgoprojWorkflowV1alpha1HDFSArtifactRepository(ModelNormal):
 
 
     attribute_map = {
-        'addresses': 'addresses',  # noqa: E501
         'force': 'force',  # noqa: E501
-        'hdfs_user': 'hdfsUser',  # noqa: E501
-        'krb_c_cache_secret': 'krbCCacheSecret',  # noqa: E501
-        'krb_config_config_map': 'krbConfigConfigMap',  # noqa: E501
-        'krb_keytab_secret': 'krbKeytabSecret',  # noqa: E501
-        'krb_realm': 'krbRealm',  # noqa: E501
-        'krb_service_principal_name': 'krbServicePrincipalName',  # noqa: E501
-        'krb_username': 'krbUsername',  # noqa: E501
+        'h_dfs_config': 'hDFSConfig',  # noqa: E501
         'path_format': 'pathFormat',  # noqa: E501
     }
 
@@ -160,16 +144,9 @@ class IoArgoprojWorkflowV1alpha1HDFSArtifactRepository(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            addresses ([str]): Addresses is accessible addresses of HDFS name nodes. [optional]  # noqa: E501
-            force (bool): Force copies a file forcibly even if it exists (default: false). [optional]  # noqa: E501
-            hdfs_user (str): HDFSUser is the user to access HDFS file system. It is ignored if either ccache or keytab is used.. [optional]  # noqa: E501
-            krb_c_cache_secret (SecretKeySelector): [optional]  # noqa: E501
-            krb_config_config_map (ConfigMapKeySelector): [optional]  # noqa: E501
-            krb_keytab_secret (SecretKeySelector): [optional]  # noqa: E501
-            krb_realm (str): KrbRealm is the Kerberos realm used with Kerberos keytab It must be set if keytab is used.. [optional]  # noqa: E501
-            krb_service_principal_name (str): KrbServicePrincipalName is the principal name of Kerberos service It must be set if either ccache or keytab is used.. [optional]  # noqa: E501
-            krb_username (str): KrbUsername is the Kerberos username used with Kerberos keytab It must be set if keytab is used.. [optional]  # noqa: E501
-            path_format (str): PathFormat is defines the format of path to store a file. Can reference workflow variables. [optional]  # noqa: E501
+            force (bool): [optional]  # noqa: E501
+            h_dfs_config (IoArgoprojWorkflowV1alpha1HDFSConfig): [optional]  # noqa: E501
+            path_format (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -251,16 +228,9 @@ class IoArgoprojWorkflowV1alpha1HDFSArtifactRepository(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            addresses ([str]): Addresses is accessible addresses of HDFS name nodes. [optional]  # noqa: E501
-            force (bool): Force copies a file forcibly even if it exists (default: false). [optional]  # noqa: E501
-            hdfs_user (str): HDFSUser is the user to access HDFS file system. It is ignored if either ccache or keytab is used.. [optional]  # noqa: E501
-            krb_c_cache_secret (SecretKeySelector): [optional]  # noqa: E501
-            krb_config_config_map (ConfigMapKeySelector): [optional]  # noqa: E501
-            krb_keytab_secret (SecretKeySelector): [optional]  # noqa: E501
-            krb_realm (str): KrbRealm is the Kerberos realm used with Kerberos keytab It must be set if keytab is used.. [optional]  # noqa: E501
-            krb_service_principal_name (str): KrbServicePrincipalName is the principal name of Kerberos service It must be set if either ccache or keytab is used.. [optional]  # noqa: E501
-            krb_username (str): KrbUsername is the Kerberos username used with Kerberos keytab It must be set if keytab is used.. [optional]  # noqa: E501
-            path_format (str): PathFormat is defines the format of path to store a file. Can reference workflow variables. [optional]  # noqa: E501
+            force (bool): [optional]  # noqa: E501
+            h_dfs_config (IoArgoprojWorkflowV1alpha1HDFSConfig): [optional]  # noqa: E501
+            path_format (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

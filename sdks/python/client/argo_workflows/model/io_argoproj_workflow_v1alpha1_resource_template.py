@@ -112,11 +112,8 @@ class IoArgoprojWorkflowV1alpha1ResourceTemplate(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, action, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1ResourceTemplate - a model defined in OpenAPI
-
-        Args:
-            action (str): Action is the action to perform to the resource. Must be one of: get, create, apply, delete, replace, patch
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -149,12 +146,13 @@ class IoArgoprojWorkflowV1alpha1ResourceTemplate(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            failure_condition (str): FailureCondition is a label selector expression which describes the conditions of the k8s resource in which the step was considered failed. [optional]  # noqa: E501
-            flags ([str]): Flags is a set of additional options passed to kubectl before submitting a resource I.e. to disable resource validation: flags: [  \"--validate=false\"  # disable resource validation ]. [optional]  # noqa: E501
-            manifest (str): Manifest contains the kubernetes manifest. [optional]  # noqa: E501
-            merge_strategy (str): MergeStrategy is the strategy used to merge a patch. It defaults to \"strategic\" Must be one of: strategic, merge, json. [optional]  # noqa: E501
+            action (str): [optional]  # noqa: E501
+            failure_condition (str): [optional]  # noqa: E501
+            flags ([str]): [optional]  # noqa: E501
+            manifest (str): [optional]  # noqa: E501
+            merge_strategy (str): [optional]  # noqa: E501
             set_owner_reference (bool): SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.. [optional]  # noqa: E501
-            success_condition (str): SuccessCondition is a label selector expression which describes the conditions of the k8s resource in which it is acceptable to proceed to the following step. [optional]  # noqa: E501
+            success_condition (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -182,7 +180,6 @@ class IoArgoprojWorkflowV1alpha1ResourceTemplate(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.action = action
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -203,11 +200,8 @@ class IoArgoprojWorkflowV1alpha1ResourceTemplate(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, action, *args, **kwargs):  # noqa: E501
+    def __init__(self, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1ResourceTemplate - a model defined in OpenAPI
-
-        Args:
-            action (str): Action is the action to perform to the resource. Must be one of: get, create, apply, delete, replace, patch
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -240,12 +234,13 @@ class IoArgoprojWorkflowV1alpha1ResourceTemplate(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            failure_condition (str): FailureCondition is a label selector expression which describes the conditions of the k8s resource in which the step was considered failed. [optional]  # noqa: E501
-            flags ([str]): Flags is a set of additional options passed to kubectl before submitting a resource I.e. to disable resource validation: flags: [  \"--validate=false\"  # disable resource validation ]. [optional]  # noqa: E501
-            manifest (str): Manifest contains the kubernetes manifest. [optional]  # noqa: E501
-            merge_strategy (str): MergeStrategy is the strategy used to merge a patch. It defaults to \"strategic\" Must be one of: strategic, merge, json. [optional]  # noqa: E501
+            action (str): [optional]  # noqa: E501
+            failure_condition (str): [optional]  # noqa: E501
+            flags ([str]): [optional]  # noqa: E501
+            manifest (str): [optional]  # noqa: E501
+            merge_strategy (str): [optional]  # noqa: E501
             set_owner_reference (bool): SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.. [optional]  # noqa: E501
-            success_condition (str): SuccessCondition is a label selector expression which describes the conditions of the k8s resource in which it is acceptable to proceed to the following step. [optional]  # noqa: E501
+            success_condition (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -271,7 +266,6 @@ class IoArgoprojWorkflowV1alpha1ResourceTemplate(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.action = action
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

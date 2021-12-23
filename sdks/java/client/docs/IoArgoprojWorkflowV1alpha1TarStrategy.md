@@ -2,7 +2,6 @@
 
 # IoArgoprojWorkflowV1alpha1TarStrategy
 
-TarStrategy will tar and gzip the file or directory when saving
 
 ## Properties
 

@@ -4,7 +4,7 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**containers** | [**[IoArgoprojWorkflowV1alpha1ContainerNode]**](IoArgoprojWorkflowV1alpha1ContainerNode.md) |  | 
+**containers** | [**[IoArgoprojWorkflowV1alpha1ContainerNode]**](IoArgoprojWorkflowV1alpha1ContainerNode.md) |  | [optional] 
 **volume_mounts** | [**[VolumeMount]**](VolumeMount.md) |  | [optional] 
 **any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 

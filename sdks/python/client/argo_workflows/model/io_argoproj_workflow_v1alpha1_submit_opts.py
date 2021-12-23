@@ -89,7 +89,7 @@ class IoArgoprojWorkflowV1alpha1SubmitOpts(ModelNormal):
         return {
             'annotations': (str,),  # noqa: E501
             'dry_run': (bool,),  # noqa: E501
-            'entry_point': (str,),  # noqa: E501
+            'entrypoint': (str,),  # noqa: E501
             'generate_name': (str,),  # noqa: E501
             'labels': (str,),  # noqa: E501
             'name': (str,),  # noqa: E501
@@ -109,7 +109,7 @@ class IoArgoprojWorkflowV1alpha1SubmitOpts(ModelNormal):
     attribute_map = {
         'annotations': 'annotations',  # noqa: E501
         'dry_run': 'dryRun',  # noqa: E501
-        'entry_point': 'entryPoint',  # noqa: E501
+        'entrypoint': 'entrypoint',  # noqa: E501
         'generate_name': 'generateName',  # noqa: E501
         'labels': 'labels',  # noqa: E501
         'name': 'name',  # noqa: E501
@@ -162,17 +162,17 @@ class IoArgoprojWorkflowV1alpha1SubmitOpts(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            annotations (str): Annotations adds to metadata.labels. [optional]  # noqa: E501
-            dry_run (bool): DryRun validates the workflow on the client-side without creating it. This option is not supported in API. [optional]  # noqa: E501
-            entry_point (str): Entrypoint overrides spec.entrypoint. [optional]  # noqa: E501
-            generate_name (str): GenerateName overrides metadata.generateName. [optional]  # noqa: E501
-            labels (str): Labels adds to metadata.labels. [optional]  # noqa: E501
-            name (str): Name overrides metadata.name. [optional]  # noqa: E501
+            annotations (str): [optional]  # noqa: E501
+            dry_run (bool): [optional]  # noqa: E501
+            entrypoint (str): [optional]  # noqa: E501
+            generate_name (str): [optional]  # noqa: E501
+            labels (str): [optional]  # noqa: E501
+            name (str): [optional]  # noqa: E501
             owner_reference (OwnerReference): [optional]  # noqa: E501
-            parameter_file (str): ParameterFile holds a reference to a parameter file. This option is not supported in API. [optional]  # noqa: E501
-            parameters ([str]): Parameters passes input parameters to workflow. [optional]  # noqa: E501
-            pod_priority_class_name (str): Set the podPriorityClassName of the workflow. [optional]  # noqa: E501
-            server_dry_run (bool): ServerDryRun validates the workflow on the server-side without creating it. [optional]  # noqa: E501
+            parameter_file (str): [optional]  # noqa: E501
+            parameters ([str]): [optional]  # noqa: E501
+            pod_priority_class_name (str): [optional]  # noqa: E501
+            server_dry_run (bool): [optional]  # noqa: E501
             service_account (str): ServiceAccount runs all pods in the workflow using specified ServiceAccount.. [optional]  # noqa: E501
         """
 
@@ -255,17 +255,17 @@ class IoArgoprojWorkflowV1alpha1SubmitOpts(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            annotations (str): Annotations adds to metadata.labels. [optional]  # noqa: E501
-            dry_run (bool): DryRun validates the workflow on the client-side without creating it. This option is not supported in API. [optional]  # noqa: E501
-            entry_point (str): Entrypoint overrides spec.entrypoint. [optional]  # noqa: E501
-            generate_name (str): GenerateName overrides metadata.generateName. [optional]  # noqa: E501
-            labels (str): Labels adds to metadata.labels. [optional]  # noqa: E501
-            name (str): Name overrides metadata.name. [optional]  # noqa: E501
+            annotations (str): [optional]  # noqa: E501
+            dry_run (bool): [optional]  # noqa: E501
+            entrypoint (str): [optional]  # noqa: E501
+            generate_name (str): [optional]  # noqa: E501
+            labels (str): [optional]  # noqa: E501
+            name (str): [optional]  # noqa: E501
             owner_reference (OwnerReference): [optional]  # noqa: E501
-            parameter_file (str): ParameterFile holds a reference to a parameter file. This option is not supported in API. [optional]  # noqa: E501
-            parameters ([str]): Parameters passes input parameters to workflow. [optional]  # noqa: E501
-            pod_priority_class_name (str): Set the podPriorityClassName of the workflow. [optional]  # noqa: E501
-            server_dry_run (bool): ServerDryRun validates the workflow on the server-side without creating it. [optional]  # noqa: E501
+            parameter_file (str): [optional]  # noqa: E501
+            parameters ([str]): [optional]  # noqa: E501
+            pod_priority_class_name (str): [optional]  # noqa: E501
+            server_dry_run (bool): [optional]  # noqa: E501
             service_account (str): ServiceAccount runs all pods in the workflow using specified ServiceAccount.. [optional]  # noqa: E501
         """
 

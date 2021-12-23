@@ -87,12 +87,12 @@ class IoArgoprojWorkflowV1alpha1GitArtifact(ModelNormal):
         """
         lazy_import()
         return {
-            'repo': (str,),  # noqa: E501
-            'depth': (int,),  # noqa: E501
+            'depth': (str,),  # noqa: E501
             'disable_submodules': (bool,),  # noqa: E501
             'fetch': ([str],),  # noqa: E501
             'insecure_ignore_host_key': (bool,),  # noqa: E501
             'password_secret': (SecretKeySelector,),  # noqa: E501
+            'repo': (str,),  # noqa: E501
             'revision': (str,),  # noqa: E501
             'ssh_private_key_secret': (SecretKeySelector,),  # noqa: E501
             'username_secret': (SecretKeySelector,),  # noqa: E501
@@ -104,12 +104,12 @@ class IoArgoprojWorkflowV1alpha1GitArtifact(ModelNormal):
 
 
     attribute_map = {
-        'repo': 'repo',  # noqa: E501
         'depth': 'depth',  # noqa: E501
         'disable_submodules': 'disableSubmodules',  # noqa: E501
         'fetch': 'fetch',  # noqa: E501
         'insecure_ignore_host_key': 'insecureIgnoreHostKey',  # noqa: E501
         'password_secret': 'passwordSecret',  # noqa: E501
+        'repo': 'repo',  # noqa: E501
         'revision': 'revision',  # noqa: E501
         'ssh_private_key_secret': 'sshPrivateKeySecret',  # noqa: E501
         'username_secret': 'usernameSecret',  # noqa: E501
@@ -122,11 +122,8 @@ class IoArgoprojWorkflowV1alpha1GitArtifact(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, repo, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1GitArtifact - a model defined in OpenAPI
-
-        Args:
-            repo (str): Repo is the git repository
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -159,12 +156,13 @@ class IoArgoprojWorkflowV1alpha1GitArtifact(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            depth (int): Depth specifies clones/fetches should be shallow and include the given number of commits from the branch tip. [optional]  # noqa: E501
-            disable_submodules (bool): DisableSubmodules disables submodules during git clone. [optional]  # noqa: E501
-            fetch ([str]): Fetch specifies a number of refs that should be fetched before checkout. [optional]  # noqa: E501
-            insecure_ignore_host_key (bool): InsecureIgnoreHostKey disables SSH strict host key checking during git clone. [optional]  # noqa: E501
+            depth (str): [optional]  # noqa: E501
+            disable_submodules (bool): [optional]  # noqa: E501
+            fetch ([str]): [optional]  # noqa: E501
+            insecure_ignore_host_key (bool): [optional]  # noqa: E501
             password_secret (SecretKeySelector): [optional]  # noqa: E501
-            revision (str): Revision is the git commit, tag, branch to checkout. [optional]  # noqa: E501
+            repo (str): [optional]  # noqa: E501
+            revision (str): [optional]  # noqa: E501
             ssh_private_key_secret (SecretKeySelector): [optional]  # noqa: E501
             username_secret (SecretKeySelector): [optional]  # noqa: E501
         """
@@ -194,7 +192,6 @@ class IoArgoprojWorkflowV1alpha1GitArtifact(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.repo = repo
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -215,11 +212,8 @@ class IoArgoprojWorkflowV1alpha1GitArtifact(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, repo, *args, **kwargs):  # noqa: E501
+    def __init__(self, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1GitArtifact - a model defined in OpenAPI
-
-        Args:
-            repo (str): Repo is the git repository
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -252,12 +246,13 @@ class IoArgoprojWorkflowV1alpha1GitArtifact(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            depth (int): Depth specifies clones/fetches should be shallow and include the given number of commits from the branch tip. [optional]  # noqa: E501
-            disable_submodules (bool): DisableSubmodules disables submodules during git clone. [optional]  # noqa: E501
-            fetch ([str]): Fetch specifies a number of refs that should be fetched before checkout. [optional]  # noqa: E501
-            insecure_ignore_host_key (bool): InsecureIgnoreHostKey disables SSH strict host key checking during git clone. [optional]  # noqa: E501
+            depth (str): [optional]  # noqa: E501
+            disable_submodules (bool): [optional]  # noqa: E501
+            fetch ([str]): [optional]  # noqa: E501
+            insecure_ignore_host_key (bool): [optional]  # noqa: E501
             password_secret (SecretKeySelector): [optional]  # noqa: E501
-            revision (str): Revision is the git commit, tag, branch to checkout. [optional]  # noqa: E501
+            repo (str): [optional]  # noqa: E501
+            revision (str): [optional]  # noqa: E501
             ssh_private_key_secret (SecretKeySelector): [optional]  # noqa: E501
             username_secret (SecretKeySelector): [optional]  # noqa: E501
         """
@@ -285,7 +280,6 @@ class IoArgoprojWorkflowV1alpha1GitArtifact(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.repo = repo
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

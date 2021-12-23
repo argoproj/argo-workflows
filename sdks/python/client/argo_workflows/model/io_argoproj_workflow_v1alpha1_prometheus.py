@@ -93,12 +93,12 @@ class IoArgoprojWorkflowV1alpha1Prometheus(ModelNormal):
         """
         lazy_import()
         return {
-            'help': (str,),  # noqa: E501
-            'name': (str,),  # noqa: E501
             'counter': (IoArgoprojWorkflowV1alpha1Counter,),  # noqa: E501
             'gauge': (IoArgoprojWorkflowV1alpha1Gauge,),  # noqa: E501
+            'help': (str,),  # noqa: E501
             'histogram': (IoArgoprojWorkflowV1alpha1Histogram,),  # noqa: E501
             'labels': ([IoArgoprojWorkflowV1alpha1MetricLabel],),  # noqa: E501
+            'name': (str,),  # noqa: E501
             'when': (str,),  # noqa: E501
         }
 
@@ -108,12 +108,12 @@ class IoArgoprojWorkflowV1alpha1Prometheus(ModelNormal):
 
 
     attribute_map = {
-        'help': 'help',  # noqa: E501
-        'name': 'name',  # noqa: E501
         'counter': 'counter',  # noqa: E501
         'gauge': 'gauge',  # noqa: E501
+        'help': 'help',  # noqa: E501
         'histogram': 'histogram',  # noqa: E501
         'labels': 'labels',  # noqa: E501
+        'name': 'name',  # noqa: E501
         'when': 'when',  # noqa: E501
     }
 
@@ -124,12 +124,8 @@ class IoArgoprojWorkflowV1alpha1Prometheus(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, help, name, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1Prometheus - a model defined in OpenAPI
-
-        Args:
-            help (str): Help is a string that describes the metric
-            name (str): Name is the name of the metric
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -164,9 +160,11 @@ class IoArgoprojWorkflowV1alpha1Prometheus(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             counter (IoArgoprojWorkflowV1alpha1Counter): [optional]  # noqa: E501
             gauge (IoArgoprojWorkflowV1alpha1Gauge): [optional]  # noqa: E501
+            help (str): [optional]  # noqa: E501
             histogram (IoArgoprojWorkflowV1alpha1Histogram): [optional]  # noqa: E501
-            labels ([IoArgoprojWorkflowV1alpha1MetricLabel]): Labels is a list of metric labels. [optional]  # noqa: E501
-            when (str): When is a conditional statement that decides when to emit the metric. [optional]  # noqa: E501
+            labels ([IoArgoprojWorkflowV1alpha1MetricLabel]): [optional]  # noqa: E501
+            name (str): [optional]  # noqa: E501
+            when (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -194,8 +192,6 @@ class IoArgoprojWorkflowV1alpha1Prometheus(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.help = help
-        self.name = name
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -216,12 +212,8 @@ class IoArgoprojWorkflowV1alpha1Prometheus(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, help, name, *args, **kwargs):  # noqa: E501
+    def __init__(self, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1Prometheus - a model defined in OpenAPI
-
-        Args:
-            help (str): Help is a string that describes the metric
-            name (str): Name is the name of the metric
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -256,9 +248,11 @@ class IoArgoprojWorkflowV1alpha1Prometheus(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             counter (IoArgoprojWorkflowV1alpha1Counter): [optional]  # noqa: E501
             gauge (IoArgoprojWorkflowV1alpha1Gauge): [optional]  # noqa: E501
+            help (str): [optional]  # noqa: E501
             histogram (IoArgoprojWorkflowV1alpha1Histogram): [optional]  # noqa: E501
-            labels ([IoArgoprojWorkflowV1alpha1MetricLabel]): Labels is a list of metric labels. [optional]  # noqa: E501
-            when (str): When is a conditional statement that decides when to emit the metric. [optional]  # noqa: E501
+            labels ([IoArgoprojWorkflowV1alpha1MetricLabel]): [optional]  # noqa: E501
+            name (str): [optional]  # noqa: E501
+            when (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -284,8 +278,6 @@ class IoArgoprojWorkflowV1alpha1Prometheus(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.help = help
-        self.name = name
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

@@ -87,9 +87,9 @@ class IoArgoprojWorkflowV1alpha1DAGTemplate(ModelNormal):
         """
         lazy_import()
         return {
-            'tasks': ([IoArgoprojWorkflowV1alpha1DAGTask],),  # noqa: E501
             'fail_fast': (bool,),  # noqa: E501
             'target': (str,),  # noqa: E501
+            'tasks': ([IoArgoprojWorkflowV1alpha1DAGTask],),  # noqa: E501
         }
 
     @cached_property
@@ -98,9 +98,9 @@ class IoArgoprojWorkflowV1alpha1DAGTemplate(ModelNormal):
 
 
     attribute_map = {
-        'tasks': 'tasks',  # noqa: E501
         'fail_fast': 'failFast',  # noqa: E501
         'target': 'target',  # noqa: E501
+        'tasks': 'tasks',  # noqa: E501
     }
 
     read_only_vars = {
@@ -110,11 +110,8 @@ class IoArgoprojWorkflowV1alpha1DAGTemplate(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, tasks, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1DAGTemplate - a model defined in OpenAPI
-
-        Args:
-            tasks ([IoArgoprojWorkflowV1alpha1DAGTask]): Tasks are a list of DAG tasks
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -147,8 +144,9 @@ class IoArgoprojWorkflowV1alpha1DAGTemplate(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            fail_fast (bool): This flag is for DAG logic. The DAG logic has a built-in \"fail fast\" feature to stop scheduling new steps, as soon as it detects that one of the DAG nodes is failed. Then it waits until all DAG nodes are completed before failing the DAG itself. The FailFast flag default is true,  if set to false, it will allow a DAG to run all branches of the DAG to completion (either success or failure), regardless of the failed outcomes of branches in the DAG. More info and example about this feature at https://github.com/argoproj/argo-workflows/issues/1442. [optional]  # noqa: E501
-            target (str): Target are one or more names of targets to execute in a DAG. [optional]  # noqa: E501
+            fail_fast (bool): [optional]  # noqa: E501
+            target (str): [optional]  # noqa: E501
+            tasks ([IoArgoprojWorkflowV1alpha1DAGTask]): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -176,7 +174,6 @@ class IoArgoprojWorkflowV1alpha1DAGTemplate(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.tasks = tasks
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -197,11 +194,8 @@ class IoArgoprojWorkflowV1alpha1DAGTemplate(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, tasks, *args, **kwargs):  # noqa: E501
+    def __init__(self, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1DAGTemplate - a model defined in OpenAPI
-
-        Args:
-            tasks ([IoArgoprojWorkflowV1alpha1DAGTask]): Tasks are a list of DAG tasks
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -234,8 +228,9 @@ class IoArgoprojWorkflowV1alpha1DAGTemplate(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            fail_fast (bool): This flag is for DAG logic. The DAG logic has a built-in \"fail fast\" feature to stop scheduling new steps, as soon as it detects that one of the DAG nodes is failed. Then it waits until all DAG nodes are completed before failing the DAG itself. The FailFast flag default is true,  if set to false, it will allow a DAG to run all branches of the DAG to completion (either success or failure), regardless of the failed outcomes of branches in the DAG. More info and example about this feature at https://github.com/argoproj/argo-workflows/issues/1442. [optional]  # noqa: E501
-            target (str): Target are one or more names of targets to execute in a DAG. [optional]  # noqa: E501
+            fail_fast (bool): [optional]  # noqa: E501
+            target (str): [optional]  # noqa: E501
+            tasks ([IoArgoprojWorkflowV1alpha1DAGTask]): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -261,7 +256,6 @@ class IoArgoprojWorkflowV1alpha1DAGTemplate(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.tasks = tasks
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

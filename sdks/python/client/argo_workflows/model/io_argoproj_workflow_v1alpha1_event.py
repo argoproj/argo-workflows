@@ -100,11 +100,8 @@ class IoArgoprojWorkflowV1alpha1Event(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, selector, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1Event - a model defined in OpenAPI
-
-        Args:
-            selector (str): Selector (https://github.com/antonmedv/expr) that we must must match the io.argoproj.workflow.v1alpha1. E.g. `payload.message == \"test\"`
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -137,6 +134,7 @@ class IoArgoprojWorkflowV1alpha1Event(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            selector (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -164,7 +162,6 @@ class IoArgoprojWorkflowV1alpha1Event(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.selector = selector
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -185,11 +182,8 @@ class IoArgoprojWorkflowV1alpha1Event(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, selector, *args, **kwargs):  # noqa: E501
+    def __init__(self, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1Event - a model defined in OpenAPI
-
-        Args:
-            selector (str): Selector (https://github.com/antonmedv/expr) that we must must match the io.argoproj.workflow.v1alpha1. E.g. `payload.message == \"test\"`
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -222,6 +216,7 @@ class IoArgoprojWorkflowV1alpha1Event(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            selector (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -247,7 +242,6 @@ class IoArgoprojWorkflowV1alpha1Event(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.selector = selector
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

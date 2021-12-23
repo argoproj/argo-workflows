@@ -104,7 +104,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStatus(ModelNormal):
             'artifact_repository_ref': (IoArgoprojWorkflowV1alpha1ArtifactRepositoryRefStatus,),  # noqa: E501
             'compressed_nodes': (str,),  # noqa: E501
             'conditions': ([IoArgoprojWorkflowV1alpha1Condition],),  # noqa: E501
-            'estimated_duration': (int,),  # noqa: E501
+            'estimated_duration': (str,),  # noqa: E501
             'finished_at': (datetime,),  # noqa: E501
             'message': (str,),  # noqa: E501
             'nodes': ({str: (IoArgoprojWorkflowV1alpha1NodeStatus,)},),  # noqa: E501
@@ -113,7 +113,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStatus(ModelNormal):
             'persistent_volume_claims': ([Volume],),  # noqa: E501
             'phase': (str,),  # noqa: E501
             'progress': (str,),  # noqa: E501
-            'resources_duration': ({str: (int,)},),  # noqa: E501
+            'resources_duration': ({str: (str,)},),  # noqa: E501
             'started_at': (datetime,),  # noqa: E501
             'stored_templates': ({str: (IoArgoprojWorkflowV1alpha1Template,)},),  # noqa: E501
             'stored_workflow_template_spec': (IoArgoprojWorkflowV1alpha1WorkflowSpec,),  # noqa: E501
@@ -187,9 +187,9 @@ class IoArgoprojWorkflowV1alpha1WorkflowStatus(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             artifact_repository_ref (IoArgoprojWorkflowV1alpha1ArtifactRepositoryRefStatus): [optional]  # noqa: E501
-            compressed_nodes (str): Compressed and base64 decoded Nodes map. [optional]  # noqa: E501
-            conditions ([IoArgoprojWorkflowV1alpha1Condition]): Conditions is a list of conditions the Workflow may have. [optional]  # noqa: E501
-            estimated_duration (int): EstimatedDuration in seconds.. [optional]  # noqa: E501
+            compressed_nodes (str): [optional]  # noqa: E501
+            conditions ([IoArgoprojWorkflowV1alpha1Condition]): [optional]  # noqa: E501
+            estimated_duration (str): EstimatedDuration in seconds.. [optional]  # noqa: E501
             finished_at (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
             message (str): A human readable message indicating details about why the workflow is in this condition.. [optional]  # noqa: E501
             nodes ({str: (IoArgoprojWorkflowV1alpha1NodeStatus,)}): Nodes is a mapping between a node ID and the node's status.. [optional]  # noqa: E501
@@ -197,8 +197,8 @@ class IoArgoprojWorkflowV1alpha1WorkflowStatus(ModelNormal):
             outputs (IoArgoprojWorkflowV1alpha1Outputs): [optional]  # noqa: E501
             persistent_volume_claims ([Volume]): PersistentVolumeClaims tracks all PVCs that were created as part of the io.argoproj.workflow.v1alpha1. The contents of this list are drained at the end of the workflow.. [optional]  # noqa: E501
             phase (str): Phase a simple, high-level summary of where the workflow is in its lifecycle.. [optional]  # noqa: E501
-            progress (str): Progress to completion. [optional]  # noqa: E501
-            resources_duration ({str: (int,)}): ResourcesDuration is the total for the workflow. [optional]  # noqa: E501
+            progress (str): [optional]  # noqa: E501
+            resources_duration ({str: (str,)}): [optional]  # noqa: E501
             started_at (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
             stored_templates ({str: (IoArgoprojWorkflowV1alpha1Template,)}): StoredTemplates is a mapping between a template ref and the node's status.. [optional]  # noqa: E501
             stored_workflow_template_spec (IoArgoprojWorkflowV1alpha1WorkflowSpec): [optional]  # noqa: E501
@@ -285,9 +285,9 @@ class IoArgoprojWorkflowV1alpha1WorkflowStatus(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             artifact_repository_ref (IoArgoprojWorkflowV1alpha1ArtifactRepositoryRefStatus): [optional]  # noqa: E501
-            compressed_nodes (str): Compressed and base64 decoded Nodes map. [optional]  # noqa: E501
-            conditions ([IoArgoprojWorkflowV1alpha1Condition]): Conditions is a list of conditions the Workflow may have. [optional]  # noqa: E501
-            estimated_duration (int): EstimatedDuration in seconds.. [optional]  # noqa: E501
+            compressed_nodes (str): [optional]  # noqa: E501
+            conditions ([IoArgoprojWorkflowV1alpha1Condition]): [optional]  # noqa: E501
+            estimated_duration (str): EstimatedDuration in seconds.. [optional]  # noqa: E501
             finished_at (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
             message (str): A human readable message indicating details about why the workflow is in this condition.. [optional]  # noqa: E501
             nodes ({str: (IoArgoprojWorkflowV1alpha1NodeStatus,)}): Nodes is a mapping between a node ID and the node's status.. [optional]  # noqa: E501
@@ -295,8 +295,8 @@ class IoArgoprojWorkflowV1alpha1WorkflowStatus(ModelNormal):
             outputs (IoArgoprojWorkflowV1alpha1Outputs): [optional]  # noqa: E501
             persistent_volume_claims ([Volume]): PersistentVolumeClaims tracks all PVCs that were created as part of the io.argoproj.workflow.v1alpha1. The contents of this list are drained at the end of the workflow.. [optional]  # noqa: E501
             phase (str): Phase a simple, high-level summary of where the workflow is in its lifecycle.. [optional]  # noqa: E501
-            progress (str): Progress to completion. [optional]  # noqa: E501
-            resources_duration ({str: (int,)}): ResourcesDuration is the total for the workflow. [optional]  # noqa: E501
+            progress (str): [optional]  # noqa: E501
+            resources_duration ({str: (str,)}): [optional]  # noqa: E501
             started_at (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
             stored_templates ({str: (IoArgoprojWorkflowV1alpha1Template,)}): StoredTemplates is a mapping between a template ref and the node's status.. [optional]  # noqa: E501
             stored_workflow_template_spec (IoArgoprojWorkflowV1alpha1WorkflowSpec): [optional]  # noqa: E501

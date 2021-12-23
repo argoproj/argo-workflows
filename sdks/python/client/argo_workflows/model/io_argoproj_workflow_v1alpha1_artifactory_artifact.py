@@ -30,8 +30,8 @@ from argo_workflows.exceptions import ApiAttributeError
 
 
 def lazy_import():
-    from argo_workflows.model.secret_key_selector import SecretKeySelector
-    globals()['SecretKeySelector'] = SecretKeySelector
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_artifactory_auth import IoArgoprojWorkflowV1alpha1ArtifactoryAuth
+    globals()['IoArgoprojWorkflowV1alpha1ArtifactoryAuth'] = IoArgoprojWorkflowV1alpha1ArtifactoryAuth
 
 
 class IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(ModelNormal):
@@ -87,9 +87,8 @@ class IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(ModelNormal):
         """
         lazy_import()
         return {
+            'artifactory_auth': (IoArgoprojWorkflowV1alpha1ArtifactoryAuth,),  # noqa: E501
             'url': (str,),  # noqa: E501
-            'password_secret': (SecretKeySelector,),  # noqa: E501
-            'username_secret': (SecretKeySelector,),  # noqa: E501
         }
 
     @cached_property
@@ -98,9 +97,8 @@ class IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(ModelNormal):
 
 
     attribute_map = {
+        'artifactory_auth': 'artifactoryAuth',  # noqa: E501
         'url': 'url',  # noqa: E501
-        'password_secret': 'passwordSecret',  # noqa: E501
-        'username_secret': 'usernameSecret',  # noqa: E501
     }
 
     read_only_vars = {
@@ -110,11 +108,8 @@ class IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, url, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1ArtifactoryArtifact - a model defined in OpenAPI
-
-        Args:
-            url (str): URL of the artifact
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -147,8 +142,8 @@ class IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            password_secret (SecretKeySelector): [optional]  # noqa: E501
-            username_secret (SecretKeySelector): [optional]  # noqa: E501
+            artifactory_auth (IoArgoprojWorkflowV1alpha1ArtifactoryAuth): [optional]  # noqa: E501
+            url (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -176,7 +171,6 @@ class IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.url = url
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -197,11 +191,8 @@ class IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, url, *args, **kwargs):  # noqa: E501
+    def __init__(self, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1ArtifactoryArtifact - a model defined in OpenAPI
-
-        Args:
-            url (str): URL of the artifact
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -234,8 +225,8 @@ class IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            password_secret (SecretKeySelector): [optional]  # noqa: E501
-            username_secret (SecretKeySelector): [optional]  # noqa: E501
+            artifactory_auth (IoArgoprojWorkflowV1alpha1ArtifactoryAuth): [optional]  # noqa: E501
+            url (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -261,7 +252,6 @@ class IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.url = url
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

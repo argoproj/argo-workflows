@@ -87,8 +87,8 @@ class IoArgoprojWorkflowV1alpha1LifecycleHook(ModelNormal):
         """
         lazy_import()
         return {
-            'template': (str,),  # noqa: E501
             'arguments': (IoArgoprojWorkflowV1alpha1Arguments,),  # noqa: E501
+            'template': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -97,8 +97,8 @@ class IoArgoprojWorkflowV1alpha1LifecycleHook(ModelNormal):
 
 
     attribute_map = {
-        'template': 'template',  # noqa: E501
         'arguments': 'arguments',  # noqa: E501
+        'template': 'template',  # noqa: E501
     }
 
     read_only_vars = {
@@ -108,11 +108,8 @@ class IoArgoprojWorkflowV1alpha1LifecycleHook(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, template, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1LifecycleHook - a model defined in OpenAPI
-
-        Args:
-            template (str):
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -146,6 +143,7 @@ class IoArgoprojWorkflowV1alpha1LifecycleHook(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             arguments (IoArgoprojWorkflowV1alpha1Arguments): [optional]  # noqa: E501
+            template (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -173,7 +171,6 @@ class IoArgoprojWorkflowV1alpha1LifecycleHook(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.template = template
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -194,11 +191,8 @@ class IoArgoprojWorkflowV1alpha1LifecycleHook(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, template, *args, **kwargs):  # noqa: E501
+    def __init__(self, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1LifecycleHook - a model defined in OpenAPI
-
-        Args:
-            template (str):
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -232,6 +226,7 @@ class IoArgoprojWorkflowV1alpha1LifecycleHook(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             arguments (IoArgoprojWorkflowV1alpha1Arguments): [optional]  # noqa: E501
+            template (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -257,7 +252,6 @@ class IoArgoprojWorkflowV1alpha1LifecycleHook(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.template = template
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

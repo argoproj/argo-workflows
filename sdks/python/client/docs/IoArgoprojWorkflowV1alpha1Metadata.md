@@ -1,6 +1,5 @@
 # IoArgoprojWorkflowV1alpha1Metadata
 
-Pod metdata
 
 ## Properties
 Name | Type | Description | Notes

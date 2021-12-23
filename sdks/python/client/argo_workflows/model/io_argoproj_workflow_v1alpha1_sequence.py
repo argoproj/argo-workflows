@@ -142,7 +142,7 @@ class IoArgoprojWorkflowV1alpha1Sequence(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             count (str): [optional]  # noqa: E501
             end (str): [optional]  # noqa: E501
-            format (str): Format is a printf format string to format the value in the sequence. [optional]  # noqa: E501
+            format (str): [optional]  # noqa: E501
             start (str): [optional]  # noqa: E501
         """
 
@@ -227,7 +227,7 @@ class IoArgoprojWorkflowV1alpha1Sequence(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             count (str): [optional]  # noqa: E501
             end (str): [optional]  # noqa: E501
-            format (str): Format is a printf format string to format the value in the sequence. [optional]  # noqa: E501
+            format (str): [optional]  # noqa: E501
             start (str): [optional]  # noqa: E501
         """
 

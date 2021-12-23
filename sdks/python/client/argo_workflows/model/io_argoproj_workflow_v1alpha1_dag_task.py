@@ -32,12 +32,14 @@ from argo_workflows.exceptions import ApiAttributeError
 def lazy_import():
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_arguments import IoArgoprojWorkflowV1alpha1Arguments
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_continue_on import IoArgoprojWorkflowV1alpha1ContinueOn
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_item import IoArgoprojWorkflowV1alpha1Item
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_lifecycle_hook import IoArgoprojWorkflowV1alpha1LifecycleHook
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_sequence import IoArgoprojWorkflowV1alpha1Sequence
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_template import IoArgoprojWorkflowV1alpha1Template
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_template_ref import IoArgoprojWorkflowV1alpha1TemplateRef
     globals()['IoArgoprojWorkflowV1alpha1Arguments'] = IoArgoprojWorkflowV1alpha1Arguments
     globals()['IoArgoprojWorkflowV1alpha1ContinueOn'] = IoArgoprojWorkflowV1alpha1ContinueOn
+    globals()['IoArgoprojWorkflowV1alpha1Item'] = IoArgoprojWorkflowV1alpha1Item
     globals()['IoArgoprojWorkflowV1alpha1LifecycleHook'] = IoArgoprojWorkflowV1alpha1LifecycleHook
     globals()['IoArgoprojWorkflowV1alpha1Sequence'] = IoArgoprojWorkflowV1alpha1Sequence
     globals()['IoArgoprojWorkflowV1alpha1Template'] = IoArgoprojWorkflowV1alpha1Template
@@ -97,18 +99,18 @@ class IoArgoprojWorkflowV1alpha1DAGTask(ModelNormal):
         """
         lazy_import()
         return {
-            'name': (str,),  # noqa: E501
             'arguments': (IoArgoprojWorkflowV1alpha1Arguments,),  # noqa: E501
             'continue_on': (IoArgoprojWorkflowV1alpha1ContinueOn,),  # noqa: E501
             'dependencies': ([str],),  # noqa: E501
             'depends': (str,),  # noqa: E501
             'hooks': ({str: (IoArgoprojWorkflowV1alpha1LifecycleHook,)},),  # noqa: E501
             'inline': (IoArgoprojWorkflowV1alpha1Template,),  # noqa: E501
+            'name': (str,),  # noqa: E501
             'on_exit': (str,),  # noqa: E501
             'template': (str,),  # noqa: E501
             'template_ref': (IoArgoprojWorkflowV1alpha1TemplateRef,),  # noqa: E501
             'when': (str,),  # noqa: E501
-            'with_items': ([dict],),  # noqa: E501
+            'with_items': ([IoArgoprojWorkflowV1alpha1Item],),  # noqa: E501
             'with_param': (str,),  # noqa: E501
             'with_sequence': (IoArgoprojWorkflowV1alpha1Sequence,),  # noqa: E501
         }
@@ -119,13 +121,13 @@ class IoArgoprojWorkflowV1alpha1DAGTask(ModelNormal):
 
 
     attribute_map = {
-        'name': 'name',  # noqa: E501
         'arguments': 'arguments',  # noqa: E501
         'continue_on': 'continueOn',  # noqa: E501
         'dependencies': 'dependencies',  # noqa: E501
         'depends': 'depends',  # noqa: E501
         'hooks': 'hooks',  # noqa: E501
         'inline': 'inline',  # noqa: E501
+        'name': 'name',  # noqa: E501
         'on_exit': 'onExit',  # noqa: E501
         'template': 'template',  # noqa: E501
         'template_ref': 'templateRef',  # noqa: E501
@@ -142,11 +144,8 @@ class IoArgoprojWorkflowV1alpha1DAGTask(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, name, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1DAGTask - a model defined in OpenAPI
-
-        Args:
-            name (str): Name is the name of the target
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -181,15 +180,16 @@ class IoArgoprojWorkflowV1alpha1DAGTask(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             arguments (IoArgoprojWorkflowV1alpha1Arguments): [optional]  # noqa: E501
             continue_on (IoArgoprojWorkflowV1alpha1ContinueOn): [optional]  # noqa: E501
-            dependencies ([str]): Dependencies are name of other targets which this depends on. [optional]  # noqa: E501
-            depends (str): Depends are name of other targets which this depends on. [optional]  # noqa: E501
-            hooks ({str: (IoArgoprojWorkflowV1alpha1LifecycleHook,)}): Hooks hold the lifecycle hook which is invoked at lifecycle of task, irrespective of the success, failure, or error status of the primary task. [optional]  # noqa: E501
+            dependencies ([str]): [optional]  # noqa: E501
+            depends (str): [optional]  # noqa: E501
+            hooks ({str: (IoArgoprojWorkflowV1alpha1LifecycleHook,)}): [optional]  # noqa: E501
             inline (IoArgoprojWorkflowV1alpha1Template): [optional]  # noqa: E501
+            name (str): [optional]  # noqa: E501
             on_exit (str): OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use Hooks[exit].Template instead.. [optional]  # noqa: E501
-            template (str): Name of template to execute. [optional]  # noqa: E501
+            template (str): [optional]  # noqa: E501
             template_ref (IoArgoprojWorkflowV1alpha1TemplateRef): [optional]  # noqa: E501
-            when (str): When is an expression in which the task should conditionally execute. [optional]  # noqa: E501
-            with_items ([dict]): WithItems expands a task into multiple parallel tasks from the items in the list. [optional]  # noqa: E501
+            when (str): [optional]  # noqa: E501
+            with_items ([IoArgoprojWorkflowV1alpha1Item]): [optional]  # noqa: E501
             with_param (str): WithParam expands a task into multiple parallel tasks from the value in the parameter, which is expected to be a JSON list.. [optional]  # noqa: E501
             with_sequence (IoArgoprojWorkflowV1alpha1Sequence): [optional]  # noqa: E501
         """
@@ -219,7 +219,6 @@ class IoArgoprojWorkflowV1alpha1DAGTask(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.name = name
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -240,11 +239,8 @@ class IoArgoprojWorkflowV1alpha1DAGTask(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, name, *args, **kwargs):  # noqa: E501
+    def __init__(self, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1DAGTask - a model defined in OpenAPI
-
-        Args:
-            name (str): Name is the name of the target
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -279,15 +275,16 @@ class IoArgoprojWorkflowV1alpha1DAGTask(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             arguments (IoArgoprojWorkflowV1alpha1Arguments): [optional]  # noqa: E501
             continue_on (IoArgoprojWorkflowV1alpha1ContinueOn): [optional]  # noqa: E501
-            dependencies ([str]): Dependencies are name of other targets which this depends on. [optional]  # noqa: E501
-            depends (str): Depends are name of other targets which this depends on. [optional]  # noqa: E501
-            hooks ({str: (IoArgoprojWorkflowV1alpha1LifecycleHook,)}): Hooks hold the lifecycle hook which is invoked at lifecycle of task, irrespective of the success, failure, or error status of the primary task. [optional]  # noqa: E501
+            dependencies ([str]): [optional]  # noqa: E501
+            depends (str): [optional]  # noqa: E501
+            hooks ({str: (IoArgoprojWorkflowV1alpha1LifecycleHook,)}): [optional]  # noqa: E501
             inline (IoArgoprojWorkflowV1alpha1Template): [optional]  # noqa: E501
+            name (str): [optional]  # noqa: E501
             on_exit (str): OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use Hooks[exit].Template instead.. [optional]  # noqa: E501
-            template (str): Name of template to execute. [optional]  # noqa: E501
+            template (str): [optional]  # noqa: E501
             template_ref (IoArgoprojWorkflowV1alpha1TemplateRef): [optional]  # noqa: E501
-            when (str): When is an expression in which the task should conditionally execute. [optional]  # noqa: E501
-            with_items ([dict]): WithItems expands a task into multiple parallel tasks from the items in the list. [optional]  # noqa: E501
+            when (str): [optional]  # noqa: E501
+            with_items ([IoArgoprojWorkflowV1alpha1Item]): [optional]  # noqa: E501
             with_param (str): WithParam expands a task into multiple parallel tasks from the value in the parameter, which is expected to be a JSON list.. [optional]  # noqa: E501
             with_sequence (IoArgoprojWorkflowV1alpha1Sequence): [optional]  # noqa: E501
         """
@@ -315,7 +312,6 @@ class IoArgoprojWorkflowV1alpha1DAGTask(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.name = name
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

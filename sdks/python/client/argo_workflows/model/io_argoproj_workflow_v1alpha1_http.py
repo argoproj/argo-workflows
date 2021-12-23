@@ -87,12 +87,12 @@ class IoArgoprojWorkflowV1alpha1HTTP(ModelNormal):
         """
         lazy_import()
         return {
-            'url': (str,),  # noqa: E501
             'body': (str,),  # noqa: E501
             'headers': ([IoArgoprojWorkflowV1alpha1HTTPHeader],),  # noqa: E501
             'method': (str,),  # noqa: E501
             'success_condition': (str,),  # noqa: E501
-            'timeout_seconds': (int,),  # noqa: E501
+            'timeout_seconds': (str,),  # noqa: E501
+            'url': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -101,12 +101,12 @@ class IoArgoprojWorkflowV1alpha1HTTP(ModelNormal):
 
 
     attribute_map = {
-        'url': 'url',  # noqa: E501
         'body': 'body',  # noqa: E501
         'headers': 'headers',  # noqa: E501
         'method': 'method',  # noqa: E501
         'success_condition': 'successCondition',  # noqa: E501
         'timeout_seconds': 'timeoutSeconds',  # noqa: E501
+        'url': 'url',  # noqa: E501
     }
 
     read_only_vars = {
@@ -116,11 +116,8 @@ class IoArgoprojWorkflowV1alpha1HTTP(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, url, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1HTTP - a model defined in OpenAPI
-
-        Args:
-            url (str): URL of the HTTP Request
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -153,11 +150,12 @@ class IoArgoprojWorkflowV1alpha1HTTP(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            body (str): Body is content of the HTTP Request. [optional]  # noqa: E501
-            headers ([IoArgoprojWorkflowV1alpha1HTTPHeader]): Headers are an optional list of headers to send with HTTP requests. [optional]  # noqa: E501
-            method (str): Method is HTTP methods for HTTP Request. [optional]  # noqa: E501
-            success_condition (str): SuccessCondition is an expression if evaluated to true is considered successful. [optional]  # noqa: E501
-            timeout_seconds (int): TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds. [optional]  # noqa: E501
+            body (str): [optional]  # noqa: E501
+            headers ([IoArgoprojWorkflowV1alpha1HTTPHeader]): [optional]  # noqa: E501
+            method (str): [optional]  # noqa: E501
+            success_condition (str): [optional]  # noqa: E501
+            timeout_seconds (str): [optional]  # noqa: E501
+            url (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -185,7 +183,6 @@ class IoArgoprojWorkflowV1alpha1HTTP(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.url = url
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -206,11 +203,8 @@ class IoArgoprojWorkflowV1alpha1HTTP(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, url, *args, **kwargs):  # noqa: E501
+    def __init__(self, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1HTTP - a model defined in OpenAPI
-
-        Args:
-            url (str): URL of the HTTP Request
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -243,11 +237,12 @@ class IoArgoprojWorkflowV1alpha1HTTP(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            body (str): Body is content of the HTTP Request. [optional]  # noqa: E501
-            headers ([IoArgoprojWorkflowV1alpha1HTTPHeader]): Headers are an optional list of headers to send with HTTP requests. [optional]  # noqa: E501
-            method (str): Method is HTTP methods for HTTP Request. [optional]  # noqa: E501
-            success_condition (str): SuccessCondition is an expression if evaluated to true is considered successful. [optional]  # noqa: E501
-            timeout_seconds (int): TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds. [optional]  # noqa: E501
+            body (str): [optional]  # noqa: E501
+            headers ([IoArgoprojWorkflowV1alpha1HTTPHeader]): [optional]  # noqa: E501
+            method (str): [optional]  # noqa: E501
+            success_condition (str): [optional]  # noqa: E501
+            timeout_seconds (str): [optional]  # noqa: E501
+            url (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -273,7 +268,6 @@ class IoArgoprojWorkflowV1alpha1HTTP(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.url = url
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

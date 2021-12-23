@@ -87,8 +87,8 @@ class IoArgoprojWorkflowV1alpha1HTTPArtifact(ModelNormal):
         """
         lazy_import()
         return {
-            'url': (str,),  # noqa: E501
             'headers': ([IoArgoprojWorkflowV1alpha1Header],),  # noqa: E501
+            'url': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -97,8 +97,8 @@ class IoArgoprojWorkflowV1alpha1HTTPArtifact(ModelNormal):
 
 
     attribute_map = {
-        'url': 'url',  # noqa: E501
         'headers': 'headers',  # noqa: E501
+        'url': 'url',  # noqa: E501
     }
 
     read_only_vars = {
@@ -108,11 +108,8 @@ class IoArgoprojWorkflowV1alpha1HTTPArtifact(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, url, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1HTTPArtifact - a model defined in OpenAPI
-
-        Args:
-            url (str): URL of the artifact
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -145,7 +142,8 @@ class IoArgoprojWorkflowV1alpha1HTTPArtifact(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            headers ([IoArgoprojWorkflowV1alpha1Header]): Headers are an optional list of headers to send with HTTP requests for artifacts. [optional]  # noqa: E501
+            headers ([IoArgoprojWorkflowV1alpha1Header]): [optional]  # noqa: E501
+            url (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -173,7 +171,6 @@ class IoArgoprojWorkflowV1alpha1HTTPArtifact(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.url = url
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -194,11 +191,8 @@ class IoArgoprojWorkflowV1alpha1HTTPArtifact(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, url, *args, **kwargs):  # noqa: E501
+    def __init__(self, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1HTTPArtifact - a model defined in OpenAPI
-
-        Args:
-            url (str): URL of the artifact
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -231,7 +225,8 @@ class IoArgoprojWorkflowV1alpha1HTTPArtifact(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            headers ([IoArgoprojWorkflowV1alpha1Header]): Headers are an optional list of headers to send with HTTP requests for artifacts. [optional]  # noqa: E501
+            headers ([IoArgoprojWorkflowV1alpha1Header]): [optional]  # noqa: E501
+            url (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -257,7 +252,6 @@ class IoArgoprojWorkflowV1alpha1HTTPArtifact(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.url = url
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

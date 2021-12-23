@@ -1,6 +1,5 @@
 # IoArgoprojWorkflowV1alpha1Synchronization
 
-Synchronization holds synchronization lock configuration
 
 ## Properties
 Name | Type | Description | Notes
