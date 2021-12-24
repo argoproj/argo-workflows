@@ -110,6 +110,7 @@ func isErrUnknownGetPods(err error) bool {
 
 // NewExecutor instantiates a new workflow executor
 func NewExecutor(clientset kubernetes.Interface, restClient rest.Interface, podName, namespace string, cre ContainerRuntimeExecutor, template wfv1.Template, includeScriptOutput bool, deadline time.Time, annotationPatchTickDuration, readProgressFileTickDuration time.Duration) WorkflowExecutor {
+	log.WithFields(log.Fields{"Steps": executorretry.Steps, "Duration": executorretry.Duration, "Factor": executorretry.Factor, "Jitter": executorretry.Jitter}).Info("Using executor retry strategy")
 	return WorkflowExecutor{
 		PodName:                      podName,
 		ClientSet:                    clientset,
