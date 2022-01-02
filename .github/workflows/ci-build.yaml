@@ -119,14 +119,14 @@ jobs:
       - run: make wait
         timeout-minutes: 4
       - run: make ${{matrix.test}} E2E_TIMEOUT=1m STATIC_FILES=false
-      - name: e2e results
-        if: ${{ failure() }}
-        run: cat /tmp/log/argo-e2e/e2e-${{matrix.test}}-${{matrix.containerRuntimeExecutor}}-${{matrix.profile}}.log
-      - name: Upload e2e-controller logs
+      - name: Upload e2e results
         uses: actions/upload-artifact@v2
         with:
           name: e2e-${{matrix.test}}-${{matrix.containerRuntimeExecutor}}-${{matrix.profile}}.log
           path: /tmp/log/argo-e2e/e2e-${{matrix.test}}-${{matrix.containerRuntimeExecutor}}-${{matrix.profile}}.log
+      - name: show e2e results
+        if: ${{ failure() }}
+        run: cat /tmp/log/argo-e2e/e2e-${{matrix.test}}-${{matrix.containerRuntimeExecutor}}-${{matrix.profile}}.log
 
   codegen:
     name: Codegen
