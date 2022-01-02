@@ -122,6 +122,11 @@ jobs:
       - name: cat argo.log
         if: ${{ failure() }}
         run: cat /tmp/log/argo-e2e/argo.log
+      - name: Upload e2e-controller logs
+        uses: actions/upload-artifact@v2
+        with:
+          name: e2e.log
+          path: /tmp/log/argo-e2e/argo.log
 
   codegen:
     name: Codegen
