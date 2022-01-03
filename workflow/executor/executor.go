@@ -321,7 +321,11 @@ func (we *WorkflowExecutor) saveArtifactFromFile(ctx context.Context, art *wfv1.
 		if err != nil {
 			return err
 		}
-		if err = art.SetType(we.Template.ArchiveLocation.Get()); err != nil {
+		art_location, err := we.Template.ArchiveLocation.Get()
+		if err != nil {
+			return err
+		}
+		if err = art.SetType(art_location); err != nil {
 			return err
 		}
 		if err := art.SetKey(path.Join(key, fileName)); err != nil {
