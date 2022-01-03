@@ -2250,29 +2250,29 @@ a workflow needs is dependent on what the workflow needs to do. For example, if 
 to deploy a resource, then the workflow's service account will require 'create' privileges on that
 resource.</p>
 <p>The bare minimum for a workflow to function is outlined below:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">rbac.authorization.k8s.io/v1</span>
-<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Role</span>
-<span class="nt">metadata</span><span class="p">:</span>
-  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">workflow-role</span>
-<span class="nt">rules</span><span class="p">:</span>
-<span class="c1"># pod get/watch is used to identify the container IDs of the current pod</span>
-<span class="c1"># pod patch is used to annotate the step&#39;s outputs back to controller (e.g. artifact location)</span>
-<span class="p p-Indicator">-</span> <span class="nt">apiGroups</span><span class="p">:</span>
-  <span class="p p-Indicator">-</span> <span class="s">&quot;&quot;</span>
-  <span class="nt">resources</span><span class="p">:</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">pods</span>
-  <span class="nt">verbs</span><span class="p">:</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">get</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">watch</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">patch</span>
-<span class="c1"># logs get/watch are used to get the pods logs for script outputs, and for log archival</span>
-<span class="p p-Indicator">-</span> <span class="nt">apiGroups</span><span class="p">:</span>
-  <span class="p p-Indicator">-</span> <span class="s">&quot;&quot;</span>
-  <span class="nt">resources</span><span class="p">:</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">pods/log</span>
-  <span class="nt">verbs</span><span class="p">:</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">get</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">watch</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rbac.authorization.k8s.io/v1</span><span class="w"></span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Role</span><span class="w"></span>
+<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflow-role</span><span class="w"></span>
+<span class="nt">rules</span><span class="p">:</span><span class="w"></span>
+<span class="c1"># pod get/watch is used to identify the container IDs of the current pod</span><span class="w"></span>
+<span class="c1"># pod patch is used to annotate the step&#39;s outputs back to controller (e.g. artifact location)</span><span class="w"></span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">apiGroups</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="nt">resources</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pods</span><span class="w"></span>
+<span class="w">  </span><span class="nt">verbs</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">get</span><span class="w"></span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">watch</span><span class="w"></span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">patch</span><span class="w"></span>
+<span class="c1"># logs get/watch are used to get the pods logs for script outputs, and for log archival</span><span class="w"></span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">apiGroups</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="nt">resources</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pods/log</span><span class="w"></span>
+<span class="w">  </span><span class="nt">verbs</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">get</span><span class="w"></span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">watch</span><span class="w"></span>
 </code></pre></div>
                 
                   

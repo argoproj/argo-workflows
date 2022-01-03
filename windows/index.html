@@ -2366,20 +2366,20 @@
 </ul>
 <h2 id="schedule-workflows-with-windows-containers">Schedule workflows with Windows containers<a class="headerlink" href="#schedule-workflows-with-windows-containers" title="Permanent link">&para;</a></h2>
 <p>If you're running workflows in your hybrid Kubernetes cluster, always make sure to include a <code>nodeSelector</code> to run the steps on the correct host OS:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
-<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
-<span class="nt">metadata</span><span class="p">:</span>
-  <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">hello-windows-</span>
-<span class="nt">spec</span><span class="p">:</span>
-  <span class="nt">entrypoint</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">hello-win</span>
-  <span class="nt">templates</span><span class="p">:</span>
-    <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">hello-win</span>
-      <span class="nt">nodeSelector</span><span class="p">:</span>
-        <span class="nt">kubernetes.io/os</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">windows</span>    <span class="c1"># specify the OS your step should run on</span>
-      <span class="nt">container</span><span class="p">:</span>
-        <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">mcr.microsoft.com/windows/nanoserver:1809</span>
-        <span class="nt">command</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;cmd&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;/c&quot;</span><span class="p p-Indicator">]</span>
-        <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;echo&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;Hello</span><span class="nv"> </span><span class="s">from</span><span class="nv"> </span><span class="s">Windows</span><span class="nv"> </span><span class="s">Container!&quot;</span><span class="p p-Indicator">]</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span><span class="w"></span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span><span class="w"></span>
+<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">generateName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hello-windows-</span><span class="w"></span>
+<span class="nt">spec</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hello-win</span><span class="w"></span>
+<span class="w">  </span><span class="nt">templates</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hello-win</span><span class="w"></span>
+<span class="w">      </span><span class="nt">nodeSelector</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="nt">kubernetes.io/os</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">windows</span><span class="w">    </span><span class="c1"># specify the OS your step should run on</span><span class="w"></span>
+<span class="w">      </span><span class="nt">container</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mcr.microsoft.com/windows/nanoserver:1809</span><span class="w"></span>
+<span class="w">        </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;cmd&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;/c&quot;</span><span class="p p-Indicator">]</span><span class="w"></span>
+<span class="w">        </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;echo&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;Hello</span><span class="nv"> </span><span class="s">from</span><span class="nv"> </span><span class="s">Windows</span><span class="nv"> </span><span class="s">Container!&quot;</span><span class="p p-Indicator">]</span><span class="w"></span>
 </code></pre></div>
 <p>You can run this example and get the logs:
 <div class="highlight"><pre><span></span><code>$ argo submit --watch https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/hello-windows.yaml
@@ -2389,34 +2389,34 @@ hello-windows-s9kk5: &quot;Hello from Windows Container!&quot;
 <h2 id="schedule-hybrid-workflows">Schedule hybrid workflows<a class="headerlink" href="#schedule-hybrid-workflows" title="Permanent link">&para;</a></h2>
 <p>You can also run different steps on different host OSs. This can for example be very helpful when you need to compile your application on Windows and Linux.</p>
 <p>An example workflow can look like the following:
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
-<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
-<span class="nt">metadata</span><span class="p">:</span>
-  <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">hello-hybrid-</span>
-<span class="nt">spec</span><span class="p">:</span>
-  <span class="nt">entrypoint</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">mytemplate</span>
-  <span class="nt">templates</span><span class="p">:</span>
-    <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">mytemplate</span>
-      <span class="nt">steps</span><span class="p">:</span>
-        <span class="p p-Indicator">-</span> <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">step1</span>
-            <span class="nt">template</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">hello-win</span>
-        <span class="p p-Indicator">-</span> <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">step2</span>
-            <span class="nt">template</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">hello-linux</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span><span class="w"></span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span><span class="w"></span>
+<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">generateName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hello-hybrid-</span><span class="w"></span>
+<span class="nt">spec</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mytemplate</span><span class="w"></span>
+<span class="w">  </span><span class="nt">templates</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mytemplate</span><span class="w"></span>
+<span class="w">      </span><span class="nt">steps</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">step1</span><span class="w"></span>
+<span class="w">            </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hello-win</span><span class="w"></span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">step2</span><span class="w"></span>
+<span class="w">            </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hello-linux</span><span class="w"></span>
 
-    <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">hello-win</span>
-      <span class="nt">nodeSelector</span><span class="p">:</span>
-        <span class="nt">kubernetes.io/os</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">windows</span>
-      <span class="nt">container</span><span class="p">:</span>
-        <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">mcr.microsoft.com/windows/nanoserver:1809</span>
-        <span class="nt">command</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;cmd&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;/c&quot;</span><span class="p p-Indicator">]</span>
-        <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;echo&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;Hello</span><span class="nv"> </span><span class="s">from</span><span class="nv"> </span><span class="s">Windows</span><span class="nv"> </span><span class="s">Container!&quot;</span><span class="p p-Indicator">]</span>
-    <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">hello-linux</span>
-      <span class="nt">nodeSelector</span><span class="p">:</span>
-        <span class="nt">kubernetes.io/os</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">linux</span>
-      <span class="nt">container</span><span class="p">:</span>
-        <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">alpine</span>
-        <span class="nt">command</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">echo</span><span class="p p-Indicator">]</span>
-        <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;Hello</span><span class="nv"> </span><span class="s">from</span><span class="nv"> </span><span class="s">Linux</span><span class="nv"> </span><span class="s">Container!&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hello-win</span><span class="w"></span>
+<span class="w">      </span><span class="nt">nodeSelector</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="nt">kubernetes.io/os</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">windows</span><span class="w"></span>
+<span class="w">      </span><span class="nt">container</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mcr.microsoft.com/windows/nanoserver:1809</span><span class="w"></span>
+<span class="w">        </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;cmd&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;/c&quot;</span><span class="p p-Indicator">]</span><span class="w"></span>
+<span class="w">        </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;echo&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;Hello</span><span class="nv"> </span><span class="s">from</span><span class="nv"> </span><span class="s">Windows</span><span class="nv"> </span><span class="s">Container!&quot;</span><span class="p p-Indicator">]</span><span class="w"></span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hello-linux</span><span class="w"></span>
+<span class="w">      </span><span class="nt">nodeSelector</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="nt">kubernetes.io/os</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">linux</span><span class="w"></span>
+<span class="w">      </span><span class="nt">container</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">alpine</span><span class="w"></span>
+<span class="w">        </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">echo</span><span class="p p-Indicator">]</span><span class="w"></span>
+<span class="w">        </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;Hello</span><span class="nv"> </span><span class="s">from</span><span class="nv"> </span><span class="s">Linux</span><span class="nv"> </span><span class="s">Container!&quot;</span><span class="p p-Indicator">]</span><span class="w"></span>
 </code></pre></div></p>
 <p>Again, you can run this example and get the logs:
 <div class="highlight"><pre><span></span><code>$ argo submit --watch https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/hello-hybrid.yaml
@@ -2426,20 +2426,20 @@ hello-hybrid-plqpp-764774907: Hello from Linux Container!
 </code></pre></div></p>
 <h2 id="artifact-mount-path">Artifact mount path<a class="headerlink" href="#artifact-mount-path" title="Permanent link">&para;</a></h2>
 <p>Artifacts work mostly the same way as on Linux. All paths get automatically mapped to the <code>C:</code> drive. For example:</p>
-<div class="highlight"><pre><span></span><code> <span class="c1"># ...</span>
-    <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">print-message</span>
-      <span class="nt">inputs</span><span class="p">:</span>
-        <span class="nt">artifacts</span><span class="p">:</span>
-          <span class="c1"># unpack the message input artifact</span>
-          <span class="c1"># and put it at C:\message</span>
-          <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">message</span>
-            <span class="nt">path</span><span class="p">:</span> <span class="s">&quot;/message&quot;</span> <span class="c1"># gets mapped to C:\message</span>
-      <span class="nt">nodeSelector</span><span class="p">:</span>
-        <span class="nt">kubernetes.io/os</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">windows</span>
-      <span class="nt">container</span><span class="p">:</span>
-        <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">mcr.microsoft.com/windows/nanoserver:1809</span>
-        <span class="nt">command</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;cmd&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;/c&quot;</span><span class="p p-Indicator">]</span>
-        <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;dir</span><span class="nv"> </span><span class="s">C:\\message&quot;</span><span class="p p-Indicator">]</span>   <span class="c1"># List the C:\message directory</span>
+<div class="highlight"><pre><span></span><code><span class="w"> </span><span class="c1"># ...</span><span class="w"></span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">print-message</span><span class="w"></span>
+<span class="w">      </span><span class="nt">inputs</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="nt">artifacts</span><span class="p">:</span><span class="w"></span>
+<span class="w">          </span><span class="c1"># unpack the message input artifact</span><span class="w"></span>
+<span class="w">          </span><span class="c1"># and put it at C:\message</span><span class="w"></span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">message</span><span class="w"></span>
+<span class="w">            </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/message&quot;</span><span class="w"> </span><span class="c1"># gets mapped to C:\message</span><span class="w"></span>
+<span class="w">      </span><span class="nt">nodeSelector</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="nt">kubernetes.io/os</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">windows</span><span class="w"></span>
+<span class="w">      </span><span class="nt">container</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mcr.microsoft.com/windows/nanoserver:1809</span><span class="w"></span>
+<span class="w">        </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;cmd&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;/c&quot;</span><span class="p p-Indicator">]</span><span class="w"></span>
+<span class="w">        </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;dir</span><span class="nv"> </span><span class="s">C:\\message&quot;</span><span class="p p-Indicator">]</span><span class="w">   </span><span class="c1"># List the C:\message directory</span><span class="w"></span>
 </code></pre></div>
 <p>Remember that <a href="https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#storage">volume mounts on Windows can only target a directory</a> in the container, and not an individual file.</p>
 <h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permanent link">&para;</a></h2>

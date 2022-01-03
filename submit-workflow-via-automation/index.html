@@ -2253,20 +2253,20 @@
 <div class="highlight"><pre><span></span><code>kubectl patch role jenkins -p <span class="s1">&#39;{&quot;rules&quot;: [{&quot;apiGroups&quot;: [&quot;argoproj.io&quot;], &quot;resources&quot;: [&quot;workflowtemplates&quot;], &quot;verbs&quot;: [&quot;get&quot;]}, {&quot;apiGroups&quot;: [&quot;argoproj.io&quot;], &quot;resources&quot;: [&quot;workflows&quot;], &quot;verbs&quot;: [&quot;create&quot;, &quot;list&quot;, &quot;get&quot;, &quot;update&quot;]}]}&#39;</span>
 </code></pre></div>
 <p>Next, create a workflow template </p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
-<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">WorkflowTemplate</span>
-<span class="nt">metadata</span><span class="p">:</span>
-  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">hello-argo</span>
-<span class="nt">spec</span><span class="p">:</span>
-  <span class="nt">entrypoint</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">main</span>
-  <span class="nt">templates</span><span class="p">:</span>
-    <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">main</span>
-      <span class="nt">steps</span><span class="p">:</span>
-        <span class="p p-Indicator">-</span> <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">a</span>
-            <span class="nt">template</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">whalesay</span>
-    <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">whalesay</span>
-      <span class="nt">container</span><span class="p">:</span>
-        <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">docker/whalesay:latest</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span><span class="w"></span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">WorkflowTemplate</span><span class="w"></span>
+<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hello-argo</span><span class="w"></span>
+<span class="nt">spec</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span><span class="w"></span>
+<span class="w">  </span><span class="nt">templates</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span><span class="w"></span>
+<span class="w">      </span><span class="nt">steps</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">a</span><span class="w"></span>
+<span class="w">            </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">whalesay</span><span class="w"></span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">whalesay</span><span class="w"></span>
+<span class="w">      </span><span class="nt">container</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker/whalesay:latest</span><span class="w"></span>
 </code></pre></div>
 <p>You can submit this workflow via an CLI or the <a href="../rest-api/">Argo Server API</a>. </p>
 <p>Submit via CLI (note how I add a label to help identify it later on):</p>

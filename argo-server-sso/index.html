@@ -2450,50 +2450,50 @@ kubectl create secret -n argo generic client-secret-secret \
 <p>To allow service accounts to manage resources in other namespaces create a role and role binding in the target namespace.</p>
 <p>RBAC config is installation-level, so any changes will need to be made by the team that installed Argo. Many complex rules will be burdensome on that team.</p>
 <p>Firstly, enable the <code>rbac:</code> setting in <a href="../workflow-controller-configmap.yaml">workflow-controller-configmap.yaml</a>. You almost certainly want to be able configure RBAC using groups, so add <code>scopes:</code> to the SSO settings:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">sso</span><span class="p">:</span>
-  <span class="c1"># ...</span>
-  <span class="nt">scopes</span><span class="p">:</span>
-   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">groups</span>
-  <span class="nt">rbac</span><span class="p">:</span>
-    <span class="nt">enabled</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+<div class="highlight"><pre><span></span><code><span class="nt">sso</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="c1"># ...</span><span class="w"></span>
+<span class="w">  </span><span class="nt">scopes</span><span class="p">:</span><span class="w"></span>
+<span class="w">   </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">groups</span><span class="w"></span>
+<span class="w">  </span><span class="nt">rbac</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w"></span>
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Not all OIDC provider support the groups scope. Please speak to your provider about their options.</p>
 </div>
 <p>To configure a service account to be used, annotate it:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">v1</span>
-<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ServiceAccount</span>
-<span class="nt">metadata</span><span class="p">:</span>
-  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">admin-user</span>
-  <span class="nt">annotations</span><span class="p">:</span>
-    <span class="c1"># The rule is an expression used to determine if this service account</span>
-    <span class="c1"># should be used.</span>
-    <span class="c1"># * `groups` - an array of the OIDC groups</span>
-    <span class="c1"># * `iss` - the issuer (&quot;argo-server&quot;)</span>
-    <span class="c1"># * `sub` - the subject (typically the username)</span>
-    <span class="c1"># Must evaluate to a boolean.</span>
-    <span class="c1"># If you want an account to be the default to use, this rule can be &quot;true&quot;.</span>
-    <span class="c1"># Details of the expression language are available in</span>
-    <span class="c1"># https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md.</span>
-    <span class="nt">workflows.argoproj.io/rbac-rule</span><span class="p">:</span> <span class="s">&quot;&#39;admin&#39;</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">groups&quot;</span>
-    <span class="c1"># The precedence is used to determine which service account to use whe</span>
-    <span class="c1"># Precedence is an integer. It may be negative. If omitted, it defaults to &quot;0&quot;.</span>
-    <span class="c1"># Numerically higher values have higher precedence (not lower, which maybe</span>
-    <span class="c1"># counter-intuitive to you).</span>
-    <span class="c1"># If two rules match and have the same precedence, then which one used will</span>
-    <span class="c1"># be arbitrary.</span>
-    <span class="nt">workflows.argoproj.io/rbac-rule-precedence</span><span class="p">:</span> <span class="s">&quot;1&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span><span class="w"></span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ServiceAccount</span><span class="w"></span>
+<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">admin-user</span><span class="w"></span>
+<span class="w">  </span><span class="nt">annotations</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="c1"># The rule is an expression used to determine if this service account</span><span class="w"></span>
+<span class="w">    </span><span class="c1"># should be used.</span><span class="w"></span>
+<span class="w">    </span><span class="c1"># * `groups` - an array of the OIDC groups</span><span class="w"></span>
+<span class="w">    </span><span class="c1"># * `iss` - the issuer (&quot;argo-server&quot;)</span><span class="w"></span>
+<span class="w">    </span><span class="c1"># * `sub` - the subject (typically the username)</span><span class="w"></span>
+<span class="w">    </span><span class="c1"># Must evaluate to a boolean.</span><span class="w"></span>
+<span class="w">    </span><span class="c1"># If you want an account to be the default to use, this rule can be &quot;true&quot;.</span><span class="w"></span>
+<span class="w">    </span><span class="c1"># Details of the expression language are available in</span><span class="w"></span>
+<span class="w">    </span><span class="c1"># https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md.</span><span class="w"></span>
+<span class="w">    </span><span class="nt">workflows.argoproj.io/rbac-rule</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&#39;admin&#39;</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">groups&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="c1"># The precedence is used to determine which service account to use whe</span><span class="w"></span>
+<span class="w">    </span><span class="c1"># Precedence is an integer. It may be negative. If omitted, it defaults to &quot;0&quot;.</span><span class="w"></span>
+<span class="w">    </span><span class="c1"># Numerically higher values have higher precedence (not lower, which maybe</span><span class="w"></span>
+<span class="w">    </span><span class="c1"># counter-intuitive to you).</span><span class="w"></span>
+<span class="w">    </span><span class="c1"># If two rules match and have the same precedence, then which one used will</span><span class="w"></span>
+<span class="w">    </span><span class="c1"># be arbitrary.</span><span class="w"></span>
+<span class="w">    </span><span class="nt">workflows.argoproj.io/rbac-rule-precedence</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1&quot;</span><span class="w"></span>
 </code></pre></div>
 <p>If no rule matches, we deny the user access.</p>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
 <p>You'll probably want to configure a default account to use if no other rule matches, e.g. a read-only account, you can do this as follows:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">metadata</span><span class="p">:</span>
-  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">read-only</span>
-  <span class="nt">annotations</span><span class="p">:</span>
-    <span class="nt">workflows.argoproj.io/rbac-rule</span><span class="p">:</span> <span class="s">&quot;true&quot;</span>
-    <span class="nt">workflows.argoproj.io/rbac-rule-precedence</span><span class="p">:</span> <span class="s">&quot;0&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read-only</span><span class="w"></span>
+<span class="w">  </span><span class="nt">annotations</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="nt">workflows.argoproj.io/rbac-rule</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="nt">workflows.argoproj.io/rbac-rule-precedence</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;0&quot;</span><span class="w"></span>
 </code></pre></div>
 <p>The precedence must be the lowest of all your service accounts.</p>
 </div>
@@ -2507,24 +2507,24 @@ Typically, on organization has a K8s cluster and a central team manages the clus
 To enable the feature, set env variable <code>SSO_DELEGATE_RBAC_TO_NAMESPACE=true</code> in your argo-server deployment.</p>
 <h4 id="recommended-usage">Recommended usage<a class="headerlink" href="#recommended-usage" title="Permanent link">&para;</a></h4>
 <p>Configure a default account in the installation namespace which would allow all users of your organization. We will use this service account to allow a user to login to the cluster. You could optionally add workflow read-only role and rolebinding if you wish to.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">v1</span>
-<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ServiceAccount</span>
-<span class="nt">metadata</span><span class="p">:</span>
-  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">user-default-login</span>
-  <span class="nt">annotations</span><span class="p">:</span>
-    <span class="nt">workflows.argoproj.io/rbac-rule</span><span class="p">:</span> <span class="s">&quot;true&quot;</span>
-    <span class="nt">workflows.argoproj.io/rbac-rule-precedence</span><span class="p">:</span> <span class="s">&quot;0&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span><span class="w"></span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ServiceAccount</span><span class="w"></span>
+<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">user-default-login</span><span class="w"></span>
+<span class="w">  </span><span class="nt">annotations</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="nt">workflows.argoproj.io/rbac-rule</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="nt">workflows.argoproj.io/rbac-rule-precedence</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;0&quot;</span><span class="w"></span>
 </code></pre></div>
 <p>Now, for the the namespace that you own, configure a service account which would allow members of your team to perform operations in your namespace.
 Make sure that the precedence of the namespace service account is higher than the precedence of the login service account. Create approprite role that you want to grant to this serviceaccount and bind it with a role-binding.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">v1</span>
-<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ServiceAccount</span>
-<span class="nt">metadata</span><span class="p">:</span>
-  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-namespace-read-write-user</span>
-  <span class="nt">namespace</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-namespace</span>
-  <span class="nt">annotations</span><span class="p">:</span>
-    <span class="nt">workflows.argoproj.io/rbac-rule</span><span class="p">:</span> <span class="s">&quot;&#39;my-team&#39;</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">groups&quot;</span>
-    <span class="nt">workflows.argoproj.io/rbac-rule-precedence</span><span class="p">:</span> <span class="s">&quot;1&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span><span class="w"></span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ServiceAccount</span><span class="w"></span>
+<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-namespace-read-write-user</span><span class="w"></span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-namespace</span><span class="w"></span>
+<span class="w">  </span><span class="nt">annotations</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="nt">workflows.argoproj.io/rbac-rule</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&#39;my-team&#39;</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">groups&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="nt">workflows.argoproj.io/rbac-rule-precedence</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1&quot;</span><span class="w"></span>
 </code></pre></div>
 <p>Using this, whenever a user is logged in via SSO and makes a request in 'my-namespace', and the <code>rbac-rule</code>matches, we will use this service account to allow the user to perform that operation in the namespace. If no serviceaccount matches in the namespace, the first serviceaccount(<code>user-default-login</code>) and its associated role will be used to perform the operation in the namespace.</p>
 <h2 id="sso-login-time">SSO Login Time<a class="headerlink" href="#sso-login-time" title="Permanent link">&para;</a></h2>
@@ -2532,9 +2532,9 @@ Make sure that the precedence of the namespace service account is higher than th
 <p>v2.12 and after</p>
 </blockquote>
 <p>By default, your SSO session will expire after 10 hours. You can change this by adding a sessionExpiry value to your <a href="../workflow-controller-configmap.yaml">workflow-controller-configmap.yaml</a> under the SSO heading.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">sso</span><span class="p">:</span>
-  <span class="c1"># Expiry defines how long your login is valid for in hours. (optional)</span>
-  <span class="nt">sessionExpiry</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">240h</span>
+<div class="highlight"><pre><span></span><code><span class="nt">sso</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="c1"># Expiry defines how long your login is valid for in hours. (optional)</span><span class="w"></span>
+<span class="w">  </span><span class="nt">sessionExpiry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">240h</span><span class="w"></span>
 </code></pre></div>
 <h2 id="custom-claims">Custom claims<a class="headerlink" href="#custom-claims" title="Permanent link">&para;</a></h2>
 <blockquote>
@@ -2542,13 +2542,13 @@ Make sure that the precedence of the namespace service account is higher than th
 </blockquote>
 <p>If your OIDC provider provides groups information with a claim name other than <code>groups</code>, you could configure config-map to specify custom claim name for groups. Argo now arbitary custom claims and any claim can be used for <code>expr eval</code>. However, since group information is displayed in UI, it still needs to be an array of strings with group names as elements.</p>
 <p>customClaim in this case will be mapped to <code>groups</code> key and we can use the same key <code>groups</code> for evaluating our expressions</p>
-<div class="highlight"><pre><span></span><code><span class="nt">sso</span><span class="p">:</span>
-  <span class="c1"># Specify custom claim name for OIDC groups.</span>
-  <span class="nt">customGroupClaimName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argo_groups</span>
+<div class="highlight"><pre><span></span><code><span class="nt">sso</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="c1"># Specify custom claim name for OIDC groups.</span><span class="w"></span>
+<span class="w">  </span><span class="nt">customGroupClaimName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo_groups</span><span class="w"></span>
 </code></pre></div>
 <p>If your OIDC provider provides groups information only using the userInfo endpoint (e.g. OKta), you could configure <code>userInfoPath</code> to specify the user info endpoint that contains the groups claim.
-<div class="highlight"><pre><span></span><code><span class="nt">sso</span><span class="p">:</span>
-  <span class="nt">userInfoPath</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/oauth2/v1/userinfo</span>
+<div class="highlight"><pre><span></span><code><span class="nt">sso</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">userInfoPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/oauth2/v1/userinfo</span><span class="w"></span>
 </code></pre></div></p>
 <h4 id="example-expr">Example expr<a class="headerlink" href="#example-expr" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="c1"># assuming customClaimGroupName: argo_groups</span>

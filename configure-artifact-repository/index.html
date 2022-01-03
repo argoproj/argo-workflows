@@ -2513,23 +2513,23 @@ specify a bucket region in your workflow configuration.</p>
 <li>Create a kubernetes secret to store the key.</li>
 <li>Configure <code>gcs</code> artifact as following in the yaml.</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="nt">artifacts</span><span class="p">:</span>
-  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">message</span>
-    <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/tmp/message</span>
-    <span class="nt">gcs</span><span class="p">:</span>
-      <span class="nt">bucket</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-bucket-name</span>
-      <span class="nt">key</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">path/in/bucket</span>
-      <span class="c1"># serviceAccountKeySecret is a secret selector.</span>
-      <span class="c1"># It references the k8s secret named &#39;my-gcs-credentials&#39;.</span>
-      <span class="c1"># This secret is expected to have have the key &#39;serviceAccountKey&#39;,</span>
-      <span class="c1"># containing the base64 encoded credentials</span>
-      <span class="c1"># to the bucket.</span>
-      <span class="c1">#</span>
-      <span class="c1"># If it&#39;s running on GKE and Workload Identity is used,</span>
-      <span class="c1"># serviceAccountKeySecret is not needed.</span>
-      <span class="nt">serviceAccountKeySecret</span><span class="p">:</span>
-        <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-gcs-credentials</span>
-        <span class="nt">key</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">serviceAccountKey</span>
+<div class="highlight"><pre><span></span><code><span class="nt">artifacts</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">message</span><span class="w"></span>
+<span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/tmp/message</span><span class="w"></span>
+<span class="w">    </span><span class="nt">gcs</span><span class="p">:</span><span class="w"></span>
+<span class="w">      </span><span class="nt">bucket</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-bucket-name</span><span class="w"></span>
+<span class="w">      </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">path/in/bucket</span><span class="w"></span>
+<span class="w">      </span><span class="c1"># serviceAccountKeySecret is a secret selector.</span><span class="w"></span>
+<span class="w">      </span><span class="c1"># It references the k8s secret named &#39;my-gcs-credentials&#39;.</span><span class="w"></span>
+<span class="w">      </span><span class="c1"># This secret is expected to have have the key &#39;serviceAccountKey&#39;,</span><span class="w"></span>
+<span class="w">      </span><span class="c1"># containing the base64 encoded credentials</span><span class="w"></span>
+<span class="w">      </span><span class="c1"># to the bucket.</span><span class="w"></span>
+<span class="w">      </span><span class="c1">#</span><span class="w"></span>
+<span class="w">      </span><span class="c1"># If it&#39;s running on GKE and Workload Identity is used,</span><span class="w"></span>
+<span class="w">      </span><span class="c1"># serviceAccountKeySecret is not needed.</span><span class="w"></span>
+<span class="w">      </span><span class="nt">serviceAccountKeySecret</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-gcs-credentials</span><span class="w"></span>
+<span class="w">        </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">serviceAccountKey</span><span class="w"></span>
 </code></pre></div>
 <p>If it's a GKE cluster, and Workload Identity is configured, there's no need to
 create the Service Account key and store it as a K8s secret,
@@ -2546,23 +2546,23 @@ access is on a per project rather than per bucket basis.</p>
 <li>Create a new key if needed.</li>
 <li>Configure <code>s3</code> artifact as following example.</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="nt">artifacts</span><span class="p">:</span>
-  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-output-artifact</span>
-    <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/my-output-artifact</span>
-    <span class="nt">s3</span><span class="p">:</span>
-      <span class="nt">endpoint</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">storage.googleapis.com</span>
-      <span class="nt">bucket</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-gcs-bucket-name</span>
-      <span class="c1"># NOTE that, by default, all output artifacts are automatically tarred and</span>
-      <span class="c1"># gzipped before saving. So as a best practice, .tgz or .tar.gz</span>
-      <span class="c1"># should be incorporated into the key name so the resulting file</span>
-      <span class="c1"># has an accurate file extension.</span>
-      <span class="nt">key</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">path/in/bucket/my-output-artifact.tgz</span>
-      <span class="nt">accessKeySecret</span><span class="p">:</span>
-        <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-gcs-s3-credentials</span>
-        <span class="nt">key</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">accessKey</span>
-      <span class="nt">secretKeySecret</span><span class="p">:</span>
-        <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-gcs-s3-credentials</span>
-        <span class="nt">key</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">secretKey</span>
+<div class="highlight"><pre><span></span><code><span class="nt">artifacts</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-output-artifact</span><span class="w"></span>
+<span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/my-output-artifact</span><span class="w"></span>
+<span class="w">    </span><span class="nt">s3</span><span class="p">:</span><span class="w"></span>
+<span class="w">      </span><span class="nt">endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">storage.googleapis.com</span><span class="w"></span>
+<span class="w">      </span><span class="nt">bucket</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-gcs-bucket-name</span><span class="w"></span>
+<span class="w">      </span><span class="c1"># NOTE that, by default, all output artifacts are automatically tarred and</span><span class="w"></span>
+<span class="w">      </span><span class="c1"># gzipped before saving. So as a best practice, .tgz or .tar.gz</span><span class="w"></span>
+<span class="w">      </span><span class="c1"># should be incorporated into the key name so the resulting file</span><span class="w"></span>
+<span class="w">      </span><span class="c1"># has an accurate file extension.</span><span class="w"></span>
+<span class="w">      </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">path/in/bucket/my-output-artifact.tgz</span><span class="w"></span>
+<span class="w">      </span><span class="nt">accessKeySecret</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-gcs-s3-credentials</span><span class="w"></span>
+<span class="w">        </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">accessKey</span><span class="w"></span>
+<span class="w">      </span><span class="nt">secretKeySecret</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-gcs-s3-credentials</span><span class="w"></span>
+<span class="w">        </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">secretKey</span><span class="w"></span>
 </code></pre></div>
 <h2 id="configuring-alibaba-cloud-oss-object-storage-service">Configuring Alibaba Cloud OSS (Object Storage Service)<a class="headerlink" href="#configuring-alibaba-cloud-oss-object-storage-service" title="Permanent link">&para;</a></h2>
 <p>To configure artifact storage for Alibaba Cloud OSS, please first follow
@@ -2571,24 +2571,24 @@ an OSS account and bucket.</p>
 <p>Once it's set up, you can find endpoint and bucket
 information on your OSS dashboard and then use them like the following to
 configure the artifact storage for your workflow:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">artifacts</span><span class="p">:</span>
-  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-art</span>
-    <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/my-artifact</span>
-    <span class="nt">oss</span><span class="p">:</span>
-      <span class="nt">endpoint</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">http://oss-cn-hangzhou-zmf.aliyuncs.com</span>
-      <span class="nt">bucket</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">test-bucket-name</span>
-      <span class="nt">key</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">test/mydirectory/</span> <span class="c1"># this is path in the bucket</span>
-      <span class="c1"># accessKeySecret and secretKeySecret are secret selectors.</span>
-      <span class="c1"># It references the k8s secret named &#39;my-oss-credentials&#39;.</span>
-      <span class="c1"># This secret is expected to have have the keys &#39;accessKey&#39;</span>
-      <span class="c1"># and &#39;secretKey&#39;, containing the base64 encoded credentials</span>
-      <span class="c1"># to the bucket.</span>
-      <span class="nt">accessKeySecret</span><span class="p">:</span>
-        <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-oss-credentials</span>
-        <span class="nt">key</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">accessKey</span>
-      <span class="nt">secretKeySecret</span><span class="p">:</span>
-        <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-oss-credentials</span>
-        <span class="nt">key</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">secretKey</span>
+<div class="highlight"><pre><span></span><code><span class="nt">artifacts</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-art</span><span class="w"></span>
+<span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/my-artifact</span><span class="w"></span>
+<span class="w">    </span><span class="nt">oss</span><span class="p">:</span><span class="w"></span>
+<span class="w">      </span><span class="nt">endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://oss-cn-hangzhou-zmf.aliyuncs.com</span><span class="w"></span>
+<span class="w">      </span><span class="nt">bucket</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test-bucket-name</span><span class="w"></span>
+<span class="w">      </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test/mydirectory/</span><span class="w"> </span><span class="c1"># this is path in the bucket</span><span class="w"></span>
+<span class="w">      </span><span class="c1"># accessKeySecret and secretKeySecret are secret selectors.</span><span class="w"></span>
+<span class="w">      </span><span class="c1"># It references the k8s secret named &#39;my-oss-credentials&#39;.</span><span class="w"></span>
+<span class="w">      </span><span class="c1"># This secret is expected to have have the keys &#39;accessKey&#39;</span><span class="w"></span>
+<span class="w">      </span><span class="c1"># and &#39;secretKey&#39;, containing the base64 encoded credentials</span><span class="w"></span>
+<span class="w">      </span><span class="c1"># to the bucket.</span><span class="w"></span>
+<span class="w">      </span><span class="nt">accessKeySecret</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-oss-credentials</span><span class="w"></span>
+<span class="w">        </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">accessKey</span><span class="w"></span>
+<span class="w">      </span><span class="nt">secretKeySecret</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-oss-credentials</span><span class="w"></span>
+<span class="w">        </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">secretKey</span><span class="w"></span>
 </code></pre></div>
 <p>You can also set <code>createBucketIfNotPresent</code> to <code>true</code> to tell the artifact driver to automatically create the OSS bucket if it doesn't exist yet when saving artifacts. Note that you'll need to set additional permission for your OSS account to create new buckets.</p>
 <h1 id="configure-the-default-artifact-repository">Configure the Default Artifact Repository<a class="headerlink" href="#configure-the-default-artifact-repository" title="Permanent link">&para;</a></h1>

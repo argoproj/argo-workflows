@@ -2583,29 +2583,29 @@ argo-server   LoadBalancer   <span class="m">10</span>.43.43.130   <span class="
 <h3 id="ingress">Ingress<a class="headerlink" href="#ingress" title="Permanent link">&para;</a></h3>
 <p>You can get ingress working as follows:</p>
 <p>Add <code>BASE_HREF</code> as environment variable to <code>deployment/argo-server</code>. Do not forget to add a trailing '/' character.</p>
-<div class="highlight"><pre><span></span><code><span class="nn">---</span>
-<span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
-<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Deployment</span>
-<span class="nt">metadata</span><span class="p">:</span>
-  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argo-server</span>
-<span class="nt">spec</span><span class="p">:</span>
-  <span class="nt">selector</span><span class="p">:</span>
-    <span class="nt">matchLabels</span><span class="p">:</span>
-      <span class="nt">app</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argo-server</span>
-  <span class="nt">template</span><span class="p">:</span>
-    <span class="nt">metadata</span><span class="p">:</span>
-      <span class="nt">labels</span><span class="p">:</span>
-        <span class="nt">app</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argo-server</span>
-    <span class="nt">spec</span><span class="p">:</span>
-      <span class="nt">containers</span><span class="p">:</span>
-      <span class="p p-Indicator">-</span> <span class="nt">args</span><span class="p">:</span>
-        <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">server</span>
-        <span class="nt">env</span><span class="p">:</span>
-          <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">BASE_HREF</span>
-            <span class="nt">value</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/argo/</span>
-        <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj/argocli:latest</span>
-        <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argo-server</span>
-<span class="nn">...</span>
+<div class="highlight"><pre><span></span><code><span class="nn">---</span><span class="w"></span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span><span class="w"></span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span><span class="w"></span>
+<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-server</span><span class="w"></span>
+<span class="nt">spec</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">selector</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span><span class="w"></span>
+<span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-server</span><span class="w"></span>
+<span class="w">  </span><span class="nt">template</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
+<span class="w">      </span><span class="nt">labels</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-server</span><span class="w"></span>
+<span class="w">    </span><span class="nt">spec</span><span class="p">:</span><span class="w"></span>
+<span class="w">      </span><span class="nt">containers</span><span class="p">:</span><span class="w"></span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">args</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">server</span><span class="w"></span>
+<span class="w">        </span><span class="nt">env</span><span class="p">:</span><span class="w"></span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">BASE_HREF</span><span class="w"></span>
+<span class="w">            </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/argo/</span><span class="w"></span>
+<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj/argocli:latest</span><span class="w"></span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-server</span><span class="w"></span>
+<span class="nn">...</span><span class="w"></span>
 </code></pre></div>
 <p>Create a ingress, with the annotation <code>ingress.kubernetes.io/rewrite-target: /</code>:</p>
 <blockquote>
@@ -2614,22 +2614,22 @@ that the backend uses HTTPS. The method depends on the ingress controller, e.g.
 Traefik expects an <code>ingress.kubernetes.io/protocol</code> annotation, while ingress-nginx
 uses <code>nginx.ingress.kubernetes.io/backend-protocol</code></p>
 </blockquote>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">networking.k8s.io/v1beta1</span>
-<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Ingress</span>
-<span class="nt">metadata</span><span class="p">:</span>
-  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argo-server</span>
-  <span class="nt">annotations</span><span class="p">:</span>
-    <span class="nt">ingress.kubernetes.io/rewrite-target</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/$2</span>
-    <span class="nt">ingress.kubernetes.io/protocol</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">https</span> <span class="c1"># Traefik</span>
-    <span class="nt">nginx.ingress.kubernetes.io/backend-protocol</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">https</span> <span class="c1"># ingress-nginx</span>
-<span class="nt">spec</span><span class="p">:</span>
-  <span class="nt">rules</span><span class="p">:</span>
-    <span class="p p-Indicator">-</span> <span class="nt">http</span><span class="p">:</span>
-        <span class="nt">paths</span><span class="p">:</span>
-          <span class="p p-Indicator">-</span> <span class="nt">backend</span><span class="p">:</span>
-              <span class="nt">serviceName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argo-server</span>
-              <span class="nt">servicePort</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2746</span>
-            <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/argo(/|$)(.*)</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">networking.k8s.io/v1beta1</span><span class="w"></span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Ingress</span><span class="w"></span>
+<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-server</span><span class="w"></span>
+<span class="w">  </span><span class="nt">annotations</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="nt">ingress.kubernetes.io/rewrite-target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/$2</span><span class="w"></span>
+<span class="w">    </span><span class="nt">ingress.kubernetes.io/protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https</span><span class="w"> </span><span class="c1"># Traefik</span><span class="w"></span>
+<span class="w">    </span><span class="nt">nginx.ingress.kubernetes.io/backend-protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https</span><span class="w"> </span><span class="c1"># ingress-nginx</span><span class="w"></span>
+<span class="nt">spec</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">rules</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">http</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="nt">paths</span><span class="p">:</span><span class="w"></span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">backend</span><span class="p">:</span><span class="w"></span>
+<span class="w">              </span><span class="nt">serviceName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-server</span><span class="w"></span>
+<span class="w">              </span><span class="nt">servicePort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2746</span><span class="w"></span>
+<span class="w">            </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/argo(/|$)(.*)</span><span class="w"></span>
 </code></pre></div>
 <p><a href="https://github.com/argoproj/argo-workflows/issues/3080">Learn more</a></p>
 <h2 id="security">Security<a class="headerlink" href="#security" title="Permanent link">&para;</a></h2>

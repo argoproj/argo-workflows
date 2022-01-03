@@ -2487,22 +2487,22 @@
 <p><code>CronWorkflow</code> are workflows that run on a preset schedule. They are designed to be converted from <code>Workflow</code> easily and to mimick the same options as Kubernetes <code>CronJob</code>. In essence, <code>CronWorkflow</code> = <code>Workflow</code> + some specific cron options.</p>
 <h2 id="cronworkflow-spec"><code>CronWorkflow</code> Spec<a class="headerlink" href="#cronworkflow-spec" title="Permanent link">&para;</a></h2>
 <p>An example <code>CronWorkflow</code> spec would look like:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
-<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">CronWorkflow</span>
-<span class="nt">metadata</span><span class="p">:</span>
-  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">test-cron-wf</span>
-<span class="nt">spec</span><span class="p">:</span>
-  <span class="nt">schedule</span><span class="p">:</span> <span class="s">&quot;*</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*&quot;</span>
-  <span class="nt">concurrencyPolicy</span><span class="p">:</span> <span class="s">&quot;Replace&quot;</span>
-  <span class="nt">startingDeadlineSeconds</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
-  <span class="nt">workflowSpec</span><span class="p">:</span>
-    <span class="nt">entrypoint</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">whalesay</span>
-    <span class="nt">templates</span><span class="p">:</span>
-    <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">whalesay</span>
-      <span class="nt">container</span><span class="p">:</span>
-        <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">alpine:3.6</span>
-        <span class="nt">command</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">sh</span><span class="p p-Indicator">,</span> <span class="nv">-c</span><span class="p p-Indicator">]</span>
-        <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;date;</span><span class="nv"> </span><span class="s">sleep</span><span class="nv"> </span><span class="s">90&quot;</span><span class="p p-Indicator">]</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span><span class="w"></span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CronWorkflow</span><span class="w"></span>
+<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test-cron-wf</span><span class="w"></span>
+<span class="nt">spec</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">schedule</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;*</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="nt">concurrencyPolicy</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Replace&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="nt">startingDeadlineSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span><span class="w"></span>
+<span class="w">  </span><span class="nt">workflowSpec</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">whalesay</span><span class="w"></span>
+<span class="w">    </span><span class="nt">templates</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">whalesay</span><span class="w"></span>
+<span class="w">      </span><span class="nt">container</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">alpine:3.6</span><span class="w"></span>
+<span class="w">        </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">sh</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-c</span><span class="p p-Indicator">]</span><span class="w"></span>
+<span class="w">        </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;date;</span><span class="nv"> </span><span class="s">sleep</span><span class="nv"> </span><span class="s">90&quot;</span><span class="p p-Indicator">]</span><span class="w"></span>
 </code></pre></div>
 <h3 id="workflowspec-and-workflowmetadata"><code>workflowSpec</code> and <code>workflowMetadata</code><a class="headerlink" href="#workflowspec-and-workflowmetadata" title="Permanent link">&para;</a></h3>
 <p><code>CronWorkflow.spec.workflowSpec</code> is the same type as <code>Workflow.spec</code> and serves as a template for <code>Workflow</code> objects that are created from it. Everything under this spec will be converted to a <code>Workflow</code>.</p>

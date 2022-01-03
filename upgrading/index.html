@@ -2606,21 +2606,21 @@ is logged.</p>
 </ul>
 <h3 id="ab361667a-featcontroller-emissary-executor-4925"><a href="https://github.com/argoproj/argo-workflows/commit/ab361667a">ab361667a</a> feat(controller) Emissary executor.  (#4925)<a class="headerlink" href="#ab361667a-featcontroller-emissary-executor-4925" title="Permanent link">&para;</a></h3>
 <p>The Emissary executor is not a breaking change per-se, but it is brand new so we would not recommend you use it by default yet. Instead, we recommend you test it out on some workflows using <a href="https://github.com/argoproj/argo-workflows/blob/master/docs/workflow-controller-configmap.yaml#L125">config map configuration</a>.</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Specifies the executor to use.</span>
-<span class="c1">#</span>
-<span class="c1"># You can use this to:</span>
-<span class="c1"># * Tailor your executor based on your preference for security or performance.</span>
-<span class="c1"># * Test out an executor without committing yourself to use it for every workflow.</span>
-<span class="c1">#</span>
-<span class="c1"># To find out which executor was actually use, see the `wait` container logs.</span>
-<span class="c1">#</span>
-<span class="c1"># The list is in order of precedence; the first matching executor is used.</span>
-<span class="c1"># This has precedence over `containerRuntimeExecutor`.</span>
-<span class="nt">containerRuntimeExecutors</span><span class="p">:</span> <span class="p p-Indicator">|</span>
-  <span class="no">- name: emissary</span>
-    <span class="no">selector:</span>
-      <span class="no">matchLabels:</span>
-        <span class="no">workflows.argoproj.io/container-runtime-executor: emissary</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># Specifies the executor to use.</span><span class="w"></span>
+<span class="c1">#</span><span class="w"></span>
+<span class="c1"># You can use this to:</span><span class="w"></span>
+<span class="c1"># * Tailor your executor based on your preference for security or performance.</span><span class="w"></span>
+<span class="c1"># * Test out an executor without committing yourself to use it for every workflow.</span><span class="w"></span>
+<span class="c1">#</span><span class="w"></span>
+<span class="c1"># To find out which executor was actually use, see the `wait` container logs.</span><span class="w"></span>
+<span class="c1">#</span><span class="w"></span>
+<span class="c1"># The list is in order of precedence; the first matching executor is used.</span><span class="w"></span>
+<span class="c1"># This has precedence over `containerRuntimeExecutor`.</span><span class="w"></span>
+<span class="nt">containerRuntimeExecutors</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w"></span>
+<span class="w">  </span><span class="no">- name: emissary</span><span class="w"></span>
+<span class="w">    </span><span class="no">selector:</span><span class="w"></span>
+<span class="w">      </span><span class="no">matchLabels:</span><span class="w"></span>
+<span class="w">        </span><span class="no">workflows.argoproj.io/container-runtime-executor: emissary</span><span class="w"></span>
 </code></pre></div>
 <h3 id="be63efe89-featcontroller-expression-template-tags-resolves-4548-1293-5115"><a href="https://github.com/argoproj/argo-workflows/commit/e6fa41a">be63efe89</a> feat(controller): Expression template tags. Resolves #4548 &amp; #1293 (#5115)<a class="headerlink" href="#be63efe89-featcontroller-expression-template-tags-resolves-4548-1293-5115" title="Permanent link">&para;</a></h3>
 <p>This PR introduced a new expression syntax know as "expression tag template". A user has reported that this does not
@@ -2633,8 +2633,8 @@ always play nicely with the <code>when</code> condition syntax (Goevaluate).</p>
 <h3 id="defbd600e-fix-default-argo_securetrue-fixes-5607-5626"><a href="https://github.com/argoproj/argo-workflows/commit/defbd600e37258c8cdf30f64d4da9f4563eb7901">defbd600e</a> fix: Default ARGO_SECURE=true. Fixes #5607 (#5626)<a class="headerlink" href="#defbd600e-fix-default-argo_securetrue-fixes-5607-5626" title="Permanent link">&para;</a></h3>
 <p>The server now starts with TLS enabled by default if a key is available. The original behaviour can be configured with <code>--secure=false</code>.</p>
 <p>If you have an ingress, you may need to add the appropriate annotations:(varies by ingress):</p>
-<div class="highlight"><pre><span></span><code><span class="nt">alb.ingress.kubernetes.io/backend-protocol</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">HTTPS</span>
-<span class="nt">nginx.ingress.kubernetes.io/backend-protocol</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">HTTPS</span>
+<div class="highlight"><pre><span></span><code><span class="nt">alb.ingress.kubernetes.io/backend-protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HTTPS</span><span class="w"></span>
+<span class="nt">nginx.ingress.kubernetes.io/backend-protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HTTPS</span><span class="w"></span>
 </code></pre></div>
 <h3 id="01d310235-choreserver-required-authentication-by-default-resolves-5206-5211"><a href="https://github.com/argoproj/argo-workflows/commit/01d310235a9349e6d552c758964cc2250a9e9616">01d310235</a> chore(server)!: Required authentication by default. Resolves #5206 (#5211)<a class="headerlink" href="#01d310235-choreserver-required-authentication-by-default-resolves-5206-5211" title="Permanent link">&para;</a></h3>
 <p>To login to the user interface, you must provide a login token. The original behaviour can be configured with <code>--auth-mode=server</code>.</p>
