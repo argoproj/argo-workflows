@@ -119,7 +119,7 @@ jobs:
       - run: make wait
         timeout-minutes: 4
       - run: make ${{matrix.test}} E2E_TIMEOUT=1m STATIC_FILES=false
-      - name: Upload e2e results
+      - name: Upload e2e results     # Codefresh changes
         uses: actions/upload-artifact@v2
         with:
           name: e2e-${{matrix.test}}-${{matrix.containerRuntimeExecutor}}-${{matrix.profile}}.log
