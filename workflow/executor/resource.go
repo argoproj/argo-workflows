@@ -216,7 +216,6 @@ func (we *WorkflowExecutor) checkResourceState(ctx context.Context, selfLink str
 	stream, err := request.Stream(ctx)
 
 	if err != nil {
-		err = errors.Cause(err)
 		if apierr.IsNotFound(err) {
 			return false, errors.Errorf(errors.CodeNotFound, "The resource has been deleted while its status was still being checked. Will not be retried: %v", err)
 		}

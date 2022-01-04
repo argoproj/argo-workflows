@@ -40,7 +40,7 @@ func TestWrap(t *testing.T) {
 //	assert.Equal(t, "hello world", intWrap.Error())
 //}
 
-func TestStackTrace(t *testing.T) {
-	err := errors.New("MYCODE", "my message")
-	assert.Contains(t, fmt.Sprintf("%+v", err), "errors_test.go")
-}
+//func TestStackTrace(t *testing.T) {
+//	err := errors.New("MYCODE", "my message")
+//	assert.Contains(t, fmt.Sprintf("%+v", err), "errors_test.go")
+//}

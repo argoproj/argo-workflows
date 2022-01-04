@@ -199,5 +199,5 @@ func TestResourceExecRetry(t *testing.T) {
 
 	_, _, _, err := we.ExecResource("", "../../examples/hello-world.yaml", nil)
 	assert.Error(t, err)
-	assert.Equal(t, "no more retries i/o timeout", err.Error())
+	assert.Equal(t, "no more retries i/o timeout: exit status 1: i/o timeout: exit status 1", err.Error())
 }
