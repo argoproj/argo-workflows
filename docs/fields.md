@@ -184,8 +184,6 @@ Workflow is the definition of a workflow resource
 
 - [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-json-patch-workflow.yaml)
 
-- [`k8s-kubeflow-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-kubeflow-jobs.yaml)
-
 - [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
@@ -193,6 +191,8 @@ Workflow is the definition of a workflow resource
 - [`k8s-patch-basic.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch-basic.yaml)
 
 - [`k8s-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch.yaml)
+
+- [`k8s-resource-log-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-resource-log-selector.yaml)
 
 - [`k8s-set-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-set-owner-reference.yaml)
 
