@@ -3143,6 +3143,33 @@ func TestStepsOutputParametersForContainerSet(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+var globalAnnotationsAndLabels = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+  labels:
+    testLabel: foobar
+  annotations:
+    workflows.argoproj.io/description: |
+      This is a simple hello world example.
+spec:
+  entrypoint: whalesay1
+  arguments:
+    parameters:
+    - name: message
+      value: hello world
+  templates:
+  - name: whalesay1
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["{{workflow.annotations}},  {{workflow.labels}}"]`
+
+func TestResolveAnnotationsAndLabelsJSson(t *testing.T) {
+	_, err := validate(globalAnnotationsAndLabels)
+	assert.NoError(t, err)
+}
+
 var testInitContainerHasName = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -3175,7 +3202,6 @@ spec:
 `
 
 func TestInitContainerHasName(t *testing.T) {
-
 	_, err := validate(testInitContainerHasName)
 	assert.EqualError(t, err, "templates.main.tasks.spurious initContainers must all have container name")
 }
