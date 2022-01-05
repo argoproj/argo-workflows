@@ -1,3 +1,25 @@
+// ________________________________________________________________________________
+//
+// Abstract Syntax Tree
+//
+// The AST for CWL  is represented in `ast_cl.go`
+// Note that a few modifications have been made to
+// the AST to make it more convenient to represent in Golang.
+//
+// Sum Types
+//
+// Sum Types (types of the form "ty | []ty") are represented by interfaces,
+// some extra type safety has been added by requiring the implementation of a dummy method in order to satisfy the interface.
+//
+// Normalisation
+//
+// Note how maps are not present in the AST
+// maps are to be represented by arrays.
+// This may incur a small performance hit for large arrays where lookup is required (but generally shouldn't since we will be traversing the entire data structure usually).
+//
+// Note how sum types of the form "ty | []ty" are represented in the AST.
+// This form is generally normalised to simply be "[]ty", the distinction between "ty | []ty" is made by examining the
+// length of the array.
 package transpiler
 
 type CWLRequirements interface {
@@ -159,7 +181,18 @@ type CommandlineInputArraySchemaType interface {
 	isCommandlineInputArraySchemaType()
 }
 
-func (_ CWLNull) isCommandlineInputArraySchemaType() {}
+func (_ CWLNull) isCommandlineInputArraySchemaType()                      {}
+func (_ CWLBool) isCommandlineInputArraySchemaType()                      {}
+func (_ CWLInt) isCommandlineInputArraySchemaType()                       {}
+func (_ CWLLong) isCommandlineInputArraySchemaType()                      {}
+func (_ CWLFloat) isCommandlineInputArraySchemaType()                     {}
+func (_ CWLDouble) isCommandlineInputArraySchemaType()                    {}
+func (_ CWLString) isCommandlineInputArraySchemaType()                    {}
+func (_ CWLFile) isCommandlineInputArraySchemaType()                      {}
+func (_ CWLDirectory) isCommandlineInputArraySchemaType()                 {}
+func (_ CommandlineInputRecordSchema) isCommandlineInputArraySchemaType() {}
+func (_ CommandlineInputArraySchema) isCommandlineInputArraySchemaType()  {}
+func (_ CommandlineInputEnumSchema) isCommandlineInputArraySchemaType()   {}
 
 type CommandlineInputArraySchema struct {
 	Items        CommandlineInputArraySchemaType
@@ -190,7 +223,6 @@ type CommandlineInputRecordSchema struct {
 
 type CommandlineInputParameterType interface {
 	isCLIParamType()
-	toRecordFieldType() CommandlineInputRecordFieldType
 }
 
 func (_ CWLNull) isCLIParamType()                      {}
@@ -207,30 +239,6 @@ func (_ CommandlineInputRecordSchema) isCLIParamType() {}
 func (_ CommandlineInputEnumSchema) isCLIParamType()   {}
 func (_ CommandlineInputArraySchema) isCLIParamType()  {}
 func (_ String) isCLIParamType()                       {}
-
-func (val CWLNull) toRecordFieldType() CommandlineInputRecordFieldType      { return &val }
-func (val CWLBool) toRecordFieldType() CommandlineInputRecordFieldType      { return &val }
-func (val CWLInt) toRecordFieldType() CommandlineInputRecordFieldType       { return &val }
-func (val CWLLong) toRecordFieldType() CommandlineInputRecordFieldType      { return &val }
-func (val CWLFloat) toRecordFieldType() CommandlineInputRecordFieldType     { return &val }
-func (val CWLDouble) toRecordFieldType() CommandlineInputRecordFieldType    { return &val }
-func (val CWLString) toRecordFieldType() CommandlineInputRecordFieldType    { return &val }
-func (val CWLFile) toRecordFieldType() CommandlineInputRecordFieldType      { return &val }
-func (val CWLDirectory) toRecordFieldType() CommandlineInputRecordFieldType { return &val }
-func (val CWLStdin) toRecordFieldType() CommandlineInputRecordFieldType     { return nil }
-func (val CommandlineInputRecordSchema) toRecordFieldType() CommandlineInputRecordFieldType {
-	return &val
-}
-
-func (val CommandlineInputEnumSchema) toRecordFieldType() CommandlineInputRecordFieldType {
-	return &val
-}
-
-func (val CommandlineInputArraySchema) toRecordFieldType() CommandlineInputRecordFieldType {
-	return &val
-}
-
-func (val String) toRecordFieldType() CommandlineInputRecordFieldType { return nil }
 
 type CommandlineBinding struct {
 	LoadContents  *bool
