@@ -33,7 +33,7 @@ type ArtifactDriver struct {
 
 var (
 	_            common.ArtifactDriver = &ArtifactDriver{}
-	defaultRetry                       = wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1}
+	defaultRetry                       = wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1, Cap: time.Minute * 10}
 )
 
 // from https://github.com/googleapis/google-cloud-go/blob/master/storage/go110.go
@@ -207,11 +207,13 @@ func (g *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error 
 			log.Infof("GCS Save path: %s, key: %s", path, outputArtifact.GCS.Key)
 			client, err := g.newGCSClient()
 			if err != nil {
+				log.Warnf("GCS Save error - newGCSClient: %v", err)
 				return !isTransientGCSErr(err), err
 			}
 			defer client.Close()
 			err = uploadObjects(client, outputArtifact.GCS.Bucket, outputArtifact.GCS.Key, path)
 			if err != nil {
+				log.Warnf("GCS Save error - uploadObjects: %v", err)
 				return !isTransientGCSErr(err), err
 			}
 			return true, nil
