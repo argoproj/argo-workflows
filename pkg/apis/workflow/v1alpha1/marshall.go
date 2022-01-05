@@ -17,6 +17,9 @@ func MustUnmarshal(text, v interface{}) {
 	case string:
 		MustUnmarshal([]byte(x), v)
 	case []byte:
+		if len(x) == 0 {
+			panic("no text to unmarshal")
+		}
 		if x[0] == '@' {
 			filename := string(x[1:])
 			y, err := ioutil.ReadFile(filepath.Clean(filename))
