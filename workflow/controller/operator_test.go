@@ -366,6 +366,8 @@ func TestGlobalParams(t *testing.T) {
 	assert.Contains(t, woc.globalParams, "workflow.name")
 	assert.Contains(t, woc.globalParams, "workflow.namespace")
 	assert.Contains(t, woc.globalParams, "workflow.parameters")
+	assert.Contains(t, woc.globalParams, "workflow.annotations")
+	assert.Contains(t, woc.globalParams, "workflow.labels")
 	assert.Contains(t, woc.globalParams, "workflow.serviceAccountName")
 	assert.Contains(t, woc.globalParams, "workflow.uid")
 
