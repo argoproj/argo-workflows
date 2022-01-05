@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"go.deanishe.net/env"
+
 	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
 	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
 	"github.com/argoproj/pkg/stats"
@@ -106,7 +108,7 @@ See %s`, help.ArgoServer),
 
 			var tlsConfig *tls.Config
 			if secure {
-				tlsMinVersion, err := env.GetInt("TLS_MIN_VERSION", tls.VersionTLS12)
+				tlsMinVersion := env.GetInt("TLS_MIN_VERSION", tls.VersionTLS12)
 				if err != nil {
 					return err
 				}

@@ -78,7 +78,10 @@ require (
 	upper.io/db.v3 v3.6.3+incompatible
 )
 
-require github.com/go-git/go-git/v5 v5.3.0
+require (
+	github.com/go-git/go-git/v5 v5.3.0
+	go.deanishe.net/env v0.5.1
+)
 
 require (
 	cloud.google.com/go v0.81.0 // indirect
