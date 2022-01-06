@@ -12,7 +12,8 @@ import {ResourceEditor} from '../../../shared/components/resource-editor/resourc
 import {services} from '../../../shared/services';
 import {WorkflowArtifacts} from '../../../workflows/components/workflow-artifacts';
 
-import {getPodName} from '../../../shared/pod-name';
+import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
+import {getPodName, getTemplateNameFromNode} from '../../../shared/pod-name';
 import {WorkflowResourcePanel} from '../../../workflows/components/workflow-details/workflow-resource-panel';
 import {WorkflowLogsViewer} from '../../../workflows/components/workflow-logs-viewer/workflow-logs-viewer';
 import {WorkflowNodeInfo} from '../../../workflows/components/workflow-node-info/workflow-node-info';
@@ -252,8 +253,13 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
     private get podName() {
         if (this.nodeId && this.state.workflow) {
             const workflowName = this.state.workflow.metadata.name;
-            const {name, templateName} = this.node;
-            return getPodName(workflowName, name, templateName, this.nodeId);
+            let annotations: {[name: string]: string} = {};
+            if (typeof this.state.workflow.metadata.annotations !== 'undefined') {
+                annotations = this.state.workflow.metadata.annotations;
+            }
+            const version = annotations[ANNOTATION_KEY_POD_NAME_VERSION];
+            const templateName = getTemplateNameFromNode(this.node);
+            return getPodName(workflowName, this.node.name, templateName, this.nodeId, version);
         }
     }
 

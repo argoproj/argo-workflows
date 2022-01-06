@@ -134,16 +134,16 @@ export const GraphPanel = (props: Props) => {
                         ]}
                     />
                     <a onClick={() => setHorizontal(s => !s)} title='Horizontal/vertical layout'>
-                        <i className={`fa ${horizontal ? 'fa-long-arrow-alt-right' : 'fa-long-arrow-alt-down'}`} />
+                        <i className={`fa ${horizontal ? 'fa-long-arrow-alt-right' : 'fa-long-arrow-alt-down'} fa-fw`} />
                     </a>
                     <a onClick={() => setNodeSize(s => s * 1.2)} title='Zoom in'>
-                        <i className='fa fa-search-plus' />
+                        <i className='fa fa-search-plus fa-fw' />
                     </a>
                     <a onClick={() => setNodeSize(s => s / 1.2)} title='Zoom out'>
-                        <i className='fa fa-search-minus' />
+                        <i className='fa fa-search-minus fa-fw' />
                     </a>
                     <a onClick={() => setFast(s => !s)} title='Use faster, but less pretty renderer' className={fast ? 'active' : ''}>
-                        <i className='fa fa-bolt' />
+                        <i className='fa fa-bolt fa-fw' />
                     </a>
                     {props.options}
                     <div className='node-search-bar'>

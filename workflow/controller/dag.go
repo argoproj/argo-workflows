@@ -9,11 +9,13 @@ import (
 	"time"
 
 	"github.com/antonmedv/expr"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/template"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 )
 
@@ -299,6 +301,14 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 		node = woc.wf.GetNodeByName(nodeName)
 		node.Outputs = outputs
 		woc.wf.Status.Nodes[node.ID] = *node
+		if node.MemoizationStatus != nil {
+			c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
+			err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
+			if err != nil {
+				woc.log.WithFields(log.Fields{"nodeID": node.ID}).WithError(err).Error("Failed to save node outputs to cache")
+				node.Phase = wfv1.NodeError
+			}
+		}
 	}
 
 	woc.updateOutboundNodesForTargetTasks(dagCtx, targetTasks, nodeName)
@@ -437,7 +447,12 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 	// For example, if we had task A with withItems of ['foo', 'bar'] which expanded to ['A(0:foo)', 'A(1:bar)'], we still
 	// need to create a node for A.
 	if task.ShouldExpand() {
-		if taskGroupNode == nil {
+		// DAG task with empty withParams list should be skipped
+		if len(expandedTasks) == 0 {
+			skipReason := "Skipped, empty params"
+			woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeSkipped, skipReason)
+			connectDependencies(nodeName)
+		} else if taskGroupNode == nil {
 			connectDependencies(nodeName)
 			taskGroupNode = woc.initializeNode(nodeName, wfv1.NodeTypeTaskGroup, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeRunning, "")
 		}

@@ -79,8 +79,21 @@ const (
 // PodGCStrategy is the strategy when to delete completed pods for GC.
 type PodGCStrategy string
 
+func (s PodGCStrategy) IsValid() bool {
+	switch s {
+	case PodGCOnPodNone,
+		PodGCOnPodCompletion,
+		PodGCOnPodSuccess,
+		PodGCOnWorkflowCompletion,
+		PodGCOnWorkflowSuccess:
+		return true
+	}
+	return false
+}
+
 // PodGCStrategy
 const (
+	PodGCOnPodNone            PodGCStrategy = ""
 	PodGCOnPodCompletion      PodGCStrategy = "OnPodCompletion"
 	PodGCOnPodSuccess         PodGCStrategy = "OnPodSuccess"
 	PodGCOnWorkflowCompletion PodGCStrategy = "OnWorkflowCompletion"
@@ -848,24 +861,22 @@ type PodGC struct {
 	LabelSelector *metav1.LabelSelector `json:"labelSelector,omitempty" protobuf:"bytes,2,opt,name=labelSelector"`
 }
 
-// Matches returns whether the pod labels match with the label selector specified in podGC.
-func (podGC *PodGC) Matches(labels labels.Set) (bool, error) {
+// GetLabelSelector gets the label selector from podGC.
+func (podGC *PodGC) GetLabelSelector() (labels.Selector, error) {
 	if podGC == nil {
-		return true, nil
+		return labels.Nothing(), nil
 	}
-	selector, err := metav1.LabelSelectorAsSelector(podGC.LabelSelector)
-	if err != nil {
-		return false, err
+	if podGC.LabelSelector == nil {
+		return labels.Everything(), nil
 	}
-	return selector.Matches(labels), nil
+	return metav1.LabelSelectorAsSelector(podGC.LabelSelector)
 }
 
-// GetLabelSelector gets the label selector from podGC.
-func (podGC *PodGC) GetLabelSelector() *metav1.LabelSelector {
-	if podGC != nil && podGC.LabelSelector != nil {
-		return podGC.LabelSelector
+func (podGC *PodGC) GetStrategy() PodGCStrategy {
+	if podGC != nil {
+		return podGC.Strategy
 	}
-	return nil
+	return PodGCOnPodNone
 }
 
 // VolumeClaimGC describes how to delete volumes from completed Workflows
@@ -2429,7 +2440,7 @@ func (tmpl *Template) GetVolumeMounts() []apiv1.VolumeMount {
 
 // whether or not the template can and will have outputs (i.e. exit code and result)
 func (tmpl *Template) HasOutput() bool {
-	return tmpl.Container != nil || tmpl.ContainerSet.HasContainerNamed("main") || tmpl.Script != nil || tmpl.Data != nil
+	return tmpl.Container != nil || tmpl.ContainerSet.HasContainerNamed("main") || tmpl.Script != nil || tmpl.Data != nil || tmpl.HTTP != nil
 }
 
 // if logs should be saved as an artifact

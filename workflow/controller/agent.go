@@ -69,11 +69,9 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	podName := woc.getAgentPodName()
 
 	obj, exists, err := woc.controller.podInformer.GetStore().Get(cache.ExplicitKey(woc.wf.Namespace + "/" + podName))
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pod from informer store: %w", err)
 	}
-
 	if exists {
 		existing, ok := obj.(*apiv1.Pod)
 		if ok {
@@ -99,10 +97,11 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			ImagePullSecrets: woc.execWf.Spec.ImagePullSecrets,
 			Containers: []apiv1.Container{
 				{
-					Name:    "main",
-					Command: []string{"argoexec"},
-					Args:    []string{"agent"},
-					Image:   woc.controller.executorImage(),
+					Name:            "main",
+					Command:         []string{"argoexec"},
+					Args:            []string{"agent"},
+					Image:           woc.controller.executorImage(),
+					ImagePullPolicy: woc.controller.executorImagePullPolicy(),
 					Env: []apiv1.EnvVar{
 						{Name: common.EnvVarWorkflowName, Value: woc.wf.Name},
 					},
