@@ -134,7 +134,7 @@ spec:
           secret:
             secretName: docker-config
       container:
-        image: moby/buildkit:v0.7.2-rootless
+        image: moby/buildkit:v0.9.3-rootless
         volumeMounts:
           - name: work
             mountPath: /work
