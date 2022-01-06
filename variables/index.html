@@ -2794,7 +2794,7 @@ returns <code>0</code>. Please review the Sprig documentation to understand whic
 </tbody>
 </table>
 <h3 id="retrystrategy">RetryStrategy<a class="headerlink" href="#retrystrategy" title="Permanent link">&para;</a></h3>
-<p>When using the <code>when</code> field within <code>retryStrategy</code>, special variables are available.</p>
+<p>When using the <code>expression</code> field within <code>retryStrategy</code>, special variables are available.</p>
 <table>
 <thead>
 <tr>
@@ -2817,7 +2817,7 @@ returns <code>0</code>. Please review the Sprig documentation to understand whic
 </tr>
 </tbody>
 </table>
-<p>Note: These variables evaluate to a string type. If using advanced expressions, either cast them to int values (<code>when: "{{=asInt(lastRetry.exitCode) &gt;= 2}}"</code>) or compare them to string values (<code>when: "{{=lastRetry.exitCode != '2'}}"</code>).</p>
+<p>Note: These variables evaluate to a string type. If using advanced expressions, either cast them to int values (<code>expression: "{{=asInt(lastRetry.exitCode) &gt;= 2}}"</code>) or compare them to string values (<code>expression: "{{=lastRetry.exitCode != '2'}}"</code>).</p>
 <h3 id="containerscript-templates">Container/Script Templates<a class="headerlink" href="#containerscript-templates" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
