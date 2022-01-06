@@ -203,6 +203,15 @@ func (s *CLISuite) TestSubmitDryRun() {
 		})
 }
 
+func (s *CLISuite) TestSubmitInvalidWf() {
+	s.Given().
+		RunCli([]string{"submit", "smoke/basic-invalid.yaml", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {
+			if assert.Error(t, err) {
+				assert.Contains(t, output, "yaml file at index 0 is not valid:")
+			}
+		})
+}
+
 func (s *CLISuite) TestSubmitServerDryRun() {
 	s.Given().
 		RunCli([]string{"submit", "smoke/basic.yaml", "--server-dry-run", "-o", "yaml", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {

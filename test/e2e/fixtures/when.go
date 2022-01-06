@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/utils/pointer"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
@@ -309,6 +310,47 @@ func (w *When) DeleteWorkflow() *When {
 	return w
 }
 
+type PodCondition func(p *corev1.Pod) bool
+
+var (
+	PodCompleted PodCondition = func(p *corev1.Pod) bool {
+		return p.Labels[common.LabelKeyCompleted] == "true"
+	}
+	PodDeleted PodCondition = func(p *corev1.Pod) bool {
+		return !p.DeletionTimestamp.IsZero()
+	}
+)
+
+func (w *When) WaitForPod(condition PodCondition) *When {
+	w.t.Helper()
+	ctx := context.Background()
+	timeout := defaultTimeout
+	watch, err := w.kubeClient.CoreV1().Pods(Namespace).Watch(
+		ctx,
+		metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + w.wf.Name, TimeoutSeconds: pointer.Int64Ptr(int64(timeout.Seconds()))},
+	)
+	if err != nil {
+		w.t.Fatal(err)
+	}
+	defer watch.Stop()
+	for event := range watch.ResultChan() {
+		p := event.Object.(*corev1.Pod)
+		state := p.Status.Phase
+		if p.Labels[common.LabelKeyCompleted] == "true" {
+			state = "Complete"
+		}
+		if !p.DeletionTimestamp.IsZero() {
+			state = "Deleted"
+		}
+		_, _ = fmt.Printf("pod %s: %s\n", p.Name, state)
+		if condition(p) {
+			_, _ = fmt.Printf("Pod condition met\n")
+			return w
+		}
+	}
+	w.t.Fatal(fmt.Errorf("timeout after %v waiting for pod", timeout))
+	return w
+}
 func (w *When) And(block func()) *When {
 	w.t.Helper()
 	block()

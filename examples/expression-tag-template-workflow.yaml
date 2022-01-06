@@ -3,7 +3,7 @@ kind: Workflow
 metadata:
   generateName: expression-tag-template-
   labels:
-    workflows.argoproj.io/test: "true"
+    workflows.argoproj.io/test-local: "true"
   annotations:
     # available in v3.1.0
     workflows.argoproj.io/version: ">= 3.1.0"

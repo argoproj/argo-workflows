@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
@@ -686,4 +687,64 @@ func TestDagOnExitAndRetryStrategy(t *testing.T) {
 	woc.operate(ctx)
 
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+var testWorkflowOnExitHttpReconciliation = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-sx6lw
+spec:
+  entrypoint: whalesay
+  onExit: exit-handler
+  templates:
+  - container:
+      args:
+      - hello world
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+    name: whalesay
+  - http:
+      url: https://example.com
+    name: exit-handler
+status:
+  nodes:
+    hello-world-sx6lw:
+      displayName: hello-world-sx6lw
+      finishedAt: "2021-10-27T14:38:30Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: hello-world-sx6lw
+      name: hello-world-sx6lw
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 2
+        memory: 1
+      startedAt: "2021-10-27T14:38:27Z"
+      templateName: whalesay
+      templateScope: local/hello-world-sx6lw
+      type: Pod
+  phase: Running
+  startedAt: "2021-10-27T14:38:27Z"
+`
+
+func TestWorkflowOnExitHttpReconciliation(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(testWorkflowOnExitHttpReconciliation)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	taskSets, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("").List(ctx, v1.ListOptions{})
+	if assert.NoError(t, err) {
+		assert.Len(t, taskSets.Items, 0)
+	}
+	woc.operate(ctx)
+
+	assert.Len(t, woc.wf.Status.Nodes, 2)
+	taskSets, err = woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("").List(ctx, v1.ListOptions{})
+	if assert.NoError(t, err) {
+		assert.Len(t, taskSets.Items, 1)
+	}
 }

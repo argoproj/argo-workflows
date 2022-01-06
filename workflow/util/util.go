@@ -169,7 +169,7 @@ func IsWorkflowCompleted(wf *wfv1.Workflow) bool {
 	return false
 }
 
-// SubmitWorkflow validates and submit a single workflow and override some of the fields of the workflow
+// SubmitWorkflow validates and submits a single workflow and overrides some of the fields of the workflow
 func SubmitWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Interface, namespace string, wf *wfv1.Workflow, opts *wfv1.SubmitOpts) (*wfv1.Workflow, error) {
 	err := ApplySubmitOpts(wf, opts)
 	if err != nil {
@@ -178,7 +178,7 @@ func SubmitWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, wfClie
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace))
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
-	_, err = validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, validate.ValidateOpts{})
+	_, err = validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, validate.ValidateOpts{Submit: true})
 	if err != nil {
 		return nil, err
 	}
@@ -804,8 +804,9 @@ func retryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrato
 			return nil, errors.InternalErrorf("Workflow cannot be retried with node %s in %s phase", node.Name, node.Phase)
 		}
 		if node.Type == wfv1.NodeTypePod {
-			log.Infof("Deleting pod: %s", node.ID)
-			podName := PodName(wf.Name, node.Name, node.TemplateName, node.ID)
+			templateName := getTemplateFromNode(node)
+			podName := PodName(wf.Name, node.Name, templateName, node.ID)
+			log.Infof("Deleting pod: %s", podName)
 			err := podIf.Delete(ctx, podName, metav1.DeleteOptions{})
 			if err != nil && !apierr.IsNotFound(err) {
 				return nil, errors.InternalWrapError(err)
@@ -854,6 +855,13 @@ func retryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrato
 	}
 
 	return wfClient.Update(ctx, newWF, metav1.UpdateOptions{})
+}
+
+func getTemplateFromNode(node wfv1.NodeStatus) string {
+	if node.TemplateRef != nil {
+		return node.TemplateRef.Template
+	}
+	return node.TemplateName
 }
 
 func getNodeIDsToReset(restartSuccessful bool, nodeFieldSelector string, nodes wfv1.Nodes) (map[string]bool, error) {

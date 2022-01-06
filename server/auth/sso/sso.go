@@ -5,6 +5,7 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/tls"
 	"crypto/x509"
 	"fmt"
 	"net/http"
@@ -48,6 +49,7 @@ type sso struct {
 	config          *oauth2.Config
 	issuer          string
 	idTokenVerifier *oidc.IDTokenVerifier
+	httpClient      *http.Client
 	baseHRef        string
 	secure          bool
 	privateKey      crypto.PrivateKey
@@ -75,6 +77,7 @@ type Config struct {
 	// customGroupClaimName will override the groups claim name
 	CustomGroupClaimName string `json:"customGroupClaimName,omitempty"`
 	UserInfoPath         string `json:"userInfoPath,omitempty"`
+	InsecureSkipVerify   bool   `json:"insecureSkipVerify,omitempty"`
 }
 
 func (c Config) GetSessionExpiry() time.Duration {
@@ -124,14 +127,16 @@ func newSso(
 	if err != nil {
 		return nil, err
 	}
+	// Create http client with TLSConfig to allow skipping of CA validation if InsecureSkipVerify is set.
+	httpClient := &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: c.InsecureSkipVerify}}}
+	oidcContext := oidc.ClientContext(ctx, httpClient)
 	// Some offspec providers like Azure, Oracle IDCS have oidc discovery url different from issuer url which causes issuerValidation to fail
 	// This providerCtx will allow the Verifier to succeed if the alternate/alias URL is in the config
-	var providerCtx context.Context = context.Background()
 	if c.IssuerAlias != "" {
-		providerCtx = oidc.InsecureIssuerURLContext(ctx, c.IssuerAlias)
+		oidcContext = oidc.InsecureIssuerURLContext(oidcContext, c.IssuerAlias)
 	}
 
-	provider, err := factory(providerCtx, c.Issuer)
+	provider, err := factory(oidcContext, c.Issuer)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +193,7 @@ func newSso(
 	if err != nil {
 		return nil, fmt.Errorf("failed to create JWT encrpytor: %w", err)
 	}
-	lf := log.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "issuerAlias": "DISABLED", "clientId": c.ClientID, "scopes": config.Scopes}
+	lf := log.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "issuerAlias": "DISABLED", "clientId": c.ClientID, "scopes": config.Scopes, "insecureSkipVerify": c.InsecureSkipVerify}
 	if c.IssuerAlias != "" {
 		lf["issuerAlias"] = c.IssuerAlias
 	}
@@ -198,6 +203,7 @@ func newSso(
 		config:          config,
 		idTokenVerifier: idTokenVerifier,
 		baseHRef:        baseHRef,
+		httpClient:      httpClient,
 		secure:          secure,
 		privateKey:      privateKey,
 		encrypter:       encrypter,
@@ -241,7 +247,9 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	redirectOption := oauth2.SetAuthURLParam("redirect_uri", s.getRedirectUrl(r))
-	oauth2Token, err := s.config.Exchange(ctx, r.URL.Query().Get("code"), redirectOption)
+	// Use sso.httpClient in order to respect TLSOptions
+	oauth2Context := context.WithValue(ctx, oauth2.HTTPClient, s.httpClient)
+	oauth2Token, err := s.config.Exchange(oauth2Context, r.URL.Query().Get("code"), redirectOption)
 	if err != nil {
 		w.WriteHeader(401)
 		_, _ = w.Write([]byte(fmt.Sprintf("failed to exchange token: %v", err)))
