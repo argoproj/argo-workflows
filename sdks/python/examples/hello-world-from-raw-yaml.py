@@ -17,5 +17,5 @@ api_client = argo_workflows.ApiClient(configuration)
 api_instance = workflow_service_api.WorkflowServiceApi(api_client)
 api_response = api_instance.create_workflow(
     namespace='argo',
-    body=IoArgoprojWorkflowV1alpha1WorkflowCreateRequest(workflow=manifest))
+    body=IoArgoprojWorkflowV1alpha1WorkflowCreateRequest(workflow=manifest, _check_return_type=False, _check_type=False))
 pprint(api_response)
