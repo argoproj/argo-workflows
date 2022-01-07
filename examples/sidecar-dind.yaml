@@ -5,7 +5,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: sidecar-dind-
+  name: sidecar-dind
 spec:
   entrypoint: dind-sidecar-example
   templates:
