@@ -1,0 +1,10 @@
+FROM registry.c3.ai/ubi/ubi8-minimal:8.4.210.1
+
+COPY hack/ssh_known_hosts /etc/ssh/
+COPY hack/nsswitch.conf /etc/
+
+COPY files/etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY dist/argo /bin/
+
+USER 1001
+ENTRYPOINT ["argo"]

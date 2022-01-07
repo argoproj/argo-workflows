@@ -1,0 +1,8 @@
+FROM registry.c3.ai/ubi/ubi8-minimal:8.4.210.1
+
+COPY files/etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+
+COPY --chown=8737 dist/workflow-controller /bin/
+
+USER 1001
+ENTRYPOINT ["workflow-controller"]

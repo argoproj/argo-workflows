@@ -17,7 +17,7 @@ DEV_BRANCH            := $(shell [ $(GIT_BRANCH) = master ] || [ `echo $(GIT_BRA
 GREP_LOGS             := ""
 
 # docker image publishing options
-IMAGE_NAMESPACE       ?= quay.io/argoproj
+IMAGE_NAMESPACE       ?= ci.registry.c3iot.io/preview
 DEV_IMAGE             ?= $(shell [ `uname -s` = Darwin ] && echo true || echo false)
 
 # declares which cluster to import to in case it's not the default name

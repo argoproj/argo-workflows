@@ -1,0 +1,9 @@
+FROM registry.c3.ai/ubi/ubi8-minimal:8.4.210.1
+
+COPY dist/argoexec /bin/
+COPY files/c3/scripts/epilog.sh /c3/scripts/
+
+RUN /c3/scripts/epilog.sh
+
+USER 1001
+ENTRYPOINT ["argoexec"]
