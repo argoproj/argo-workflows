@@ -23,10 +23,10 @@ argo --help
 
 You'll need to configure your commands to use the Argo Server if you have [offloaded node status](offloading-large-workflows.md) or are trying to access your [workflow archive](workflow-archive.md). 
 
-To do so, set the `ARGO_SERVER` environment variable, e.g.:
+To do so, set the `ARGOCD_SERVER` environment variable, e.g.:
 
 ```
-export ARGO_SERVER=localhost:2746
+export ARGOCD_SERVER=localhost:2746
 ```
 
 See [TLS](tls.md).
