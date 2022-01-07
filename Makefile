@@ -577,11 +577,12 @@ docs/cli/argo.md: $(CLI_PKGS) go.sum server/static/files.go hack/cli/main.go
 
 # pre-push
 
-.git/hooks/commit-msg: hack/git/hooks/commit-msg
-	cp -v hack/git/hooks/commit-msg .git/hooks/commit-msg
+# This is a very crafty way of injecting a script when you run `git commit`
+#.git/hooks/commit-msg: hack/git/hooks/commit-msg
+#	cp -v hack/git/hooks/commit-msg .git/hooks/commit-msg
 
 .PHONY: githooks
-githooks: .git/hooks/commit-msg
+githooks: #.git/hooks/commit-msg
 
 .PHONY: pre-commit
 pre-commit: githooks codegen lint
