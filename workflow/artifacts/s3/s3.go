@@ -4,19 +4,18 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/argoproj/pkg/file"
 	argos3 "github.com/argoproj/pkg/s3"
 	"github.com/minio/minio-go/v7"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	artifactscommon "github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	executorretry "github.com/argoproj/argo-workflows/v3/workflow/executor/retry"
 )
 
 // ArtifactDriver is a driver for AWS S3
@@ -35,10 +34,7 @@ type ArtifactDriver struct {
 	ServerSideCustomerKey string
 }
 
-var (
-	_            artifactscommon.ArtifactDriver = &ArtifactDriver{}
-	defaultRetry                                = wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1}
-)
+var _ artifactscommon.ArtifactDriver = &ArtifactDriver{}
 
 // newMinioClient instantiates a new minio client object.
 func (s3Driver *ArtifactDriver) newS3Client(ctx context.Context) (argos3.S3Client, error) {
@@ -67,7 +63,7 @@ func (s3Driver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	err := waitutil.Backoff(defaultRetry,
+	err := waitutil.Backoff(executorretry.ExecutorRetry,
 		func() (bool, error) {
 			log.Infof("S3 Load path: %s, key: %s", path, inputArtifact.S3.Key)
 			s3cli, err := s3Driver.newS3Client(ctx)
@@ -112,7 +108,7 @@ func (s3Driver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	err := waitutil.Backoff(defaultRetry,
+	err := waitutil.Backoff(executorretry.ExecutorRetry,
 		func() (bool, error) {
 			log.Infof("S3 Save path: %s, key: %s", path, outputArtifact.S3.Key)
 			s3cli, err := s3Driver.newS3Client(ctx)
@@ -162,7 +158,7 @@ func (s3Driver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, 
 	defer cancel()
 
 	var files []string
-	err := waitutil.Backoff(defaultRetry,
+	err := waitutil.Backoff(executorretry.ExecutorRetry,
 		func() (bool, error) {
 			s3cli, err := s3Driver.newS3Client(ctx)
 			if err != nil {

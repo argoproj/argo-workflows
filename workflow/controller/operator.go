@@ -524,9 +524,10 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 		woc.globalParams[common.GlobalVarWorkflowParameters] = string(workflowParameters)
 	}
 	for _, param := range executionParameters.Parameters {
-		if param.Value != nil {
-			woc.globalParams["workflow.parameters."+param.Name] = param.Value.String()
-		} else if param.ValueFrom != nil {
+		if param.Value == nil && param.ValueFrom == nil {
+			return fmt.Errorf("either value or valueFrom must be specified in order to set global parameter %s", param.Name)
+		}
+		if param.ValueFrom != nil {
 			if param.ValueFrom.ConfigMapKeyRef != nil {
 				cmValue, err := common.GetConfigMapValue(woc.controller.configMapInformer, woc.wf.ObjectMeta.Namespace, param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key)
 				if err != nil {
@@ -536,7 +537,7 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 				woc.globalParams["workflow.parameters."+param.Name] = cmValue
 			}
 		} else {
-			return fmt.Errorf("either value or valueFrom must be specified in order to set global parameter %s", param.Name)
+			woc.globalParams["workflow.parameters."+param.Name] = param.Value.String()
 		}
 	}
 	if workflowAnnotations, err := json.Marshal(woc.wf.ObjectMeta.Annotations); err == nil {
@@ -2727,7 +2728,7 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(scope *wfScope, prefix st
 	outputParamValueLists := make(map[string][]string)
 	resultsList := make([]wfv1.Item, 0)
 	for _, node := range childNodes {
-		if node.Outputs == nil {
+		if node.Outputs == nil || node.Phase != wfv1.NodeSucceeded || node.Type == wfv1.NodeTypeRetry {
 			continue
 		}
 		if len(node.Outputs.Parameters) > 0 {
