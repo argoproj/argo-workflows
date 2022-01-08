@@ -17,7 +17,7 @@ MAJOR_VERSION_INDEX = 0
 UNTAGGED = 'untagged'
 
 FAILED = 'FAILED'  # indicator captured by the makefile to know when something failed
-UNTAGGED_VERSION = '0.0.0-latest'
+UNTAGGED_VERSION = '0.0.0-pre'
 git_tag_cmd = 'git describe --exact-match --tags --abbrev=0 2> /dev/null || echo untagged'
 try:
     git_tag = os.popen(git_tag_cmd).read().strip()
