@@ -803,6 +803,14 @@ spec:
       args: ["echo \"it was heads the first flip and tails the second. Or it was two times tails.\""]
 ```
 
+!!! note
+    If the parameter value contains quotes, it may invalidate the govaluate expression. To handle parameters with quote,
+    embed an [expr](https://github.com/antonmedv/expr) expression in the conditional. For example:
+
+    ```yaml
+    when: "{{=inputs.parameters['may-contain-quotes'] == 'example'}}"
+    ```
+
 ## Retrying Failed or Errored Steps
 
 You can specify a `retryStrategy` that will dictate how failed or errored steps are retried:
