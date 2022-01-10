@@ -1,28 +1,40 @@
 package transpiler
 
-type String string
-type Bool bool
-type Int int
-type Float float32
-type Strings []string
+type (
+	String         string
+	Bool           bool
+	Int            int
+	Float          float32
+	Strings        []string
+	SecondaryFiles []CWLSecondaryFileSchema
+)
 
-type CWLFormat interface {
-	isCWLFormat()
+type CWLFormatKind int32
+
+const (
+	FormatStringKind CWLFormatKind = iota
+	FormatStringsKind
+	FormatExpressionKind
+)
+
+type CWLFormat struct {
+	Kind       CWLFormatKind
+	String     String
+	Strings    Strings
+	Expression CWLExpression
 }
 
-func (_ String) isCWLFormat()        {}
-func (_ Strings) isCWLFormat()       {}
-func (_ CWLExpression) isCWLFormat() {}
-
-type CWLNull struct{}
-type CWLBool struct{}
-type CWLInt struct{}
-type CWLLong struct{}
-type CWLFloat struct{}
-type CWLDouble struct{}
-type CWLString struct{}
-type CWLFile struct{}
-type CWLDirectory struct{}
+type (
+	CWLNull      struct{}
+	CWLBool      struct{}
+	CWLInt       struct{}
+	CWLLong      struct{}
+	CWLFloat     struct{}
+	CWLDouble    struct{}
+	CWLString    struct{}
+	CWLFile      struct{}
+	CWLDirectory struct{}
+)
 
 func (_ CWLNull) isCWLType()      {}
 func (_ CWLBool) isCWLType()      {}
@@ -40,65 +52,38 @@ type CWLType interface {
 	isCWLType()
 }
 
-type LoadListingEnum interface {
-	isLoadListingEnum()
+type LoadListingKind int32
+
+const (
+	ShallowListingKind LoadListingKind = iota
+	DeepListingKind
+	NoListingKind
+)
+
+type LoadListingEnum struct {
+	Kind LoadListingKind
 }
-type NoListing struct{}
 
-func (_ NoListing) isLoadListingEnum() {}
+type CWLExpressionKind int32
 
-type ShallowListing struct{}
-
-func (_ ShallowListing) isLoadListingEnum() {}
-
-type DeepListing struct{}
-
-func (_ DeepListing) isLoadListingEnum() {}
-
-type CWLClass interface {
-}
+const (
+	RawKind CWLExpressionKind = iota
+	ExpressionKind
+	BoolKind
+	IntKind
+	FloatKind
+)
 
 type CWLExpression struct {
+	Kind       CWLExpressionKind
+	Raw        string
 	Expression string
+	Bool       bool
+	Int        int
+	Float      float64
 }
-
-type CWLExpressionString interface {
-	isCWLExpressionString()
-}
-
-func (_ String) isCWLExpressionString()        {}
-func (_ CWLExpression) isCWLExpressionString() {}
-
-type CWLExpressionBool interface {
-	isCWLExpressionBool()
-}
-
-func (_ Bool) isCWLExpressionBool()          {}
-func (_ CWLExpression) isCWLExpressionBool() {}
-
-type CWLExpressionInt interface {
-	isCWLExpressionInt()
-}
-
-func (_ Int) isCWLExpressionInt()           {}
-func (_ CWLExpression) isCWLExpressionInt() {}
-
-type CWLExpressionNum interface {
-	isCWLExpressionNum()
-}
-
-func (_ Int) isCWLExpressionNum()           {}
-func (_ Float) isCWLExpressionNum()         {}
-func (_ CWLExpression) isCWLExpressionNum() {}
 
 type CWLSecondaryFileSchema struct {
-	Pattern  CWLExpressionString
-	Required CWLExpressionBool
-}
-
-type CWLDefinition struct {
-	Class   CWLClass
-	Version string
-	Inputs  int
-	Outputs int
+	Pattern  CWLExpression `yaml:"pattern"`
+	Required CWLExpression `yaml:"required"`
 }
