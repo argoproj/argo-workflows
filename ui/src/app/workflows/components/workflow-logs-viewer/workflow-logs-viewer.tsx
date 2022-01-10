@@ -1,17 +1,21 @@
 import * as React from 'react';
-import {useEffect, useState} from 'react';
+import {useContext, useEffect, useState} from 'react';
 
 import {Autocomplete} from 'argo-ui';
 import {Observable} from 'rxjs';
 import * as models from '../../../../models';
 import {execSpec} from '../../../../models';
 import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
+import {Button} from '../../../shared/components/button';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {InfoIcon, WarningIcon} from '../../../shared/components/fa-icons';
 import {Links} from '../../../shared/components/links';
+import {Context} from '../../../shared/context';
 import {getPodName, getTemplateNameFromNode} from '../../../shared/pod-name';
+import {ScopedLocalStorage} from '../../../shared/scoped-local-storage';
 import {services} from '../../../shared/services';
 import {FullHeightLogsViewer} from './full-height-logs-viewer';
+import {extractJsonValue, JsonLogsFieldSelector, SelectedJsonFields} from './json-logs-field-selector';
 
 interface WorkflowLogsViewerProps {
     workflow: models.Workflow;
@@ -26,19 +30,47 @@ function identity<T>(value: T) {
 }
 
 export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container, archived}: WorkflowLogsViewerProps) => {
+    const storage = new ScopedLocalStorage('workflow-logs-viewer');
+    const storedJsonFields = storage.getItem('jsonFields', {
+        values: []
+    } as SelectedJsonFields);
+
+    const {popup} = useContext(Context);
     const [podName, setPodName] = useState(initialPodName || '');
     const [selectedContainer, setContainer] = useState(container);
     const [grep, setGrep] = useState('');
     const [error, setError] = useState<Error>();
     const [loaded, setLoaded] = useState(false);
     const [logsObservable, setLogsObservable] = useState<Observable<string>>();
+    const [selectedJsonFields, setSelectedJsonFields] = useState<SelectedJsonFields>(storedJsonFields);
 
     useEffect(() => {
         setError(null);
         setLoaded(false);
         const source = services.workflows
             .getContainerLogs(workflow, podName, nodeId, selectedContainer, grep, archived)
-            .map(e => (!podName ? e.podName + ': ' : '') + e.content + '\n')
+            // extract message from LogEntry
+            .map(e => {
+                const values: string[] = [];
+                const content = e.content;
+                if (selectedJsonFields.values.length > 0) {
+                    try {
+                        const json = JSON.parse(content);
+                        selectedJsonFields.values.forEach(selectedJsonField => {
+                            const value = extractJsonValue(json, selectedJsonField);
+                            if (value) {
+                                values.push(value);
+                            }
+                        });
+                    } catch (e) {
+                        // if not json, show content directly
+                    }
+                }
+                if (values.length === 0) {
+                    values.push(content);
+                }
+                return `${!podName ? e.podName + ': ' : ''}${values.join(' ')}\n`;
+            })
             // this next line highlights the search term in bold with a yellow background, white text
             .map(x => {
                 if (grep !== '') {
@@ -55,7 +87,7 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
         );
         setLogsObservable(source);
         return () => subscription.unsubscribe();
-    }, [workflow.metadata.namespace, workflow.metadata.name, podName, selectedContainer, grep, archived]);
+    }, [workflow.metadata.namespace, workflow.metadata.name, podName, selectedContainer, grep, archived, selectedJsonFields]);
 
     // filter allows us to introduce a short delay, before we actually change grep
     const [filter, setFilter] = useState('');
@@ -91,6 +123,22 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
             .map(c => c.name)
     );
 
+    const popupJsonFieldSelector = async () => {
+        const fields = {...selectedJsonFields};
+        const updated = await popup.confirm('Select Json Fields', () => (
+            <JsonLogsFieldSelector
+                fields={selectedJsonFields}
+                onChange={values => {
+                    fields.values = values;
+                }}
+            />
+        ));
+        if (updated) {
+            storage.setItem('jsonFields', fields, {values: []});
+            setSelectedJsonFields(fields);
+        }
+    };
+
     return (
         <div className='workflow-logs-viewer'>
             <h3>Logs</h3>
@@ -102,7 +150,10 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
             <div>
                 <i className='fa fa-box' />{' '}
                 <Autocomplete items={podNames} value={(podNames.find(x => x.value === podName) || {label: ''}).label} onSelect={(_, item) => setPodName(item.value)} /> /{' '}
-                <Autocomplete items={containers} value={selectedContainer} onSelect={setContainer} />
+                <Autocomplete items={containers} value={selectedContainer} onSelect={setContainer} />{' '}
+                <Button onClick={popupJsonFieldSelector} icon={'exchange-alt'}>
+                    Log Fields
+                </Button>
                 <span className='fa-pull-right'>
                     <i className='fa fa-filter' /> <input type='search' defaultValue={filter} onChange={v => setFilter(v.target.value)} placeholder='Filter (regexp)...' />
                 </span>
