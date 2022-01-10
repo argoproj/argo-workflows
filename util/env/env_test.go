@@ -15,6 +15,8 @@ func TestLookupEnvDurationOr(t *testing.T) {
 	assert.Panics(t, func() { LookupEnvDurationOr("FOO", time.Second) }, "bad value")
 	_ = os.Setenv("FOO", "1h")
 	assert.Equal(t, time.Hour, LookupEnvDurationOr("FOO", time.Second), "env var value")
+	_ = os.Setenv("FOO", "")
+	assert.Equal(t, time.Second, LookupEnvDurationOr("FOO", time.Second), "empty var value; default value")
 }
 
 func TestLookupEnvIntOr(t *testing.T) {
@@ -24,6 +26,8 @@ func TestLookupEnvIntOr(t *testing.T) {
 	assert.Panics(t, func() { LookupEnvIntOr("FOO", 1) }, "bad value")
 	_ = os.Setenv("FOO", "2")
 	assert.Equal(t, 2, LookupEnvIntOr("FOO", 1), "env var value")
+	_ = os.Setenv("FOO", "")
+	assert.Equal(t, 1, LookupEnvIntOr("FOO", 1), "empty var value; default value")
 }
 
 func TestLookupEnvFloatOr(t *testing.T) {
@@ -33,4 +37,6 @@ func TestLookupEnvFloatOr(t *testing.T) {
 	assert.Panics(t, func() { LookupEnvFloatOr("FOO", 1.) }, "bad value")
 	_ = os.Setenv("FOO", "2.0")
 	assert.Equal(t, 2., LookupEnvFloatOr("FOO", 1.), "env var value")
+	_ = os.Setenv("FOO", "")
+	assert.Equal(t, 1., LookupEnvFloatOr("FOO", 1.), "empty var value; default value")
 }

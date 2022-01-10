@@ -315,6 +315,7 @@ func TestGlobalParams(t *testing.T) {
 		assert.Contains(t, woc.globalParams, fmt.Sprintf("%s.%s", "workflow.creationTimestamp", string(char)))
 	}
 	assert.Contains(t, woc.globalParams, "workflow.creationTimestamp.s")
+	assert.Contains(t, woc.globalParams, "workflow.creationTimestamp.RFC3339")
 
 	assert.Contains(t, woc.globalParams, "workflow.duration")
 	assert.Contains(t, woc.globalParams, "workflow.name")
@@ -2789,20 +2790,30 @@ spec:
 `
 
 func TestResolvePodNameInRetries(t *testing.T) {
-	ctx := context.Background()
-	wf := wfv1.MustUnmarshalWorkflow(podNameInRetries)
-	woc := newWoc(*wf)
-	woc.operate(ctx)
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(ctx, metav1.ListOptions{})
-	assert.NoError(t, err)
-	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
+	tests := []struct {
+		podNameVersion string
+		wantPodName    string
+	}{
+		{"v1", "output-value-placeholders-wf-3033990984"},
+		{"v2", "output-value-placeholders-wf-tell-pod-name-3033990984"},
+	}
+	for _, tt := range tests {
+		_ = os.Setenv("POD_NAMES", tt.podNameVersion)
+		ctx := context.Background()
+		wf := wfv1.MustUnmarshalWorkflow(podNameInRetries)
+		woc := newWoc(*wf)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+		pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(ctx, metav1.ListOptions{})
+		assert.NoError(t, err)
+		assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
 
-	template, err := getPodTemplate(&pods.Items[0])
-	assert.NoError(t, err)
-	parameterValue := template.Outputs.Parameters[0].Value
-	assert.NotNil(t, parameterValue)
-	assert.Equal(t, "output-value-placeholders-wf-3033990984", parameterValue.String())
+		template, err := getPodTemplate(&pods.Items[0])
+		assert.NoError(t, err)
+		parameterValue := template.Outputs.Parameters[0].Value
+		assert.NotNil(t, parameterValue)
+		assert.Equal(t, tt.wantPodName, parameterValue.String())
+	}
 }
 
 var outputStatuses = `
@@ -7606,4 +7617,59 @@ func TestExitHandlerWithRetryNodeParam(t *testing.T) {
 	assert.Equal(t, "hello world", retryStepNode.Outputs.Parameters[0].Value.String())
 	onExitNode := woc.wf.GetNodeByName("exit-handler-with-param-xbh52[0].step-1.onExit")
 	assert.Equal(t, "hello world", onExitNode.Inputs.Parameters[0].Value.String())
+}
+
+func TestReOperateCompletedWf(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+metadata:
+  name: my-wf
+  namespace: my-ns
+spec:
+  entrypoint: main
+  templates:
+   - name: main
+     dag:
+       tasks:
+       - name: pod
+         template: pod
+   - name: pod
+     container: 
+       image: my-image
+`)
+	wf.Status.Phase = wfv1.WorkflowError
+	wf.Status.FinishedAt = metav1.Now()
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	assert.NotPanics(t, func() { woc.operate(ctx) })
+}
+
+func TestSetWFPodNamesAnnotation(t *testing.T) {
+	defer func() {
+		_ = os.Unsetenv("POD_NAMES")
+	}()
+
+	tests := []struct {
+		podNameVersion string
+	}{
+		{"v1"},
+		{"v2"},
+	}
+
+	for _, tt := range tests {
+		_ = os.Setenv("POD_NAMES", tt.podNameVersion)
+
+		wf := wfv1.MustUnmarshalWorkflow(exitHandlerWithRetryNodeParam)
+		cancel, controller := newController(wf)
+		defer cancel()
+
+		ctx := context.Background()
+		woc := newWorkflowOperationCtx(wf, controller)
+
+		woc.operate(ctx)
+		annotations := woc.wf.ObjectMeta.GetAnnotations()
+		assert.Equal(t, annotations[common.AnnotationKeyPodNameVersion], tt.podNameVersion)
+	}
 }

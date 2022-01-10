@@ -46,6 +46,9 @@ export const PipelineList = ({match, history}: RouteComponentProps<any>) => {
         return () => lw.stop();
     }, [namespace]);
 
+    const loading = !error && !pipelines;
+    const zeroState = (pipelines || []).length === 0;
+
     return (
         <Page
             title='Pipelines'
@@ -57,9 +60,8 @@ export const PipelineList = ({match, history}: RouteComponentProps<any>) => {
                 tools: [<NamespaceFilter key='namespace-filter' value={namespace} onChange={setNamespace} />]
             }}>
             <ErrorNotice error={error} />
-            {!pipelines ? (
-                <Loading />
-            ) : pipelines.length === 0 ? (
+            {loading && <Loading />}
+            {zeroState && (
                 <ZeroState title='No pipelines'>
                     <p>Argo Dataflow is a Kubernetes native platform for executing large parallel data-processing pipelines.</p>
                     <p>
@@ -74,7 +76,8 @@ export const PipelineList = ({match, history}: RouteComponentProps<any>) => {
                         <a href='https://github.com/argoproj-labs/argo-dataflow'>Learn more</a>
                     </p>
                 </ZeroState>
-            ) : (
+            )}
+            {pipelines && pipelines.length > 0 && (
                 <>
                     <div className='argo-table-list'>
                         <div className='row argo-table-list__head'>

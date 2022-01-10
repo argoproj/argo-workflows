@@ -147,6 +147,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [WooliesX](https://wooliesx.com.au/)
 1. [Woolworths Group](https://www.woolworthsgroup.com.au/)
 1. [Workiva](https://www.workiva.com/)
+1. [Voyager](https://investvoyager.com/)
 1. [Zhihu](https://www.zhihu.com/)
 
 ### Projects Using Argo

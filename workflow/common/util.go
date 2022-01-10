@@ -124,18 +124,22 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 	// 3) if no default value, it is an error
 	newTmpl := tmpl.DeepCopy()
 	for i, inParam := range newTmpl.Inputs.Parameters {
-		if inParam.Default != nil {
+		if inParam.Value == nil && inParam.Default != nil {
 			// first set to default value
 			inParam.Value = inParam.Default
 		}
 		// overwrite value from argument (if supplied)
 		argParam := args.GetParameterByName(inParam.Name)
-		if argParam != nil && argParam.Value != nil {
-			inParam.Value = argParam.Value
+		if argParam != nil {
+			if argParam.Value != nil {
+				inParam.Value = argParam.Value
+			} else {
+				inParam.ValueFrom = argParam.ValueFrom
+			}
 		}
 		if inParam.ValueFrom != nil && inParam.ValueFrom.ConfigMapKeyRef != nil {
 			if configMapInformer != nil {
-				cmValue, err := util.GetConfigMapValue(configMapInformer, namespace, inParam.ValueFrom.ConfigMapKeyRef.Name, inParam.ValueFrom.ConfigMapKeyRef.Key)
+				cmValue, err := GetConfigMapValue(configMapInformer, namespace, inParam.ValueFrom.ConfigMapKeyRef.Name, inParam.ValueFrom.ConfigMapKeyRef.Key)
 				if err != nil {
 					return nil, errors.Errorf(errors.CodeBadRequest, "unable to retrieve inputs.parameters.%s from ConfigMap: %s", inParam.Name, err)
 				}

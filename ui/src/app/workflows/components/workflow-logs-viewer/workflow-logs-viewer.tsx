@@ -5,10 +5,11 @@ import {Autocomplete} from 'argo-ui';
 import {Observable} from 'rxjs';
 import * as models from '../../../../models';
 import {execSpec} from '../../../../models';
+import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {InfoIcon, WarningIcon} from '../../../shared/components/fa-icons';
 import {Links} from '../../../shared/components/links';
-import {getPodName} from '../../../shared/pod-name';
+import {getPodName, getTemplateNameFromNode} from '../../../shared/pod-name';
 import {services} from '../../../shared/services';
 import {FullHeightLogsViewer} from './full-height-logs-viewer';
 
@@ -36,10 +37,15 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
         setError(null);
         setLoaded(false);
         const source = services.workflows
-            .getContainerLogs(workflow, podName, selectedContainer, grep, archived)
+            .getContainerLogs(workflow, podName, nodeId, selectedContainer, grep, archived)
             .map(e => (!podName ? e.podName + ': ' : '') + e.content + '\n')
             // this next line highlights the search term in bold with a yellow background, white text
-            .map(x => x.replace(new RegExp(grep, 'g'), y => '\u001b[1m\u001b[43;1m\u001b[37m' + y + '\u001b[0m'))
+            .map(x => {
+                if (grep !== '') {
+                    return x.replace(new RegExp(grep, 'g'), y => '\u001b[1m\u001b[43;1m\u001b[37m' + y + '\u001b[0m');
+                }
+                return x;
+            })
             .publishReplay()
             .refCount();
         const subscription = source.subscribe(
@@ -58,12 +64,19 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
         return () => clearTimeout(x);
     }, [filter]);
 
+    let annotations: {[name: string]: string} = {};
+    if (typeof workflow.metadata.annotations !== 'undefined') {
+        annotations = workflow.metadata.annotations;
+    }
+    const podNameVersion = annotations[ANNOTATION_KEY_POD_NAME_VERSION];
+
     const podNames = [{value: '', label: 'All'}].concat(
         Object.values(workflow.status.nodes || {})
             .filter(x => x.type === 'Pod')
             .map(targetNode => {
-                const {name, id, templateName, displayName} = targetNode;
-                const targetPodName = getPodName(workflow.metadata.name, name, templateName, id);
+                const {name, id, displayName} = targetNode;
+                const templateName = getTemplateNameFromNode(targetNode);
+                const targetPodName = getPodName(workflow.metadata.name, name, templateName, id, podNameVersion);
                 return {value: targetPodName, label: (displayName || name) + ' (' + targetPodName + ')'};
             })
     );

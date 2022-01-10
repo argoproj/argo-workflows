@@ -70,7 +70,6 @@ require (
 	gopkg.in/jcmturner/gokrb5.v5 v5.3.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	gopkg.in/square/go-jose.v2 v2.5.1
-	gopkg.in/src-d/go-git.v4 v4.13.1
 	k8s.io/api v0.21.5
 	k8s.io/apimachinery v0.21.5
 	k8s.io/client-go v0.21.5
@@ -81,4 +80,12 @@ require (
 	sigs.k8s.io/controller-tools v0.4.1
 	sigs.k8s.io/yaml v1.2.0
 	upper.io/db.v3 v3.6.3+incompatible
+)
+
+require github.com/go-git/go-git/v5 v5.3.0
+
+require (
+	github.com/onsi/ginkgo v1.16.4 // indirect
+	github.com/onsi/gomega v1.13.0 // indirect
+	google.golang.org/protobuf v1.27.1 // indirect
 )

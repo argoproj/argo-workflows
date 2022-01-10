@@ -154,18 +154,33 @@ func getClusterWorkflowTemplateServer() (clusterwftmplpkg.ClusterWorkflowTemplat
 
 func TestWorkflowTemplateServer_CreateClusterWorkflowTemplate(t *testing.T) {
 	server, ctx := getClusterWorkflowTemplateServer()
-	cwftReq := clusterwftmplpkg.ClusterWorkflowTemplateCreateRequest{
-		Template: unlabelled.DeepCopy(),
-	}
-	cwftReq.Template.Name = "foo"
-	assert.NotContains(t, cwftReq.Template.Labels, common.LabelKeyControllerInstanceID)
-	cwftRsp, err := server.CreateClusterWorkflowTemplate(ctx, &cwftReq)
-	if assert.NoError(t, err) {
-		assert.NotNil(t, cwftRsp)
-		// ensure the label is added
-		assert.Contains(t, cwftRsp.Labels, common.LabelKeyControllerInstanceID)
-		assert.Contains(t, cwftRsp.Labels, common.LabelKeyCreator)
-	}
+	t.Run("Without parameter values", func(t *testing.T) {
+		tmpl := unlabelled.DeepCopy()
+		tmpl.Name = "foo-without-param-values"
+		tmpl.Spec.Arguments.Parameters[0].Value = nil
+		req := clusterwftmplpkg.ClusterWorkflowTemplateCreateRequest{
+			Template: tmpl,
+		}
+		resp, err := server.CreateClusterWorkflowTemplate(ctx, &req)
+		if assert.NoError(t, err) {
+			assert.Equal(t, "message", resp.Spec.Arguments.Parameters[0].Name)
+			assert.Nil(t, resp.Spec.Arguments.Parameters[0].Value)
+		}
+	})
+	t.Run("With parameter values", func(t *testing.T) {
+		cwftReq := clusterwftmplpkg.ClusterWorkflowTemplateCreateRequest{
+			Template: unlabelled.DeepCopy(),
+		}
+		cwftReq.Template.Name = "foo-with-param-values"
+		assert.NotContains(t, cwftReq.Template.Labels, common.LabelKeyControllerInstanceID)
+		cwftRsp, err := server.CreateClusterWorkflowTemplate(ctx, &cwftReq)
+		if assert.NoError(t, err) {
+			assert.NotNil(t, cwftRsp)
+			// ensure the label is added
+			assert.Contains(t, cwftRsp.Labels, common.LabelKeyControllerInstanceID)
+			assert.Contains(t, cwftRsp.Labels, common.LabelKeyCreator)
+		}
+	})
 }
 
 func TestWorkflowTemplateServer_GetClusterWorkflowTemplate(t *testing.T) {
@@ -226,6 +241,20 @@ func TestWorkflowTemplateServer_LintClusterWorkflowTemplate(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Contains(t, resp.Labels, common.LabelKeyControllerInstanceID)
 			assert.Contains(t, resp.Labels, common.LabelKeyCreator)
+		}
+	})
+
+	t.Run("Without param values", func(t *testing.T) {
+		tmpl := unlabelled.DeepCopy()
+		tmpl.Name = "foo-without-param-values"
+		tmpl.Spec.Arguments.Parameters[0].Value = nil
+		req := clusterwftmplpkg.ClusterWorkflowTemplateLintRequest{
+			Template: tmpl,
+		}
+		resp, err := server.LintClusterWorkflowTemplate(ctx, &req)
+		if assert.NoError(t, err) {
+			assert.Equal(t, "message", resp.Spec.Arguments.Parameters[0].Name)
+			assert.Nil(t, resp.Spec.Arguments.Parameters[0].Value)
 		}
 	})
 }

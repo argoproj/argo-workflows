@@ -118,7 +118,7 @@ func (o *Operation) dispatch(ctx context.Context, wfeb wfv1.WorkflowEventBinding
 		if submit.Arguments != nil {
 			for _, p := range submit.Arguments.Parameters {
 				if p.ValueFrom == nil {
-					return nil, fmt.Errorf("malformed workflow template parameter \"%s\": validFrom is nil", p.Name)
+					return nil, fmt.Errorf("malformed workflow template parameter \"%s\": valueFrom is nil", p.Name)
 				}
 				result, err := expr.Eval(p.ValueFrom.Event, o.env)
 				if err != nil {

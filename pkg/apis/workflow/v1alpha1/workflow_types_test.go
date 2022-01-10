@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/utils/pointer"
 )
 
@@ -349,6 +350,64 @@ func TestArtifactRepositoryRefStatus_String(t *testing.T) {
 func TestArtifact_GetArchive(t *testing.T) {
 	assert.NotNil(t, (&Artifact{}).GetArchive())
 	assert.Equal(t, &ArchiveStrategy{None: &NoneStrategy{}}, (&Artifact{Archive: &ArchiveStrategy{None: &NoneStrategy{}}}).GetArchive())
+}
+
+func TestPodGCStrategy_IsValid(t *testing.T) {
+	for _, s := range []PodGCStrategy{
+		PodGCOnPodNone,
+		PodGCOnPodCompletion,
+		PodGCOnPodSuccess,
+		PodGCOnWorkflowCompletion,
+		PodGCOnWorkflowSuccess,
+	} {
+		t.Run(string(s), func(t *testing.T) {
+			assert.True(t, s.IsValid())
+		})
+	}
+	t.Run("Invalid", func(t *testing.T) {
+		assert.False(t, PodGCStrategy("Foo").IsValid())
+	})
+}
+
+func TestPodGC_GetStrategy(t *testing.T) {
+	t.Run("Nil", func(t *testing.T) {
+		var podGC *PodGC
+		assert.Equal(t, PodGCOnPodNone, podGC.GetStrategy())
+	})
+	t.Run("Unspecified", func(t *testing.T) {
+		var podGC = &PodGC{}
+		assert.Equal(t, PodGCOnPodNone, podGC.GetStrategy())
+	})
+	t.Run("Specified", func(t *testing.T) {
+		var podGC = &PodGC{Strategy: PodGCOnWorkflowSuccess}
+		assert.Equal(t, PodGCOnWorkflowSuccess, podGC.GetStrategy())
+	})
+}
+
+func TestPodGC_GetLabelSelector(t *testing.T) {
+	t.Run("Nil", func(t *testing.T) {
+		var podGC *PodGC
+		selector, err := podGC.GetLabelSelector()
+		assert.NoError(t, err)
+		assert.Equal(t, labels.Nothing(), selector)
+	})
+	t.Run("Unspecified", func(t *testing.T) {
+		var podGC = &PodGC{}
+		selector, err := podGC.GetLabelSelector()
+		assert.NoError(t, err)
+		assert.Equal(t, labels.Everything(), selector)
+	})
+	t.Run("Specified", func(t *testing.T) {
+		labelSelector := &metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				"foo": "bar",
+			},
+		}
+		var podGC = &PodGC{LabelSelector: labelSelector}
+		selector, err := podGC.GetLabelSelector()
+		assert.NoError(t, err)
+		assert.Equal(t, "foo=bar", selector.String())
+	})
 }
 
 func TestNodes_FindByDisplayName(t *testing.T) {
