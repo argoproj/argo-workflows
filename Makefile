@@ -171,6 +171,12 @@ dist/argo-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
 dist/argo-linux-ppc64le: GOARGS = GOOS=linux GOARCH=ppc64le
 dist/argo-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
 
+dist/argo-windows-%.gz: dist/argo-windows-%
+	gzip --force --keep dist/argo-windows-$*.exe
+
+dist/argo-windows-%: server/static/files.go $(CLI_PKGS) go.sum
+	CGO_ENABLED=0 $(GOARGS) go build -v -ldflags '${LDFLAGS} -extldflags -static' -o $@.exe ./cmd/argo
+
 dist/argo-%.gz: dist/argo-%
 	gzip --force --keep dist/argo-$*
 
