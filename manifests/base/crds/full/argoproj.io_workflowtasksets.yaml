@@ -2625,6 +2625,8 @@ spec:
                                             type: object
                                           type: array
                                       type: object
+                                    expression:
+                                      type: string
                                     template:
                                       type: string
                                   required:

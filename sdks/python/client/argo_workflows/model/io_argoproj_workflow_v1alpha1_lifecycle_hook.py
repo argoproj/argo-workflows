@@ -89,6 +89,7 @@ class IoArgoprojWorkflowV1alpha1LifecycleHook(ModelNormal):
         return {
             'template': (str,),  # noqa: E501
             'arguments': (IoArgoprojWorkflowV1alpha1Arguments,),  # noqa: E501
+            'expression': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -99,6 +100,7 @@ class IoArgoprojWorkflowV1alpha1LifecycleHook(ModelNormal):
     attribute_map = {
         'template': 'template',  # noqa: E501
         'arguments': 'arguments',  # noqa: E501
+        'expression': 'expression',  # noqa: E501
     }
 
     read_only_vars = {
@@ -146,6 +148,7 @@ class IoArgoprojWorkflowV1alpha1LifecycleHook(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             arguments (IoArgoprojWorkflowV1alpha1Arguments): [optional]  # noqa: E501
+            expression (str): Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not be retried and the retry strategy will be ignored. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -232,6 +235,7 @@ class IoArgoprojWorkflowV1alpha1LifecycleHook(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             arguments (IoArgoprojWorkflowV1alpha1Arguments): [optional]  # noqa: E501
+            expression (str): Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not be retried and the retry strategy will be ignored. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

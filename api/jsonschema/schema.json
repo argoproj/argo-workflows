@@ -5507,6 +5507,10 @@
         "arguments": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
         },
+        "expression": {
+          "description": "Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not be retried and the retry strategy will be ignored",
+          "type": "string"
+        },
         "template": {
           "type": "string"
         }
@@ -7388,6 +7392,13 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorConfig",
           "description": "Executor holds configurations of executor containers of the io.argoproj.workflow.v1alpha1."
         },
+        "hooks": {
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LifecycleHook"
+          },
+          "description": "Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step",
+          "type": "object"
+        },
         "hostAliases": {
           "items": {
             "$ref": "#/definitions/io.k8s.api.core.v1.HostAlias"
@@ -7903,6 +7914,13 @@
         "executor": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorConfig",
           "description": "Executor holds configurations of executor containers of the io.argoproj.workflow.v1alpha1."
+        },
+        "hooks": {
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LifecycleHook"
+          },
+          "description": "Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step",
+          "type": "object"
         },
         "hostAliases": {
           "items": {

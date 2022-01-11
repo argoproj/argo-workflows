@@ -3112,6 +3112,13 @@ func (in *WorkflowSpec) DeepCopyInto(out *WorkflowSpec) {
 		*out = new(bool)
 		**out = **in
 	}
+	if in.Hooks != nil {
+		in, out := &in.Hooks, &out.Hooks
+		*out = make(LifecycleHooks, len(*in))
+		for key, val := range *in {
+			(*out)[key] = *val.DeepCopy()
+		}
+	}
 	return
 }
 

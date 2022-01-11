@@ -119,6 +119,10 @@ func GetExecutorOutput(exec remotecommand.Executor) (*bytes.Buffer, *bytes.Buffe
 // * global parameters (e.g. {{workflow.parameters.XX}}, {{workflow.name}}, {{workflow.status}})
 // * local parameters (e.g. {{pod.name}})
 func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams, localParams Parameters, validateOnly bool, namespace string, configMapInformer cache.SharedIndexInformer) (*wfv1.Template, error) {
+	return ProcessArgsWithHook(tmpl, args, globalParams, localParams, validateOnly, namespace, configMapInformer)
+}
+
+func ProcessArgsWithHook(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams, localParams Parameters, validateOnly bool, namespace string, configMapInformer cache.SharedIndexInformer) (*wfv1.Template, error) {
 	// For each input parameter:
 	// 1) check if was supplied as argument. if so use the supplied value from arg
 	// 2) if not, use default value.
@@ -180,11 +184,15 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 		}
 	}
 
-	return SubstituteParams(newTmpl, globalParams, localParams)
+	return SubstituteParamsWithHook(newTmpl, globalParams, localParams)
 }
 
 // SubstituteParams returns a new copy of the template with global, pod, and input parameters substituted
 func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters) (*wfv1.Template, error) {
+	return SubstituteParamsWithHook(tmpl, globalParams, localParams)
+}
+
+func SubstituteParamsWithHook(tmpl *wfv1.Template, globalParams, localParams Parameters) (*wfv1.Template, error) {
 	tmplBytes, err := json.Marshal(tmpl)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
@@ -359,4 +367,8 @@ func IsDone(un *unstructured.Unstructured) bool {
 	return un.GetDeletionTimestamp() == nil &&
 		un.GetLabels()[LabelKeyCompleted] == "true" &&
 		un.GetLabels()[LabelKeyWorkflowArchivingStatus] != "Pending"
+}
+
+func GenerateLifeHookNodeName(parentNodeName string, hookName string) string {
+return fmt.Sprintf("%s.hooks.%s", parentNodeName, hookName)
 }
