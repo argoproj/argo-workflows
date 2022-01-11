@@ -804,8 +804,8 @@ spec:
 ```
 
 !!! note
-    If the parameter value contains quotes, it may invalidate the govaluate expression. To handle parameters with quote,
-    embed an [expr](https://github.com/antonmedv/expr) expression in the conditional. For example:
+    If the parameter value contains quotes, it may invalidate the govaluate expression. To handle parameters with 
+    quotes, embed an [expr](https://github.com/antonmedv/expr) expression in the conditional. For example:
 
     ```yaml
     when: "{{=inputs.parameters['may-contain-quotes'] == 'example'}}"
