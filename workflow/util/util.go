@@ -600,7 +600,7 @@ func randString(n int) string {
 
 // RandSuffix generates a random suffix suitable for suffixing resource name.
 func RandSuffix() string {
-	return randString(5)
+	return randString(10)
 }
 
 // FormulateResubmitWorkflow formulate a new workflow from a previous workflow, optionally re-using successful nodes
