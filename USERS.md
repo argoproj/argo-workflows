@@ -80,6 +80,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [HOVER](https://hover.to)
 1. [HSBC](https://hsbc.com)
 1. [IBM](https://ibm.com)
+1. [Iflytek](https://www.iflytek.com/)
 1. [Inceptio Technology](https://www.inceptio.ai/)
 1. [incrmntal](https://incrmntal.com/)
 1. [InsideBoard](https://www.insideboard.com)
