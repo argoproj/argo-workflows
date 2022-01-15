@@ -142,8 +142,18 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 			if configMapInformer != nil {
 				// SubstituteParams is called only at the end of this method. To support parametrization of the configmap
 				// we need to perform a substitution here over the name and the key of the ConfigMapKeyRef.
-				name, key := substituteConfigMapKeyRefParams(inParam, globalParams)
-				cmValue, err := GetConfigMapValue(configMapInformer, namespace, name, key)
+				cmName, err := substituteConfigMapKeyRefParam(inParam.ValueFrom.ConfigMapKeyRef.Name, globalParams)
+				if err != nil {
+					log.WithError(err).Error("unable to substitute name for ConfigMapKeyRef")
+					return nil, err
+				}
+				cmKey, err := substituteConfigMapKeyRefParam(inParam.ValueFrom.ConfigMapKeyRef.Key, globalParams)
+				if err != nil {
+					log.WithError(err).Error("unable to substitute key for ConfigMapKeyRef")
+					return nil, err
+				}
+
+				cmValue, err := GetConfigMapValue(configMapInformer, namespace, cmName, cmKey)
 				if err != nil {
 					return nil, errors.Errorf(errors.CodeBadRequest, "unable to retrieve inputs.parameters.%s from ConfigMap: %s", inParam.Name, err)
 				}
@@ -186,24 +196,21 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 	return SubstituteParams(newTmpl, globalParams, localParams)
 }
 
-// substituteConfigMapKeyRefParams check if ConfigMapKeyRef's Name and Value are params and perform the substitution
-func substituteConfigMapKeyRefParams(inParam wfv1.Parameter, globalParams Parameters) (string, string) {
-	name := inParam.ValueFrom.ConfigMapKeyRef.Name
-	key := inParam.ValueFrom.ConfigMapKeyRef.Key
+// substituteConfigMapKeyRefParams check if ConfigMapKeyRef's key is a param and perform the substitution.
+func substituteConfigMapKeyRefParam(in string, globalParams Parameters) (string, error) {
+	if strings.HasPrefix(in, "{{") && strings.HasSuffix(in, "}}") {
+		k := strings.TrimSuffix(strings.TrimPrefix(in, "{{"), "}}")
+		k = strings.Trim(k, " ")
 
-	if strings.HasPrefix(name, "{{") && strings.HasSuffix(name, "}}") {
-		k := strings.TrimSuffix(strings.TrimPrefix(inParam.ValueFrom.ConfigMapKeyRef.Name, "{{"), "}}")
-		if v, ok := globalParams[k]; ok {
-			name = v
+		v, ok := globalParams[k]
+		if !ok {
+			err := errors.New("parameter %s not found", k)
+			log.WithError(err).Error()
+			return "", err
 		}
+		return v, nil
 	}
-	if strings.HasPrefix(key, "{{") && strings.HasPrefix(key, "}}") {
-		k := strings.TrimSuffix(strings.TrimPrefix(inParam.ValueFrom.ConfigMapKeyRef.Key, "{{"), "}}")
-		if v, ok := globalParams[k]; ok {
-			key = v
-		}
-	}
-	return name, key
+	return in, nil
 }
 
 // SubstituteParams returns a new copy of the template with global, pod, and input parameters substituted
