@@ -40773,6 +40773,7 @@ with argo_workflows.ApiClient() as api_client:
                 "parameters_example",
             ],
             pod_priority_class_name="pod_priority_class_name_example",
+            priority=1,
             server_dry_run=True,
             service_account="service_account_example",
         ),
