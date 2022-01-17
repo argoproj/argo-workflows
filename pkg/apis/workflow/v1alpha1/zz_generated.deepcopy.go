@@ -1348,6 +1348,11 @@ func (in *LabelValues) DeepCopy() *LabelValues {
 func (in *LifecycleHook) DeepCopyInto(out *LifecycleHook) {
 	*out = *in
 	in.Arguments.DeepCopyInto(&out.Arguments)
+	if in.TemplateRef != nil {
+		in, out := &in.TemplateRef, &out.TemplateRef
+		*out = new(TemplateRef)
+		**out = **in
+	}
 	return
 }
 

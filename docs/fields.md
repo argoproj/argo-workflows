@@ -110,6 +110,12 @@ Workflow is the definition of a workflow resource
 
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/default-pdb-support.yaml)
 
+- [`artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dinever/artifacts.yaml)
+
+- [`http.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dinever/http.yaml)
+
+- [`retry-add-memory.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dinever/retry-add-memory.yaml)
+
 - [`dns-config.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dns-config.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-code-output-variable.yaml)
@@ -523,6 +529,12 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/default-pdb-support.yaml)
 
+- [`artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dinever/artifacts.yaml)
+
+- [`http.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dinever/http.yaml)
+
+- [`retry-add-memory.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dinever/retry-add-memory.yaml)
+
 - [`dns-config.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dns-config.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-code-output-variable.yaml)
@@ -934,6 +946,12 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/default-pdb-support.yaml)
 
+- [`artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dinever/artifacts.yaml)
+
+- [`http.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dinever/http.yaml)
+
+- [`retry-add-memory.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dinever/retry-add-memory.yaml)
+
 - [`dns-config.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dns-config.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-code-output-variable.yaml)
@@ -1301,6 +1319,12 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/default-pdb-support.yaml)
 
+- [`artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dinever/artifacts.yaml)
+
+- [`http.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dinever/http.yaml)
+
+- [`retry-add-memory.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dinever/retry-add-memory.yaml)
+
 - [`dns-config.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dns-config.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-code-output-variable.yaml)
@@ -1632,6 +1656,8 @@ Arguments to a template
 
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
 
+- [`artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dinever/artifacts.yaml)
+
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-code-output-variable.yaml)
 
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-dag-level.yaml)
@@ -1861,6 +1887,8 @@ RetryStrategy provides controls on how to retry a workflow step
 - [`clustertemplates.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
 
 - [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-disable-failFast.yaml)
+
+- [`retry-add-memory.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dinever/retry-add-memory.yaml)
 
 - [`retry-backoff.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-backoff.yaml)
 
@@ -2117,9 +2145,9 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
 
-- [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-artifacts.yaml)
+- [`artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dinever/artifacts.yaml)
 
-- [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
+- [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-artifacts.yaml)
 
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
@@ -2220,6 +2248,8 @@ Artifact indicates an artifact to place at a specified path
 - [`dag-conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-artifacts.yaml)
 
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
+
+- [`artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dinever/artifacts.yaml)
 
 - [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-artifacts.yaml)
 
@@ -2344,6 +2374,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-task-level-timeout.yaml)
 
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
+
+- [`http.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dinever/http.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-code-output-variable.yaml)
 
@@ -2715,6 +2747,8 @@ _No description available_
 
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-daemon-task.yaml)
 
+- [`http.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dinever/http.yaml)
+
 - [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
 
 - [`http-success-condition.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-success-condition.yaml)
@@ -2838,6 +2872,10 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
 
+- [`artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dinever/artifacts.yaml)
+
+- [`http.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dinever/http.yaml)
+
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-code-output-variable.yaml)
 
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-dag-level.yaml)
@@ -2845,8 +2883,6 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 - [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-step-level.yaml)
 
 - [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-artifacts.yaml)
-
-- [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
 
 - [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-destructure-json.yaml)
 
@@ -3037,8 +3073,6 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 
 - [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-artifacts.yaml)
 
-- [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
-
 - [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-destructure-json.yaml)
 
 - [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-reusing-verbose-snippets.yaml)
@@ -3148,6 +3182,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-diamond-steps.yaml)
 
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
+
+- [`artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dinever/artifacts.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-code-output-variable.yaml)
 
@@ -3352,6 +3388,8 @@ TemplateRef is a reference of template resource.
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cron-backfill.yaml)
 
+- [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
+
 - [`dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/hello-world.yaml)
@@ -3536,6 +3574,8 @@ HTTPArtifact allows an file served on HTTP to be placed as an input artifact in 
 
 - [`dag-daemon-task.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-daemon-task.yaml)
 
+- [`http.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dinever/http.yaml)
+
 - [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
 
 - [`http-success-condition.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-success-condition.yaml)
@@ -3636,8 +3676,6 @@ ValueFrom describes a location in which to obtain the value to a parameter
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/custom-metrics.yaml)
 
 - [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
-
-- [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
 
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
@@ -3773,8 +3811,6 @@ MetricLabel is a single label for a prometheus metric
 
 - [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-artifacts.yaml)
 
-- [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
-
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
 - [`global-parameters-from-configmap-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters-from-configmap-referenced-as-local-variable.yaml)
@@ -3829,6 +3865,8 @@ _No description available_
 - [`sequence-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/container-set-template/sequence-workflow.yaml)
 
 - [`workspace-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/container-set-template/workspace-workflow.yaml)
+
+- [`retry-add-memory.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dinever/retry-add-memory.yaml)
 
 - [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-spec-patch-wf-tmpl.yaml)
 
@@ -3987,8 +4025,6 @@ DataSource sources external data into a data template
 
 - [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-artifacts.yaml)
 
-- [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
-
 - [`expression-destructure-json.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-destructure-json.yaml)
 
 - [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-reusing-verbose-snippets.yaml)
@@ -4109,8 +4145,9 @@ _No description available_
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`arguments`|[`Arguments`](#arguments)|_No description available_|
-|`template`|`string`|_No description available_|
+|`arguments`|[`Arguments`](#arguments)|Arguments hold arguments to the template|
+|`template`|`string`|Template is the name of the template to execute by the hook|
+|`templateRef`|[`TemplateRef`](#templateref)|TemplateRef is the reference to the template resource to execute by the hook|
 
 ## Item
 
@@ -4452,8 +4489,6 @@ _No description available_
 
 - [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
 
-- [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
-
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
@@ -4610,6 +4645,12 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
 
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/default-pdb-support.yaml)
+
+- [`artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dinever/artifacts.yaml)
+
+- [`http.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dinever/http.yaml)
+
+- [`retry-add-memory.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dinever/retry-add-memory.yaml)
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dns-config.yaml)
 
@@ -5095,6 +5136,8 @@ _No description available_
 
 - [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-disable-failFast.yaml)
 
+- [`retry-add-memory.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dinever/retry-add-memory.yaml)
+
 - [`retry-backoff.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-backoff.yaml)
 
 - [`retry-conditional.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-conditional.yaml)
@@ -5199,6 +5242,10 @@ A single application container that you want to run within a pod.
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
 
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/default-pdb-support.yaml)
+
+- [`artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dinever/artifacts.yaml)
+
+- [`retry-add-memory.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dinever/retry-add-memory.yaml)
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dns-config.yaml)
 
@@ -5566,6 +5613,8 @@ ResourceRequirements describes the compute resource requirements.
 
 - [`ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci.yaml)
 
+- [`retry-add-memory.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dinever/retry-add-memory.yaml)
+
 - [`dns-config.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dns-config.yaml)
 
 - [`fun-with-gifs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fun-with-gifs.yaml)
@@ -5869,6 +5918,12 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
 
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/default-pdb-support.yaml)
+
+- [`artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dinever/artifacts.yaml)
+
+- [`http.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dinever/http.yaml)
+
+- [`retry-add-memory.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dinever/retry-add-memory.yaml)
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dns-config.yaml)
 
@@ -6525,8 +6580,6 @@ EnvVarSource represents a source for the value of an EnvVar.
 
 - [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
 
-- [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
-
 - [`expression-tag-template-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/expression-tag-template-workflow.yaml)
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
@@ -6647,6 +6700,8 @@ Quantity is a fixed-point representation of a number. It provides convenient mar
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
+
+- [`retry-add-memory.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dinever/retry-add-memory.yaml)
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dns-config.yaml)
 

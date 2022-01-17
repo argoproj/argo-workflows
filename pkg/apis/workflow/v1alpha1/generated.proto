@@ -650,9 +650,14 @@ message LabelValues {
 }
 
 message LifecycleHook {
+  // Template is the name of the template to execute by the hook
   optional string template = 1;
 
+  // Arguments hold arguments to the template
   optional Arguments arguments = 2;
+
+  // TemplateRef is the reference to the template resource to execute by the hook
+  optional TemplateRef templateRef = 3;
 }
 
 // A link to another app.
