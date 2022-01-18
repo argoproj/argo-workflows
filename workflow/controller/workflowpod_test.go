@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -679,6 +680,20 @@ func Test_createWorkflowPod_emissary(t *testing.T) {
 			assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary", "--", "my-cmd"}, pod.Spec.Containers[1].Command)
 			assert.Equal(t, []string{"foo"}, pod.Spec.Containers[1].Args)
 		}
+	})
+	t.Run("CommandFromPodSpecPatch", func(t *testing.T) {
+		woc := newWoc()
+		woc.controller.containerRuntimeExecutor = common.ContainerRuntimeExecutorEmissary
+		podSpec := &apiv1.PodSpec{}
+		podSpec.Containers = []apiv1.Container{{
+			Name:    "main",
+			Command: []string{"bar"},
+		}}
+		podSpecPatch, err := json.Marshal(podSpec)
+		assert.NoError(t, err)
+		pod, err := woc.createWorkflowPod(context.Background(), "", []apiv1.Container{{Command: []string{"foo"}}}, &wfv1.Template{PodSpecPatch: string(podSpecPatch)}, &createWorkflowPodOpts{})
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary", "--", "bar"}, pod.Spec.Containers[1].Command)
 	})
 }
 
