@@ -4265,6 +4265,40 @@ func TestUnsuppliedArgValue(t *testing.T) {
 	assert.Equal(t, woc.wf.Status.Message, "invalid spec: spec.arguments.missing.value is required")
 }
 
+var suppliedArgValue = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf-with-supplied-param-
+spec:
+  arguments:
+    parameters:
+    - name: message
+      value: argo
+      valueFrom:
+        supplied: {}
+  entrypoint: whalesay
+  templates:
+  - container:
+      args: ["{{workflow.parameters.message}}"]
+      command: ["cowsay"]
+      image: docker/whalesay:latest
+    name: whalesay
+`
+
+// TestSuppliedArgValue ensures that supplied workflow parameters are correctly set in the global parameters
+func TestSuppliedArgValue(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(suppliedArgValue)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	assert.Equal(t, "argo", woc.globalParams["workflow.parameters.message"])
+}
+
 var maxDurationOnErroredFirstNode = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
