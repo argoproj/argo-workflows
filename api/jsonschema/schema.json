@@ -5335,6 +5335,10 @@
           "description": "Method is HTTP methods for HTTP Request",
           "type": "string"
         },
+        "successCondition": {
+          "description": "SuccessCondition is an expression if evaluated to true is considered successful",
+          "type": "string"
+        },
         "timeoutSeconds": {
           "description": "TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds",
           "type": "integer"
@@ -5984,6 +5988,10 @@
           "description": "Default is the default value to use for an input parameter if a value was not supplied",
           "type": "string"
         },
+        "description": {
+          "description": "Description is the parameter description",
+          "type": "string"
+        },
         "enum": {
           "description": "Enum holds a list of string values to choose from, for the actual value of the parameter",
           "items": {
@@ -6553,6 +6561,10 @@
         "podPriorityClassName": {
           "description": "Set the podPriorityClassName of the workflow",
           "type": "string"
+        },
+        "priority": {
+          "description": "Priority is used if controller is configured to process limited number of workflows in parallel, higher priority workflows are processed first.",
+          "type": "integer"
         },
         "serverDryRun": {
           "description": "ServerDryRun validates the workflow on the server-side without creating it",

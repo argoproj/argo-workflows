@@ -17,6 +17,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -139,7 +140,7 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 		}
 		if inParam.ValueFrom != nil && inParam.ValueFrom.ConfigMapKeyRef != nil {
 			if configMapInformer != nil {
-				cmValue, err := util.GetConfigMapValue(configMapInformer, namespace, inParam.ValueFrom.ConfigMapKeyRef.Name, inParam.ValueFrom.ConfigMapKeyRef.Key)
+				cmValue, err := GetConfigMapValue(configMapInformer, namespace, inParam.ValueFrom.ConfigMapKeyRef.Name, inParam.ValueFrom.ConfigMapKeyRef.Key)
 				if err != nil {
 					return nil, errors.Errorf(errors.CodeBadRequest, "unable to retrieve inputs.parameters.%s from ConfigMap: %s", inParam.Name, err)
 				}
@@ -352,4 +353,10 @@ func GetTemplateHolderString(tmplHolder wfv1.TemplateReferenceHolder) string {
 
 func GenerateOnExitNodeName(parentNodeName string) string {
 	return fmt.Sprintf("%s.onExit", parentNodeName)
+}
+
+func IsDone(un *unstructured.Unstructured) bool {
+	return un.GetDeletionTimestamp() == nil &&
+		un.GetLabels()[LabelKeyCompleted] == "true" &&
+		un.GetLabels()[LabelKeyWorkflowArchivingStatus] != "Pending"
 }

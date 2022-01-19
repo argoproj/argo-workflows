@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/antonmedv/expr"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/expr/argoexpr"
 	"github.com/argoproj/argo-workflows/v3/util/template"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
@@ -755,14 +755,9 @@ func (d *dagContext) evaluateDependsLogic(taskName string) (bool, bool, error) {
 	}
 
 	evalLogic := strings.Replace(d.GetTaskDependsLogic(taskName), "-", "_", -1)
-	result, err := expr.Eval(evalLogic, evalScope)
+	execute, err := argoexpr.EvalBool(evalLogic, evalScope)
 	if err != nil {
 		return false, false, fmt.Errorf("unable to evaluate expression '%s': %s", evalLogic, err)
 	}
-	execute, ok := result.(bool)
-	if !ok {
-		return false, false, fmt.Errorf("unable to cast expression result '%s': %s", result, err)
-	}
-
 	return execute, true, nil
 }

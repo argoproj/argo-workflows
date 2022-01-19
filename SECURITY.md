@@ -15,3 +15,7 @@ Security vulnerabilities will be disclosed via [release notes](docs/releasing.md
 ## Vulnerability Scanning
 
 See [static code analysis](docs/static-code-analysis.md).
+
+## Securing Argo Workflows
+
+See [docs/security.md](docs/security.md) for information about securing your Argo Workflows instance.

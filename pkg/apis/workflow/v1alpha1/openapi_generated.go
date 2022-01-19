@@ -2434,6 +2434,13 @@ func schema_pkg_apis_workflow_v1alpha1_HTTP(ref common.ReferenceCallback) common
 							Format:      "int64",
 						},
 					},
+					"successCondition": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SuccessCondition is an expression if evaluated to true is considered successful",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"body": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Body is content of the HTTP Request",
@@ -3709,6 +3716,13 @@ func schema_pkg_apis_workflow_v1alpha1_Parameter(ref common.ReferenceCallback) c
 							},
 						},
 					},
+					"description": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Description is the parameter description",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"name"},
 			},
@@ -4818,6 +4832,13 @@ func schema_pkg_apis_workflow_v1alpha1_SubmitOpts(ref common.ReferenceCallback) 
 							Description: "Set the podPriorityClassName of the workflow",
 							Type:        []string{"string"},
 							Format:      "",
+						},
+					},
+					"priority": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Priority is used if controller is configured to process limited number of workflows in parallel, higher priority workflows are processed first.",
+							Type:        []string{"integer"},
+							Format:      "int32",
 						},
 					},
 				},

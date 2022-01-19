@@ -571,6 +571,9 @@ message HTTP {
   // TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds
   optional int64 timeoutSeconds = 4;
 
+  // SuccessCondition is an expression if evaluated to true is considered successful
+  optional string successCondition = 6;
+
   // Body is content of the HTTP Request
   optional string body = 5;
 }
@@ -948,6 +951,9 @@ message Parameter {
 
   // Enum holds a list of string values to choose from, for the actual value of the parameter
   repeated string enum = 6;
+
+  // Description is the parameter description
+  optional string description = 7;
 }
 
 // PodGC describes how to delete completed pods as they complete
@@ -1211,6 +1217,10 @@ message SubmitOpts {
 
   // Set the podPriorityClassName of the workflow
   optional string podPriorityClassName = 13;
+
+  // Priority is used if controller is configured to process limited number of workflows in parallel, higher priority workflows
+  // are processed first.
+  optional int32 priority = 14;
 }
 
 // SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.

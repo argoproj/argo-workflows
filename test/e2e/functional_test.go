@@ -84,6 +84,28 @@ spec:
 		ExpectWorkflowDeleted()
 }
 
+func (s *FunctionalSuite) TestWorkflowRetention() {
+	listOptions := metav1.ListOptions{LabelSelector: "workflows.argoproj.io/phase=Failed"}
+	s.Given().
+		Workflow("@testdata/exit-1.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Given().
+		Workflow("@testdata/exit-1.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Given().
+		Workflow("@testdata/exit-1.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeFailed).
+		WaitForWorkflowList(listOptions, func(list []wfv1.Workflow) bool {
+			return len(list) == 2
+		})
+}
+
 // in this test we create a poi quota, and then  we create a workflow that needs one more pod than the quota allows
 // because we run them in parallel, the first node will run to completion, and then the second one
 func (s *FunctionalSuite) TestResourceQuota() {
@@ -840,6 +862,21 @@ func (s *FunctionalSuite) TestDataTransformation() {
 			}
 			assert.NotNil(t, status.Nodes.FindByDisplayName("process-artifact(0:foo/script.py)"))
 			assert.NotNil(t, status.Nodes.FindByDisplayName("process-artifact(1:script.py)"))
+		})
+}
+
+func (s *FunctionalSuite) TestHTTPOutputs() {
+	s.Given().
+		Workflow("@testdata/http-outputs.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			httpNode := status.Nodes.FindByDisplayName("http")
+			assert.NotNil(t, httpNode.Outputs.Result)
+			echoNode := status.Nodes.FindByDisplayName("echo")
+			assert.Equal(t, *httpNode.Outputs.Result, echoNode.Inputs.Parameters[0].Value.String())
 		})
 }
 

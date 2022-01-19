@@ -688,7 +688,6 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
-  containerRuntimeExecutor: emissary
   containerRuntimeExecutors: |
     - name: emissary
       selector:
@@ -752,6 +751,10 @@ data:
       passwordSecret:
         name: argo-postgres-config
         key: password
+  retentionPolicy: |
+    completed: 10
+    failed: 3
+    errored: 3
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap

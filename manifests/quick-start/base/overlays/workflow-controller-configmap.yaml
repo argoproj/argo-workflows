@@ -5,7 +5,6 @@ data:
       requests:
         cpu: 10m
         memory: 64Mi
-  containerRuntimeExecutor: emissary
   containerRuntimeExecutors: |
     - name: emissary
       selector:

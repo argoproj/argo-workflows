@@ -56,11 +56,11 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/pod"
 	"github.com/argoproj/argo-workflows/v3/workflow/cron"
 	"github.com/argoproj/argo-workflows/v3/workflow/events"
+	"github.com/argoproj/argo-workflows/v3/workflow/gccontroller"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
 	"github.com/argoproj/argo-workflows/v3/workflow/signal"
 	"github.com/argoproj/argo-workflows/v3/workflow/sync"
-	"github.com/argoproj/argo-workflows/v3/workflow/ttlcontroller"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
@@ -130,6 +130,14 @@ const (
 	workflowTaskSetResyncPeriod         = 20 * time.Minute
 )
 
+var cacheGCPeriod = env.LookupEnvDurationOr("CACHE_GC_PERIOD", 0)
+
+func init() {
+	if cacheGCPeriod != 0 {
+		log.WithField("cacheGCPeriod", cacheGCPeriod).Info("GC for memoization caches will be performed every")
+	}
+}
+
 // NewWorkflowController instantiates a new WorkflowController
 func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap string) (*WorkflowController, error) {
 	dynamicInterface, err := dynamic.NewForConfig(restConfig)
@@ -176,12 +184,12 @@ func (wfc *WorkflowController) newThrottler() sync.Throttler {
 	}
 }
 
-// RunTTLController runs the workflow TTL controller
-func (wfc *WorkflowController) runTTLController(ctx context.Context, workflowTTLWorkers int) {
+// runGCcontroller runs the workflow garbage collector controller
+func (wfc *WorkflowController) runGCcontroller(ctx context.Context, workflowTTLWorkers int) {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 
-	ttlCtrl := ttlcontroller.NewController(wfc.wfclientset, wfc.wfInformer, wfc.metrics)
-	err := ttlCtrl.Run(ctx.Done(), workflowTTLWorkers)
+	gcCtrl := gccontroller.NewController(wfc.wfclientset, wfc.wfInformer, wfc.metrics, wfc.Config.RetentionPolicy)
+	err := gcCtrl.Run(ctx.Done(), workflowTTLWorkers)
 	if err != nil {
 		panic(err)
 	}
@@ -215,8 +223,14 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	defer wfc.podQueue.ShutDown()
 	defer wfc.podCleanupQueue.ShutDown()
 
-	log.WithField("version", argo.GetVersion().Version).Info("Starting Workflow Controller")
-	log.Infof("Workers: workflow: %d, pod: %d, pod cleanup: %d", wfWorkers, podWorkers, podCleanupWorkers)
+	log.WithField("version", argo.GetVersion().Version).
+		WithField("defaultRequeueTime", GetRequeueTime()).
+		Info("Starting Workflow Controller")
+	log.WithField("workflow", wfWorkers).
+		WithField("workflowTtl", workflowTTLWorkers).
+		WithField("pod", podWorkers).
+		WithField("podCleanup", podCleanupWorkers).
+		Info("Current Worker Numbers")
 
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListOptions, indexers)
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
@@ -307,7 +321,7 @@ func (wfc *WorkflowController) startLeading(ctx context.Context, logCtx *log.Ent
 	go wfc.workflowGarbageCollector(ctx.Done())
 	go wfc.archivedWorkflowGarbageCollector(ctx.Done())
 
-	go wfc.runTTLController(ctx, workflowTTLWorkers)
+	go wfc.runGCcontroller(ctx, workflowTTLWorkers)
 	go wfc.runCronController(ctx)
 	go wait.Until(wfc.syncWorkflowPhaseMetrics, 15*time.Second, ctx.Done())
 	go wait.Until(wfc.syncPodPhaseMetrics, 15*time.Second, ctx.Done())
@@ -319,6 +333,9 @@ func (wfc *WorkflowController) startLeading(ctx context.Context, logCtx *log.Ent
 	}
 	for i := 0; i < podWorkers; i++ {
 		go wait.Until(wfc.podWorker, time.Second, ctx.Done())
+	}
+	if cacheGCPeriod != 0 {
+		go wait.JitterUntilWithContext(ctx, wfc.syncAllCacheForGC, cacheGCPeriod, 0.0, true)
 	}
 }
 
@@ -580,7 +597,7 @@ func (wfc *WorkflowController) workflowGarbageCollector(stopCh <-chan struct{}) 
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 
 	periodicity := env.LookupEnvDurationOr("WORKFLOW_GC_PERIOD", 5*time.Minute)
-	log.Infof("Performing periodic GC every %v", periodicity)
+	log.WithField("periodicity", periodicity).Info("Performing periodic GC")
 	ticker := time.NewTicker(periodicity)
 	for {
 		select {
@@ -1051,7 +1068,7 @@ func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer 
 	return v1.NewFilteredConfigMapInformer(wfc.kubeclientset, wfc.GetManagedNamespace(), 20*time.Minute, cache.Indexers{
 		indexes.ConfigMapLabelsIndex: indexes.ConfigMapIndexFunc,
 	}, func(opts *metav1.ListOptions) {
-		opts.LabelSelector = indexes.ConfigMapTypeLabel
+		opts.LabelSelector = common.LabelKeyConfigMapType
 	})
 }
 
@@ -1085,10 +1102,13 @@ func (wfc *WorkflowController) GetContainerRuntimeExecutor(labels labels.Labels)
 	if err != nil {
 		log.WithError(err).Info("failed to determine container runtime executor")
 	}
-	if executor == "" && wfc.containerRuntimeExecutor != "" {
+	if executor != "" {
+		return executor
+	}
+	if wfc.containerRuntimeExecutor != "" {
 		return wfc.containerRuntimeExecutor
 	}
-	return executor
+	return common.ContainerRuntimeExecutorEmissary
 }
 
 func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, metrics.ServerConfig) {
