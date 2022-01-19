@@ -57,6 +57,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [DDEV](https://www.ddev.com/)
 1. [Devtron Labs](https://github.com/devtron-labs/devtron)
 1. [DevSamurai](https://www.devsamurai.com/)
+1. [Dyno Therapeutics](https://dynotx.com)
 1. [DLR](https://www.dlr.de/eoc/)
 1. [EBSCO Information Services](https://www.ebsco.com/)
 1. [Equinor](https://www.equinor.com/)
@@ -79,6 +80,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [HOVER](https://hover.to)
 1. [HSBC](https://hsbc.com)
 1. [IBM](https://ibm.com)
+1. [Iflytek](https://www.iflytek.com/)
 1. [Inceptio Technology](https://www.inceptio.ai/)
 1. [incrmntal](https://incrmntal.com/)
 1. [InsideBoard](https://www.insideboard.com)
@@ -155,12 +157,14 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Workiva](https://www.workiva.com/)
 1. [Voyager](https://investvoyager.com/)
 1. [Zhihu](https://www.zhihu.com/)
+1. [Xueqiu](https://www.xueqiu.com/)
 
 ### Projects Using Argo
 
 In addition, the following projects are **officially** using Argo Workflows:
 
 1. [Couler](https://github.com/couler-proj/couler)
+1. [Hera Workflows](https://github.com/argoproj-labs/hera-workflows)
 1. [Kubeflow](https://www.kubeflow.org/)
 1. [Onepanel](https://github.com/onepanelio/onepanel)
 1. [SQLFlow](https://github.com/sql-machine-learning/sqlflow)
