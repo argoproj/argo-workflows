@@ -2175,6 +2175,8 @@ spec:
                                       properties:
                                         default:
                                           type: string
+                                        description:
+                                          type: string
                                         enum:
                                           items:
                                             type: string
@@ -2575,6 +2577,8 @@ spec:
                                           items:
                                             properties:
                                               default:
+                                                type: string
+                                              description:
                                                 type: string
                                               enum:
                                                 items:
@@ -3075,6 +3079,8 @@ spec:
                             type: object
                           type: array
                         method:
+                          type: string
+                        successCondition:
                           type: string
                         timeoutSeconds:
                           format: int64
@@ -3981,6 +3987,8 @@ spec:
                             properties:
                               default:
                                 type: string
+                              description:
+                                type: string
                               enum:
                                 items:
                                   type: string
@@ -4471,6 +4479,8 @@ spec:
                           items:
                             properties:
                               default:
+                                type: string
+                              description:
                                 type: string
                               enum:
                                 items:
@@ -6826,6 +6836,8 @@ spec:
                           items:
                             properties:
                               default:
+                                type: string
+                              description:
                                 type: string
                               enum:
                                 items:

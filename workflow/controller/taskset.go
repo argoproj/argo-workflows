@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	log "github.com/sirupsen/logrus"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -85,7 +84,7 @@ func (woc *wfOperationCtx) reconcileTaskSet(ctx context.Context) error {
 		return err
 	}
 
-	woc.log.WithField("workflow", woc.wf.Name).WithField("namespace", woc.wf.Namespace).Infof("TaskSet Reconciliation")
+	woc.log.Info("TaskSet Reconciliation")
 	if workflowTaskSet != nil && len(workflowTaskSet.Status.Nodes) > 0 {
 		for nodeID, taskResult := range workflowTaskSet.Status.Nodes {
 			node := woc.wf.Status.Nodes[nodeID]
@@ -107,8 +106,7 @@ func (woc *wfOperationCtx) createTaskSet(ctx context.Context) error {
 		return nil
 	}
 
-	key := fmt.Sprintf("%s/%s", woc.wf.Namespace, woc.wf.Name)
-	log.WithField("workflow", woc.wf.Name).WithField("namespace", woc.wf.Namespace).WithField("TaskSet", key).Infof("Creating TaskSet")
+	woc.log.Info("Creating TaskSet")
 	taskSet := wfv1.WorkflowTaskSet{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       workflow.WorkflowTaskSetKind,
@@ -130,23 +128,23 @@ func (woc *wfOperationCtx) createTaskSet(ctx context.Context) error {
 			Tasks: woc.taskSet,
 		},
 	}
-	log.WithField("workflow", woc.wf.Name).WithField("namespace", woc.wf.Namespace).WithField("TaskSet", key).Debug("creating new taskset")
+	woc.log.Debug("creating new taskset")
 
 	_, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace).Create(ctx, &taskSet, metav1.CreateOptions{})
 
 	if apierr.IsConflict(err) || apierr.IsAlreadyExists(err) {
-		log.WithField("workflow", woc.wf.Name).WithField("namespace", woc.wf.Namespace).WithField("TaskSet", woc.taskSet).Debug("patching the exiting taskset")
+		woc.log.Debug("patching the exiting taskset")
 		spec := map[string]interface{}{
 			"spec": wfv1.WorkflowTaskSetSpec{Tasks: woc.taskSet},
 		}
 		// patch the new templates into taskset
 		err = woc.patchTaskSet(ctx, spec, types.MergePatchType)
 		if err != nil {
-			log.WithError(err).WithField("workflow", woc.wf.Name).WithField("namespace", woc.wf.Namespace).Error("Failed to patch WorkflowTaskSet")
+			woc.log.WithError(err).Error("Failed to patch WorkflowTaskSet")
 			return fmt.Errorf("failed to patch TaskSet. %v", err)
 		}
 	} else if err != nil {
-		log.WithError(err).WithField("workflow", woc.wf.Name).WithField("namespace", woc.wf.Namespace).Error("Failed to create WorkflowTaskSet")
+		woc.log.WithError(err).Error("Failed to create WorkflowTaskSet")
 		return err
 	}
 	return nil

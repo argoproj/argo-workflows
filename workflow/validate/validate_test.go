@@ -1814,38 +1814,42 @@ func TestInvalidResourceWorkflow(t *testing.T) {
 }
 
 var invalidPodGC = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
 metadata:
   generateName: pod-gc-strategy-unknown-
 spec:
   podGC:
     strategy: Foo
-  entrypoint: whalesay
+  entrypoint: main
   templates:
-  - name: whalesay
+  - name: main
     container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["hello world"]
+      image: docker/whalesay
 `
 
 // TestIncorrectPodGCStrategy verifies pod gc strategy is correct.
 func TestIncorrectPodGCStrategy(t *testing.T) {
 	wf := unmarshalWf(invalidPodGC)
 	_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
-
 	assert.EqualError(t, err, "podGC.strategy unknown strategy 'Foo'")
+}
 
-	for _, start := range []wfv1.PodGCStrategy{wfv1.PodGCOnPodCompletion, wfv1.PodGCOnPodSuccess, wfv1.PodGCOnWorkflowCompletion, wfv1.PodGCOnWorkflowSuccess} {
-		wf.Spec.PodGC.Strategy = start
-		_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
-		assert.NoError(t, err)
-
-		wf.Spec.PodGC.LabelSelector = &metav1.LabelSelector{MatchLabels: map[string]string{"evicted": "true"}}
-		_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
-		assert.NoError(t, err)
-	}
+func TestInvalidPodGCLabelSelector(t *testing.T) {
+	wf := unmarshalWf(`
+metadata:
+  generateName: pod-gc-strategy-unknown-
+spec:
+  podGC:
+    labelSelector:
+      matchExpressions:
+        - {key: environment, operator: InvalidOperator, values: [dev]}
+  entrypoint: main
+  templates:
+  - name: main
+    container:
+      image: docker/whalesay
+`)
+	_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+	assert.EqualError(t, err, "podGC.labelSelector invalid: \"InvalidOperator\" is not a valid pod selector operator")
 }
 
 //nolint:gosec
@@ -2230,6 +2234,89 @@ func TestInvalidMetricHelp(t *testing.T) {
 	assert.EqualError(t, err, "templates.whalesay metric 'metric_name' must contain a help string under 'help: ' field")
 }
 
+var invalidRealtimeMetricGauge = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    metrics:
+      prometheus:
+        - name: metric_name
+          help: please
+          gauge:
+            realtime: true
+            value: "{{resourcesDuration.cpu}}/{{resourcesDuration.memory}}"
+    container:
+      image: docker/whalesay:latest
+`
+
+func TestInvalidMetricGauge(t *testing.T) {
+	_, err := validate(invalidRealtimeMetricGauge)
+	assert.EqualError(t, err, "templates.whalesay metric 'metric_name' error: 'resourcesDuration.*' metrics cannot be used in real-time")
+}
+
+var invalidNoValueMetricGauge = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    metrics:
+      prometheus:
+        - name: metric_name
+          help: please
+          gauge:
+            realtime: false
+    container:
+      image: docker/whalesay:latest
+`
+
+func TestInvalidNoValueMetricGauge(t *testing.T) {
+	_, err := validate(invalidNoValueMetricGauge)
+	assert.EqualError(t, err, "templates.whalesay metric 'metric_name' error: missing gauge.value")
+}
+
+var validMetricGauges = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    metrics:
+      prometheus:
+        - name: metric_one
+          help: please
+          gauge:
+            realtime: true
+            value: "{{duration}}/{{workflow.duration}}"
+        - name: metric_two
+          help: please
+          gauge:
+            realtime: false
+            value: "{{resourcesDuration.cpu}}/{{resourcesDuration.memory}}/{{duration}}/{{workflow.duration}}"
+        - name: metric_three
+          help: please
+          gauge:
+            value: "{{resourcesDuration.cpu}}/{{resourcesDuration.memory}}/{{duration}}/{{workflow.duration}}"
+    container:
+      image: docker/whalesay:latest
+`
+
+func TestValidMetricGauge(t *testing.T) {
+	_, err := validate(validMetricGauges)
+	assert.NoError(t, err)
+}
+
 var globalVariables = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -2521,6 +2608,10 @@ spec:
 func TestDagAndStepLevelOutputArtifactsForDiffExecutor(t *testing.T) {
 	t.Run("DefaultExecutor", func(t *testing.T) {
 		_, err := validateWithOptions(dagAndStepLevelOutputArtifacts, ValidateOpts{ContainerRuntimeExecutor: ""})
+		assert.NoError(t, err)
+	})
+	t.Run("EmissaryExecutor", func(t *testing.T) {
+		_, err := validateWithOptions(dagAndStepLevelOutputArtifacts, ValidateOpts{ContainerRuntimeExecutor: common.ContainerRuntimeExecutorEmissary})
 		assert.NoError(t, err)
 	})
 	t.Run("DockerExecutor", func(t *testing.T) {
@@ -3133,4 +3224,67 @@ spec:
 func TestStepsOutputParametersForContainerSet(t *testing.T) {
 	_, err := validate(stepsOutputParametersForContainerSet)
 	assert.NoError(t, err)
+}
+
+var globalAnnotationsAndLabels = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+  labels:
+    testLabel: foobar
+  annotations:
+    workflows.argoproj.io/description: |
+      This is a simple hello world example.
+spec:
+  entrypoint: whalesay1
+  arguments:
+    parameters:
+    - name: message
+      value: hello world
+  templates:
+  - name: whalesay1
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["{{workflow.annotations}},  {{workflow.labels}}"]`
+
+func TestResolveAnnotationsAndLabelsJSson(t *testing.T) {
+	_, err := validate(globalAnnotationsAndLabels)
+	assert.NoError(t, err)
+}
+
+var testInitContainerHasName = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: spurious-
+spec:
+  entrypoint: main
+
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: spurious
+        template: spurious
+
+  - name: spurious
+    retryStrategy:
+      retryPolicy: Always
+    initContainers:
+    - image: alpine:latest
+      # name: sleep
+      command:
+      - sleep
+      - "15"
+    container:
+      image: alpine:latest
+      command:
+      - echo
+      - "i am running"
+`
+
+func TestInitContainerHasName(t *testing.T) {
+	_, err := validate(testInitContainerHasName)
+	assert.EqualError(t, err, "templates.main.tasks.spurious initContainers must all have container name")
 }

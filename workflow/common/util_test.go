@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/kubernetes/fake"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -139,5 +140,24 @@ func TestGetTemplateHolderString(t *testing.T) {
 		Name:         "foo",
 		Template:     "bar",
 		ClusterScope: true,
+	}}))
+}
+
+func TestIsDone(t *testing.T) {
+	assert.False(t, IsDone(&unstructured.Unstructured{}))
+	assert.True(t, IsDone(&unstructured.Unstructured{Object: map[string]interface{}{
+		"metadata": map[string]interface{}{
+			"labels": map[string]interface{}{
+				LabelKeyCompleted: "true",
+			},
+		},
+	}}))
+	assert.False(t, IsDone(&unstructured.Unstructured{Object: map[string]interface{}{
+		"metadata": map[string]interface{}{
+			"labels": map[string]interface{}{
+				LabelKeyCompleted:               "true",
+				LabelKeyWorkflowArchivingStatus: "Pending",
+			},
+		},
 	}}))
 }

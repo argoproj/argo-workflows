@@ -84,6 +84,28 @@ spec:
 		ExpectWorkflowDeleted()
 }
 
+func (s *FunctionalSuite) TestWorkflowRetention() {
+	listOptions := metav1.ListOptions{LabelSelector: "workflows.argoproj.io/phase=Failed"}
+	s.Given().
+		Workflow("@testdata/exit-1.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Given().
+		Workflow("@testdata/exit-1.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Given().
+		Workflow("@testdata/exit-1.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeFailed).
+		WaitForWorkflowList(listOptions, func(list []wfv1.Workflow) bool {
+			return len(list) == 2
+		})
+}
+
 // in this test we create a poi quota, and then  we create a workflow that needs one more pod than the quota allows
 // because we run them in parallel, the first node will run to completion, and then the second one
 func (s *FunctionalSuite) TestResourceQuota() {
@@ -186,6 +208,36 @@ spec:
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeFailed, status.Nodes.FindByDisplayName("F").Phase)
 			assert.Equal(t, wfv1.NodeSucceeded, status.Nodes.FindByDisplayName("P").Phase)
+		})
+}
+
+func (s *FunctionalSuite) TestVolumeClaimTemplate() {
+	s.Given().
+		Workflow(`@testdata/volume-claim-template-workflow.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		// test that the PVC was deleted (because the `kubernetes.io/pvc-protection` finalizer was deleted)
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			defer cancel()
+			ticker := time.NewTicker(time.Second)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					t.Error("timeout waiting for PVC to be deleted")
+					t.FailNow()
+				case <-ticker.C:
+					list, err := s.KubeClient.CoreV1().PersistentVolumeClaims(fixtures.Namespace).List(context.Background(), metav1.ListOptions{})
+					if assert.NoError(t, err) {
+						if len(list.Items) == 0 {
+							return
+						}
+					}
+				}
+			}
 		})
 }
 
@@ -813,6 +865,21 @@ func (s *FunctionalSuite) TestDataTransformation() {
 		})
 }
 
+func (s *FunctionalSuite) TestHTTPOutputs() {
+	s.Given().
+		Workflow("@testdata/http-outputs.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			httpNode := status.Nodes.FindByDisplayName("http")
+			assert.NotNil(t, httpNode.Outputs.Result)
+			echoNode := status.Nodes.FindByDisplayName("echo")
+			assert.Equal(t, *httpNode.Outputs.Result, echoNode.Inputs.Parameters[0].Value.String())
+		})
+}
+
 func (s *FunctionalSuite) TestScriptAsNonRoot() {
 	s.Given().
 		Workflow(`
@@ -838,6 +905,37 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
+func (s *FunctionalSuite) TestPauseBefore() {
+	s.Given().
+		Workflow(`@functional/pause-before.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeRunning).
+		Exec("bash", []string{"-c", "sleep 5 &&  kubectl exec -i $(kubectl get pods | awk '/pause-before/ {print $1;exit}') -c main -- bash -c 'touch /proc/1/root/run/argo/ctr/main/before'"}, fixtures.NoError).
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
+func (s *FunctionalSuite) TestPauseAfter() {
+	s.Given().
+		Workflow(`@functional/pause-after.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeRunning).
+		Exec("bash", []string{"-c", "sleep 5 && kubectl exec -i $(kubectl get pods -n argo | awk '/pause-after/ {print $1;exit}') -c main -- bash -c 'touch /proc/1/root/run/argo/ctr/main/after'"}, fixtures.NoError).
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
+func (s *FunctionalSuite) TestPauseAfterAndBefore() {
+	s.Given().
+		Workflow(`@functional/pause-before-after.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeRunning).
+		Exec("bash", []string{"-c", "sleep 5 && kubectl exec -i $(kubectl get pods | awk '/pause-before-after/ {print $1;exit}') -c main -- bash -c 'touch /proc/1/root/run/argo/ctr/main/before'"}, fixtures.NoError).
+		Exec("bash", []string{"-c", "kubectl exec -i $(kubectl get pods | awk '/pause-before-after/ {print $1;exit}') -c main -- bash -c 'touch /proc/1/root/run/argo/ctr/main/after'"}, fixtures.NoError).
 		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 

@@ -1,4 +1,5 @@
 import * as models from '../../../models';
+import {Pagination} from '../pagination';
 import {Utils} from '../utils';
 import requests from './requests';
 
@@ -10,11 +11,8 @@ export class WorkflowTemplateService {
             .then(res => res.body as models.WorkflowTemplate);
     }
 
-    public list(namespace: string, labels: string[]) {
-        return requests
-            .get(`api/v1/workflow-templates/${namespace}?${Utils.queryParams({labels}).join('&')}`)
-            .then(res => res.body as models.WorkflowTemplateList)
-            .then(list => list.items || []);
+    public list(namespace: string, labels?: string[], pagination?: Pagination) {
+        return requests.get(`api/v1/workflow-templates/${namespace}?${Utils.queryParams({labels, pagination}).join('&')}`).then(res => res.body as models.WorkflowTemplateList);
     }
 
     public get(name: string, namespace: string) {

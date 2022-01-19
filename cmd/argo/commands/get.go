@@ -120,7 +120,11 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) string {
 	out += fmt.Sprintf(fmtStr, "Namespace:", wf.ObjectMeta.Namespace)
 	serviceAccount := wf.Spec.ServiceAccountName
 	if serviceAccount == "" {
-		serviceAccount = "default"
+		// if serviceAccountName was not specified in a submitted Workflow, we will
+		// use the serviceAccountName provided in Workflow Defaults (if any). If that
+		// also isn't set, we will use the 'default' ServiceAccount in the namespace
+		// the workflow will run in.
+		serviceAccount = "unset (will run with the default ServiceAccount)"
 	}
 	out += fmt.Sprintf(fmtStr, "ServiceAccount:", serviceAccount)
 	out += fmt.Sprintf(fmtStr, "Status:", printer.WorkflowStatus(wf))

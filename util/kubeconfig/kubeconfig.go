@@ -165,18 +165,21 @@ func GetBearerToken(in *restclient.Config, explicitKubeConfigPath string) (strin
 		// This code is not making actual request. We can ignore it.
 		_ = auth.UpdateTransportConfig(tc)
 
-		rt, err := transport.New(tc)
+		tp, err := transport.New(tc)
 		if err != nil {
 			return "", err
 		}
-		req := http.Request{Header: map[string][]string{}}
-
-		newT := NewUserAgentRoundTripper("dummy", rt)
-		resp, err := newT.RoundTrip(&req)
+		req, err := http.NewRequest("GET", in.Host, nil)
 		if err != nil {
 			return "", err
 		}
-		resp.Body.Close()
+		resp, err := tc.WrapTransport(tp).RoundTrip(req)
+		if err != nil {
+			return "", err
+		}
+		if err := resp.Body.Close(); err != nil {
+			return "", err
+		}
 
 		token := req.Header.Get("Authorization")
 		return strings.TrimPrefix(token, "Bearer "), nil

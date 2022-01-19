@@ -47,7 +47,7 @@ spec:
 		{Name: "workspace", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 	}, pod.Spec.Volumes)
 
-	assert.Empty(t, pod.Spec.InitContainers)
+	assert.NotEmpty(t, pod.Spec.InitContainers)
 
 	assert.Len(t, pod.Spec.Containers, 2)
 	for _, c := range pod.Spec.Containers {
@@ -162,6 +162,7 @@ spec:
         containers:
           - name: main
             image: argoproj/argosay:v2
+            command: [ /argosay ]
       outputs:
         artifacts:
          - name: in-0
@@ -190,7 +191,7 @@ spec:
 		{Name: "workspace", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 	}, pod.Spec.Volumes)
 
-	assert.Len(t, pod.Spec.InitContainers, 0)
+	assert.NotEmpty(t, pod.Spec.InitContainers)
 
 	assert.Len(t, pod.Spec.Containers, 2)
 	for _, c := range pod.Spec.Containers {
