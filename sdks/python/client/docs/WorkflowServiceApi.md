@@ -1,30 +1,30 @@
-# openapi_client.WorkflowServiceApi
+# argo_workflows.WorkflowServiceApi
 
 All URIs are relative to *http://localhost:2746*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**workflow_service_create_workflow**](WorkflowServiceApi.md#workflow_service_create_workflow) | **POST** /api/v1/workflows/{namespace} | 
-[**workflow_service_delete_workflow**](WorkflowServiceApi.md#workflow_service_delete_workflow) | **DELETE** /api/v1/workflows/{namespace}/{name} | 
-[**workflow_service_get_workflow**](WorkflowServiceApi.md#workflow_service_get_workflow) | **GET** /api/v1/workflows/{namespace}/{name} | 
-[**workflow_service_lint_workflow**](WorkflowServiceApi.md#workflow_service_lint_workflow) | **POST** /api/v1/workflows/{namespace}/lint | 
-[**workflow_service_list_workflows**](WorkflowServiceApi.md#workflow_service_list_workflows) | **GET** /api/v1/workflows/{namespace} | 
-[**workflow_service_pod_logs**](WorkflowServiceApi.md#workflow_service_pod_logs) | **GET** /api/v1/workflows/{namespace}/{name}/{podName}/log | DEPRECATED: Cannot work via HTTP if podName is an empty string. Use WorkflowLogs.
-[**workflow_service_resubmit_workflow**](WorkflowServiceApi.md#workflow_service_resubmit_workflow) | **PUT** /api/v1/workflows/{namespace}/{name}/resubmit | 
-[**workflow_service_resume_workflow**](WorkflowServiceApi.md#workflow_service_resume_workflow) | **PUT** /api/v1/workflows/{namespace}/{name}/resume | 
-[**workflow_service_retry_workflow**](WorkflowServiceApi.md#workflow_service_retry_workflow) | **PUT** /api/v1/workflows/{namespace}/{name}/retry | 
-[**workflow_service_set_workflow**](WorkflowServiceApi.md#workflow_service_set_workflow) | **PUT** /api/v1/workflows/{namespace}/{name}/set | 
-[**workflow_service_stop_workflow**](WorkflowServiceApi.md#workflow_service_stop_workflow) | **PUT** /api/v1/workflows/{namespace}/{name}/stop | 
-[**workflow_service_submit_workflow**](WorkflowServiceApi.md#workflow_service_submit_workflow) | **POST** /api/v1/workflows/{namespace}/submit | 
-[**workflow_service_suspend_workflow**](WorkflowServiceApi.md#workflow_service_suspend_workflow) | **PUT** /api/v1/workflows/{namespace}/{name}/suspend | 
-[**workflow_service_terminate_workflow**](WorkflowServiceApi.md#workflow_service_terminate_workflow) | **PUT** /api/v1/workflows/{namespace}/{name}/terminate | 
-[**workflow_service_watch_events**](WorkflowServiceApi.md#workflow_service_watch_events) | **GET** /api/v1/stream/events/{namespace} | 
-[**workflow_service_watch_workflows**](WorkflowServiceApi.md#workflow_service_watch_workflows) | **GET** /api/v1/workflow-events/{namespace} | 
-[**workflow_service_workflow_logs**](WorkflowServiceApi.md#workflow_service_workflow_logs) | **GET** /api/v1/workflows/{namespace}/{name}/log | 
+[**create_workflow**](WorkflowServiceApi.md#create_workflow) | **POST** /api/v1/workflows/{namespace} | 
+[**delete_workflow**](WorkflowServiceApi.md#delete_workflow) | **DELETE** /api/v1/workflows/{namespace}/{name} | 
+[**get_workflow**](WorkflowServiceApi.md#get_workflow) | **GET** /api/v1/workflows/{namespace}/{name} | 
+[**lint_workflow**](WorkflowServiceApi.md#lint_workflow) | **POST** /api/v1/workflows/{namespace}/lint | 
+[**list_workflows**](WorkflowServiceApi.md#list_workflows) | **GET** /api/v1/workflows/{namespace} | 
+[**pod_logs**](WorkflowServiceApi.md#pod_logs) | **GET** /api/v1/workflows/{namespace}/{name}/{podName}/log | DEPRECATED: Cannot work via HTTP if podName is an empty string. Use WorkflowLogs.
+[**resubmit_workflow**](WorkflowServiceApi.md#resubmit_workflow) | **PUT** /api/v1/workflows/{namespace}/{name}/resubmit | 
+[**resume_workflow**](WorkflowServiceApi.md#resume_workflow) | **PUT** /api/v1/workflows/{namespace}/{name}/resume | 
+[**retry_workflow**](WorkflowServiceApi.md#retry_workflow) | **PUT** /api/v1/workflows/{namespace}/{name}/retry | 
+[**set_workflow**](WorkflowServiceApi.md#set_workflow) | **PUT** /api/v1/workflows/{namespace}/{name}/set | 
+[**stop_workflow**](WorkflowServiceApi.md#stop_workflow) | **PUT** /api/v1/workflows/{namespace}/{name}/stop | 
+[**submit_workflow**](WorkflowServiceApi.md#submit_workflow) | **POST** /api/v1/workflows/{namespace}/submit | 
+[**suspend_workflow**](WorkflowServiceApi.md#suspend_workflow) | **PUT** /api/v1/workflows/{namespace}/{name}/suspend | 
+[**terminate_workflow**](WorkflowServiceApi.md#terminate_workflow) | **PUT** /api/v1/workflows/{namespace}/{name}/terminate | 
+[**watch_events**](WorkflowServiceApi.md#watch_events) | **GET** /api/v1/stream/events/{namespace} | 
+[**watch_workflows**](WorkflowServiceApi.md#watch_workflows) | **GET** /api/v1/workflow-events/{namespace} | 
+[**workflow_logs**](WorkflowServiceApi.md#workflow_logs) | **GET** /api/v1/workflows/{namespace}/{name}/log | 
 
 
-# **workflow_service_create_workflow**
-> IoArgoprojWorkflowV1alpha1Workflow workflow_service_create_workflow(namespace, body)
+# **create_workflow**
+> IoArgoprojWorkflowV1alpha1Workflow create_workflow(namespace, body)
 
 
 
@@ -32,21 +32,21 @@ Method | HTTP request | Description
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import workflow_service_api
-from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_create_request import IoArgoprojWorkflowV1alpha1WorkflowCreateRequest
+import argo_workflows
+from argo_workflows.api import workflow_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_create_request import IoArgoprojWorkflowV1alpha1WorkflowCreateRequest
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = workflow_service_api.WorkflowServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -422,6 +422,7 @@ with openapi_client.ApiClient() as api_client:
                     parameters=[
                         IoArgoprojWorkflowV1alpha1Parameter(
                             default="default_example",
+                            description="description_example",
                             enum=[
                                 "enum_example",
                             ],
@@ -1600,6 +1601,7 @@ with openapi_client.ApiClient() as api_client:
                                     parameters=[
                                         IoArgoprojWorkflowV1alpha1Parameter(
                                             default="default_example",
+                                            description="description_example",
                                             enum=[
                                                 "enum_example",
                                             ],
@@ -1797,6 +1799,7 @@ with openapi_client.ApiClient() as api_client:
                                             parameters=[
                                                 IoArgoprojWorkflowV1alpha1Parameter(
                                                     default="default_example",
+                                                    description="description_example",
                                                     enum=[
                                                         "enum_example",
                                                     ],
@@ -2041,6 +2044,7 @@ with openapi_client.ApiClient() as api_client:
                             ),
                         ],
                         method="method_example",
+                        success_condition="success_condition_example",
                         timeout_seconds=1,
                         url="url_example",
                     ),
@@ -2460,6 +2464,7 @@ with openapi_client.ApiClient() as api_client:
                         parameters=[
                             IoArgoprojWorkflowV1alpha1Parameter(
                                 default="default_example",
+                                description="description_example",
                                 enum=[
                                     "enum_example",
                                 ],
@@ -2699,6 +2704,7 @@ with openapi_client.ApiClient() as api_client:
                         parameters=[
                             IoArgoprojWorkflowV1alpha1Parameter(
                                 default="default_example",
+                                description="description_example",
                                 enum=[
                                     "enum_example",
                                 ],
@@ -3450,6 +3456,7 @@ with openapi_client.ApiClient() as api_client:
                                     parameters=[
                                         IoArgoprojWorkflowV1alpha1Parameter(
                                             default="default_example",
+                                            description="description_example",
                                             enum=[
                                                 "enum_example",
                                             ],
@@ -3643,6 +3650,7 @@ with openapi_client.ApiClient() as api_client:
                                             parameters=[
                                                 IoArgoprojWorkflowV1alpha1Parameter(
                                                     default="default_example",
+                                                    description="description_example",
                                                     enum=[
                                                         "enum_example",
                                                     ],
@@ -4985,6 +4993,7 @@ with openapi_client.ApiClient() as api_client:
                                         parameters=[
                                             IoArgoprojWorkflowV1alpha1Parameter(
                                                 default="default_example",
+                                                description="description_example",
                                                 enum=[
                                                     "enum_example",
                                                 ],
@@ -5182,6 +5191,7 @@ with openapi_client.ApiClient() as api_client:
                                                 parameters=[
                                                     IoArgoprojWorkflowV1alpha1Parameter(
                                                         default="default_example",
+                                                        description="description_example",
                                                         enum=[
                                                             "enum_example",
                                                         ],
@@ -5426,6 +5436,7 @@ with openapi_client.ApiClient() as api_client:
                                 ),
                             ],
                             method="method_example",
+                            success_condition="success_condition_example",
                             timeout_seconds=1,
                             url="url_example",
                         ),
@@ -5845,6 +5856,7 @@ with openapi_client.ApiClient() as api_client:
                             parameters=[
                                 IoArgoprojWorkflowV1alpha1Parameter(
                                     default="default_example",
+                                    description="description_example",
                                     enum=[
                                         "enum_example",
                                     ],
@@ -6084,6 +6096,7 @@ with openapi_client.ApiClient() as api_client:
                             parameters=[
                                 IoArgoprojWorkflowV1alpha1Parameter(
                                     default="default_example",
+                                    description="description_example",
                                     enum=[
                                         "enum_example",
                                     ],
@@ -6835,6 +6848,7 @@ with openapi_client.ApiClient() as api_client:
                                         parameters=[
                                             IoArgoprojWorkflowV1alpha1Parameter(
                                                 default="default_example",
+                                                description="description_example",
                                                 enum=[
                                                     "enum_example",
                                                 ],
@@ -7028,6 +7042,7 @@ with openapi_client.ApiClient() as api_client:
                                                 parameters=[
                                                     IoArgoprojWorkflowV1alpha1Parameter(
                                                         default="default_example",
+                                                        description="description_example",
                                                         enum=[
                                                             "enum_example",
                                                         ],
@@ -8095,6 +8110,7 @@ with openapi_client.ApiClient() as api_client:
                             parameters=[
                                 IoArgoprojWorkflowV1alpha1Parameter(
                                     default="default_example",
+                                    description="description_example",
                                     enum=[
                                         "enum_example",
                                     ],
@@ -8293,6 +8309,7 @@ with openapi_client.ApiClient() as api_client:
                             parameters=[
                                 IoArgoprojWorkflowV1alpha1Parameter(
                                     default="default_example",
+                                    description="description_example",
                                     enum=[
                                         "enum_example",
                                     ],
@@ -8503,6 +8520,7 @@ with openapi_client.ApiClient() as api_client:
                     parameters=[
                         IoArgoprojWorkflowV1alpha1Parameter(
                             default="default_example",
+                            description="description_example",
                             enum=[
                                 "enum_example",
                             ],
@@ -9800,6 +9818,7 @@ with openapi_client.ApiClient() as api_client:
                                         parameters=[
                                             IoArgoprojWorkflowV1alpha1Parameter(
                                                 default="default_example",
+                                                description="description_example",
                                                 enum=[
                                                     "enum_example",
                                                 ],
@@ -9997,6 +10016,7 @@ with openapi_client.ApiClient() as api_client:
                                                 parameters=[
                                                     IoArgoprojWorkflowV1alpha1Parameter(
                                                         default="default_example",
+                                                        description="description_example",
                                                         enum=[
                                                             "enum_example",
                                                         ],
@@ -10241,6 +10261,7 @@ with openapi_client.ApiClient() as api_client:
                                 ),
                             ],
                             method="method_example",
+                            success_condition="success_condition_example",
                             timeout_seconds=1,
                             url="url_example",
                         ),
@@ -10660,6 +10681,7 @@ with openapi_client.ApiClient() as api_client:
                             parameters=[
                                 IoArgoprojWorkflowV1alpha1Parameter(
                                     default="default_example",
+                                    description="description_example",
                                     enum=[
                                         "enum_example",
                                     ],
@@ -10899,6 +10921,7 @@ with openapi_client.ApiClient() as api_client:
                             parameters=[
                                 IoArgoprojWorkflowV1alpha1Parameter(
                                     default="default_example",
+                                    description="description_example",
                                     enum=[
                                         "enum_example",
                                     ],
@@ -11650,6 +11673,7 @@ with openapi_client.ApiClient() as api_client:
                                         parameters=[
                                             IoArgoprojWorkflowV1alpha1Parameter(
                                                 default="default_example",
+                                                description="description_example",
                                                 enum=[
                                                     "enum_example",
                                                 ],
@@ -11843,6 +11867,7 @@ with openapi_client.ApiClient() as api_client:
                                                 parameters=[
                                                     IoArgoprojWorkflowV1alpha1Parameter(
                                                         default="default_example",
+                                                        description="description_example",
                                                         enum=[
                                                             "enum_example",
                                                         ],
@@ -12521,6 +12546,7 @@ with openapi_client.ApiClient() as api_client:
                         parameters=[
                             IoArgoprojWorkflowV1alpha1Parameter(
                                 default="default_example",
+                                description="description_example",
                                 enum=[
                                     "enum_example",
                                 ],
@@ -13699,6 +13725,7 @@ with openapi_client.ApiClient() as api_client:
                                         parameters=[
                                             IoArgoprojWorkflowV1alpha1Parameter(
                                                 default="default_example",
+                                                description="description_example",
                                                 enum=[
                                                     "enum_example",
                                                 ],
@@ -13896,6 +13923,7 @@ with openapi_client.ApiClient() as api_client:
                                                 parameters=[
                                                     IoArgoprojWorkflowV1alpha1Parameter(
                                                         default="default_example",
+                                                        description="description_example",
                                                         enum=[
                                                             "enum_example",
                                                         ],
@@ -14140,6 +14168,7 @@ with openapi_client.ApiClient() as api_client:
                                 ),
                             ],
                             method="method_example",
+                            success_condition="success_condition_example",
                             timeout_seconds=1,
                             url="url_example",
                         ),
@@ -14559,6 +14588,7 @@ with openapi_client.ApiClient() as api_client:
                             parameters=[
                                 IoArgoprojWorkflowV1alpha1Parameter(
                                     default="default_example",
+                                    description="description_example",
                                     enum=[
                                         "enum_example",
                                     ],
@@ -14798,6 +14828,7 @@ with openapi_client.ApiClient() as api_client:
                             parameters=[
                                 IoArgoprojWorkflowV1alpha1Parameter(
                                     default="default_example",
+                                    description="description_example",
                                     enum=[
                                         "enum_example",
                                     ],
@@ -15549,6 +15580,7 @@ with openapi_client.ApiClient() as api_client:
                                         parameters=[
                                             IoArgoprojWorkflowV1alpha1Parameter(
                                                 default="default_example",
+                                                description="description_example",
                                                 enum=[
                                                     "enum_example",
                                                 ],
@@ -15742,6 +15774,7 @@ with openapi_client.ApiClient() as api_client:
                                                 parameters=[
                                                     IoArgoprojWorkflowV1alpha1Parameter(
                                                         default="default_example",
+                                                        description="description_example",
                                                         enum=[
                                                             "enum_example",
                                                         ],
@@ -17084,6 +17117,7 @@ with openapi_client.ApiClient() as api_client:
                                             parameters=[
                                                 IoArgoprojWorkflowV1alpha1Parameter(
                                                     default="default_example",
+                                                    description="description_example",
                                                     enum=[
                                                         "enum_example",
                                                     ],
@@ -17281,6 +17315,7 @@ with openapi_client.ApiClient() as api_client:
                                                     parameters=[
                                                         IoArgoprojWorkflowV1alpha1Parameter(
                                                             default="default_example",
+                                                            description="description_example",
                                                             enum=[
                                                                 "enum_example",
                                                             ],
@@ -17525,6 +17560,7 @@ with openapi_client.ApiClient() as api_client:
                                     ),
                                 ],
                                 method="method_example",
+                                success_condition="success_condition_example",
                                 timeout_seconds=1,
                                 url="url_example",
                             ),
@@ -17944,6 +17980,7 @@ with openapi_client.ApiClient() as api_client:
                                 parameters=[
                                     IoArgoprojWorkflowV1alpha1Parameter(
                                         default="default_example",
+                                        description="description_example",
                                         enum=[
                                             "enum_example",
                                         ],
@@ -18183,6 +18220,7 @@ with openapi_client.ApiClient() as api_client:
                                 parameters=[
                                     IoArgoprojWorkflowV1alpha1Parameter(
                                         default="default_example",
+                                        description="description_example",
                                         enum=[
                                             "enum_example",
                                         ],
@@ -18934,6 +18972,7 @@ with openapi_client.ApiClient() as api_client:
                                             parameters=[
                                                 IoArgoprojWorkflowV1alpha1Parameter(
                                                     default="default_example",
+                                                    description="description_example",
                                                     enum=[
                                                         "enum_example",
                                                     ],
@@ -19127,6 +19166,7 @@ with openapi_client.ApiClient() as api_client:
                                                     parameters=[
                                                         IoArgoprojWorkflowV1alpha1Parameter(
                                                             default="default_example",
+                                                            description="description_example",
                                                             enum=[
                                                                 "enum_example",
                                                             ],
@@ -19936,10 +19976,10 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.workflow_service_create_workflow(namespace, body)
+        api_response = api_instance.create_workflow(namespace, body)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling WorkflowServiceApi->workflow_service_create_workflow: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling WorkflowServiceApi->create_workflow: %s\n" % e)
 ```
 
 
@@ -19972,8 +20012,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **workflow_service_delete_workflow**
-> bool, date, datetime, dict, float, int, list, str, none_type workflow_service_delete_workflow(namespace, name)
+# **delete_workflow**
+> bool, date, datetime, dict, float, int, list, str, none_type delete_workflow(namespace, name)
 
 
 
@@ -19981,19 +20021,19 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import workflow_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+import argo_workflows
+from argo_workflows.api import workflow_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = workflow_service_api.WorkflowServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -20009,18 +20049,18 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.workflow_service_delete_workflow(namespace, name)
+        api_response = api_instance.delete_workflow(namespace, name)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling WorkflowServiceApi->workflow_service_delete_workflow: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling WorkflowServiceApi->delete_workflow: %s\n" % e)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.workflow_service_delete_workflow(namespace, name, delete_options_grace_period_seconds=delete_options_grace_period_seconds, delete_options_preconditions_uid=delete_options_preconditions_uid, delete_options_preconditions_resource_version=delete_options_preconditions_resource_version, delete_options_orphan_dependents=delete_options_orphan_dependents, delete_options_propagation_policy=delete_options_propagation_policy, delete_options_dry_run=delete_options_dry_run)
+        api_response = api_instance.delete_workflow(namespace, name, delete_options_grace_period_seconds=delete_options_grace_period_seconds, delete_options_preconditions_uid=delete_options_preconditions_uid, delete_options_preconditions_resource_version=delete_options_preconditions_resource_version, delete_options_orphan_dependents=delete_options_orphan_dependents, delete_options_propagation_policy=delete_options_propagation_policy, delete_options_dry_run=delete_options_dry_run)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling WorkflowServiceApi->workflow_service_delete_workflow: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling WorkflowServiceApi->delete_workflow: %s\n" % e)
 ```
 
 
@@ -20059,8 +20099,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **workflow_service_get_workflow**
-> IoArgoprojWorkflowV1alpha1Workflow workflow_service_get_workflow(namespace, name)
+# **get_workflow**
+> IoArgoprojWorkflowV1alpha1Workflow get_workflow(namespace, name)
 
 
 
@@ -20068,20 +20108,20 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import workflow_service_api
-from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+import argo_workflows
+from argo_workflows.api import workflow_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = workflow_service_api.WorkflowServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -20091,18 +20131,18 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.workflow_service_get_workflow(namespace, name)
+        api_response = api_instance.get_workflow(namespace, name)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling WorkflowServiceApi->workflow_service_get_workflow: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling WorkflowServiceApi->get_workflow: %s\n" % e)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.workflow_service_get_workflow(namespace, name, get_options_resource_version=get_options_resource_version, fields=fields)
+        api_response = api_instance.get_workflow(namespace, name, get_options_resource_version=get_options_resource_version, fields=fields)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling WorkflowServiceApi->workflow_service_get_workflow: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling WorkflowServiceApi->get_workflow: %s\n" % e)
 ```
 
 
@@ -20137,8 +20177,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **workflow_service_lint_workflow**
-> IoArgoprojWorkflowV1alpha1Workflow workflow_service_lint_workflow(namespace, body)
+# **lint_workflow**
+> IoArgoprojWorkflowV1alpha1Workflow lint_workflow(namespace, body)
 
 
 
@@ -20146,21 +20186,21 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import workflow_service_api
-from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_lint_request import IoArgoprojWorkflowV1alpha1WorkflowLintRequest
+import argo_workflows
+from argo_workflows.api import workflow_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_lint_request import IoArgoprojWorkflowV1alpha1WorkflowLintRequest
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = workflow_service_api.WorkflowServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -20528,6 +20568,7 @@ with openapi_client.ApiClient() as api_client:
                     parameters=[
                         IoArgoprojWorkflowV1alpha1Parameter(
                             default="default_example",
+                            description="description_example",
                             enum=[
                                 "enum_example",
                             ],
@@ -21706,6 +21747,7 @@ with openapi_client.ApiClient() as api_client:
                                     parameters=[
                                         IoArgoprojWorkflowV1alpha1Parameter(
                                             default="default_example",
+                                            description="description_example",
                                             enum=[
                                                 "enum_example",
                                             ],
@@ -21903,6 +21945,7 @@ with openapi_client.ApiClient() as api_client:
                                             parameters=[
                                                 IoArgoprojWorkflowV1alpha1Parameter(
                                                     default="default_example",
+                                                    description="description_example",
                                                     enum=[
                                                         "enum_example",
                                                     ],
@@ -22147,6 +22190,7 @@ with openapi_client.ApiClient() as api_client:
                             ),
                         ],
                         method="method_example",
+                        success_condition="success_condition_example",
                         timeout_seconds=1,
                         url="url_example",
                     ),
@@ -22566,6 +22610,7 @@ with openapi_client.ApiClient() as api_client:
                         parameters=[
                             IoArgoprojWorkflowV1alpha1Parameter(
                                 default="default_example",
+                                description="description_example",
                                 enum=[
                                     "enum_example",
                                 ],
@@ -22805,6 +22850,7 @@ with openapi_client.ApiClient() as api_client:
                         parameters=[
                             IoArgoprojWorkflowV1alpha1Parameter(
                                 default="default_example",
+                                description="description_example",
                                 enum=[
                                     "enum_example",
                                 ],
@@ -23556,6 +23602,7 @@ with openapi_client.ApiClient() as api_client:
                                     parameters=[
                                         IoArgoprojWorkflowV1alpha1Parameter(
                                             default="default_example",
+                                            description="description_example",
                                             enum=[
                                                 "enum_example",
                                             ],
@@ -23749,6 +23796,7 @@ with openapi_client.ApiClient() as api_client:
                                             parameters=[
                                                 IoArgoprojWorkflowV1alpha1Parameter(
                                                     default="default_example",
+                                                    description="description_example",
                                                     enum=[
                                                         "enum_example",
                                                     ],
@@ -25091,6 +25139,7 @@ with openapi_client.ApiClient() as api_client:
                                         parameters=[
                                             IoArgoprojWorkflowV1alpha1Parameter(
                                                 default="default_example",
+                                                description="description_example",
                                                 enum=[
                                                     "enum_example",
                                                 ],
@@ -25288,6 +25337,7 @@ with openapi_client.ApiClient() as api_client:
                                                 parameters=[
                                                     IoArgoprojWorkflowV1alpha1Parameter(
                                                         default="default_example",
+                                                        description="description_example",
                                                         enum=[
                                                             "enum_example",
                                                         ],
@@ -25532,6 +25582,7 @@ with openapi_client.ApiClient() as api_client:
                                 ),
                             ],
                             method="method_example",
+                            success_condition="success_condition_example",
                             timeout_seconds=1,
                             url="url_example",
                         ),
@@ -25951,6 +26002,7 @@ with openapi_client.ApiClient() as api_client:
                             parameters=[
                                 IoArgoprojWorkflowV1alpha1Parameter(
                                     default="default_example",
+                                    description="description_example",
                                     enum=[
                                         "enum_example",
                                     ],
@@ -26190,6 +26242,7 @@ with openapi_client.ApiClient() as api_client:
                             parameters=[
                                 IoArgoprojWorkflowV1alpha1Parameter(
                                     default="default_example",
+                                    description="description_example",
                                     enum=[
                                         "enum_example",
                                     ],
@@ -26941,6 +26994,7 @@ with openapi_client.ApiClient() as api_client:
                                         parameters=[
                                             IoArgoprojWorkflowV1alpha1Parameter(
                                                 default="default_example",
+                                                description="description_example",
                                                 enum=[
                                                     "enum_example",
                                                 ],
@@ -27134,6 +27188,7 @@ with openapi_client.ApiClient() as api_client:
                                                 parameters=[
                                                     IoArgoprojWorkflowV1alpha1Parameter(
                                                         default="default_example",
+                                                        description="description_example",
                                                         enum=[
                                                             "enum_example",
                                                         ],
@@ -28201,6 +28256,7 @@ with openapi_client.ApiClient() as api_client:
                             parameters=[
                                 IoArgoprojWorkflowV1alpha1Parameter(
                                     default="default_example",
+                                    description="description_example",
                                     enum=[
                                         "enum_example",
                                     ],
@@ -28399,6 +28455,7 @@ with openapi_client.ApiClient() as api_client:
                             parameters=[
                                 IoArgoprojWorkflowV1alpha1Parameter(
                                     default="default_example",
+                                    description="description_example",
                                     enum=[
                                         "enum_example",
                                     ],
@@ -28609,6 +28666,7 @@ with openapi_client.ApiClient() as api_client:
                     parameters=[
                         IoArgoprojWorkflowV1alpha1Parameter(
                             default="default_example",
+                            description="description_example",
                             enum=[
                                 "enum_example",
                             ],
@@ -29906,6 +29964,7 @@ with openapi_client.ApiClient() as api_client:
                                         parameters=[
                                             IoArgoprojWorkflowV1alpha1Parameter(
                                                 default="default_example",
+                                                description="description_example",
                                                 enum=[
                                                     "enum_example",
                                                 ],
@@ -30103,6 +30162,7 @@ with openapi_client.ApiClient() as api_client:
                                                 parameters=[
                                                     IoArgoprojWorkflowV1alpha1Parameter(
                                                         default="default_example",
+                                                        description="description_example",
                                                         enum=[
                                                             "enum_example",
                                                         ],
@@ -30347,6 +30407,7 @@ with openapi_client.ApiClient() as api_client:
                                 ),
                             ],
                             method="method_example",
+                            success_condition="success_condition_example",
                             timeout_seconds=1,
                             url="url_example",
                         ),
@@ -30766,6 +30827,7 @@ with openapi_client.ApiClient() as api_client:
                             parameters=[
                                 IoArgoprojWorkflowV1alpha1Parameter(
                                     default="default_example",
+                                    description="description_example",
                                     enum=[
                                         "enum_example",
                                     ],
@@ -31005,6 +31067,7 @@ with openapi_client.ApiClient() as api_client:
                             parameters=[
                                 IoArgoprojWorkflowV1alpha1Parameter(
                                     default="default_example",
+                                    description="description_example",
                                     enum=[
                                         "enum_example",
                                     ],
@@ -31756,6 +31819,7 @@ with openapi_client.ApiClient() as api_client:
                                         parameters=[
                                             IoArgoprojWorkflowV1alpha1Parameter(
                                                 default="default_example",
+                                                description="description_example",
                                                 enum=[
                                                     "enum_example",
                                                 ],
@@ -31949,6 +32013,7 @@ with openapi_client.ApiClient() as api_client:
                                                 parameters=[
                                                     IoArgoprojWorkflowV1alpha1Parameter(
                                                         default="default_example",
+                                                        description="description_example",
                                                         enum=[
                                                             "enum_example",
                                                         ],
@@ -32627,6 +32692,7 @@ with openapi_client.ApiClient() as api_client:
                         parameters=[
                             IoArgoprojWorkflowV1alpha1Parameter(
                                 default="default_example",
+                                description="description_example",
                                 enum=[
                                     "enum_example",
                                 ],
@@ -33805,6 +33871,7 @@ with openapi_client.ApiClient() as api_client:
                                         parameters=[
                                             IoArgoprojWorkflowV1alpha1Parameter(
                                                 default="default_example",
+                                                description="description_example",
                                                 enum=[
                                                     "enum_example",
                                                 ],
@@ -34002,6 +34069,7 @@ with openapi_client.ApiClient() as api_client:
                                                 parameters=[
                                                     IoArgoprojWorkflowV1alpha1Parameter(
                                                         default="default_example",
+                                                        description="description_example",
                                                         enum=[
                                                             "enum_example",
                                                         ],
@@ -34246,6 +34314,7 @@ with openapi_client.ApiClient() as api_client:
                                 ),
                             ],
                             method="method_example",
+                            success_condition="success_condition_example",
                             timeout_seconds=1,
                             url="url_example",
                         ),
@@ -34665,6 +34734,7 @@ with openapi_client.ApiClient() as api_client:
                             parameters=[
                                 IoArgoprojWorkflowV1alpha1Parameter(
                                     default="default_example",
+                                    description="description_example",
                                     enum=[
                                         "enum_example",
                                     ],
@@ -34904,6 +34974,7 @@ with openapi_client.ApiClient() as api_client:
                             parameters=[
                                 IoArgoprojWorkflowV1alpha1Parameter(
                                     default="default_example",
+                                    description="description_example",
                                     enum=[
                                         "enum_example",
                                     ],
@@ -35655,6 +35726,7 @@ with openapi_client.ApiClient() as api_client:
                                         parameters=[
                                             IoArgoprojWorkflowV1alpha1Parameter(
                                                 default="default_example",
+                                                description="description_example",
                                                 enum=[
                                                     "enum_example",
                                                 ],
@@ -35848,6 +35920,7 @@ with openapi_client.ApiClient() as api_client:
                                                 parameters=[
                                                     IoArgoprojWorkflowV1alpha1Parameter(
                                                         default="default_example",
+                                                        description="description_example",
                                                         enum=[
                                                             "enum_example",
                                                         ],
@@ -37190,6 +37263,7 @@ with openapi_client.ApiClient() as api_client:
                                             parameters=[
                                                 IoArgoprojWorkflowV1alpha1Parameter(
                                                     default="default_example",
+                                                    description="description_example",
                                                     enum=[
                                                         "enum_example",
                                                     ],
@@ -37387,6 +37461,7 @@ with openapi_client.ApiClient() as api_client:
                                                     parameters=[
                                                         IoArgoprojWorkflowV1alpha1Parameter(
                                                             default="default_example",
+                                                            description="description_example",
                                                             enum=[
                                                                 "enum_example",
                                                             ],
@@ -37631,6 +37706,7 @@ with openapi_client.ApiClient() as api_client:
                                     ),
                                 ],
                                 method="method_example",
+                                success_condition="success_condition_example",
                                 timeout_seconds=1,
                                 url="url_example",
                             ),
@@ -38050,6 +38126,7 @@ with openapi_client.ApiClient() as api_client:
                                 parameters=[
                                     IoArgoprojWorkflowV1alpha1Parameter(
                                         default="default_example",
+                                        description="description_example",
                                         enum=[
                                             "enum_example",
                                         ],
@@ -38289,6 +38366,7 @@ with openapi_client.ApiClient() as api_client:
                                 parameters=[
                                     IoArgoprojWorkflowV1alpha1Parameter(
                                         default="default_example",
+                                        description="description_example",
                                         enum=[
                                             "enum_example",
                                         ],
@@ -39040,6 +39118,7 @@ with openapi_client.ApiClient() as api_client:
                                             parameters=[
                                                 IoArgoprojWorkflowV1alpha1Parameter(
                                                     default="default_example",
+                                                    description="description_example",
                                                     enum=[
                                                         "enum_example",
                                                     ],
@@ -39233,6 +39312,7 @@ with openapi_client.ApiClient() as api_client:
                                                     parameters=[
                                                         IoArgoprojWorkflowV1alpha1Parameter(
                                                             default="default_example",
+                                                            description="description_example",
                                                             enum=[
                                                                 "enum_example",
                                                             ],
@@ -40042,10 +40122,10 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.workflow_service_lint_workflow(namespace, body)
+        api_response = api_instance.lint_workflow(namespace, body)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling WorkflowServiceApi->workflow_service_lint_workflow: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling WorkflowServiceApi->lint_workflow: %s\n" % e)
 ```
 
 
@@ -40078,8 +40158,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **workflow_service_list_workflows**
-> IoArgoprojWorkflowV1alpha1WorkflowList workflow_service_list_workflows(namespace)
+# **list_workflows**
+> IoArgoprojWorkflowV1alpha1WorkflowList list_workflows(namespace)
 
 
 
@@ -40087,20 +40167,20 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import workflow_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_list import IoArgoprojWorkflowV1alpha1WorkflowList
+import argo_workflows
+from argo_workflows.api import workflow_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_list import IoArgoprojWorkflowV1alpha1WorkflowList
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = workflow_service_api.WorkflowServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -40117,18 +40197,18 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.workflow_service_list_workflows(namespace)
+        api_response = api_instance.list_workflows(namespace)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling WorkflowServiceApi->workflow_service_list_workflows: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling WorkflowServiceApi->list_workflows: %s\n" % e)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.workflow_service_list_workflows(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue, fields=fields)
+        api_response = api_instance.list_workflows(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue, fields=fields)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling WorkflowServiceApi->workflow_service_list_workflows: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling WorkflowServiceApi->list_workflows: %s\n" % e)
 ```
 
 
@@ -40170,8 +40250,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **workflow_service_pod_logs**
-> StreamResultOfIoArgoprojWorkflowV1alpha1LogEntry workflow_service_pod_logs(namespace, name, pod_name)
+# **pod_logs**
+> StreamResultOfIoArgoprojWorkflowV1alpha1LogEntry pod_logs(namespace, name, pod_name)
 
 DEPRECATED: Cannot work via HTTP if podName is an empty string. Use WorkflowLogs.
 
@@ -40179,20 +40259,20 @@ DEPRECATED: Cannot work via HTTP if podName is an empty string. Use WorkflowLogs
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import workflow_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.stream_result_of_io_argoproj_workflow_v1alpha1_log_entry import StreamResultOfIoArgoprojWorkflowV1alpha1LogEntry
+import argo_workflows
+from argo_workflows.api import workflow_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.stream_result_of_io_argoproj_workflow_v1alpha1_log_entry import StreamResultOfIoArgoprojWorkflowV1alpha1LogEntry
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = workflow_service_api.WorkflowServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -40214,19 +40294,19 @@ with openapi_client.ApiClient() as api_client:
     # example passing only required values which don't have defaults set
     try:
         # DEPRECATED: Cannot work via HTTP if podName is an empty string. Use WorkflowLogs.
-        api_response = api_instance.workflow_service_pod_logs(namespace, name, pod_name)
+        api_response = api_instance.pod_logs(namespace, name, pod_name)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling WorkflowServiceApi->workflow_service_pod_logs: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling WorkflowServiceApi->pod_logs: %s\n" % e)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
         # DEPRECATED: Cannot work via HTTP if podName is an empty string. Use WorkflowLogs.
-        api_response = api_instance.workflow_service_pod_logs(namespace, name, pod_name, log_options_container=log_options_container, log_options_follow=log_options_follow, log_options_previous=log_options_previous, log_options_since_seconds=log_options_since_seconds, log_options_since_time_seconds=log_options_since_time_seconds, log_options_since_time_nanos=log_options_since_time_nanos, log_options_timestamps=log_options_timestamps, log_options_tail_lines=log_options_tail_lines, log_options_limit_bytes=log_options_limit_bytes, log_options_insecure_skip_tls_verify_backend=log_options_insecure_skip_tls_verify_backend, grep=grep, selector=selector)
+        api_response = api_instance.pod_logs(namespace, name, pod_name, log_options_container=log_options_container, log_options_follow=log_options_follow, log_options_previous=log_options_previous, log_options_since_seconds=log_options_since_seconds, log_options_since_time_seconds=log_options_since_time_seconds, log_options_since_time_nanos=log_options_since_time_nanos, log_options_timestamps=log_options_timestamps, log_options_tail_lines=log_options_tail_lines, log_options_limit_bytes=log_options_limit_bytes, log_options_insecure_skip_tls_verify_backend=log_options_insecure_skip_tls_verify_backend, grep=grep, selector=selector)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling WorkflowServiceApi->workflow_service_pod_logs: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling WorkflowServiceApi->pod_logs: %s\n" % e)
 ```
 
 
@@ -40272,8 +40352,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **workflow_service_resubmit_workflow**
-> IoArgoprojWorkflowV1alpha1Workflow workflow_service_resubmit_workflow(namespace, name, body)
+# **resubmit_workflow**
+> IoArgoprojWorkflowV1alpha1Workflow resubmit_workflow(namespace, name, body)
 
 
 
@@ -40281,21 +40361,21 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import workflow_service_api
-from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_resubmit_request import IoArgoprojWorkflowV1alpha1WorkflowResubmitRequest
+import argo_workflows
+from argo_workflows.api import workflow_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_resubmit_request import IoArgoprojWorkflowV1alpha1WorkflowResubmitRequest
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = workflow_service_api.WorkflowServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -40308,10 +40388,10 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.workflow_service_resubmit_workflow(namespace, name, body)
+        api_response = api_instance.resubmit_workflow(namespace, name, body)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling WorkflowServiceApi->workflow_service_resubmit_workflow: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling WorkflowServiceApi->resubmit_workflow: %s\n" % e)
 ```
 
 
@@ -40345,8 +40425,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **workflow_service_resume_workflow**
-> IoArgoprojWorkflowV1alpha1Workflow workflow_service_resume_workflow(namespace, name, body)
+# **resume_workflow**
+> IoArgoprojWorkflowV1alpha1Workflow resume_workflow(namespace, name, body)
 
 
 
@@ -40354,21 +40434,21 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import workflow_service_api
-from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_resume_request import IoArgoprojWorkflowV1alpha1WorkflowResumeRequest
+import argo_workflows
+from argo_workflows.api import workflow_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_resume_request import IoArgoprojWorkflowV1alpha1WorkflowResumeRequest
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = workflow_service_api.WorkflowServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -40381,10 +40461,10 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.workflow_service_resume_workflow(namespace, name, body)
+        api_response = api_instance.resume_workflow(namespace, name, body)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling WorkflowServiceApi->workflow_service_resume_workflow: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling WorkflowServiceApi->resume_workflow: %s\n" % e)
 ```
 
 
@@ -40418,8 +40498,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **workflow_service_retry_workflow**
-> IoArgoprojWorkflowV1alpha1Workflow workflow_service_retry_workflow(namespace, name, body)
+# **retry_workflow**
+> IoArgoprojWorkflowV1alpha1Workflow retry_workflow(namespace, name, body)
 
 
 
@@ -40427,21 +40507,21 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import workflow_service_api
-from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_retry_request import IoArgoprojWorkflowV1alpha1WorkflowRetryRequest
+import argo_workflows
+from argo_workflows.api import workflow_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_retry_request import IoArgoprojWorkflowV1alpha1WorkflowRetryRequest
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = workflow_service_api.WorkflowServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -40455,10 +40535,10 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.workflow_service_retry_workflow(namespace, name, body)
+        api_response = api_instance.retry_workflow(namespace, name, body)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling WorkflowServiceApi->workflow_service_retry_workflow: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling WorkflowServiceApi->retry_workflow: %s\n" % e)
 ```
 
 
@@ -40492,8 +40572,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **workflow_service_set_workflow**
-> IoArgoprojWorkflowV1alpha1Workflow workflow_service_set_workflow(namespace, name, body)
+# **set_workflow**
+> IoArgoprojWorkflowV1alpha1Workflow set_workflow(namespace, name, body)
 
 
 
@@ -40501,21 +40581,21 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import workflow_service_api
-from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_set_request import IoArgoprojWorkflowV1alpha1WorkflowSetRequest
+import argo_workflows
+from argo_workflows.api import workflow_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_set_request import IoArgoprojWorkflowV1alpha1WorkflowSetRequest
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = workflow_service_api.WorkflowServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -40531,10 +40611,10 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.workflow_service_set_workflow(namespace, name, body)
+        api_response = api_instance.set_workflow(namespace, name, body)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling WorkflowServiceApi->workflow_service_set_workflow: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling WorkflowServiceApi->set_workflow: %s\n" % e)
 ```
 
 
@@ -40568,8 +40648,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **workflow_service_stop_workflow**
-> IoArgoprojWorkflowV1alpha1Workflow workflow_service_stop_workflow(namespace, name, body)
+# **stop_workflow**
+> IoArgoprojWorkflowV1alpha1Workflow stop_workflow(namespace, name, body)
 
 
 
@@ -40577,21 +40657,21 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import workflow_service_api
-from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_stop_request import IoArgoprojWorkflowV1alpha1WorkflowStopRequest
+import argo_workflows
+from argo_workflows.api import workflow_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_stop_request import IoArgoprojWorkflowV1alpha1WorkflowStopRequest
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = workflow_service_api.WorkflowServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -40605,10 +40685,10 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.workflow_service_stop_workflow(namespace, name, body)
+        api_response = api_instance.stop_workflow(namespace, name, body)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling WorkflowServiceApi->workflow_service_stop_workflow: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling WorkflowServiceApi->stop_workflow: %s\n" % e)
 ```
 
 
@@ -40642,8 +40722,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **workflow_service_submit_workflow**
-> IoArgoprojWorkflowV1alpha1Workflow workflow_service_submit_workflow(namespace, body)
+# **submit_workflow**
+> IoArgoprojWorkflowV1alpha1Workflow submit_workflow(namespace, body)
 
 
 
@@ -40651,21 +40731,21 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import workflow_service_api
-from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_submit_request import IoArgoprojWorkflowV1alpha1WorkflowSubmitRequest
+import argo_workflows
+from argo_workflows.api import workflow_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_submit_request import IoArgoprojWorkflowV1alpha1WorkflowSubmitRequest
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = workflow_service_api.WorkflowServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -40692,6 +40772,8 @@ with openapi_client.ApiClient() as api_client:
             parameters=[
                 "parameters_example",
             ],
+            pod_priority_class_name="pod_priority_class_name_example",
+            priority=1,
             server_dry_run=True,
             service_account="service_account_example",
         ),
@@ -40699,10 +40781,10 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.workflow_service_submit_workflow(namespace, body)
+        api_response = api_instance.submit_workflow(namespace, body)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling WorkflowServiceApi->workflow_service_submit_workflow: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling WorkflowServiceApi->submit_workflow: %s\n" % e)
 ```
 
 
@@ -40735,8 +40817,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **workflow_service_suspend_workflow**
-> IoArgoprojWorkflowV1alpha1Workflow workflow_service_suspend_workflow(namespace, name, body)
+# **suspend_workflow**
+> IoArgoprojWorkflowV1alpha1Workflow suspend_workflow(namespace, name, body)
 
 
 
@@ -40744,21 +40826,21 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import workflow_service_api
-from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_suspend_request import IoArgoprojWorkflowV1alpha1WorkflowSuspendRequest
-from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+import argo_workflows
+from argo_workflows.api import workflow_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_suspend_request import IoArgoprojWorkflowV1alpha1WorkflowSuspendRequest
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = workflow_service_api.WorkflowServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -40770,10 +40852,10 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.workflow_service_suspend_workflow(namespace, name, body)
+        api_response = api_instance.suspend_workflow(namespace, name, body)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling WorkflowServiceApi->workflow_service_suspend_workflow: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling WorkflowServiceApi->suspend_workflow: %s\n" % e)
 ```
 
 
@@ -40807,8 +40889,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **workflow_service_terminate_workflow**
-> IoArgoprojWorkflowV1alpha1Workflow workflow_service_terminate_workflow(namespace, name, body)
+# **terminate_workflow**
+> IoArgoprojWorkflowV1alpha1Workflow terminate_workflow(namespace, name, body)
 
 
 
@@ -40816,21 +40898,21 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import workflow_service_api
-from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_terminate_request import IoArgoprojWorkflowV1alpha1WorkflowTerminateRequest
+import argo_workflows
+from argo_workflows.api import workflow_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_terminate_request import IoArgoprojWorkflowV1alpha1WorkflowTerminateRequest
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = workflow_service_api.WorkflowServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -40842,10 +40924,10 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.workflow_service_terminate_workflow(namespace, name, body)
+        api_response = api_instance.terminate_workflow(namespace, name, body)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling WorkflowServiceApi->workflow_service_terminate_workflow: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling WorkflowServiceApi->terminate_workflow: %s\n" % e)
 ```
 
 
@@ -40879,8 +40961,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **workflow_service_watch_events**
-> StreamResultOfEvent workflow_service_watch_events(namespace)
+# **watch_events**
+> StreamResultOfEvent watch_events(namespace)
 
 
 
@@ -40888,20 +40970,20 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import workflow_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.stream_result_of_event import StreamResultOfEvent
+import argo_workflows
+from argo_workflows.api import workflow_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.stream_result_of_event import StreamResultOfEvent
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = workflow_service_api.WorkflowServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -40917,18 +40999,18 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.workflow_service_watch_events(namespace)
+        api_response = api_instance.watch_events(namespace)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling WorkflowServiceApi->workflow_service_watch_events: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling WorkflowServiceApi->watch_events: %s\n" % e)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.workflow_service_watch_events(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue)
+        api_response = api_instance.watch_events(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling WorkflowServiceApi->workflow_service_watch_events: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling WorkflowServiceApi->watch_events: %s\n" % e)
 ```
 
 
@@ -40969,8 +41051,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **workflow_service_watch_workflows**
-> StreamResultOfIoArgoprojWorkflowV1alpha1WorkflowWatchEvent workflow_service_watch_workflows(namespace)
+# **watch_workflows**
+> StreamResultOfIoArgoprojWorkflowV1alpha1WorkflowWatchEvent watch_workflows(namespace)
 
 
 
@@ -40978,20 +41060,20 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import workflow_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.stream_result_of_io_argoproj_workflow_v1alpha1_workflow_watch_event import StreamResultOfIoArgoprojWorkflowV1alpha1WorkflowWatchEvent
+import argo_workflows
+from argo_workflows.api import workflow_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.stream_result_of_io_argoproj_workflow_v1alpha1_workflow_watch_event import StreamResultOfIoArgoprojWorkflowV1alpha1WorkflowWatchEvent
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = workflow_service_api.WorkflowServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -41008,18 +41090,18 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.workflow_service_watch_workflows(namespace)
+        api_response = api_instance.watch_workflows(namespace)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling WorkflowServiceApi->workflow_service_watch_workflows: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling WorkflowServiceApi->watch_workflows: %s\n" % e)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.workflow_service_watch_workflows(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue, fields=fields)
+        api_response = api_instance.watch_workflows(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue, fields=fields)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling WorkflowServiceApi->workflow_service_watch_workflows: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling WorkflowServiceApi->watch_workflows: %s\n" % e)
 ```
 
 
@@ -41061,8 +41143,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **workflow_service_workflow_logs**
-> StreamResultOfIoArgoprojWorkflowV1alpha1LogEntry workflow_service_workflow_logs(namespace, name)
+# **workflow_logs**
+> StreamResultOfIoArgoprojWorkflowV1alpha1LogEntry workflow_logs(namespace, name)
 
 
 
@@ -41070,20 +41152,20 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import workflow_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.stream_result_of_io_argoproj_workflow_v1alpha1_log_entry import StreamResultOfIoArgoprojWorkflowV1alpha1LogEntry
+import argo_workflows
+from argo_workflows.api import workflow_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.stream_result_of_io_argoproj_workflow_v1alpha1_log_entry import StreamResultOfIoArgoprojWorkflowV1alpha1LogEntry
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = workflow_service_api.WorkflowServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -41104,18 +41186,18 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.workflow_service_workflow_logs(namespace, name)
+        api_response = api_instance.workflow_logs(namespace, name)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling WorkflowServiceApi->workflow_service_workflow_logs: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling WorkflowServiceApi->workflow_logs: %s\n" % e)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.workflow_service_workflow_logs(namespace, name, pod_name=pod_name, log_options_container=log_options_container, log_options_follow=log_options_follow, log_options_previous=log_options_previous, log_options_since_seconds=log_options_since_seconds, log_options_since_time_seconds=log_options_since_time_seconds, log_options_since_time_nanos=log_options_since_time_nanos, log_options_timestamps=log_options_timestamps, log_options_tail_lines=log_options_tail_lines, log_options_limit_bytes=log_options_limit_bytes, log_options_insecure_skip_tls_verify_backend=log_options_insecure_skip_tls_verify_backend, grep=grep, selector=selector)
+        api_response = api_instance.workflow_logs(namespace, name, pod_name=pod_name, log_options_container=log_options_container, log_options_follow=log_options_follow, log_options_previous=log_options_previous, log_options_since_seconds=log_options_since_seconds, log_options_since_time_seconds=log_options_since_time_seconds, log_options_since_time_nanos=log_options_since_time_nanos, log_options_timestamps=log_options_timestamps, log_options_tail_lines=log_options_tail_lines, log_options_limit_bytes=log_options_limit_bytes, log_options_insecure_skip_tls_verify_backend=log_options_insecure_skip_tls_verify_backend, grep=grep, selector=selector)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling WorkflowServiceApi->workflow_service_workflow_logs: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling WorkflowServiceApi->workflow_logs: %s\n" % e)
 ```
 
 

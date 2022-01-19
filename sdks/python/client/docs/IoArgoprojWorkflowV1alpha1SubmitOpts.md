@@ -14,6 +14,8 @@ Name | Type | Description | Notes
 **owner_reference** | [**OwnerReference**](OwnerReference.md) |  | [optional] 
 **parameter_file** | **str** | ParameterFile holds a reference to a parameter file. This option is not supported in API | [optional] 
 **parameters** | **[str]** | Parameters passes input parameters to workflow | [optional] 
+**pod_priority_class_name** | **str** | Set the podPriorityClassName of the workflow | [optional] 
+**priority** | **int** | Priority is used if controller is configured to process limited number of workflows in parallel, higher priority workflows are processed first. | [optional] 
 **server_dry_run** | **bool** | ServerDryRun validates the workflow on the server-side without creating it | [optional] 
 **service_account** | **str** | ServiceAccount runs all pods in the workflow using specified ServiceAccount. | [optional] 
 **any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]

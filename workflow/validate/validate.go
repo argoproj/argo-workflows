@@ -180,9 +180,12 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	for k := range wf.ObjectMeta.Annotations {
 		ctx.globalParams["workflow.annotations."+k] = placeholderGenerator.NextPlaceholder()
 	}
+	ctx.globalParams[common.GlobalVarWorkflowAnnotations] = placeholderGenerator.NextPlaceholder()
+
 	for k := range wf.ObjectMeta.Labels {
 		ctx.globalParams["workflow.labels."+k] = placeholderGenerator.NextPlaceholder()
 	}
+	ctx.globalParams[common.GlobalVarWorkflowLabels] = placeholderGenerator.NextPlaceholder()
 
 	if wf.Spec.Priority != nil {
 		ctx.globalParams[common.GlobalVarWorkflowPriority] = strconv.Itoa(int(*wf.Spec.Priority))
@@ -217,12 +220,11 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		}
 	}
 
-	if wf.Spec.PodGC != nil {
-		switch wf.Spec.PodGC.Strategy {
-		case wfv1.PodGCOnPodCompletion, wfv1.PodGCOnPodSuccess, wfv1.PodGCOnWorkflowCompletion, wfv1.PodGCOnWorkflowSuccess:
-		default:
-			return nil, errors.Errorf(errors.CodeBadRequest, "podGC.strategy unknown strategy '%s'", wf.Spec.PodGC.Strategy)
-		}
+	if !wf.Spec.PodGC.GetStrategy().IsValid() {
+		return nil, errors.Errorf(errors.CodeBadRequest, "podGC.strategy unknown strategy '%s'", wf.Spec.PodGC.Strategy)
+	}
+	if _, err := wf.Spec.PodGC.GetLabelSelector(); err != nil {
+		return nil, errors.Errorf(errors.CodeBadRequest, "podGC.labelSelector invalid: %v", err)
 	}
 
 	// Check if all templates can be resolved.
@@ -311,6 +313,15 @@ func ValidateCronWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamesp
 	return nil
 }
 
+func (ctx *templateValidationCtx) validateInitContainers(containers []wfv1.UserContainer) error {
+	for _, container := range containers {
+		if len(container.Container.Name) == 0 {
+			return errors.Errorf(errors.CodeBadRequest, "initContainers must all have container name")
+		}
+	}
+	return nil
+}
+
 func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx *templateresolution.Context, args wfv1.ArgumentsProvider) error {
 	if err := validateTemplateType(tmpl); err != nil {
 		return err
@@ -318,6 +329,10 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 
 	scope, err := validateInputs(tmpl)
 	if err != nil {
+		return err
+	}
+
+	if err := ctx.validateInitContainers(tmpl.InitContainers); err != nil {
 		return err
 	}
 
@@ -413,6 +428,9 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 			}
 			if metric.Help == "" {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s metric '%s' must contain a help string under 'help: ' field", tmpl.Name, metric.Name)
+			}
+			if err := metrics.ValidateMetricValues(metric); err != nil {
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s metric '%s' error: %s", tmpl.Name, metric.Name, err)
 			}
 		}
 	}

@@ -10,8 +10,8 @@
 
 from setuptools import setup, find_packages  # noqa: H301
 
-NAME = "openapi-client"
-VERSION = "1.0.0"
+NAME = "argo-workflows"
+VERSION = "0.0.0-pre"
 # To install the library, run the following
 #
 # python setup.py install

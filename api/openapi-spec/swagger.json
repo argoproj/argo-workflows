@@ -9601,6 +9601,10 @@
           "description": "Method is HTTP methods for HTTP Request",
           "type": "string"
         },
+        "successCondition": {
+          "description": "SuccessCondition is an expression if evaluated to true is considered successful",
+          "type": "string"
+        },
         "timeoutSeconds": {
           "description": "TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds",
           "type": "integer"
@@ -10257,6 +10261,10 @@
           "description": "Default is the default value to use for an input parameter if a value was not supplied",
           "type": "string"
         },
+        "description": {
+          "description": "Description is the parameter description",
+          "type": "string"
+        },
         "enum": {
           "description": "Enum holds a list of string values to choose from, for the actual value of the parameter",
           "type": "array",
@@ -10416,7 +10424,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Backoff"
         },
         "expression": {
-          "description": "Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not be retried and the retry strategy will be ignored/",
+          "description": "Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not be retried and the retry strategy will be ignored",
           "type": "string"
         },
         "limit": {
@@ -10820,6 +10828,14 @@
             "type": "string"
           }
         },
+        "podPriorityClassName": {
+          "description": "Set the podPriorityClassName of the workflow",
+          "type": "string"
+        },
+        "priority": {
+          "description": "Priority is used if controller is configured to process limited number of workflows in parallel, higher priority workflows are processed first.",
+          "type": "integer"
+        },
         "serverDryRun": {
           "description": "ServerDryRun validates the workflow on the server-side without creating it",
           "type": "boolean"
@@ -11066,7 +11082,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Synchronization"
         },
         "timeout": {
-          "description": "Timout allows to set the total node execution timeout duration counting from the node's start time. This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.",
+          "description": "Timeout allows to set the total node execution timeout duration counting from the node's start time. This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.",
           "type": "string"
         },
         "tolerations": {

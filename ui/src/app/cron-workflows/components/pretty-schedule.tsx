@@ -1,4 +1,5 @@
 import React = require('react');
+import {WarningIcon} from '../../shared/components/fa-icons';
 
 const x = require('cronstrue');
 
@@ -13,9 +14,16 @@ const x = require('cronstrue');
 
 export const PrettySchedule = ({schedule}: {schedule: string}) => {
     try {
+        if (schedule.split(' ').length >= 6) {
+            throw new Error('cron schedules must consist of 5 values only');
+        }
         const pretty = x.toString(schedule);
         return <span title={pretty}>{pretty}</span>;
     } catch (e) {
-        return <>{e.toString()}</>;
+        return (
+            <span>
+                <WarningIcon /> {e.toString()}
+            </span>
+        );
     }
 };

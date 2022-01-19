@@ -1,22 +1,32 @@
 # Environment Variables
 
-This document outlines the set of environment variables that can be used to customize the behaviours at different levels.
-These environment variables are typically added to test out experimental features and should not be needed by most users.
-Note that these environment variables may be removed at any time.
+This document outlines the set of environment variables that can be used to customize the behaviours at different
+levels. These environment variables are typically added to test out experimental features and should not be needed by
+most users. Note that these environment variables may be removed at any time.
 
 ## Controller
 
 | Name | Type | Default | Description | 
 |------|------|---------|-------------|
+| `ARGO_AGENT_TASK_WORKERS` | `int` | `16` | The number of task workers for the agent pod. |
 | `ALL_POD_CHANGES_SIGNIFICANT` | `bool` | `false` | Whether to consider all pod changes as significant during pod reconciliation. |
 | `ALWAYS_OFFLOAD_NODE_STATUS` | `bool` | `false` | Whether to always offload the node status. |
 | `ARCHIVED_WORKFLOW_GC_PERIOD` | `time.Duration` | `24h` | The periodicity for GC of archived workflows. |
 | `ARGO_PPROF` | `bool` | `false` | Enable pprof endpoints |
+| `ARGO_PROGRESS_PATCH_TICK_DURATION` | `time.Duration` | `1m` | How often self reported progress is patched into the pod annotations which means how long it takes until the controller picks up the progress change. Set to 0 to disable self reporting progress. |
+| `ARGO_PROGRESS_FILE_TICK_DURATION` | `time.Duration` | `3s` | How often the progress file is read by the executor. Set to 0 to disable self reporting progress. |
+| `ARGO_REMOVE_PVC_PROTECTION_FINALIZER` | `bool` | `false` | Remove the `kubernetes.io/pvc-protection` finalizer from persistent volume claims (PVC) after marking PVCs created for the workflow for deletion, so deleted is not blocked until the pods are deleted.  [#6629](https://github.com/argoproj/argo-workflows/issues/6629) |
 | `ARGO_TRACE` | `string` | `"1"` | Whether to enable tracing statements in Argo components. |
+| `ARGO_AGENT_PATCH_RATE` | `time.Duration` | `DEFAULT_REQUEUE_TIME` | Rate that the Argo Agent will patch the Workflow TaskSet. |
+| `BUBBLE_ENTRY_TEMPLATE_ERR` | `bool` | `true` | Whether to bubble up template errors to workflow. |
+| `CACHE_GC_PERIOD` | `time.Duration` | `0s` | How often to perform memoization cache GC, which is disabled by default and can be enabled by providing a non-zero duration. |
+| `CACHE_GC_AFTER_NOT_HIT_DURATION` | `time.Duration` | `30s` | When a memoization cache has not been hit after this duration, it will be deleted. |
 | `CRON_SYNC_PERIOD` | `time.Duration` | `10s` | How often to sync cron workflows. |
 | `DEFAULT_REQUEUE_TIME` | `time.Duration` | `10s` | The requeue time for the rate limiter of the workflow queue. |
 | `EXPRESSION_TEMPLATES` | `bool` | `true` | Escape hatch to disable expression templates. |
+| `GRPC_MESSAGE_SIZE` | `string` | Use different GRPC Max message size for Argo server deployment (supporting huge workflows). |
 | `GZIP_IMPLEMENTATION` | `string` | `"PGZip"` | The implementation of compression/decompression. Currently only "PGZip" and "GZip" are supported. |
+| `INFORMER_WRITE_BACK` | `bool` | `true` | Whether to write back to informer instead of catching up. |
 | `HEALTHZ_AGE` | `time.Duration` | `5m` | How old a un-reconciled workflow is to report unhealthy. |
 | `INDEX_WORKFLOW_SEMAPHORE_KEYS` | `bool` | `true` | Whether or not to index semaphores. |
 | `LEADER_ELECTION_IDENTITY` | `string` | Controller's `metadata.name` | The ID used for workflow controllers to elect a leader. |
@@ -35,13 +45,9 @@ Note that these environment variables may be removed at any time.
 | `TRANSIENT_ERROR_PATTERN` | `string` | `""` | The regular expression that represents additional patterns for transient errors. |
 | `WF_DEL_PROPAGATION_POLICY` | `string` | `""` | The deletion propagation policy for workflows. |
 | `WORKFLOW_GC_PERIOD` | `time.Duration` | `5m` | The periodicity for GC of workflows. |
-| `BUBBLE_ENTRY_TEMPLATE_ERR` | `bool` | `true` | Whether to bubble up template errors to workflow. |
-| `INFORMER_WRITE_BACK` | `bool` | `true` | Whether to write back to informer instead of catching up. |
-| `GRPC_MESSAGE_SIZE` | `string` | Use different GRPC Max message size for Argo server deployment (supporting huge workflows). |
-| `ARGO_PROGRESS_PATCH_TICK_DURATION` | `time.Duration` | `1m` | How often self reported progress is patched into the pod annotations which means how long it takes until the controller picks up the progress change. Set to 0 to disable self reporting progress. |
-| `ARGO_PROGRESS_FILE_TICK_DURATION` | `time.Duration` | `3s` | How often the progress file is read by the executor. Set to 0 to disable self reporting progress. |
 
-CLI parameters of the `argo-server` and `workflow-controller` can be specified as environment variables with the `ARGO_` prefix. For example:
+CLI parameters of the `argo-server` and `workflow-controller` can be specified as environment variables with the `ARGO_`
+prefix. For example:
 
 ```
 workflow-controller --managed-namespace=argo
@@ -70,17 +76,17 @@ spec:
         app: argo-server
     spec:
       containers:
-      - args:
-        - server
-        image: argoproj/argocli:latest
-        name: argo-server
-        env:
-        - name: GRPC_MESSAGE_SIZE
-          value: "209715200"
-        ports:
-        ..
-        ...
-        ....
+        - args:
+            - server
+          image: argoproj/argocli:latest
+          name: argo-server
+          env:
+            - name: GRPC_MESSAGE_SIZE
+              value: "209715200"
+          ports:
+          ..
+          ...
+          ....
 ```
 
 You can set the environment variables for controller in controller's container spec like the following:
@@ -101,8 +107,8 @@ spec:
     spec:
       containers:
         - env:
-          - name: WORKFLOW_GC_PERIOD
-            value: 30s
+            - name: WORKFLOW_GC_PERIOD
+              value: 30s
 ```
 
 ## Executor

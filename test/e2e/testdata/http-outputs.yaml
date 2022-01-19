@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: http-outputs-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: http
+            template: http
+            arguments:
+              parameters:
+                - name: url
+                  value: >-
+                    https://raw.githubusercontent.com/argoproj/argo-workflows/4e450e250168e6b4d51a126b784e90b11a0162bc/pkg/apis/workflow/v1alpha1/generated.swagger.json
+          - name: echo
+            template: echo
+            arguments:
+              parameters:
+                - name: msg
+                  value: '{{tasks.http.outputs.result}}'
+            dependencies:
+              - http
+    - name: http
+      inputs:
+        parameters:
+          - name: url
+      http:
+        url: '{{inputs.parameters.url}}'
+    - name: echo
+      inputs:
+        parameters:
+          - name: msg
+      container:
+        image: 'argoproj/argosay:v2'
+        args:
+          - echo
+          - '{{inputs.parameters.msg}}'

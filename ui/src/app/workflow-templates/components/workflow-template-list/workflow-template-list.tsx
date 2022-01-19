@@ -8,11 +8,14 @@ import {ErrorNotice} from '../../../shared/components/error-notice';
 import {ExampleManifests} from '../../../shared/components/example-manifests';
 import {InfoIcon} from '../../../shared/components/fa-icons';
 import {Loading} from '../../../shared/components/loading';
+import {PaginationPanel} from '../../../shared/components/pagination-panel';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Context} from '../../../shared/context';
 import {Footnote} from '../../../shared/footnote';
 import {historyUrl} from '../../../shared/history';
+import {Pagination, parseLimit} from '../../../shared/pagination';
+import {ScopedLocalStorage} from '../../../shared/scoped-local-storage';
 import {services} from '../../../shared/services';
 import {useQueryParams} from '../../../shared/use-query-params';
 import {Utils} from '../../../shared/utils';
@@ -28,10 +31,18 @@ export const WorkflowTemplateList = ({match, location, history}: RouteComponentP
     const queryParams = new URLSearchParams(location.search);
     const {navigation} = useContext(Context);
 
-    // state for URL, query and label parameters
+    const storage = new ScopedLocalStorage('WorkflowTemplateListOptions');
+    const savedOptions = storage.getItem('paginationLimit', 0);
+
+    // state for URL and query parameters
     const [namespace, setNamespace] = useState(Utils.getNamespace(match.params.namespace) || '');
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
+
     const [labels, setLabels] = useState([]);
+    const [pagination, setPagination] = useState<Pagination>({
+        offset: queryParams.get('offset'),
+        limit: parseLimit(queryParams.get('limit')) || savedOptions.paginationLimit || 500
+    });
 
     useEffect(
         useQueryParams(history, p => {
@@ -54,14 +65,19 @@ export const WorkflowTemplateList = ({match, location, history}: RouteComponentP
     // internal state
     const [error, setError] = useState<Error>();
     const [templates, setTemplates] = useState<WorkflowTemplate[]>();
-
     useEffect(() => {
         services.workflowTemplate
-            .list(namespace, labels)
-            .then(setTemplates)
+            .list(namespace, labels, pagination)
+            .then(list => {
+                setPagination({...pagination, nextOffset: list.metadata.continue});
+                setTemplates(list.items || []);
+            })
             .then(() => setError(null))
             .catch(setError);
-    }, [namespace, labels]);
+    }, [namespace, labels, pagination.offset, pagination.limit]);
+    useEffect(() => {
+        storage.setItem('paginationLimit', pagination.limit, 0);
+    }, [pagination.limit, labels]);
 
     return (
         <Page
@@ -134,6 +150,7 @@ export const WorkflowTemplateList = ({match, location, history}: RouteComponentP
                             <Footnote>
                                 <InfoIcon /> Workflow templates are reusable templates you can create new workflows from. <ExampleManifests />. {learnMore}.
                             </Footnote>
+                            <PaginationPanel onChange={setPagination} pagination={pagination} numRecords={null} />
                         </>
                     )}
                 </div>

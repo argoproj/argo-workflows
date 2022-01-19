@@ -36,6 +36,9 @@ spec:
 ...
 ```
 
+!!! Note 
+    In order to use memoization it is necessary to add the verbs `create` and `update` to the `configmaps` resource for the appropriate (cluster) roles. In the case of a cluster install the `argo-cluster-role` cluster role should be updated, whilst for a namespace install the `argo-role` role should be updated.
+
 ## FAQs
 
 1. If you see errors like `"error creating cache entry: ConfigMap \"reuse-task\" is invalid: []: Too long: must have at most 1048576 characters"`,

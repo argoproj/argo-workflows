@@ -9,7 +9,7 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
 
 ⚠️Deprecated. 
 
-**default in <= v3.2 **
+**default in <= v3.2**
 
 * Reliability:
     * Most well-tested
@@ -92,7 +92,7 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
 
 > v3.1 and after
 
-**default in >= v3.3 **
+**default in >= v3.3**
 
 This is the most fully featured executor.
 
@@ -100,6 +100,7 @@ This is the most fully featured executor.
     * Not yet well-tested
     * Not yet popular
     * Works on GKE Autopilot
+    * Does not require `init` process to kill sub-processes.
 * More secure:
     * No `privileged` access
     * Cannot escape the privileges of the pod's service account

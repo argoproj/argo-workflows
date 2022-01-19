@@ -52,8 +52,9 @@ const (
 	// for the purposes of workflow segregation
 	LabelKeyControllerInstanceID = workflow.WorkflowFullName + "/controller-instanceid"
 	// Who created this workflow.
-	LabelKeyCreator      = workflow.WorkflowFullName + "/creator"
-	LabelKeyCreatorEmail = workflow.WorkflowFullName + "/creator-email"
+	LabelKeyCreator                  = workflow.WorkflowFullName + "/creator"
+	LabelKeyCreatorEmail             = workflow.WorkflowFullName + "/creator-email"
+	LabelKeyCreatorPreferredUsername = workflow.WorkflowFullName + "/creator-preferred-username"
 	// LabelKeyCompleted is the metadata label applied on workflows and workflow pods to indicates if resource is completed
 	// Workflows and pods with a completed=true label will be ignored by the controller.
 	// See also `LabelKeyWorkflowArchivingStatus`.
@@ -102,7 +103,7 @@ const (
 
 	// EnvVarPodName contains the name of the pod (currently unused)
 	EnvVarPodName = "ARGO_POD_NAME"
-	// EnvVarWorkflowName
+	// EnvVarWorkflowName is the name of the workflow for which the an agent is responsible for
 	EnvVarWorkflowName = "ARGO_WORKFLOW_NAME"
 	// EnvVarContainerName container the container's name for the current pod
 	EnvVarContainerName = "ARGO_CONTAINER_NAME"
@@ -122,7 +123,6 @@ const (
 	EnvVarKubeletInsecure = "ARGO_KUBELET_INSECURE"
 	// EnvVarArgoTrace is used enable tracing statements in Argo components
 	EnvVarArgoTrace = "ARGO_TRACE"
-
 	// EnvVarProgressPatchTickDuration sets the tick duration for patching pod annotations upon progress changes.
 	// Setting this or EnvVarProgressFileTickDuration to 0 will disable monitoring progress.
 	EnvVarProgressPatchTickDuration = "ARGO_PROGRESS_PATCH_TICK_DURATION"
@@ -131,6 +131,12 @@ const (
 	EnvVarProgressFileTickDuration = "ARGO_PROGRESS_FILE_TICK_DURATION"
 	// EnvVarProgressFile is the file watched for reporting progress
 	EnvVarProgressFile = "ARGO_PROGRESS_FILE"
+	// EnvVarDefaultRequeueTime is the default requeue time for Workflow Informers. For more info, see rate_limiters.go
+	EnvVarDefaultRequeueTime = "DEFAULT_REQUEUE_TIME"
+	// EnvAgentTaskWorkers is the number of task workers for the agent pod
+	EnvAgentTaskWorkers = "ARGO_AGENT_TASK_WORKERS"
+	// EnvAgentPatchRate is the rate that the Argo Agent will patch the Workflow TaskSet
+	EnvAgentPatchRate = "ARGO_AGENT_PATCH_RATE"
 
 	// ContainerRuntimeExecutorDocker to use docker as container runtime executor
 	ContainerRuntimeExecutorDocker = "docker"
@@ -167,10 +173,21 @@ const (
 	GlobalVarWorkflowFailures = "workflow.failures"
 	// GlobalVarWorkflowDuration is the current duration of this workflow
 	GlobalVarWorkflowDuration = "workflow.duration"
+	// GlobalVarWorkflowAnnotations is a JSON string containing all workflow annotations
+	GlobalVarWorkflowAnnotations = "workflow.annotations"
+	// GlobalVarWorkflowLabels is a JSON string containing all workflow labels
+	GlobalVarWorkflowLabels = "workflow.labels"
 	// GlobalVarWorkflowParameters is a JSON string containing all workflow parameters
 	GlobalVarWorkflowParameters = "workflow.parameters"
 	// GlobalVarWorkflowCronScheduleTime is the scheduled timestamp of a Workflow started by a CronWorkflow
 	GlobalVarWorkflowCronScheduleTime = "workflow.scheduledTime"
+
+	// LabelKeyConfigMapType is the label key for the type of configmap.
+	LabelKeyConfigMapType = "workflows.argoproj.io/configmap-type"
+	// LabelValueTypeConfigMapCache is a key for configmaps that are memoization cache.
+	LabelValueTypeConfigMapCache = "Cache"
+	// LabelValueTypeConfigMapParameter is a key for configmaps that contains parameter values.
+	LabelValueTypeConfigMapParameter = "Parameter"
 
 	// LocalVarPodName is a step level variable that references the name of the pod
 	LocalVarPodName = "pod.name"

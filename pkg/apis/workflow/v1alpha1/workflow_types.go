@@ -79,8 +79,21 @@ const (
 // PodGCStrategy is the strategy when to delete completed pods for GC.
 type PodGCStrategy string
 
+func (s PodGCStrategy) IsValid() bool {
+	switch s {
+	case PodGCOnPodNone,
+		PodGCOnPodCompletion,
+		PodGCOnPodSuccess,
+		PodGCOnWorkflowCompletion,
+		PodGCOnWorkflowSuccess:
+		return true
+	}
+	return false
+}
+
 // PodGCStrategy
 const (
+	PodGCOnPodNone            PodGCStrategy = ""
 	PodGCOnPodCompletion      PodGCStrategy = "OnPodCompletion"
 	PodGCOnPodSuccess         PodGCStrategy = "OnPodSuccess"
 	PodGCOnWorkflowCompletion PodGCStrategy = "OnWorkflowCompletion"
@@ -635,7 +648,7 @@ type Template struct {
 	// Memoize allows templates to use outputs generated from already executed templates
 	Memoize *Memoize `json:"memoize,omitempty" protobuf:"bytes,37,opt,name=memoize"`
 
-	// Timout allows to set the total node execution timeout duration counting from the node's start time.
+	// Timeout allows to set the total node execution timeout duration counting from the node's start time.
 	// This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
 	Timeout string `json:"timeout,omitempty" protobuf:"bytes,38,opt,name=timeout"`
 }
@@ -752,6 +765,9 @@ type Parameter struct {
 
 	// Enum holds a list of string values to choose from, for the actual value of the parameter
 	Enum []AnyString `json:"enum,omitempty" protobuf:"bytes,6,rep,name=enum"`
+
+	// Description is the parameter description
+	Description *AnyString `json:"description,omitempty" protobuf:"bytes,7,opt,name=description"`
 }
 
 // ValueFrom describes a location in which to obtain the value to a parameter
@@ -848,24 +864,22 @@ type PodGC struct {
 	LabelSelector *metav1.LabelSelector `json:"labelSelector,omitempty" protobuf:"bytes,2,opt,name=labelSelector"`
 }
 
-// Matches returns whether the pod labels match with the label selector specified in podGC.
-func (podGC *PodGC) Matches(labels labels.Set) (bool, error) {
+// GetLabelSelector gets the label selector from podGC.
+func (podGC *PodGC) GetLabelSelector() (labels.Selector, error) {
 	if podGC == nil {
-		return true, nil
+		return labels.Nothing(), nil
 	}
-	selector, err := metav1.LabelSelectorAsSelector(podGC.LabelSelector)
-	if err != nil {
-		return false, err
+	if podGC.LabelSelector == nil {
+		return labels.Everything(), nil
 	}
-	return selector.Matches(labels), nil
+	return metav1.LabelSelectorAsSelector(podGC.LabelSelector)
 }
 
-// GetLabelSelector gets the label selector from podGC.
-func (podGC *PodGC) GetLabelSelector() *metav1.LabelSelector {
-	if podGC != nil && podGC.LabelSelector != nil {
-		return podGC.LabelSelector
+func (podGC *PodGC) GetStrategy() PodGCStrategy {
+	if podGC != nil {
+		return podGC.Strategy
 	}
-	return nil
+	return PodGCOnPodNone
 }
 
 // VolumeClaimGC describes how to delete volumes from completed Workflows
@@ -944,27 +958,27 @@ type ArtifactLocation struct {
 	GCS *GCSArtifact `json:"gcs,omitempty" protobuf:"bytes,9,opt,name=gcs"`
 }
 
-func (a *ArtifactLocation) Get() ArtifactLocationType {
+func (a *ArtifactLocation) Get() (ArtifactLocationType, error) {
 	if a == nil {
-		return nil
+		return nil, fmt.Errorf("key unsupported: cannot get key for artifact location, because it is invalid")
 	} else if a.Artifactory != nil {
-		return a.Artifactory
+		return a.Artifactory, nil
 	} else if a.Git != nil {
-		return a.Git
+		return a.Git, nil
 	} else if a.GCS != nil {
-		return a.GCS
+		return a.GCS, nil
 	} else if a.HDFS != nil {
-		return a.HDFS
+		return a.HDFS, nil
 	} else if a.HTTP != nil {
-		return a.HTTP
+		return a.HTTP, nil
 	} else if a.OSS != nil {
-		return a.OSS
+		return a.OSS, nil
 	} else if a.Raw != nil {
-		return a.Raw
+		return a.Raw, nil
 	} else if a.S3 != nil {
-		return a.S3
+		return a.S3, nil
 	}
-	return nil
+	return nil, fmt.Errorf("You need to configure artifact storage. More information on how to do this can be found in the docs: https://argoproj.github.io/argo-workflows/configure-artifact-repository/")
 }
 
 // SetType sets the type of the artifact to type the argument.
@@ -1003,9 +1017,9 @@ func (a *ArtifactLocation) HasKey() bool {
 
 // set the key to a new value, use path.Join to combine items
 func (a *ArtifactLocation) SetKey(key string) error {
-	v := a.Get()
-	if v == nil {
-		return fmt.Errorf("key unsupported: cannot set key for artifact location because it is invalid")
+	v, err := a.Get()
+	if err != nil {
+		return err
 	}
 	return v.SetKey(key)
 }
@@ -1038,8 +1052,8 @@ func (a *ArtifactLocation) Relocate(l *ArtifactLocation) error {
 // HasLocation whether or not an artifact has a *full* location defined
 // An artifact that has a location implicitly has a key (i.e. HasKey() == true).
 func (a *ArtifactLocation) HasLocation() bool {
-	v := a.Get()
-	return v != nil && v.HasLocation()
+	v, err := a.Get()
+	return err == nil && v.HasLocation()
 }
 
 func (a *ArtifactLocation) IsArchiveLogs() bool {
@@ -1047,9 +1061,9 @@ func (a *ArtifactLocation) IsArchiveLogs() bool {
 }
 
 func (a *ArtifactLocation) GetKey() (string, error) {
-	v := a.Get()
-	if v == nil {
-		return "", fmt.Errorf("key unsupported: cannot get key for artifact location, because it is invalid")
+	v, err := a.Get()
+	if err != nil {
+		return "", err
 	}
 	return v.GetKey()
 }
@@ -2414,7 +2428,7 @@ func (tmpl *Template) GetVolumeMounts() []apiv1.VolumeMount {
 
 // whether or not the template can and will have outputs (i.e. exit code and result)
 func (tmpl *Template) HasOutput() bool {
-	return tmpl.Container != nil || tmpl.ContainerSet.HasContainerNamed("main") || tmpl.Script != nil || tmpl.Data != nil
+	return tmpl.Container != nil || tmpl.ContainerSet.HasContainerNamed("main") || tmpl.Script != nil || tmpl.Data != nil || tmpl.HTTP != nil
 }
 
 // if logs should be saved as an artifact

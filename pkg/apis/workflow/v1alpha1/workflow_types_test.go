@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/utils/pointer"
 )
 
@@ -192,15 +193,35 @@ func TestArtifactLocation_Relocate(t *testing.T) {
 
 func TestArtifactLocation_Get(t *testing.T) {
 	var l *ArtifactLocation
-	assert.Nil(t, l.Get())
-	assert.Nil(t, (&ArtifactLocation{}).Get())
-	assert.IsType(t, &GitArtifact{}, (&ArtifactLocation{Git: &GitArtifact{}}).Get())
-	assert.IsType(t, &GCSArtifact{}, (&ArtifactLocation{GCS: &GCSArtifact{}}).Get())
-	assert.IsType(t, &HDFSArtifact{}, (&ArtifactLocation{HDFS: &HDFSArtifact{}}).Get())
-	assert.IsType(t, &HTTPArtifact{}, (&ArtifactLocation{HTTP: &HTTPArtifact{}}).Get())
-	assert.IsType(t, &OSSArtifact{}, (&ArtifactLocation{OSS: &OSSArtifact{}}).Get())
-	assert.IsType(t, &RawArtifact{}, (&ArtifactLocation{Raw: &RawArtifact{}}).Get())
-	assert.IsType(t, &S3Artifact{}, (&ArtifactLocation{S3: &S3Artifact{}}).Get())
+
+	v, err := l.Get()
+	assert.Nil(t, v)
+	assert.EqualError(t, err, "key unsupported: cannot get key for artifact location, because it is invalid")
+
+	v, err = (&ArtifactLocation{}).Get()
+	assert.Nil(t, v)
+	assert.EqualError(t, err, "You need to configure artifact storage. More information on how to do this can be found in the docs: https://argoproj.github.io/argo-workflows/configure-artifact-repository/")
+
+	v, _ = (&ArtifactLocation{Git: &GitArtifact{}}).Get()
+	assert.IsType(t, &GitArtifact{}, v)
+
+	v, _ = (&ArtifactLocation{GCS: &GCSArtifact{}}).Get()
+	assert.IsType(t, &GCSArtifact{}, v)
+
+	v, _ = (&ArtifactLocation{HDFS: &HDFSArtifact{}}).Get()
+	assert.IsType(t, &HDFSArtifact{}, v)
+
+	v, _ = (&ArtifactLocation{HTTP: &HTTPArtifact{}}).Get()
+	assert.IsType(t, &HTTPArtifact{}, v)
+
+	v, _ = (&ArtifactLocation{OSS: &OSSArtifact{}}).Get()
+	assert.IsType(t, &OSSArtifact{}, v)
+
+	v, _ = (&ArtifactLocation{Raw: &RawArtifact{}}).Get()
+	assert.IsType(t, &RawArtifact{}, v)
+
+	v, _ = (&ArtifactLocation{S3: &S3Artifact{}}).Get()
+	assert.IsType(t, &S3Artifact{}, v)
 }
 
 func TestArtifactLocation_SetType(t *testing.T) {
@@ -349,6 +370,64 @@ func TestArtifactRepositoryRefStatus_String(t *testing.T) {
 func TestArtifact_GetArchive(t *testing.T) {
 	assert.NotNil(t, (&Artifact{}).GetArchive())
 	assert.Equal(t, &ArchiveStrategy{None: &NoneStrategy{}}, (&Artifact{Archive: &ArchiveStrategy{None: &NoneStrategy{}}}).GetArchive())
+}
+
+func TestPodGCStrategy_IsValid(t *testing.T) {
+	for _, s := range []PodGCStrategy{
+		PodGCOnPodNone,
+		PodGCOnPodCompletion,
+		PodGCOnPodSuccess,
+		PodGCOnWorkflowCompletion,
+		PodGCOnWorkflowSuccess,
+	} {
+		t.Run(string(s), func(t *testing.T) {
+			assert.True(t, s.IsValid())
+		})
+	}
+	t.Run("Invalid", func(t *testing.T) {
+		assert.False(t, PodGCStrategy("Foo").IsValid())
+	})
+}
+
+func TestPodGC_GetStrategy(t *testing.T) {
+	t.Run("Nil", func(t *testing.T) {
+		var podGC *PodGC
+		assert.Equal(t, PodGCOnPodNone, podGC.GetStrategy())
+	})
+	t.Run("Unspecified", func(t *testing.T) {
+		var podGC = &PodGC{}
+		assert.Equal(t, PodGCOnPodNone, podGC.GetStrategy())
+	})
+	t.Run("Specified", func(t *testing.T) {
+		var podGC = &PodGC{Strategy: PodGCOnWorkflowSuccess}
+		assert.Equal(t, PodGCOnWorkflowSuccess, podGC.GetStrategy())
+	})
+}
+
+func TestPodGC_GetLabelSelector(t *testing.T) {
+	t.Run("Nil", func(t *testing.T) {
+		var podGC *PodGC
+		selector, err := podGC.GetLabelSelector()
+		assert.NoError(t, err)
+		assert.Equal(t, labels.Nothing(), selector)
+	})
+	t.Run("Unspecified", func(t *testing.T) {
+		var podGC = &PodGC{}
+		selector, err := podGC.GetLabelSelector()
+		assert.NoError(t, err)
+		assert.Equal(t, labels.Everything(), selector)
+	})
+	t.Run("Specified", func(t *testing.T) {
+		labelSelector := &metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				"foo": "bar",
+			},
+		}
+		var podGC = &PodGC{LabelSelector: labelSelector}
+		selector, err := podGC.GetLabelSelector()
+		assert.NoError(t, err)
+		assert.Equal(t, "foo=bar", selector.String())
+	})
 }
 
 func TestNodes_FindByDisplayName(t *testing.T) {

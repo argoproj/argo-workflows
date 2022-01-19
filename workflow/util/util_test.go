@@ -612,6 +612,12 @@ func TestApplySubmitOpts(t *testing.T) {
 			assert.Equal(t, "81861780812", parameters[0].Value.String())
 		}
 	})
+	t.Run("PodPriorityClassName", func(t *testing.T) {
+		wf := &wfv1.Workflow{}
+		err := ApplySubmitOpts(wf, &wfv1.SubmitOpts{PodPriorityClassName: "abc"})
+		assert.NoError(t, err)
+		assert.Equal(t, "abc", wf.Spec.PodPriorityClassName)
+	})
 }
 
 func TestFormulateResubmitWorkflow(t *testing.T) {
@@ -898,5 +904,36 @@ func TestToUnstructured(t *testing.T) {
 		assert.Equal(t, workflow.WorkflowKind, gv.Kind)
 		assert.Equal(t, workflow.Group, gv.Group)
 		assert.Equal(t, workflow.Version, gv.Version)
+	}
+}
+
+func TestGetTemplateFromNode(t *testing.T) {
+	cases := []struct {
+		inputNode            wfv1.NodeStatus
+		expectedTemplateName string
+	}{
+		{
+			inputNode: wfv1.NodeStatus{
+				TemplateRef: &wfv1.TemplateRef{
+					Name:         "foo-workflowtemplate",
+					Template:     "foo-template",
+					ClusterScope: false,
+				},
+				TemplateName: "",
+			},
+			expectedTemplateName: "foo-template",
+		},
+		{
+			inputNode: wfv1.NodeStatus{
+				TemplateRef:  nil,
+				TemplateName: "bar-template",
+			},
+			expectedTemplateName: "bar-template",
+		},
+	}
+
+	for _, tc := range cases {
+		actual := getTemplateFromNode(tc.inputNode)
+		assert.Equal(t, tc.expectedTemplateName, actual)
 	}
 }
