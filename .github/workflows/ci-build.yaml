@@ -83,6 +83,9 @@ jobs:
       max-parallel: 4
       matrix:
         include:
+          - test: test-plugins
+            containerRuntimeExecutor: emissary
+            profile: plugins
           - test: test-functional
             containerRuntimeExecutor: emissary
             profile: minimal

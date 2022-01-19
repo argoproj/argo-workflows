@@ -9494,7 +9494,7 @@
           }
         },
         "force": {
-          "description": "Force copies a file forcibly even if it exists (default: false)",
+          "description": "Force copies a file forcibly even if it exists",
           "type": "boolean"
         },
         "hdfsUser": {
@@ -9543,7 +9543,7 @@
           }
         },
         "force": {
-          "description": "Force copies a file forcibly even if it exists (default: false)",
+          "description": "Force copies a file forcibly even if it exists",
           "type": "boolean"
         },
         "hdfsUser": {
@@ -10283,6 +10283,10 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.Plugin": {
+      "description": "Plugin is an Object with exactly one key",
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.PodGC": {
       "description": "PodGC describes how to delete completed pods as they complete",
       "type": "object",
@@ -11013,6 +11017,10 @@
         "parallelism": {
           "description": "Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.",
           "type": "integer"
+        },
+        "plugin": {
+          "description": "Plugin is a plugin template",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Plugin"
         },
         "podSpecPatch": {
           "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).",

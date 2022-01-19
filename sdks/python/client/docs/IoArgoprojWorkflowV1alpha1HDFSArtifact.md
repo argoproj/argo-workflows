@@ -7,7 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **path** | **str** | Path is a file path in HDFS | 
 **addresses** | **[str]** | Addresses is accessible addresses of HDFS name nodes | [optional] 
-**force** | **bool** | Force copies a file forcibly even if it exists (default: false) | [optional] 
+**force** | **bool** | Force copies a file forcibly even if it exists | [optional] 
 **hdfs_user** | **str** | HDFSUser is the user to access HDFS file system. It is ignored if either ccache or keytab is used. | [optional] 
 **krb_c_cache_secret** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 
 **krb_config_config_map** | [**ConfigMapKeySelector**](ConfigMapKeySelector.md) |  | [optional] 
