@@ -31,3 +31,22 @@ func TestUpdater(t *testing.T) {
 	assert.Equal(t, wfv1.Progress("150/300"), wf.Status.Nodes["wf"].Progress)
 	assert.Equal(t, wfv1.Progress("150/300"), wf.Status.Progress)
 }
+
+func TestUpdaterWithHTTPNode(t *testing.T) {
+	ns := "my-ns"
+	wf := &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Namespace: ns, Name: "wf"},
+		Status: wfv1.WorkflowStatus{
+			Nodes: wfv1.Nodes{
+				"http": wfv1.NodeStatus{Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeHTTP, Progress: wfv1.Progress("1/1")},
+				"wf":   wfv1.NodeStatus{Children: []string{"http"}},
+			},
+		},
+	}
+
+	UpdateProgress(wf)
+
+	assert.Equal(t, wfv1.Progress("1/1"), wf.Status.Nodes["http"].Progress)
+	assert.Equal(t, wfv1.Progress("1/1"), wf.Status.Nodes["wf"].Progress)
+	assert.Equal(t, wfv1.Progress("1/1"), wf.Status.Progress)
+}

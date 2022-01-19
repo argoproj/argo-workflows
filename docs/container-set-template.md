@@ -87,7 +87,7 @@ Then you know you need only a maximum of 2Gi. You could set as follows:
 
 The total is 2Gi, which is enough for `b`. We're all good.
 
-Example B: Diamond DAG e.g. a diamond `a -> b -> d and  a -> b -> d`, i.e. `b` and `c` run at the same time.
+Example B: Diamond DAG e.g. a diamond `a -> b -> d and  a -> c -> d`, i.e. `b` and `c` run at the same time.
 
 * `a` needs 1000 cpu
 * `b` needs 2000 cpu

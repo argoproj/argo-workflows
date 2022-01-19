@@ -6562,6 +6562,10 @@
           "description": "Set the podPriorityClassName of the workflow",
           "type": "string"
         },
+        "priority": {
+          "description": "Priority is used if controller is configured to process limited number of workflows in parallel, higher priority workflows are processed first.",
+          "type": "integer"
+        },
         "serverDryRun": {
           "description": "ServerDryRun validates the workflow on the server-side without creating it",
           "type": "boolean"

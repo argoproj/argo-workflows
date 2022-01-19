@@ -129,6 +129,8 @@ func TestWorkflowQueueMetrics(t *testing.T) {
 	m := New(config, config)
 	workqueue.SetProvider(m)
 	wfQueue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "workflow_queue")
+	defer wfQueue.ShutDown()
+
 	assert.NotNil(t, m.workqueueMetrics["workflow_queue-depth"])
 	assert.NotNil(t, m.workqueueMetrics["workflow_queue-adds"])
 	assert.NotNil(t, m.workqueueMetrics["workflow_queue-latency"])

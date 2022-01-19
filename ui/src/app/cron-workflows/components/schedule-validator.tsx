@@ -5,8 +5,8 @@ const x = require('cronstrue');
 
 export const ScheduleValidator = ({schedule}: {schedule: string}) => {
     try {
-        if (schedule.split(' ').length === 6) {
-            throw new Error('seconds are not supported');
+        if (schedule.split(' ').length >= 6) {
+            throw new Error('cron schedules must consist of 5 values only');
         }
         return (
             <span>

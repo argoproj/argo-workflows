@@ -21,7 +21,7 @@ We'll find the right mentor for you.
 
 Create a pull request which changes this page to add you to this list:
 
-Mentees:
+Mentors:
 
 * @alexec (Alex)
 * @simster7 (Simon)
