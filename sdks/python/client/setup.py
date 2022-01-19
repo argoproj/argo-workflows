@@ -11,7 +11,7 @@
 from setuptools import setup, find_packages  # noqa: H301
 
 NAME = "argo-workflows"
-VERSION = "0.0.0-latest"
+VERSION = "0.0.0-pre"
 # To install the library, run the following
 #
 # python setup.py install

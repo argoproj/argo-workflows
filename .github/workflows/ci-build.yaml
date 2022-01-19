@@ -208,7 +208,6 @@ jobs:
         with:
           fetch-depth: 0
       - run: cp server/static/files.go.stub server/static/files.go
-      - run: ./hack/check-logging.sh
       - uses: golangci/golangci-lint-action@v2
         with:
           version: v1.42.0

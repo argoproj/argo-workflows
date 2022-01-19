@@ -227,6 +227,9 @@ func PopulateSubmitOpts(command *cobra.Command, submitOpts *wfv1.SubmitOpts, inc
 
 // Apply the Submit options into workflow object
 func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
+	if wf == nil {
+		return fmt.Errorf("workflow cannot be nil")
+	}
 	if opts == nil {
 		opts = &wfv1.SubmitOpts{}
 	}
@@ -238,6 +241,10 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 	}
 	if opts.PodPriorityClassName != "" {
 		wf.Spec.PodPriorityClassName = opts.PodPriorityClassName
+	}
+
+	if opts.Priority != nil {
+		wf.Spec.Priority = opts.Priority
 	}
 
 	wfLabels := wf.GetLabels()
