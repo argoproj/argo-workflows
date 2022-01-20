@@ -223,7 +223,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v1
         with:
-          node-version: "17"
+          node-version: "16"
       - uses: actions/cache@v2
         with:
           path: ui/node_modules
