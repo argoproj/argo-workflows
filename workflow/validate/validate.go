@@ -1280,6 +1280,12 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 			aggregate := len(ancestorTask.WithItems) > 0 || ancestorTask.WithParam != ""
 			ctx.addOutputsToScope(resolvedTmpl, ancestorPrefix, taskScope, aggregate, true)
 		}
+		if i := task.Inline; i != nil {
+			for _, p := range i.Inputs.Parameters {
+				taskScope["inputs.parameters."+p.Name] = placeholderGenerator.NextPlaceholder()
+			}
+		}
+
 		err = addItemsToScope(task.WithItems, task.WithParam, task.WithSequence, taskScope)
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
