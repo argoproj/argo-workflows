@@ -1,4 +1,4 @@
-import {NODE_PHASE, NodeStatus, NodeType} from '../../models';
+import {NODE_PHASE, NodePhase, NodeStatus, NodeType} from '../../models';
 import {createFNVHash, ensurePodNamePrefixLength, getPodName, getTemplateNameFromNode, k8sNamingHashLength, maxK8sResourceNameLength, POD_NAME_V1, POD_NAME_V2} from './pod-name';
 
 describe('pod names', () => {
@@ -40,6 +40,7 @@ describe('pod names', () => {
         // case: no template ref or template name
         // expect fallback to empty string
         const nodeType: NodeType = 'Pod';
+        const nodePhase: NodePhase = NODE_PHASE.SUCCEEDED;
 
         const node: NodeStatus = {
             id: 'patch-processing-pipeline-ksp78-1623891970',
@@ -47,7 +48,7 @@ describe('pod names', () => {
             displayName: 'retriable-map-authoring-initializer',
             type: nodeType,
             templateScope: 'local/',
-            phase: NODE_PHASE.SUCCEEDED
+            phase: nodePhase
         };
 
         expect(getTemplateNameFromNode(node)).toEqual('');
