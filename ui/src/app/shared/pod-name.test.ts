@@ -1,4 +1,4 @@
-import {Inputs, MemoizationStatus, NODE_PHASE, NodePhase, NodeStatus, NodeType, Outputs, RetryStrategy} from '../../models';
+import {Inputs, MemoizationStatus, NodePhase, NodeStatus, NodeType, Outputs, RetryStrategy} from '../../models';
 import {createFNVHash, ensurePodNamePrefixLength, getPodName, getTemplateNameFromNode, k8sNamingHashLength, maxK8sResourceNameLength, POD_NAME_V1, POD_NAME_V2} from './pod-name';
 
 describe('pod names', () => {
