@@ -1,4 +1,3 @@
-import {Observable} from 'rxjs';
 import * as models from '../../models';
 import {NODE_PHASE} from '../../models';
 import {Pagination} from './pagination';
@@ -32,22 +31,6 @@ export const Utils = {
 
     shortNodeName(node: {name: string; displayName: string}): string {
         return node.displayName || node.name;
-    },
-
-    toObservable<T>(val: T | Observable<T> | Promise<T>): Observable<T> {
-        const observable = val as Observable<T>;
-        if (observable && observable.subscribe && observable.catch) {
-            return observable as Observable<T>;
-        }
-        return Observable.from([val as T]);
-    },
-
-    tryJsonParse(input: string) {
-        try {
-            return (input && JSON.parse(input)) || null;
-        } catch {
-            return null;
-        }
     },
 
     isWorkflowSuspended(wf: models.Workflow): boolean {
