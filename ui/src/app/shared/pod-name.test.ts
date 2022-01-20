@@ -1,4 +1,4 @@
-import {NODE_PHASE, NodePhase, NodeStatus, NodeType} from '../../models';
+import {Inputs, MemoizationStatus, NODE_PHASE, NodePhase, NodeStatus, NodeType, Outputs, RetryStrategy} from '../../models';
 import {createFNVHash, ensurePodNamePrefixLength, getPodName, getTemplateNameFromNode, k8sNamingHashLength, maxK8sResourceNameLength, POD_NAME_V1, POD_NAME_V2} from './pod-name';
 
 describe('pod names', () => {
@@ -40,7 +40,15 @@ describe('pod names', () => {
         // case: no template ref or template name
         // expect fallback to empty string
         const nodeType: NodeType = 'Pod';
-        const nodePhase: NodePhase = NODE_PHASE.SUCCEEDED;
+        const nodePhase: NodePhase = 'Succeeded';
+        const retryStrategy: RetryStrategy = {};
+        const outputs: Outputs = {};
+        const inputs: Inputs = {};
+        const memoizationStatus: MemoizationStatus = {
+            hit: false,
+            key: 'key',
+            cacheName: 'cache'
+        };
 
         const node: NodeStatus = {
             id: 'patch-processing-pipeline-ksp78-1623891970',
@@ -48,7 +56,21 @@ describe('pod names', () => {
             displayName: 'retriable-map-authoring-initializer',
             type: nodeType,
             templateScope: 'local/',
-            phase: nodePhase
+            phase: nodePhase,
+            boundaryID: '',
+            message: '',
+            startedAt: '',
+            finishedAt: '',
+            podIP: '',
+            daemoned: false,
+            retryStrategy,
+            outputs,
+            children: [],
+            outboundNodes: [],
+            templateName: '',
+            inputs,
+            hostNodeName: '',
+            memoizationStatus
         };
 
         expect(getTemplateNameFromNode(node)).toEqual('');
