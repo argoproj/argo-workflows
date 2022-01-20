@@ -1,4 +1,4 @@
-import {NODE_PHASE, NodeStatus} from '../../models';
+import {NODE_PHASE, NodeStatus, NodeType} from '../../models';
 import {createFNVHash, ensurePodNamePrefixLength, getPodName, getTemplateNameFromNode, k8sNamingHashLength, maxK8sResourceNameLength, POD_NAME_V1, POD_NAME_V2} from './pod-name';
 
 describe('pod names', () => {
@@ -39,11 +39,13 @@ describe('pod names', () => {
     test('getTemplateNameFromNode', () => {
         // case: no template ref or template name
         // expect fallback to empty string
+        const nodeType: NodeType = 'Pod';
+
         const node: NodeStatus = {
             id: 'patch-processing-pipeline-ksp78-1623891970',
             name: 'patch-processing-pipeline-ksp78.retriable-map-authoring-initializer',
             displayName: 'retriable-map-authoring-initializer',
-            type: 'Pod',
+            type: nodeType,
             templateScope: 'local/',
             phase: NODE_PHASE.SUCCEEDED
         };
