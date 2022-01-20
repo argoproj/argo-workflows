@@ -5505,10 +5505,16 @@
     "io.argoproj.workflow.v1alpha1.LifecycleHook": {
       "properties": {
         "arguments": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments",
+          "description": "Arguments hold arguments to the template"
         },
         "template": {
+          "description": "Template is the name of the template to execute by the hook",
           "type": "string"
+        },
+        "templateRef": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TemplateRef",
+          "description": "TemplateRef is the reference to the template resource to execute by the hook"
         }
       },
       "required": [
