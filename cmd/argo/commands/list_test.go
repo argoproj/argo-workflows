@@ -76,11 +76,21 @@ func Test_listWorkflows(t *testing.T) {
 			assert.Len(t, workflows, 1)
 		}
 	})
+	t.Run("Names", func(t *testing.T) {
+		workflows, err := list(&metav1.ListOptions{FieldSelector: nameFields}, listFlags{fields: nameFields})
+		if assert.NoError(t, err) {
+			assert.Len(t, workflows, 3)
+			// most recent workflow will be shown first
+			assert.Equal(t, "bar-", workflows[0].Name)
+			assert.Equal(t, "baz-", workflows[1].Name)
+			assert.Equal(t, "foo-", workflows[2].Name)
+		}
+	})
 }
 
 func list(listOptions *metav1.ListOptions, flags listFlags) (wfv1.Workflows, error) {
 	c := &workflowmocks.WorkflowServiceClient{}
-	c.On("ListWorkflows", mock.Anything, &workflow.WorkflowListRequest{ListOptions: listOptions, Fields: defaultFields}).Return(&wfv1.WorkflowList{Items: wfv1.Workflows{
+	c.On("ListWorkflows", mock.Anything, &workflow.WorkflowListRequest{ListOptions: listOptions, Fields: flags.displayFields()}).Return(&wfv1.WorkflowList{Items: wfv1.Workflows{
 		{ObjectMeta: metav1.ObjectMeta{Name: "foo-", CreationTimestamp: metav1.Time{Time: time.Now().Add(-2 * time.Hour)}}, Status: wfv1.WorkflowStatus{FinishedAt: metav1.Time{Time: time.Now().Add(-2 * time.Hour)}}},
 		{ObjectMeta: metav1.ObjectMeta{Name: "bar-", CreationTimestamp: metav1.Time{Time: time.Now()}}},
 		{ObjectMeta: metav1.ObjectMeta{
