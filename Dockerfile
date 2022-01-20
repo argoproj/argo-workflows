@@ -66,7 +66,7 @@ COPY hack/nsswitch.conf /etc/
 
 ####################################################################################################
 
-FROM node:14.0.0 as argo-ui
+FROM node:16 as argo-ui
 
 COPY ui/package.json ui/yarn.lock ui/
 

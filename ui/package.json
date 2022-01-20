@@ -35,7 +35,7 @@
         "react-router-dom": "^4.2.2",
         "superagent": "^3.8.2",
         "superagent-promise": "^1.1.0",
-        "swagger-ui-react": "4"
+        "swagger-ui-react": "^3.29.0"
     },
     "devDependencies": {
         "@babel/core": "^7.0.0-0",
@@ -86,7 +86,7 @@
     },
     "resolutions": {
         "lodash": "4.17.21",
-        "prismjs": "1.25.0",
+        "prismjs": "1.26.0",
         "@types/react": "16.8.5"
     }
 }
