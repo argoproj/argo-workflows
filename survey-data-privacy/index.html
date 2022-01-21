@@ -36,7 +36,7 @@
     
     
       
-        <title>Environment Variables - Argo Workflows - The workflow engine for Kubernetes</title>
+        <title>Survey - Argo Workflows - The workflow engine for Kubernetes</title>
       
     
     
@@ -127,7 +127,7 @@
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
     <label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
     
-      <a href="#environment-variables" tabindex="1" class="md-skip">
+      <a href="#survey" tabindex="1" class="md-skip">
         Skip to content
       </a>
     
@@ -152,7 +152,7 @@
               Argo Workflows - The workflow engine for Kubernetes
             </span>
             <span class="md-header-nav__topic">
-              Environment Variables
+              Survey
             </span>
           
         </div>
@@ -1628,12 +1628,10 @@
       
       
 
-  
 
-
-  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+  <li class="md-nav__item md-nav__item--nested">
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-6" type="checkbox" id="nav-6" checked>
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-6" type="checkbox" id="nav-6">
     
     <label class="md-nav__link" for="nav-6">
       Operator Manual
@@ -1985,63 +1983,11 @@
           
           
 
-  
 
-
-  <li class="md-nav__item md-nav__item--active">
-    
-    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-    
-      
-    
-    
-      <label class="md-nav__link md-nav__link--active" for="__toc">
-        Environment Variables
-      </label>
-    
-    <a href="./" title="Environment Variables" class="md-nav__link md-nav__link--active">
+  <li class="md-nav__item">
+    <a href="../environment-variables/" title="Environment Variables" class="md-nav__link">
       Environment Variables
     </a>
-    
-      
-<nav class="md-nav md-nav--secondary">
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">Table of contents</label>
-    <ul class="md-nav__list" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#controller" title="Controller" class="md-nav__link">
-    Controller
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#executor" title="Executor" class="md-nav__link">
-    Executor
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#argo-server" title="Argo Server" class="md-nav__link">
-    Argo Server
-  </a>
-  
-</li>
-      
-      
-      
-      
-      
-    </ul>
-  
-</nav>
-    
   </li>
 
         
@@ -2271,36 +2217,6 @@
     
   
   
-    <label class="md-nav__title" for="__toc">Table of contents</label>
-    <ul class="md-nav__list" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#controller" title="Controller" class="md-nav__link">
-    Controller
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#executor" title="Executor" class="md-nav__link">
-    Executor
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#argo-server" title="Argo Server" class="md-nav__link">
-    Argo Server
-  </a>
-  
-</li>
-      
-      
-      
-      
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -2311,424 +2227,11 @@
             <article class="md-content__inner md-typeset">
               
                 
-                  <a href="https://github.com/argoproj/argo-workflows/edit/master/docs/environment-variables.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
+                  <a href="https://github.com/argoproj/argo-workflows/edit/master/docs/survey-data-privacy.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
                 
                 
-                <h1 id="environment-variables">Environment Variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h1>
-<p>This document outlines the set of environment variables that can be used to customize the behaviours at different
-levels. These environment variables are typically added to test out experimental features and should not be needed by
-most users. Note that these environment variables may be removed at any time.</p>
-<h2 id="controller">Controller<a class="headerlink" href="#controller" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Default</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>ARGO_AGENT_TASK_WORKERS</code></td>
-<td><code>int</code></td>
-<td><code>16</code></td>
-<td>The number of task workers for the agent pod.</td>
-</tr>
-<tr>
-<td><code>ALL_POD_CHANGES_SIGNIFICANT</code></td>
-<td><code>bool</code></td>
-<td><code>false</code></td>
-<td>Whether to consider all pod changes as significant during pod reconciliation.</td>
-</tr>
-<tr>
-<td><code>ALWAYS_OFFLOAD_NODE_STATUS</code></td>
-<td><code>bool</code></td>
-<td><code>false</code></td>
-<td>Whether to always offload the node status.</td>
-</tr>
-<tr>
-<td><code>ARCHIVED_WORKFLOW_GC_PERIOD</code></td>
-<td><code>time.Duration</code></td>
-<td><code>24h</code></td>
-<td>The periodicity for GC of archived workflows.</td>
-</tr>
-<tr>
-<td><code>ARGO_PPROF</code></td>
-<td><code>bool</code></td>
-<td><code>false</code></td>
-<td>Enable pprof endpoints</td>
-</tr>
-<tr>
-<td><code>ARGO_PROGRESS_PATCH_TICK_DURATION</code></td>
-<td><code>time.Duration</code></td>
-<td><code>1m</code></td>
-<td>How often self reported progress is patched into the pod annotations which means how long it takes until the controller picks up the progress change. Set to 0 to disable self reporting progress.</td>
-</tr>
-<tr>
-<td><code>ARGO_PROGRESS_FILE_TICK_DURATION</code></td>
-<td><code>time.Duration</code></td>
-<td><code>3s</code></td>
-<td>How often the progress file is read by the executor. Set to 0 to disable self reporting progress.</td>
-</tr>
-<tr>
-<td><code>ARGO_REMOVE_PVC_PROTECTION_FINALIZER</code></td>
-<td><code>bool</code></td>
-<td><code>false</code></td>
-<td>Remove the <code>kubernetes.io/pvc-protection</code> finalizer from persistent volume claims (PVC) after marking PVCs created for the workflow for deletion, so deleted is not blocked until the pods are deleted.  <a href="https://github.com/argoproj/argo-workflows/issues/6629">#6629</a></td>
-</tr>
-<tr>
-<td><code>ARGO_TRACE</code></td>
-<td><code>string</code></td>
-<td><code>"1"</code></td>
-<td>Whether to enable tracing statements in Argo components.</td>
-</tr>
-<tr>
-<td><code>ARGO_AGENT_PATCH_RATE</code></td>
-<td><code>time.Duration</code></td>
-<td><code>DEFAULT_REQUEUE_TIME</code></td>
-<td>Rate that the Argo Agent will patch the Workflow TaskSet.</td>
-</tr>
-<tr>
-<td><code>BUBBLE_ENTRY_TEMPLATE_ERR</code></td>
-<td><code>bool</code></td>
-<td><code>true</code></td>
-<td>Whether to bubble up template errors to workflow.</td>
-</tr>
-<tr>
-<td><code>CACHE_GC_PERIOD</code></td>
-<td><code>time.Duration</code></td>
-<td><code>0s</code></td>
-<td>How often to perform memoization cache GC, which is disabled by default and can be enabled by providing a non-zero duration.</td>
-</tr>
-<tr>
-<td><code>CACHE_GC_AFTER_NOT_HIT_DURATION</code></td>
-<td><code>time.Duration</code></td>
-<td><code>30s</code></td>
-<td>When a memoization cache has not been hit after this duration, it will be deleted.</td>
-</tr>
-<tr>
-<td><code>CRON_SYNC_PERIOD</code></td>
-<td><code>time.Duration</code></td>
-<td><code>10s</code></td>
-<td>How often to sync cron workflows.</td>
-</tr>
-<tr>
-<td><code>DEFAULT_REQUEUE_TIME</code></td>
-<td><code>time.Duration</code></td>
-<td><code>10s</code></td>
-<td>The requeue time for the rate limiter of the workflow queue.</td>
-</tr>
-<tr>
-<td><code>EXPRESSION_TEMPLATES</code></td>
-<td><code>bool</code></td>
-<td><code>true</code></td>
-<td>Escape hatch to disable expression templates.</td>
-</tr>
-<tr>
-<td><code>GRPC_MESSAGE_SIZE</code></td>
-<td><code>string</code></td>
-<td>Use different GRPC Max message size for Argo server deployment (supporting huge workflows).</td>
-<td></td>
-</tr>
-<tr>
-<td><code>GZIP_IMPLEMENTATION</code></td>
-<td><code>string</code></td>
-<td><code>"PGZip"</code></td>
-<td>The implementation of compression/decompression. Currently only "PGZip" and "GZip" are supported.</td>
-</tr>
-<tr>
-<td><code>INFORMER_WRITE_BACK</code></td>
-<td><code>bool</code></td>
-<td><code>true</code></td>
-<td>Whether to write back to informer instead of catching up.</td>
-</tr>
-<tr>
-<td><code>HEALTHZ_AGE</code></td>
-<td><code>time.Duration</code></td>
-<td><code>5m</code></td>
-<td>How old a un-reconciled workflow is to report unhealthy.</td>
-</tr>
-<tr>
-<td><code>INDEX_WORKFLOW_SEMAPHORE_KEYS</code></td>
-<td><code>bool</code></td>
-<td><code>true</code></td>
-<td>Whether or not to index semaphores.</td>
-</tr>
-<tr>
-<td><code>LEADER_ELECTION_IDENTITY</code></td>
-<td><code>string</code></td>
-<td>Controller's <code>metadata.name</code></td>
-<td>The ID used for workflow controllers to elect a leader.</td>
-</tr>
-<tr>
-<td><code>LEADER_ELECTION_DISABLE</code></td>
-<td><code>bool</code></td>
-<td><code>false</code></td>
-<td>Whether leader election should be disabled.</td>
-</tr>
-<tr>
-<td><code>LEADER_ELECTION_LEASE_DURATION</code></td>
-<td><code>time.Duration</code></td>
-<td><code>15s</code></td>
-<td>The duration that non-leader candidates will wait to force acquire leadership.</td>
-</tr>
-<tr>
-<td><code>LEADER_ELECTION_RENEW_DEADLINE</code></td>
-<td><code>time.Duration</code></td>
-<td><code>10s</code></td>
-<td>The duration that the acting master will retry refreshing leadership before giving up.</td>
-</tr>
-<tr>
-<td><code>LEADER_ELECTION_RETRY_PERIOD</code></td>
-<td><code>time.Duration</code></td>
-<td><code>5s</code></td>
-<td>The duration that the leader election clients should wait between tries of actions.</td>
-</tr>
-<tr>
-<td><code>MAX_OPERATION_TIME</code></td>
-<td><code>time.Duration</code></td>
-<td><code>30s</code></td>
-<td>The maximum time a workflow operation is allowed to run for before requeuing the workflow onto the work queue.</td>
-</tr>
-<tr>
-<td><code>OFFLOAD_NODE_STATUS_TTL</code></td>
-<td><code>time.Duration</code></td>
-<td><code>5m</code></td>
-<td>The TTL to delete the offloaded node status. Currently only used for testing.</td>
-</tr>
-<tr>
-<td><code>POD_NAMES</code></td>
-<td><code>string</code></td>
-<td><code>v2</code></td>
-<td>Whether to have pod names contain the template name (v2) or be the node id (v1).</td>
-</tr>
-<tr>
-<td><code>RECENTLY_STARTED_POD_DURATION</code></td>
-<td><code>time.Duration</code></td>
-<td><code>10s</code></td>
-<td>The duration of a pod before the pod is considered to be recently started.</td>
-</tr>
-<tr>
-<td><code>RETRY_BACKOFF_DURATION</code></td>
-<td><code>time.Duration</code></td>
-<td><code>10ms</code></td>
-<td>The retry backoff duration when retrying API calls.</td>
-</tr>
-<tr>
-<td><code>RETRY_BACKOFF_FACTOR</code></td>
-<td><code>float</code></td>
-<td><code>2.0</code></td>
-<td>The retry backoff factor when retrying API calls.</td>
-</tr>
-<tr>
-<td><code>RETRY_BACKOFF_STEPS</code></td>
-<td><code>int</code></td>
-<td><code>5</code></td>
-<td>The retry backoff steps when retrying API calls.</td>
-</tr>
-<tr>
-<td><code>RETRY_HOST_NAME_LABEL_KEY</code></td>
-<td><code>string</code></td>
-<td><code>kubernetes.io/hostname</code></td>
-<td>The label key for host name used when retrying templates.</td>
-</tr>
-<tr>
-<td><code>TRANSIENT_ERROR_PATTERN</code></td>
-<td><code>string</code></td>
-<td><code>""</code></td>
-<td>The regular expression that represents additional patterns for transient errors.</td>
-</tr>
-<tr>
-<td><code>WF_DEL_PROPAGATION_POLICY</code></td>
-<td><code>string</code></td>
-<td><code>""</code></td>
-<td>The deletion propagation policy for workflows.</td>
-</tr>
-<tr>
-<td><code>WORKFLOW_GC_PERIOD</code></td>
-<td><code>time.Duration</code></td>
-<td><code>5m</code></td>
-<td>The periodicity for GC of workflows.</td>
-</tr>
-</tbody>
-</table>
-<p>CLI parameters of the <code>argo-server</code> and <code>workflow-controller</code> can be specified as environment variables with the <code>ARGO_</code>
-prefix. For example:</p>
-<div class="highlight"><pre><span></span><code>workflow-controller --managed-namespace=argo
-</code></pre></div>
-<p>Can be expressed as:</p>
-<div class="highlight"><pre><span></span><code>ARGO_MANAGED_NAMESPACE=argo workflow-controller
-</code></pre></div>
-<p>You can set environment variable for the argo-server deployment, for example:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span><span class="w"></span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span><span class="w"></span>
-<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-server</span><span class="w"></span>
-<span class="nt">spec</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">selector</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-server</span><span class="w"></span>
-<span class="w">  </span><span class="nt">template</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">labels</span><span class="p">:</span><span class="w"></span>
-<span class="w">        </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-server</span><span class="w"></span>
-<span class="w">    </span><span class="nt">spec</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">containers</span><span class="p">:</span><span class="w"></span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">args</span><span class="p">:</span><span class="w"></span>
-<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">server</span><span class="w"></span>
-<span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj/argocli:latest</span><span class="w"></span>
-<span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-server</span><span class="w"></span>
-<span class="w">          </span><span class="nt">env</span><span class="p">:</span><span class="w"></span>
-<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GRPC_MESSAGE_SIZE</span><span class="w"></span>
-<span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;209715200&quot;</span><span class="w"></span>
-<span class="w">          </span><span class="nt">ports</span><span class="p">:</span><span class="w"></span>
-<span class="w">          </span><span class="l l-Scalar l-Scalar-Plain">..</span><span class="w"></span>
-<span class="w">          </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
-<span class="w">          </span><span class="l l-Scalar l-Scalar-Plain">....</span><span class="w"></span>
-</code></pre></div>
-<p>You can set the environment variables for controller in controller's container spec like the following:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span><span class="w"></span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span><span class="w"></span>
-<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflow-controller</span><span class="w"></span>
-<span class="nt">spec</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">selector</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflow-controller</span><span class="w"></span>
-<span class="w">  </span><span class="nt">template</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">labels</span><span class="p">:</span><span class="w"></span>
-<span class="w">        </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflow-controller</span><span class="w"></span>
-<span class="w">    </span><span class="nt">spec</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">containers</span><span class="p">:</span><span class="w"></span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">env</span><span class="p">:</span><span class="w"></span>
-<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">WORKFLOW_GC_PERIOD</span><span class="w"></span>
-<span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30s</span><span class="w"></span>
-</code></pre></div>
-<h2 id="executor">Executor<a class="headerlink" href="#executor" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Default</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>ARGO_CONTAINER_RUNTIME_EXECUTOR</code></td>
-<td><code>string</code></td>
-<td><code>"docker"</code></td>
-<td>The name of the container runtime executor.</td>
-</tr>
-<tr>
-<td><code>ARGO_KUBELET_PORT</code></td>
-<td><code>int</code></td>
-<td><code>10250</code></td>
-<td>The port to the Kubelet API.</td>
-</tr>
-<tr>
-<td><code>ARGO_KUBELET_INSECURE</code></td>
-<td><code>bool</code></td>
-<td><code>false</code></td>
-<td>Whether to disable the TLS verification.</td>
-</tr>
-<tr>
-<td><code>EXECUTOR_RETRY_BACKOFF_DURATION</code></td>
-<td><code>time.Duration</code></td>
-<td><code>1s</code></td>
-<td>The retry backoff duration when the workflow executor performs retries.</td>
-</tr>
-<tr>
-<td><code>EXECUTOR_RETRY_BACKOFF_FACTOR</code></td>
-<td><code>float</code></td>
-<td><code>1.6</code></td>
-<td>The retry backoff factor when the workflow executor performs retries.</td>
-</tr>
-<tr>
-<td><code>EXECUTOR_RETRY_BACKOFF_JITTER</code></td>
-<td><code>float</code></td>
-<td><code>0.5</code></td>
-<td>The retry backoff jitter when the workflow executor performs retries.</td>
-</tr>
-<tr>
-<td><code>EXECUTOR_RETRY_BACKOFF_STEPS</code></td>
-<td><code>int</code></td>
-<td><code>5</code></td>
-<td>The retry backoff steps when the workflow executor performs retries.</td>
-</tr>
-<tr>
-<td><code>PNS_PRIVILEGED</code></td>
-<td><code>bool</code></td>
-<td><code>false</code></td>
-<td>Whether to always set privileged on for PNS when PNS executor is used.</td>
-</tr>
-<tr>
-<td><code>REMOVE_LOCAL_ART_PATH</code></td>
-<td><code>bool</code></td>
-<td><code>false</code></td>
-<td>Whether to remove local artifacts.</td>
-</tr>
-<tr>
-<td><code>RESOURCE_STATE_CHECK_INTERVAL</code></td>
-<td><code>time.Duration</code></td>
-<td><code>5s</code></td>
-<td>The time interval between resource status checks against the specified success and failure conditions.</td>
-</tr>
-<tr>
-<td><code>WAIT_CONTAINER_STATUS_CHECK_INTERVAL</code></td>
-<td><code>time.Duration</code></td>
-<td><code>5s</code></td>
-<td>The time interval for wait container to check whether the containers have completed.</td>
-</tr>
-</tbody>
-</table>
-<p>You can set the environment variables for executor by customizing executor container's environment variables in your
-controller's configmap like the following:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span><span class="w"></span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span><span class="w"></span>
-<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflow-controller-configmap</span><span class="w"></span>
-<span class="nt">data</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">config</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w"></span>
-<span class="w">    </span><span class="no">executor:</span><span class="w"></span>
-<span class="w">      </span><span class="no">env:</span><span class="w"></span>
-<span class="w">      </span><span class="no">- name: RESOURCE_STATE_CHECK_INTERVAL</span><span class="w"></span>
-<span class="w">        </span><span class="no">value: 3s</span><span class="w"></span>
-</code></pre></div>
-<h2 id="argo-server">Argo Server<a class="headerlink" href="#argo-server" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Default</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>FIRST_TIME_USER_MODAL</code></td>
-<td><code>bool</code></td>
-<td><code>true</code></td>
-<td>Show this modal.</td>
-</tr>
-<tr>
-<td><code>FEEDBACK_MODAL</code></td>
-<td><code>bool</code></td>
-<td><code>true</code></td>
-<td>Show this modal.</td>
-</tr>
-<tr>
-<td><code>NEW_VERSION_MODAL</code></td>
-<td><code>bool</code></td>
-<td><code>true</code></td>
-<td>Show this modal.</td>
-</tr>
-</tbody>
-</table>
+                <h1 id="survey">Survey<a class="headerlink" href="#survey" title="Permanent link">&para;</a></h1>
+<p>TODO</p>
                 
                   
                 
@@ -2745,41 +2248,6 @@ controller's configmap like the following:</p>
       
         
 <footer class="md-footer">
-  
-    <div class="md-footer-nav">
-      <nav class="md-footer-nav__inner md-grid">
-        
-          <a href="../windows/" title="Windows Container Support" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
-            <div class="md-flex__cell md-flex__cell--shrink">
-              <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
-            </div>
-            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
-              <span class="md-flex__ellipsis">
-                <span class="md-footer-nav__direction">
-                  Previous
-                </span>
-                Windows Container Support
-              </span>
-            </div>
-          </a>
-        
-        
-          <a href="../CONTRIBUTING/" title="Contributing" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
-            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
-              <span class="md-flex__ellipsis">
-                <span class="md-footer-nav__direction">
-                  Next
-                </span>
-                Contributing
-              </span>
-            </div>
-            <div class="md-flex__cell md-flex__cell--shrink">
-              <i class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
-            </div>
-          </a>
-        
-      </nav>
-    </div>
   
   <div class="md-footer-meta md-typeset">
     <div class="md-footer-meta__inner md-grid">
