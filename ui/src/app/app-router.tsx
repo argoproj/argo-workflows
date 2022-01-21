@@ -13,6 +13,7 @@ import eventflow from './event-flow';
 import eventSources from './event-sources';
 import help from './help';
 import login from './login';
+import {ModalSwitch} from './modals/modal-switch';
 import pipelines from './pipelines';
 import reports from './reports';
 import sensors from './sensors';
@@ -46,6 +47,7 @@ const reportsUrl = uiUrl('reports');
 
 export const AppRouter = ({popupManager, history, notificationsManager}: {popupManager: PopupManager; history: H.History; notificationsManager: NotificationsManager}) => {
     const [popupProps, setPopupProps] = useState<PopupProps>();
+    const [modals, setModals] = useState<{string: boolean}>();
     const [version, setVersion] = useState<Version>();
     const [namespace, setNamespace] = useState<string>();
     const [navBarBackgroundColor, setNavBarBackgroundColor] = useState<string>();
@@ -66,6 +68,7 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
             .then(info => {
                 Utils.managedNamespace = info.managedNamespace;
                 setNamespace(Utils.currentNamespace);
+                setModals(info.modals);
                 setNavBarBackgroundColor(info.navColor);
             })
             .then(() => services.info.getVersion())
@@ -181,6 +184,7 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                             </Switch>
                         </ErrorBoundary>
                         <ChatButton />
+                        {version && modals && <ModalSwitch version={version.version} modals={modals} />}
                     </Layout>
                 </Switch>
             </Router>

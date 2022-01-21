@@ -9711,6 +9711,13 @@
         "managedNamespace": {
           "type": "string"
         },
+        "modals": {
+          "type": "object",
+          "title": "which modals to show",
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        },
         "navColor": {
           "type": "string"
         }
@@ -9774,10 +9781,16 @@
       ],
       "properties": {
         "arguments": {
+          "description": "Arguments hold arguments to the template",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
         },
         "template": {
+          "description": "Template is the name of the template to execute by the hook",
           "type": "string"
+        },
+        "templateRef": {
+          "description": "TemplateRef is the reference to the template resource to execute by the hook",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TemplateRef"
         }
       }
     },
@@ -10827,6 +10840,10 @@
         "podPriorityClassName": {
           "description": "Set the podPriorityClassName of the workflow",
           "type": "string"
+        },
+        "priority": {
+          "description": "Priority is used if controller is configured to process limited number of workflows in parallel, higher priority workflows are processed first.",
+          "type": "integer"
         },
         "serverDryRun": {
           "description": "ServerDryRun validates the workflow on the server-side without creating it",

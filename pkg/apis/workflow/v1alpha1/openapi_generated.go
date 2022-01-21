@@ -2744,15 +2744,23 @@ func schema_pkg_apis_workflow_v1alpha1_LifecycleHook(ref common.ReferenceCallbac
 				Properties: map[string]spec.Schema{
 					"template": {
 						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
+							Description: "Template is the name of the template to execute by the hook",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"arguments": {
 						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Arguments"),
+							Description: "Arguments hold arguments to the template",
+							Default:     map[string]interface{}{},
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Arguments"),
+						},
+					},
+					"templateRef": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TemplateRef is the reference to the template resource to execute by the hook",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TemplateRef"),
 						},
 					},
 				},
@@ -2760,7 +2768,7 @@ func schema_pkg_apis_workflow_v1alpha1_LifecycleHook(ref common.ReferenceCallbac
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Arguments"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TemplateRef"},
 	}
 }
 
@@ -4832,6 +4840,13 @@ func schema_pkg_apis_workflow_v1alpha1_SubmitOpts(ref common.ReferenceCallback) 
 							Description: "Set the podPriorityClassName of the workflow",
 							Type:        []string{"string"},
 							Format:      "",
+						},
+					},
+					"priority": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Priority is used if controller is configured to process limited number of workflows in parallel, higher priority workflows are processed first.",
+							Type:        []string{"integer"},
+							Format:      "int32",
 						},
 					},
 				},

@@ -142,3 +142,11 @@ data:
       - name: RESOURCE_STATE_CHECK_INTERVAL
         value: 3s
 ```
+
+## Argo Server
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `FIRST_TIME_USER_MODAL` | `bool` | `true` | Show this modal. |
+| `FEEDBACK_MODAL` | `bool` | `true` | Show this modal. |
+| `NEW_VERSION_MODAL` | `bool` | `true` | Show this modal. |

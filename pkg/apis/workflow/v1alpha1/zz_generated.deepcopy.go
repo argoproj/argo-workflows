@@ -1348,6 +1348,11 @@ func (in *LabelValues) DeepCopy() *LabelValues {
 func (in *LifecycleHook) DeepCopyInto(out *LifecycleHook) {
 	*out = *in
 	in.Arguments.DeepCopyInto(&out.Arguments)
+	if in.TemplateRef != nil {
+		in, out := &in.TemplateRef, &out.TemplateRef
+		*out = new(TemplateRef)
+		**out = **in
+	}
 	return
 }
 
@@ -2333,6 +2338,11 @@ func (in *SubmitOpts) DeepCopyInto(out *SubmitOpts) {
 		in, out := &in.OwnerReference, &out.OwnerReference
 		*out = new(metav1.OwnerReference)
 		(*in).DeepCopyInto(*out)
+	}
+	if in.Priority != nil {
+		in, out := &in.Priority, &out.Priority
+		*out = new(int32)
+		**out = **in
 	}
 	return
 }

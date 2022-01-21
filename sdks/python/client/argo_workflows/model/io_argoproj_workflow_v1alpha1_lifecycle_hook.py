@@ -31,7 +31,9 @@ from argo_workflows.exceptions import ApiAttributeError
 
 def lazy_import():
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_arguments import IoArgoprojWorkflowV1alpha1Arguments
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_template_ref import IoArgoprojWorkflowV1alpha1TemplateRef
     globals()['IoArgoprojWorkflowV1alpha1Arguments'] = IoArgoprojWorkflowV1alpha1Arguments
+    globals()['IoArgoprojWorkflowV1alpha1TemplateRef'] = IoArgoprojWorkflowV1alpha1TemplateRef
 
 
 class IoArgoprojWorkflowV1alpha1LifecycleHook(ModelNormal):
@@ -89,6 +91,7 @@ class IoArgoprojWorkflowV1alpha1LifecycleHook(ModelNormal):
         return {
             'template': (str,),  # noqa: E501
             'arguments': (IoArgoprojWorkflowV1alpha1Arguments,),  # noqa: E501
+            'template_ref': (IoArgoprojWorkflowV1alpha1TemplateRef,),  # noqa: E501
         }
 
     @cached_property
@@ -99,6 +102,7 @@ class IoArgoprojWorkflowV1alpha1LifecycleHook(ModelNormal):
     attribute_map = {
         'template': 'template',  # noqa: E501
         'arguments': 'arguments',  # noqa: E501
+        'template_ref': 'templateRef',  # noqa: E501
     }
 
     read_only_vars = {
@@ -112,7 +116,7 @@ class IoArgoprojWorkflowV1alpha1LifecycleHook(ModelNormal):
         """IoArgoprojWorkflowV1alpha1LifecycleHook - a model defined in OpenAPI
 
         Args:
-            template (str):
+            template (str): Template is the name of the template to execute by the hook
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -146,6 +150,7 @@ class IoArgoprojWorkflowV1alpha1LifecycleHook(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             arguments (IoArgoprojWorkflowV1alpha1Arguments): [optional]  # noqa: E501
+            template_ref (IoArgoprojWorkflowV1alpha1TemplateRef): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -198,7 +203,7 @@ class IoArgoprojWorkflowV1alpha1LifecycleHook(ModelNormal):
         """IoArgoprojWorkflowV1alpha1LifecycleHook - a model defined in OpenAPI
 
         Args:
-            template (str):
+            template (str): Template is the name of the template to execute by the hook
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -232,6 +237,7 @@ class IoArgoprojWorkflowV1alpha1LifecycleHook(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             arguments (IoArgoprojWorkflowV1alpha1Arguments): [optional]  # noqa: E501
+            template_ref (IoArgoprojWorkflowV1alpha1TemplateRef): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

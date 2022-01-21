@@ -171,6 +171,12 @@ dist/argo-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
 dist/argo-linux-ppc64le: GOARGS = GOOS=linux GOARCH=ppc64le
 dist/argo-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
 
+dist/argo-windows-%.gz: dist/argo-windows-%
+	gzip --force --keep dist/argo-windows-$*.exe
+
+dist/argo-windows-%: server/static/files.go $(CLI_PKGS) go.sum
+	CGO_ENABLED=0 $(GOARGS) go build -v -ldflags '${LDFLAGS} -extldflags -static' -o $@.exe ./cmd/argo
+
 dist/argo-%.gz: dist/argo-%
 	gzip --force --keep dist/argo-$*
 
@@ -229,11 +235,6 @@ argoexec-image:
 	docker run --rm -t $(IMAGE_NAMESPACE)/$*:$(VERSION) version
 	if [ $(K3D) = true ]; then k3d image import -c $(K3D_CLUSTER_NAME) $(IMAGE_NAMESPACE)/$*:$(VERSION); fi
 	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$*:$(VERSION) ; fi
-
-scan-images: scan-workflow-controller scan-argoexec scan-argocli
-
-scan-%:
-	docker scan --severity=high $(IMAGE_NAMESPACE)/$*:$(VERSION)
 
 # generation
 
@@ -381,8 +382,6 @@ lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 	rm -Rf v3 vendor
 	# Tidy Go modules
 	go mod tidy
-	# Lint logging statements
-	./hack/check-logging.sh
 	# Lint Go files
 	$(GOPATH)/bin/golangci-lint run --fix --verbose
 
@@ -396,7 +395,11 @@ install: githooks
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 	@echo "installing PROFILE=$(PROFILE), E2E_EXECUTOR=$(E2E_EXECUTOR)"
-	kubectl kustomize --load-restrictor=LoadRestrictionsNone test/e2e/manifests/$(PROFILE) | sed 's|quay.io/argoproj/|$(IMAGE_NAMESPACE)/|' | sed 's/containerRuntimeExecutor: emissary/containerRuntimeExecutor: $(E2E_EXECUTOR)/' | sed 's/namespace: argo/namespace: $(KUBE_NAMESPACE)/' | kubectl -n $(KUBE_NAMESPACE) apply --prune -l app.kubernetes.io/part-of=argo -f -
+	kubectl kustomize --load-restrictor=LoadRestrictionsNone test/e2e/manifests/$(PROFILE) | sed 's|quay.io/argoproj/|$(IMAGE_NAMESPACE)/|' | sed 's/namespace: argo/namespace: $(KUBE_NAMESPACE)/' | kubectl -n $(KUBE_NAMESPACE) apply --prune -l app.kubernetes.io/part-of=argo -f -
+ifneq ($(E2E_EXECUTOR),emissary)
+	# only change the executor from the default it we need to
+	kubectl patch cm/workflow-controller-configmap -p "{\"data\": {\"containerRuntimeExecutor\": \"$(E2E_EXECUTOR)\"}}"
+endif
 ifeq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml
 endif

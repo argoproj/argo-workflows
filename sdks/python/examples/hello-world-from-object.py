@@ -25,8 +25,8 @@ manifest = IoArgoprojWorkflowV1alpha1Workflow(
                     image='docker/whalesay:latest', command=['cowsay'], args=['hello world']))]))
 
 api_client = argo_workflows.ApiClient(configuration)
-api_instance = workflow_service_api.WorkflowServiceApi(api_client)
+api_instance = workflow_service_api.WorkflowServiceApi(api_client=api_client)
 api_response = api_instance.create_workflow(
-    namespace='default',
-    body=IoArgoprojWorkflowV1alpha1WorkflowCreateRequest(workflow=manifest))
+    namespace='argo',
+    body=IoArgoprojWorkflowV1alpha1WorkflowCreateRequest(workflow=manifest, _check_return_type=False))
 pprint(api_response)

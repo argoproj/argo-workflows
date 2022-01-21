@@ -19,6 +19,14 @@ func GetConditions(un *unstructured.Unstructured) wfv1.Conditions {
 		if !ok {
 			return nil
 		}
+		_, ok = m["type"].(string)
+		if !ok {
+			return nil
+		}
+		_, ok = m["status"].(string)
+		if !ok {
+			return nil
+		}
 		x = append(x, wfv1.Condition{
 			Type:   wfv1.ConditionType(m["type"].(string)),
 			Status: metav1.ConditionStatus(m["status"].(string)),

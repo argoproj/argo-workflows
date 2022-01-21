@@ -6,7 +6,7 @@ metadata:
     workflows.argoproj.io/test: "true"
   annotations:
     workflows.argoproj.io/description: |
-      Exemplifies usage of successCondition in HTTP template
+      Exemplifies usage of successCondition in HTTP template (available since v3.3)
 spec:
   entrypoint: main
   templates:

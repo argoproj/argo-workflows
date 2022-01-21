@@ -366,6 +366,8 @@ func TestGlobalParams(t *testing.T) {
 	assert.Contains(t, woc.globalParams, "workflow.name")
 	assert.Contains(t, woc.globalParams, "workflow.namespace")
 	assert.Contains(t, woc.globalParams, "workflow.parameters")
+	assert.Contains(t, woc.globalParams, "workflow.annotations")
+	assert.Contains(t, woc.globalParams, "workflow.labels")
 	assert.Contains(t, woc.globalParams, "workflow.serviceAccountName")
 	assert.Contains(t, woc.globalParams, "workflow.uid")
 
@@ -2764,7 +2766,7 @@ spec:
       - name: text
         path: /outputs/text/data
     container:
-      image: busybox
+      image: argoproj/argosay:v2
       command: [sh, -c, 'head -n {{inputs.parameters.lines-count}} <"{{inputs.artifacts.text.path}}" | tee "{{outputs.artifacts.text.path}}" | wc -l > "{{outputs.parameters.actual-lines-count.path}}"']
 `
 
@@ -2778,7 +2780,7 @@ func TestResolveIOPathPlaceholders(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
 
-	assert.Equal(t, []string{"sh", "-c", "head -n 3 <\"/inputs/text/data\" | tee \"/outputs/text/data\" | wc -l > \"/outputs/actual-lines-count/data\""}, pods.Items[0].Spec.Containers[1].Command)
+	assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary", "--", "sh", "-c", "head -n 3 <\"/inputs/text/data\" | tee \"/outputs/text/data\" | wc -l > \"/outputs/actual-lines-count/data\""}, pods.Items[0].Spec.Containers[1].Command)
 }
 
 var outputValuePlaceholders = `
@@ -2795,7 +2797,7 @@ spec:
       - name: pod-name
         value: "{{pod.name}}"
     container:
-      image: busybox
+      image: argoproj/argosay:v2
 `
 
 func TestResolvePlaceholdersInOutputValues(t *testing.T) {
@@ -2831,7 +2833,7 @@ spec:
       - name: pod-name
         value: "{{pod.name}}"
     container:
-      image: busybox
+      image: argoproj/argosay:v2
 `
 
 func TestResolvePodNameInRetries(t *testing.T) {
@@ -3608,8 +3610,8 @@ spec:
 	// Pod node should return a pod
 	podNode := woc.wf.GetNodeByName("dag-events.a")
 	pod, err = woc.getPodByNode(podNode)
+	assert.NoError(t, err)
 	assert.NotNil(t, pod)
-	assert.Nil(t, err)
 	// Invalid node should not return a pod
 	invalidNode := wfv1.NodeStatus{Type: wfv1.NodeTypePod, Name: "doesnt-exist"}
 	pod, err = woc.getPodByNode(&invalidNode)
@@ -4263,6 +4265,40 @@ func TestUnsuppliedArgValue(t *testing.T) {
 	assert.Equal(t, woc.wf.Status.Message, "invalid spec: spec.arguments.missing.value is required")
 }
 
+var suppliedArgValue = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf-with-supplied-param-
+spec:
+  arguments:
+    parameters:
+    - name: message
+      value: argo
+      valueFrom:
+        supplied: {}
+  entrypoint: whalesay
+  templates:
+  - container:
+      args: ["{{workflow.parameters.message}}"]
+      command: ["cowsay"]
+      image: docker/whalesay:latest
+    name: whalesay
+`
+
+// TestSuppliedArgValue ensures that supplied workflow parameters are correctly set in the global parameters
+func TestSuppliedArgValue(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(suppliedArgValue)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	assert.Equal(t, "argo", woc.globalParams["workflow.parameters.message"])
+}
+
 var maxDurationOnErroredFirstNode = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -4834,7 +4870,7 @@ spec:
   entrypoint: main
   templates:
   - container:
-      image: whalesay
+      image: docker/whalesay:latest
     name: main
 `)
 	cancel, controller := newController(wf)
@@ -7475,6 +7511,15 @@ func TestBuildRetryStrategyLocalScope(t *testing.T) {
 func TestGetContainerRuntimeExecutor(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
+	t.Run("Default", func(t *testing.T) {
+		executor := controller.GetContainerRuntimeExecutor(labels.Set{})
+		assert.Equal(t, common.ContainerRuntimeExecutorEmissary, executor)
+	})
+	t.Run("CLIParameter", func(t *testing.T) {
+		controller.containerRuntimeExecutor = common.ContainerRuntimeExecutorKubelet
+		executor := controller.GetContainerRuntimeExecutor(labels.Set{})
+		assert.Equal(t, common.ContainerRuntimeExecutorKubelet, executor)
+	})
 	controller.Config.ContainerRuntimeExecutor = "pns"
 	controller.Config.ContainerRuntimeExecutors = config.ContainerRuntimeExecutors{
 		{
@@ -7486,10 +7531,14 @@ func TestGetContainerRuntimeExecutor(t *testing.T) {
 			},
 		},
 	}
-	executor := controller.GetContainerRuntimeExecutor(labels.Set{})
-	assert.Equal(t, common.ContainerRuntimeExecutorPNS, executor)
-	executor = controller.GetContainerRuntimeExecutor(labels.Set{"workflows.argoproj.io/container-runtime-executor": "emissary"})
-	assert.Equal(t, common.ContainerRuntimeExecutorEmissary, executor)
+	t.Run("Configuration", func(t *testing.T) {
+		executor := controller.GetContainerRuntimeExecutor(labels.Set{})
+		assert.Equal(t, common.ContainerRuntimeExecutorPNS, executor)
+	})
+	t.Run("Labels", func(t *testing.T) {
+		executor := controller.GetContainerRuntimeExecutor(labels.Set{"workflows.argoproj.io/container-runtime-executor": "emissary"})
+		assert.Equal(t, common.ContainerRuntimeExecutorEmissary, executor)
+	})
 }
 
 var exitHandlerWithRetryNodeParam = `
@@ -7719,4 +7768,449 @@ func TestSetWFPodNamesAnnotation(t *testing.T) {
 		annotations := woc.wf.ObjectMeta.GetAnnotations()
 		assert.Equal(t, annotations[common.AnnotationKeyPodNameVersion], tt.podNameVersion)
 	}
+}
+
+var RetryLoopWithOutputParam = `
+metadata:
+  name: hr-retry-replication
+  namespace: argo
+  uid: a0edb47a-3e6d-4568-b828-bf0cfcd8e5d5
+  resourceVersion: '258409'
+  generation: 21
+  creationTimestamp: '2022-01-06T00:09:56Z'
+  labels:
+    app.kubernetes.io/managed-by: Helm
+    workflows.argoproj.io/completed: 'true'
+    workflows.argoproj.io/phase: Succeeded
+  annotations:
+    meta.helm.sh/release-name: hr-retry-replication
+    meta.helm.sh/release-namespace: argo
+    workflows.argoproj.io/pod-name-format: v1
+  managedFields:
+    - manager: Go-http-client
+      operation: Update
+      apiVersion: argoproj.io/v1alpha1
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:spec':
+          'f:entrypoint': {}
+          'f:templates': {}
+    - manager: argo
+      operation: Update
+      apiVersion: argoproj.io/v1alpha1
+      time: '2022-01-06T00:09:56Z'
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:metadata':
+          'f:annotations':
+            .: {}
+            'f:meta.helm.sh/release-name': {}
+            'f:meta.helm.sh/release-namespace': {}
+          'f:labels':
+            .: {}
+            'f:app.kubernetes.io/managed-by': {}
+    - manager: workflow-controller
+      operation: Update
+      apiVersion: argoproj.io/v1alpha1
+      time: '2022-01-06T00:10:17Z'
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:metadata':
+          'f:annotations':
+            'f:workflows.argoproj.io/pod-name-format': {}
+          'f:labels':
+            'f:workflows.argoproj.io/completed': {}
+            'f:workflows.argoproj.io/phase': {}
+        'f:spec': {}
+        'f:status': {}
+spec:
+  templates:
+    - name: hr-retry-replication
+      inputs: {}
+      outputs: {}
+      metadata: {}
+      dag:
+        tasks:
+          - name: Create-Json-List
+            template: createJsonList
+            arguments: {}
+          - name: Retry-And-Loop
+            template: retryAndLoop
+            arguments:
+              parameters:
+                - name: itemId
+                  value: '{{item.Id}}'
+            withParam: '{{tasks.Create-Json-List.outputs.parameters.jsonList}}'
+            depends: Create-Json-List
+          - name: Check-Output
+            template: checkOutput
+            arguments:
+              parameters:
+                - name: someInput
+                  value: '{{tasks.Retry-And-Loop.outputs.parameters.outputParam}}'
+            depends: Retry-And-Loop
+    - name: checkOutput
+      inputs:
+        parameters:
+          - name: someInput
+      outputs: {}
+      metadata: {}
+      script:
+        name: ''
+        image: 'alpine:3.7'
+        command:
+          - /bin/sh
+        resources: {}
+        source: |
+          echo "The Output is: {{inputs.parameters.someInput}}"
+    - name: retryAndLoop
+      inputs:
+        parameters:
+          - name: itemId
+      outputs:
+        parameters:
+          - name: outputParam
+            valueFrom:
+              path: /outputParam.txt
+      metadata: {}
+      script:
+        name: ''
+        image: 'alpine:3.7'
+        command:
+          - /bin/sh
+        resources: {}
+        source: |
+          echo ItemId: {{inputs.parameters.itemId}}
+          if [[ {{ retries }} == 0 ]]; then
+            exit 1 # Exit as failed on zeroth retry
+          fi
+          echo "Successful" > /outputParam.txt
+          exit 0 # Else exit successfully
+      retryStrategy:
+        limit: '2'
+    - name: createJsonList
+      inputs: {}
+      outputs:
+        parameters:
+          - name: jsonList
+            valueFrom:
+              path: /jsonList.json
+      metadata: {}
+      script:
+        name: ''
+        image: 'alpine:3.7'
+        command:
+          - /bin/sh
+        resources: {}
+        source: |
+          echo [{\"Id\": \"1\"}, {\"Id\": \"2\"}] > /jsonList.json
+  entrypoint: hr-retry-replication
+  arguments: {}
+  ttlStrategy:
+    secondsAfterCompletion: 600
+  activeDeadlineSeconds: 300
+  podSpecPatch: |
+    terminationGracePeriodSeconds: 3
+status:
+  phase: Succeeded
+  startedAt: '2022-01-06T00:09:56Z'
+  finishedAt: '2022-01-06T00:10:17Z'
+  progress: 6/6
+  nodes:
+    hr-retry-replication:
+      id: hr-retry-replication
+      name: hr-retry-replication
+      displayName: hr-retry-replication
+      type: DAG
+      templateName: hr-retry-replication
+      templateScope: local/hr-retry-replication
+      phase: Succeeded
+      startedAt: '2022-01-06T00:09:56Z'
+      finishedAt: '2022-01-06T00:10:17Z'
+      progress: 6/6
+      resourcesDuration:
+        cpu: 18
+        memory: 8
+      children:
+        - hr-retry-replication-2229970335
+      outboundNodes:
+        - hr-retry-replication-2709022465
+    hr-retry-replication-1172938528:
+      id: hr-retry-replication-1172938528
+      name: 'hr-retry-replication.Retry-And-Loop(0:Id:1)(0)'
+      displayName: 'Retry-And-Loop(0:Id:1)(0)'
+      type: Pod
+      templateName: retryAndLoop
+      templateScope: local/hr-retry-replication
+      phase: Failed
+      boundaryID: hr-retry-replication
+      message: Error (exit code 1)
+      startedAt: '2022-01-06T00:10:00Z'
+      finishedAt: '2022-01-06T00:10:05Z'
+      progress: 1/1
+      resourcesDuration:
+        cpu: 2
+        memory: 1
+      inputs:
+        parameters:
+          - name: itemId
+            value: '1'
+      outputs:
+        parameters:
+          - name: outputParam
+            valueFrom:
+              path: /outputParam.txt
+        artifacts:
+          - name: main-logs
+            s3:
+              key: hr-retry-replication/hr-retry-replication-1172938528/main.log
+        exitCode: '1'
+      hostNodeName: k3d-k3s-default-server-0
+    hr-retry-replication-1480423937:
+      id: hr-retry-replication-1480423937
+      name: 'hr-retry-replication.Retry-And-Loop(1:Id:2)(1)'
+      displayName: 'Retry-And-Loop(1:Id:2)(1)'
+      type: Pod
+      templateName: retryAndLoop
+      templateScope: local/hr-retry-replication
+      phase: Succeeded
+      boundaryID: hr-retry-replication
+      startedAt: '2022-01-06T00:10:05Z'
+      finishedAt: '2022-01-06T00:10:12Z'
+      progress: 1/1
+      resourcesDuration:
+        cpu: 4
+        memory: 2
+      inputs:
+        parameters:
+          - name: itemId
+            value: '2'
+      outputs:
+        parameters:
+          - name: outputParam
+            value: Successful
+            valueFrom:
+              path: /outputParam.txt
+        artifacts:
+          - name: main-logs
+            s3:
+              key: hr-retry-replication/hr-retry-replication-1480423937/main.log
+        exitCode: '0'
+      children:
+        - hr-retry-replication-2709022465
+      hostNodeName: k3d-k3s-default-server-0
+    hr-retry-replication-1488413861:
+      id: hr-retry-replication-1488413861
+      name: 'hr-retry-replication.Retry-And-Loop(1:Id:2)'
+      displayName: 'Retry-And-Loop(1:Id:2)'
+      type: Retry
+      templateName: retryAndLoop
+      templateScope: local/hr-retry-replication
+      phase: Succeeded
+      boundaryID: hr-retry-replication
+      startedAt: '2022-01-06T00:10:00Z'
+      finishedAt: '2022-01-06T00:10:12Z'
+      progress: 3/3
+      resourcesDuration:
+        cpu: 9
+        memory: 4
+      inputs:
+        parameters:
+          - name: itemId
+            value: '2'
+      outputs:
+        parameters:
+          - name: outputParam
+            value: Successful
+            valueFrom:
+              path: /outputParam.txt
+        artifacts:
+          - name: main-logs
+            s3:
+              key: hr-retry-replication/hr-retry-replication-1480423937/main.log
+        exitCode: '0'
+      children:
+        - hr-retry-replication-3158332932
+        - hr-retry-replication-1480423937
+    hr-retry-replication-2229970335:
+      id: hr-retry-replication-2229970335
+      name: hr-retry-replication.Create-Json-List
+      displayName: Create-Json-List
+      type: Pod
+      templateName: createJsonList
+      templateScope: local/hr-retry-replication
+      phase: Succeeded
+      boundaryID: hr-retry-replication
+      startedAt: '2022-01-06T00:09:56Z'
+      finishedAt: '2022-01-06T00:10:00Z'
+      progress: 1/1
+      resourcesDuration:
+        cpu: 3
+        memory: 1
+      outputs:
+        parameters:
+          - name: jsonList
+            value: '[{"Id": "1"}, {"Id": "2"}]'
+            valueFrom:
+              path: /jsonList.json
+        artifacts:
+          - name: main-logs
+            s3:
+              key: hr-retry-replication/hr-retry-replication-2229970335/main.log
+        exitCode: '0'
+      children:
+        - hr-retry-replication-3704116740
+      hostNodeName: k3d-k3s-default-server-0
+    hr-retry-replication-2709022465:
+      id: hr-retry-replication-2709022465
+      name: hr-retry-replication.Check-Output
+      displayName: Check-Output
+      type: Pod
+      templateName: checkOutput
+      templateScope: local/hr-retry-replication
+      phase: Succeeded
+      boundaryID: hr-retry-replication
+      startedAt: '2022-01-06T00:10:12Z'
+      finishedAt: '2022-01-06T00:10:17Z'
+      progress: 1/1
+      resourcesDuration:
+        cpu: 3
+        memory: 1
+      inputs:
+        parameters:
+          - name: someInput
+            value: '["Successful","Successful"]'
+      outputs:
+        artifacts:
+          - name: main-logs
+            s3:
+              key: hr-retry-replication/hr-retry-replication-2709022465/main.log
+        exitCode: '0'
+      hostNodeName: k3d-k3s-default-server-0
+    hr-retry-replication-302978553:
+      id: hr-retry-replication-302978553
+      name: 'hr-retry-replication.Retry-And-Loop(0:Id:1)'
+      displayName: 'Retry-And-Loop(0:Id:1)'
+      type: Retry
+      templateName: retryAndLoop
+      templateScope: local/hr-retry-replication
+      phase: Succeeded
+      boundaryID: hr-retry-replication
+      startedAt: '2022-01-06T00:10:00Z'
+      finishedAt: '2022-01-06T00:10:12Z'
+      progress: 3/3
+      resourcesDuration:
+        cpu: 9
+        memory: 4
+      inputs:
+        parameters:
+          - name: itemId
+            value: '1'
+      outputs:
+        parameters:
+          - name: outputParam
+            value: Successful
+            valueFrom:
+              path: /outputParam.txt
+        artifacts:
+          - name: main-logs
+            s3:
+              key: hr-retry-replication/hr-retry-replication-4058438733/main.log
+        exitCode: '0'
+      children:
+        - hr-retry-replication-1172938528
+        - hr-retry-replication-4058438733
+    hr-retry-replication-3158332932:
+      id: hr-retry-replication-3158332932
+      name: 'hr-retry-replication.Retry-And-Loop(1:Id:2)(0)'
+      displayName: 'Retry-And-Loop(1:Id:2)(0)'
+      type: Pod
+      templateName: retryAndLoop
+      templateScope: local/hr-retry-replication
+      phase: Failed
+      boundaryID: hr-retry-replication
+      message: Error (exit code 1)
+      startedAt: '2022-01-06T00:10:00Z'
+      finishedAt: '2022-01-06T00:10:05Z'
+      progress: 1/1
+      resourcesDuration:
+        cpu: 2
+        memory: 1
+      inputs:
+        parameters:
+          - name: itemId
+            value: '2'
+      outputs:
+        parameters:
+          - name: outputParam
+            valueFrom:
+              path: /outputParam.txt
+        artifacts:
+          - name: main-logs
+            s3:
+              key: hr-retry-replication/hr-retry-replication-3158332932/main.log
+        exitCode: '1'
+      hostNodeName: k3d-k3s-default-server-0
+    hr-retry-replication-3704116740:
+      id: hr-retry-replication-3704116740
+      name: hr-retry-replication.Retry-And-Loop
+      displayName: Retry-And-Loop
+      type: TaskGroup
+      templateName: retryAndLoop
+      templateScope: local/hr-retry-replication
+      phase: Succeeded
+      boundaryID: hr-retry-replication
+      startedAt: '2022-01-06T00:10:00Z'
+      finishedAt: '2022-01-06T00:10:12Z'
+      progress: 5/5
+      resourcesDuration:
+        cpu: 15
+        memory: 7
+      children:
+        - hr-retry-replication-302978553
+        - hr-retry-replication-1488413861
+    hr-retry-replication-4058438733:
+      id: hr-retry-replication-4058438733
+      name: 'hr-retry-replication.Retry-And-Loop(0:Id:1)(1)'
+      displayName: 'Retry-And-Loop(0:Id:1)(1)'
+      type: Pod
+      templateName: retryAndLoop
+      templateScope: local/hr-retry-replication
+      phase: Succeeded
+      boundaryID: hr-retry-replication
+      startedAt: '2022-01-06T00:10:05Z'
+      finishedAt: '2022-01-06T00:10:12Z'
+      progress: 1/1
+      resourcesDuration:
+        cpu: 4
+        memory: 2
+      inputs:
+        parameters:
+          - name: itemId
+            value: '1'
+      outputs:
+        parameters:
+          - name: outputParam
+            value: Successful
+            valueFrom:
+              path: /outputParam.txt
+        artifacts:
+          - name: main-logs
+            s3:
+              key: hr-retry-replication/hr-retry-replication-4058438733/main.log
+        exitCode: '0'
+      children:
+        - hr-retry-replication-2709022465
+      hostNodeName: k3d-k3s-default-server-0`
+
+func TestRetryLoopWithOutputParam(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(RetryLoopWithOutputParam)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }

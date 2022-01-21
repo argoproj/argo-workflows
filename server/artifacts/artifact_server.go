@@ -165,11 +165,7 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 		return fmt.Errorf("artifact not found")
 	}
 
-	ref, err := a.artifactRepositories.Resolve(ctx, wf.Spec.ArtifactRepositoryRef, wf.Namespace)
-	if err != nil {
-		return err
-	}
-	ar, err := a.artifactRepositories.Get(ctx, ref)
+	ar, err := a.artifactRepositories.Get(ctx, wf.Status.ArtifactRepositoryRef)
 	if err != nil {
 		return err
 	}

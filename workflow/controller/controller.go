@@ -1102,10 +1102,13 @@ func (wfc *WorkflowController) GetContainerRuntimeExecutor(labels labels.Labels)
 	if err != nil {
 		log.WithError(err).Info("failed to determine container runtime executor")
 	}
-	if executor == "" && wfc.containerRuntimeExecutor != "" {
+	if executor != "" {
+		return executor
+	}
+	if wfc.containerRuntimeExecutor != "" {
 		return wfc.containerRuntimeExecutor
 	}
-	return executor
+	return common.ContainerRuntimeExecutorEmissary
 }
 
 func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, metrics.ServerConfig) {
