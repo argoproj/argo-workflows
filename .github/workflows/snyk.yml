@@ -3,15 +3,7 @@ on:
   schedule:
     - cron: "30 2 * * *"
 jobs:
-  images:
-    if: github.repository == 'argoproj/argo-workflows'
-    runs-on: ubuntu-latest
-    env:
-      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-    steps:
-      - run: docker scan --severity=high quay.io/argoproj/workflow-controller
-      - run: docker scan --severity=high quay.io/argoproj/argoexec
-      - run: docker scan --severity=high quay.io/argoproj/argocli
+  # we do not scan images here, they're scanned here: https://app.snyk.io/org/argoproj/projects
 
   golang:
     if: github.repository == 'argoproj/argo-workflows'
