@@ -146,28 +146,43 @@ func GetClaims(ctx context.Context) *types.Claims {
 	return config
 }
 
-func getAuthHeader(md metadata.MD) string {
+func getAuthHeaders(md metadata.MD) []string {
 	// looks for the HTTP header `Authorization: Bearer ...`
 	for _, t := range md.Get("authorization") {
-		return t
+		return []string{t}
 	}
 	// check the HTTP cookie
+	// In cases such as wildcard domain cookies, there could be multiple authorization headers
+	var authorizations []string
 	for _, t := range md.Get("cookie") {
 		header := http.Header{}
 		header.Add("Cookie", t)
 		request := http.Request{Header: header}
-		token, err := request.Cookie("authorization")
-		if err == nil {
-			return token.Value
+		cookies := request.Cookies()
+		for _, c := range cookies {
+			if c.Name == "authorization" {
+				authorizations = append(authorizations, c.Value)
+			}
 		}
 	}
-	return ""
+	return authorizations
 }
 
 func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertypes.Clients, *types.Claims, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
-	authorization := getAuthHeader(md)
-	mode, valid := s.Modes.GetMode(authorization)
+	authorizations := getAuthHeaders(md)
+	valid := false
+	var mode Mode
+	var authorization string
+
+	for _, token := range authorizations {
+		mode, valid = s.Modes.GetMode(token)
+		// Stop checking after the first valid token
+		if valid {
+			authorization = token
+			break
+		}
+	}
 	if !valid {
 		return nil, nil, status.Error(codes.Unauthenticated, "token not valid for running mode")
 	}
