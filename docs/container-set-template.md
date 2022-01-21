@@ -1,6 +1,6 @@
 # Container Set Template
 
-![alpha](assets/alpha.svg)
+![GA](assets/ga.svg)
 
 > v3.1 and after
 

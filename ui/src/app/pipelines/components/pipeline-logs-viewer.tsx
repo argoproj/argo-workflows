@@ -1,6 +1,7 @@
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 import {Observable} from 'rxjs';
+import {filter, map, publishReplay, refCount} from 'rxjs/operators';
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {services} from '../../shared/services';
 import {FullHeightLogsViewer} from '../../workflows/components/workflow-logs-viewer/full-height-logs-viewer';
@@ -17,23 +18,23 @@ export const PipelineLogsViewer = ({namespace, pipelineName, stepName}: {namespa
     const [logsObservable, setLogsObservable] = useState<Observable<string>>();
     const [logLoaded, setLogLoaded] = useState(false);
     // filter allows us to introduce a short delay, before we actually change grep
-    const [filter, setFilter] = useState('');
+    const [logFilter, setLogFilter] = useState('');
     useEffect(() => {
-        const x = setTimeout(() => setGrep(filter), 1000);
+        const x = setTimeout(() => setGrep(logFilter), 1000);
         return () => clearTimeout(x);
-    }, [filter]);
+    }, [logFilter]);
 
     useEffect(() => {
         setError(null);
         setLogLoaded(false);
-        const source = services.pipeline
-            .pipelineLogs(namespace, pipelineName, stepName, container, grep, tailLines)
-            .filter(e => !!e)
-            .map(e => e.msg + '\n')
+        const source = services.pipeline.pipelineLogs(namespace, pipelineName, stepName, container, grep, tailLines).pipe(
+            filter(e => !!e),
+            map(e => e.msg + '\n'),
             // this next line highlights the search term in bold with a yellow background, white text
-            .map(x => x.replace(new RegExp(grep, 'g'), y => '\u001b[1m\u001b[43;1m\u001b[37m' + y + '\u001b[0m'))
-            .publishReplay()
-            .refCount();
+            map(x => x.replace(new RegExp(grep, 'g'), y => '\u001b[1m\u001b[43;1m\u001b[37m' + y + '\u001b[0m')),
+            publishReplay(),
+            refCount()
+        );
         const subscription = source.subscribe(() => setLogLoaded(true), setError);
         setLogsObservable(source);
         return () => subscription.unsubscribe();
@@ -56,7 +57,7 @@ export const PipelineLogsViewer = ({namespace, pipelineName, stepName}: {namespa
                     </a>
                 ))}
                 <span className='fa-pull-right'>
-                    <i className='fa fa-filter' /> <input type='search' defaultValue={filter} onChange={v => setFilter(v.target.value)} placeholder='Filter (regexp)...' />
+                    <i className='fa fa-filter' /> <input type='search' defaultValue={logFilter} onChange={v => setLogFilter(v.target.value)} placeholder='Filter (regexp)...' />
                 </span>
             </div>
             <ErrorNotice error={error} />

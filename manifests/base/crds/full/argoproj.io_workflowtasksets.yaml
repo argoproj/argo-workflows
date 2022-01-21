@@ -2627,6 +2627,15 @@ spec:
                                       type: object
                                     template:
                                       type: string
+                                    templateRef:
+                                      properties:
+                                        clusterScope:
+                                          type: boolean
+                                        name:
+                                          type: string
+                                        template:
+                                          type: string
+                                      type: object
                                   required:
                                   - template
                                   type: object

@@ -237,11 +237,6 @@ argoexec-image:
 	if [ $(K3D) = true ]; then k3d image import -c $(K3D_CLUSTER_NAME) $(IMAGE_NAMESPACE)/$*:$(VERSION); fi
 	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$*:$(VERSION) ; fi
 
-scan-images: scan-workflow-controller scan-argoexec scan-argocli
-
-scan-%:
-	docker scan --severity=high $(IMAGE_NAMESPACE)/$*:$(VERSION)
-
 # generation
 plugins/%-plugin-configmap.yaml: ./dist/argo
 	./dist/argo executor-plugin build $(dir $@)
