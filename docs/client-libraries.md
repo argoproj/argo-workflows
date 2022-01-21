@@ -21,7 +21,8 @@ The following client libraries are officially maintained by the Argo team.
 
 The following client libraries are provided and maintained by their authors, not the Argo team.
 
-| Language | Client Library | Info |
+| Language | Client Library | Examples/Docs |
 |----------|----------------|---------------|
 | Python | [Couler](https://github.com/couler-proj/couler) | Multi-workflow engine support Python SDK |
 | Python | [Hera](https://github.com/argoproj-labs/hera-workflows) | Easy and accessible Argo workflows construction and submission in Python |
+

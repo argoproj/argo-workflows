@@ -5,6 +5,7 @@ export interface Link {
 }
 
 export interface Info {
+    modals: {string: boolean};
     managedNamespace?: string;
     links?: Link[];
 }

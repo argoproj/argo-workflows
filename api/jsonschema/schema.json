@@ -5447,6 +5447,13 @@
         },
         "managedNamespace": {
           "type": "string"
+        },
+        "modals": {
+          "additionalProperties": {
+            "type": "boolean"
+          },
+          "title": "which modals to show",
+          "type": "object"
         }
       },
       "type": "object"

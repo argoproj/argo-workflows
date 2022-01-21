@@ -1,6 +1,5 @@
 # Key-Only Artifacts
 
-![Alpha](assets/alpha.svg)
 
 > v3.0 and after
 
