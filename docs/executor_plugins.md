@@ -110,6 +110,10 @@ spec:
 
 You'll see the workflow complete successfully.
 
+To list executor plugins:
+
+    kubectl get cm -l workflows.argoproj.io/configmap-type=ExecutorPlugin
+
 ### Requeue
 
 It might be the case that the plugin must execute asynchronously, e.g. due to long running task. Is that case the plugin
@@ -138,4 +142,3 @@ kubectl -n argo logs ${agentPodName} -c hello-executor-plugin
 ### Learn More
 
 - Read the [API reference](executor_swagger.md).
-- Read the [security recommendations](plugins.md#security) for plugins.
