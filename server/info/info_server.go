@@ -41,7 +41,7 @@ func (i *infoServer) GetInfo(context.Context, *infopkg.GetInfoRequest) (*infopkg
 		ManagedNamespace: i.managedNamespace,
 		Links:            i.links,
 		Modals:           modals,
-		NavColor: i.navColor,
+		NavColor:         i.navColor,
 	}, nil
 }
 
