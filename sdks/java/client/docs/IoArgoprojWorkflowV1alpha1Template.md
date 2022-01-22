@@ -30,6 +30,7 @@ Name | Type | Description | Notes
 **nodeSelector** | **Map&lt;String, String&gt;** | NodeSelector is a selector to schedule this step of the workflow to be run on the selected node(s). Overrides the selector set at the workflow level. |  [optional]
 **outputs** | [**IoArgoprojWorkflowV1alpha1Outputs**](IoArgoprojWorkflowV1alpha1Outputs.md) |  |  [optional]
 **parallelism** | **Integer** | Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total. |  [optional]
+**plugin** | **Object** | Plugin is an Object with exactly one key |  [optional]
 **podSpecPatch** | **String** | PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits). |  [optional]
 **priority** | **Integer** | Priority to apply to workflow pods. |  [optional]
 **priorityClassName** | **String** | PriorityClassName to apply to workflow pods. |  [optional]

@@ -504,7 +504,7 @@ message HDFSArtifact {
   // Path is a file path in HDFS
   optional string path = 2;
 
-  // Force copies a file forcibly even if it exists (default: false)
+  // Force copies a file forcibly even if it exists
   optional bool force = 3;
 }
 
@@ -515,7 +515,7 @@ message HDFSArtifactRepository {
   // PathFormat is defines the format of path to store a file. Can reference workflow variables
   optional string pathFormat = 2;
 
-  // Force copies a file forcibly even if it exists (default: false)
+  // Force copies a file forcibly even if it exists
   optional bool force = 3;
 }
 
@@ -915,6 +915,10 @@ message OSSLifecycleRule {
   optional int32 markDeletionAfterDays = 2;
 }
 
+// +kubebuilder:validation:Type=object
+message Object {
+}
+
 // Outputs hold parameters, artifacts, and results from a step
 message Outputs {
   // Parameters holds the list of output parameters produced by a step
@@ -963,6 +967,11 @@ message Parameter {
 
   // Description is the parameter description
   optional string description = 7;
+}
+
+// Plugin is an Object with exactly one key
+message Plugin {
+  optional Object object = 1;
 }
 
 // PodGC describes how to delete completed pods as they complete
@@ -1330,6 +1339,9 @@ message Template {
 
   // HTTP makes a HTTP request
   optional HTTP http = 42;
+
+  // Plugin is a plugin template
+  optional Plugin plugin = 43;
 
   // Volumes is a list of volumes that can be mounted by containers in a template.
   // +patchStrategy=merge

@@ -1,0 +1,10 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-example-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      plugin:
+        hello: { }
