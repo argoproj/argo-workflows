@@ -14,7 +14,7 @@ func TestConfigMapIndexFunc(t *testing.T) {
 	t.Run("NoLabel", func(t *testing.T) {
 		values, err := ConfigMapIndexFunc(&corev1.ConfigMap{})
 		assert.NoError(t, err)
-		assert.Equal(t, []string{""}, values)
+		assert.Empty(t, values)
 	})
 	t.Run("HasLabel", func(t *testing.T) {
 		values, err := ConfigMapIndexFunc(&corev1.ConfigMap{

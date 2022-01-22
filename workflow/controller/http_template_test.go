@@ -35,7 +35,7 @@ func TestNodeRequiresHttpReconciliation(t *testing.T) {
 		},
 	}
 
-	assert.False(t, woc.nodeRequiresHttpReconciliation("not-needed"))
-	assert.True(t, woc.nodeRequiresHttpReconciliation("child-http"))
-	assert.True(t, woc.nodeRequiresHttpReconciliation("parent"))
+	assert.False(t, woc.nodeRequiresTaskSetReconciliation("not-needed"))
+	assert.True(t, woc.nodeRequiresTaskSetReconciliation("child-http"))
+	assert.True(t, woc.nodeRequiresTaskSetReconciliation("parent"))
 }

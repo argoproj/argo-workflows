@@ -15,6 +15,7 @@ import help from './help';
 import login from './login';
 import {ModalSwitch} from './modals/modal-switch';
 import pipelines from './pipelines';
+import plugins from './plugins';
 import reports from './reports';
 import sensors from './sensors';
 import {uiUrl} from './shared/base';
@@ -38,6 +39,7 @@ const clusterWorkflowTemplatesUrl = uiUrl('cluster-workflow-templates');
 const cronWorkflowsUrl = uiUrl('cron-workflows');
 const archivedWorkflowsUrl = uiUrl('archived-workflows');
 const eventSourceUrl = uiUrl('event-sources');
+const pluginsUrl = uiUrl('plugins');
 const helpUrl = uiUrl('help');
 const apiDocsUrl = uiUrl('apidocs');
 const userInfoUrl = uiUrl('userinfo');
@@ -149,6 +151,11 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                                 iconClassName: 'fa fa-code'
                             },
                             {
+                                title: 'Plugins',
+                                path: pluginsUrl,
+                                iconClassName: 'fa fa-puzzle-piece'
+                            },
+                            {
                                 title: 'Help',
                                 path: helpUrl,
                                 iconClassName: 'fa fa-question-circle'
@@ -172,6 +179,7 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                                 <Route path={cronWorkflowsUrl} component={cronWorkflows.component} />
                                 <Route path={archivedWorkflowsUrl} component={archivedWorkflows.component} />
                                 <Route path={reportsUrl} component={reports.component} />
+                                <Route path={pluginsUrl} component={plugins.component} />
                                 <Route exact={true} strict={true} path={helpUrl} component={help.component} />
                                 <Route exact={true} strict={true} path={apiDocsUrl} component={apidocs.component} />
                                 <Route exact={true} strict={true} path={userInfoUrl} component={userinfo.component} />
