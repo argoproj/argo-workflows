@@ -992,6 +992,42 @@
   </li>
 
         
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../plugins/" title="Plugins" class="md-nav__link">
+      Plugins
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../executor_plugins/" title="Executor Plugins" class="md-nav__link">
+      Executor Plugins
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../executor_swagger/" title="The API for an executor plugin." class="md-nav__link">
+      The API for an executor plugin.
+    </a>
+  </li>
+
+        
       </ul>
     </nav>
   </li>
@@ -1850,6 +1886,13 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#plugin" title="Plugin" class="md-nav__link">
+    Plugin
+  </a>
   
 </li>
       
@@ -4832,6 +4875,13 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#plugin" title="Plugin" class="md-nav__link">
+    Plugin
+  </a>
   
 </li>
       
@@ -8558,6 +8608,11 @@
 <td>Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.</td>
 </tr>
 <tr>
+<td align="center"><code>plugin</code></td>
+<td align="center"><a href="#plugin"><code>Plugin</code></a></td>
+<td>Plugin is a plugin template</td>
+</tr>
+<tr>
 <td align="center"><code>podSpecPatch</code></td>
 <td align="center"><code>string</code></td>
 <td>PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).</td>
@@ -10356,6 +10411,8 @@
 </tr>
 </tbody>
 </table>
+<h2 id="plugin">Plugin<a class="headerlink" href="#plugin" title="Permanent link">&para;</a></h2>
+<p>Plugin is an Object with exactly one key</p>
 <h2 id="resourcetemplate">ResourceTemplate<a class="headerlink" href="#resourcetemplate" title="Permanent link">&para;</a></h2>
 <p>ResourceTemplate is a template subtype to manipulate kubernetes resources</p>
 <details>
@@ -11321,7 +11378,7 @@
 <tr>
 <td align="center"><code>force</code></td>
 <td align="center"><code>boolean</code></td>
-<td>Force copies a file forcibly even if it exists (default: false)</td>
+<td>Force copies a file forcibly even if it exists</td>
 </tr>
 <tr>
 <td align="center"><code>hdfsUser</code></td>
@@ -12625,7 +12682,7 @@
 <tr>
 <td align="center"><code>force</code></td>
 <td align="center"><code>boolean</code></td>
-<td>Force copies a file forcibly even if it exists (default: false)</td>
+<td>Force copies a file forcibly even if it exists</td>
 </tr>
 <tr>
 <td align="center"><code>hdfsUser</code></td>
