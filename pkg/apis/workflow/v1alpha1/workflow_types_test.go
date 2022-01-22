@@ -193,15 +193,35 @@ func TestArtifactLocation_Relocate(t *testing.T) {
 
 func TestArtifactLocation_Get(t *testing.T) {
 	var l *ArtifactLocation
-	assert.Nil(t, l.Get())
-	assert.Nil(t, (&ArtifactLocation{}).Get())
-	assert.IsType(t, &GitArtifact{}, (&ArtifactLocation{Git: &GitArtifact{}}).Get())
-	assert.IsType(t, &GCSArtifact{}, (&ArtifactLocation{GCS: &GCSArtifact{}}).Get())
-	assert.IsType(t, &HDFSArtifact{}, (&ArtifactLocation{HDFS: &HDFSArtifact{}}).Get())
-	assert.IsType(t, &HTTPArtifact{}, (&ArtifactLocation{HTTP: &HTTPArtifact{}}).Get())
-	assert.IsType(t, &OSSArtifact{}, (&ArtifactLocation{OSS: &OSSArtifact{}}).Get())
-	assert.IsType(t, &RawArtifact{}, (&ArtifactLocation{Raw: &RawArtifact{}}).Get())
-	assert.IsType(t, &S3Artifact{}, (&ArtifactLocation{S3: &S3Artifact{}}).Get())
+
+	v, err := l.Get()
+	assert.Nil(t, v)
+	assert.EqualError(t, err, "key unsupported: cannot get key for artifact location, because it is invalid")
+
+	v, err = (&ArtifactLocation{}).Get()
+	assert.Nil(t, v)
+	assert.EqualError(t, err, "You need to configure artifact storage. More information on how to do this can be found in the docs: https://argoproj.github.io/argo-workflows/configure-artifact-repository/")
+
+	v, _ = (&ArtifactLocation{Git: &GitArtifact{}}).Get()
+	assert.IsType(t, &GitArtifact{}, v)
+
+	v, _ = (&ArtifactLocation{GCS: &GCSArtifact{}}).Get()
+	assert.IsType(t, &GCSArtifact{}, v)
+
+	v, _ = (&ArtifactLocation{HDFS: &HDFSArtifact{}}).Get()
+	assert.IsType(t, &HDFSArtifact{}, v)
+
+	v, _ = (&ArtifactLocation{HTTP: &HTTPArtifact{}}).Get()
+	assert.IsType(t, &HTTPArtifact{}, v)
+
+	v, _ = (&ArtifactLocation{OSS: &OSSArtifact{}}).Get()
+	assert.IsType(t, &OSSArtifact{}, v)
+
+	v, _ = (&ArtifactLocation{Raw: &RawArtifact{}}).Get()
+	assert.IsType(t, &RawArtifact{}, v)
+
+	v, _ = (&ArtifactLocation{S3: &S3Artifact{}}).Get()
+	assert.IsType(t, &S3Artifact{}, v)
 }
 
 func TestArtifactLocation_SetType(t *testing.T) {

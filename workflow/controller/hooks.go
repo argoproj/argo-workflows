@@ -11,70 +11,76 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 )
 
-func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *templateresolution.Context) (*wfv1.NodeStatus, error) {
+func IsExitHook(hookName wfv1.LifecycleEvent) bool {
+	return hookName == wfv1.ExitLifecycleEvent
+}
+
+func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *templateresolution.Context) error {
 	if woc.wf.Spec.Hooks != nil && len(woc.wf.Spec.Hooks) > 0 {
 		for hookName, hook := range woc.wf.Spec.Hooks {
-			if hook.Expression == "" {
-				return nil, nil
+			//exit hook will be execute in runOnExitNode
+			if IsExitHook(hookName) {
+				continue
 			}
 			// Replace hook's parameters
 			hookBytes, err := json.Marshal(hook)
 			if err != nil {
-				return nil, errors.InternalWrapError(err)
+				return errors.InternalWrapError(err)
 			}
 			newHookStr, err := template.Replace(string(hookBytes), woc.globalParams, true)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			var newHook wfv1.LifecycleHook
 			err = json.Unmarshal([]byte(newHookStr), &newHook)
-
+			if err != nil {
+				return err
+			}
 			execute, err := shouldExecute(newHook.Expression)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			if execute {
 				hookNodeName := common.GenerateLifeHookNodeName(woc.wf.ObjectMeta.Name, string(hookName))
 				woc.log.WithField("lifeCycleHook", hookName).WithField("node", hookNodeName).Infof("Running workflow level hooks")
 				_, err := woc.executeTemplate(ctx, hookNodeName, &wfv1.WorkflowStep{Template: hook.Template}, tmplCtx, hook.Arguments, &executeTemplateOpts{})
 				if err != nil {
-					return nil, err
+					return err
 				}
 				woc.addChildNode(woc.wf.ObjectMeta.Name, hookNodeName)
 			}
 		}
 	}
-	return nil, nil
+	return nil
 }
 
-func (woc *wfOperationCtx) executeLifeCycleHook(ctx context.Context, scope *wfScope, lifeCycleHooks wfv1.LifecycleHooks, parentNode *wfv1.NodeStatus, boundaryID string, tmplCtx *templateresolution.Context, prefix string) (bool, *wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) executeLifeCycleHook(ctx context.Context, scope *wfScope, lifeCycleHooks wfv1.LifecycleHooks, parentNode *wfv1.NodeStatus, boundaryID string, tmplCtx *templateresolution.Context, prefix string) error {
 
 	if lifeCycleHooks == nil {
-		return false, nil, nil
+		return  nil
 	}
 	for hookName, hook := range lifeCycleHooks {
-		if hookName == wfv1.ExitLifecycleEvent {
-			return false, nil, nil
-		}
-
-		if hook.Expression == "" {
-			return false, nil, nil
+		//exit hook will be execute in runOnExitNode
+		if IsExitHook(hookName) {
+			continue
 		}
 		// Replace hook's parameters
 		hookBytes, err := json.Marshal(hook)
 		if err != nil {
-			return false, nil, errors.InternalWrapError(err)
+			return  errors.InternalWrapError(err)
 		}
 		newHookStr, err := template.Replace(string(hookBytes), woc.globalParams.Merge(scope.getParameters()), true)
 		if err != nil {
-			return false, nil, err
+			return err
 		}
 		var newHook wfv1.LifecycleHook
 		err = json.Unmarshal([]byte(newHookStr), &newHook)
-
+		if err != nil {
+			return err
+		}
 		execute, err := shouldExecute(newHook.Expression)
 		if err != nil {
-			return false, nil, err
+			return err
 		}
 		if execute {
 			outputs := parentNode.Outputs
@@ -89,15 +95,15 @@ func (woc *wfOperationCtx) executeLifeCycleHook(ctx context.Context, scope *wfSc
 			if !resolvedArgs.IsEmpty() && outputs != nil {
 				resolvedArgs, err = woc.resolveExitTmplArgument(newHook.Arguments, prefix, outputs)
 				if err != nil {
-					return true, nil, err
+					return err
 				}
 			}
-			onExitNode, err := woc.executeTemplate(ctx, hookNodeName, &wfv1.WorkflowStep{Template: newHook.Template}, tmplCtx, resolvedArgs, &executeTemplateOpts{
+			_, err = woc.executeTemplate(ctx, hookNodeName, &wfv1.WorkflowStep{Template: newHook.Template}, tmplCtx, resolvedArgs, &executeTemplateOpts{
 				boundaryID: boundaryID,
 			})
 			woc.addChildNode(parentNode.Name, hookNodeName)
-			return true, onExitNode, err
+			return err
 		}
 	}
-	return false, nil, nil
+	return nil
 }

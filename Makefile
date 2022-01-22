@@ -230,16 +230,11 @@ argoexec-image:
 		--target $* \
 		--cache-from "type=local,src=/tmp/.buildx-cache" \
 		--cache-to "type=local,dest=/tmp/.buildx-cache" \
-		--output=type=docker .
+		--output=type=docker .make
 	[ ! -e $* ] || mv $* dist/
 	docker run --rm -t $(IMAGE_NAMESPACE)/$*:$(VERSION) version
 	if [ $(K3D) = true ]; then k3d image import -c $(K3D_CLUSTER_NAME) $(IMAGE_NAMESPACE)/$*:$(VERSION); fi
 	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$*:$(VERSION) ; fi
-
-scan-images: scan-workflow-controller scan-argoexec scan-argocli
-
-scan-%:
-	docker scan --severity=high $(IMAGE_NAMESPACE)/$*:$(VERSION)
 
 # generation
 
@@ -387,8 +382,6 @@ lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 	rm -Rf v3 vendor
 	# Tidy Go modules
 	go mod tidy
-	# Lint logging statements
-	./hack/check-logging.sh
 	# Lint Go files
 	$(GOPATH)/bin/golangci-lint run --fix --verbose
 

@@ -1,6 +1,5 @@
 # Webhooks
 
-![alpha](assets/alpha.svg)
 
 > v2.11 and after
 

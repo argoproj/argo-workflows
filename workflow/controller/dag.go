@@ -254,7 +254,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 			if err != nil {
 				woc.markNodeError(node.Name, err)
 			}
-			_, _, err = woc.executeLifeCycleHook(ctx, scope, dagCtx.GetTask(taskName).Hooks, taskNode, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
+			_, err = woc.executeLifeCycleHook(ctx, scope, dagCtx.GetTask(taskName).Hooks, taskNode, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
 			if err != nil {
 				woc.markNodeError(node.Name, err)
 			}
@@ -377,7 +377,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 			woc.markNodeError(node.Name, err)
 		}
 		scope.addParamToScope(fmt.Sprintf("tasks.%s.status", task.Name), string(node.Phase))
-		_, _, err = woc.executeLifeCycleHook(ctx, scope, dagCtx.GetTask(taskName).Hooks, node, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
+		_, err = woc.executeLifeCycleHook(ctx, scope, dagCtx.GetTask(taskName).Hooks, node, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
 		if err != nil {
 			woc.markNodeError(node.Name, err)
 		}

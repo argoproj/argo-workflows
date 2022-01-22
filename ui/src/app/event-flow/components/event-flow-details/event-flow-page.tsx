@@ -3,6 +3,7 @@ import {useContext, useEffect, useState} from 'react';
 import React = require('react');
 import {RouteComponentProps} from 'react-router-dom';
 import {Observable} from 'rxjs';
+import {filter, map} from 'rxjs/operators';
 import {kubernetes, Workflow} from '../../../../models';
 import {EventSource} from '../../../../models/event-source';
 import {Sensor} from '../../../../models/sensor';
@@ -324,14 +325,15 @@ export const EventFlowPage = ({history, location, match}: RouteComponentProps<an
                                                     loadLogs: () =>
                                                         ((selected.kind === 'Sensor'
                                                             ? services.sensor.sensorsLogs(namespace, selected.name, selected.key, '', 50)
-                                                            : services.eventSource.eventSourcesLogs(namespace, selected.name, '', selected.key, '', 50)) as Observable<any>)
-                                                            .filter(e => !!e)
-                                                            .map(
+                                                            : services.eventSource.eventSourcesLogs(namespace, selected.name, '', selected.key, '', 50)) as Observable<any>).pipe(
+                                                            filter(e => !!e),
+                                                            map(
                                                                 e =>
                                                                     Object.entries(e)
                                                                         .map(([key, value]) => key + '=' + value)
                                                                         .join(', ') + '\n'
-                                                            ),
+                                                            )
+                                                        ),
                                                     shouldRepeat: () => false
                                                 }}
                                             />

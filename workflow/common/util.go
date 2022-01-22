@@ -370,5 +370,5 @@ func IsDone(un *unstructured.Unstructured) bool {
 }
 
 func GenerateLifeHookNodeName(parentNodeName string, hookName string) string {
-return fmt.Sprintf("%s.hooks.%s", parentNodeName, hookName)
+	return fmt.Sprintf("%s.hooks.%s", parentNodeName, hookName)
 }

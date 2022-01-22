@@ -260,10 +260,8 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	}
 
 	if woc.execWf.Spec.Metrics != nil {
-		realTimeScope := map[string]func() float64{common.GlobalVarWorkflowDuration: func() float64 {
-			return time.Since(woc.wf.Status.StartedAt.Time).Seconds()
-		}}
-		woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, woc.globalParams, realTimeScope, true)
+		localScope, realTimeScope := woc.prepareDefaultMetricScope()
+		woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, localScope, realTimeScope, true)
 	}
 
 	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
@@ -379,7 +377,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	woc.globalParams[common.GlobalVarWorkflowStatus] = string(workflowStatus)
 
-	_, err = woc.executeWfLifeCycleHook(ctx, tmplCtx)
+	err = woc.executeWfLifeCycleHook(ctx, tmplCtx)
 	if err != nil {
 		woc.markNodeError(node.Name, err)
 	}
@@ -393,7 +391,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	}
 
 	var onExitNode *wfv1.NodeStatus
-	if woc.execWf.Spec.OnExit != "" && woc.GetShutdownStrategy().ShouldExecute(true) {
+	if woc.execWf.Spec.HasExitHook() && woc.GetShutdownStrategy().ShouldExecute(true) {
 		var failures []failedNodeStatus
 		for _, node := range woc.wf.Status.Nodes {
 			if node.Phase == wfv1.NodeFailed || node.Phase == wfv1.NodeError {
@@ -418,7 +416,8 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 		woc.log.Infof("Running OnExit handler: %s", woc.execWf.Spec.OnExit)
 		onExitNodeName := common.GenerateOnExitNodeName(woc.wf.ObjectMeta.Name)
-		onExitNode, err = woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: woc.execWf.Spec.OnExit}, tmplCtx, woc.execWf.Spec.Arguments, &executeTemplateOpts{onExitTemplate: true})
+		exitHook := woc.execWf.Spec.GetExitHook(woc.execWf.Spec.Arguments)
+		onExitNode, err = woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: exitHook.Template, TemplateRef: exitHook.TemplateRef}, tmplCtx, exitHook.Arguments, &executeTemplateOpts{onExitTemplate: true})
 		if err != nil {
 			x := fmt.Errorf("error in exit template execution : %w", err)
 			switch err {
@@ -480,11 +479,9 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	}
 
 	if woc.execWf.Spec.Metrics != nil {
-		realTimeScope := map[string]func() float64{common.GlobalVarWorkflowDuration: func() float64 {
-			return node.FinishedAt.Sub(node.StartedAt.Time).Seconds()
-		}}
 		woc.globalParams[common.GlobalVarWorkflowStatus] = string(workflowStatus)
-		woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, woc.globalParams, realTimeScope, false)
+		localScope, realTimeScope := woc.prepareMetricScope(node)
+		woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, localScope, realTimeScope, false)
 	}
 
 	err = woc.deletePVCs(ctx)
@@ -540,15 +537,13 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 		if param.Value == nil && param.ValueFrom == nil {
 			return fmt.Errorf("either value or valueFrom must be specified in order to set global parameter %s", param.Name)
 		}
-		if param.ValueFrom != nil {
-			if param.ValueFrom.ConfigMapKeyRef != nil {
-				cmValue, err := common.GetConfigMapValue(woc.controller.configMapInformer, woc.wf.ObjectMeta.Namespace, param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key)
-				if err != nil {
-					return fmt.Errorf("failed to set global parameter %s from configmap with name %s and key %s: %w",
-						param.Name, param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key, err)
-				}
-				woc.globalParams["workflow.parameters."+param.Name] = cmValue
+		if param.ValueFrom != nil && param.ValueFrom.ConfigMapKeyRef != nil {
+			cmValue, err := common.GetConfigMapValue(woc.controller.configMapInformer, woc.wf.ObjectMeta.Namespace, param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key)
+			if err != nil {
+				return fmt.Errorf("failed to set global parameter %s from configmap with name %s and key %s: %w",
+					param.Name, param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key, err)
 			}
+			woc.globalParams["workflow.parameters."+param.Name] = cmValue
 		} else {
 			woc.globalParams["workflow.parameters."+param.Name] = param.Value.String()
 		}
@@ -1598,7 +1593,7 @@ func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[s
 	lastChildNode := getChildNodeIndex(node, nodes, -1)
 
 	exitCode := "-1"
-	if lastChildNode.Outputs != nil {
+	if lastChildNode.Outputs != nil && lastChildNode.Outputs.ExitCode != nil {
 		exitCode = *lastChildNode.Outputs.ExitCode
 	}
 	localScope[common.LocalVarRetriesLastExitCode] = exitCode

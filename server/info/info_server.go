@@ -2,6 +2,7 @@ package info
 
 import (
 	"context"
+	"os"
 
 	"github.com/argoproj/argo-workflows/v3"
 	infopkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/info"
@@ -30,7 +31,16 @@ func (i *infoServer) GetUserInfo(ctx context.Context, _ *infopkg.GetUserInfoRequ
 }
 
 func (i *infoServer) GetInfo(context.Context, *infopkg.GetInfoRequest) (*infopkg.InfoResponse, error) {
-	return &infopkg.InfoResponse{ManagedNamespace: i.managedNamespace, Links: i.links}, nil
+	modals := map[string]bool{
+		"feedback":      os.Getenv("FEEDBACK_MODAL") != "false",
+		"firstTimeUser": os.Getenv("FIRST_TIME_USER_MODAL") != "false",
+		"newVersion":    os.Getenv("NEW_VERSION_MODAL") != "false",
+	}
+	return &infopkg.InfoResponse{
+		ManagedNamespace: i.managedNamespace,
+		Links:            i.links,
+		Modals:           modals,
+	}, nil
 }
 
 func (i *infoServer) GetVersion(context.Context, *infopkg.GetVersionRequest) (*wfv1.Version, error) {
