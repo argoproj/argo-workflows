@@ -1647,7 +1647,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	}
 
 	// Inputs has been processed with arguments already, so pass empty arguments.
-	processedTmpl, err := common.ProcessArgsWithHook(resolvedTmpl, &args, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer)
+	processedTmpl, err := common.ProcessArgs(resolvedTmpl, &args, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer)
 	if errorsutil.IsTransientErr(err) {
 		return node, err
 	}
@@ -1836,7 +1836,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			// Inject the retryAttempt number
 			localParams[common.LocalVarRetries] = strconv.Itoa(len(retryParentNode.Children))
 
-			processedTmpl, err = common.SubstituteParamsWithHook(processedTmpl, map[string]string{}, localParams)
+			processedTmpl, err = common.SubstituteParams(processedTmpl, map[string]string{}, localParams)
 			if errorsutil.IsTransientErr(err) {
 				return node, err
 			}
