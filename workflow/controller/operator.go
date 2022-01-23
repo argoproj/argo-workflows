@@ -383,7 +383,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	}
 
 	// Reconcile TaskSet and Agent for HTTP templates
-	woc.httpReconciliation(ctx)
+	woc.taskSetReconciliation(ctx)
 
 	if !node.Fulfilled() {
 		// node can be nil if a workflow created immediately in a parallelism == 0 state

@@ -43,10 +43,10 @@
                 depends: "A"
                 template: coinflip
               - name: D
-    #              hooks:
-    #                success:
-    #                  expression: "{{tasks.D.status}} == Succeeded"
-    #                  template: heads
+                hooks:
+                  success:
+                    expression: "{{tasks.D.status}} == Succeeded"
+                    template: heads
                 depends: "B && C"
                 template: coinflip
         

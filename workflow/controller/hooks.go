@@ -57,7 +57,7 @@ func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *
 func (woc *wfOperationCtx) executeLifeCycleHook(ctx context.Context, scope *wfScope, lifeCycleHooks wfv1.LifecycleHooks, parentNode *wfv1.NodeStatus, boundaryID string, tmplCtx *templateresolution.Context, prefix string) error {
 
 	if lifeCycleHooks == nil {
-		return  nil
+		return nil
 	}
 	for hookName, hook := range lifeCycleHooks {
 		//exit hook will be execute in runOnExitNode
@@ -67,7 +67,7 @@ func (woc *wfOperationCtx) executeLifeCycleHook(ctx context.Context, scope *wfSc
 		// Replace hook's parameters
 		hookBytes, err := json.Marshal(hook)
 		if err != nil {
-			return  errors.InternalWrapError(err)
+			return errors.InternalWrapError(err)
 		}
 		newHookStr, err := template.Replace(string(hookBytes), woc.globalParams.Merge(scope.getParameters()), true)
 		if err != nil {
