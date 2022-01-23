@@ -204,7 +204,7 @@ func substituteConfigMapKeyRefParam(in string, globalParams Parameters) (string,
 
 		v, ok := globalParams[k]
 		if !ok {
-			err := errors.New("parameter %s not found", k)
+			err := errors.InternalError(fmt.Sprintf("parameter %s not found", k))
 			log.WithError(err).Error()
 			return "", err
 		}
