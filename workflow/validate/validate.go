@@ -1229,7 +1229,6 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		resolvedTemplates[task.Name] = resolvedTmpl
 
 		prefix := fmt.Sprintf("tasks.%s", task.Name)
-		scope[fmt.Sprintf("%s.status", prefix)] = true
 		aggregate := len(task.WithItems) > 0 || task.WithParam != ""
 		ctx.addOutputsToScope(resolvedTmpl, prefix, scope, aggregate, false)
 
@@ -1255,7 +1254,6 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 	if err = verifyNoCycles(tmpl, dagValidationCtx); err != nil {
 		return err
 	}
-
 	err = resolveAllVariables(scope, ctx.globalParams, tmpl.DAG.Target)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.targets %s", tmpl.Name, err.Error())
@@ -1268,6 +1266,10 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		resolvedTmpl := resolvedTemplates[task.Name]
 		// add all tasks outputs to scope so that a nested DAGs can have outputs
 		prefix := fmt.Sprintf("tasks.%s", task.Name)
+		// add self status reference for  hooks
+		if task.Hooks != nil {
+			scope[fmt.Sprintf("%s.status", prefix)] = true
+		}
 		ctx.addOutputsToScope(resolvedTmpl, prefix, scope, false, false)
 		if task.HasExitHook() {
 			ctx.addOutputsToScope(resolvedTmpl, prefix, scope, false, false)

@@ -608,8 +608,6 @@ spec:
 `
 
 func TestDAGStatusReference(t *testing.T) {
-	// TODO Need to refactor it
-	t.Skip()
 	_, err := validate(dagStatusReference)
 	assert.NoError(t, err)
 
@@ -618,7 +616,6 @@ func TestDAGStatusReference(t *testing.T) {
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "failed to resolve {{tasks.B.status}}")
 	}
-
 	_, err = validate(dagStatusNoFutureReferenceWhenFutureReferenceHasChild)
 	// Can't reference the status of steps that have not run yet, even if the referenced steps have children
 	if assert.NotNil(t, err) {

@@ -259,7 +259,6 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 			if err != nil {
 				woc.markNodeError(node.Name, err)
 			}
-
 		}
 		if taskNode != nil && taskNode.Fulfilled() {
 			if taskNode.Completed() {
