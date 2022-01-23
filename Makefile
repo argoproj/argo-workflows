@@ -231,7 +231,7 @@ argoexec-image:
 		--target $* \
 		--cache-from "type=local,src=/tmp/.buildx-cache" \
 		--cache-to "type=local,dest=/tmp/.buildx-cache" \
-		--output=type=docker .make
+		--output=type=docker .
 	[ ! -e $* ] || mv $* dist/
 	docker run --rm -t $(IMAGE_NAMESPACE)/$*:$(VERSION) version
 	if [ $(K3D) = true ]; then k3d image import -c $(K3D_CLUSTER_NAME) $(IMAGE_NAMESPACE)/$*:$(VERSION); fi
