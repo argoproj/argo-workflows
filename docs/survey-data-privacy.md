@@ -1,3 +1,3 @@
-# Survey
+# Survey Data Privacy
 
-TODO
+[Privacy policy](https://www.linuxfoundation.org/privacy-policy/)
