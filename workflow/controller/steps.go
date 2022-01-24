@@ -270,7 +270,7 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 		childNode := woc.wf.Status.Nodes[childNodeID]
 		step := nodeSteps[childNode.Name]
 		stepsCtx.scope.addParamToScope(fmt.Sprintf("steps.%s.status", childNode.DisplayName), string(childNode.Phase))
-		err := woc.executeLifeCycleHook(ctx, stepsCtx.scope, step.Hooks, &childNode, stepsCtx.boundaryID, stepsCtx.tmplCtx, "steps."+step.Name)
+		err := woc.executeTmplLifeCycleHook(ctx, stepsCtx.scope, step.Hooks, &childNode, stepsCtx.boundaryID, stepsCtx.tmplCtx, "steps."+step.Name)
 		if err != nil {
 			woc.markNodeError(node.Name, err)
 		}

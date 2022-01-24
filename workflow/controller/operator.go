@@ -357,14 +357,6 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		return
 	}
 
-	// Reconcile TaskSet and Agent for HTTP templates
-	woc.taskSetReconciliation(ctx)
-
-	if node == nil || !node.Fulfilled() {
-		// node can be nil if a workflow created immediately in a parallelism == 0 state
-		return
-	}
-
 	workflowStatus := map[wfv1.NodePhase]wfv1.WorkflowPhase{
 		wfv1.NodePending:   wfv1.WorkflowPending,
 		wfv1.NodeRunning:   wfv1.WorkflowRunning,
@@ -381,7 +373,6 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	if err != nil {
 		woc.markNodeError(node.Name, err)
 	}
-
 	// Reconcile TaskSet and Agent for HTTP templates
 	woc.taskSetReconciliation(ctx)
 
@@ -1648,9 +1639,6 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 
 	// Inputs has been processed with arguments already, so pass empty arguments.
 	processedTmpl, err := common.ProcessArgs(resolvedTmpl, &args, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer)
-	if errorsutil.IsTransientErr(err) {
-		return node, err
-	}
 	if err != nil {
 		return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 	}

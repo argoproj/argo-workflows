@@ -360,7 +360,3 @@ func IsDone(un *unstructured.Unstructured) bool {
 		un.GetLabels()[LabelKeyCompleted] == "true" &&
 		un.GetLabels()[LabelKeyWorkflowArchivingStatus] != "Pending"
 }
-
-func GenerateLifeHookNodeName(parentNodeName string, hookName string) string {
-	return fmt.Sprintf("%s.hooks.%s", parentNodeName, hookName)
-}
