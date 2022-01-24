@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"time"
@@ -13,6 +14,7 @@ import (
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 
 	tlsutils "github.com/argoproj/argo-workflows/v3/util/tls"
+	"k8s.io/utils/env"
 )
 
 // RunServer starts a metrics server
@@ -54,8 +56,12 @@ func runServer(config ServerConfig, registry *prometheus.Registry, ctx context.C
 	srv := &http.Server{Addr: fmt.Sprintf(":%v", config.Port), Handler: mux}
 
 	if config.Secure {
+		tlsMinVersion, err := env.GetInt("TLS_MIN_VERSION", tls.VersionTLS12)
+		if err != nil {
+			panic(err)
+		}
 		log.Infof("Generating Self Signed TLS Certificates for Telemetry Servers")
-		tlsConfig, err := tlsutils.GenerateTLSConfig()
+		tlsConfig, err := tlsutils.GenerateX509KeyPairTLSConfig(uint16(tlsMinVersion))
 		if err != nil {
 			panic(err)
 		}

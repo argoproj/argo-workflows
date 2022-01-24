@@ -34,6 +34,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/help"
 	pprofutil "github.com/argoproj/argo-workflows/v3/util/pprof"
 	tlsutils "github.com/argoproj/argo-workflows/v3/util/tls"
+	"k8s.io/utils/env"
 )
 
 func NewServerCommand() *cobra.Command {
@@ -43,6 +44,7 @@ func NewServerCommand() *cobra.Command {
 		port                     int
 		baseHRef                 string
 		secure                   bool
+		tlsCertificateSecretName string
 		htst                     bool
 		namespaced               bool   // --namespaced
 		managedNamespace         string // --managed-namespace
@@ -105,11 +107,23 @@ See %s`, help.ArgoServer),
 
 			var tlsConfig *tls.Config
 			if secure {
-				log.Infof("Generating Self Signed TLS Certificates for Secure Mode")
-				tlsConfig, err = tlsutils.GenerateTLSConfig()
+				tlsMinVersion, err := env.GetInt("TLS_MIN_VERSION", tls.VersionTLS12)
 				if err != nil {
 					return err
 				}
+
+				if tlsCertificateSecretName != "" {
+					log.Infof("Getting contents of Kubernetes secret %s for TLS Certificates", tlsCertificateSecretName)
+					tlsConfig, err = tlsutils.GetServerTLSConfigFromSecret(ctx, clients.Kubernetes, tlsCertificateSecretName, uint16(tlsMinVersion), namespace)
+					if err != nil {
+						return err
+					}
+					log.Infof("Successfully loaded TLS config from Kubernetes secret %s", tlsCertificateSecretName)
+				} else {
+					log.Infof("Generating Self Signed TLS Certificates for Secure Mode")
+					tlsConfig, err = tlsutils.GenerateX509KeyPairTLSConfig(uint16(tlsMinVersion))
+				}
+
 			} else {
 				log.Warn("You are running in insecure mode. Learn how to enable transport layer security: https://argoproj.github.io/argo-workflows/tls/")
 			}
