@@ -5454,6 +5454,9 @@
           },
           "title": "which modals to show",
           "type": "object"
+        },
+        "navColor": {
+          "type": "string"
         }
       },
       "type": "object"

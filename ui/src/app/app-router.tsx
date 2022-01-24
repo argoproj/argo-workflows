@@ -52,6 +52,7 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
     const [modals, setModals] = useState<{string: boolean}>();
     const [version, setVersion] = useState<Version>();
     const [namespace, setNamespace] = useState<string>();
+    const [navBarBackgroundColor, setNavBarBackgroundColor] = useState<string>();
     const setError = (error: Error) => {
         notificationsManager.show({
             content: 'Failed to load version/info ' + error,
@@ -70,6 +71,7 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                 Utils.managedNamespace = info.managedNamespace;
                 setNamespace(Utils.currentNamespace);
                 setModals(info.modals);
+                setNavBarBackgroundColor(info.navColor);
             })
             .then(() => services.info.getVersion())
             .then(setVersion)
@@ -84,6 +86,7 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                 <Switch>
                     <Route path={uiUrl('widgets')} component={Widgets} />
                     <Layout
+                        navBarStyle={{backgroundColor: navBarBackgroundColor}}
                         navItems={[
                             {
                                 title: 'Workflows',

@@ -9717,6 +9717,9 @@
           "additionalProperties": {
             "type": "boolean"
           }
+        },
+        "navColor": {
+          "type": "string"
         }
       }
     },

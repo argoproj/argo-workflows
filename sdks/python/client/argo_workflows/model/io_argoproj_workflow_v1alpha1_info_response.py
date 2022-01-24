@@ -90,6 +90,7 @@ class IoArgoprojWorkflowV1alpha1InfoResponse(ModelNormal):
             'links': ([IoArgoprojWorkflowV1alpha1Link],),  # noqa: E501
             'managed_namespace': (str,),  # noqa: E501
             'modals': ({str: (bool,)},),  # noqa: E501
+            'nav_color': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -101,6 +102,7 @@ class IoArgoprojWorkflowV1alpha1InfoResponse(ModelNormal):
         'links': 'links',  # noqa: E501
         'managed_namespace': 'managedNamespace',  # noqa: E501
         'modals': 'modals',  # noqa: E501
+        'nav_color': 'navColor',  # noqa: E501
     }
 
     read_only_vars = {
@@ -147,6 +149,7 @@ class IoArgoprojWorkflowV1alpha1InfoResponse(ModelNormal):
             links ([IoArgoprojWorkflowV1alpha1Link]): [optional]  # noqa: E501
             managed_namespace (str): [optional]  # noqa: E501
             modals ({str: (bool,)}): [optional]  # noqa: E501
+            nav_color (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -231,6 +234,7 @@ class IoArgoprojWorkflowV1alpha1InfoResponse(ModelNormal):
             links ([IoArgoprojWorkflowV1alpha1Link]): [optional]  # noqa: E501
             managed_namespace (str): [optional]  # noqa: E501
             modals ({str: (bool,)}): [optional]  # noqa: E501
+            nav_color (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
