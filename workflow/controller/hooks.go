@@ -80,7 +80,6 @@ func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, scope *
 func shouldExecuteHook(expression string, param common.Parameters) (bool, error) {
 	params := make(map[string]interface{})
 	for key, value := range param {
-		fmt.Println(expression, key, value)
 		params[strings.Replace(key, "-", "_", -1)] = value
 	}
 	env := env.GetFuncMap(params)
