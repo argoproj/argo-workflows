@@ -69,22 +69,31 @@ kind: ExecutorPlugin
 metadata:
   name: hello
 spec:
-  description: This is the "hello world" plugin
-  container:
-    command:
-      - python
-      - -c
-    image: python:alpine3.6
-    name: hello-executor-plugin
-    ports:
-      - containerPort: 4355
+  sidecar:
+    container:
+      command:
+        - python
+        - -c
+      image: python:alpine3.6
+      name: hello-executor-plugin
+      ports:
+        - containerPort: 4355
+      securityContext:
+        runAsNonRoot: true
+      resources:
+        requests:
+          memory: "64Mi"
+          cpu: "250m"
+        limits:
+          memory: "128Mi"
+          cpu: "500m"
 ```
 
 Build and install as follows:
 
 ```shell
 argo executor-plugin build .
-kubectl -n argo apply -f hello-executor-configmap.yaml
+kubectl -n argo apply -f hello-executor-plugin-configmap.yaml
 ```
 
 Check your controller logs:
