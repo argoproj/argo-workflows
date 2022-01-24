@@ -12,9 +12,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/utils/env"
 
 	tlsutils "github.com/argoproj/argo-workflows/v3/util/tls"
-	"k8s.io/utils/env"
 )
 
 // RunServer starts a metrics server

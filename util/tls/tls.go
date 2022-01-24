@@ -17,8 +17,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util"
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/argoproj/argo-workflows/v3/util"
 )
 
 const (

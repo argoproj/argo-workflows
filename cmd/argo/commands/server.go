@@ -23,6 +23,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	restclient "k8s.io/client-go/rest"
+	"k8s.io/utils/env"
 
 	"github.com/argoproj/argo-workflows/v3"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
@@ -34,7 +35,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/help"
 	pprofutil "github.com/argoproj/argo-workflows/v3/util/pprof"
 	tlsutils "github.com/argoproj/argo-workflows/v3/util/tls"
-	"k8s.io/utils/env"
 )
 
 func NewServerCommand() *cobra.Command {
@@ -122,6 +122,9 @@ See %s`, help.ArgoServer),
 				} else {
 					log.Infof("Generating Self Signed TLS Certificates for Secure Mode")
 					tlsConfig, err = tlsutils.GenerateX509KeyPairTLSConfig(uint16(tlsMinVersion))
+					if err != nil {
+						return err
+					}
 				}
 
 			} else {
