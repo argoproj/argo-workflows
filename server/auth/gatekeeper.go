@@ -171,6 +171,10 @@ func getAuthHeaders(md metadata.MD) []string {
 func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertypes.Clients, *types.Claims, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	authorizations := getAuthHeaders(md)
+	// Required for GetMode() with Server auth when no auth header specified
+	if len(authorizations) == 0 {
+		authorizations = append(authorizations, "")
+	}
 	valid := false
 	var mode Mode
 	var authorization string
