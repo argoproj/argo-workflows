@@ -5,6 +5,7 @@ metadata:
   labels:
     # Note that this label is required for the informer to detect this ConfigMap.
     workflows.argoproj.io/configmap-type: Parameter
+  # Note that the ConfigMap should reside in where workflow-controller is installed.
   namespace: argo
 data:
   msg: 'hello world'
