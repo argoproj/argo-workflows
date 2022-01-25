@@ -146,6 +146,9 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 					Command: []string{"my-cmd"},
 					Args:    []string{"my-args"},
 				},
+				"argoproj/argosay:v2":    {Command: []string{""}},
+				"docker/whalesay:latest": {Command: []string{""}},
+				"busybox":                {Command: []string{""}},
 			},
 		},
 		artifactRepositories: armocks.DummyArtifactRepositories(&wfv1.ArtifactRepository{
@@ -192,6 +195,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		wfc.wftmplInformer = informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
 		wfc.addWorkflowInformerHandlers(ctx)
 		wfc.podInformer = wfc.newPodInformer(ctx)
+		wfc.configMapInformer = wfc.newConfigMapInformer()
 		wfc.createSynchronizationManager(ctx)
 		_ = wfc.initManagers(ctx)
 

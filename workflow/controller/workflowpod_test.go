@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -644,7 +645,7 @@ func Test_createWorkflowPod_rateLimited(t *testing.T) {
 
 func Test_createWorkflowPod_containerName(t *testing.T) {
 	woc := newWoc()
-	pod, err := woc.createWorkflowPod(context.Background(), "", []apiv1.Container{{Name: "invalid"}}, &wfv1.Template{}, &createWorkflowPodOpts{})
+	pod, err := woc.createWorkflowPod(context.Background(), "", []apiv1.Container{{Name: "invalid", Command: []string{""}}}, &wfv1.Template{}, &createWorkflowPodOpts{})
 	assert.NoError(t, err)
 	assert.Equal(t, common.MainContainerName, pod.Spec.Containers[1].Name)
 }
@@ -680,6 +681,20 @@ func Test_createWorkflowPod_emissary(t *testing.T) {
 			assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary", "--", "my-cmd"}, pod.Spec.Containers[1].Command)
 			assert.Equal(t, []string{"foo"}, pod.Spec.Containers[1].Args)
 		}
+	})
+	t.Run("CommandFromPodSpecPatch", func(t *testing.T) {
+		woc := newWoc()
+		woc.controller.containerRuntimeExecutor = common.ContainerRuntimeExecutorEmissary
+		podSpec := &apiv1.PodSpec{}
+		podSpec.Containers = []apiv1.Container{{
+			Name:    "main",
+			Command: []string{"bar"},
+		}}
+		podSpecPatch, err := json.Marshal(podSpec)
+		assert.NoError(t, err)
+		pod, err := woc.createWorkflowPod(context.Background(), "", []apiv1.Container{{Command: []string{"foo"}}}, &wfv1.Template{PodSpecPatch: string(podSpecPatch)}, &createWorkflowPodOpts{})
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary", "--", "bar"}, pod.Spec.Containers[1].Command)
 	})
 }
 
@@ -1015,15 +1030,16 @@ func TestInitContainers(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Equal(t, 1, len(pod.Spec.InitContainers))
-	assert.Equal(t, "init-foo", pod.Spec.InitContainers[0].Name)
+	assert.Equal(t, 2, len(pod.Spec.InitContainers))
+	foo := pod.Spec.InitContainers[1]
+	assert.Equal(t, "init-foo", foo.Name)
 	for _, v := range volumes {
 		assert.Contains(t, pod.Spec.Volumes, v)
 	}
-	assert.Equal(t, 3, len(pod.Spec.InitContainers[0].VolumeMounts))
-	assert.Equal(t, "init-volume-name", pod.Spec.InitContainers[0].VolumeMounts[0].Name)
-	assert.Equal(t, "volume-name", pod.Spec.InitContainers[0].VolumeMounts[1].Name)
-	assert.Equal(t, "var-run-argo", pod.Spec.InitContainers[0].VolumeMounts[2].Name)
+	assert.Equal(t, 3, len(foo.VolumeMounts))
+	assert.Equal(t, "init-volume-name", foo.VolumeMounts[0].Name)
+	assert.Equal(t, "volume-name", foo.VolumeMounts[1].Name)
+	assert.Equal(t, "var-run-argo", foo.VolumeMounts[2].Name)
 }
 
 // TestSidecars verifies the ability to set up sidecars
@@ -1066,6 +1082,7 @@ func TestSidecars(t *testing.T) {
 			Container: apiv1.Container{
 				Name:         "side-foo",
 				VolumeMounts: sidecarVolumeMounts,
+				Image:        "argoproj/argosay:v2",
 			},
 		},
 	}

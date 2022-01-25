@@ -1,6 +1,7 @@
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 import {Observable} from 'rxjs';
+import {filter, map, publishReplay, refCount} from 'rxjs/operators';
 import {Sensor} from '../../../models';
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {Links} from '../../shared/components/links';
@@ -32,17 +33,17 @@ export const SensorLogsViewer = ({
         }
         setError(null);
         setLogLoaded(false);
-        const source = services.sensor
-            .sensorsLogs(namespace, sensor.metadata.name, selectedTrigger, '', 50)
-            .filter(e => !!e)
-            .map(
+        const source = services.sensor.sensorsLogs(namespace, sensor.metadata.name, selectedTrigger, '', 50).pipe(
+            filter(e => !!e),
+            map(
                 e =>
                     Object.entries(e)
                         .map(([key, value]) => key + '=' + value)
                         .join(', ') + '\n'
-            )
-            .publishReplay()
-            .refCount();
+            ),
+            publishReplay(),
+            refCount()
+        );
         const subscription = source.subscribe(() => setLogLoaded(true), setError);
         setLogsObservable(source);
         return () => subscription.unsubscribe();

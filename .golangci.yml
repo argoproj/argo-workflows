@@ -21,6 +21,7 @@ run:
     - executor
     - examples
     - functional
+    - plugins
 linters:
   enable:
     - bodyclose

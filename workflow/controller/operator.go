@@ -260,10 +260,8 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	}
 
 	if woc.execWf.Spec.Metrics != nil {
-		realTimeScope := map[string]func() float64{common.GlobalVarWorkflowDuration: func() float64 {
-			return time.Since(woc.wf.Status.StartedAt.Time).Seconds()
-		}}
-		woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, woc.globalParams, realTimeScope, true)
+		localScope, realTimeScope := woc.prepareDefaultMetricScope()
+		woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, localScope, realTimeScope, true)
 	}
 
 	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
@@ -360,7 +358,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	}
 
 	// Reconcile TaskSet and Agent for HTTP templates
-	woc.httpReconciliation(ctx)
+	woc.taskSetReconciliation(ctx)
 
 	if node == nil || !node.Fulfilled() {
 		// node can be nil if a workflow created immediately in a parallelism == 0 state
@@ -422,8 +420,8 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		}
 
 		// If the onExit node (or any child of the onExit node) requires HTTP reconciliation, do it here
-		if onExitNode != nil && woc.nodeRequiresHttpReconciliation(onExitNode.Name) {
-			woc.httpReconciliation(ctx)
+		if onExitNode != nil && woc.nodeRequiresTaskSetReconciliation(onExitNode.Name) {
+			woc.taskSetReconciliation(ctx)
 		}
 
 		if onExitNode == nil || !onExitNode.Fulfilled() {
@@ -467,11 +465,9 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	}
 
 	if woc.execWf.Spec.Metrics != nil {
-		realTimeScope := map[string]func() float64{common.GlobalVarWorkflowDuration: func() float64 {
-			return node.FinishedAt.Sub(node.StartedAt.Time).Seconds()
-		}}
 		woc.globalParams[common.GlobalVarWorkflowStatus] = string(workflowStatus)
-		woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, woc.globalParams, realTimeScope, false)
+		localScope, realTimeScope := woc.prepareMetricScope(node)
+		woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, localScope, realTimeScope, false)
 	}
 
 	err = woc.deletePVCs(ctx)
@@ -524,23 +520,28 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 		woc.globalParams[common.GlobalVarWorkflowParameters] = string(workflowParameters)
 	}
 	for _, param := range executionParameters.Parameters {
-		if param.Value != nil {
-			woc.globalParams["workflow.parameters."+param.Name] = param.Value.String()
-		} else if param.ValueFrom != nil {
-			if param.ValueFrom.ConfigMapKeyRef != nil {
-				cmValue, err := common.GetConfigMapValue(woc.controller.configMapInformer, woc.wf.ObjectMeta.Namespace, param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key)
-				if err != nil {
-					return fmt.Errorf("failed to set global parameter %s from configmap with name %s and key %s: %w",
-						param.Name, param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key, err)
-				}
-				woc.globalParams["workflow.parameters."+param.Name] = cmValue
-			}
-		} else {
+		if param.Value == nil && param.ValueFrom == nil {
 			return fmt.Errorf("either value or valueFrom must be specified in order to set global parameter %s", param.Name)
 		}
+		if param.ValueFrom != nil && param.ValueFrom.ConfigMapKeyRef != nil {
+			cmValue, err := common.GetConfigMapValue(woc.controller.configMapInformer, woc.wf.ObjectMeta.Namespace, param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key)
+			if err != nil {
+				return fmt.Errorf("failed to set global parameter %s from configmap with name %s and key %s: %w",
+					param.Name, param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key, err)
+			}
+			woc.globalParams["workflow.parameters."+param.Name] = cmValue
+		} else {
+			woc.globalParams["workflow.parameters."+param.Name] = param.Value.String()
+		}
+	}
+	if workflowAnnotations, err := json.Marshal(woc.wf.ObjectMeta.Annotations); err == nil {
+		woc.globalParams[common.GlobalVarWorkflowAnnotations] = string(workflowAnnotations)
 	}
 	for k, v := range woc.wf.ObjectMeta.Annotations {
 		woc.globalParams["workflow.annotations."+k] = v
+	}
+	if workflowLabels, err := json.Marshal(woc.wf.ObjectMeta.Labels); err == nil {
+		woc.globalParams[common.GlobalVarWorkflowLabels] = string(workflowLabels)
 	}
 	for k, v := range woc.wf.ObjectMeta.Labels {
 		woc.globalParams["workflow.labels."+k] = v
@@ -1578,7 +1579,7 @@ func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[s
 	lastChildNode := getChildNodeIndex(node, nodes, -1)
 
 	exitCode := "-1"
-	if lastChildNode.Outputs != nil {
+	if lastChildNode.Outputs != nil && lastChildNode.Outputs.ExitCode != nil {
 		exitCode = *lastChildNode.Outputs.ExitCode
 	}
 	localScope[common.LocalVarRetriesLastExitCode] = exitCode
@@ -1844,10 +1845,13 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		node, err = woc.executeData(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	case wfv1.TemplateTypeHTTP:
 		node = woc.executeHTTPTemplate(nodeName, templateScope, processedTmpl, orgTmpl, opts)
+	case wfv1.TemplateTypePlugin:
+		node = woc.executePluginTemplate(nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	default:
 		err = errors.Errorf(errors.CodeBadRequest, "Template '%s' missing specification", processedTmpl.Name)
 		return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, opts.boundaryID, wfv1.NodeError, err.Error()), err
 	}
+
 	if err != nil {
 		node = woc.markNodeError(nodeName, err)
 
@@ -2007,6 +2011,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 			}
 			woc.updated = true
 		}
+		woc.controller.queuePodForCleanup(woc.wf.Namespace, woc.getAgentPodName(), deletePod)
 	}
 }
 
@@ -2408,7 +2413,7 @@ func (woc *wfOperationCtx) executeContainer(ctx context.Context, nodeName string
 func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
 	node := woc.wf.Status.Nodes[nodeID]
 	switch node.Type {
-	case wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend, wfv1.NodeTypeHTTP:
+	case wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend, wfv1.NodeTypeHTTP, wfv1.NodeTypePlugin:
 		return []string{node.ID}
 	case wfv1.NodeTypePod:
 
@@ -2594,7 +2599,11 @@ func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, t
 	}
 
 	mainCtr := tmpl.Script.Container
-	mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
+	if len(tmpl.Script.Source) == 0 {
+		woc.log.Warn("'script.source' is empty, suggest change template into 'container'")
+	} else {
+		mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
+	}
 	_, err = woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{mainCtr}, tmpl, &createWorkflowPodOpts{
 		includeScriptOutput: includeScriptOutput,
 		onExitPod:           opts.onExitTemplate,
@@ -2721,7 +2730,7 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(scope *wfScope, prefix st
 	outputParamValueLists := make(map[string][]string)
 	resultsList := make([]wfv1.Item, 0)
 	for _, node := range childNodes {
-		if node.Outputs == nil {
+		if node.Outputs == nil || node.Phase != wfv1.NodeSucceeded || node.Type == wfv1.NodeTypeRetry {
 			continue
 		}
 		if len(node.Outputs.Parameters) > 0 {
@@ -3350,6 +3359,10 @@ func (woc *wfOperationCtx) fetchWorkflowSpec() (wfv1.WorkflowSpecHolder, error) 
 	var err error
 	// Logic for workflow refers Workflow template
 	if woc.wf.Spec.WorkflowTemplateRef.ClusterScope {
+		if woc.controller.cwftmplInformer == nil {
+			woc.log.WithError(err).Error("clusterWorkflowTemplate RBAC is missing")
+			return nil, fmt.Errorf("cannot get resource clusterWorkflowTemplate at cluster scope")
+		}
 		specHolder, err = woc.controller.cwftmplInformer.Lister().Get(woc.wf.Spec.WorkflowTemplateRef.Name)
 	} else {
 		specHolder, err = woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace).Get(woc.wf.Spec.WorkflowTemplateRef.Name)

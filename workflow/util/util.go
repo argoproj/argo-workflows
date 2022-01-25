@@ -227,6 +227,9 @@ func PopulateSubmitOpts(command *cobra.Command, submitOpts *wfv1.SubmitOpts, inc
 
 // Apply the Submit options into workflow object
 func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
+	if wf == nil {
+		return fmt.Errorf("workflow cannot be nil")
+	}
 	if opts == nil {
 		opts = &wfv1.SubmitOpts{}
 	}
@@ -238,6 +241,10 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 	}
 	if opts.PodPriorityClassName != "" {
 		wf.Spec.PodPriorityClassName = opts.PodPriorityClassName
+	}
+
+	if opts.Priority != nil {
+		wf.Spec.Priority = opts.Priority
 	}
 
 	wfLabels := wf.GetLabels()
@@ -1059,20 +1066,7 @@ func PodSpecPatchMerge(wf *wfv1.Workflow, tmpl *wfv1.Template) (string, error) {
 }
 
 func GetNodeType(tmpl *wfv1.Template) wfv1.NodeType {
-	if tmpl.RetryStrategy != nil {
-		return wfv1.NodeTypeRetry
-	}
-	switch tmpl.GetType() {
-	case wfv1.TemplateTypeContainer, wfv1.TemplateTypeContainerSet, wfv1.TemplateTypeScript, wfv1.TemplateTypeResource, wfv1.TemplateTypeData:
-		return wfv1.NodeTypePod
-	case wfv1.TemplateTypeDAG:
-		return wfv1.NodeTypeDAG
-	case wfv1.TemplateTypeSteps:
-		return wfv1.NodeTypeSteps
-	case wfv1.TemplateTypeSuspend:
-		return wfv1.NodeTypeSuspend
-	}
-	return ""
+	return tmpl.GetNodeType()
 }
 
 // IsWindowsUNCPath checks if path is prefixed with \\

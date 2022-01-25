@@ -284,7 +284,7 @@ func isNonBoundaryParentNode(node wfv1.NodeType) bool {
 }
 
 func isExecutionNode(node wfv1.NodeType) bool {
-	return (node == wfv1.NodeTypePod) || (node == wfv1.NodeTypeSkipped) || (node == wfv1.NodeTypeSuspend) || (node == wfv1.NodeTypeHTTP)
+	return (node == wfv1.NodeTypePod) || (node == wfv1.NodeTypeSkipped) || (node == wfv1.NodeTypeSuspend) || (node == wfv1.NodeTypeHTTP) || (node == wfv1.NodeTypePlugin)
 }
 
 func insertSorted(wf *wfv1.Workflow, sortedArray []renderNode, item renderNode) []renderNode {

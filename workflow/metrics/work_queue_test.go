@@ -25,6 +25,8 @@ func TestMetricsWorkQueue(t *testing.T) {
 	assert.Len(t, m.workersBusy, 1)
 
 	queue := m.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "test")
+	defer queue.ShutDown()
+
 	queue.Add("A")
 	assert.Equal(t, float64(0), *write(m.workersBusy["test"]).Gauge.Value)
 

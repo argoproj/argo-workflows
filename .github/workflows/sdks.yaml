@@ -3,8 +3,6 @@ on:
   push:
     tags:
       - v*
-    branches:
-      - master
 jobs:
   sdk:
     if: github.repository == 'argoproj/argo-workflows'
@@ -20,3 +18,4 @@ jobs:
       - run: make --directory sdks/${{matrix.name}} publish -B
         env:
           JAVA_SDK_MAVEN_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+          PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}

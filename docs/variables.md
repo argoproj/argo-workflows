@@ -163,6 +163,8 @@ returns `0`. Please review the Sprig documentation to understand which functions
 
 ### HTTP Templates
 
+> Since v3.3
+
 Only available for `successCondition`
 
 | Variable | Description|
@@ -177,7 +179,7 @@ Only available for `successCondition`
 
 ### RetryStrategy
 
-When using the `when` field within `retryStrategy`, special variables are available.
+When using the `expression` field within `retryStrategy`, special variables are available.
 
 | Variable | Description|
 |----------|------------|
@@ -185,7 +187,7 @@ When using the `when` field within `retryStrategy`, special variables are availa
 | `lastRetry.Status` | Status of the last retry |
 | `lastRetry.Duration` | Duration in seconds of the last retry |
 
-Note: These variables evaluate to a string type. If using advanced expressions, either cast them to int values (`when: "{{=asInt(lastRetry.exitCode) >= 2}}"`) or compare them to string values (`when: "{{=lastRetry.exitCode != '2'}}"`).
+Note: These variables evaluate to a string type. If using advanced expressions, either cast them to int values (`expression: "{{=asInt(lastRetry.exitCode) >= 2}}"`) or compare them to string values (`expression: "{{=lastRetry.exitCode != '2'}}"`).
 
 ### Container/Script Templates
 

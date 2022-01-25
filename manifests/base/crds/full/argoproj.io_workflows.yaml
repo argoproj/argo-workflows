@@ -3715,6 +3715,15 @@ spec:
                                     type: object
                                   template:
                                     type: string
+                                  templateRef:
+                                    properties:
+                                      clusterScope:
+                                        type: boolean
+                                      name:
+                                        type: string
+                                      template:
+                                        type: string
+                                    type: object
                                 required:
                                 - template
                                 type: object
@@ -5620,6 +5629,8 @@ spec:
                   parallelism:
                     format: int64
                     type: integer
+                  plugin:
+                    type: object
                   podSpecPatch:
                     type: string
                   priority:
@@ -10175,6 +10186,15 @@ spec:
                                       type: object
                                     template:
                                       type: string
+                                    templateRef:
+                                      properties:
+                                        clusterScope:
+                                          type: boolean
+                                        name:
+                                          type: string
+                                        template:
+                                          type: string
+                                      type: object
                                   required:
                                   - template
                                   type: object
@@ -12080,6 +12100,8 @@ spec:
                     parallelism:
                       format: int64
                       type: integer
+                    plugin:
+                      type: object
                     podSpecPatch:
                       type: string
                     priority:
@@ -19641,6 +19663,15 @@ spec:
                                       type: object
                                     template:
                                       type: string
+                                    templateRef:
+                                      properties:
+                                        clusterScope:
+                                          type: boolean
+                                        name:
+                                          type: string
+                                        template:
+                                          type: string
+                                      type: object
                                   required:
                                   - template
                                   type: object
@@ -21546,6 +21577,8 @@ spec:
                     parallelism:
                       format: int64
                       type: integer
+                    plugin:
+                      type: object
                     podSpecPatch:
                       type: string
                     priority:
@@ -27182,6 +27215,15 @@ spec:
                                         type: object
                                       template:
                                         type: string
+                                      templateRef:
+                                        properties:
+                                          clusterScope:
+                                            type: boolean
+                                          name:
+                                            type: string
+                                          template:
+                                            type: string
+                                        type: object
                                     required:
                                     - template
                                     type: object
@@ -29087,6 +29129,8 @@ spec:
                       parallelism:
                         format: int64
                         type: integer
+                      plugin:
+                        type: object
                       podSpecPatch:
                         type: string
                       priority:
@@ -33642,6 +33686,15 @@ spec:
                                           type: object
                                         template:
                                           type: string
+                                        templateRef:
+                                          properties:
+                                            clusterScope:
+                                              type: boolean
+                                            name:
+                                              type: string
+                                            template:
+                                              type: string
+                                          type: object
                                       required:
                                       - template
                                       type: object
@@ -35547,6 +35600,8 @@ spec:
                         parallelism:
                           format: int64
                           type: integer
+                        plugin:
+                          type: object
                         podSpecPatch:
                           type: string
                         priority:

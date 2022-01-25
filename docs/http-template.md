@@ -40,7 +40,7 @@ spec:
         #  response.statusCode: int, the response status code
         #  response.body: string, the response body
         #  response.headers: map[string][]string, the response headers
-        successCondition: "response.body contains \"google\""
+        successCondition: "response.body contains \"google\"" # available since v3.3
         body: "test body" # Change request body
 ```
 

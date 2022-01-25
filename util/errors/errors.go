@@ -1,6 +1,7 @@
 package errors
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"net/url"
@@ -17,7 +18,8 @@ func IsTransientErr(err error) bool {
 	if err == nil {
 		return false
 	}
-	isTransient := isExceededQuotaErr(err) || apierr.IsTooManyRequests(err) || isResourceQuotaConflictErr(err) || isTransientNetworkErr(err) || apierr.IsServerTimeout(err) || apierr.IsServiceUnavailable(err) || matchTransientErrPattern(err)
+	isTransient := isExceededQuotaErr(err) || apierr.IsTooManyRequests(err) || isResourceQuotaConflictErr(err) || isTransientNetworkErr(err) || apierr.IsServerTimeout(err) || apierr.IsServiceUnavailable(err) || matchTransientErrPattern(err) ||
+		errors.Is(err, NewErrTransient(""))
 	if isTransient {
 		log.Infof("Transient error: %v", err)
 	} else {

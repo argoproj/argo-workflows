@@ -35,6 +35,7 @@ const (
 	TemplateTypeSuspend      TemplateType = "Suspend"
 	TemplateTypeData         TemplateType = "Data"
 	TemplateTypeHTTP         TemplateType = "HTTP"
+	TemplateTypePlugin       TemplateType = "Plugin"
 	TemplateTypeUnknown      TemplateType = "Unknown"
 )
 
@@ -74,6 +75,7 @@ const (
 	NodeTypeSkipped   NodeType = "Skipped"
 	NodeTypeSuspend   NodeType = "Suspend"
 	NodeTypeHTTP      NodeType = "HTTP"
+	NodeTypePlugin    NodeType = "Plugin"
 )
 
 // PodGCStrategy is the strategy when to delete completed pods for GC.
@@ -559,6 +561,9 @@ type Template struct {
 	// HTTP makes a HTTP request
 	HTTP *HTTP `json:"http,omitempty" protobuf:"bytes,42,opt,name=http"`
 
+	// Plugin is a plugin template
+	Plugin *Plugin `json:"plugin,omitempty" protobuf:"bytes,43,opt,name=plugin"`
+
 	// Volumes is a list of volumes that can be mounted by containers in a template.
 	// +patchStrategy=merge
 	// +patchMergeKey=name
@@ -958,27 +963,27 @@ type ArtifactLocation struct {
 	GCS *GCSArtifact `json:"gcs,omitempty" protobuf:"bytes,9,opt,name=gcs"`
 }
 
-func (a *ArtifactLocation) Get() ArtifactLocationType {
+func (a *ArtifactLocation) Get() (ArtifactLocationType, error) {
 	if a == nil {
-		return nil
+		return nil, fmt.Errorf("key unsupported: cannot get key for artifact location, because it is invalid")
 	} else if a.Artifactory != nil {
-		return a.Artifactory
+		return a.Artifactory, nil
 	} else if a.Git != nil {
-		return a.Git
+		return a.Git, nil
 	} else if a.GCS != nil {
-		return a.GCS
+		return a.GCS, nil
 	} else if a.HDFS != nil {
-		return a.HDFS
+		return a.HDFS, nil
 	} else if a.HTTP != nil {
-		return a.HTTP
+		return a.HTTP, nil
 	} else if a.OSS != nil {
-		return a.OSS
+		return a.OSS, nil
 	} else if a.Raw != nil {
-		return a.Raw
+		return a.Raw, nil
 	} else if a.S3 != nil {
-		return a.S3
+		return a.S3, nil
 	}
-	return nil
+	return nil, fmt.Errorf("You need to configure artifact storage. More information on how to do this can be found in the docs: https://argoproj.github.io/argo-workflows/configure-artifact-repository/")
 }
 
 // SetType sets the type of the artifact to type the argument.
@@ -1017,9 +1022,9 @@ func (a *ArtifactLocation) HasKey() bool {
 
 // set the key to a new value, use path.Join to combine items
 func (a *ArtifactLocation) SetKey(key string) error {
-	v := a.Get()
-	if v == nil {
-		return fmt.Errorf("key unsupported: cannot set key for artifact location because it is invalid")
+	v, err := a.Get()
+	if err != nil {
+		return err
 	}
 	return v.SetKey(key)
 }
@@ -1052,8 +1057,8 @@ func (a *ArtifactLocation) Relocate(l *ArtifactLocation) error {
 // HasLocation whether or not an artifact has a *full* location defined
 // An artifact that has a location implicitly has a key (i.e. HasKey() == true).
 func (a *ArtifactLocation) HasLocation() bool {
-	v := a.Get()
-	return v != nil && v.HasLocation()
+	v, err := a.Get()
+	return err == nil && v.HasLocation()
 }
 
 func (a *ArtifactLocation) IsArchiveLogs() bool {
@@ -1061,9 +1066,9 @@ func (a *ArtifactLocation) IsArchiveLogs() bool {
 }
 
 func (a *ArtifactLocation) GetKey() (string, error) {
-	v := a.Get()
-	if v == nil {
-		return "", fmt.Errorf("key unsupported: cannot get key for artifact location, because it is invalid")
+	v, err := a.Get()
+	if err != nil {
+		return "", err
 	}
 	return v.GetKey()
 }
@@ -1199,8 +1204,12 @@ func (lchs LifecycleHooks) GetExitHook() *LifecycleHook {
 }
 
 type LifecycleHook struct {
-	Template  string    `json:"template," protobuf:"bytes,1,opt,name=template"`
+	// Template is the name of the template to execute by the hook
+	Template string `json:"template," protobuf:"bytes,1,opt,name=template"`
+	// Arguments hold arguments to the template
 	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,2,opt,name=arguments"`
+	// TemplateRef is the reference to the template resource to execute by the hook
+	TemplateRef *TemplateRef `json:"templateRef,omitempty" protobuf:"bytes,3,opt,name=templateRef"`
 }
 
 func (lch *LifecycleHook) WithArgs(args Arguments) *LifecycleHook {
@@ -1369,15 +1378,6 @@ func (n Nodes) Find(f func(NodeStatus) bool) *NodeStatus {
 		}
 	}
 	return nil
-}
-
-func (n Nodes) HasHTTPNodes() bool {
-	for _, i := range n {
-		if i.Type == NodeTypeHTTP {
-			return true
-		}
-	}
-	return false
 }
 
 func NodeWithDisplayName(name string) func(n NodeStatus) bool {
@@ -2096,7 +2096,7 @@ type HDFSArtifact struct {
 	// Path is a file path in HDFS
 	Path string `json:"path" protobuf:"bytes,2,opt,name=path"`
 
-	// Force copies a file forcibly even if it exists (default: false)
+	// Force copies a file forcibly even if it exists
 	Force bool `json:"force,omitempty" protobuf:"varint,3,opt,name=force"`
 }
 
@@ -2369,7 +2369,29 @@ func (tmpl *Template) GetType() TemplateType {
 	if tmpl.HTTP != nil {
 		return TemplateTypeHTTP
 	}
+	if tmpl.Plugin != nil {
+		return TemplateTypePlugin
+	}
 	return TemplateTypeUnknown
+}
+
+func (tmpl *Template) GetNodeType() NodeType {
+	if tmpl.RetryStrategy != nil {
+		return NodeTypeRetry
+	}
+	switch tmpl.GetType() {
+	case TemplateTypeContainer, TemplateTypeContainerSet, TemplateTypeScript, TemplateTypeResource, TemplateTypeData:
+		return NodeTypePod
+	case TemplateTypeDAG:
+		return NodeTypeDAG
+	case TemplateTypeSteps:
+		return NodeTypeSteps
+	case TemplateTypeSuspend:
+		return NodeTypeSuspend
+	case TemplateTypePlugin:
+		return NodeTypePlugin
+	}
+	return ""
 }
 
 // IsPodType returns whether or not the template is a pod type
@@ -2384,7 +2406,7 @@ func (tmpl *Template) IsPodType() bool {
 // IsLeaf returns whether or not the template is a leaf
 func (tmpl *Template) IsLeaf() bool {
 	switch tmpl.GetType() {
-	case TemplateTypeContainer, TemplateTypeContainerSet, TemplateTypeScript, TemplateTypeResource, TemplateTypeData, TemplateTypeHTTP:
+	case TemplateTypeContainer, TemplateTypeContainerSet, TemplateTypeScript, TemplateTypeResource, TemplateTypeData, TemplateTypeHTTP, TemplateTypePlugin:
 		return true
 	}
 	return false

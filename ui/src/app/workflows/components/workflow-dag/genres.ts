@@ -4,6 +4,7 @@ export const genres = {
     DAG: true,
     HTTP: true,
     Pod: true,
+    Plugin: true,
     Retry: true,
     Skipped: true,
     StepGroup: false,
