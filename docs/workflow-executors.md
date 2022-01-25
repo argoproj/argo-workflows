@@ -4,6 +4,47 @@ A workflow executor is a process that conforms to a specific interface that allo
 
 The executor to be used in your workflows can be changed in [the configmap](./workflow-controller-configmap.yaml) under the `containerRuntimeExecutor` key.
 
+## Emissary (emissary)
+
+> v3.1 and after
+
+**default in >= v3.3**
+
+This is the most fully featured executor.
+
+* Reliability:
+  * Works on GKE Autopilot
+  * Does not require `init` process to kill sub-processes.
+* More secure:
+  * No `privileged` access
+  * Cannot escape the privileges of the pod's service account
+  * Can [`runAsNonRoot`](workflow-pod-security-context.md).
+* Scalable:
+  * It reads and writes to and from the container's disk and typically does not use any network APIs unless resource
+    type template is used.
+* Artifacts:
+  * Output artifacts can be located on the base layer (e.g. `/tmp`).
+* Configuration:
+  * `command` must be specified for containers.
+
+You can determine the command and args as follows:
+
+```bash
+docker image inspect -f '{{.Config.Entrypoint}} {{.Config.Cmd}}' argoproj/argosay:v2
+```
+
+[Learn more about command and args](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#notes)
+
+### Image Index
+
+If the emissary cannot determine which command to run, because you did not specify it in your workflow spec, then it
+will look it up in the **image index**. This is nothing more fancy than
+a [configuration item](workflow-controller-configmap.yaml).
+
+### Exit Code 64
+
+The emissary will exit with code 64 if it fails. This may indicate a bug in the emissary.
+
 
 ## Docker (docker) 
 
@@ -11,9 +52,6 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
 
 **default in <= v3.2**
 
-* Reliability:
-    * Most well-tested
-    * Most popular
 * Least secure:
     * It requires `privileged` access to `docker.sock` of the host to be mounted which. Often rejected by Open Policy Agent (OPA) or your Pod Security Policy (PSP).
     * It can escape the privileges of the pod's service account
@@ -29,9 +67,6 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
 
 ## Kubelet (kubelet)
 
-* Reliability:
-    * Second least well-tested
-    * Second least popular
 * Secure
     * No `privileged` access
     * Cannot escape the privileges of the pod's service account
@@ -48,8 +83,6 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
 ## Kubernetes API (k8sapi)
 
 * Reliability:
-    * Well-tested
-    * Popular
     * Works on GKE Autopilot
 * Most secure:
     * No `privileged` access
@@ -66,9 +99,6 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
 
 ## Process Namespace Sharing (pns)
 
-* Reliability:
-    * Well-tested
-    * Popular
 * More secure:
     * No `privileged` access
     * cannot escape the privileges of the pod's service account
@@ -87,47 +117,3 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
 * [Doesn't work for Windows containers](https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#v1-pod).
 
 [https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/](https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/)
-
-## Emissary (emissary)
-
-> v3.1 and after
-
-**default in >= v3.3**
-
-This is the most fully featured executor.
-
-* Reliability:
-    * Not yet well-tested
-    * Not yet popular
-    * Works on GKE Autopilot
-    * Does not require `init` process to kill sub-processes.
-* More secure:
-    * No `privileged` access
-    * Cannot escape the privileges of the pod's service account
-    * Can [`runAsNonRoot`](workflow-pod-security-context.md).
-* Scalable:
-    * It reads and writes to and from the container's disk and typically does not use any network APIs unless resource
-      type template is used.
-* Artifacts:
-    * Output artifacts can be located on the base layer (e.g. `/tmp`).
-* Configuration:
-    * `command` must be specified for containers. 
-  
-You can determine the command and args as follows:
-
-```bash
-docker image inspect -f '{{.Config.Entrypoint}} {{.Config.Cmd}}' argoproj/argosay:v2
-```
-
-[Learn more about command and args](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#notes
-)
-
-### Image Index
-
-If the emissary cannot determine which command to run, because you did not specify it in your workflow spec, then it
-will look it up in the **image index**. This is nothing more fancy than
-a [configuration item](workflow-controller-configmap.yaml).
-
-### Exit Code 64
-
-The emissary will exit with code 64 if it fails. This may indicate a bug in the emissary.
