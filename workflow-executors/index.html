@@ -1819,6 +1819,33 @@
     <ul class="md-nav__list" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#emissary-emissary" title="Emissary (emissary)" class="md-nav__link">
+    Emissary (emissary)
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#image-index" title="Image Index" class="md-nav__link">
+    Image Index
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exit-code-64" title="Exit Code 64" class="md-nav__link">
+    Exit Code 64
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#docker-docker" title="Docker (docker)" class="md-nav__link">
     Docker (docker)
   </a>
@@ -1843,33 +1870,6 @@
   <a href="#process-namespace-sharing-pns" title="Process Namespace Sharing (pns)" class="md-nav__link">
     Process Namespace Sharing (pns)
   </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#emissary-emissary" title="Emissary (emissary)" class="md-nav__link">
-    Emissary (emissary)
-  </a>
-  
-    <nav class="md-nav">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#image-index" title="Image Index" class="md-nav__link">
-    Image Index
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#exit-code-64" title="Exit Code 64" class="md-nav__link">
-    Exit Code 64
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -2347,6 +2347,33 @@
     <ul class="md-nav__list" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#emissary-emissary" title="Emissary (emissary)" class="md-nav__link">
+    Emissary (emissary)
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#image-index" title="Image Index" class="md-nav__link">
+    Image Index
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exit-code-64" title="Exit Code 64" class="md-nav__link">
+    Exit Code 64
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#docker-docker" title="Docker (docker)" class="md-nav__link">
     Docker (docker)
   </a>
@@ -2374,33 +2401,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#emissary-emissary" title="Emissary (emissary)" class="md-nav__link">
-    Emissary (emissary)
-  </a>
-  
-    <nav class="md-nav">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#image-index" title="Image Index" class="md-nav__link">
-    Image Index
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#exit-code-64" title="Exit Code 64" class="md-nav__link">
-    Exit Code 64
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
       
       
       
@@ -2423,15 +2423,42 @@
                 <h1 id="workflow-executors">Workflow Executors<a class="headerlink" href="#workflow-executors" title="Permanent link">&para;</a></h1>
 <p>A workflow executor is a process that conforms to a specific interface that allows Argo to perform certain actions like monitoring pod logs, collecting artifacts, managing container lifecycles, etc..</p>
 <p>The executor to be used in your workflows can be changed in <a href="../workflow-controller-configmap.yaml">the configmap</a> under the <code>containerRuntimeExecutor</code> key.</p>
+<h2 id="emissary-emissary">Emissary (emissary)<a class="headerlink" href="#emissary-emissary" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p>v3.1 and after</p>
+</blockquote>
+<p><strong>default in &gt;= v3.3</strong></p>
+<p>This is the most fully featured executor.</p>
+<ul>
+<li>Reliability:</li>
+<li>Works on GKE Autopilot</li>
+<li>Does not require <code>init</code> process to kill sub-processes.</li>
+<li>More secure:</li>
+<li>No <code>privileged</code> access</li>
+<li>Cannot escape the privileges of the pod's service account</li>
+<li>Can <a href="../workflow-pod-security-context/"><code>runAsNonRoot</code></a>.</li>
+<li>Scalable:</li>
+<li>It reads and writes to and from the container's disk and typically does not use any network APIs unless resource
+    type template is used.</li>
+<li>Artifacts:</li>
+<li>Output artifacts can be located on the base layer (e.g. <code>/tmp</code>).</li>
+<li>Configuration:</li>
+<li><code>command</code> must be specified for containers.</li>
+</ul>
+<p>You can determine the command and args as follows:</p>
+<div class="highlight"><pre><span></span><code>docker image inspect -f <span class="s1">&#39;{{.Config.Entrypoint}} {{.Config.Cmd}}&#39;</span> argoproj/argosay:v2
+</code></pre></div>
+<p><a href="https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#notes">Learn more about command and args</a></p>
+<h3 id="image-index">Image Index<a class="headerlink" href="#image-index" title="Permanent link">&para;</a></h3>
+<p>If the emissary cannot determine which command to run, because you did not specify it in your workflow spec, then it
+will look it up in the <strong>image index</strong>. This is nothing more fancy than
+a <a href="../workflow-controller-configmap.yaml">configuration item</a>.</p>
+<h3 id="exit-code-64">Exit Code 64<a class="headerlink" href="#exit-code-64" title="Permanent link">&para;</a></h3>
+<p>The emissary will exit with code 64 if it fails. This may indicate a bug in the emissary.</p>
 <h2 id="docker-docker">Docker (docker)<a class="headerlink" href="#docker-docker" title="Permanent link">&para;</a></h2>
 <p>⚠️Deprecated. </p>
 <p><strong>default in &lt;= v3.2</strong></p>
 <ul>
-<li>Reliability:<ul>
-<li>Most well-tested</li>
-<li>Most popular</li>
-</ul>
-</li>
 <li>Least secure:<ul>
 <li>It requires <code>privileged</code> access to <code>docker.sock</code> of the host to be mounted which. Often rejected by Open Policy Agent (OPA) or your Pod Security Policy (PSP).</li>
 <li>It can escape the privileges of the pod's service account</li>
@@ -2454,11 +2481,6 @@
 <p><strong>Note</strong>: when using docker as workflow executors, messages printed in both <code>stdout</code> and <code>stderr</code> are captured in the <a href="../variables/#scripttemplate">Argo variable</a> <code>.outputs.result</code>.</p>
 <h2 id="kubelet-kubelet">Kubelet (kubelet)<a class="headerlink" href="#kubelet-kubelet" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Reliability:<ul>
-<li>Second least well-tested</li>
-<li>Second least popular</li>
-</ul>
-</li>
 <li>Secure<ul>
 <li>No <code>privileged</code> access</li>
 <li>Cannot escape the privileges of the pod's service account</li>
@@ -2485,8 +2507,6 @@
 <h2 id="kubernetes-api-k8sapi">Kubernetes API (k8sapi)<a class="headerlink" href="#kubernetes-api-k8sapi" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Reliability:<ul>
-<li>Well-tested</li>
-<li>Popular</li>
 <li>Works on GKE Autopilot</li>
 </ul>
 </li>
@@ -2515,11 +2535,6 @@
 </ul>
 <h2 id="process-namespace-sharing-pns">Process Namespace Sharing (pns)<a class="headerlink" href="#process-namespace-sharing-pns" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Reliability:<ul>
-<li>Well-tested</li>
-<li>Popular</li>
-</ul>
-</li>
 <li>More secure:<ul>
 <li>No <code>privileged</code> access</li>
 <li>cannot escape the privileges of the pod's service account</li>
@@ -2546,50 +2561,6 @@
 <li><a href="https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#v1-pod">Doesn't work for Windows containers</a>.</li>
 </ul>
 <p><a href="https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/">https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/</a></p>
-<h2 id="emissary-emissary">Emissary (emissary)<a class="headerlink" href="#emissary-emissary" title="Permanent link">&para;</a></h2>
-<blockquote>
-<p>v3.1 and after</p>
-</blockquote>
-<p><strong>default in &gt;= v3.3</strong></p>
-<p>This is the most fully featured executor.</p>
-<ul>
-<li>Reliability:<ul>
-<li>Not yet well-tested</li>
-<li>Not yet popular</li>
-<li>Works on GKE Autopilot</li>
-<li>Does not require <code>init</code> process to kill sub-processes.</li>
-</ul>
-</li>
-<li>More secure:<ul>
-<li>No <code>privileged</code> access</li>
-<li>Cannot escape the privileges of the pod's service account</li>
-<li>Can <a href="../workflow-pod-security-context/"><code>runAsNonRoot</code></a>.</li>
-</ul>
-</li>
-<li>Scalable:<ul>
-<li>It reads and writes to and from the container's disk and typically does not use any network APIs unless resource
-  type template is used.</li>
-</ul>
-</li>
-<li>Artifacts:<ul>
-<li>Output artifacts can be located on the base layer (e.g. <code>/tmp</code>).</li>
-</ul>
-</li>
-<li>Configuration:<ul>
-<li><code>command</code> must be specified for containers. </li>
-</ul>
-</li>
-</ul>
-<p>You can determine the command and args as follows:</p>
-<div class="highlight"><pre><span></span><code>docker image inspect -f <span class="s1">&#39;{{.Config.Entrypoint}} {{.Config.Cmd}}&#39;</span> argoproj/argosay:v2
-</code></pre></div>
-<p><a href="https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#notes">Learn more about command and args</a></p>
-<h3 id="image-index">Image Index<a class="headerlink" href="#image-index" title="Permanent link">&para;</a></h3>
-<p>If the emissary cannot determine which command to run, because you did not specify it in your workflow spec, then it
-will look it up in the <strong>image index</strong>. This is nothing more fancy than
-a <a href="../workflow-controller-configmap.yaml">configuration item</a>.</p>
-<h3 id="exit-code-64">Exit Code 64<a class="headerlink" href="#exit-code-64" title="Permanent link">&para;</a></h3>
-<p>The emissary will exit with code 64 if it fails. This may indicate a bug in the emissary.</p>
                 
                   
                 
