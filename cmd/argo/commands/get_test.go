@@ -19,7 +19,7 @@ func testPrintNodeImpl(t *testing.T, expected string, node wfv1.NodeStatus, getA
 	w := tabwriter.NewWriter(&result, 0, 8, 1, '\t', 0)
 	filtered, _ := filterNode(node, getArgs)
 	if !filtered {
-		printNode(w, node, "", getArgs)
+		printNode(w, node, "testWf", "", getArgs)
 	}
 	err := w.Flush()
 	assert.NoError(t, err)
