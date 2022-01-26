@@ -539,7 +539,6 @@ func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, wfName, nodePrefix str
 	duration := humanize.RelativeDurationShort(node.StartedAt.Time, node.FinishedAt.Time)
 	if node.Type == wfv1.NodeTypePod {
 		podName := util.PodName(wfName, nodeName, templateName, node.ID)
-		fmt.Println("GOT POD NAME ======>", podName)
 		args = []interface{}{nodePrefix, nodeName, templateName, podName, duration, node.Message, ""}
 	} else {
 		args = []interface{}{nodePrefix, nodeName, templateName, "", "", node.Message, ""}
