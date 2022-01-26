@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/expr/argoexpr"
 	"github.com/argoproj/argo-workflows/v3/util/expr/env"
@@ -22,7 +21,7 @@ func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *
 		if IsExitHook(hookName) {
 			continue
 		}
-		execute, err := shouldExecuteHook(hook.Expression, woc.globalParams)
+		execute, err := shouldExecuteHook(hook.Expression, getEnv(woc.globalParams))
 		if err != nil {
 			return err
 		}
@@ -47,7 +46,7 @@ func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, scope *
 		if IsExitHook(hookName) {
 			continue
 		}
-		execute, err := shouldExecuteHook(hook.Expression, woc.globalParams.Merge(scope.getParameters()))
+		execute, err := shouldExecuteHook(hook.Expression, getEnv(woc.globalParams.Merge(scope.getParameters())))
 		if err != nil {
 			return err
 		}
@@ -77,13 +76,15 @@ func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, scope *
 	return nil
 }
 
-func shouldExecuteHook(expression string, param common.Parameters) (bool, error) {
+func getEnv(parameters common.Parameters) map[string]interface{} {
 	params := make(map[string]interface{})
-	for key, value := range param {
+	for key, value := range parameters {
 		params[strings.Replace(key, "-", "_", -1)] = value
 	}
-	env := env.GetFuncMap(params)
+	return env.GetFuncMap(params)
+}
 
+func shouldExecuteHook(expression string, env map[string]interface{}) (bool, error) {
 	return argoexpr.EvalBool(strings.Replace(expression, "-", "_", -1), env)
 }
 

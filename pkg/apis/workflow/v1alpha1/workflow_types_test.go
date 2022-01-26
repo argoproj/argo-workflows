@@ -1034,3 +1034,30 @@ func TestTemplateGetType(t *testing.T) {
 	tmpl := Template{HTTP: &HTTP{}}
 	assert.Equal(t, TemplateTypeHTTP, tmpl.GetType())
 }
+
+func TestWfSpecGetExitHook(t *testing.T) {
+	wfSpec := WorkflowSpec{OnExit: "test"}
+	hooks := wfSpec.GetExitHook(wfSpec.Arguments)
+	assert.Equal(t, "test", hooks.Template)
+	wfSpec = WorkflowSpec{Hooks: LifecycleHooks{"exit": LifecycleHook{Template: "hook"}}}
+	hooks = wfSpec.GetExitHook(wfSpec.Arguments)
+	assert.Equal(t, "hook", hooks.Template)
+}
+
+func TestDagSpecGetExitHook(t *testing.T) {
+	dagTask := DAGTask{Name: "A", OnExit: "test"}
+	hooks := dagTask.GetExitHook(dagTask.Arguments)
+	assert.Equal(t, "test", hooks.Template)
+	dagTask = DAGTask{Name: "A", Hooks: LifecycleHooks{"exit": LifecycleHook{Template: "hook"}}}
+	hooks = dagTask.GetExitHook(dagTask.Arguments)
+	assert.Equal(t, "hook", hooks.Template)
+}
+
+func TestStepSpecGetExitHook(t *testing.T) {
+	step := WorkflowStep{Name: "A", OnExit: "test"}
+	hooks := step.GetExitHook(step.Arguments)
+	assert.Equal(t, "test", hooks.Template)
+	step = WorkflowStep{Name: "A", Hooks: LifecycleHooks{"exit": LifecycleHook{Template: "hook"}}}
+	hooks = step.GetExitHook(step.Arguments)
+	assert.Equal(t, "hook", hooks.Template)
+}
