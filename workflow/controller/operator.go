@@ -1171,6 +1171,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 	}
 
 	for _, c := range pod.Status.ContainerStatuses {
+		println("ALEX", "container=", c.Name, "terminated=", c.State.Terminated != nil)
 		ctrNodeName := fmt.Sprintf("%s.%s", node.Name, c.Name)
 		if woc.wf.GetNodeByName(ctrNodeName) == nil {
 			continue
