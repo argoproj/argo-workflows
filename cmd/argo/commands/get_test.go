@@ -12,6 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 func testPrintNodeImpl(t *testing.T, expected string, node wfv1.NodeStatus, getArgs getFlags) {
@@ -19,7 +20,7 @@ func testPrintNodeImpl(t *testing.T, expected string, node wfv1.NodeStatus, getA
 	w := tabwriter.NewWriter(&result, 0, 8, 1, '\t', 0)
 	filtered, _ := filterNode(node, getArgs)
 	if !filtered {
-		printNode(w, node, "", getArgs)
+		printNode(w, node, "testWf", "", getArgs, util.GetPodNameVersion())
 	}
 	err := w.Flush()
 	assert.NoError(t, err)
