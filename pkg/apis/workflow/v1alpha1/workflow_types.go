@@ -2655,6 +2655,11 @@ func (wf *Workflow) GetTemplateByName(name string) *Template {
 			}
 		}
 	}
+	for _, t := range wf.Status.StoredTemplates {
+		if t.Name == name {
+			return &t
+		}
+	}
 	return nil
 }
 
