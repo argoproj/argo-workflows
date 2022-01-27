@@ -208,6 +208,9 @@ func deleteObjects(client *storage.Client, bucket, key string) error {
 	}
 	for _, objName := range objNames {
 		err = deleteObject(client, bucket, objName)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
