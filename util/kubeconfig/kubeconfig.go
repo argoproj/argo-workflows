@@ -10,12 +10,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
 	clientauthenticationapi "k8s.io/client-go/pkg/apis/clientauthentication"
 	"k8s.io/client-go/plugin/pkg/client/auth/exec"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/transport"
+
+	"github.com/argoproj/argo-workflows/v3/errors"
 )
 
 const (
