@@ -39,7 +39,7 @@ spec:
       - name: message
         valueFrom:
           configMapKeyRef:
-            name: simple-parameters
+            name: cmref-parameters
             key: '{{ workflow.parameters.message }}'
     container:
       image: argoproj/argosay:v2
@@ -48,8 +48,13 @@ spec:
         - "{{inputs.parameters.message}}"
 `).
 		When().
+		CreateConfigMap(
+			"cmref-parameters",
+			map[string]string{"msg": "hello world"},
+			map[string]string{"workflows.argoproj.io/configmap-type": "Parameter"}).
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
+		DeleteConfigMap("cmref-parameters").
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
@@ -69,7 +74,7 @@ spec:
   arguments:
     parameters:
     - name: cm-name
-      value: simple-parameters
+      value: cmref-parameters
   templates:
   - name: whalesay
     inputs:
@@ -86,8 +91,13 @@ spec:
         - "{{inputs.parameters.message}}"
 `).
 		When().
+		CreateConfigMap(
+			"cmref-parameters",
+			map[string]string{"msg": "hello world"},
+			map[string]string{"workflows.argoproj.io/configmap-type": "Parameter"}).
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
+		DeleteConfigMap("cmref-parameters").
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
@@ -107,7 +117,7 @@ spec:
   arguments:
     parameters:
     - name: cm-name
-      value: simple-parameters
+      value: cmref-parameters
   templates:
   - name: whalesay
     inputs:

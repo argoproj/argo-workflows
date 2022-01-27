@@ -46,7 +46,7 @@ func (s *SemaphoreSuite) TestWorkflowLevelSemaphore() {
 	s.Given().
 		Workflow("@testdata/semaphore-wf-level.yaml").
 		When().
-		CreateConfigMap("my-config", map[string]string{"workflow": "1"}).
+		CreateConfigMap("my-config", map[string]string{"workflow": "1"}, map[string]string{}).
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToHavePhase(wfv1.WorkflowUnknown), time.Minute).
 		WaitForWorkflow().
@@ -60,7 +60,7 @@ func (s *SemaphoreSuite) TestTemplateLevelSemaphore() {
 	s.Given().
 		Workflow("@testdata/semaphore-tmpl-level.yaml").
 		When().
-		CreateConfigMap("my-config", map[string]string{"template": "1"}).
+		CreateConfigMap("my-config", map[string]string{"template": "1"}, map[string]string{}).
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeRunning, time.Minute).
 		Then().
