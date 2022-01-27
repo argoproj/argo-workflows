@@ -3072,7 +3072,6 @@ func expandSequence(seq *wfv1.Sequence) ([]wfv1.Item, error) {
 			return nil, err
 		}
 	} else if seq.Count != nil {
-		seg.Count = &intstr.IntOrString{}
 		count, err := strconv.Atoi(seq.Count.String())
 		if err != nil {
 			return nil, err

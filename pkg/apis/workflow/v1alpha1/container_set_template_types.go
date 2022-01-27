@@ -2,15 +2,19 @@ package v1alpha1
 
 import (
 	"fmt"
+	"time"
+
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	corev1 "k8s.io/api/core/v1"
 	intstr "k8s.io/apimachinery/pkg/util/intstr"
 )
 
 type ContainerSetTemplate struct {
-	Containers    []ContainerNode            `json:"containers" protobuf:"bytes,4,rep,name=containers"`
-	VolumeMounts  []corev1.VolumeMount       `json:"volumeMounts,omitempty" protobuf:"bytes,3,rep,name=volumeMounts"`
-	RetryStrategy *ContainerSetRetryStrategy `json:"retryStrategy,omitempty" protobuf:"bytes,5,opt,name=retryStrategy"`
+	Containers   []ContainerNode      `json:"containers" protobuf:"bytes,4,rep,name=containers"`
+	VolumeMounts []corev1.VolumeMount `json:"volumeMounts,omitempty" protobuf:"bytes,3,rep,name=volumeMounts"`
+	//RetryStrategy *ContainerSetRetryStrategy `json:"retryStrategy,omitempty" protobuf:"bytes,5,opt,name=retryStrategy"`
+	RetryStrategy *wait.Backoff `json:"retryStrategy,omitempty" protobuf:"bytes,5,opt,name=retryStrategy"`
 }
 
 type ContainerSetRetryStrategy struct {
@@ -21,6 +25,39 @@ type ContainerSetRetryStrategy struct {
 	Backoff *Backoff `json:"backoff,omitempty" protobuf:"bytes,3,opt,name=backoff,casttype=Backoff"`
 }
 
+func (t *ContainerSetTemplate) GetRetryStrategy() (wait.Backoff, error) {
+	if t == nil || t.RetryStrategy == nil || t.RetryStrategy.Limit == nil {
+		return wait.Backoff{Steps: 1}, nil
+	}
+
+	retry := t.RetryStrategy
+	backoff := wait.Backoff{Steps: retry.Limit.IntValue()}
+	if retry.Backoff == nil {
+		return backoff, nil
+	}
+
+	if retry.Backoff.Duration != "" {
+		duration, err := time.ParseDuration(retry.Backoff.Duration)
+		if err != nil {
+			return wait.Backoff{}, fmt.Errorf("failed to parse retry duration: %w", err)
+		}
+		backoff.Duration = duration
+	}
+
+	if retry.Backoff.MaxDuration != "" {
+		cap, err := time.ParseDuration(retry.Backoff.MaxDuration)
+		if err != nil {
+			return wait.Backoff{}, fmt.Errorf("failed to parse max duration: %w", err)
+		}
+		backoff.Cap = cap
+	}
+
+	if retry.Backoff.Factor != nil {
+		backoff.Factor = float64(retry.Backoff.Factor.IntVal)
+	}
+
+	return backoff, nil
+}
 func (in *ContainerSetTemplate) GetContainers() []corev1.Container {
 	var ctrs []corev1.Container
 	for _, t := range in.GetGraph() {

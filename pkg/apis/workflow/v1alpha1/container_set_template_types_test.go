@@ -2,9 +2,12 @@ package v1alpha1
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
+	intstr "k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/yaml"
 )
 
@@ -15,6 +18,61 @@ func validateContainerSetTemplate(yamlStr string) error {
 		panic(err)
 	}
 	return cst.Validate()
+}
+
+func TestContainerSetGetRetryStrategy(t *testing.T) {
+	t.Run("LimitSet", func(t *testing.T) {
+		limit := intstr.FromInt(100)
+		set := ContainerSetTemplate{
+			RetryStrategy: &ContainerSetRetryStrategy{
+				Limit: &limit,
+			},
+		}
+		strategy, err := set.GetRetryStrategy()
+		assert.Nil(t, err)
+		assert.Equal(t, wait.Backoff{Steps: 100}, strategy)
+	})
+
+	t.Run("Backoff", func(t *testing.T) {
+		limit := intstr.FromInt(100)
+		set := &ContainerSetTemplate{
+			RetryStrategy: &ContainerSetRetryStrategy{
+				Limit: &limit,
+				Backoff: &Backoff{
+					Duration: "1s",
+				},
+			},
+		}
+		strategy, err := set.GetRetryStrategy()
+		assert.Nil(t, err)
+		assert.Equal(t, wait.Backoff{
+			Steps:    100,
+			Duration: time.Duration(time.Second),
+		}, strategy)
+	})
+
+	t.Run("Backoff", func(t *testing.T) {
+		limit := intstr.FromInt(100)
+		factor := intstr.FromInt(100)
+		set := &ContainerSetTemplate{
+			RetryStrategy: &ContainerSetRetryStrategy{
+				Limit: &limit,
+				Backoff: &Backoff{
+					Duration:    "1s",
+					MaxDuration: "20s",
+					Factor:      &factor,
+				},
+			},
+		}
+		strategy, err := set.GetRetryStrategy()
+		assert.Nil(t, err)
+		assert.Equal(t, wait.Backoff{
+			Steps:    100,
+			Factor:   100,
+			Duration: time.Duration(time.Second),
+			Cap:      time.Duration(time.Second * 20),
+		}, strategy)
+	})
 }
 
 func TestContainerSetTemplate(t *testing.T) {

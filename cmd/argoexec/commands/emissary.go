@@ -123,9 +123,9 @@ func NewEmissaryCommand() *cobra.Command {
 				}
 			}
 
-			backoff, err := getBackoff(template.ContainerSet)
+			backoff, err := template.GetRetryStrategy()
 			if err != nil {
-				return fmt.Errorf("failed to get backoff: %w", err)
+				return fmt.Errorf("failed to get retry strategy: %w", err)
 			}
 
 			var command *exec.Cmd

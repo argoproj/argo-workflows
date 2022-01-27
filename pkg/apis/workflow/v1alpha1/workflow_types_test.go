@@ -9,6 +9,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/pointer"
 )
 
@@ -1095,4 +1096,34 @@ func TestStepSpecGetExitHook(t *testing.T) {
 	step = WorkflowStep{Name: "A", Hooks: LifecycleHooks{"exit": LifecycleHook{Template: "hook"}}}
 	hooks = step.GetExitHook(step.Arguments)
 	assert.Equal(t, "hook", hooks.Template)
+func TestTemplate_DefaultRetryStrategy(t *testing.T) {
+
+}
+
+func TestTemplate_RetryStrategy(t *testing.T) {
+	tmpl := Template{}
+	strategy, err := tmpl.GetRetryStrategy()
+	assert.Nil(t, err)
+	assert.Equal(t, wait.Backoff{Steps: 1}, strategy)
+}
+
+func TestHasHTTPNodes(t *testing.T) {
+	nodes := Nodes{
+		"test": {
+			Type: NodeTypeHTTP,
+		},
+		"test1": {
+			Type: NodeTypeContainer,
+		},
+	}
+	assert.True(t, nodes.HasHTTPNodes())
+	nodes = Nodes{
+		"test": {
+			Type: NodeTypeSteps,
+		},
+		"test1": {
+			Type: NodeTypeContainer,
+		},
+	}
+	assert.False(t, nodes.HasHTTPNodes())
 }

@@ -1,8 +1,6 @@
 package intstr
 
 import (
-	"encoding/json"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,12 +8,6 @@ import (
 
 func TestInt(t *testing.T) {
 	i, err := Int(ParsePtr("2"))
-	fmt.Println("HERE HERE")
-	val := ParsePtr("2")
-	json, err := json.Marshal(val)
-	fmt.Println(val)
-	fmt.Println(json)
-	assert.Error(t, err)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, *i)
 
