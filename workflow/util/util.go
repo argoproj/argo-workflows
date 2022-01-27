@@ -822,7 +822,8 @@ func retryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrato
 		}
 		if node.Type == wfv1.NodeTypePod {
 			templateName := getTemplateFromNode(node)
-			podName := PodName(wf.Name, node.Name, templateName, node.ID)
+			version := GetWorkflowPodNameVersion(wf)
+			podName := PodName(wf.Name, node.Name, templateName, node.ID, version)
 			log.Infof("Deleting pod: %s", podName)
 			err := podIf.Delete(ctx, podName, metav1.DeleteOptions{})
 			if err != nil && !apierr.IsNotFound(err) {
