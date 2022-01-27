@@ -18,7 +18,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -214,25 +213,6 @@ func NewEmissaryCommand() *cobra.Command {
 			return cmdErr // this is the error returned from cmd.Wait(), which maybe an exitError
 		},
 	}
-}
-
-func getBackoff(containerset *wfv1.ContainerSetTemplate) (wait.Backoff, error) {
-	if containerset == nil || containerset.RetryStrategy == nil || containerset.RetryStrategy.Limit == nil {
-		return wait.Backoff{Steps: 1}, nil
-	}
-	retryStrategy := containerset.RetryStrategy
-	if retryStrategy.Backoff == nil || retryStrategy.Backoff.Factor == nil {
-		return wait.Backoff{Steps: retryStrategy.Limit.IntValue()}, nil
-	}
-	duration, err := time.ParseDuration(retryStrategy.Backoff.Duration)
-	if err != nil {
-		return wait.Backoff{}, fmt.Errorf("failed to parse containerset retry duration: %w", err)
-	}
-	return wait.Backoff{
-		Steps:    int(retryStrategy.Limit.IntVal),
-		Factor:   float64(retryStrategy.Backoff.Factor.IntVal),
-		Duration: duration,
-	}, nil
 }
 
 func createCommand(name string, args []string, template *wfv1.Template) (*exec.Cmd, *os.File, *os.File, error) {
