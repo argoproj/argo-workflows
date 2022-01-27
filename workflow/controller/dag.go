@@ -256,7 +256,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 				return node, err
 			}
 			scope.addParamToScope(fmt.Sprintf("tasks.%s.status", task.Name), string(node.Phase))
-			err = woc.executeTmplLifeCycleHook(ctx, scope, dagCtx.GetTask(taskName).Hooks, taskNode, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
+			_, err = woc.executeTmplLifeCycleHook(ctx, woc.globalParams.Merge(scope.getParameters()), dagCtx.GetTask(taskName).Hooks, taskNode, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
 			if err != nil {
 				woc.markNodeError(node.Name, err)
 				return node, err
@@ -379,9 +379,13 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 			woc.markNodeError(node.Name, err)
 		}
 		scope.addParamToScope(fmt.Sprintf("tasks.%s.status", task.Name), string(node.Phase))
-		err = woc.executeTmplLifeCycleHook(ctx, scope, dagCtx.GetTask(taskName).Hooks, node, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
+		hookCompleted, err := woc.executeTmplLifeCycleHook(ctx, woc.globalParams.Merge(scope.getParameters()), dagCtx.GetTask(taskName).Hooks, node, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
 		if err != nil {
 			woc.markNodeError(node.Name, err)
+		}
+		// Check all hooks are completes
+		if !hookCompleted {
+			return
 		}
 
 		if node.Completed() {
