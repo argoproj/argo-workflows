@@ -20,7 +20,7 @@ func testPrintNodeImpl(t *testing.T, expected string, node wfv1.NodeStatus, getA
 	w := tabwriter.NewWriter(&result, 0, 8, 1, '\t', 0)
 	filtered, _ := filterNode(node, getArgs)
 	if !filtered {
-		printNode(w, node, "testWf", "", getArgs, util.PodNameV1)
+		printNode(w, node, "testWf", "", getArgs, util.GetPodNameVersion())
 	}
 	err := w.Flush()
 	assert.NoError(t, err)
