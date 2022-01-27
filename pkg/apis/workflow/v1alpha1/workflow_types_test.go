@@ -32,6 +32,41 @@ func TestWorkflows(t *testing.T) {
 	})
 }
 
+func TestGetTemplateByName(t *testing.T) {
+	t.Run("Spec", func(t *testing.T) {
+		wf := &Workflow{
+			Spec: WorkflowSpec{
+				Templates: []Template{
+					{Name: "my-tmpl"},
+				},
+			},
+		}
+		assert.NotNil(t, wf.GetTemplateByName("my-tmpl"))
+	})
+	t.Run("StoredWorkflowSpec", func(t *testing.T) {
+		wf := &Workflow{
+			Status: WorkflowStatus{
+				StoredWorkflowSpec: &WorkflowSpec{
+					Templates: []Template{
+						{Name: "my-tmpl"},
+					},
+				},
+			},
+		}
+		assert.NotNil(t, wf.GetTemplateByName("my-tmpl"))
+	})
+	t.Run("StoredTemplates", func(t *testing.T) {
+		wf := &Workflow{
+			Status: WorkflowStatus{
+				StoredTemplates: map[string]Template{
+					"": {Name: "my-tmpl"},
+				},
+			},
+		}
+		assert.NotNil(t, wf.GetTemplateByName("my-tmpl"))
+	})
+}
+
 func TestWorkflowCreatedAfter(t *testing.T) {
 	t0 := time.Time{}
 	t1 := t0.Add(time.Second)
