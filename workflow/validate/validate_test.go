@@ -2234,6 +2234,89 @@ func TestInvalidMetricHelp(t *testing.T) {
 	assert.EqualError(t, err, "templates.whalesay metric 'metric_name' must contain a help string under 'help: ' field")
 }
 
+var invalidRealtimeMetricGauge = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    metrics:
+      prometheus:
+        - name: metric_name
+          help: please
+          gauge:
+            realtime: true
+            value: "{{resourcesDuration.cpu}}/{{resourcesDuration.memory}}"
+    container:
+      image: docker/whalesay:latest
+`
+
+func TestInvalidMetricGauge(t *testing.T) {
+	_, err := validate(invalidRealtimeMetricGauge)
+	assert.EqualError(t, err, "templates.whalesay metric 'metric_name' error: 'resourcesDuration.*' metrics cannot be used in real-time")
+}
+
+var invalidNoValueMetricGauge = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    metrics:
+      prometheus:
+        - name: metric_name
+          help: please
+          gauge:
+            realtime: false
+    container:
+      image: docker/whalesay:latest
+`
+
+func TestInvalidNoValueMetricGauge(t *testing.T) {
+	_, err := validate(invalidNoValueMetricGauge)
+	assert.EqualError(t, err, "templates.whalesay metric 'metric_name' error: missing gauge.value")
+}
+
+var validMetricGauges = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    metrics:
+      prometheus:
+        - name: metric_one
+          help: please
+          gauge:
+            realtime: true
+            value: "{{duration}}/{{workflow.duration}}"
+        - name: metric_two
+          help: please
+          gauge:
+            realtime: false
+            value: "{{resourcesDuration.cpu}}/{{resourcesDuration.memory}}/{{duration}}/{{workflow.duration}}"
+        - name: metric_three
+          help: please
+          gauge:
+            value: "{{resourcesDuration.cpu}}/{{resourcesDuration.memory}}/{{duration}}/{{workflow.duration}}"
+    container:
+      image: docker/whalesay:latest
+`
+
+func TestValidMetricGauge(t *testing.T) {
+	_, err := validate(validMetricGauges)
+	assert.NoError(t, err)
+}
+
 var globalVariables = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow

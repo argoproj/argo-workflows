@@ -12,5 +12,9 @@ func ConfigMapIndexFunc(obj interface{}) ([]string, error) {
 	if !ok {
 		return nil, nil
 	}
-	return []string{cm.GetLabels()[common.LabelKeyConfigMapType]}, nil
+	v, ok := cm.GetLabels()[common.LabelKeyConfigMapType]
+	if !ok {
+		return nil, nil
+	}
+	return []string{v}, nil
 }

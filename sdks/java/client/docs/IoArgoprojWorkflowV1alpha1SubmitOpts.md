@@ -18,6 +18,7 @@ Name | Type | Description | Notes
 **parameterFile** | **String** | ParameterFile holds a reference to a parameter file. This option is not supported in API |  [optional]
 **parameters** | **List&lt;String&gt;** | Parameters passes input parameters to workflow |  [optional]
 **podPriorityClassName** | **String** | Set the podPriorityClassName of the workflow |  [optional]
+**priority** | **Integer** | Priority is used if controller is configured to process limited number of workflows in parallel, higher priority workflows are processed first. |  [optional]
 **serverDryRun** | **Boolean** | ServerDryRun validates the workflow on the server-side without creating it |  [optional]
 **serviceAccount** | **String** | ServiceAccount runs all pods in the workflow using specified ServiceAccount. |  [optional]
 

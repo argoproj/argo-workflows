@@ -97,6 +97,7 @@ class IoArgoprojWorkflowV1alpha1SubmitOpts(ModelNormal):
             'parameter_file': (str,),  # noqa: E501
             'parameters': ([str],),  # noqa: E501
             'pod_priority_class_name': (str,),  # noqa: E501
+            'priority': (int,),  # noqa: E501
             'server_dry_run': (bool,),  # noqa: E501
             'service_account': (str,),  # noqa: E501
         }
@@ -117,6 +118,7 @@ class IoArgoprojWorkflowV1alpha1SubmitOpts(ModelNormal):
         'parameter_file': 'parameterFile',  # noqa: E501
         'parameters': 'parameters',  # noqa: E501
         'pod_priority_class_name': 'podPriorityClassName',  # noqa: E501
+        'priority': 'priority',  # noqa: E501
         'server_dry_run': 'serverDryRun',  # noqa: E501
         'service_account': 'serviceAccount',  # noqa: E501
     }
@@ -172,6 +174,7 @@ class IoArgoprojWorkflowV1alpha1SubmitOpts(ModelNormal):
             parameter_file (str): ParameterFile holds a reference to a parameter file. This option is not supported in API. [optional]  # noqa: E501
             parameters ([str]): Parameters passes input parameters to workflow. [optional]  # noqa: E501
             pod_priority_class_name (str): Set the podPriorityClassName of the workflow. [optional]  # noqa: E501
+            priority (int): Priority is used if controller is configured to process limited number of workflows in parallel, higher priority workflows are processed first.. [optional]  # noqa: E501
             server_dry_run (bool): ServerDryRun validates the workflow on the server-side without creating it. [optional]  # noqa: E501
             service_account (str): ServiceAccount runs all pods in the workflow using specified ServiceAccount.. [optional]  # noqa: E501
         """
@@ -265,6 +268,7 @@ class IoArgoprojWorkflowV1alpha1SubmitOpts(ModelNormal):
             parameter_file (str): ParameterFile holds a reference to a parameter file. This option is not supported in API. [optional]  # noqa: E501
             parameters ([str]): Parameters passes input parameters to workflow. [optional]  # noqa: E501
             pod_priority_class_name (str): Set the podPriorityClassName of the workflow. [optional]  # noqa: E501
+            priority (int): Priority is used if controller is configured to process limited number of workflows in parallel, higher priority workflows are processed first.. [optional]  # noqa: E501
             server_dry_run (bool): ServerDryRun validates the workflow on the server-side without creating it. [optional]  # noqa: E501
             service_account (str): ServiceAccount runs all pods in the workflow using specified ServiceAccount.. [optional]  # noqa: E501
         """

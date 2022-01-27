@@ -1,6 +1,7 @@
 package tls
 
 import (
+	"context"
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
@@ -16,7 +17,17 @@ import (
 	"os"
 	"time"
 
-	"k8s.io/utils/env"
+	"k8s.io/client-go/kubernetes"
+
+	"github.com/argoproj/argo-workflows/v3/util"
+)
+
+const (
+	// The key of the tls.crt within the Kubernetes secret
+	tlsCrtSecretKey = "tls.crt"
+
+	// The key of the tls.key within the Kubernetes secret
+	tlsKeySecretKey = "tls.key"
 )
 
 func pemBlockForKey(priv interface{}) *pem.Block {
@@ -103,19 +114,38 @@ func GenerateX509KeyPair() (*tls.Certificate, error) {
 	return &cert, nil
 }
 
-func GenerateTLSConfig() (*tls.Config, error) {
-	tlsMinVersion, err := env.GetInt("TLS_MIN_VERSION", tls.VersionTLS12)
+func GenerateX509KeyPairTLSConfig(tlsMinVersion uint16) (*tls.Config, error) {
+
+	cer, err := GenerateX509KeyPair()
 	if err != nil {
 		return nil, err
 	}
-	var cer *tls.Certificate
-	cer, err = GenerateX509KeyPair()
-	if err != nil {
-		return nil, err
-	}
+
 	return &tls.Config{
 		Certificates:       []tls.Certificate{*cer},
 		MinVersion:         uint16(tlsMinVersion),
 		InsecureSkipVerify: true,
+	}, nil
+}
+
+func GetServerTLSConfigFromSecret(ctx context.Context, kubectlConfig kubernetes.Interface, tlsKubernetesSecretName string, tlsMinVersion uint16, namespace string) (*tls.Config, error) {
+	certpem, err := util.GetSecrets(ctx, kubectlConfig, namespace, tlsKubernetesSecretName, tlsCrtSecretKey)
+	if err != nil {
+		return nil, err
+	}
+
+	keypem, err := util.GetSecrets(ctx, kubectlConfig, namespace, tlsKubernetesSecretName, tlsKeySecretKey)
+	if err != nil {
+		return nil, err
+	}
+
+	cert, err := tls.X509KeyPair(certpem, keypem)
+	if err != nil {
+		return nil, err
+	}
+
+	return &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		MinVersion:   uint16(tlsMinVersion),
 	}, nil
 }

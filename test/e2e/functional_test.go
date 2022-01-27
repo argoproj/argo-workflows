@@ -656,6 +656,53 @@ spec:
 		})
 }
 
+func (s *FunctionalSuite) TestWorkflowLifecycleHookWithWorkflowTemplate() {
+	s.Given().
+		WorkflowTemplate(`
+metadata:
+  name: test-exit-handler
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      inputs:
+        parameters:
+        - name: message
+      container:
+        image: argoproj/argosay:v2 
+        command: [cowsay]
+        args: ["{{inputs.parameters.message}}"]
+`).
+		Workflow(`
+metadata:
+  generateName: test-lifecycle-hook-
+spec:
+  entrypoint: hooks-exit-test
+  templates:
+  - name: hooks-exit-test
+    container:
+      image: argoproj/argosay:v2
+    hooks:
+      exit:
+        templateRef:
+          name: test-exit-handler
+          template: main
+        arguments:
+          parameters:
+            - name: message
+              value: "hello world"
+`).
+		When().
+		CreateWorkflowTemplates().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			assert.Empty(t, status.Message)
+		})
+}
+
 func (s *FunctionalSuite) TestParametrizableAds() {
 	s.Given().
 		Workflow(`

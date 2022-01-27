@@ -11,6 +11,7 @@ YAML validation is supported natively in IDEA.
 Configure your IDE to reference the Argo schema and map it to your Argo YAML files:
 
 ![IDEA Configure Schema](assets/intellij-ide-step-1-config.png)
+
 - The schema is located at [https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/jsonschema/schema.json](https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/jsonschema/schema.json).
 - Specify a file glob pattern that locates **your** Argo files. The example glob here is for the Argo Github project!
 - Note that you may need to restart IDEA to pick up the changes.

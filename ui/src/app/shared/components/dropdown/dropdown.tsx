@@ -1,7 +1,8 @@
 import * as classNames from 'classnames';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import {BehaviorSubject, Observable, Subscription} from 'rxjs';
+import {BehaviorSubject, fromEvent, merge, Subscription} from 'rxjs';
+import {filter} from 'rxjs/operators';
 
 export interface DropDownProps {
     isMenu?: boolean;
@@ -67,15 +68,17 @@ export class DropDown extends React.Component<DropDownProps, DropDownState> {
 
     public componentWillMount() {
         this.subscriptions = [
-            Observable.merge(
-                dropDownOpened.filter(dropdown => dropdown !== this),
-                Observable.fromEvent(document, 'click').filter((event: Event) => {
-                    return this.content && this.state.opened && !this.content.contains(event.target as Node) && !this.el.contains(event.target as Node);
-                })
+            merge(
+                dropDownOpened.pipe(filter(dropdown => dropdown !== this)),
+                fromEvent(document, 'click').pipe(
+                    filter((event: Event) => {
+                        return this.content && this.state.opened && !this.content.contains(event.target as Node) && !this.el.contains(event.target as Node);
+                    })
+                )
             ).subscribe(() => {
                 this.close();
             }),
-            Observable.fromEvent(document, 'scroll', true).subscribe(() => {
+            fromEvent(document, 'scroll', {capture: true}).subscribe(() => {
                 if (this.state.opened && this.content && this.el) {
                     this.setState(this.refreshState());
                 }

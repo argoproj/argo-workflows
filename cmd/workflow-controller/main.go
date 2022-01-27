@@ -57,7 +57,7 @@ func NewRootCommand() *cobra.Command {
 		qps                      float32
 		namespaced               bool   // --namespaced
 		managedNamespace         string // --managed-namespace
-
+		executorPlugins          bool
 	)
 
 	command := cobra.Command{
@@ -105,7 +105,7 @@ func NewRootCommand() *cobra.Command {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			wfController, err := controller.NewWorkflowController(ctx, config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap)
+			wfController, err := controller.NewWorkflowController(ctx, config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap, executorPlugins)
 			errors.CheckError(err)
 
 			go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podWorkers, podCleanupWorkers)
@@ -138,6 +138,7 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().Float32Var(&qps, "qps", 20.0, "Queries per second")
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run workflow-controller as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that workflow-controller watches, default to the installation namespace")
+	command.Flags().BoolVar(&executorPlugins, "executor-plugins", false, "enable executor plugins")
 
 	viper.AutomaticEnv()
 	viper.SetEnvPrefix("ARGO")

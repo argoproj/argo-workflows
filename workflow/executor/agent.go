@@ -22,6 +22,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	executorplugins "github.com/argoproj/argo-workflows/v3/pkg/plugins/executor"
 	"github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/util/env"
 	"github.com/argoproj/argo-workflows/v3/util/errors"
@@ -37,9 +38,12 @@ type AgentExecutor struct {
 	RESTClient        rest.Interface
 	Namespace         string
 	consideredTasks   map[string]bool
+	plugins           []executorplugins.TemplateExecutor
 }
 
-func NewAgentExecutor(clientSet kubernetes.Interface, restClient rest.Interface, config *rest.Config, namespace, workflowName string) *AgentExecutor {
+type templateExecutor = func(ctx context.Context, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error)
+
+func NewAgentExecutor(clientSet kubernetes.Interface, restClient rest.Interface, config *rest.Config, namespace, workflowName string, plugins []executorplugins.TemplateExecutor) *AgentExecutor {
 	return &AgentExecutor{
 		log:               log.WithField("workflow", workflowName),
 		ClientSet:         clientSet,
@@ -48,6 +52,7 @@ func NewAgentExecutor(clientSet kubernetes.Interface, restClient rest.Interface,
 		WorkflowName:      workflowName,
 		WorkflowInterface: workflow.NewForConfigOrDie(config),
 		consideredTasks:   make(map[string]bool),
+		plugins:           plugins,
 	}
 }
 
@@ -122,7 +127,7 @@ func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, re
 		ae.consideredTasks[nodeID] = true
 
 		log.Info("Processing task")
-		result, err := ae.processTask(ctx, tmpl)
+		result, requeue, err := ae.processTask(ctx, tmpl)
 		if err != nil {
 			log.WithError(err).Error("Error in agent task")
 			result = &wfv1.NodeResult{
@@ -132,15 +137,26 @@ func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, re
 			// Do not return or continue here, the "errored" result still needs to be propagated to the responseQueue below
 		}
 
-		log.WithField("phase", result.Phase).
+		log.
+			WithField("phase", result.Phase).
 			WithField("message", result.Message).
+			WithField("requeue", requeue).
 			Info("Sending result")
-		responseQueue <- response{NodeId: nodeID, Result: result}
+
+		if result.Phase != "" {
+			responseQueue <- response{NodeId: nodeID, Result: result}
+		}
+		if requeue > 0 {
+			time.AfterFunc(requeue, func() {
+				taskQueue <- task
+			})
+		}
 	}
 }
 
 func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alpha1.WorkflowTaskSetInterface, responseQueue chan response, requeueTime time.Duration) {
 	ticker := time.NewTicker(requeueTime)
+	defer ticker.Stop()
 	nodeResults := map[string]wfv1.NodeResult{}
 	for {
 		select {
@@ -184,39 +200,44 @@ func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alp
 			// Patch was successful, clear nodeResults for next iteration
 			nodeResults = map[string]wfv1.NodeResult{}
 
-			ae.log.Info("Patched TaskSet")
+			log.Info("Patched TaskSet")
 		}
 	}
 }
 
-func (ae *AgentExecutor) processTask(ctx context.Context, tmpl wfv1.Template) (*wfv1.NodeResult, error) {
+func (ae *AgentExecutor) processTask(ctx context.Context, tmpl wfv1.Template) (*wfv1.NodeResult, time.Duration, error) {
+	var executeTemplate templateExecutor
 	switch {
 	case tmpl.HTTP != nil:
-		return ae.executeHTTPTemplate(ctx, tmpl), nil
+		executeTemplate = ae.executeHTTPTemplate
+	case tmpl.Plugin != nil:
+		executeTemplate = ae.executePluginTemplate
 	default:
-		return nil, fmt.Errorf("agent cannot execute: unknown task type")
+		return nil, 0, fmt.Errorf("agent cannot execute: unknown task type: %v", tmpl.GetType())
 	}
+	result := &wfv1.NodeResult{}
+	requeue, err := executeTemplate(ctx, tmpl, result)
+	if err != nil {
+		result.Phase = wfv1.NodeFailed
+		result.Message = err.Error()
+	}
+	return result, requeue, nil
 }
 
-func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Template) *wfv1.NodeResult {
+func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error) {
 	if tmpl.HTTP == nil {
-		return nil
+		return 0, nil
 	}
 
-	var result wfv1.NodeResult
 	response, err := ae.executeHTTPTemplateRequest(ctx, tmpl.HTTP)
 	if err != nil {
-		result.Phase = wfv1.NodeError
-		result.Message = err.Error()
-		return &result
+		return 0, err
 	}
 	defer response.Body.Close()
 
 	bodyBytes, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		result.Phase = wfv1.NodeError
-		result.Message = err.Error()
-		return &result
+		return 0, err
 	}
 
 	outputs := wfv1.Outputs{Result: pointer.StringPtr(string(bodyBytes))}
@@ -245,9 +266,7 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Temp
 		}
 		success, err := argoexpr.EvalBool(tmpl.HTTP.SuccessCondition, evalScope)
 		if err != nil {
-			result.Phase = wfv1.NodeError
-			result.Message = err.Error()
-			return &result
+			return 0, err
 		}
 		if !success {
 			phase = wfv1.NodeFailed
@@ -258,7 +277,7 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Temp
 	result.Phase = phase
 	result.Message = message
 	result.Outputs = &outputs
-	return &result
+	return 0, nil
 }
 
 func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTemplate *wfv1.HTTP) (*http.Response, error) {
@@ -288,6 +307,25 @@ func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTem
 		return nil, err
 	}
 	return response, nil
+}
+
+func (ae *AgentExecutor) executePluginTemplate(ctx context.Context, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error) {
+	args := executorplugins.ExecuteTemplateArgs{
+		Workflow: &executorplugins.Workflow{
+			ObjectMeta: executorplugins.ObjectMeta{Name: ae.WorkflowName},
+		},
+		Template: &tmpl,
+	}
+	reply := &executorplugins.ExecuteTemplateReply{}
+	for _, plug := range ae.plugins {
+		if err := plug.ExecuteTemplate(ctx, args, reply); err != nil {
+			return 0, err
+		} else if reply.Node != nil {
+			*result = *reply.Node
+			return reply.GetRequeue(), nil
+		}
+	}
+	return 0, fmt.Errorf("no plugin executed the template")
 }
 
 func IsWorkflowCompleted(wts *wfv1.WorkflowTaskSet) bool {

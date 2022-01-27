@@ -171,12 +171,10 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 	// Performs substitutions of input artifacts
 	artifacts := newTmpl.Inputs.Artifacts
 	for i, inArt := range artifacts {
-		// if artifact has hard-wired location, we prefer that
-		if inArt.HasLocationOrKey() {
-			continue
-		}
+
 		argArt := args.GetArtifactByName(inArt.Name)
-		if !inArt.Optional {
+
+		if !inArt.Optional && !inArt.HasLocationOrKey() {
 			// artifact must be supplied
 			if argArt == nil {
 				return nil, errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s was not supplied", inArt.Name)

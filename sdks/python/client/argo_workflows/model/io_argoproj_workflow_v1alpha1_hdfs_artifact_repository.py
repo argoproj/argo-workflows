@@ -161,7 +161,7 @@ class IoArgoprojWorkflowV1alpha1HDFSArtifactRepository(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             addresses ([str]): Addresses is accessible addresses of HDFS name nodes. [optional]  # noqa: E501
-            force (bool): Force copies a file forcibly even if it exists (default: false). [optional]  # noqa: E501
+            force (bool): Force copies a file forcibly even if it exists. [optional]  # noqa: E501
             hdfs_user (str): HDFSUser is the user to access HDFS file system. It is ignored if either ccache or keytab is used.. [optional]  # noqa: E501
             krb_c_cache_secret (SecretKeySelector): [optional]  # noqa: E501
             krb_config_config_map (ConfigMapKeySelector): [optional]  # noqa: E501
@@ -252,7 +252,7 @@ class IoArgoprojWorkflowV1alpha1HDFSArtifactRepository(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             addresses ([str]): Addresses is accessible addresses of HDFS name nodes. [optional]  # noqa: E501
-            force (bool): Force copies a file forcibly even if it exists (default: false). [optional]  # noqa: E501
+            force (bool): Force copies a file forcibly even if it exists. [optional]  # noqa: E501
             hdfs_user (str): HDFSUser is the user to access HDFS file system. It is ignored if either ccache or keytab is used.. [optional]  # noqa: E501
             krb_c_cache_secret (SecretKeySelector): [optional]  # noqa: E501
             krb_config_config_map (ConfigMapKeySelector): [optional]  # noqa: E501

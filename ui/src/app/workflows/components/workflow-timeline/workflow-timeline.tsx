@@ -1,7 +1,7 @@
 import * as classNames from 'classnames';
 import * as moment from 'moment';
 import * as React from 'react';
-import {Observable, Subscription} from 'rxjs';
+import {fromEvent, interval, Subscription} from 'rxjs';
 
 import * as models from '../../../../models';
 import {Utils} from '../../../shared/utils';
@@ -35,7 +35,7 @@ export class WorkflowTimeline extends React.Component<WorkflowTimelineProps, Wor
     }
 
     public componentDidMount() {
-        this.resizeSubscription = Observable.fromEvent(window, 'resize').subscribe(() => this.updateWidth());
+        this.resizeSubscription = fromEvent(window, 'resize').subscribe(() => this.updateWidth());
         this.updateWidth();
     }
 
@@ -134,7 +134,7 @@ export class WorkflowTimeline extends React.Component<WorkflowTimelineProps, Wor
         const completedPhases = [models.NODE_PHASE.ERROR, models.NODE_PHASE.SUCCEEDED, models.NODE_PHASE.SKIPPED, models.NODE_PHASE.OMITTED, models.NODE_PHASE.FAILED];
         const isCompleted = workflow && workflow.status && completedPhases.indexOf(workflow.status.phase) > -1;
         if (!this.refreshSubscription && !isCompleted) {
-            this.refreshSubscription = Observable.interval(1000).subscribe(() => {
+            this.refreshSubscription = interval(1000).subscribe(() => {
                 this.setState({now: moment()});
             });
         } else if (this.refreshSubscription && isCompleted) {

@@ -57,6 +57,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [DDEV](https://www.ddev.com/)
 1. [Devtron Labs](https://github.com/devtron-labs/devtron)
 1. [DevSamurai](https://www.devsamurai.com/)
+1. [Dyno Therapeutics](https://dynotx.com)
 1. [DLR](https://www.dlr.de/eoc/)
 1. [EBSCO Information Services](https://www.ebsco.com/)
 1. [Equinor](https://www.equinor.com/)
@@ -79,6 +80,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [HOVER](https://hover.to)
 1. [HSBC](https://hsbc.com)
 1. [IBM](https://ibm.com)
+1. [Iflytek](https://www.iflytek.com/)
 1. [Inceptio Technology](https://www.inceptio.ai/)
 1. [incrmntal](https://incrmntal.com/)
 1. [InsideBoard](https://www.insideboard.com)
@@ -107,6 +109,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Norwegian Refugee Council](https://www.nrc.no/)
 1. [nrd.io](https://nrd.io/)
 1. [NVIDIA](https://www.nvidia.com/)
+1. [One Concern](https://oneconcern.com/)
 1. [Onepanel](https://docs.onepanel.ai)
 1. [Oracle](https://www.oracle.com/)
 1. [OVH](https://www.ovh.com/)
@@ -141,7 +144,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Styra](https://www.styra.com/)
 1. [Sutpc](http://www.sutpc.com/)
 1. [Threekit](https://www.threekit.com/)
-1. [Tiger Analytics](https://www.tigeranalytics.com/) 
+1. [Tiger Analytics](https://www.tigeranalytics.com/)
 1. [Tradeshift](https://tradeshift.com/)
 1. [Tulip](https://tulip.com/)
 1. [Ubie](https://ubie.life/)
@@ -155,12 +158,14 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Workiva](https://www.workiva.com/)
 1. [Voyager](https://investvoyager.com/)
 1. [Zhihu](https://www.zhihu.com/)
+1. [Xueqiu](https://www.xueqiu.com/)
 
 ### Projects Using Argo
 
 In addition, the following projects are **officially** using Argo Workflows:
 
 1. [Couler](https://github.com/couler-proj/couler)
+1. [Hera Workflows](https://github.com/argoproj-labs/hera-workflows)
 1. [Kubeflow](https://www.kubeflow.org/)
 1. [Onepanel](https://github.com/onepanelio/onepanel)
 1. [SQLFlow](https://github.com/sql-machine-learning/sqlflow)
