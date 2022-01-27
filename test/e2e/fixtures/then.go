@@ -17,7 +17,6 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
@@ -87,11 +86,10 @@ func (t *Then) ExpectWorkflowNode(selector func(status wfv1.NodeStatus) bool, f 
 		if n != nil {
 			_, _ = fmt.Println("Found node", "id="+n.ID, "type="+n.Type)
 			if n.Type == wfv1.NodeTypePod {
-				version := util.PodNameV1
-				annotations := metadata.GetAnnotations()
-				if annotations[common.AnnotationKeyPodNameVersion] == util.PodNameV2.String() {
-					version = util.PodNameV2
+				wf := &wfv1.Workflow{
+					ObjectMeta: *metadata,
 				}
+				version := util.GetWorkflowPodNameVersion(wf)
 				podName := util.PodName(t.wf.Name, n.Name, n.TemplateName, n.ID, version)
 
 				var err error
