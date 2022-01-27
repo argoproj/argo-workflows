@@ -59,6 +59,9 @@ func (w *When) SubmitWorkflow() *When {
 
 func label(obj metav1.Object) {
 	labels := obj.GetLabels()
+	if labels == nil {
+		labels = map[string]string{}
+	}
 	if labels[Label] == "" {
 		labels[Label] = "true"
 		obj.SetLabels(labels)
@@ -70,6 +73,9 @@ func (w *When) SubmitWorkflowsFromWorkflowTemplates() *When {
 	ctx := context.Background()
 	for _, tmpl := range w.wfTemplates {
 		_, _ = fmt.Println("Submitting workflow from workflow template", tmpl.Name)
+		if tmpl.Spec.WorkflowMetadata == nil {
+			tmpl.Spec.WorkflowMetadata = &metav1.ObjectMeta{}
+		}
 		label(tmpl.Spec.WorkflowMetadata)
 		wf, err := w.client.Create(ctx, common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, false), metav1.CreateOptions{})
 		if err != nil {
@@ -86,6 +92,9 @@ func (w *When) SubmitWorkflowsFromClusterWorkflowTemplates() *When {
 	ctx := context.Background()
 	for _, tmpl := range w.cwfTemplates {
 		_, _ = fmt.Println("Submitting workflow from cluster workflow template", tmpl.Name)
+		if tmpl.Spec.WorkflowMetadata == nil {
+			tmpl.Spec.WorkflowMetadata = &metav1.ObjectMeta{}
+		}
 		label(tmpl.Spec.WorkflowMetadata)
 		wf, err := w.client.Create(ctx, common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, true), metav1.CreateOptions{})
 		if err != nil {
