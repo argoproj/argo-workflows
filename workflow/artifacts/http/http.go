@@ -51,3 +51,7 @@ func (h *ArtifactDriver) Save(string, *wfv1.Artifact) error {
 func (h *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
 	return nil, fmt.Errorf("ListObjects is currently not supported for this artifact type, but it will be in a future version")
 }
+
+func (h *ArtifactDriver) Delete(artifact *wfv1.Artifact) error {
+	return fmt.Errorf("Delete is currently not supported for this artifact type, but will be in a future version")
+}

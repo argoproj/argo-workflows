@@ -173,3 +173,7 @@ func (s3Driver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, 
 
 	return files, err
 }
+
+func (s3Driver *ArtifactDriver) Delete(artifact *wfv1.Artifact) error {
+	return fmt.Errorf("Delete is not currently supported for this artifact type but it will be in a future version")
+}

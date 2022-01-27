@@ -179,6 +179,10 @@ func (ossDriver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string,
 	return files, err
 }
 
+func (ossDriver *ArtifactDriver) Delete(artifact *wfv1.Artifact) error {
+	return fmt.Errorf("Delete is currently not supported for this artifact type, but will be in a future version")
+}
+
 func setBucketLogging(client *oss.Client, bucketName string) error {
 	if os.Getenv(wfcommon.EnvVarArgoTrace) == "1" {
 		err := client.SetBucketLogging(bucketName, bucketName, bucketLogFilePrefix, true)

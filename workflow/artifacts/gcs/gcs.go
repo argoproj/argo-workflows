@@ -177,6 +177,47 @@ func downloadObject(client *storage.Client, bucket, key, objName, path string) e
 	return nil
 }
 
+func (g *ArtifactDriver) Delete(artifact *wfv1.Artifact) error {
+	err := waitutil.Backoff(defaultRetry,
+		func() (bool, error) {
+			log.Infof("GCS Delete key: %s", artifact.GCS.Key)
+			gcsClient, err := g.newGCSClient()
+			if err != nil {
+				log.Warnf("Failed to create new GCS client: %v", err)
+				return !isTransientGCSErr(err), err
+			}
+			defer gcsClient.Close()
+			err = deleteObjects(gcsClient, artifact.GCS.Bucket, artifact.GCS.Key)
+			if err != nil {
+				log.Warnf("Failed to download objects from GCS: %v", err)
+				return !isTransientGCSErr(err), err
+			}
+			return true, nil
+		})
+	return err
+}
+
+func deleteObjects(client *storage.Client, bucket, key string) error {
+	objNames, err := listByPrefix(client, bucket, key, "")
+	if err != nil {
+		return err
+	}
+	if len(objNames) < 1 {
+		msg := fmt.Sprintf("no results for key: %s", key)
+		return errors.New(errors.CodeNotFound, msg)
+	}
+	for _, objName := range objNames {
+		err = deleteObject(client, bucket, objName)
+	}
+	return nil
+}
+
+func deleteObject(client *storage.Client, bucket, objName string) error {
+	ctx := context.Background()
+	o := client.Bucket(bucket).Object(objName)
+	return o.Delete(ctx)
+}
+
 // list all the object names of the prefix in the bucket
 func listByPrefix(client *storage.Client, bucket, prefix, delim string) ([]string, error) {
 	ctx := context.Background()

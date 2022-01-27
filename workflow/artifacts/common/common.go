@@ -10,5 +10,7 @@ type ArtifactDriver interface {
 	// Save uploads the path to artifact destination
 	Save(path string, outputArtifact *v1alpha1.Artifact) error
 
+	Delete(artifact *v1alpha1.Artifact) error
+
 	ListObjects(artifact *v1alpha1.Artifact) ([]string, error)
 }
