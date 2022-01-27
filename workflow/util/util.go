@@ -787,7 +787,7 @@ func retryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrato
 				continue
 			}
 		case wfv1.NodeError, wfv1.NodeFailed, wfv1.NodeOmitted:
-			if !strings.HasPrefix(node.Name, onExitNodeName) && (node.Type == wfv1.NodeTypeDAG || node.Type == wfv1.NodeTypeStepGroup) {
+			if !strings.HasPrefix(node.Name, onExitNodeName) && (node.Type == wfv1.NodeTypeDAG || node.Type == wfv1.NodeTypeTaskGroup || node.Type == wfv1.NodeTypeStepGroup) {
 				newNode := node.DeepCopy()
 				newNode.Phase = wfv1.NodeRunning
 				newNode.Message = ""
