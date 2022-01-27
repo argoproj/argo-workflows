@@ -82,10 +82,8 @@ func NewEmissaryCommand() *cobra.Command {
 				return fmt.Errorf("failed to unmarshal template: %w", err)
 			}
 
-			var containerSet bool
 			for _, x := range template.ContainerSet.GetGraph() {
 				if x.Name == containerName {
-					containerSet = true
 					for _, y := range x.Dependencies {
 						logger.Infof("waiting for dependency %q", y)
 						for {
@@ -125,20 +123,11 @@ func NewEmissaryCommand() *cobra.Command {
 				}
 			}
 
-			backoff := wait.Backoff{Steps: 1} // we will not understand the error here really ....
-			// Check here if we are running a container that is part of the container set ..
-			// If not we dont want anything.
-			if containerSet && retrySet(template.ContainerSet.RetryStrategy) {
-				duration, err := time.ParseDuration(template.ContainerSet.RetryStrategy.Backoff.Duration)
-				if err != nil {
-					return fmt.Errorf("failed to parse containerset retry duration: %w", err)
-				}
-				backoff = wait.Backoff{
-					Steps:    int(template.ContainerSet.RetryStrategy.Limit.IntVal),
-					Factor:   float64(template.ContainerSet.RetryStrategy.Backoff.Factor.IntVal),
-					Duration: duration,
-				}
+			backoff, err := getBackoff(template.ContainerSet)
+			if err != nil {
+				return fmt.Errorf("failed to get backoff: %w", err)
 			}
+
 			var command *exec.Cmd
 			var stdout *os.File
 			var stderr *os.File
@@ -227,6 +216,25 @@ func NewEmissaryCommand() *cobra.Command {
 	}
 }
 
+func getBackoff(containerset *wfv1.ContainerSetTemplate) (wait.Backoff, error) {
+	if containerset == nil || containerset.RetryStrategy == nil || containerset.RetryStrategy.Limit == nil {
+		return wait.Backoff{Steps: 1}, nil
+	}
+	retryStrategy := containerset.RetryStrategy
+	if retryStrategy.Backoff == nil || retryStrategy.Backoff.Factor == nil {
+		return wait.Backoff{Steps: retryStrategy.Limit.IntValue()}, nil
+	}
+	duration, err := time.ParseDuration(retryStrategy.Backoff.Duration)
+	if err != nil {
+		return wait.Backoff{}, fmt.Errorf("failed to parse containerset retry duration: %w", err)
+	}
+	return wait.Backoff{
+		Steps:    int(retryStrategy.Limit.IntVal),
+		Factor:   float64(retryStrategy.Backoff.Factor.IntVal),
+		Duration: duration,
+	}, nil
+}
+
 func createCommand(name string, args []string, template *wfv1.Template) (*exec.Cmd, *os.File, *os.File, error) {
 	command := exec.Command(name, args...)
 	command.Env = os.Environ()
@@ -255,14 +263,6 @@ func createCommand(name string, args []string, template *wfv1.Template) (*exec.C
 		command.Stderr = io.MultiWriter(os.Stderr, stderr)
 	}
 	return command, stdout, stderr, nil
-}
-
-func retrySet(retryStrategy *wfv1.ContainerSetRetryStrategy) bool {
-	if retryStrategy == nil {
-		logger.Info("retry strategy is nil")
-		return false
-	}
-	return true
 }
 
 func saveArtifact(srcPath string) error {
