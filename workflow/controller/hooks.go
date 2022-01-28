@@ -3,32 +3,28 @@ package controller
 import (
 	"context"
 	"fmt"
+	"github.com/argoproj/argo-workflows/v3/util/expr/argoexpr"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/expr/argoexpr"
 	"github.com/argoproj/argo-workflows/v3/util/expr/env"
 	"github.com/argoproj/argo-workflows/v3/util/template"
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 )
 
-func IsExitHook(hookName wfv1.LifecycleEvent) bool {
-	return hookName == wfv1.ExitLifecycleEvent
-}
-
 func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *templateresolution.Context) error {
 	for hookName, hook := range woc.wf.Spec.Hooks {
 		//exit hook will be execute in runOnExitNode
-		if IsExitHook(hookName) {
+		if hookName == wfv1.ExitLifecycleEvent {
 			continue
 		}
-		execute, err := shouldExecuteHook(hook.Expression, env.GetFuncMap(template.EnvMap(woc.globalParams)))
+		execute, err := argoexpr.EvalBool(hook.Expression, env.GetFuncMap(template.EnvMap(woc.globalParams)))
 		if err != nil {
 			return err
 		}
 		if execute {
 			hookNodeName := generateLifeHookNodeName(woc.wf.ObjectMeta.Name, string(hookName))
 			woc.log.WithField("lifeCycleHook", hookName).WithField("node", hookNodeName).Infof("Running workflow level hooks")
-			_, err := woc.executeTemplate(ctx, hookNodeName, &wfv1.WorkflowStep{Template: hook.Template}, tmplCtx, hook.Arguments, &executeTemplateOpts{})
+			_, err := woc.executeTemplate(ctx, hookNodeName, &wfv1.WorkflowStep{Template: hook.Template, TemplateRef: hook.TemplateRef}, tmplCtx, hook.Arguments, &executeTemplateOpts{})
 			if err != nil {
 				return err
 			}
@@ -44,10 +40,10 @@ func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, envMap 
 	completed := false
 	for hookName, hook := range lifeCycleHooks {
 		//exit hook will be execute in runOnExitNode
-		if IsExitHook(hookName) {
+		if hookName == wfv1.ExitLifecycleEvent {
 			continue
 		}
-		execute, err := shouldExecuteHook(hook.Expression, env.GetFuncMap(template.EnvMap(envMap)))
+		execute, err := argoexpr.EvalBool(hook.Expression, env.GetFuncMap(template.EnvMap(envMap)))
 		if err != nil {
 			return completed, err
 		}
@@ -67,7 +63,7 @@ func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, envMap 
 					return completed, err
 				}
 			}
-			hookNode, err := woc.executeTemplate(ctx, hookNodeName, &wfv1.WorkflowStep{Template: hook.Template}, tmplCtx, resolvedArgs, &executeTemplateOpts{
+			hookNode, err := woc.executeTemplate(ctx, hookNodeName, &wfv1.WorkflowStep{Template: hook.Template, TemplateRef: hook.TemplateRef}, tmplCtx, resolvedArgs, &executeTemplateOpts{
 				boundaryID: boundaryID,
 			})
 			if err != nil {
@@ -88,10 +84,6 @@ func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, envMap 
 		}
 	}
 	return completed, nil
-}
-
-func shouldExecuteHook(expression string, env map[string]interface{}) (bool, error) {
-	return argoexpr.EvalBool(expression, env)
 }
 
 func generateLifeHookNodeName(parentNodeName string, hookName string) string {
