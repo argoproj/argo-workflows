@@ -52,6 +52,117 @@ spec:
 		})
 }
 
+func (s *DaemonPodSuite) TestDaemonFromWorkflowTemplate() {
+	s.Given().
+		WorkflowTemplate(`
+metadata:
+  name: daemon
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+        - name: redis
+          template: redis-tmpl
+        - name: whale
+          dependencies: [redis]
+          template: whale-tmpl
+  - name: redis-tmpl
+    daemon: true
+    container:
+      image: argoproj/argosay:v2
+      args: ["sleep", "100s"]
+  - name: whale-tmpl
+    container:
+      image: argoproj/argosay:v2
+`).
+		When().
+		CreateWorkflowTemplates().
+		SubmitWorkflowsFromWorkflowTemplates().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
+func (s *DaemonPodSuite) TestDaemonFromClusterWorkflowTemplate() {
+	s.Given().
+		ClusterWorkflowTemplate(`
+metadata:
+  name: daemon
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+        - name: redis
+          template: redis-tmpl
+        - name: whale
+          dependencies: [redis]
+          template: whale-tmpl
+  - name: redis-tmpl
+    daemon: true
+    container:
+      image: argoproj/argosay:v2
+      args: ["sleep", "100s"]
+  - name: whale-tmpl
+    container:
+      image: argoproj/argosay:v2
+`).
+		When().
+		CreateClusterWorkflowTemplates().
+		SubmitWorkflowsFromClusterWorkflowTemplates().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
+func (s *DaemonPodSuite) TestDaemonTemplateRef() {
+	s.Given().
+		WorkflowTemplate(`
+metadata:
+  name: broken-pipeline
+spec:
+  entrypoint: main
+  templates:
+  - name: do-something
+    container:
+      image: argoproj/argosay:v2
+  - name: main
+    dag:
+      tasks:
+        - name: do-something
+          template: do-something
+        - name: run-tests-broken
+          depends: "do-something"
+          templateRef:
+            name: run-tests-broken
+            template: main
+`).
+		WorkflowTemplate(`
+metadata:
+  name: run-tests-broken
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+      - - name: postgres
+          template: postgres
+      - - name: run-tests-broken
+          template: run-tests-broken
+  - name: run-tests-broken
+    container:
+      image: argoproj/argosay:v2
+  - name: postgres
+    daemon: true
+    container:
+      image: argoproj/argosay:v2
+      args: ["sleep", "100s"]
+      name: database`).
+		When().
+		CreateWorkflowTemplates().
+		SubmitWorkflowsFromWorkflowTemplates().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
 func (s *DaemonPodSuite) TestMarkDaemonedPodSucceeded() {
 	s.Given().
 		Workflow("@testdata/daemoned-pod-completed.yaml").
