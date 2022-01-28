@@ -62,7 +62,7 @@ require (
 	golang.org/x/tools v0.1.5 // indirect
 	google.golang.org/api v0.44.0
 	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c
-	google.golang.org/grpc v1.38.0
+	google.golang.org/grpc v1.41.1
 	google.golang.org/grpc/examples v0.0.0-20201226181154-53788aa5dcb4 // indirect
 	gopkg.in/go-playground/webhooks.v5 v5.15.0
 	gopkg.in/jcmturner/gokrb5.v5 v5.3.0
