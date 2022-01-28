@@ -189,8 +189,7 @@ If two plugins have the same name, only the one in the workflow's namespace is l
 
 ### Secrets
 
-If you interact with a third-party system, you'll need access to secrets. Don't put them in `plugin.yaml`.
-Use a secret:
+If you interact with a third-party system, you'll need access to secrets. Don't put them in `plugin.yaml`. Use a secret:
 
 ```yaml
 spec:
@@ -203,6 +202,8 @@ spec:
               name: slack-executor-plugin
               key: URL
 ```
+
+Refer to the [Kubernetes Secret documentation] for secret best practices and security considerations
 
 ### Resources, Security Context
 
