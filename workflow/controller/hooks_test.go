@@ -322,7 +322,7 @@ spec:
     parameters:
     - name: message
       value: test
-  entrypoint: main
+  entrypoint: main	
   workflowTemplateRef:
     name: workflow-template-whalesay-template
 status:
