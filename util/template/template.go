@@ -36,7 +36,7 @@ func (t *impl) Replace(replaceMap map[string]string, allowUnresolved bool) (stri
 		kind, expression := parseTag(tag)
 		switch kind {
 		case kindExpression:
-			env := exprenv.GetFuncMap(envMap(replaceMap))
+			env := exprenv.GetFuncMap(EnvMap(replaceMap))
 			return expressionReplace(w, expression, env, allowUnresolved)
 		default:
 			return simpleReplace(w, tag, replaceMap, allowUnresolved)

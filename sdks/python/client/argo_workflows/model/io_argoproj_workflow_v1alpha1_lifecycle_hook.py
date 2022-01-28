@@ -91,6 +91,7 @@ class IoArgoprojWorkflowV1alpha1LifecycleHook(ModelNormal):
         return {
             'template': (str,),  # noqa: E501
             'arguments': (IoArgoprojWorkflowV1alpha1Arguments,),  # noqa: E501
+            'expression': (str,),  # noqa: E501
             'template_ref': (IoArgoprojWorkflowV1alpha1TemplateRef,),  # noqa: E501
         }
 
@@ -102,6 +103,7 @@ class IoArgoprojWorkflowV1alpha1LifecycleHook(ModelNormal):
     attribute_map = {
         'template': 'template',  # noqa: E501
         'arguments': 'arguments',  # noqa: E501
+        'expression': 'expression',  # noqa: E501
         'template_ref': 'templateRef',  # noqa: E501
     }
 
@@ -150,6 +152,7 @@ class IoArgoprojWorkflowV1alpha1LifecycleHook(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             arguments (IoArgoprojWorkflowV1alpha1Arguments): [optional]  # noqa: E501
+            expression (str): Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not be retried and the retry strategy will be ignored. [optional]  # noqa: E501
             template_ref (IoArgoprojWorkflowV1alpha1TemplateRef): [optional]  # noqa: E501
         """
 
@@ -237,6 +240,7 @@ class IoArgoprojWorkflowV1alpha1LifecycleHook(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             arguments (IoArgoprojWorkflowV1alpha1Arguments): [optional]  # noqa: E501
+            expression (str): Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not be retried and the retry strategy will be ignored. [optional]  # noqa: E501
             template_ref (IoArgoprojWorkflowV1alpha1TemplateRef): [optional]  # noqa: E501
         """
 

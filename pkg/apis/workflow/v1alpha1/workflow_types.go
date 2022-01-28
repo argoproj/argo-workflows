@@ -373,6 +373,24 @@ type WorkflowSpec struct {
 
 	// ArchiveLogs indicates if the container logs should be archived
 	ArchiveLogs *bool `json:"archiveLogs,omitempty" protobuf:"varint,40,opt,name=archiveLogs"`
+
+	// Hooks holds the lifecycle hook which is invoked at lifecycle of
+	// step, irrespective of the success, failure, or error status of the primary step
+	Hooks LifecycleHooks `json:"hooks,omitempty" protobuf:"bytes,41,opt,name=hooks"`
+}
+
+func (wfs *WorkflowSpec) GetExitHook(args Arguments) *LifecycleHook {
+	if !wfs.HasExitHook() {
+		return nil
+	}
+	if wfs.OnExit != "" {
+		return &LifecycleHook{Template: wfs.OnExit, Arguments: args}
+	}
+	return wfs.Hooks.GetExitHook().WithArgs(args)
+}
+
+func (wfs *WorkflowSpec) HasExitHook() bool {
+	return (wfs.Hooks != nil && wfs.Hooks.HasExitHook()) || wfs.OnExit != ""
 }
 
 // GetVolumeClaimGC returns the VolumeClaimGC that was defined in the workflow spec.  If none was provided, a default value is returned.
@@ -1203,6 +1221,10 @@ func (lchs LifecycleHooks) GetExitHook() *LifecycleHook {
 	return nil
 }
 
+func (lchs LifecycleHooks) HasExitHook() bool {
+	return lchs.GetExitHook() != nil
+}
+
 type LifecycleHook struct {
 	// Template is the name of the template to execute by the hook
 	Template string `json:"template," protobuf:"bytes,1,opt,name=template"`
@@ -1210,6 +1232,9 @@ type LifecycleHook struct {
 	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,2,opt,name=arguments"`
 	// TemplateRef is the reference to the template resource to execute by the hook
 	TemplateRef *TemplateRef `json:"templateRef,omitempty" protobuf:"bytes,3,opt,name=templateRef"`
+	// Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not
+	// be retried and the retry strategy will be ignored
+	Expression string `json:"expression,omitempty" protobuf:"bytes,4,opt,name=expression"`
 }
 
 func (lch *LifecycleHook) WithArgs(args Arguments) *LifecycleHook {
@@ -1223,7 +1248,7 @@ func (lch *LifecycleHook) WithArgs(args Arguments) *LifecycleHook {
 var _ TemplateReferenceHolder = &WorkflowStep{}
 
 func (step *WorkflowStep) HasExitHook() bool {
-	return (step.Hooks != nil && step.Hooks.GetExitHook() != nil) || step.OnExit != ""
+	return (step.Hooks != nil && step.Hooks.HasExitHook()) || step.OnExit != ""
 }
 
 func (step *WorkflowStep) GetExitHook(args Arguments) *LifecycleHook {
@@ -2541,7 +2566,7 @@ func (t *DAGTask) GetExitHook(args Arguments) *LifecycleHook {
 }
 
 func (t *DAGTask) HasExitHook() bool {
-	return (t.Hooks != nil && t.Hooks.GetExitHook() != nil) || t.OnExit != ""
+	return (t.Hooks != nil && t.Hooks.HasExitHook()) || t.OnExit != ""
 }
 
 func (t *DAGTask) GetTemplate() *Template {

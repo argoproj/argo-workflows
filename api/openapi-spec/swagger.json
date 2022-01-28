@@ -9784,6 +9784,10 @@
           "description": "Arguments hold arguments to the template",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
         },
+        "expression": {
+          "description": "Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not be retried and the retry strategy will be ignored",
+          "type": "string"
+        },
         "template": {
           "description": "Template is the name of the template to execute by the hook",
           "type": "string"
@@ -11661,6 +11665,13 @@
           "description": "Executor holds configurations of executor containers of the io.argoproj.workflow.v1alpha1.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorConfig"
         },
+        "hooks": {
+          "description": "Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LifecycleHook"
+          }
+        },
         "hostAliases": {
           "type": "array",
           "items": {
@@ -12167,6 +12178,13 @@
         "executor": {
           "description": "Executor holds configurations of executor containers of the io.argoproj.workflow.v1alpha1.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorConfig"
+        },
+        "hooks": {
+          "description": "Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LifecycleHook"
+          }
         },
         "hostAliases": {
           "type": "array",

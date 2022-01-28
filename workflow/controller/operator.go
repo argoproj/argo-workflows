@@ -357,14 +357,6 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		return
 	}
 
-	// Reconcile TaskSet and Agent for HTTP templates
-	woc.taskSetReconciliation(ctx)
-
-	if node == nil || !node.Fulfilled() {
-		// node can be nil if a workflow created immediately in a parallelism == 0 state
-		return
-	}
-
 	workflowStatus := map[wfv1.NodePhase]wfv1.WorkflowPhase{
 		wfv1.NodePending:   wfv1.WorkflowPending,
 		wfv1.NodeRunning:   wfv1.WorkflowRunning,
@@ -375,10 +367,22 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		wfv1.NodeOmitted:   wfv1.WorkflowSucceeded,
 	}[node.Phase]
 
-	var onExitNode *wfv1.NodeStatus
-	if woc.execWf.Spec.OnExit != "" && woc.GetShutdownStrategy().ShouldExecute(true) {
-		woc.globalParams[common.GlobalVarWorkflowStatus] = string(workflowStatus)
+	woc.globalParams[common.GlobalVarWorkflowStatus] = string(workflowStatus)
 
+	err = woc.executeWfLifeCycleHook(ctx, tmplCtx)
+	if err != nil {
+		woc.markNodeError(node.Name, err)
+	}
+	// Reconcile TaskSet and Agent for HTTP templates
+	woc.taskSetReconciliation(ctx)
+
+	if !node.Fulfilled() {
+		// node can be nil if a workflow created immediately in a parallelism == 0 state
+		return
+	}
+
+	var onExitNode *wfv1.NodeStatus
+	if woc.execWf.Spec.HasExitHook() && woc.GetShutdownStrategy().ShouldExecute(true) {
 		var failures []failedNodeStatus
 		for _, node := range woc.wf.Status.Nodes {
 			if node.Phase == wfv1.NodeFailed || node.Phase == wfv1.NodeError {
@@ -403,7 +407,8 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 		woc.log.Infof("Running OnExit handler: %s", woc.execWf.Spec.OnExit)
 		onExitNodeName := common.GenerateOnExitNodeName(woc.wf.ObjectMeta.Name)
-		onExitNode, err = woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: woc.execWf.Spec.OnExit}, tmplCtx, woc.execWf.Spec.Arguments, &executeTemplateOpts{onExitTemplate: true})
+		exitHook := woc.execWf.Spec.GetExitHook(woc.execWf.Spec.Arguments)
+		onExitNode, err = woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: exitHook.Template, TemplateRef: exitHook.TemplateRef}, tmplCtx, exitHook.Arguments, &executeTemplateOpts{onExitTemplate: true})
 		if err != nil {
 			x := fmt.Errorf("error in exit template execution : %w", err)
 			switch err {
@@ -1820,6 +1825,9 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			localParams[common.LocalVarRetries] = strconv.Itoa(len(retryParentNode.Children))
 
 			processedTmpl, err = common.SubstituteParams(processedTmpl, map[string]string{}, localParams)
+			if errorsutil.IsTransientErr(err) {
+				return node, err
+			}
 			if err != nil {
 				return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 			}

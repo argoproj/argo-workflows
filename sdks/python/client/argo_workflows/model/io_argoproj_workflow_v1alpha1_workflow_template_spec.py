@@ -35,6 +35,7 @@ def lazy_import():
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_arguments import IoArgoprojWorkflowV1alpha1Arguments
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_artifact_repository_ref import IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_executor_config import IoArgoprojWorkflowV1alpha1ExecutorConfig
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_lifecycle_hook import IoArgoprojWorkflowV1alpha1LifecycleHook
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_metadata import IoArgoprojWorkflowV1alpha1Metadata
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_metrics import IoArgoprojWorkflowV1alpha1Metrics
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_pod_gc import IoArgoprojWorkflowV1alpha1PodGC
@@ -57,6 +58,7 @@ def lazy_import():
     globals()['IoArgoprojWorkflowV1alpha1Arguments'] = IoArgoprojWorkflowV1alpha1Arguments
     globals()['IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef'] = IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef
     globals()['IoArgoprojWorkflowV1alpha1ExecutorConfig'] = IoArgoprojWorkflowV1alpha1ExecutorConfig
+    globals()['IoArgoprojWorkflowV1alpha1LifecycleHook'] = IoArgoprojWorkflowV1alpha1LifecycleHook
     globals()['IoArgoprojWorkflowV1alpha1Metadata'] = IoArgoprojWorkflowV1alpha1Metadata
     globals()['IoArgoprojWorkflowV1alpha1Metrics'] = IoArgoprojWorkflowV1alpha1Metrics
     globals()['IoArgoprojWorkflowV1alpha1PodGC'] = IoArgoprojWorkflowV1alpha1PodGC
@@ -139,6 +141,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowTemplateSpec(ModelNormal):
             'dns_policy': (str,),  # noqa: E501
             'entrypoint': (str,),  # noqa: E501
             'executor': (IoArgoprojWorkflowV1alpha1ExecutorConfig,),  # noqa: E501
+            'hooks': ({str: (IoArgoprojWorkflowV1alpha1LifecycleHook,)},),  # noqa: E501
             'host_aliases': ([HostAlias],),  # noqa: E501
             'host_network': (bool,),  # noqa: E501
             'image_pull_secrets': ([LocalObjectReference],),  # noqa: E501
@@ -187,6 +190,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowTemplateSpec(ModelNormal):
         'dns_policy': 'dnsPolicy',  # noqa: E501
         'entrypoint': 'entrypoint',  # noqa: E501
         'executor': 'executor',  # noqa: E501
+        'hooks': 'hooks',  # noqa: E501
         'host_aliases': 'hostAliases',  # noqa: E501
         'host_network': 'hostNetwork',  # noqa: E501
         'image_pull_secrets': 'imagePullSecrets',  # noqa: E501
@@ -270,6 +274,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowTemplateSpec(ModelNormal):
             dns_policy (str): Set DNS policy for the pod. Defaults to \"ClusterFirst\". Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'. DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy. To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'.. [optional]  # noqa: E501
             entrypoint (str): Entrypoint is a template reference to the starting point of the io.argoproj.workflow.v1alpha1.. [optional]  # noqa: E501
             executor (IoArgoprojWorkflowV1alpha1ExecutorConfig): [optional]  # noqa: E501
+            hooks ({str: (IoArgoprojWorkflowV1alpha1LifecycleHook,)}): Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step. [optional]  # noqa: E501
             host_aliases ([HostAlias]): [optional]  # noqa: E501
             host_network (bool): Host networking requested for this workflow pod. Default to false.. [optional]  # noqa: E501
             image_pull_secrets ([LocalObjectReference]): ImagePullSecrets is a list of references to secrets in the same namespace to use for pulling any images in pods that reference this ServiceAccount. ImagePullSecrets are distinct from Secrets because Secrets can be mounted in the pod, but ImagePullSecrets are only accessed by the kubelet. More info: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod. [optional]  # noqa: E501
@@ -391,6 +396,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowTemplateSpec(ModelNormal):
             dns_policy (str): Set DNS policy for the pod. Defaults to \"ClusterFirst\". Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'. DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy. To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'.. [optional]  # noqa: E501
             entrypoint (str): Entrypoint is a template reference to the starting point of the io.argoproj.workflow.v1alpha1.. [optional]  # noqa: E501
             executor (IoArgoprojWorkflowV1alpha1ExecutorConfig): [optional]  # noqa: E501
+            hooks ({str: (IoArgoprojWorkflowV1alpha1LifecycleHook,)}): Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step. [optional]  # noqa: E501
             host_aliases ([HostAlias]): [optional]  # noqa: E501
             host_network (bool): Host networking requested for this workflow pod. Default to false.. [optional]  # noqa: E501
             image_pull_secrets ([LocalObjectReference]): ImagePullSecrets is a list of references to secrets in the same namespace to use for pulling any images in pods that reference this ServiceAccount. ImagePullSecrets are distinct from Secrets because Secrets can be mounted in the pod, but ImagePullSecrets are only accessed by the kubelet. More info: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod. [optional]  # noqa: E501

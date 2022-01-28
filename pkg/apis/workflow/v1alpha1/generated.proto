@@ -658,6 +658,10 @@ message LifecycleHook {
 
   // TemplateRef is the reference to the template resource to execute by the hook
   optional TemplateRef templateRef = 3;
+
+  // Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not
+  // be retried and the retry strategy will be ignored
+  optional string expression = 4;
 }
 
 // A link to another app.
@@ -1729,6 +1733,10 @@ message WorkflowSpec {
 
   // ArchiveLogs indicates if the container logs should be archived
   optional bool archiveLogs = 40;
+
+  // Hooks holds the lifecycle hook which is invoked at lifecycle of
+  // step, irrespective of the success, failure, or error status of the primary step
+  map<string, LifecycleHook> hooks = 41;
 }
 
 // WorkflowStatus contains overall status information about a workflow

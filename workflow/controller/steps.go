@@ -269,6 +269,16 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 	for _, childNodeID := range node.Children {
 		childNode := woc.wf.Status.Nodes[childNodeID]
 		step := nodeSteps[childNode.Name]
+		stepsCtx.scope.addParamToScope(fmt.Sprintf("steps.%s.status", childNode.DisplayName), string(childNode.Phase))
+		hookCompleted, err := woc.executeTmplLifeCycleHook(ctx, woc.globalParams.Merge(stepsCtx.scope.getParameters()), step.Hooks, &childNode, stepsCtx.boundaryID, stepsCtx.tmplCtx, "steps."+step.Name)
+		if err != nil {
+			woc.markNodeError(node.Name, err)
+		}
+		// Check all hooks are completed
+		if !hookCompleted {
+			return node
+		}
+
 		if !childNode.Fulfilled() {
 			completed = false
 		} else if childNode.Completed() {
