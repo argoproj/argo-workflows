@@ -323,13 +323,15 @@ jobs:
       - uses: actions/setup-node@v2.5.1
         with:
           node-version: "16"
+      - uses: actions/setup-go@v2
+        with:
+          go-version: "1.17"
+      - run: go install sigs.k8s.io/bom/cmd/bom@v0.2.0
+      - run: bom generate . -o dist/bom.spdx -n http://argoproj.io/workflows
       - uses: actions/cache@v2
         with:
           path: ui/node_modules
           key: ${{ runner.os }}-node-dep-v1-${{ hashFiles('**/yarn.lock') }}
-      - uses: actions/setup-go@v2
-        with:
-          go-version: "1.17"
       - uses: actions/cache@v2
         with:
           path: /home/runner/.cache/go-build
@@ -364,5 +366,6 @@ jobs:
             dist/argo-*.gz
             dist/argo-*.gz.sha256
             dist/manifests/*.yaml
+            dist/bom.spdx
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
