@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -268,6 +269,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
   name: workflow-template-whalesay-template
+  namespace: default
 spec:
   hooks:
     exit:
@@ -283,8 +285,8 @@ spec:
               exit:
                 expression: steps["step-1"].status == "Running"
                 template: http
-              success:
-                expression: steps["step-1"].status == "Succeeded"
+              error:
+                expression: steps["step-1"].status == "Error"
                 template: http
             template: echo
         - - name: step2
@@ -292,8 +294,8 @@ spec:
               exit:
                 expression: steps.step2.status == "Running"
                 template: http
-              success:
-                expression: steps.step2.status == "Succeeded"
+              error:
+                expression: steps.step2.status == "Error"
                 template: http
             template: echo
 
@@ -511,8 +513,8 @@ status:
             exit:
               expression: steps.step2.status == "Running"
               template: http
-            success:
-              expression: steps.step2.status == "Succeeded"
+            error:
+              expression: steps.step2.status == "Error"
               template: http
           name: step2
           template: echo
@@ -551,8 +553,11 @@ func TestTemplateRefWithHook(t *testing.T) {
 kind: Workflow
 metadata:
   name: workflow-template-whalesay-template-1
-  namespace: argo
+  namespace: default
 spec:
+
+  entrypoint: main
+
   templates:
   - name: main
     steps:
@@ -562,8 +567,9 @@ spec:
             templateRef:
               name: workflow-template-whalesay-template
               template: http
-          success:
-            expression: steps["step-1"].status == "Succeeded"
+          error:
+            expression: steps["step-1"].status == "Error"
+            template: ""
             templateRef:
               name: workflow-template-whalesay-template
               template: http
@@ -571,19 +577,21 @@ spec:
         templateRef:
           name: workflow-template-whalesay-template
           template: main
+  ttlStrategy:
+    secondsAfterCompletion: 600
 status:
   conditions:
   - status: "False"
     type: PodRunning
   - status: "True"
     type: Completed
-  finishedAt: "2022-01-28T05:57:44Z"
+  finishedAt: "2022-01-28T07:01:04Z"
   nodes:
     workflow-template-whalesay-template-1:
       children:
       - workflow-template-whalesay-template-1-1761665519
       displayName: workflow-template-whalesay-template-1
-      finishedAt: "2022-01-28T05:57:44Z"
+      finishedAt: "2022-01-28T07:01:04Z"
       id: workflow-template-whalesay-template-1
       name: workflow-template-whalesay-template-1
       outboundNodes:
@@ -591,51 +599,26 @@ status:
       phase: Running
       progress: 2/2
       resourcesDuration:
-        cpu: 5
-        memory: 2
-      startedAt: "2022-01-28T05:57:35Z"
+        cpu: 3
+        memory: 0
+      startedAt: "2022-01-28T07:00:55Z"
       templateName: main
       templateScope: local/workflow-template-whalesay-template-1
       type: Steps
-    workflow-template-whalesay-template-1-79192944:
-      boundaryID: workflow-template-whalesay-template-1-1438125631
-      children:
-      - workflow-template-whalesay-template-1-889506783
-      - workflow-template-whalesay-template-1-4099742019
-      displayName: step2
-      finishedAt: "2022-01-28T05:57:43Z"
-      hostNodeName: k3d-k3s-default-server-0
-      id: workflow-template-whalesay-template-1-79192944
-      name: workflow-template-whalesay-template-1[0].step-1[1].step2
-      outputs:
-        artifacts:
-        - name: main-logs
-          s3:
-            key: workflow-template-whalesay-template-1/workflow-template-whalesay-template-1-79192944/main.log
-        exitCode: "0"
-      phase: Running
-      progress: 1/1
-      resourcesDuration:
-        cpu: 3
-        memory: 1
-      startedAt: "2022-01-28T05:57:40Z"
-      templateName: echo
-      templateScope: namespaced/workflow-template-whalesay-template
-      type: Pod
     workflow-template-whalesay-template-1-1236010667:
       boundaryID: workflow-template-whalesay-template-1-1438125631
       children:
       - workflow-template-whalesay-template-1-2715724931
       displayName: '[0]'
-      finishedAt: "2022-01-28T05:57:40Z"
+      finishedAt: "2022-01-28T07:01:00Z"
       id: workflow-template-whalesay-template-1-1236010667
       name: workflow-template-whalesay-template-1[0].step-1[0]
       phase: Running
       progress: 2/2
       resourcesDuration:
-        cpu: 5
-        memory: 2
-      startedAt: "2022-01-28T05:57:35Z"
+        cpu: 3
+        memory: 0
+      startedAt: "2022-01-28T07:00:55Z"
       templateScope: namespaced/workflow-template-whalesay-template
       type: StepGroup
     workflow-template-whalesay-template-1-1438125631:
@@ -645,7 +628,7 @@ status:
       - workflow-template-whalesay-template-1-986640140
       - workflow-template-whalesay-template-1-1359034694
       displayName: step-1
-      finishedAt: "2022-01-28T05:57:44Z"
+      finishedAt: "2022-01-28T07:01:04Z"
       id: workflow-template-whalesay-template-1-1438125631
       name: workflow-template-whalesay-template-1[0].step-1
       outboundNodes:
@@ -653,9 +636,9 @@ status:
       phase: Running
       progress: 2/2
       resourcesDuration:
-        cpu: 5
-        memory: 2
-      startedAt: "2022-01-28T05:57:35Z"
+        cpu: 3
+        memory: 0
+      startedAt: "2022-01-28T07:00:55Z"
       templateRef:
         name: workflow-template-whalesay-template
         template: main
@@ -666,15 +649,15 @@ status:
       children:
       - workflow-template-whalesay-template-1-1438125631
       displayName: '[0]'
-      finishedAt: "2022-01-28T05:57:44Z"
+      finishedAt: "2022-01-28T07:01:04Z"
       id: workflow-template-whalesay-template-1-1761665519
       name: workflow-template-whalesay-template-1[0]
       phase: Running
       progress: 2/2
       resourcesDuration:
-        cpu: 5
-        memory: 2
-      startedAt: "2022-01-28T05:57:35Z"
+        cpu: 3
+        memory: 0
+      startedAt: "2022-01-28T07:00:55Z"
       templateScope: local/workflow-template-whalesay-template-1
       type: StepGroup
     workflow-template-whalesay-template-1-2377035854:
@@ -682,15 +665,15 @@ status:
       children:
       - workflow-template-whalesay-template-1-79192944
       displayName: '[1]'
-      finishedAt: "2022-01-28T05:57:44Z"
+      finishedAt: "2022-01-28T07:01:04Z"
       id: workflow-template-whalesay-template-1-2377035854
       name: workflow-template-whalesay-template-1[0].step-1[1]
       phase: Running
       progress: 1/1
       resourcesDuration:
-        cpu: 3
-        memory: 1
-      startedAt: "2022-01-28T05:57:40Z"
+        cpu: 2
+        memory: 0
+      startedAt: "2022-01-28T07:01:00Z"
       templateScope: namespaced/workflow-template-whalesay-template
       type: StepGroup
     workflow-template-whalesay-template-1-2715724931:
@@ -700,7 +683,7 @@ status:
       - workflow-template-whalesay-template-1-1403479850
       - workflow-template-whalesay-template-1-2377035854
       displayName: step-1
-      finishedAt: "2022-01-28T05:57:38Z"
+      finishedAt: "2022-01-28T07:00:58Z"
       hostNodeName: k3d-k3s-default-server-0
       id: workflow-template-whalesay-template-1-2715724931
       name: workflow-template-whalesay-template-1[0].step-1[0].step-1
@@ -710,21 +693,21 @@ status:
           s3:
             key: workflow-template-whalesay-template-1/workflow-template-whalesay-template-1-2715724931/main.log
         exitCode: "0"
-      phase: Succeeded
+      phase: Running
       progress: 1/1
       resourcesDuration:
-        cpu: 2
-        memory: 1
-      startedAt: "2022-01-28T05:57:35Z"
+        cpu: 1
+        memory: 0
+      startedAt: "2022-01-28T07:00:55Z"
       templateName: echo
       templateScope: namespaced/workflow-template-whalesay-template
       type: Pod
   phase: Running
   progress: 2/2
   resourcesDuration:
-    cpu: 5
-    memory: 2
-  startedAt: "2022-01-28T05:57:35Z"
+    cpu: 3
+    memory: 0
+  startedAt: "2022-01-28T07:00:55Z"
   storedTemplates:
     namespaced/workflow-template-whalesay-template/echo:
       container:
@@ -771,12 +754,13 @@ status:
               arguments: {}
               expression: steps.step2.status == "Running"
               template: http
-            success:
+            error:
               arguments: {}
               expression: steps.step2.status == "Error"
               template: http
           name: step2
           template: echo
+
 `)
 	cancel, controller := newController(wf, wfv1.MustUnmarshalWorkflowTemplate(wftWithHook))
 	defer cancel()
@@ -784,6 +768,9 @@ status:
 	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
+	for _, node := range woc.wf.Status.Nodes{
+		fmt.Println(node.DisplayName, node.Phase)
+	}
 	assert.NotNil(t, woc.wf.Status.Nodes.FindByDisplayName("step-1.hooks.error"))
 
 }
