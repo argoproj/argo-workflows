@@ -7,7 +7,7 @@ Create your PR as a draft.
 * Your PR needs to pass the required checks before it can be approved. If the check is not required (e.g. E2E tests) it
   does not need to pass.
 * Once required tests have passed, you can make it "Ready for review".
-* Say how how you tested your changes. If you changed the UI, attach screenshots.
+* Say how you tested your changes. If you changed the UI, attach screenshots.
 
 Tips:
 
