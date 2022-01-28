@@ -264,7 +264,7 @@ status:
 	assert.Nil(t, node)
 }
 
-const wftWithHook =`
+const wftWithHook = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
@@ -547,9 +547,8 @@ status:
 	assert.NotNil(t, woc.wf.Status.Nodes.FindByDisplayName("step-1.hooks.error"))
 }
 
-
 func TestTemplateRefWithHook(t *testing.T) {
-	wf  :=wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
+	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: workflow-template-whalesay-template-1
@@ -768,7 +767,7 @@ status:
 	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
-	for _, node := range woc.wf.Status.Nodes{
+	for _, node := range woc.wf.Status.Nodes {
 		fmt.Println(node.DisplayName, node.Phase)
 	}
 	assert.NotNil(t, woc.wf.Status.Nodes.FindByDisplayName("step-1.hooks.error"))

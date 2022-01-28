@@ -3,9 +3,8 @@ package controller
 import (
 	"context"
 	"fmt"
-	"github.com/argoproj/argo-workflows/v3/util/expr/argoexpr"
-
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/expr/argoexpr"
 	"github.com/argoproj/argo-workflows/v3/util/expr/env"
 	"github.com/argoproj/argo-workflows/v3/util/template"
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
