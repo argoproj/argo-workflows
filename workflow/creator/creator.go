@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/server/auth"
@@ -21,6 +22,19 @@ func Label(ctx context.Context, obj metav1.Object) {
 		}
 		if claims.PreferredUsername != "" {
 			labels.Label(obj, common.LabelKeyCreatorPreferredUsername, dnsFriendly(claims.PreferredUsername))
+		}
+	}
+}
+
+func LogFields(ctx context.Context, fields log.Fields) {
+	claims := auth.GetClaims(ctx)
+	if claims != nil {
+		fields["creator"] = claims.Subject
+		if claims.Email != "" {
+			fields["creatorEmail"] = claims.Email
+		}
+		if claims.PreferredUsername != "" {
+			fields["creatorPreferredUsername"] = claims.PreferredUsername
 		}
 	}
 }

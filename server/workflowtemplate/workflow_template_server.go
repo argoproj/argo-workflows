@@ -10,6 +10,7 @@ import (
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
+	"github.com/argoproj/argo-workflows/v3/util/audit"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/creator"
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
@@ -37,7 +38,12 @@ func (wts *WorkflowTemplateServer) CreateWorkflowTemplate(ctx context.Context, r
 	if err != nil {
 		return nil, err
 	}
-	return wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).Create(ctx, req.Template, v1.CreateOptions{})
+	wfTmpl, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).Create(ctx, req.Template, v1.CreateOptions{})
+	if err != nil {
+		return nil, err
+	}
+	audit.LogWorkflowTemplateAudit(ctx, wfTmpl, audit.WorkflowTemplateAuditCreate)
+	return wfTmpl, nil
 }
 
 func (wts *WorkflowTemplateServer) GetWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateGetRequest) (*v1alpha1.WorkflowTemplate, error) {
@@ -76,7 +82,7 @@ func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, re
 
 func (wts *WorkflowTemplateServer) DeleteWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateDeleteRequest) (*workflowtemplatepkg.WorkflowTemplateDeleteResponse, error) {
 	wfClient := auth.GetWfClient(ctx)
-	_, err := wts.getTemplateAndValidate(ctx, req.Namespace, req.Name)
+	wfTmpl, err := wts.getTemplateAndValidate(ctx, req.Namespace, req.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -84,6 +90,7 @@ func (wts *WorkflowTemplateServer) DeleteWorkflowTemplate(ctx context.Context, r
 	if err != nil {
 		return nil, err
 	}
+	audit.LogWorkflowTemplateAudit(ctx, wfTmpl, audit.WorkflowTemplateAuditDelete)
 	return &workflowtemplatepkg.WorkflowTemplateDeleteResponse{}, nil
 }
 
@@ -116,5 +123,6 @@ func (wts *WorkflowTemplateServer) UpdateWorkflowTemplate(ctx context.Context, r
 		return nil, err
 	}
 	res, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).Update(ctx, req.Template, v1.UpdateOptions{})
+	audit.LogWorkflowTemplateAudit(ctx, res, audit.WorkflowTemplateAuditUpdate)
 	return res, err
 }

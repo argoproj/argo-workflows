@@ -11,6 +11,7 @@ import (
 	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
+	"github.com/argoproj/argo-workflows/v3/util/audit"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/creator"
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
@@ -61,7 +62,12 @@ func (c *cronWorkflowServiceServer) CreateCronWorkflow(ctx context.Context, req 
 	if err != nil {
 		return nil, err
 	}
-	return wfClient.ArgoprojV1alpha1().CronWorkflows(req.Namespace).Create(ctx, req.CronWorkflow, metav1.CreateOptions{})
+	cwf, err := wfClient.ArgoprojV1alpha1().CronWorkflows(req.Namespace).Create(ctx, req.CronWorkflow, metav1.CreateOptions{})
+	if err != nil {
+		return nil, err
+	}
+	audit.LogCronWorkflowAudit(ctx, cwf, audit.CronWorkflowAuditCreate)
+	return cwf, nil
 }
 
 func (c *cronWorkflowServiceServer) GetCronWorkflow(ctx context.Context, req *cronworkflowpkg.GetCronWorkflowRequest) (*v1alpha1.CronWorkflow, error) {
@@ -83,11 +89,16 @@ func (c *cronWorkflowServiceServer) UpdateCronWorkflow(ctx context.Context, req 
 	if err := validate.ValidateCronWorkflow(wftmplGetter, cwftmplGetter, req.CronWorkflow); err != nil {
 		return nil, err
 	}
-	return auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(req.Namespace).Update(ctx, req.CronWorkflow, metav1.UpdateOptions{})
+	cwf, err := auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(req.Namespace).Update(ctx, req.CronWorkflow, metav1.UpdateOptions{})
+	if err != nil {
+		return nil, err
+	}
+	audit.LogCronWorkflowAudit(ctx, req.CronWorkflow, audit.CronWorkflowAuditUpdate)
+	return cwf, nil
 }
 
 func (c *cronWorkflowServiceServer) DeleteCronWorkflow(ctx context.Context, req *cronworkflowpkg.DeleteCronWorkflowRequest) (*cronworkflowpkg.CronWorkflowDeletedResponse, error) {
-	_, err := c.getCronWorkflowAndValidate(ctx, req.Namespace, req.Name, metav1.GetOptions{})
+	cwf, err := c.getCronWorkflowAndValidate(ctx, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -101,15 +112,26 @@ func (c *cronWorkflowServiceServer) DeleteCronWorkflow(ctx context.Context, req 
 	if err != nil {
 		return nil, err
 	}
+	audit.LogCronWorkflowAudit(ctx, cwf, audit.CronWorkflowAuditDelete)
 	return &cronworkflowpkg.CronWorkflowDeletedResponse{}, nil
 }
 
 func (c *cronWorkflowServiceServer) ResumeCronWorkflow(ctx context.Context, req *cronworkflowpkg.CronWorkflowResumeRequest) (*v1alpha1.CronWorkflow, error) {
-	return setCronWorkflowSuspend(ctx, false, req.Namespace, req.Name)
+	cwf, err := setCronWorkflowSuspend(ctx, false, req.Namespace, req.Name)
+	if err != nil {
+		return nil, err
+	}
+	audit.LogCronWorkflowAudit(ctx, cwf, audit.CronWorkflowAuditResume)
+	return cwf, nil
 }
 
 func (c *cronWorkflowServiceServer) SuspendCronWorkflow(ctx context.Context, req *cronworkflowpkg.CronWorkflowSuspendRequest) (*v1alpha1.CronWorkflow, error) {
-	return setCronWorkflowSuspend(ctx, true, req.Namespace, req.Name)
+	cwf, err := setCronWorkflowSuspend(ctx, true, req.Namespace, req.Name)
+	if err != nil {
+		return nil, err
+	}
+	audit.LogCronWorkflowAudit(ctx, cwf, audit.CronWorkflowAuditSuspend)
+	return cwf, nil
 }
 
 func setCronWorkflowSuspend(ctx context.Context, setTo bool, namespace, name string) (*v1alpha1.CronWorkflow, error) {

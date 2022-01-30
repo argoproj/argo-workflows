@@ -21,6 +21,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	argoutil "github.com/argoproj/argo-workflows/v3/util"
+	"github.com/argoproj/argo-workflows/v3/util/audit"
 	"github.com/argoproj/argo-workflows/v3/util/fields"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/util/logs"
@@ -86,6 +87,7 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 		return nil, err
 	}
 
+	audit.LogWorkflowAudit(ctx, wf, audit.WorkflowAuditCreate)
 	return wf, nil
 }
 
@@ -302,6 +304,7 @@ func (s *workflowServer) DeleteWorkflow(ctx context.Context, req *workflowpkg.Wo
 	if err != nil {
 		return nil, err
 	}
+	audit.LogWorkflowAudit(ctx, wf, audit.WorkflowAuditDelete)
 	return &workflowpkg.WorkflowDeleteResponse{}, nil
 }
 
@@ -323,6 +326,8 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 	if err != nil {
 		return nil, err
 	}
+
+	audit.LogWorkflowAudit(ctx, wf, audit.WorkflowAuditRetry)
 	return wf, nil
 }
 
@@ -347,6 +352,8 @@ func (s *workflowServer) ResubmitWorkflow(ctx context.Context, req *workflowpkg.
 	if err != nil {
 		return nil, err
 	}
+
+	audit.LogWorkflowAudit(ctx, created, audit.WorkflowAuditResubmit)
 	return created, nil
 }
 
@@ -373,6 +380,7 @@ func (s *workflowServer) ResumeWorkflow(ctx context.Context, req *workflowpkg.Wo
 		return nil, err
 	}
 
+	audit.LogWorkflowAudit(ctx, wf, audit.WorkflowAuditResume)
 	return wf, nil
 }
 
@@ -399,6 +407,7 @@ func (s *workflowServer) SuspendWorkflow(ctx context.Context, req *workflowpkg.W
 		return nil, err
 	}
 
+	audit.LogWorkflowAudit(ctx, wf, audit.WorkflowAuditSuspend)
 	return wf, nil
 }
 
@@ -424,6 +433,8 @@ func (s *workflowServer) TerminateWorkflow(ctx context.Context, req *workflowpkg
 	if err != nil {
 		return nil, err
 	}
+
+	audit.LogWorkflowAudit(ctx, wf, audit.WorkflowAuditTerminate)
 	return wf, nil
 }
 
@@ -446,6 +457,8 @@ func (s *workflowServer) StopWorkflow(ctx context.Context, req *workflowpkg.Work
 	if err != nil {
 		return nil, err
 	}
+
+	audit.LogWorkflowAudit(ctx, wf, audit.WorkflowAuditStop)
 	return wf, nil
 }
 
@@ -491,6 +504,8 @@ func (s *workflowServer) SetWorkflow(ctx context.Context, req *workflowpkg.Workf
 	if err != nil {
 		return nil, err
 	}
+
+	audit.LogWorkflowAudit(ctx, wf, audit.WorkflowAuditSet)
 	return wf, nil
 }
 
@@ -613,5 +628,11 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 	if err != nil {
 		return nil, err
 	}
-	return wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+
+	if wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(ctx, wf, metav1.CreateOptions{}); err != nil {
+		return nil, err
+	}
+
+	audit.LogWorkflowAudit(ctx, wf, audit.WorkflowAuditSubmit)
+	return wf, nil
 }

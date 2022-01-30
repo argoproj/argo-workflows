@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/square/go-jose.v2/jwt"
 
@@ -50,6 +51,24 @@ func TestLabel(t *testing.T) {
 		Label(context.WithValue(context.TODO(), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: sub}}), wf)
 		if assert.NotEmpty(t, wf.Labels) {
 			assert.Equal(t, strings.Repeat("x", 20), wf.Labels[common.LabelKeyCreator])
+		}
+	})
+}
+
+func TestLogFields(t *testing.T) {
+	t.Run("Empty", func(t *testing.T) {
+		fields := log.Fields{}
+		LogFields(context.TODO(), fields)
+		assert.Empty(t, fields)
+	})
+	t.Run("NotEmpty", func(t *testing.T) {
+		fields := log.Fields{}
+		claims := &types.Claims{Claims: jwt.Claims{Subject: strings.Repeat("x", 63) + "y"}, Email: "my@email", PreferredUsername: "username"}
+		LogFields(context.WithValue(context.TODO(), auth.ClaimsKey, claims), fields)
+		if assert.NotEmpty(t, fields) {
+			assert.Equal(t, strings.Repeat("x", 63)+"y", fields["creator"])
+			assert.Equal(t, "my@email", fields["creatorEmail"])
+			assert.Equal(t, "username", fields["creatorPreferredUsername"])
 		}
 	})
 }
