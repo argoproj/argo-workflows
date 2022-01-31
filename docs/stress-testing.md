@@ -37,8 +37,14 @@ You can
 use [this Tab Auto Refresh Chrome extension](https://chrome.google.com/webstore/detail/tab-auto-refresh/oomoeacogjkolheacgdkkkhbjipaomkn)
 to auto-refresh the page.
 
-Open `test/stress/main.go` and run it with a large number (e.g. 10000).
+Run `go run ./test/stress/tool` and run it with a large number (e.g. 10000).
 
 * Use Prometheus to analyse this.
-* Use PProf using `./hack/capture-pprof.sh` and look at allocs and profile for costly areas.
+* Use PProf:
+
+```
+go tool pprof -web http://localhost:6060/debug/pprof/allocs
+go tool pprof -web http://localhost:6060/debug/pprof/heap
+go tool pprof -web http://localhost:6060/debug/pprof/profile
+```
 
