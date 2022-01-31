@@ -50,6 +50,54 @@ spec:
       args: ["hello world"]
 
 `
+	validConfigMapRefWf = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: test-template-configmapkeyselector-substitution
+spec:
+  entrypoint: whalesay
+  arguments:
+    parameters:
+    - name: name
+      value: simple-parameters
+    - name: key
+      value: msg
+  templates:
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+        valueFrom:
+          configMapKeyRef:
+            name: "{{ workflow.parameters.name }}"
+            key: "{{ workflow.parameters.key }}"
+    container:
+      image: argoproj/argosay:v2
+      args:
+        - echo
+        - "{{inputs.parameters.message}}"
+`
+	invalidConfigMapRefWf = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: test-template-configmapkeyselector-substitution
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+        valueFrom:
+          configMapKeyRef:
+            name: "{{ workflow.parameters.name }}"
+            key: "{{ workflow.parameters.key }}"
+    container:
+      image: argoproj/argosay:v2
+      args:
+        - echo
+        - "{{inputs.parameters.message}}"
+`
 )
 
 // TestFindOverlappingVolume tests logic of TestFindOverlappingVolume
@@ -160,6 +208,51 @@ func TestIsDone(t *testing.T) {
 			},
 		},
 	}}))
+}
+
+func TestSubstituteConfigMapKeyRefParam(t *testing.T) {
+	res := ParseObjects([]byte(validConfigMapRefWf), false)
+	assert.Equal(t, 1, len(res))
+
+	obj, ok := res[0].Object.(*wfv1.Workflow)
+	assert.True(t, ok)
+	assert.NotNil(t, obj)
+
+	globalParams := Parameters{
+		"workflow.parameters.name": "simple-parameters",
+		"workflow.parameters.key":  "msg",
+	}
+
+	for _, inParam := range obj.GetTemplateByName("whalesay").Inputs.Parameters {
+		cmName, _ := substituteConfigMapKeyRefParam(inParam.ValueFrom.ConfigMapKeyRef.Name, globalParams)
+		assert.Equal(t, "simple-parameters", cmName, "it should be equal")
+
+		cmKey, _ := substituteConfigMapKeyRefParam(inParam.ValueFrom.ConfigMapKeyRef.Key, globalParams)
+		assert.Equal(t, "msg", cmKey, "it should be equal")
+	}
+}
+
+func TestSubstituteConfigMapKeyRefParamWithNoParamsDefined(t *testing.T) {
+	res := ParseObjects([]byte(invalidConfigMapRefWf), false)
+	assert.Equal(t, 1, len(res))
+
+	obj, ok := res[0].Object.(*wfv1.Workflow)
+	assert.True(t, ok)
+	assert.NotNil(t, obj)
+
+	globalParams := Parameters{}
+
+	for _, inParam := range obj.GetTemplateByName("whalesay").Inputs.Parameters {
+		cmName, err := substituteConfigMapKeyRefParam(inParam.ValueFrom.ConfigMapKeyRef.Name, globalParams)
+		assert.Error(t, err)
+		assert.EqualError(t, err, "parameter workflow.parameters.name not found")
+		assert.Equal(t, "", cmName)
+
+		cmKey, err := substituteConfigMapKeyRefParam(inParam.ValueFrom.ConfigMapKeyRef.Key, globalParams)
+		assert.Error(t, err)
+		assert.EqualError(t, err, "parameter workflow.parameters.key not found")
+		assert.Equal(t, "", cmKey)
+	}
 }
 
 func TestOverridableDefaultInputArts(t *testing.T) {
