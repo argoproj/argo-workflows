@@ -23,12 +23,12 @@ kubectl get deployments
 
 If this fails, just try running it again.
 
-* Open https://localhost:2746/workflows/argo and check it loads and that you can run a workflow.
+* Open http://localhost:2746/workflows and check it loads and that you can run a workflow.
 * Open http://localhost:9090/metrics and check you can see the Prometheus metrics.
 * Open http://localhost:9091/graph and check you can see a Prometheus graph.
-* Open http://localhost:6060 and check you can access pprof.
+* Open http://localhost:6060/debug/pprof and check you can access pprof.
 
-Open `test/stress/main.go` and run it with a small number (e.g. 10) workflows and make sure they complete.
+Run `go run ./test/stress/tool -n 1`  to test with a small number workflows and make sure they complete.
 
 Do you get `ImagePullBackOff`? Make sure image is `argoproj/argosay:v2`
 in  `kubectl -n argo edit workflowtemplate massive-workflow`.
@@ -37,14 +37,14 @@ You can
 use [this Tab Auto Refresh Chrome extension](https://chrome.google.com/webstore/detail/tab-auto-refresh/oomoeacogjkolheacgdkkkhbjipaomkn)
 to auto-refresh the page.
 
-Run `go run ./test/stress/tool` and run it with a large number (e.g. 10000).
+Run `go run ./test/stress/tool -n 10000` to run a large number of workflows.
 
-* Use Prometheus to analyse this.
-* Use PProf:
+* Use Prometheus to see how many Kubernetes API requests are being made.
+* Use PProf to see if there any any hot spots:
 
 ```
-go tool pprof -web http://localhost:6060/debug/pprof/allocs
-go tool pprof -web http://localhost:6060/debug/pprof/heap
-go tool pprof -web http://localhost:6060/debug/pprof/profile
+go tool pprof -png http://localhost:6060/debug/pprof/allocs
+go tool pprof -png http://localhost:6060/debug/pprof/heap
+go tool pprof -png http://localhost:6060/debug/pprof/profile
 ```
 
