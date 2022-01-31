@@ -8326,13 +8326,29 @@ func TestFailSuspendedAndPendingNodesAfterDeadlineOrShutdown(t *testing.T) {
 		step1NodeName := "container-set-termination-demopw5vv-893664226"
 		step2NodeName := "container-set-termination-demopw5vv-876886607"
 
-		assert.Equal(t, woc.wf.Status.Nodes[step1NodeName].Phase, wfv1.NodePending)
-		assert.Equal(t, woc.wf.Status.Nodes[step2NodeName].Phase, wfv1.NodePending)
+		// update step1 type to NodeTypePod
+		//              phase to NodeRunning
+		if entry, ok := woc.wf.Status.Nodes[step1NodeName]; ok {
+			entry.Type = wfv1.NodeTypePod
+			entry.Phase = wfv1.NodeRunning
+			woc.wf.Status.Nodes[step1NodeName] = entry
+		}
+
+		// update step2 type to NodeTypeSuspend
+		//              phase to NodeRunning
+		if entry, ok := woc.wf.Status.Nodes[step2NodeName]; ok {
+			entry.Type = wfv1.NodeTypeSuspend
+			entry.Phase = wfv1.NodeRunning
+			woc.wf.Status.Nodes[step2NodeName] = entry
+		}
+
+		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Nodes[step1NodeName].Phase)
+		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Nodes[step2NodeName].Phase)
 
 		woc.failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
 
-		assert.Equal(t, woc.wf.Status.Nodes[step1NodeName].Phase, wfv1.NodeFailed)
-		assert.Equal(t, woc.wf.Status.Nodes[step2NodeName].Phase, wfv1.NodeFailed)
+		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Nodes[step1NodeName].Phase)
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes[step2NodeName].Phase)
 	})
 
 	t.Run("Deadline", func(t *testing.T) {
@@ -8349,12 +8365,24 @@ func TestFailSuspendedAndPendingNodesAfterDeadlineOrShutdown(t *testing.T) {
 		step1NodeName := "container-set-termination-demopw5vv-893664226"
 		step2NodeName := "container-set-termination-demopw5vv-876886607"
 
-		assert.Equal(t, wfv1.NodePending, woc.wf.Status.Nodes[step1NodeName].Phase)
+		// update step1 phase to NodeRunning
+		if entry, ok := woc.wf.Status.Nodes[step1NodeName]; ok {
+			entry.Phase = wfv1.NodeRunning
+			woc.wf.Status.Nodes[step1NodeName] = entry
+		}
+
+		// update step2 phase to NodePending
+		if entry, ok := woc.wf.Status.Nodes[step2NodeName]; ok {
+			entry.Phase = wfv1.NodePending
+			woc.wf.Status.Nodes[step2NodeName] = entry
+		}
+
+		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Nodes[step1NodeName].Phase)
 		assert.Equal(t, wfv1.NodePending, woc.wf.Status.Nodes[step2NodeName].Phase)
 
 		woc.failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
 
-		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes[step1NodeName].Phase)
+		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Nodes[step1NodeName].Phase)
 		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes[step2NodeName].Phase)
 	})
 }
