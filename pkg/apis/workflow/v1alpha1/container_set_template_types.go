@@ -7,22 +7,37 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	corev1 "k8s.io/api/core/v1"
-	intstr "k8s.io/apimachinery/pkg/util/intstr"
 )
 
 type ContainerSetTemplate struct {
-	Containers   []ContainerNode      `json:"containers" protobuf:"bytes,4,rep,name=containers"`
-	VolumeMounts []corev1.VolumeMount `json:"volumeMounts,omitempty" protobuf:"bytes,3,rep,name=volumeMounts"`
-	//RetryStrategy *ContainerSetRetryStrategy `json:"retryStrategy,omitempty" protobuf:"bytes,5,opt,name=retryStrategy"`
-	RetryStrategy *wait.Backoff `json:"retryStrategy,omitempty" protobuf:"bytes,5,opt,name=retryStrategy"`
+	Containers    []ContainerNode            `json:"containers" protobuf:"bytes,4,rep,name=containers"`
+	VolumeMounts  []corev1.VolumeMount       `json:"volumeMounts,omitempty" protobuf:"bytes,3,rep,name=volumeMounts"`
+	RetryStrategy *ContainerSetRetryStrategy `json:"retryStrategy,omitempty" protobuf:"bytes,5,opt,name=retryStrategy"`
 }
 
 type ContainerSetRetryStrategy struct {
-	// Limit is the maximum number of attempts when retrying a container
-	Limit *intstr.IntOrString `json:"limit,omitempty" protobuf:"varint,1,opt,name=limit"`
-
-	// Backoff is a backoff strategy
-	Backoff *Backoff `json:"backoff,omitempty" protobuf:"bytes,3,opt,name=backoff,casttype=Backoff"`
+	// The initial duration.
+	Duration time.Duration `protobuf:"varint,1,opt,name=duration,casttype=time.Duration"`
+	// Duration is multiplied by factor each iteration, if factor is not zero
+	// and the limits imposed by Steps and Cap have not been reached.
+	// Should not be negative.
+	// The jitter does not contribute to the updates to the duration parameter.
+	Factor float64 `protobuf:"fixed64,2,opt,name=factor"`
+	// The sleep at each iteration is the duration plus an additional
+	// amount chosen uniformly at random from the interval between
+	// zero and `jitter*duration`.
+	Jitter float64 `protobuf:"fixed64,3,opt,name=jitter"`
+	// The remaining number of iterations in which the duration
+	// parameter may change (but progress can be stopped earlier by
+	// hitting the cap). If not positive, the duration is not
+	// changed. Used for exponential backoff in combination with
+	// Factor and Cap.
+	Steps int `protobuf:"varint,4,opt,name=steps"`
+	// A limit on revised values of the duration parameter. If a
+	// multiplication by the factor parameter would make the duration
+	// exceed the cap then the duration is set to the cap and the
+	// steps parameter is set to zero.
+	Cap time.Duration `protobuf:"varint,5,opt,name=cap,casttype=time.Duration"`
 }
 
 func (t *ContainerSetTemplate) GetRetryStrategy() (wait.Backoff, error) {

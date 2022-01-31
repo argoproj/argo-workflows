@@ -245,11 +245,32 @@ message ContainerNode {
 }
 
 message ContainerSetRetryStrategy {
-  // Limit is the maximum number of attempts when retrying a container
-  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString limit = 1;
+  // The initial duration.
+  optional int64 duration = 1;
 
-  // Backoff is a backoff strategy
-  optional Backoff backoff = 3;
+  // Duration is multiplied by factor each iteration, if factor is not zero
+  // and the limits imposed by Steps and Cap have not been reached.
+  // Should not be negative.
+  // The jitter does not contribute to the updates to the duration parameter.
+  optional double factor = 2;
+
+  // The sleep at each iteration is the duration plus an additional
+  // amount chosen uniformly at random from the interval between
+  // zero and `jitter*duration`.
+  optional double jitter = 3;
+
+  // The remaining number of iterations in which the duration
+  // parameter may change (but progress can be stopped earlier by
+  // hitting the cap). If not positive, the duration is not
+  // changed. Used for exponential backoff in combination with
+  // Factor and Cap.
+  optional int64 steps = 4;
+
+  // A limit on revised values of the duration parameter. If a
+  // multiplication by the factor parameter would make the duration
+  // exceed the cap then the duration is set to the cap and the
+  // steps parameter is set to zero.
+  optional int64 cap = 5;
 }
 
 message ContainerSetTemplate {
