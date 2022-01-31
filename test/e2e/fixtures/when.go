@@ -74,10 +74,10 @@ func (w *When) SubmitWorkflowsFromWorkflowTemplates() *When {
 	for _, tmpl := range w.wfTemplates {
 		_, _ = fmt.Println("Submitting workflow from workflow template", tmpl.Name)
 		if tmpl.Spec.WorkflowMetadata == nil {
-			tmpl.Spec.WorkflowMetadata = &metav1.ObjectMeta{}
+			tmpl.Spec.WorkflowMetadata = &wfv1.WorkflowMetadata{}
 		}
-		label(tmpl.Spec.WorkflowMetadata)
-		wf, err := w.client.Create(ctx, common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, false), metav1.CreateOptions{})
+		tmpl.Spec.WorkflowMetadata.Labels[Label] = "true"
+		wf, err := w.client.Create(ctx, common.NewWorkflowFromWorkflowTemplate(tmpl.Name, false), metav1.CreateOptions{})
 		if err != nil {
 			w.t.Fatal(err)
 		} else {
@@ -93,10 +93,10 @@ func (w *When) SubmitWorkflowsFromClusterWorkflowTemplates() *When {
 	for _, tmpl := range w.cwfTemplates {
 		_, _ = fmt.Println("Submitting workflow from cluster workflow template", tmpl.Name)
 		if tmpl.Spec.WorkflowMetadata == nil {
-			tmpl.Spec.WorkflowMetadata = &metav1.ObjectMeta{}
+			tmpl.Spec.WorkflowMetadata = &wfv1.WorkflowMetadata{}
 		}
-		label(tmpl.Spec.WorkflowMetadata)
-		wf, err := w.client.Create(ctx, common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, true), metav1.CreateOptions{})
+		tmpl.Spec.WorkflowMetadata.Labels[Label] = "true"
+		wf, err := w.client.Create(ctx, common.NewWorkflowFromWorkflowTemplate(tmpl.Name, true), metav1.CreateOptions{})
 		if err != nil {
 			w.t.Fatal(err)
 		} else {

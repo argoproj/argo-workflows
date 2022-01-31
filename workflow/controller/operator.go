@@ -3438,6 +3438,28 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 			return err
 		}
 
+		if md := woc.execWf.Spec.WorkflowMetadata; md != nil {
+			for n, v := range md.Labels {
+				woc.wf.Labels[n] = v
+			}
+			for n, v := range md.Annotations {
+				woc.wf.Annotations[n] = v
+			}
+			env := map[string]interface{}{"workflow": woc.execWf}
+			for n, f := range md.LabelsFrom {
+				eval, err := expr.Eval(f.Expression, env)
+				if err != nil {
+					return fmt.Errorf("failed to eval label %q as string: %w", n, err)
+				}
+				v, ok := eval.(string)
+				if !ok {
+					return fmt.Errorf("failed to eval label %q as string", n)
+				}
+				woc.wf.Labels[n] = v
+			}
+			woc.updated = true
+		}
+
 		// If we received conditions during validation (such as SpecWarnings), add them to the Workflow object
 		if len(*wfConditions) > 0 {
 			woc.wf.Status.Conditions.JoinConditions(wfConditions)
@@ -3488,7 +3510,7 @@ func (woc *wfOperationCtx) setStoredWfSpec() error {
 			return err
 		}
 		// Join WFT and WfDefault metadata to Workflow metadata.
-		wfutil.JoinWorkflowMetaData(&woc.wf.ObjectMeta, wftHolder.GetWorkflowMetadata(), &wfDefault.ObjectMeta)
+		wfutil.JoinWorkflowMetaData(&woc.wf.ObjectMeta, &wfDefault.ObjectMeta)
 		workflowTemplateSpec = wftHolder.GetWorkflowSpec()
 	}
 	// Update the Entrypoint, ShutdownStrategy and Suspend

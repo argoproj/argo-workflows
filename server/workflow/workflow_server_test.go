@@ -903,8 +903,6 @@ func TestSubmitWorkflowFromResource(t *testing.T) {
 			assert.NotNil(t, wf)
 			assert.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID)
 			assert.Contains(t, wf.Labels, common.LabelKeyCreator)
-			assert.Contains(t, wf.Labels, "labelTest")
-			assert.Contains(t, wf.Annotations, "annotationTest")
 		}
 	})
 	t.Run("SubmitFromCronWorkflow", func(t *testing.T) {
@@ -929,8 +927,6 @@ func TestSubmitWorkflowFromResource(t *testing.T) {
 			assert.NotNil(t, wf)
 			assert.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID)
 			assert.Contains(t, wf.Labels, common.LabelKeyCreator)
-			assert.Contains(t, wf.Labels, "labelTest")
-			assert.Contains(t, wf.Annotations, "annotationTest")
 		}
 	})
 }
