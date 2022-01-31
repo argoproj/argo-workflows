@@ -10,8 +10,6 @@ import (
 	"regexp"
 	"strings"
 
-	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
-
 	log "github.com/sirupsen/logrus"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 
