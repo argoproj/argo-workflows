@@ -110,4 +110,5 @@ package was on version `5.0.0` already whereas Argo Workflows was still on `3.x.
 
 In order to make it easier indicate backwards compatibility between the SDK version and the Argo Workflows
 releases, we bump the Python SDK major version by 3 and keep the minor and patch versions. For example,
-Python SDK with version `6.3.0rc2` is released with Argo Workflows `v3.3.0rc2`.
+Python SDK with version `6.3.0rc2` is released with Argo Workflows `v3.3.0-rc2`. Note that the hyphen
+in `-rc2` is removed intentionally to follow Python package versioning conventions documented in [PEP-0440](https://www.python.org/dev/peps/pep-0440/).
