@@ -62,6 +62,35 @@ func (s *FunctionalSuite) TestWorkflowLevelErrorRetryPolicy() {
 		})
 }
 
+func (s *FunctionalSuite) TestWorkflowMetadataLabelsFrom() {
+	s.Given().
+		Workflow(`
+metadata:
+  generateName: metadata-
+spec:
+  arguments:
+    parameters:
+      - name: foo
+        value: "bar"
+  workflowMetadata:
+    labelsFrom:
+      my-label: 
+        expression: 'parameters.foo'
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, "bar", metadata.Labels["my-label"])
+		})
+}
+
 func (s *FunctionalSuite) TestWorkflowTTL() {
 	s.Given().
 		Workflow(`

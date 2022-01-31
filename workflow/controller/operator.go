@@ -275,6 +275,11 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			return
 		}
 
+		if err := woc.updateWorkflowMetadata(); err != nil {
+			woc.markWorkflowError(ctx, err)
+			return
+		}
+
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 
 		// Workflow will not be requeued if workflow steps are in pending state.
@@ -479,6 +484,37 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	if err != nil {
 		woc.log.WithError(err).Warn("failed to delete PVCs")
 	}
+}
+
+func (woc *wfOperationCtx) updateWorkflowMetadata() error {
+	if md := woc.execWf.Spec.WorkflowMetadata; md != nil {
+		for n, v := range md.Labels {
+			woc.wf.Labels[n] = v
+		}
+		for n, v := range md.Annotations {
+			woc.wf.Annotations[n] = v
+		}
+		parameters := map[string]interface{}{}
+		for _, p := range woc.execWf.Spec.Arguments.Parameters {
+			parameters[p.Name] = p.Value.String()
+		}
+		env := map[string]interface{}{
+			"parameters": parameters,
+		}
+		for n, f := range md.LabelsFrom {
+			r, err := expr.Eval(f.Expression, env)
+			if err != nil {
+				return fmt.Errorf("failed to evaluate label %q expression %q: %w", n, f.Expression, err)
+			}
+			v, ok := r.(string)
+			if !ok {
+				return fmt.Errorf("failed to evaluate label %q expression %q evaluted to %T but must be a string", n, f.Expression, r)
+			}
+			woc.wf.Labels[n] = v
+		}
+		woc.updated = true
+	}
+	return nil
 }
 
 func (woc *wfOperationCtx) getContainerRuntimeExecutor() string {
@@ -3436,28 +3472,6 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 			msg := fmt.Sprintf("invalid spec: %s", err.Error())
 			woc.markWorkflowFailed(ctx, msg)
 			return err
-		}
-
-		if md := woc.execWf.Spec.WorkflowMetadata; md != nil {
-			for n, v := range md.Labels {
-				woc.wf.Labels[n] = v
-			}
-			for n, v := range md.Annotations {
-				woc.wf.Annotations[n] = v
-			}
-			env := map[string]interface{}{"workflow": woc.execWf}
-			for n, f := range md.LabelsFrom {
-				eval, err := expr.Eval(f.Expression, env)
-				if err != nil {
-					return fmt.Errorf("failed to eval label %q as string: %w", n, err)
-				}
-				v, ok := eval.(string)
-				if !ok {
-					return fmt.Errorf("failed to eval label %q as string", n)
-				}
-				woc.wf.Labels[n] = v
-			}
-			woc.updated = true
 		}
 
 		// If we received conditions during validation (such as SpecWarnings), add them to the Workflow object
