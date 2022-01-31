@@ -10,14 +10,19 @@ import (
 	"regexp"
 	"strings"
 
+	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
+
 	log "github.com/sirupsen/logrus"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
+
+	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
 )
 
 func IsTransientErr(err error) bool {
 	if err == nil {
 		return false
 	}
+	err = argoerrs.Cause(err)
 	isTransient := isExceededQuotaErr(err) || apierr.IsTooManyRequests(err) || isResourceQuotaConflictErr(err) || isTransientNetworkErr(err) || apierr.IsServerTimeout(err) || apierr.IsServiceUnavailable(err) || matchTransientErrPattern(err) ||
 		errors.Is(err, NewErrTransient(""))
 	if isTransient {

@@ -2,6 +2,7 @@ package errors
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 )
 
@@ -21,7 +22,6 @@ const (
 type ArgoError interface {
 	Error() string
 	Code() string
-	Message() string
 	JSON() []byte
 }
 
@@ -35,7 +35,7 @@ type argoerr struct {
 // New returns an error with the supplied message.
 // New also records the stack trace at the point it was called.
 func New(code string, message string) error {
-	err := fmt.Errorf(message)
+	err := errors.New(message)
 	return argoerr{code, message, err}
 }
 
@@ -78,16 +78,39 @@ func Wrap(err error, code string, message string) error {
 	return argoerr{code, message, err}
 }
 
+// Cause returns the underlying cause of the error, if possible.
+// An error value has a cause if it implements the following
+// interface:
+//
+//     type causer interface {
+//            Cause() error
+//     }
+//
+// If the error does not implement Cause, the original error will
+// be returned. If the error is nil, nil will be returned without further
+// investigation.
+func Cause(err error) error {
+	if argoErr, ok := err.(argoerr); ok {
+		return unwrapCause(argoErr.err)
+	}
+	return unwrapCause(err)
+}
+
+func unwrapCause(err error) error {
+	innerErr := errors.Unwrap(err)
+	for innerErr != nil {
+		err = innerErr
+		innerErr = errors.Unwrap(err)
+	}
+	return err
+}
+
 func (e argoerr) Error() string {
-	return e.err.Error()
+	return e.message
 }
 
 func (e argoerr) Code() string {
 	return e.code
-}
-
-func (e argoerr) Message() string {
-	return e.message
 }
 
 func (e argoerr) JSON() []byte {
