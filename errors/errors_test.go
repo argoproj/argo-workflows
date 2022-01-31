@@ -35,5 +35,6 @@ func TestInternalError(t *testing.T) {
 	assert.Equal(t, "random error", intWrap.Error())
 	intWrap = errors.InternalWrapError(err, "different message")
 	assert.Equal(t, "different message", intWrap.Error())
+	intWrap = errors.InternalWrapErrorf(err, "hello %s", "world")
 	assert.Equal(t, "hello world", intWrap.Error())
 }
