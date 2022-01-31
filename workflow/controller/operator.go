@@ -1077,9 +1077,9 @@ func (woc *wfOperationCtx) failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
 			continue
 		}
 
-		// fail all pending nodes when exceeding deadline
+		// fail all pending and suspended nodes when exceeding deadline
 		deadlineExceeded := woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline)
-		if node.Phase == wfv1.NodePending && deadlineExceeded {
+		if deadlineExceeded && (node.Phase == wfv1.NodePending || node.IsActiveSuspendNode()) {
 			message := "Step exceeded its deadline"
 			woc.markNodePhase(node.Name, wfv1.NodeFailed, message)
 			continue
