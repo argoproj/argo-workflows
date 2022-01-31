@@ -91,16 +91,31 @@ func Wrap(err error, code string, message string) error {
 // investigation.
 func Cause(err error) error {
 	if argoErr, ok := err.(argoerr); ok {
-		return unwrapCause(argoErr.err)
+		return unwrapCauseArgoErr(argoErr.err)
 	}
 	return unwrapCause(err)
 }
 
-func unwrapCause(err error) error {
+func unwrapCauseArgoErr(err error) error {
 	innerErr := errors.Unwrap(err)
 	for innerErr != nil {
 		err = innerErr
 		innerErr = errors.Unwrap(err)
+	}
+	return err
+}
+
+func unwrapCause(err error) error {
+	type causer interface {
+		Cause() error
+	}
+
+	for err != nil {
+		cause, ok := err.(causer)
+		if !ok {
+			break
+		}
+		err = cause.Cause()
 	}
 	return err
 }
