@@ -90,7 +90,7 @@ with argo_workflows.ApiClient() as api_client:
                 self_link="self_link_example",
                 uid="uid_example",
             ),
-            spec=IoArgoprojWorkflowV1alpha1WorkflowTemplateSpec(
+            spec=IoArgoprojWorkflowV1alpha1WorkflowSpec(
                 active_deadline_seconds=1,
                 affinity=Affinity(
                     node_affinity=NodeAffinity(
@@ -8017,47 +8017,18 @@ with argo_workflows.ApiClient() as api_client:
                         ),
                     ),
                 ],
-                workflow_metadata=ObjectMeta(
+                workflow_metadata=IoArgoprojWorkflowV1alpha1WorkflowMetadata(
                     annotations={
                         "key": "key_example",
                     },
-                    cluster_name="cluster_name_example",
-                    creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
-                    deletion_grace_period_seconds=1,
-                    deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
-                    finalizers=[
-                        "finalizers_example",
-                    ],
-                    generate_name="generate_name_example",
-                    generation=1,
                     labels={
                         "key": "key_example",
                     },
-                    managed_fields=[
-                        ManagedFieldsEntry(
-                            api_version="api_version_example",
-                            fields_type="fields_type_example",
-                            fields_v1={},
-                            manager="manager_example",
-                            operation="operation_example",
-                            time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                    labels_from={
+                        "key": IoArgoprojWorkflowV1alpha1LabelValueFrom(
+                            expression="expression_example",
                         ),
-                    ],
-                    name="name_example",
-                    namespace="namespace_example",
-                    owner_references=[
-                        OwnerReference(
-                            api_version="api_version_example",
-                            block_owner_deletion=True,
-                            controller=True,
-                            kind="kind_example",
-                            name="name_example",
-                            uid="uid_example",
-                        ),
-                    ],
-                    resource_version="resource_version_example",
-                    self_link="self_link_example",
-                    uid="uid_example",
+                    },
                 ),
                 workflow_template_ref=IoArgoprojWorkflowV1alpha1WorkflowTemplateRef(
                     cluster_scope=True,
@@ -8341,7 +8312,7 @@ with argo_workflows.ApiClient() as api_client:
                 self_link="self_link_example",
                 uid="uid_example",
             ),
-            spec=IoArgoprojWorkflowV1alpha1WorkflowTemplateSpec(
+            spec=IoArgoprojWorkflowV1alpha1WorkflowSpec(
                 active_deadline_seconds=1,
                 affinity=Affinity(
                     node_affinity=NodeAffinity(
@@ -16268,47 +16239,18 @@ with argo_workflows.ApiClient() as api_client:
                         ),
                     ),
                 ],
-                workflow_metadata=ObjectMeta(
+                workflow_metadata=IoArgoprojWorkflowV1alpha1WorkflowMetadata(
                     annotations={
                         "key": "key_example",
                     },
-                    cluster_name="cluster_name_example",
-                    creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
-                    deletion_grace_period_seconds=1,
-                    deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
-                    finalizers=[
-                        "finalizers_example",
-                    ],
-                    generate_name="generate_name_example",
-                    generation=1,
                     labels={
                         "key": "key_example",
                     },
-                    managed_fields=[
-                        ManagedFieldsEntry(
-                            api_version="api_version_example",
-                            fields_type="fields_type_example",
-                            fields_v1={},
-                            manager="manager_example",
-                            operation="operation_example",
-                            time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                    labels_from={
+                        "key": IoArgoprojWorkflowV1alpha1LabelValueFrom(
+                            expression="expression_example",
                         ),
-                    ],
-                    name="name_example",
-                    namespace="namespace_example",
-                    owner_references=[
-                        OwnerReference(
-                            api_version="api_version_example",
-                            block_owner_deletion=True,
-                            controller=True,
-                            kind="kind_example",
-                            name="name_example",
-                            uid="uid_example",
-                        ),
-                    ],
-                    resource_version="resource_version_example",
-                    self_link="self_link_example",
-                    uid="uid_example",
+                    },
                 ),
                 workflow_template_ref=IoArgoprojWorkflowV1alpha1WorkflowTemplateRef(
                     cluster_scope=True,
@@ -16510,7 +16452,7 @@ with argo_workflows.ApiClient() as api_client:
                 self_link="self_link_example",
                 uid="uid_example",
             ),
-            spec=IoArgoprojWorkflowV1alpha1WorkflowTemplateSpec(
+            spec=IoArgoprojWorkflowV1alpha1WorkflowSpec(
                 active_deadline_seconds=1,
                 affinity=Affinity(
                     node_affinity=NodeAffinity(
@@ -24437,47 +24379,18 @@ with argo_workflows.ApiClient() as api_client:
                         ),
                     ),
                 ],
-                workflow_metadata=ObjectMeta(
+                workflow_metadata=IoArgoprojWorkflowV1alpha1WorkflowMetadata(
                     annotations={
                         "key": "key_example",
                     },
-                    cluster_name="cluster_name_example",
-                    creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
-                    deletion_grace_period_seconds=1,
-                    deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
-                    finalizers=[
-                        "finalizers_example",
-                    ],
-                    generate_name="generate_name_example",
-                    generation=1,
                     labels={
                         "key": "key_example",
                     },
-                    managed_fields=[
-                        ManagedFieldsEntry(
-                            api_version="api_version_example",
-                            fields_type="fields_type_example",
-                            fields_v1={},
-                            manager="manager_example",
-                            operation="operation_example",
-                            time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                    labels_from={
+                        "key": IoArgoprojWorkflowV1alpha1LabelValueFrom(
+                            expression="expression_example",
                         ),
-                    ],
-                    name="name_example",
-                    namespace="namespace_example",
-                    owner_references=[
-                        OwnerReference(
-                            api_version="api_version_example",
-                            block_owner_deletion=True,
-                            controller=True,
-                            kind="kind_example",
-                            name="name_example",
-                            uid="uid_example",
-                        ),
-                    ],
-                    resource_version="resource_version_example",
-                    self_link="self_link_example",
-                    uid="uid_example",
+                    },
                 ),
                 workflow_template_ref=IoArgoprojWorkflowV1alpha1WorkflowTemplateRef(
                     cluster_scope=True,
