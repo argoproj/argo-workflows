@@ -32,6 +32,7 @@ case ${1:-} in
     ;;
   sh) 
     sh "${2:-0}"
+    ;;
   *)
     exit 1
 esac
