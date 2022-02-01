@@ -15,10 +15,10 @@ import (
 )
 
 func TestEmissary(t *testing.T) {
-	_, err := ioutil.TempDir("", "")
+	tmp, err := ioutil.TempDir("", "")
 	assert.NoError(t, err)
 
-	varRunArgo = "." //tmp
+	varRunArgo = tmp
 	includeScriptOutput = true
 
 	wd, err := os.Getwd()
