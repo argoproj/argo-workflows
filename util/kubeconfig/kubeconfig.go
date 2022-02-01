@@ -2,7 +2,7 @@ package kubeconfig
 
 import (
 	"encoding/base64"
-	goErrors "errors"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -43,7 +43,7 @@ func GetRestConfig(token string) (*restclient.Config, error) {
 		token = strings.TrimSpace(strings.TrimPrefix(token, BasicAuthScheme))
 		username, password, ok := decodeBasicAuthToken(token)
 		if !ok {
-			return nil, goErrors.New("Error parsing Basic Authentication")
+			return nil, errors.New("Error parsing Basic Authentication")
 		}
 		return GetBasicRestConfig(username, password)
 	}
@@ -51,7 +51,7 @@ func GetRestConfig(token string) (*restclient.Config, error) {
 		token = strings.TrimSpace(strings.TrimPrefix(token, BearerAuthScheme))
 		return GetBearerRestConfig(token)
 	}
-	return nil, goErrors.New("Unsupported authentication scheme")
+	return nil, errors.New("Unsupported authentication scheme")
 }
 
 // convert a basic token (username, password) into a REST config
