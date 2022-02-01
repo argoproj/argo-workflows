@@ -23,6 +23,7 @@ most users. Note that these environment variables may be removed at any time.
 | `CACHE_GC_AFTER_NOT_HIT_DURATION` | `time.Duration` | `30s` | When a memoization cache has not been hit after this duration, it will be deleted. |
 | `CRON_SYNC_PERIOD` | `time.Duration` | `10s` | How often to sync cron workflows. |
 | `DEFAULT_REQUEUE_TIME` | `time.Duration` | `10s` | The requeue time for the rate limiter of the workflow queue. |
+| `ENABLE_MULTICLUSTER` | `bool` | `false` | Enable multi-cluster workflows. |
 | `EXPRESSION_TEMPLATES` | `bool` | `true` | Escape hatch to disable expression templates. |
 | `GRPC_MESSAGE_SIZE` | `string` | Use different GRPC Max message size for Argo server deployment (supporting huge workflows). |
 | `GZIP_IMPLEMENTATION` | `string` | `"PGZip"` | The implementation of compression/decompression. Currently only "PGZip" and "GZip" are supported. |
