@@ -1265,17 +1265,18 @@ func schema_pkg_apis_workflow_v1alpha1_ContainerSetRetryStrategy(ref common.Refe
 							Format:      "",
 						},
 					},
-					"steps": {
+					"retries": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Nbr of retries",
-							Type:        []string{"integer"},
-							Format:      "int32",
+							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
 						},
 					},
 				},
-				Required: []string{"steps"},
+				Required: []string{"retries"},
 			},
 		},
+		Dependencies: []string{
+			"k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
 	}
 }
 

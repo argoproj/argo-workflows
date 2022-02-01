@@ -8972,16 +8972,16 @@
     "io.argoproj.workflow.v1alpha1.ContainerSetRetryStrategy": {
       "type": "object",
       "required": [
-        "steps"
+        "retries"
       ],
       "properties": {
         "duration": {
           "description": "Duration is the time between each retry",
           "type": "string"
         },
-        "steps": {
+        "retries": {
           "description": "Nbr of retries",
-          "type": "integer"
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         }
       }
     },

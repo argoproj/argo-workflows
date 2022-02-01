@@ -3958,7 +3958,7 @@ _No description available_
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`duration`|`string`|Duration is the time between each retry|
-|`steps`|`integer`|Nbr of retries|
+|`retries`|[`IntOrString`](#intorstring)|Nbr of retries|
 
 ## DAGTask
 
