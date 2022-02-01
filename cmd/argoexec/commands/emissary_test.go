@@ -37,14 +37,6 @@ func TestEmissary(t *testing.T) {
 		assert.Equal(t, "0", string(data))
 	})
 
-	t.Run("Exit0", func(t *testing.T) {
-		err := run(x, []string{"exit"})
-		assert.NoError(t, err)
-		data, err := ioutil.ReadFile(varRunArgo + "/ctr/main/exitcode")
-		assert.NoError(t, err)
-		assert.Equal(t, "0", string(data))
-	})
-
 	t.Run("Exit1", func(t *testing.T) {
 		err := run(x, []string{"exit", "1"})
 		assert.Equal(t, 1, err.(*exec.ExitError).ExitCode())
