@@ -327,8 +327,13 @@ jobs:
         with:
           go-version: "1.17"
       - run: go install sigs.k8s.io/bom/cmd/bom@v0.2.0
+      - run: go install github.com/opensbom-generator/spdx-sbom-generator/cmd/generator@v0.0.13
       - run: mkdir -p dist
-      - run: bom generate . -o dist/bom.spdx -n http://argoproj.io/workflows
+      - run: generator -o dist -p .
+      - run: generator -o dist -p ui
+      - run: bom generate --image quay.io/argoproj/workflow-controller:${GITHUB_REF##*/}
+      - run: bom generate --image quay.io/argoproj/argocli:${GITHUB_REF##*/}
+      - run: bom generate --image quay.io/argoproj/argoexec:${GITHUB_REF##*/}
       - uses: actions/cache@v2
         with:
           path: ui/node_modules
@@ -367,6 +372,6 @@ jobs:
             dist/argo-*.gz
             dist/argo-*.gz.sha256
             dist/manifests/*.yaml
-            dist/bom.spdx
+            dist/*.spdx
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
