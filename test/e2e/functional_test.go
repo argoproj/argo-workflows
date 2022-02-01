@@ -71,11 +71,11 @@ spec:
   arguments:
     parameters:
       - name: foo
-        value: "bar"
+        value: bar
   workflowMetadata:
     labelsFrom:
       my-label: 
-        expression: 'parameters.foo'
+        expression: parameters.foo
   entrypoint: main
   templates:
     - name: main
