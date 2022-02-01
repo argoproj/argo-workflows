@@ -1609,7 +1609,7 @@ with argo_workflows.ApiClient() as api_client:
                         ],
                         retry_strategy=IoArgoprojWorkflowV1alpha1ContainerSetRetryStrategy(
                             duration="duration_example",
-                            steps=1,
+                            retries="retries_example",
                         ),
                         volume_mounts=[
                             VolumeMount(
@@ -5018,7 +5018,7 @@ with argo_workflows.ApiClient() as api_client:
                             ],
                             retry_strategy=IoArgoprojWorkflowV1alpha1ContainerSetRetryStrategy(
                                 duration="duration_example",
-                                steps=1,
+                                retries="retries_example",
                             ),
                             volume_mounts=[
                                 VolumeMount(
@@ -9875,7 +9875,7 @@ with argo_workflows.ApiClient() as api_client:
                         ],
                         retry_strategy=IoArgoprojWorkflowV1alpha1ContainerSetRetryStrategy(
                             duration="duration_example",
-                            steps=1,
+                            retries="retries_example",
                         ),
                         volume_mounts=[
                             VolumeMount(
@@ -13284,7 +13284,7 @@ with argo_workflows.ApiClient() as api_client:
                             ],
                             retry_strategy=IoArgoprojWorkflowV1alpha1ContainerSetRetryStrategy(
                                 duration="duration_example",
-                                steps=1,
+                                retries="retries_example",
                             ),
                             volume_mounts=[
                                 VolumeMount(
@@ -18064,7 +18064,7 @@ with argo_workflows.ApiClient() as api_client:
                         ],
                         retry_strategy=IoArgoprojWorkflowV1alpha1ContainerSetRetryStrategy(
                             duration="duration_example",
-                            steps=1,
+                            retries="retries_example",
                         ),
                         volume_mounts=[
                             VolumeMount(
@@ -21473,7 +21473,7 @@ with argo_workflows.ApiClient() as api_client:
                             ],
                             retry_strategy=IoArgoprojWorkflowV1alpha1ContainerSetRetryStrategy(
                                 duration="duration_example",
-                                steps=1,
+                                retries="retries_example",
                             ),
                             volume_mounts=[
                                 VolumeMount(

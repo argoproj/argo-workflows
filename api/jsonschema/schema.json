@@ -4704,13 +4704,13 @@
           "description": "Duration is the time between each retry",
           "type": "string"
         },
-        "steps": {
-          "description": "Nbr of retries",
-          "type": "integer"
+        "retries": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString",
+          "description": "Nbr of retries"
         }
       },
       "required": [
-        "steps"
+        "retries"
       ],
       "type": "object"
     },

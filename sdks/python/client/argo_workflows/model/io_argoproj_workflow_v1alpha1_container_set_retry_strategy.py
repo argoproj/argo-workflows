@@ -81,7 +81,7 @@ class IoArgoprojWorkflowV1alpha1ContainerSetRetryStrategy(ModelNormal):
                 and the value is attribute type.
         """
         return {
-            'steps': (int,),  # noqa: E501
+            'retries': (str,),  # noqa: E501
             'duration': (str,),  # noqa: E501
         }
 
@@ -91,7 +91,7 @@ class IoArgoprojWorkflowV1alpha1ContainerSetRetryStrategy(ModelNormal):
 
 
     attribute_map = {
-        'steps': 'steps',  # noqa: E501
+        'retries': 'retries',  # noqa: E501
         'duration': 'duration',  # noqa: E501
     }
 
@@ -102,11 +102,11 @@ class IoArgoprojWorkflowV1alpha1ContainerSetRetryStrategy(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, steps, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, retries, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1ContainerSetRetryStrategy - a model defined in OpenAPI
 
         Args:
-            steps (int): Nbr of retries
+            retries (str):
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -167,7 +167,7 @@ class IoArgoprojWorkflowV1alpha1ContainerSetRetryStrategy(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.steps = steps
+        self.retries = retries
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -188,11 +188,11 @@ class IoArgoprojWorkflowV1alpha1ContainerSetRetryStrategy(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, steps, *args, **kwargs):  # noqa: E501
+    def __init__(self, retries, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1ContainerSetRetryStrategy - a model defined in OpenAPI
 
         Args:
-            steps (int): Nbr of retries
+            retries (str):
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -251,7 +251,7 @@ class IoArgoprojWorkflowV1alpha1ContainerSetRetryStrategy(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.steps = steps
+        self.retries = retries
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

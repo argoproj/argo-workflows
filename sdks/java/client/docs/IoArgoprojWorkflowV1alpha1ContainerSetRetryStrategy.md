@@ -8,7 +8,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **duration** | **String** | Duration is the time between each retry |  [optional]
-**steps** | **Integer** | Nbr of retries | 
+**retries** | **String** |  | 
 
 
 
