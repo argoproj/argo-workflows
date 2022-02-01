@@ -200,6 +200,8 @@ Workflow is the definition of a workflow resource
 
 - [`key-only-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/key-only-artifact.yaml)
 
+- [`label-value-from-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/label-value-from-workflow.yaml)
+
 - [`life-cycle-hooks-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-tmpl-level.yaml)
 
 - [`life-cycle-hooks-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-wf-level.yaml)
@@ -606,6 +608,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
 
 - [`key-only-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/key-only-artifact.yaml)
+
+- [`label-value-from-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/label-value-from-workflow.yaml)
 
 - [`life-cycle-hooks-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-tmpl-level.yaml)
 
@@ -1024,6 +1028,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`key-only-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/key-only-artifact.yaml)
 
+- [`label-value-from-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/label-value-from-workflow.yaml)
+
 - [`life-cycle-hooks-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-tmpl-level.yaml)
 
 - [`life-cycle-hooks-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-wf-level.yaml)
@@ -1296,6 +1302,8 @@ Arguments to a template
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
+
+- [`label-value-from-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/label-value-from-workflow.yaml)
 
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
@@ -1645,6 +1653,13 @@ VolumeClaimGC describes how to delete volumes from completed Workflows
 ## WorkflowMetadata
 
 _No description available_
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`label-value-from-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/label-value-from-workflow.yaml)
+</details>
 
 ### Fields
 | Field Name | Field Type | Description   |
@@ -2042,6 +2057,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
+
+- [`label-value-from-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/label-value-from-workflow.yaml)
 
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
@@ -3015,6 +3032,13 @@ SuspendTemplate is a template subtype to suspend a workflow at a predetermined p
 ## LabelValueFrom
 
 _No description available_
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`label-value-from-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/label-value-from-workflow.yaml)
+</details>
 
 ### Fields
 | Field Name | Field Type | Description   |
@@ -4361,6 +4385,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`key-only-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/key-only-artifact.yaml)
 
+- [`label-value-from-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/label-value-from-workflow.yaml)
+
 - [`life-cycle-hooks-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-tmpl-level.yaml)
 
 - [`life-cycle-hooks-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-wf-level.yaml)
@@ -4941,6 +4967,8 @@ A single application container that you want to run within a pod.
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
 
 - [`key-only-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/key-only-artifact.yaml)
+
+- [`label-value-from-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/label-value-from-workflow.yaml)
 
 - [`life-cycle-hooks-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-tmpl-level.yaml)
 
@@ -5627,6 +5655,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
 
 - [`key-only-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/key-only-artifact.yaml)
+
+- [`label-value-from-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/label-value-from-workflow.yaml)
 
 - [`life-cycle-hooks-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-tmpl-level.yaml)
 
