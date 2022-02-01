@@ -8214,3 +8214,175 @@ func TestRetryLoopWithOutputParam(t *testing.T) {
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
+
+var workflowShuttingDownWithNodesInPendingAfterReconsiliation = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v1
+  generateName: container-set-termination-demo
+  generation: 10
+  labels:
+    workflows.argoproj.io/phase: Running
+    workflows.argoproj.io/resubmitted-from-workflow: container-set-termination-demob7c6c
+  name: container-set-termination-demopw5vv
+  namespace: argo
+  resourceVersion: "88102"
+  uid: 2a5a4c10-3a5c-4fb4-8931-20ac78cabfee
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+        - name: using-container-set-template
+          template: problematic-container-set
+  - name: problematic-container-set
+    containerSet:
+      containers:
+      - command:
+        - sh
+        - -c
+        - sleep 10
+        image: alpine
+        name: step-1
+      - command:
+        - sh
+        - -c
+        - sleep 10
+        image: alpine
+        name: step-2
+status:
+  phase: Running
+  conditions:
+  - status: "True"
+    type: PodRunning
+  finishedAt: null
+  nodes:
+    container-set-termination-demopw5vv:
+      children:
+      - container-set-termination-demopw5vv-2652912851
+      displayName: container-set-termination-demopw5vv
+      finishedAt: null
+      id: container-set-termination-demopw5vv
+      name: container-set-termination-demopw5vv
+      phase: Running
+      progress: 2/2
+      startedAt: "2022-01-27T17:45:59Z"
+      templateName: main
+      templateScope: local/container-set-termination-demopw5vv
+      type: DAG
+    container-set-termination-demopw5vv-842041608:
+      boundaryID: container-set-termination-demopw5vv
+      children:
+      - container-set-termination-demopw5vv-893664226
+      - container-set-termination-demopw5vv-876886607
+      displayName: using-container-set-template
+      finishedAt: "2022-01-27T17:46:16Z"
+      hostNodeName: k3d-argo-workflow-server-0
+      id: container-set-termination-demopw5vv-842041608
+      name: container-set-termination-demopw5vv.using-container-set-template
+      phase: Failed
+      progress: 1/1
+      startedAt: "2022-01-27T17:46:14Z"
+      templateName: problematic-container-set
+      templateScope: local/container-set-termination-demopw5vv
+      type: Pod
+    container-set-termination-demopw5vv-876886607:
+      boundaryID: container-set-termination-demopw5vv-842041608
+      displayName: step-2
+      finishedAt: null
+      id: container-set-termination-demopw5vv-876886607
+      name: container-set-termination-demopw5vv.using-container-set-template.step-2
+      phase: Pending
+      startedAt: "2022-01-27T17:46:14Z"
+      templateName: problematic-container-set
+      templateScope: local/container-set-termination-demopw5vv
+      type: Container
+    container-set-termination-demopw5vv-893664226:
+      boundaryID: container-set-termination-demopw5vv-842041608
+      displayName: step-1
+      finishedAt: null
+      id: container-set-termination-demopw5vv-893664226
+      name: container-set-termination-demopw5vv.using-container-set-template.step-1
+      phase: Pending
+      startedAt: "2022-01-27T17:46:14Z"
+      templateName: problematic-container-set
+      templateScope: local/container-set-termination-demopw5vv
+      type: Container
+`
+
+func TestFailSuspendedAndPendingNodesAfterDeadlineOrShutdown(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+
+	t.Run("Shutdown", func(t *testing.T) {
+		workflow := wfv1.MustUnmarshalWorkflow(workflowShuttingDownWithNodesInPendingAfterReconsiliation)
+		woc := newWorkflowOperationCtx(workflow, controller)
+
+		woc.execWf.Spec.Shutdown = "Terminate"
+		woc.execWf.Spec.ActiveDeadlineSeconds = nil
+
+		step1NodeName := "container-set-termination-demopw5vv-893664226"
+		step2NodeName := "container-set-termination-demopw5vv-876886607"
+
+		// update step1 type to NodeTypePod
+		//              phase to NodeRunning
+		if entry, ok := woc.wf.Status.Nodes[step1NodeName]; ok {
+			entry.Type = wfv1.NodeTypePod
+			entry.Phase = wfv1.NodeRunning
+			woc.wf.Status.Nodes[step1NodeName] = entry
+		}
+
+		// update step2 type to NodeTypeSuspend
+		//              phase to NodeRunning
+		if entry, ok := woc.wf.Status.Nodes[step2NodeName]; ok {
+			entry.Type = wfv1.NodeTypeSuspend
+			entry.Phase = wfv1.NodeRunning
+			woc.wf.Status.Nodes[step2NodeName] = entry
+		}
+
+		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Nodes[step1NodeName].Phase)
+		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Nodes[step2NodeName].Phase)
+
+		woc.failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
+
+		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Nodes[step1NodeName].Phase)
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes[step2NodeName].Phase)
+	})
+
+	t.Run("Deadline", func(t *testing.T) {
+		workflow := wfv1.MustUnmarshalWorkflow(workflowShuttingDownWithNodesInPendingAfterReconsiliation)
+		woc := newWorkflowOperationCtx(workflow, controller)
+
+		woc.execWf.Spec.Shutdown = ""
+
+		deadlineInSeconds := int64(10)
+		woc.wf.Status.StartedAt = metav1.NewTime(time.Now().AddDate(0, 0, -1)) // yesterday
+		woc.execWf.Spec.ActiveDeadlineSeconds = &deadlineInSeconds
+		woc.workflowDeadline = woc.getWorkflowDeadline()
+
+		step1NodeName := "container-set-termination-demopw5vv-893664226"
+		step2NodeName := "container-set-termination-demopw5vv-876886607"
+
+		// update step1 phase to NodeRunning
+		if entry, ok := woc.wf.Status.Nodes[step1NodeName]; ok {
+			entry.Phase = wfv1.NodeRunning
+			woc.wf.Status.Nodes[step1NodeName] = entry
+		}
+
+		// update step2 phase to NodePending
+		if entry, ok := woc.wf.Status.Nodes[step2NodeName]; ok {
+			entry.Phase = wfv1.NodePending
+			woc.wf.Status.Nodes[step2NodeName] = entry
+		}
+
+		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Nodes[step1NodeName].Phase)
+		assert.Equal(t, wfv1.NodePending, woc.wf.Status.Nodes[step2NodeName].Phase)
+
+		woc.failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
+
+		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Nodes[step1NodeName].Phase)
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes[step2NodeName].Phase)
+	})
+}

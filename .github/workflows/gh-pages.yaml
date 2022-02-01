@@ -20,7 +20,7 @@ jobs:
       - run: pip install mkdocs==1.0.4 mkdocs_material==4.1.1
       - run: mkdocs build
       - run: make parse-examples
-      - uses: peaceiris/actions-gh-pages@v2.5.0
+      - uses: peaceiris/actions-gh-pages@v2.9.0
         env:
           PERSONAL_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
           PUBLISH_BRANCH: gh-pages
