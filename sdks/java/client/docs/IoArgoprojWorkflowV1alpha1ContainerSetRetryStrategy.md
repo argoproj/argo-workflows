@@ -7,8 +7,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**backoff** | [**IoArgoprojWorkflowV1alpha1Backoff**](IoArgoprojWorkflowV1alpha1Backoff.md) |  |  [optional]
-**limit** | **String** |  |  [optional]
+**duration** | **String** | Duration is the time between each retry |  [optional]
+**steps** | **Integer** | Nbr of retries | 
 
 
 

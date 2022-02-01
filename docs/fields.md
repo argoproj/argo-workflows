@@ -3957,8 +3957,8 @@ _No description available_
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`backoff`|[`Backoff`](#backoff)|Backoff is a backoff strategy|
-|`limit`|[`IntOrString`](#intorstring)|Limit is the maximum number of attempts when retrying a container|
+|`duration`|`string`|Duration is the time between each retry|
+|`steps`|`integer`|Nbr of retries|
 
 ## DAGTask
 

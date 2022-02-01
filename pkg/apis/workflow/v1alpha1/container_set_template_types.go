@@ -2,8 +2,8 @@ package v1alpha1
 
 import (
 	"fmt"
-	"time"
 
+	intstr "k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	corev1 "k8s.io/api/core/v1"
@@ -16,63 +16,32 @@ type ContainerSetTemplate struct {
 }
 
 type ContainerSetRetryStrategy struct {
-	// The initial duration.
-	Duration time.Duration `protobuf:"varint,1,opt,name=duration,casttype=time.Duration"`
-	// Duration is multiplied by factor each iteration, if factor is not zero
-	// and the limits imposed by Steps and Cap have not been reached.
-	// Should not be negative.
-	// The jitter does not contribute to the updates to the duration parameter.
-	Factor float64 `protobuf:"fixed64,2,opt,name=factor"`
-	// The sleep at each iteration is the duration plus an additional
-	// amount chosen uniformly at random from the interval between
-	// zero and `jitter*duration`.
-	Jitter float64 `protobuf:"fixed64,3,opt,name=jitter"`
-	// The remaining number of iterations in which the duration
-	// parameter may change (but progress can be stopped earlier by
-	// hitting the cap). If not positive, the duration is not
-	// changed. Used for exponential backoff in combination with
-	// Factor and Cap.
-	Steps int `protobuf:"varint,4,opt,name=steps"`
-	// A limit on revised values of the duration parameter. If a
-	// multiplication by the factor parameter would make the duration
-	// exceed the cap then the duration is set to the cap and the
-	// steps parameter is set to zero.
-	Cap time.Duration `protobuf:"varint,5,opt,name=cap,casttype=time.Duration"`
+	// Duration is the time between each retry
+	Duration string `json:"duration,omitempty" protobuf:"bytes,1,opt,name=duration"`
+
+	// Nbr of retries
+	Retries *intstr.IntOrString `json:"retries" protobuf:"bytes,2,rep,name=retries"`
 }
 
 func (t *ContainerSetTemplate) GetRetryStrategy() (wait.Backoff, error) {
-	if t == nil || t.RetryStrategy == nil || t.RetryStrategy.Limit == nil {
+	if t == nil || t.RetryStrategy == nil || t.RetryStrategy.Retries == nil {
 		return wait.Backoff{Steps: 1}, nil
 	}
 
-	retry := t.RetryStrategy
-	backoff := wait.Backoff{Steps: retry.Limit.IntValue()}
-	if retry.Backoff == nil {
+	backoff := wait.Backoff{Steps: t.RetryStrategy.Retries.IntValue()}
+
+	if t.RetryStrategy.Duration == "" {
 		return backoff, nil
 	}
 
-	if retry.Backoff.Duration != "" {
-		duration, err := time.ParseDuration(retry.Backoff.Duration)
-		if err != nil {
-			return wait.Backoff{}, fmt.Errorf("failed to parse retry duration: %w", err)
-		}
-		backoff.Duration = duration
+	baseDuration, err := ParseStringToDuration(t.RetryStrategy.Duration)
+	if err != nil {
+		return wait.Backoff{}, err
 	}
-
-	if retry.Backoff.MaxDuration != "" {
-		cap, err := time.ParseDuration(retry.Backoff.MaxDuration)
-		if err != nil {
-			return wait.Backoff{}, fmt.Errorf("failed to parse max duration: %w", err)
-		}
-		backoff.Cap = cap
-	}
-
-	if retry.Backoff.Factor != nil {
-		backoff.Factor = float64(retry.Backoff.Factor.IntVal)
-	}
-
+	backoff.Duration = baseDuration
 	return backoff, nil
 }
+
 func (in *ContainerSetTemplate) GetContainers() []corev1.Container {
 	var ctrs []corev1.Container
 	for _, t := range in.GetGraph() {

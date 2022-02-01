@@ -1258,48 +1258,22 @@ func schema_pkg_apis_workflow_v1alpha1_ContainerSetRetryStrategy(ref common.Refe
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
-					"Duration": {
+					"duration": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The initial duration.",
-							Default:     0,
-							Type:        []string{"integer"},
-							Format:      "int64",
+							Description: "Duration is the time between each retry",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
-					"Factor": {
+					"steps": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Duration is multiplied by factor each iteration, if factor is not zero and the limits imposed by Steps and Cap have not been reached. Should not be negative. The jitter does not contribute to the updates to the duration parameter.",
-							Default:     0,
-							Type:        []string{"number"},
-							Format:      "double",
-						},
-					},
-					"Jitter": {
-						SchemaProps: spec.SchemaProps{
-							Description: "The sleep at each iteration is the duration plus an additional amount chosen uniformly at random from the interval between zero and `jitter*duration`.",
-							Default:     0,
-							Type:        []string{"number"},
-							Format:      "double",
-						},
-					},
-					"Steps": {
-						SchemaProps: spec.SchemaProps{
-							Description: "The remaining number of iterations in which the duration parameter may change (but progress can be stopped earlier by hitting the cap). If not positive, the duration is not changed. Used for exponential backoff in combination with Factor and Cap.",
-							Default:     0,
+							Description: "Nbr of retries",
 							Type:        []string{"integer"},
 							Format:      "int32",
 						},
 					},
-					"Cap": {
-						SchemaProps: spec.SchemaProps{
-							Description: "A limit on revised values of the duration parameter. If a multiplication by the factor parameter would make the duration exceed the cap then the duration is set to the cap and the steps parameter is set to zero.",
-							Default:     0,
-							Type:        []string{"integer"},
-							Format:      "int64",
-						},
-					},
 				},
-				Required: []string{"Duration", "Factor", "Jitter", "Steps", "Cap"},
+				Required: []string{"steps"},
 			},
 		},
 	}

@@ -153,14 +153,14 @@ func TestEmissary(t *testing.T) {
 		],
 		"retryStrategy": 
 		{
-			"limit": 1
+			"retries": 1
 		}
 	}
 }
 `), 0o600)
 		assert.NoError(t, err)
 		_ = os.Remove("test.txt")
-		err = run(x, []string{"sh", "./test/containerResetTest.sh", "/tmp/artifact"})
+		err = run(x, []string{"sh", "./test/containerSetRetryTest.sh", "/tmp/artifact"})
 		assert.Error(t, err)
 		data, err := ioutil.ReadFile(varRunArgo + "/outputs/artifacts/tmp/artifact.tgz")
 		assert.NoError(t, err)
@@ -183,14 +183,14 @@ func TestEmissary(t *testing.T) {
 		],
 		"retryStrategy": 
 		{
-			"limit": 2
+			"retries": 2
 		}
 	}
 }
 `), 0o600)
 		assert.NoError(t, err)
 		_ = os.Remove("test.txt")
-		err = run(x, []string{"sh", "./test/containerResetTest.sh", "/tmp/artifact"})
+		err = run(x, []string{"sh", "./test/containerSetRetryTest.sh", "/tmp/artifact"})
 		assert.NoError(t, err)
 		data, err := ioutil.ReadFile(varRunArgo + "/outputs/artifacts/tmp/artifact.tgz")
 		assert.NoError(t, err)

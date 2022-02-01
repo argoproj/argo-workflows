@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
-	intstr "k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/yaml"
 )
@@ -21,11 +21,11 @@ func validateContainerSetTemplate(yamlStr string) error {
 }
 
 func TestContainerSetGetRetryStrategy(t *testing.T) {
-	t.Run("LimitSet", func(t *testing.T) {
-		limit := intstr.FromInt(100)
+	t.Run("RetriesOnly", func(t *testing.T) {
+		retries := intstr.FromInt(100)
 		set := ContainerSetTemplate{
 			RetryStrategy: &ContainerSetRetryStrategy{
-				Limit: &limit,
+				Retries: &retries,
 			},
 		}
 		strategy, err := set.GetRetryStrategy()
@@ -33,42 +33,18 @@ func TestContainerSetGetRetryStrategy(t *testing.T) {
 		assert.Equal(t, wait.Backoff{Steps: 100}, strategy)
 	})
 
-	t.Run("Backoff", func(t *testing.T) {
-		limit := intstr.FromInt(100)
+	t.Run("DurationSet", func(t *testing.T) {
+		retries := intstr.FromInt(100)
+		duration := "1s"
 		set := &ContainerSetTemplate{
 			RetryStrategy: &ContainerSetRetryStrategy{
-				Limit: &limit,
-				Backoff: &Backoff{
-					Duration: "1s",
-				},
+				Retries:  &retries,
+				Duration: duration,
 			},
 		}
 		strategy, err := set.GetRetryStrategy()
 		assert.Nil(t, err)
 		assert.Equal(t, wait.Backoff{
-			Steps:    100,
-			Duration: time.Duration(time.Second),
-		}, strategy)
-	})
-
-	t.Run("Backoff", func(t *testing.T) {
-		limit := intstr.FromInt(100)
-		factor := intstr.FromInt(100)
-		set := &ContainerSetTemplate{
-			RetryStrategy: &ContainerSetRetryStrategy{
-				Limit: &limit,
-				Backoff: &Backoff{
-					Duration:    "1s",
-					MaxDuration: "20s",
-					Factor:      &factor,
-				},
-			},
-		}
-		strategy, err := set.GetRetryStrategy()
-		assert.Nil(t, err)
-		assert.Equal(t, wait.Backoff{
-			Steps:    100,
-			Factor:   100,
 			Duration: time.Duration(time.Second),
 			Cap:      time.Duration(time.Second * 20),
 		}, strategy)

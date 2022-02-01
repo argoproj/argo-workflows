@@ -3298,23 +3298,15 @@ spec:
                         type: array
                       retryStrategy:
                         properties:
-                          backoff:
-                            properties:
-                              duration:
-                                type: string
-                              factor:
-                                anyOf:
-                                - type: integer
-                                - type: string
-                                x-kubernetes-int-or-string: true
-                              maxDuration:
-                                type: string
-                            type: object
-                          limit:
+                          duration:
+                            type: string
+                          retries:
                             anyOf:
                             - type: integer
                             - type: string
                             x-kubernetes-int-or-string: true
+                        required:
+                        - retries
                         type: object
                       volumeMounts:
                         items:
@@ -9791,23 +9783,15 @@ spec:
                           type: array
                         retryStrategy:
                           properties:
-                            backoff:
-                              properties:
-                                duration:
-                                  type: string
-                                factor:
-                                  anyOf:
-                                  - type: integer
-                                  - type: string
-                                  x-kubernetes-int-or-string: true
-                                maxDuration:
-                                  type: string
-                              type: object
-                            limit:
+                            duration:
+                              type: string
+                            retries:
                               anyOf:
                               - type: integer
                               - type: string
                               x-kubernetes-int-or-string: true
+                          required:
+                          - retries
                           type: object
                         volumeMounts:
                           items:
@@ -19290,23 +19274,15 @@ spec:
                           type: array
                         retryStrategy:
                           properties:
-                            backoff:
-                              properties:
-                                duration:
-                                  type: string
-                                factor:
-                                  anyOf:
-                                  - type: integer
-                                  - type: string
-                                  x-kubernetes-int-or-string: true
-                                maxDuration:
-                                  type: string
-                              type: object
-                            limit:
+                            duration:
+                              type: string
+                            retries:
                               anyOf:
                               - type: integer
                               - type: string
                               x-kubernetes-int-or-string: true
+                          required:
+                          - retries
                           type: object
                         volumeMounts:
                           items:
@@ -27271,23 +27247,15 @@ spec:
                             type: array
                           retryStrategy:
                             properties:
-                              backoff:
-                                properties:
-                                  duration:
-                                    type: string
-                                  factor:
-                                    anyOf:
-                                    - type: integer
-                                    - type: string
-                                    x-kubernetes-int-or-string: true
-                                  maxDuration:
-                                    type: string
-                                type: object
-                              limit:
+                              duration:
+                                type: string
+                              retries:
                                 anyOf:
                                 - type: integer
                                 - type: string
                                 x-kubernetes-int-or-string: true
+                            required:
+                            - retries
                             type: object
                           volumeMounts:
                             items:
@@ -33764,23 +33732,15 @@ spec:
                               type: array
                             retryStrategy:
                               properties:
-                                backoff:
-                                  properties:
-                                    duration:
-                                      type: string
-                                    factor:
-                                      anyOf:
-                                      - type: integer
-                                      - type: string
-                                      x-kubernetes-int-or-string: true
-                                    maxDuration:
-                                      type: string
-                                  type: object
-                                limit:
+                                duration:
+                                  type: string
+                                retries:
                                   anyOf:
                                   - type: integer
                                   - type: string
                                   x-kubernetes-int-or-string: true
+                              required:
+                              - retries
                               type: object
                             volumeMounts:
                               items:

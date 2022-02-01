@@ -4700,15 +4700,18 @@
     },
     "io.argoproj.workflow.v1alpha1.ContainerSetRetryStrategy": {
       "properties": {
-        "backoff": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Backoff",
-          "description": "Backoff is a backoff strategy"
+        "duration": {
+          "description": "Duration is the time between each retry",
+          "type": "string"
         },
-        "limit": {
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString",
-          "description": "Limit is the maximum number of attempts when retrying a container"
+        "steps": {
+          "description": "Nbr of retries",
+          "type": "integer"
         }
       },
+      "required": [
+        "steps"
+      ],
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.ContainerSetTemplate": {
