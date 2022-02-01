@@ -73,10 +73,6 @@ func (w *When) SubmitWorkflowsFromWorkflowTemplates() *When {
 	ctx := context.Background()
 	for _, tmpl := range w.wfTemplates {
 		_, _ = fmt.Println("Submitting workflow from workflow template", tmpl.Name)
-		if tmpl.Spec.WorkflowMetadata == nil {
-			tmpl.Spec.WorkflowMetadata = &wfv1.WorkflowMetadata{}
-		}
-		tmpl.Spec.WorkflowMetadata.Labels[Label] = "true"
 		wf, err := w.client.Create(ctx, common.NewWorkflowFromWorkflowTemplate(tmpl.Name, false), metav1.CreateOptions{})
 		if err != nil {
 			w.t.Fatal(err)
@@ -92,10 +88,6 @@ func (w *When) SubmitWorkflowsFromClusterWorkflowTemplates() *When {
 	ctx := context.Background()
 	for _, tmpl := range w.cwfTemplates {
 		_, _ = fmt.Println("Submitting workflow from cluster workflow template", tmpl.Name)
-		if tmpl.Spec.WorkflowMetadata == nil {
-			tmpl.Spec.WorkflowMetadata = &wfv1.WorkflowMetadata{}
-		}
-		tmpl.Spec.WorkflowMetadata.Labels[Label] = "true"
 		wf, err := w.client.Create(ctx, common.NewWorkflowFromWorkflowTemplate(tmpl.Name, true), metav1.CreateOptions{})
 		if err != nil {
 			w.t.Fatal(err)
@@ -146,6 +138,10 @@ func (w *When) CreateWorkflowTemplates() *When {
 	for _, wfTmpl := range w.wfTemplates {
 		_, _ = fmt.Println("Creating workflow template", wfTmpl.Name)
 		label(wfTmpl)
+		if wfTmpl.Spec.WorkflowMetadata == nil {
+			wfTmpl.Spec.WorkflowMetadata = &wfv1.WorkflowMetadata{Labels: map[string]string{}}
+		}
+		wfTmpl.Spec.WorkflowMetadata.Labels[Label] = "true"
 		_, err := w.wfTemplateClient.Create(ctx, wfTmpl, metav1.CreateOptions{})
 		if err != nil {
 			w.t.Fatal(err)
@@ -165,6 +161,10 @@ func (w *When) CreateClusterWorkflowTemplates() *When {
 	for _, cwfTmpl := range w.cwfTemplates {
 		_, _ = fmt.Println("Creating cluster workflow template", cwfTmpl.Name)
 		label(cwfTmpl)
+		if cwfTmpl.Spec.WorkflowMetadata == nil {
+			cwfTmpl.Spec.WorkflowMetadata = &wfv1.WorkflowMetadata{Labels: map[string]string{}}
+		}
+		cwfTmpl.Spec.WorkflowMetadata.Labels[Label] = "true"
 		_, err := w.cwfTemplateClient.Create(ctx, cwfTmpl, metav1.CreateOptions{})
 		if err != nil {
 			w.t.Fatal(err)
