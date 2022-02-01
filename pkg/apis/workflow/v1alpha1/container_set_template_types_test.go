@@ -35,7 +35,7 @@ func TestContainerSetGetRetryStrategy(t *testing.T) {
 
 	t.Run("DurationSet", func(t *testing.T) {
 		retries := intstr.FromInt(100)
-		duration := "1s"
+		duration := "20s"
 		set := &ContainerSetTemplate{
 			RetryStrategy: &ContainerSetRetryStrategy{
 				Retries:  &retries,
@@ -45,8 +45,8 @@ func TestContainerSetGetRetryStrategy(t *testing.T) {
 		strategy, err := set.GetRetryStrategy()
 		assert.Nil(t, err)
 		assert.Equal(t, wait.Backoff{
-			Duration: time.Duration(time.Second),
-			Cap:      time.Duration(time.Second * 20),
+			Steps:    100,
+			Duration: time.Duration(20 * time.Second),
 		}, strategy)
 	})
 }
