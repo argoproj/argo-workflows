@@ -1105,24 +1105,3 @@ func TestTemplate_RetryStrategy(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, wait.Backoff{Steps: 1}, strategy)
 }
-
-func TestHasHTTPNodes(t *testing.T) {
-	nodes := Nodes{
-		"test": {
-			Type: NodeTypeHTTP,
-		},
-		"test1": {
-			Type: NodeTypeContainer,
-		},
-	}
-	assert.True(t, nodes.HasHTTPNodes())
-	nodes = Nodes{
-		"test": {
-			Type: NodeTypeSteps,
-		},
-		"test1": {
-			Type: NodeTypeContainer,
-		},
-	}
-	assert.False(t, nodes.HasHTTPNodes())
-}
