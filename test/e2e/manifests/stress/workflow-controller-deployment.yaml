@@ -16,7 +16,5 @@ spec:
             - --qps=512
             - --workflow-workers=128
           env:
-            - name: PNS_PRIVILEGED
-              value: "true"
             - name: ARGO_PPROF
               value: "true"
