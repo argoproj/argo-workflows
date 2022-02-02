@@ -33,8 +33,7 @@ func ParseClusterNamespaceKey(s string) (ClusterNamespaceKey, error) {
 // a namespace
 func NewClusterNamespaceKey(clusterName ClusterName, namespace string) (ClusterNamespaceKey, error) {
 	key := ClusterNamespaceKey(fmt.Sprintf("%v.%s", clusterName, namespace))
-	err := key.Validate()
-	return key, err
+	return key, key.Validate()
 }
 
 // Split takes a ClusterNamespaceKey from the clusterName.namespace form and
