@@ -15,7 +15,7 @@ All vulnerabilites and associated information will be treated with full confiden
 ## Public Disclosure
 
 Security vulnerabilities will be disclosed via [release notes](docs/releasing.md) and using the
-[Git Hub Security Advisories](https://github.com/argoproj/argo-workflows/security/advisories)
+[GitHub Security Advisories](https://github.com/argoproj/argo-workflows/security/advisories)
 feature to keep our community well informed, and will credit you for your findings (unless you prefer to stay anonymous, of course).
 
 ## Vulnerability Scanning
