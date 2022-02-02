@@ -266,7 +266,8 @@ func (s *FunctionalSuite) TestEventOnNodeFailSentAsPod() {
 		When().
 		UpdateConfigMap(
 			"workflow-controller-configmap",
-			configMap.Data).
+			configMap.Data,
+			map[string]string{}).
 		// Give controller enough time to update from config map change
 		Wait(5*time.Second).
 		SubmitWorkflow().
@@ -313,7 +314,7 @@ func (s *FunctionalSuite) TestEventOnNodeFailSentAsPod() {
 		).
 		When().
 		// Reset config map to original settings
-		UpdateConfigMap("workflow-controller-configmap", originalData).
+		UpdateConfigMap("workflow-controller-configmap", originalData, map[string]string{}).
 		// Give controller enough time to update from config map change
 		Wait(5 * time.Second)
 }
@@ -480,7 +481,7 @@ func (s *FunctionalSuite) TestPendingRetryWorkflow() {
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: pending-retry-workflow-    
+  generateName: pending-retry-workflow-
 spec:
   entrypoint: dag
   templates:
