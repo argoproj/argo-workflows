@@ -326,14 +326,6 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: "1.17"
-      - run: go install sigs.k8s.io/bom/cmd/bom@v0.2.0
-      - run: go install github.com/spdx/spdx-sbom-generator/cmd/generator@v0.0.13
-      - run: mkdir -p dist
-      - run: generator -o dist -p .
-      - run: generator -o dist -p ui
-      - run: bom generate --image quay.io/argoproj/workflow-controller:${GITHUB_REF##*/}
-      - run: bom generate --image quay.io/argoproj/argocli:${GITHUB_REF##*/}
-      - run: bom generate --image quay.io/argoproj/argoexec:${GITHUB_REF##*/}
       - uses: actions/cache@v2
         with:
           path: ui/node_modules
@@ -346,6 +338,15 @@ jobs:
         with:
           path: /home/runner/go/pkg/mod
           key: GOMODCACHE-v2-${{ hashFiles('**/go.mod') }}
+      - run: go install sigs.k8s.io/bom/cmd/bom@v0.2.0
+      - run: go install github.com/spdx/spdx-sbom-generator/cmd/generator@v0.0.13
+      - run: mkdir -p dist
+      - run: generator -o dist -p .
+      - run: yarn --cwd ui install
+      - run: generator -o dist -p ui
+      - run: bom generate --image quay.io/argoproj/workflow-controller:${GITHUB_REF##*/} -o dist/workflow-controller.spdx
+      - run: bom generate --image quay.io/argoproj/argocli:${GITHUB_REF##*/} -o dist/argocli.spdx
+      - run: bom generate --image quay.io/argoproj/argoexec:${GITHUB_REF##*/} -o dist/argoexec.spdx
       # https://stackoverflow.com/questions/58033366/how-to-get-current-branch-within-github-actions
       - run: make release-notes VERSION=${GITHUB_REF##*/}
       - run: cat release-notes
