@@ -12,9 +12,7 @@ resources:
   - workflow-default-rolebinding.yaml
   - cluster-workflow-template-rbac.yaml
   - artifact-repositories-configmap.yaml
-  - workflow-controller-podpriorityclass.yaml
 
 patchesStrategicMerge:
   - overlays/workflow-controller-configmap.yaml
-  - overlays/workflow-controller-deployment.yaml
   - overlays/argo-server-deployment.yaml
