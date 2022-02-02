@@ -32,7 +32,15 @@ func (key ResourceKey) String() string {
 
 // Validate determines whether a ResourceKey follows the
 // clusterName/namespace/resourceName/resource.version.group convention
-func (key *ResourceKey) Validate() error {
+func (key *ResourceKey) Validate() (err error) {
+	// gracefully handle schema.ParseResourceArg panicking
+	defer func() {
+		if r := recover(); r != nil {
+			parts := strings.Split(key.String(), "/")
+			err = fmt.Errorf(ErrInvalidGroupVersionResource, parts[3])
+		}
+	}()
+
 	parts := strings.Split(key.String(), "/")
 	if len(parts) != 4 {
 		return fmt.Errorf(ErrInvalidResourceKey, key.String())
@@ -43,7 +51,7 @@ func (key *ResourceKey) Validate() error {
 		return fmt.Errorf(ErrInvalidGroupVersionResource, parts[3])
 	}
 
-	return nil
+	return
 }
 
 // Split takes a ResourceKey and returns the component cluster name, namespace,
