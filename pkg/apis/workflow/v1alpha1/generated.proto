@@ -800,6 +800,12 @@ message NodeStatus {
   // A human readable message indicating details about why the node is in this condition.
   optional string message = 9;
 
+  // Cluster this node (pod nodes only) ran on. If empty/omitted it ran in the same cluster as the workflow.
+  optional string clusterName = 27;
+
+  // Namespace this node (pod nodes only) ran on. If empty/omitted it ran in the same namespace as the workflow.
+  optional string namespace = 28;
+
   // Time at which this node started
   optional k8s.io.apimachinery.pkg.apis.meta.v1.Time startedAt = 10;
 
@@ -1328,6 +1334,10 @@ message Template {
   // Resource template subtype which can run k8s resources
   optional ResourceTemplate resource = 14;
 
+  // MulticlusterResource is a k8s resource declaration that can live on a
+  // different cluster
+  optional Item multiclusterResource = 46;
+
   // DAG template subtype which runs a DAG
   optional DAGTemplate dag = 15;
 
@@ -1398,6 +1408,12 @@ message Template {
 
   // Priority to apply to workflow pods.
   optional int32 priority = 27;
+
+  // Cluster to run this template on. If empty/omitted it'll run in the same cluster as the workflow.
+  optional string clusterName = 44;
+
+  // Namespace run the template in. If empty/omitted it'll run in the same namespace as the workflow.
+  optional string namespaces = 45;
 
   // ServiceAccountName to apply to workflow pods
   optional string serviceAccountName = 28;

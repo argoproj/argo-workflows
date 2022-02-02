@@ -687,6 +687,8 @@ spec:
                       type: object
                     automountServiceAccountToken:
                       type: boolean
+                    clusterName:
+                      type: string
                     container:
                       properties:
                         args:
@@ -4143,7 +4145,11 @@ spec:
                       required:
                       - prometheus
                       type: object
+                    multiclusterResource:
+                      type: object
                     name:
+                      type: string
+                    namespace:
                       type: string
                     nodeSelector:
                       additionalProperties:
