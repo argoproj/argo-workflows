@@ -2583,6 +2583,10 @@ func (in *Template) DeepCopyInto(out *Template) {
 		*out = new(ResourceTemplate)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.MulticlusterResource != nil {
+		in, out := &in.MulticlusterResource, &out.MulticlusterResource
+		*out = (*in).DeepCopy()
+	}
 	if in.DAG != nil {
 		in, out := &in.DAG, &out.DAG
 		*out = new(DAGTemplate)

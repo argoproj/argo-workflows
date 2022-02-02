@@ -10,6 +10,7 @@ Name | Type | Description | Notes
 **type** | **str** | Type indicates type of node | 
 **boundary_id** | **str** | BoundaryID indicates the node ID of the associated template root node in which this node belongs to | [optional] 
 **children** | **[str]** | Children is a list of child node IDs | [optional] 
+**cluster_name** | **str** | Cluster this node (pod nodes only) ran on. If empty/omitted it ran in the same cluster as the io.argoproj.workflow.v1alpha1. | [optional] 
 **daemoned** | **bool** | Daemoned tracks whether or not this node was daemoned and need to be terminated | [optional] 
 **display_name** | **str** | DisplayName is a human readable representation of the node. Unique within a template boundary | [optional] 
 **estimated_duration** | **int** | EstimatedDuration in seconds. | [optional] 
@@ -18,6 +19,7 @@ Name | Type | Description | Notes
 **inputs** | [**IoArgoprojWorkflowV1alpha1Inputs**](IoArgoprojWorkflowV1alpha1Inputs.md) |  | [optional] 
 **memoization_status** | [**IoArgoprojWorkflowV1alpha1MemoizationStatus**](IoArgoprojWorkflowV1alpha1MemoizationStatus.md) |  | [optional] 
 **message** | **str** | A human readable message indicating details about why the node is in this condition. | [optional] 
+**namespace** | **str** | Namespace this node (pod nodes only) ran on. If empty/omitted it ran in the same namespace as the io.argoproj.workflow.v1alpha1. | [optional] 
 **outbound_nodes** | **[str]** | OutboundNodes tracks the node IDs which are considered \&quot;outbound\&quot; nodes to a template invocation. For every invocation of a template, there are nodes which we considered as \&quot;outbound\&quot;. Essentially, these are last nodes in the execution sequence to run, before the template is considered completed. These nodes are then connected as parents to a following step.  In the case of single pod steps (i.e. container, script, resource templates), this list will be nil since the pod itself is already considered the \&quot;outbound\&quot; node. In the case of DAGs, outbound nodes are the \&quot;target\&quot; tasks (tasks with no children). In the case of steps, outbound nodes are all the containers involved in the last step group. NOTE: since templates are composable, the list of outbound nodes are carried upwards when a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of a template, will be a superset of the outbound nodes of its last children. | [optional] 
 **outputs** | [**IoArgoprojWorkflowV1alpha1Outputs**](IoArgoprojWorkflowV1alpha1Outputs.md) |  | [optional] 
 **phase** | **str** | Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine. | [optional] 

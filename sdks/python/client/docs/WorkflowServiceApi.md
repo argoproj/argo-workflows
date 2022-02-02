@@ -1114,6 +1114,7 @@ with argo_workflows.ApiClient() as api_client:
                         ),
                     ),
                     automount_service_account_token=True,
+                    cluster_name="cluster_name_example",
                     container=Container(
                         args=[
                             "args_example",
@@ -2741,7 +2742,9 @@ with argo_workflows.ApiClient() as api_client:
                             ),
                         ],
                     ),
+                    multicluster_resource={},
                     name="name_example",
+                    namespace="namespace_example",
                     node_selector={
                         "key": "key_example",
                     },
@@ -4519,6 +4522,7 @@ with argo_workflows.ApiClient() as api_client:
                             ),
                         ),
                         automount_service_account_token=True,
+                        cluster_name="cluster_name_example",
                         container=Container(
                             args=[
                                 "args_example",
@@ -6146,7 +6150,9 @@ with argo_workflows.ApiClient() as api_client:
                                 ),
                             ],
                         ),
+                        multicluster_resource={},
                         name="name_example",
+                        namespace="namespace_example",
                         node_selector={
                             "key": "key_example",
                         },
@@ -8166,6 +8172,7 @@ with argo_workflows.ApiClient() as api_client:
                         children=[
                             "children_example",
                         ],
+                        cluster_name="cluster_name_example",
                         daemoned=True,
                         display_name="display_name_example",
                         estimated_duration=1,
@@ -8367,6 +8374,7 @@ with argo_workflows.ApiClient() as api_client:
                         ),
                         message="message_example",
                         name="name_example",
+                        namespace="namespace_example",
                         outbound_nodes=[
                             "outbound_nodes_example",
                         ],
@@ -9357,6 +9365,7 @@ with argo_workflows.ApiClient() as api_client:
                             ),
                         ),
                         automount_service_account_token=True,
+                        cluster_name="cluster_name_example",
                         container=Container(
                             args=[
                                 "args_example",
@@ -10984,7 +10993,9 @@ with argo_workflows.ApiClient() as api_client:
                                 ),
                             ],
                         ),
+                        multicluster_resource={},
                         name="name_example",
+                        namespace="namespace_example",
                         node_selector={
                             "key": "key_example",
                         },
@@ -13476,6 +13487,7 @@ with argo_workflows.ApiClient() as api_client:
                             ),
                         ),
                         automount_service_account_token=True,
+                        cluster_name="cluster_name_example",
                         container=Container(
                             args=[
                                 "args_example",
@@ -15103,7 +15115,9 @@ with argo_workflows.ApiClient() as api_client:
                                 ),
                             ],
                         ),
+                        multicluster_resource={},
                         name="name_example",
+                        namespace="namespace_example",
                         node_selector={
                             "key": "key_example",
                         },
@@ -16881,6 +16895,7 @@ with argo_workflows.ApiClient() as api_client:
                                 ),
                             ),
                             automount_service_account_token=True,
+                            cluster_name="cluster_name_example",
                             container=Container(
                                 args=[
                                     "args_example",
@@ -18508,7 +18523,9 @@ with argo_workflows.ApiClient() as api_client:
                                     ),
                                 ],
                             ),
+                            multicluster_resource={},
                             name="name_example",
+                            namespace="namespace_example",
                             node_selector={
                                 "key": "key_example",
                             },
@@ -21723,6 +21740,7 @@ with argo_workflows.ApiClient() as api_client:
                         ),
                     ),
                     automount_service_account_token=True,
+                    cluster_name="cluster_name_example",
                     container=Container(
                         args=[
                             "args_example",
@@ -23350,7 +23368,9 @@ with argo_workflows.ApiClient() as api_client:
                             ),
                         ],
                     ),
+                    multicluster_resource={},
                     name="name_example",
+                    namespace="namespace_example",
                     node_selector={
                         "key": "key_example",
                     },
@@ -25128,6 +25148,7 @@ with argo_workflows.ApiClient() as api_client:
                             ),
                         ),
                         automount_service_account_token=True,
+                        cluster_name="cluster_name_example",
                         container=Container(
                             args=[
                                 "args_example",
@@ -26755,7 +26776,9 @@ with argo_workflows.ApiClient() as api_client:
                                 ),
                             ],
                         ),
+                        multicluster_resource={},
                         name="name_example",
+                        namespace="namespace_example",
                         node_selector={
                             "key": "key_example",
                         },
@@ -28775,6 +28798,7 @@ with argo_workflows.ApiClient() as api_client:
                         children=[
                             "children_example",
                         ],
+                        cluster_name="cluster_name_example",
                         daemoned=True,
                         display_name="display_name_example",
                         estimated_duration=1,
@@ -28976,6 +29000,7 @@ with argo_workflows.ApiClient() as api_client:
                         ),
                         message="message_example",
                         name="name_example",
+                        namespace="namespace_example",
                         outbound_nodes=[
                             "outbound_nodes_example",
                         ],
@@ -29966,6 +29991,7 @@ with argo_workflows.ApiClient() as api_client:
                             ),
                         ),
                         automount_service_account_token=True,
+                        cluster_name="cluster_name_example",
                         container=Container(
                             args=[
                                 "args_example",
@@ -31593,7 +31619,9 @@ with argo_workflows.ApiClient() as api_client:
                                 ),
                             ],
                         ),
+                        multicluster_resource={},
                         name="name_example",
+                        namespace="namespace_example",
                         node_selector={
                             "key": "key_example",
                         },
@@ -34085,6 +34113,7 @@ with argo_workflows.ApiClient() as api_client:
                             ),
                         ),
                         automount_service_account_token=True,
+                        cluster_name="cluster_name_example",
                         container=Container(
                             args=[
                                 "args_example",
@@ -35712,7 +35741,9 @@ with argo_workflows.ApiClient() as api_client:
                                 ),
                             ],
                         ),
+                        multicluster_resource={},
                         name="name_example",
+                        namespace="namespace_example",
                         node_selector={
                             "key": "key_example",
                         },
@@ -37490,6 +37521,7 @@ with argo_workflows.ApiClient() as api_client:
                                 ),
                             ),
                             automount_service_account_token=True,
+                            cluster_name="cluster_name_example",
                             container=Container(
                                 args=[
                                     "args_example",
@@ -39117,7 +39149,9 @@ with argo_workflows.ApiClient() as api_client:
                                     ),
                                 ],
                             ),
+                            multicluster_resource={},
                             name="name_example",
+                            namespace="namespace_example",
                             node_selector={
                                 "key": "key_example",
                             },

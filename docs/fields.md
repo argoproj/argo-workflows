@@ -1970,6 +1970,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`affinity`|[`Affinity`](#affinity)|Affinity sets the pod's scheduling constraints Overrides the affinity set at the workflow level (if any)|
 |`archiveLocation`|[`ArtifactLocation`](#artifactlocation)|Location in which all files related to the step will be stored (logs, artifacts, etc...). Can be overridden by individual items in Outputs. If omitted, will use the default artifact repository location configured in the controller, appended with the <workflowname>/<nodename> in the key.|
 |`automountServiceAccountToken`|`boolean`|AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.|
+|`clusterName`|`string`|Cluster to run this template on. If empty/omitted it'll run in the same cluster as the io.argoproj.workflow.v1alpha1.|
 |`container`|[`Container`](#container)|Container is the main container image to run in the pod|
 |`containerSet`|[`ContainerSetTemplate`](#containersettemplate)|ContainerSet groups multiple containers within a single pod.|
 |`daemon`|`boolean`|Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness|
@@ -1984,7 +1985,9 @@ Template is a reusable and composable unit of execution in a workflow
 |`memoize`|[`Memoize`](#memoize)|Memoize allows templates to use outputs generated from already executed templates|
 |`metadata`|[`Metadata`](#metadata)|Metdata sets the pods's metadata, i.e. annotations and labels|
 |`metrics`|[`Metrics`](#metrics)|Metrics are a list of metrics emitted from this template|
+|`multiclusterResource`|[`Item`](#item)|MulticlusterResource is a k8s resource declaration that can live on a different cluster|
 |`name`|`string`|Name is the name of the template|
+|`namespace`|`string`|Namespace run the template in. If empty/omitted it'll run in the same namespace as the io.argoproj.workflow.v1alpha1.|
 |`nodeSelector`|`Map< string , string >`|NodeSelector is a selector to schedule this step of the workflow to be run on the selected node(s). Overrides the selector set at the workflow level.|
 |`outputs`|[`Outputs`](#outputs)|Outputs describe the parameters and artifacts that this template produces|
 |`parallelism`|`integer`|Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.|
@@ -2102,6 +2105,7 @@ NodeStatus contains status information about an individual node in the workflow
 |:----------:|:----------:|---------------|
 |`boundaryID`|`string`|BoundaryID indicates the node ID of the associated template root node in which this node belongs to|
 |`children`|`Array< string >`|Children is a list of child node IDs|
+|`clusterName`|`string`|Cluster this node (pod nodes only) ran on. If empty/omitted it ran in the same cluster as the io.argoproj.workflow.v1alpha1.|
 |`daemoned`|`boolean`|Daemoned tracks whether or not this node was daemoned and need to be terminated|
 |`displayName`|`string`|DisplayName is a human readable representation of the node. Unique within a template boundary|
 |`estimatedDuration`|`integer`|EstimatedDuration in seconds.|
@@ -2112,6 +2116,7 @@ NodeStatus contains status information about an individual node in the workflow
 |`memoizationStatus`|[`MemoizationStatus`](#memoizationstatus)|MemoizationStatus holds information about cached nodes|
 |`message`|`string`|A human readable message indicating details about why the node is in this condition.|
 |`name`|`string`|Name is unique name in the node tree used to generate the node ID|
+|`namespace`|`string`|Namespace this node (pod nodes only) ran on. If empty/omitted it ran in the same namespace as the io.argoproj.workflow.v1alpha1.|
 |`outboundNodes`|`Array< string >`|OutboundNodes tracks the node IDs which are considered "outbound" nodes to a template invocation. For every invocation of a template, there are nodes which we considered as "outbound". Essentially, these are last nodes in the execution sequence to run, before the template is considered completed. These nodes are then connected as parents to a following step.In the case of single pod steps (i.e. container, script, resource templates), this list will be nil since the pod itself is already considered the "outbound" node. In the case of DAGs, outbound nodes are the "target" tasks (tasks with no children). In the case of steps, outbound nodes are all the containers involved in the last step group. NOTE: since templates are composable, the list of outbound nodes are carried upwards when a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of a template, will be a superset of the outbound nodes of its last children.|
 |`outputs`|[`Outputs`](#outputs)|Outputs captures output parameter values and artifact locations produced by this template invocation|
 |`phase`|`string`|Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine.|
@@ -3054,6 +3059,10 @@ Memoization enables caching for the Outputs of the template
 |`cache`|[`Cache`](#cache)|Cache sets and configures the kind of cache|
 |`key`|`string`|Key is the key to use as the caching key|
 |`maxAge`|`string`|MaxAge is the maximum age (e.g. "180s", "24h") of an entry that is still considered valid. If an entry is older than the MaxAge, it will be ignored.|
+
+## Item
+
+Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number
 
 ## Plugin
 
@@ -4152,41 +4161,6 @@ ContinueOn defines if a workflow should continue even if a task or step fails/er
 |:----------:|:----------:|---------------|
 |`error`|`boolean`|_No description available_|
 |`failed`|`boolean`|_No description available_|
-
-## Item
-
-Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-output-artifact.yaml)
-
-- [`ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci.yaml)
-
-- [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-custom-metrics.yaml)
-
-- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-diamond-steps.yaml)
-
-- [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
-
-- [`loops-maps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-maps.yaml)
-
-- [`loops.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops.yaml)
-
-- [`parallelism-limit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-limit.yaml)
-
-- [`parallelism-template-limit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-template-limit.yaml)
-
-- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation-dag.yaml)
-
-- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation-script.yaml)
-
-- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation.yaml)
-
-- [`timeouts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/timeouts-workflow.yaml)
-</details>
 
 ## Sequence
 

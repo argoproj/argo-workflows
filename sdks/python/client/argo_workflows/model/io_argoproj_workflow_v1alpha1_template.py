@@ -137,6 +137,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
             'affinity': (Affinity,),  # noqa: E501
             'archive_location': (IoArgoprojWorkflowV1alpha1ArtifactLocation,),  # noqa: E501
             'automount_service_account_token': (bool,),  # noqa: E501
+            'cluster_name': (str,),  # noqa: E501
             'container': (Container,),  # noqa: E501
             'container_set': (IoArgoprojWorkflowV1alpha1ContainerSetTemplate,),  # noqa: E501
             'daemon': (bool,),  # noqa: E501
@@ -151,7 +152,9 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
             'memoize': (IoArgoprojWorkflowV1alpha1Memoize,),  # noqa: E501
             'metadata': (IoArgoprojWorkflowV1alpha1Metadata,),  # noqa: E501
             'metrics': (IoArgoprojWorkflowV1alpha1Metrics,),  # noqa: E501
+            'multicluster_resource': (bool, date, datetime, dict, float, int, list, str, none_type,),  # noqa: E501
             'name': (str,),  # noqa: E501
+            'namespace': (str,),  # noqa: E501
             'node_selector': ({str: (str,)},),  # noqa: E501
             'outputs': (IoArgoprojWorkflowV1alpha1Outputs,),  # noqa: E501
             'parallelism': (int,),  # noqa: E501
@@ -184,6 +187,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
         'affinity': 'affinity',  # noqa: E501
         'archive_location': 'archiveLocation',  # noqa: E501
         'automount_service_account_token': 'automountServiceAccountToken',  # noqa: E501
+        'cluster_name': 'clusterName',  # noqa: E501
         'container': 'container',  # noqa: E501
         'container_set': 'containerSet',  # noqa: E501
         'daemon': 'daemon',  # noqa: E501
@@ -198,7 +202,9 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
         'memoize': 'memoize',  # noqa: E501
         'metadata': 'metadata',  # noqa: E501
         'metrics': 'metrics',  # noqa: E501
+        'multicluster_resource': 'multiclusterResource',  # noqa: E501
         'name': 'name',  # noqa: E501
+        'namespace': 'namespace',  # noqa: E501
         'node_selector': 'nodeSelector',  # noqa: E501
         'outputs': 'outputs',  # noqa: E501
         'parallelism': 'parallelism',  # noqa: E501
@@ -266,6 +272,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
             affinity (Affinity): [optional]  # noqa: E501
             archive_location (IoArgoprojWorkflowV1alpha1ArtifactLocation): [optional]  # noqa: E501
             automount_service_account_token (bool): AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.. [optional]  # noqa: E501
+            cluster_name (str): Cluster to run this template on. If empty/omitted it'll run in the same cluster as the io.argoproj.workflow.v1alpha1.. [optional]  # noqa: E501
             container (Container): [optional]  # noqa: E501
             container_set (IoArgoprojWorkflowV1alpha1ContainerSetTemplate): [optional]  # noqa: E501
             daemon (bool): Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness. [optional]  # noqa: E501
@@ -280,7 +287,9 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
             memoize (IoArgoprojWorkflowV1alpha1Memoize): [optional]  # noqa: E501
             metadata (IoArgoprojWorkflowV1alpha1Metadata): [optional]  # noqa: E501
             metrics (IoArgoprojWorkflowV1alpha1Metrics): [optional]  # noqa: E501
+            multicluster_resource (bool, date, datetime, dict, float, int, list, str, none_type): Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number. [optional]  # noqa: E501
             name (str): Name is the name of the template. [optional]  # noqa: E501
+            namespace (str): Namespace run the template in. If empty/omitted it'll run in the same namespace as the io.argoproj.workflow.v1alpha1.. [optional]  # noqa: E501
             node_selector ({str: (str,)}): NodeSelector is a selector to schedule this step of the workflow to be run on the selected node(s). Overrides the selector set at the workflow level.. [optional]  # noqa: E501
             outputs (IoArgoprojWorkflowV1alpha1Outputs): [optional]  # noqa: E501
             parallelism (int): Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.. [optional]  # noqa: E501
@@ -386,6 +395,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
             affinity (Affinity): [optional]  # noqa: E501
             archive_location (IoArgoprojWorkflowV1alpha1ArtifactLocation): [optional]  # noqa: E501
             automount_service_account_token (bool): AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.. [optional]  # noqa: E501
+            cluster_name (str): Cluster to run this template on. If empty/omitted it'll run in the same cluster as the io.argoproj.workflow.v1alpha1.. [optional]  # noqa: E501
             container (Container): [optional]  # noqa: E501
             container_set (IoArgoprojWorkflowV1alpha1ContainerSetTemplate): [optional]  # noqa: E501
             daemon (bool): Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness. [optional]  # noqa: E501
@@ -400,7 +410,9 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
             memoize (IoArgoprojWorkflowV1alpha1Memoize): [optional]  # noqa: E501
             metadata (IoArgoprojWorkflowV1alpha1Metadata): [optional]  # noqa: E501
             metrics (IoArgoprojWorkflowV1alpha1Metrics): [optional]  # noqa: E501
+            multicluster_resource (bool, date, datetime, dict, float, int, list, str, none_type): Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number. [optional]  # noqa: E501
             name (str): Name is the name of the template. [optional]  # noqa: E501
+            namespace (str): Namespace run the template in. If empty/omitted it'll run in the same namespace as the io.argoproj.workflow.v1alpha1.. [optional]  # noqa: E501
             node_selector ({str: (str,)}): NodeSelector is a selector to schedule this step of the workflow to be run on the selected node(s). Overrides the selector set at the workflow level.. [optional]  # noqa: E501
             outputs (IoArgoprojWorkflowV1alpha1Outputs): [optional]  # noqa: E501
             parallelism (int): Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.. [optional]  # noqa: E501

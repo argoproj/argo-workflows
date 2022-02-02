@@ -100,6 +100,7 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
             'type': (str,),  # noqa: E501
             'boundary_id': (str,),  # noqa: E501
             'children': ([str],),  # noqa: E501
+            'cluster_name': (str,),  # noqa: E501
             'daemoned': (bool,),  # noqa: E501
             'display_name': (str,),  # noqa: E501
             'estimated_duration': (int,),  # noqa: E501
@@ -108,6 +109,7 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
             'inputs': (IoArgoprojWorkflowV1alpha1Inputs,),  # noqa: E501
             'memoization_status': (IoArgoprojWorkflowV1alpha1MemoizationStatus,),  # noqa: E501
             'message': (str,),  # noqa: E501
+            'namespace': (str,),  # noqa: E501
             'outbound_nodes': ([str],),  # noqa: E501
             'outputs': (IoArgoprojWorkflowV1alpha1Outputs,),  # noqa: E501
             'phase': (str,),  # noqa: E501
@@ -132,6 +134,7 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
         'type': 'type',  # noqa: E501
         'boundary_id': 'boundaryID',  # noqa: E501
         'children': 'children',  # noqa: E501
+        'cluster_name': 'clusterName',  # noqa: E501
         'daemoned': 'daemoned',  # noqa: E501
         'display_name': 'displayName',  # noqa: E501
         'estimated_duration': 'estimatedDuration',  # noqa: E501
@@ -140,6 +143,7 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
         'inputs': 'inputs',  # noqa: E501
         'memoization_status': 'memoizationStatus',  # noqa: E501
         'message': 'message',  # noqa: E501
+        'namespace': 'namespace',  # noqa: E501
         'outbound_nodes': 'outboundNodes',  # noqa: E501
         'outputs': 'outputs',  # noqa: E501
         'phase': 'phase',  # noqa: E501
@@ -201,6 +205,7 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             boundary_id (str): BoundaryID indicates the node ID of the associated template root node in which this node belongs to. [optional]  # noqa: E501
             children ([str]): Children is a list of child node IDs. [optional]  # noqa: E501
+            cluster_name (str): Cluster this node (pod nodes only) ran on. If empty/omitted it ran in the same cluster as the io.argoproj.workflow.v1alpha1.. [optional]  # noqa: E501
             daemoned (bool): Daemoned tracks whether or not this node was daemoned and need to be terminated. [optional]  # noqa: E501
             display_name (str): DisplayName is a human readable representation of the node. Unique within a template boundary. [optional]  # noqa: E501
             estimated_duration (int): EstimatedDuration in seconds.. [optional]  # noqa: E501
@@ -209,6 +214,7 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
             inputs (IoArgoprojWorkflowV1alpha1Inputs): [optional]  # noqa: E501
             memoization_status (IoArgoprojWorkflowV1alpha1MemoizationStatus): [optional]  # noqa: E501
             message (str): A human readable message indicating details about why the node is in this condition.. [optional]  # noqa: E501
+            namespace (str): Namespace this node (pod nodes only) ran on. If empty/omitted it ran in the same namespace as the io.argoproj.workflow.v1alpha1.. [optional]  # noqa: E501
             outbound_nodes ([str]): OutboundNodes tracks the node IDs which are considered \"outbound\" nodes to a template invocation. For every invocation of a template, there are nodes which we considered as \"outbound\". Essentially, these are last nodes in the execution sequence to run, before the template is considered completed. These nodes are then connected as parents to a following step.  In the case of single pod steps (i.e. container, script, resource templates), this list will be nil since the pod itself is already considered the \"outbound\" node. In the case of DAGs, outbound nodes are the \"target\" tasks (tasks with no children). In the case of steps, outbound nodes are all the containers involved in the last step group. NOTE: since templates are composable, the list of outbound nodes are carried upwards when a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of a template, will be a superset of the outbound nodes of its last children.. [optional]  # noqa: E501
             outputs (IoArgoprojWorkflowV1alpha1Outputs): [optional]  # noqa: E501
             phase (str): Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine.. [optional]  # noqa: E501
@@ -311,6 +317,7 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             boundary_id (str): BoundaryID indicates the node ID of the associated template root node in which this node belongs to. [optional]  # noqa: E501
             children ([str]): Children is a list of child node IDs. [optional]  # noqa: E501
+            cluster_name (str): Cluster this node (pod nodes only) ran on. If empty/omitted it ran in the same cluster as the io.argoproj.workflow.v1alpha1.. [optional]  # noqa: E501
             daemoned (bool): Daemoned tracks whether or not this node was daemoned and need to be terminated. [optional]  # noqa: E501
             display_name (str): DisplayName is a human readable representation of the node. Unique within a template boundary. [optional]  # noqa: E501
             estimated_duration (int): EstimatedDuration in seconds.. [optional]  # noqa: E501
@@ -319,6 +326,7 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
             inputs (IoArgoprojWorkflowV1alpha1Inputs): [optional]  # noqa: E501
             memoization_status (IoArgoprojWorkflowV1alpha1MemoizationStatus): [optional]  # noqa: E501
             message (str): A human readable message indicating details about why the node is in this condition.. [optional]  # noqa: E501
+            namespace (str): Namespace this node (pod nodes only) ran on. If empty/omitted it ran in the same namespace as the io.argoproj.workflow.v1alpha1.. [optional]  # noqa: E501
             outbound_nodes ([str]): OutboundNodes tracks the node IDs which are considered \"outbound\" nodes to a template invocation. For every invocation of a template, there are nodes which we considered as \"outbound\". Essentially, these are last nodes in the execution sequence to run, before the template is considered completed. These nodes are then connected as parents to a following step.  In the case of single pod steps (i.e. container, script, resource templates), this list will be nil since the pod itself is already considered the \"outbound\" node. In the case of DAGs, outbound nodes are the \"target\" tasks (tasks with no children). In the case of steps, outbound nodes are all the containers involved in the last step group. NOTE: since templates are composable, the list of outbound nodes are carried upwards when a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of a template, will be a superset of the outbound nodes of its last children.. [optional]  # noqa: E501
             outputs (IoArgoprojWorkflowV1alpha1Outputs): [optional]  # noqa: E501
             phase (str): Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine.. [optional]  # noqa: E501

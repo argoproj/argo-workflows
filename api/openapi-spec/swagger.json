@@ -10021,6 +10021,10 @@
             "type": "string"
           }
         },
+        "clusterName": {
+          "description": "Cluster this node (pod nodes only) ran on. If empty/omitted it ran in the same cluster as the io.argoproj.workflow.v1alpha1.",
+          "type": "string"
+        },
         "daemoned": {
           "description": "Daemoned tracks whether or not this node was daemoned and need to be terminated",
           "type": "boolean"
@@ -10059,6 +10063,10 @@
         },
         "name": {
           "description": "Name is unique name in the node tree used to generate the node ID",
+          "type": "string"
+        },
+        "namespace": {
+          "description": "Namespace this node (pod nodes only) ran on. If empty/omitted it ran in the same namespace as the io.argoproj.workflow.v1alpha1.",
           "type": "string"
         },
         "outboundNodes": {
@@ -10953,6 +10961,10 @@
           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.",
           "type": "boolean"
         },
+        "clusterName": {
+          "description": "Cluster to run this template on. If empty/omitted it'll run in the same cluster as the io.argoproj.workflow.v1alpha1.",
+          "type": "string"
+        },
         "container": {
           "description": "Container is the main container image to run in the pod",
           "$ref": "#/definitions/io.k8s.api.core.v1.Container"
@@ -11019,8 +11031,16 @@
           "description": "Metrics are a list of metrics emitted from this template",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metrics"
         },
+        "multiclusterResource": {
+          "description": "MulticlusterResource is a k8s resource declaration that can live on a different cluster",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Item"
+        },
         "name": {
           "description": "Name is the name of the template",
+          "type": "string"
+        },
+        "namespace": {
+          "description": "Namespace run the template in. If empty/omitted it'll run in the same namespace as the io.argoproj.workflow.v1alpha1.",
           "type": "string"
         },
         "nodeSelector": {
