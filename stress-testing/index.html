@@ -2151,9 +2151,38 @@
       
     
     
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        Stress Testing
+      </label>
+    
     <a href="./" title="Stress Testing" class="md-nav__link md-nav__link--active">
       Stress Testing
     </a>
+    
+      
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#clean-up" title="Clean-up" class="md-nav__link">
+    Clean-up
+  </a>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
+</nav>
     
   </li>
 
@@ -2264,6 +2293,22 @@
     
   
   
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#clean-up" title="Clean-up" class="md-nav__link">
+    Clean-up
+  </a>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -2278,35 +2323,53 @@
                 
                 
                 <h1 id="stress-testing">Stress Testing<a class="headerlink" href="#stress-testing" title="Permanent link">&para;</a></h1>
-<p>Create a cluster in <a href="https://console.cloud.google.com/access/iam?cloudshell=false&amp;project=jesse-sb"><code>jesse-sb</code> project</a>
-with at least 21 nodes.</p>
 <p>Install <code>gcloud</code> binary.</p>
-<p>Login to GCP: <code>gloud auth login</code></p>
-<p>Get your KUBECONFIG, something like:</p>
-<div class="highlight"><pre><span></span><code>gcloud container clusters get-credentials cluster-1 --zone us-central1-c --project jesse-sb
+<div class="highlight"><pre><span></span><code><span class="c1"># Login to GCP:</span>
+gloud auth login
+
+<span class="c1"># Set-up your config (if needed):</span>
+gcloud config <span class="nb">set</span> project alex-sb
+
+<span class="c1"># Create a cluster (default region is us-west-2, if you&#39;re not in west of the USA, you might want at different region):</span>
+gcloud container clusters create-auto argo-workflows-stress-1
+
+<span class="c1"># Get credentials:</span>
+gcloud container clusters get-credentials argo-workflows-stress-1                             
+
+<span class="c1"># Install workflows (If this fails, try running it again):</span>
+make start <span class="nv">PROFILE</span><span class="o">=</span>stress
+
+<span class="c1"># Make sure pods are running:</span>
+kubectl get deployments
+
+<span class="c1"># Run a test workflow:</span>
+argo submit examples/hello-world.yaml --watch
 </code></pre></div>
-<p>Run <code>make start PROFILE=stress</code>.</p>
-<p>Make sure pods are running:</p>
-<div class="highlight"><pre><span></span><code>kubectl get deployments
-</code></pre></div>
-<p>If this fails, just try running it again.</p>
+<p>Checks</p>
 <ul>
-<li>Open https://localhost:2746/workflows/argo and check it loads and that you can run a workflow.</li>
+<li>Open http://localhost:2746/workflows and check it loads and that you can run a workflow.</li>
 <li>Open http://localhost:9090/metrics and check you can see the Prometheus metrics.</li>
-<li>Open http://localhost:9091/graph and check you can see a Prometheus graph.</li>
-<li>Open http://localhost:6060 and check you can access pprof.</li>
+<li>Open http://localhost:9091/graph and check you can see a Prometheus graph. You can
+  use <a href="https://chrome.google.com/webstore/detail/tab-auto-refresh/oomoeacogjkolheacgdkkkhbjipaomkn">this Tab Auto Refresh Chrome extension</a>
+  to auto-refresh the page.</li>
+<li>Open http://localhost:6060/debug/pprof and check you can access pprof.</li>
 </ul>
-<p>Open <code>test/stress/main.go</code> and run it with a small number (e.g. 10) workflows and make sure they complete.</p>
-<p>Do you get <code>ImagePullBackOff</code>? Make sure image is <code>argoproj/argosay:v2</code>
-in  <code>kubectl -n argo edit workflowtemplate massive-workflow</code>.</p>
-<p>You can
-use <a href="https://chrome.google.com/webstore/detail/tab-auto-refresh/oomoeacogjkolheacgdkkkhbjipaomkn">this Tab Auto Refresh Chrome extension</a>
-to auto-refresh the page.</p>
-<p>Open <code>test/stress/main.go</code> and run it with a large number (e.g. 10000).</p>
-<ul>
-<li>Use Prometheus to analyse this.</li>
-<li>Use PProf using <code>./hack/capture-pprof.sh</code> and look at allocs and profile for costly areas.</li>
-</ul>
+<p>Run <code>go run ./test/stress/tool -n 10000</code> to run a large number of workflows.</p>
+<p>Check Prometheus:</p>
+<ol>
+<li>See how many Kubernetes API requests are being made. You will see about one <code>Update workflows</code>
+   per reconciliation, multiple <code>Create pods</code>. You should expect to see one <code>Get workflowtemplates</code> per workflow (done
+   on first reconciliation). Otherwise, if you see anything else, that might be a problem.</li>
+<li>How many errors were logged? <code>log_messages{level="error"}</code> What was the cause?</li>
+</ol>
+<p>Check PProf to see if there any any hot spots:</p>
+<div class="highlight"><pre><span></span><code>go tool pprof -png http://localhost:6060/debug/pprof/allocs
+go tool pprof -png http://localhost:6060/debug/pprof/heap
+go tool pprof -png http://localhost:6060/debug/pprof/profile
+</code></pre></div>
+<h2 id="clean-up">Clean-up<a class="headerlink" href="#clean-up" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>gcloud container clusters delete argo-workflows-stress-1
+</code></pre></div>
                 
                   
                 
