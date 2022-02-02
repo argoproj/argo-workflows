@@ -8,10 +8,10 @@ import (
 var (
 	// ErrInvalidClusterNamespaceKey is kicked when the clusterName.namespace
 	// format is not followed
-	ErrInvalidClusterNamespaceKey = "invalid cluster namespace key: must be dot-delimited: \"clusterName.namespace\", e.g. \"main.argo\"; only namespace maybe empty string: %s"
+	ErrInvalidClusterNamespaceKey string = "invalid cluster namespace key: must be dot-delimited: \"clusterName.namespace\", e.g. \"main.argo\"; only namespace maybe empty string: %s"
 	// ErrIncompleteClusterNamespaceKey is kicked when clusterName or namespace is
 	// empty
-	ErrIncompleteClusterNamespaceKey = "incomplete cluster namespace key: need a clusterName and a namespace but got clusterName: %s and namespace %s"
+	ErrIncompleteClusterNamespaceKey string = "incomplete cluster namespace key: need a clusterName and a namespace but got clusterName: %s and namespace %s"
 )
 
 // ClusterNamespaceKey is a controller-level unique key for a
