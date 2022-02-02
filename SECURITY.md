@@ -12,7 +12,6 @@ Please report vulnerabilities by e-mail to the following address:
 
 All vulnerabilites and associated information will be treated with full confidentiality. 
 
-
 ## Public Disclosure
 
 Security vulnerabilities will be disclosed via [release notes](docs/releasing.md) and using the
