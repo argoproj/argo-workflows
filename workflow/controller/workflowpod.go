@@ -1018,8 +1018,6 @@ func addOutputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Template) {
 				continue
 			}
 			mnt.MountPath = filepath.Join(common.ExecutorMainFilesystemDir, mnt.MountPath)
-			// ReadOnly is needed to be false for overlapping volume mounts
-			mnt.ReadOnly = false
 			waitCtr.VolumeMounts = append(waitCtr.VolumeMounts, mnt)
 		}
 	}
