@@ -96,8 +96,11 @@ func (a *ArtifactServer) GetInputArtifactByUID(w http.ResponseWriter, r *http.Re
 }
 
 func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request, isInput bool) {
-	requestPath := strings.SplitN(r.URL.Path, "/", 6)
-
+	requestPath := strings.SplitN(r.URL.Path, "/", 5)
+	if len(requestPath) != 5 {
+		a.serverInternalError(errors.New("request path is not valid"), w)
+		return
+	}
 	uid := requestPath[2]
 	nodeId := requestPath[3]
 	artifactName := requestPath[4]
