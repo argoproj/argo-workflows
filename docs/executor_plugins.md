@@ -1,21 +1,74 @@
 # Executor Plugins
 
-## Types
+> Since v3.3
 
-### Template Executor
+## Configuration
 
-There is only one type of executor plugin, one that runs custom ("plugin") templates, e.g. for non-pod tasks such as
-Tekton builds or Spark jobs.
+Plugins are disabled by default. To enable them, start the controller with `ARGO_EXECUTOR_PLUGINS=true`, e.g.
 
-## A Simple Python Plugin
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workflow-controller
+spec:
+  template:
+    spec:
+      containers:
+        - name: workflow-controller
+          env:
+            - name: ARGO_EXECUTOR_PLUGINS
+              value: "true"
+```
+
+## Template Executor
+
+This is a plugin that runs custom "plugin" templates, e.g. for non-pod tasks such as Tekton builds, Spark jobs, sending
+Slack notifications.
+
+### A Simple Python Plugin
 
 Let's make a Python plugin that prints "hello" each time the workflow is operated on.
 
 We need the following:
 
-1. [Plugins enabled](plugins.md).
-2. A HTTP server that will be run as a sidecar to the main container and will respond to RPC HTTP requests from the executor.
-3. Configuration so the controller can discover the plugin.
+1. Plugins enabled (see above).
+2. A HTTP server that will be run as a sidecar to the main container and will respond to RPC HTTP requests from the
+   executor with [this API contract](executor_swagger.md).
+3. A `plugin.yaml` configuration file, that is turned into a config map so the controller can discover the plugin.
+
+A template executor plugin services HTTP POST requests on `/api/v1/template.execute`:
+
+```shell
+curl http://localhost:4355//api/v1/template.execute -d \
+'{
+  "workflow": {
+    "metadata": {
+      "name": "my-wf"
+    }
+  },
+  "template": {
+    "name": "my-tmpl",
+    "inputs": {},
+    "outputs": {},
+    "plugin": {
+      "hello": {}
+    }
+  }
+}' 
+# ...
+HTTP/1.1 200 OK
+{
+  "node": {
+    "phase": "Succeeded",
+    "message": "Hello template!"
+  }
+}
+```
+
+**Tip:** The port number can be anything, but must not conflict with other plugins. Don't use common ports such as 80,
+443, 8080, 8081, 8443. If you plan to publish your plugin, choose a random port number under 10,000 and create a PR to
+add your plugin. If not, use a port number greater than 10,000.
 
 We'll need to create a script that starts a HTTP server:
 
@@ -54,12 +107,18 @@ if __name__ == '__main__':
     httpd.serve_forever()
 ```
 
+**Tip**: Plugins can be written in any language you can run as a container. Python is convenient because you can embed
+the script in the container.
+
 Some things to note here:
 
 * You only need to implement the calls you need. Return 404 and it won't be called again.
 * The path is the RPC method name.
 * The request body contains the template's input parameters.
-* The response body contains the node result, including the phase (e.g. "Succeeded" or "Failed") and a message
+* The response body may contain the node's result, including the phase (e.g. "Succeeded" or "Failed") and a message.
+* If the response is `{}`, then the plugin is saying it cannot execute the plugin template, e.g. it is a Slack plugin,
+  but the template is a Tekton job.
+* If the status code is 404, then the plugin will not be called again.
 
 Next, create a manifest named `plugin.yaml`:
 
@@ -119,35 +178,107 @@ spec:
 
 You'll see the workflow complete successfully.
 
-To list executor plugins:
+### Discovery
 
-    kubectl get cm -l workflows.argoproj.io/configmap-type=ExecutorPlugin
+When a workflow is run, plugins are loaded from:
+
+* The workflow's namespace.
+* The Argo installation namespace (typically `argo`).
+
+If two plugins have the same name, only the one in the workflow's namespace is loaded.
+
+### Secrets
+
+If you interact with a third-party system, you'll need access to secrets. Don't put them in `plugin.yaml`. Use a secret:
+
+```yaml
+spec:
+  sidecar:
+    container:
+      env:
+        - name: URL
+          valueFrom:
+            secretKeyRef:
+              name: slack-executor-plugin
+              key: URL
+```
+
+Refer to the [Kubernetes Secret documentation] for secret best practices and security considerations
+
+### Resources, Security Context
+
+We made these mandatory, so no one can create a plugin that uses an unreasonable amount of memory, or run as root unless
+they deliberately do so:
+
+```yaml
+spec:
+  sidecar:
+    container:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 32Mi
+        limits:
+          cpu: 200m
+          memory: 64Mi
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+```
+
+### Failure
+
+A plugin may fail as follows:
+
+* Connection/socket error - considered transient.
+* Timeout - considered transient.
+* 404 error - method is not supported by the plugin, as a result the method will not be called again.
+* 503 error - considered transient.
+* Other 4xx/5xx errors - considered fatal.
+
+Transient errors are retried, all other errors are considered fatal.
+
+Fatal errors will result in failed steps.
 
 ### Requeue
 
-It might be the case that the plugin must execute asynchronously, e.g. due to long running task. Is that case the plugin
-should return
+It might be the case that the plugin can't finish straight away. E.g. it starts a long running task. When that happens,
+you return "Pending" or "Running" a and a requeue time:
 
 ```json
 {
   "node": {
-    "phase": "Pending",
+    "phase": "Running",
     "message": "Long-running task started"
   },
   "requeue": "2m"
 }
 ```
 
-The task will be re-queue and send again in 2 minutes.
+In this example, the task will be re-queued and `template.execute` will be called again in 2 minutes.
 
-### Debugging
+## Debugging
 
 You can find the plugin's log in the agent pod's sidecar, e.g.:
 
-```
+```shell
 kubectl -n argo logs ${agentPodName} -c hello-executor-plugin
 ```
 
-### Learn More
+## Listing Plugins
 
-- Read the [API reference](executor_swagger.md).
+Because plugins are just config maps, you can list them using `kubectl`:
+
+```shell
+kubectl get cm -l workflows.argoproj.io/configmap-type=ExecutorPlugin
+```
+
+## Examples and Community Contributed Plugins
+
+[Show examples and community contributed plugins](https://github.com/argoproj/argo-workflows/tree/master/plugins)
+.
+
+## Publishing Your Plugin
+
+If you want to publish and share you plugin (we hope you do!), then submit a pull request to add it to the above
+directory.
