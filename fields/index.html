@@ -1,38 +1,15 @@
 
-
-
-
 <!doctype html>
 <html lang="en" class="no-js">
   <head>
     
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
-      <meta http-equiv="x-ua-compatible" content="ie=edge">
       
       
       
-      
-        <meta name="lang:clipboard.copy" content="Copy to clipboard">
-      
-        <meta name="lang:clipboard.copied" content="Copied to clipboard">
-      
-        <meta name="lang:search.language" content="en">
-      
-        <meta name="lang:search.pipeline.stopwords" content="True">
-      
-        <meta name="lang:search.pipeline.trimmer" content="True">
-      
-        <meta name="lang:search.result.none" content="No matching documents">
-      
-        <meta name="lang:search.result.one" content="1 matching document">
-      
-        <meta name="lang:search.result.other" content="# matching documents">
-      
-        <meta name="lang:search.tokenizer" content="[\s\-]+">
-      
-      <link rel="shortcut icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.0.4, mkdocs-material-4.1.1">
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.9">
     
     
       
@@ -40,142 +17,149 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/application.3020aac5.css">
-      
-        <link rel="stylesheet" href="../assets/stylesheets/application-palette.224b79ff.css">
-      
+      <link rel="stylesheet" href="../assets/stylesheets/main.2b4465f4.min.css">
       
         
+        <link rel="stylesheet" href="../assets/stylesheets/palette.e6a45f82.min.css">
         
-        <meta name="theme-color" content="#2196f3">
       
-    
-    
-      <script src="../assets/javascripts/modernizr.01ccdecf.js"></script>
-    
-    
-      
-        <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Work+Sans:300,400,400i,700|">
-        <style>body,input{font-family:"Work Sans","Helvetica Neue",Helvetica,Arial,sans-serif}code,kbd,pre{font-family:"","Courier New",Courier,monospace}</style>
-      
-    
-    <link rel="stylesheet" href="../assets/fonts/material-icons.css">
     
     
     
       
         
-<script>
-  window.ga = window.ga || function() {
-    (ga.q = ga.q || []).push(arguments)
-  }
-  ga.l = +new Date
-  /* Setup integration and send page view */
-  ga("create", "UA-105170809-7", "auto")
-  ga("set", "anonymizeIp", true)
-  ga("send", "pageview")
-  /* Register handler to log search on blur */
-  document.addEventListener("DOMContentLoaded", () => {
-    if (document.forms.search) {
-      var query = document.forms.search.query
-      query.addEventListener("blur", function() {
-        if (this.value) {
-          var path = document.location.pathname;
-          ga("send", "pageview", path + "?q=" + this.value)
-        }
-      })
-    }
-  })
-</script>
-<script async src="https://www.google-analytics.com/analytics.js"></script>
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Work+Sans:300,400,400i,700%7C&display=fallback">
+        <style>:root{--md-text-font:"Work Sans";--md-code-font:""}</style>
       
+    
+    
+    <script>__md_scope=new URL("..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+  
+
+
+  
+  
+
+
+  <script>window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)},ga.l=+new Date,ga("create","UA-105170809-7","auto"),ga("set","anonymizeIp",!0),ga("send","pageview"),document.addEventListener("DOMContentLoaded",function(){document.forms.search&&document.forms.search.query.addEventListener("blur",function(){var e;this.value&&(e=document.location.pathname,ga("send","pageview",e+"?q="+this.value))}),"undefined"!=typeof location$&&location$.subscribe(function(e){ga("send","pageview",e.pathname)})})</script>
+  <script async src="https://www.google-analytics.com/analytics.js"></script>
+
+
     
     
   </head>
   
-    
-    
-    <body dir="ltr" data-md-color-primary="blue" data-md-color-accent="">
   
-    <svg class="md-svg">
-      <defs>
-        
-        
-          <svg xmlns="http://www.w3.org/2000/svg" width="416" height="448"
-    viewBox="0 0 416 448" id="__github">
-  <path fill="currentColor" d="M160 304q0 10-3.125 20.5t-10.75 19-18.125
-        8.5-18.125-8.5-10.75-19-3.125-20.5 3.125-20.5 10.75-19 18.125-8.5
-        18.125 8.5 10.75 19 3.125 20.5zM320 304q0 10-3.125 20.5t-10.75
-        19-18.125 8.5-18.125-8.5-10.75-19-3.125-20.5 3.125-20.5 10.75-19
-        18.125-8.5 18.125 8.5 10.75 19 3.125 20.5zM360
-        304q0-30-17.25-51t-46.75-21q-10.25 0-48.75 5.25-17.75 2.75-39.25
-        2.75t-39.25-2.75q-38-5.25-48.75-5.25-29.5 0-46.75 21t-17.25 51q0 22 8
-        38.375t20.25 25.75 30.5 15 35 7.375 37.25 1.75h42q20.5 0
-        37.25-1.75t35-7.375 30.5-15 20.25-25.75 8-38.375zM416 260q0 51.75-15.25
-        82.75-9.5 19.25-26.375 33.25t-35.25 21.5-42.5 11.875-42.875 5.5-41.75
-        1.125q-19.5 0-35.5-0.75t-36.875-3.125-38.125-7.5-34.25-12.875-30.25-20.25-21.5-28.75q-15.5-30.75-15.5-82.75
-        0-59.25 34-99-6.75-20.5-6.75-42.5 0-29 12.75-54.5 27 0 47.5 9.875t47.25
-        30.875q36.75-8.75 77.25-8.75 37 0 70 8 26.25-20.5
-        46.75-30.25t47.25-9.75q12.75 25.5 12.75 54.5 0 21.75-6.75 42 34 40 34
-        99.5z" />
-</svg>
-        
-      </defs>
-    </svg>
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
     <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
-    <label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
-    
-      <a href="#field-reference" tabindex="1" class="md-skip">
-        Skip to content
-      </a>
-    
-    
-      <header class="md-header" data-md-component="header">
-  <nav class="md-header-nav md-grid">
-    <div class="md-flex">
-      <div class="md-flex__cell md-flex__cell--shrink">
-        <a href=".." title="Argo Workflows - The workflow engine for Kubernetes" class="md-header-nav__button md-logo">
-          
-            <img src="../assets/logo.png" width="24" height="24">
-          
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#field-reference" class="md-skip">
+          Skip to content
         </a>
-      </div>
-      <div class="md-flex__cell md-flex__cell--shrink">
-        <label class="md-icon md-icon--menu md-header-nav__button" for="__drawer"></label>
-      </div>
-      <div class="md-flex__cell md-flex__cell--stretch">
-        <div class="md-flex__ellipsis md-header-nav__title" data-md-component="title">
-          
-            <span class="md-header-nav__topic">
-              Argo Workflows - The workflow engine for Kubernetes
-            </span>
-            <span class="md-header-nav__topic">
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Argo Workflows - The workflow engine for Kubernetes" class="md-header__button md-logo" aria-label="Argo Workflows - The workflow engine for Kubernetes" data-md-component="logo">
+      
+  <img src="../assets/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Argo Workflows - The workflow engine for Kubernetes
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
               Field Reference
-            </span>
-          
+            
+          </span>
         </div>
       </div>
-      <div class="md-flex__cell md-flex__cell--shrink">
+    </div>
+    
+      <form class="md-header__option" data-md-component="palette">
         
-          <label class="md-icon md-icon--search md-header-nav__button" for="__search"></label>
           
-<div class="md-search" data-md-component="search" role="dialog">
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent=""  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+          
+            <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6zm0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4zM7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            </label>
+          
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="" data-md-color-accent=""  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+          
+            <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3z"/></svg>
+            </label>
+          
+        
+      </form>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
   <label class="md-search__overlay" for="__search"></label>
   <div class="md-search__inner" role="search">
     <form class="md-search__form" name="search">
-      <input type="text" class="md-search__input" name="query" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="query" data-md-state="active">
-      <label class="md-icon md-search__icon" for="__search"></label>
-      <button type="reset" class="md-icon md-search__icon" data-md-component="reset" tabindex="-1">
-        &#xE5CD;
-      </button>
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
     </form>
     <div class="md-search__output">
       <div class="md-search__scrollwrap" data-md-scrollfix>
-        <div class="md-search-result" data-md-component="result">
+        <div class="md-search-result" data-md-component="search-result">
           <div class="md-search-result__meta">
-            Type to start searching
+            Initializing search
           </div>
           <ol class="md-search-result__list"></ol>
         </div>
@@ -183,71 +167,58 @@
     </div>
   </div>
 </div>
-        
-      </div>
-      
-        <div class="md-flex__cell md-flex__cell--shrink">
-          <div class="md-header-nav__source">
-            
-
-
-  
-
-<a href="https://github.com/argoproj/argo-workflows/" title="Go to repository" class="md-source" data-md-source="github">
-  
-    <div class="md-source__icon">
-      <svg viewBox="0 0 24 24" width="24" height="24">
-        <use xlink:href="#__github" width="24" height="24"></use>
-      </svg>
-    </div>
-  
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/argoproj/argo-workflows/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
   <div class="md-source__repository">
     GitHub
   </div>
 </a>
-          </div>
-        </div>
-      
-    </div>
+      </div>
+    
   </nav>
+  
 </header>
     
-    <div class="md-container">
+    <div class="md-container" data-md-component="container">
+      
       
         
+          
+        
       
-      
-      <main class="md-main">
-        <div class="md-main__inner md-grid" data-md-component="container">
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
           
             
-              <div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
                 <div class="md-sidebar__scrollwrap">
                   <div class="md-sidebar__inner">
-                    <nav class="md-nav md-nav--primary" data-md-level="0">
-  <label class="md-nav__title md-nav__title--site" for="__drawer">
-    <a href=".." title="Argo Workflows - The workflow engine for Kubernetes" class="md-nav__button md-logo">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Argo Workflows - The workflow engine for Kubernetes" class="md-nav__button md-logo" aria-label="Argo Workflows - The workflow engine for Kubernetes" data-md-component="logo">
       
-        <img src="../assets/logo.png" width="48" height="48">
-      
+  <img src="../assets/logo.png" alt="logo">
+
     </a>
     Argo Workflows - The workflow engine for Kubernetes
   </label>
   
     <div class="md-nav__source">
-      
-
-
-  
-
-<a href="https://github.com/argoproj/argo-workflows/" title="Go to repository" class="md-source" data-md-source="github">
-  
-    <div class="md-source__icon">
-      <svg viewBox="0 0 24 24" width="24" height="24">
-        <use xlink:href="#__github" width="24" height="24"></use>
-      </svg>
-    </div>
-  
+      <a href="https://github.com/argoproj/argo-workflows/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
   <div class="md-source__repository">
     GitHub
   </div>
@@ -260,48 +231,15 @@
       
       
 
-
-  <li class="md-nav__item">
-    <a href=".." title="Overview" class="md-nav__link">
-      Overview
-    </a>
-  </li>
-
-    
-      
-      
-      
-
-
-  <li class="md-nav__item">
-    <a href="../core-concepts/" title="Core Concepts" class="md-nav__link">
-      Core Concepts
-    </a>
-  </li>
-
-    
-      
-      
-      
-
-
-  <li class="md-nav__item">
-    <a href="../quick-start/" title="Quick Start" class="md-nav__link">
-      Quick Start
-    </a>
-  </li>
-
-    
-      
-      
-      
-
-
-  <li class="md-nav__item">
-    <a href="../training/" title="Training" class="md-nav__link">
-      Training
-    </a>
-  </li>
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
 
     
       
@@ -309,820 +247,1027 @@
       
 
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../core-concepts/" class="md-nav__link">
+        Core Concepts
+      </a>
+    </li>
+  
 
-
-  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-5" type="checkbox" id="nav-5" checked>
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quick-start/" class="md-nav__link">
+        Quick Start
+      </a>
+    </li>
+  
+
     
-    <label class="md-nav__link" for="nav-5">
-      User Guide
-    </label>
-    <nav class="md-nav" data-md-component="collapsible" data-md-level="1">
-      <label class="md-nav__title" for="nav-5">
-        User Guide
-      </label>
-      <ul class="md-nav__list" data-md-scrollfix>
-        
-        
-          
-          
-          
+      
+      
+      
 
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../training/" class="md-nav__link">
+        Training
+      </a>
+    </li>
+  
 
-  <li class="md-nav__item md-nav__item--nested">
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-5-1" type="checkbox" id="nav-5-1">
+      
+      
+      
+
+  
+  
     
-    <label class="md-nav__link" for="nav-5-1">
-      Beginner
-    </label>
-    <nav class="md-nav" data-md-component="collapsible" data-md-level="2">
-      <label class="md-nav__title" for="nav-5-1">
-        Beginner
-      </label>
-      <ul class="md-nav__list" data-md-scrollfix>
-        
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../workflow-concepts/" title="Core Concepts" class="md-nav__link">
-      Core Concepts
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/" title="CLI" class="md-nav__link">
-      CLI
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../variables/" title="Workflow Variables" class="md-nav__link">
-      Workflow Variables
-    </a>
-  </li>
-
-        
-      </ul>
-    </nav>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item md-nav__item--nested">
+  
+  
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-5-2" type="checkbox" id="nav-5-2">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5">
+          User Guide
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="User Guide" data-md-level="1">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          User Guide
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
     
-    <label class="md-nav__link" for="nav-5-2">
-      Intermediate
-    </label>
-    <nav class="md-nav" data-md-component="collapsible" data-md-level="2">
-      <label class="md-nav__title" for="nav-5-2">
-        Intermediate
-      </label>
-      <ul class="md-nav__list" data-md-scrollfix>
-        
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../service-accounts/" title="Service Accounts" class="md-nav__link">
-      Service Accounts
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../workflow-rbac/" title="Workflow RBAC" class="md-nav__link">
-      Workflow RBAC
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../node-field-selector/" title="Node Field Selectors" class="md-nav__link">
-      Node Field Selectors
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../empty-dir/" title="Empty Dir" class="md-nav__link">
-      Empty Dir
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../workflow-templates/" title="Workflow Templates" class="md-nav__link">
-      Workflow Templates
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../workflow-inputs/" title="Workflow Inputs" class="md-nav__link">
-      Workflow Inputs
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cluster-workflow-templates/" title="Cluster Workflow Templates" class="md-nav__link">
-      Cluster Workflow Templates
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cron-workflows/" title="Cron Workflows" class="md-nav__link">
-      Cron Workflows
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cron-backfill/" title="Cron Backfill" class="md-nav__link">
-      Cron Backfill
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../templates/" title="Templates" class="md-nav__link">
-      Templates
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../http-template/" title="HTTP Template" class="md-nav__link">
-      HTTP Template
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../container-set-template/" title="Container Set Template" class="md-nav__link">
-      Container Set Template
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../template-defaults/" title="Template Defaults" class="md-nav__link">
-      Template Defaults
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../work-avoidance/" title="Work Avoidance" class="md-nav__link">
-      Work Avoidance
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../enhanced-depends-logic/" title="Enhanced Depends Logic" class="md-nav__link">
-      Enhanced Depends Logic
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../data-sourcing-and-transformation/" title="Data Sourcing and Transformations" class="md-nav__link">
-      Data Sourcing and Transformations
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../artifact-repository-ref/" title="Artifact Repository Ref" class="md-nav__link">
-      Artifact Repository Ref
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../key-only-artifacts/" title="Key-Only Artifacts" class="md-nav__link">
-      Key-Only Artifacts
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../conditional-artifacts-parameters/" title="Conditional Artifacts and Parameters" class="md-nav__link">
-      Conditional Artifacts and Parameters
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../resource-duration/" title="Resource Duration" class="md-nav__link">
-      Resource Duration
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../estimated-duration/" title="Estimated Duration" class="md-nav__link">
-      Estimated Duration
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../workflow-pod-security-context/" title="Workflow Pod Security Context" class="md-nav__link">
-      Workflow Pod Security Context
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../progress/" title="Workflow Progress" class="md-nav__link">
-      Workflow Progress
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../workflow-creator/" title="Workflow Creator" class="md-nav__link">
-      Workflow Creator
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../synchronization/" title="Synchronization" class="md-nav__link">
-      Synchronization
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../workflow-of-workflows/" title="Workflow of Workflows" class="md-nav__link">
-      Workflow of Workflows
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../memoization/" title="Step Level Memoization" class="md-nav__link">
-      Step Level Memoization
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../tolerating-pod-deletion/" title="Tolerating Pod Deletion" class="md-nav__link">
-      Tolerating Pod Deletion
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../widgets/" title="Widgets" class="md-nav__link">
-      Widgets
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../retries/" title="Retries" class="md-nav__link">
-      Retries
-    </a>
-  </li>
-
-        
-      </ul>
-    </nav>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5_1" type="checkbox" id="__nav_5_1" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5_1">
+          Beginner
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Beginner" data-md-level="2">
+        <label class="md-nav__title" for="__nav_5_1">
+          <span class="md-nav__icon md-icon"></span>
+          Beginner
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflow-concepts/" class="md-nav__link">
+        Core Concepts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        CLI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../variables/" class="md-nav__link">
+        Workflow Variables
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-5-3" type="checkbox" id="nav-5-3">
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5_2" type="checkbox" id="__nav_5_2" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5_2">
+          Intermediate
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Intermediate" data-md-level="2">
+        <label class="md-nav__title" for="__nav_5_2">
+          <span class="md-nav__icon md-icon"></span>
+          Intermediate
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../service-accounts/" class="md-nav__link">
+        Service Accounts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflow-rbac/" class="md-nav__link">
+        Workflow RBAC
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../node-field-selector/" class="md-nav__link">
+        Node Field Selectors
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../empty-dir/" class="md-nav__link">
+        Empty Dir
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflow-templates/" class="md-nav__link">
+        Workflow Templates
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflow-inputs/" class="md-nav__link">
+        Workflow Inputs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cluster-workflow-templates/" class="md-nav__link">
+        Cluster Workflow Templates
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cron-workflows/" class="md-nav__link">
+        Cron Workflows
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cron-backfill/" class="md-nav__link">
+        Cron Backfill
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../templates/" class="md-nav__link">
+        Templates
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../http-template/" class="md-nav__link">
+        HTTP Template
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../container-set-template/" class="md-nav__link">
+        Container Set Template
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../template-defaults/" class="md-nav__link">
+        Template Defaults
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../work-avoidance/" class="md-nav__link">
+        Work Avoidance
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../enhanced-depends-logic/" class="md-nav__link">
+        Enhanced Depends Logic
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-sourcing-and-transformation/" class="md-nav__link">
+        Data Sourcing and Transformations
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../artifact-repository-ref/" class="md-nav__link">
+        Artifact Repository Ref
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../key-only-artifacts/" class="md-nav__link">
+        Key-Only Artifacts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../conditional-artifacts-parameters/" class="md-nav__link">
+        Conditional Artifacts and Parameters
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../resource-duration/" class="md-nav__link">
+        Resource Duration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../estimated-duration/" class="md-nav__link">
+        Estimated Duration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflow-pod-security-context/" class="md-nav__link">
+        Workflow Pod Security Context
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../progress/" class="md-nav__link">
+        Workflow Progress
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflow-creator/" class="md-nav__link">
+        Workflow Creator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../synchronization/" class="md-nav__link">
+        Synchronization
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflow-of-workflows/" class="md-nav__link">
+        Workflow of Workflows
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../memoization/" class="md-nav__link">
+        Step Level Memoization
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tolerating-pod-deletion/" class="md-nav__link">
+        Tolerating Pod Deletion
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../widgets/" class="md-nav__link">
+        Widgets
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../retries/" class="md-nav__link">
+        Retries
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
     
-    <label class="md-nav__link" for="nav-5-3">
-      Advanced
-    </label>
-    <nav class="md-nav" data-md-component="collapsible" data-md-level="2">
-      <label class="md-nav__title" for="nav-5-3">
-        Advanced
-      </label>
-      <ul class="md-nav__list" data-md-scrollfix>
-        
-        
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5_3" type="checkbox" id="__nav_5_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5_3">
+          Advanced
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Advanced" data-md-level="2">
+        <label class="md-nav__title" for="__nav_5_3">
+          <span class="md-nav__icon md-icon"></span>
+          Advanced
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflow-restrictions/" class="md-nav__link">
+        Workflow Restrictions
+      </a>
+    </li>
+  
+
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflow-notifications/" class="md-nav__link">
+        Workflow Notifications
+      </a>
+    </li>
+  
+
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflow-events/" class="md-nav__link">
+        Workflow Events
+      </a>
+    </li>
+  
 
-
-  <li class="md-nav__item">
-    <a href="../workflow-restrictions/" title="Workflow Restrictions" class="md-nav__link">
-      Workflow Restrictions
-    </a>
-  </li>
-
-        
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kubectl/" class="md-nav__link">
+        Kubectl
+      </a>
+    </li>
+  
+
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../access-token/" class="md-nav__link">
+        Access Token
+      </a>
+    </li>
+  
+
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../swagger/" class="md-nav__link">
+        Argo Server API
+      </a>
+    </li>
+  
 
-
-  <li class="md-nav__item">
-    <a href="../workflow-notifications/" title="Workflow Notifications" class="md-nav__link">
-      Workflow Notifications
-    </a>
-  </li>
-
-        
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rest-api/" class="md-nav__link">
+        REST API
+      </a>
+    </li>
+  
+
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rest-examples/" class="md-nav__link">
+        API Examples
+      </a>
+    </li>
+  
+
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../client-libraries/" class="md-nav__link">
+        Client Libraries
+      </a>
+    </li>
+  
 
-
-  <li class="md-nav__item">
-    <a href="../workflow-events/" title="Workflow Events" class="md-nav__link">
-      Workflow Events
-    </a>
-  </li>
-
-        
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../events/" class="md-nav__link">
+        Events
+      </a>
+    </li>
+  
+
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhooks/" class="md-nav__link">
+        Webhooks
+      </a>
+    </li>
+  
+
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../submit-workflow-via-automation/" class="md-nav__link">
+        Submitting A Workflow Via Automation
+      </a>
+    </li>
+  
 
-
-  <li class="md-nav__item">
-    <a href="../kubectl/" title="Kubectl" class="md-nav__link">
-      Kubectl
-    </a>
-  </li>
-
-        
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflow-submitting-workflow/" class="md-nav__link">
+        One Workflow Submitting Another
+      </a>
+    </li>
+  
+
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../resuming-workflow-via-automation/" class="md-nav__link">
+        Resume A Workflow
+      </a>
+    </li>
+  
+
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../async-pattern/" class="md-nav__link">
+        Asynchronous Job Pattern
+      </a>
+    </li>
+  
 
-
-  <li class="md-nav__item">
-    <a href="../access-token/" title="Access Token" class="md-nav__link">
-      Access Token
-    </a>
-  </li>
-
-        
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/" class="md-nav__link">
+        Security
+      </a>
+    </li>
+  
+
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../running-at-massive-scale/" class="md-nav__link">
+        Running At Massive Scale
+      </a>
+    </li>
+  
+
+            
           
+        </ul>
+      </nav>
+    </li>
+  
 
-
-  <li class="md-nav__item">
-    <a href="../swagger/" title="Argo Server API" class="md-nav__link">
-      Argo Server API
-    </a>
-  </li>
-
-        
+            
           
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../rest-api/" title="REST API" class="md-nav__link">
-      REST API
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../rest-examples/" title="API Examples" class="md-nav__link">
-      API Examples
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../client-libraries/" title="Client Libraries" class="md-nav__link">
-      Client Libraries
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../events/" title="Events" class="md-nav__link">
-      Events
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../webhooks/" title="Webhooks" class="md-nav__link">
-      Webhooks
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../submit-workflow-via-automation/" title="Submitting A Workflow Via Automation" class="md-nav__link">
-      Submitting A Workflow Via Automation
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../workflow-submitting-workflow/" title="One Workflow Submitting Another" class="md-nav__link">
-      One Workflow Submitting Another
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../resuming-workflow-via-automation/" title="Resume A Workflow" class="md-nav__link">
-      Resume A Workflow
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../async-pattern/" title="Asynchronous Job Pattern" class="md-nav__link">
-      Asynchronous Job Pattern
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../security/" title="Security" class="md-nav__link">
-      Security
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../running-at-massive-scale/" title="Running At Massive Scale" class="md-nav__link">
-      Running At Massive Scale
-    </a>
-  </li>
-
-        
-      </ul>
-    </nav>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item md-nav__item--nested">
+            
+              
+  
+  
+  
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-5-4" type="checkbox" id="nav-5-4">
-    
-    <label class="md-nav__link" for="nav-5-4">
-      Plugins
-    </label>
-    <nav class="md-nav" data-md-component="collapsible" data-md-level="2">
-      <label class="md-nav__title" for="nav-5-4">
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5_4" type="checkbox" id="__nav_5_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5_4">
+          Plugins
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Plugins" data-md-level="2">
+        <label class="md-nav__title" for="__nav_5_4">
+          <span class="md-nav__icon md-icon"></span>
+          Plugins
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugins/" class="md-nav__link">
         Plugins
-      </label>
-      <ul class="md-nav__list" data-md-scrollfix>
-        
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../plugins/" title="Plugins" class="md-nav__link">
-      Plugins
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../executor_plugins/" title="Executor Plugins" class="md-nav__link">
-      Executor Plugins
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../executor_swagger/" title="The API for an executor plugin." class="md-nav__link">
-      The API for an executor plugin.
-    </a>
-  </li>
-
-        
-      </ul>
-    </nav>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../ide-setup/" title="IDE Set-Up" class="md-nav__link">
-      IDE Set-Up
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/README.md" title="Examples" class="md-nav__link">
-      Examples
-    </a>
-  </li>
-
-        
-          
-          
-          
-
+      </a>
+    </li>
   
 
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../executor_plugins/" class="md-nav__link">
+        Executor Plugins
+      </a>
+    </li>
+  
 
-  <li class="md-nav__item md-nav__item--active">
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../executor_swagger/" class="md-nav__link">
+        The API for an executor plugin.
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ide-setup/" class="md-nav__link">
+        IDE Set-Up
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/README.md" class="md-nav__link">
+        Examples
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
     
-    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
       
-    
-    
-      <label class="md-nav__link md-nav__link--active" for="__toc">
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Field Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         Field Reference
-      </label>
-    
-    <a href="./" title="Field Reference" class="md-nav__link md-nav__link--active">
-      Field Reference
-    </a>
-    
+      </a>
       
-<nav class="md-nav md-nav--secondary">
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
   
   
     
   
   
-    <label class="md-nav__title" for="__toc">Table of contents</label>
-    <ul class="md-nav__list" data-md-scrollfix>
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#workflow" title="Workflow" class="md-nav__link">
+  <a href="#workflow" class="md-nav__link">
     Workflow
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Workflow">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields" title="Fields" class="md-nav__link">
+  <a href="#fields" class="md-nav__link">
     Fields
   </a>
   
@@ -1134,15 +1279,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#cronworkflow" title="CronWorkflow" class="md-nav__link">
+  <a href="#cronworkflow" class="md-nav__link">
     CronWorkflow
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="CronWorkflow">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_1" title="Fields" class="md-nav__link">
+  <a href="#fields_1" class="md-nav__link">
     Fields
   </a>
   
@@ -1154,15 +1299,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#workflowtemplate" title="WorkflowTemplate" class="md-nav__link">
+  <a href="#workflowtemplate" class="md-nav__link">
     WorkflowTemplate
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="WorkflowTemplate">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_2" title="Fields" class="md-nav__link">
+  <a href="#fields_2" class="md-nav__link">
     Fields
   </a>
   
@@ -1174,15 +1319,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#workflowspec" title="WorkflowSpec" class="md-nav__link">
+  <a href="#workflowspec" class="md-nav__link">
     WorkflowSpec
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="WorkflowSpec">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_3" title="Fields" class="md-nav__link">
+  <a href="#fields_3" class="md-nav__link">
     Fields
   </a>
   
@@ -1194,15 +1339,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#workflowstatus" title="WorkflowStatus" class="md-nav__link">
+  <a href="#workflowstatus" class="md-nav__link">
     WorkflowStatus
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="WorkflowStatus">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_4" title="Fields" class="md-nav__link">
+  <a href="#fields_4" class="md-nav__link">
     Fields
   </a>
   
@@ -1214,15 +1359,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#cronworkflowspec" title="CronWorkflowSpec" class="md-nav__link">
+  <a href="#cronworkflowspec" class="md-nav__link">
     CronWorkflowSpec
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="CronWorkflowSpec">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_5" title="Fields" class="md-nav__link">
+  <a href="#fields_5" class="md-nav__link">
     Fields
   </a>
   
@@ -1234,15 +1379,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#cronworkflowstatus" title="CronWorkflowStatus" class="md-nav__link">
+  <a href="#cronworkflowstatus" class="md-nav__link">
     CronWorkflowStatus
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="CronWorkflowStatus">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_6" title="Fields" class="md-nav__link">
+  <a href="#fields_6" class="md-nav__link">
     Fields
   </a>
   
@@ -1254,15 +1399,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#workflowtemplatespec" title="WorkflowTemplateSpec" class="md-nav__link">
+  <a href="#workflowtemplatespec" class="md-nav__link">
     WorkflowTemplateSpec
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="WorkflowTemplateSpec">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_7" title="Fields" class="md-nav__link">
+  <a href="#fields_7" class="md-nav__link">
     Fields
   </a>
   
@@ -1274,15 +1419,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#arguments" title="Arguments" class="md-nav__link">
+  <a href="#arguments" class="md-nav__link">
     Arguments
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Arguments">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_8" title="Fields" class="md-nav__link">
+  <a href="#fields_8" class="md-nav__link">
     Fields
   </a>
   
@@ -1294,15 +1439,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#artifactrepositoryref" title="ArtifactRepositoryRef" class="md-nav__link">
+  <a href="#artifactrepositoryref" class="md-nav__link">
     ArtifactRepositoryRef
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="ArtifactRepositoryRef">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_9" title="Fields" class="md-nav__link">
+  <a href="#fields_9" class="md-nav__link">
     Fields
   </a>
   
@@ -1314,15 +1459,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#executorconfig" title="ExecutorConfig" class="md-nav__link">
+  <a href="#executorconfig" class="md-nav__link">
     ExecutorConfig
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="ExecutorConfig">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_10" title="Fields" class="md-nav__link">
+  <a href="#fields_10" class="md-nav__link">
     Fields
   </a>
   
@@ -1334,15 +1479,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#lifecyclehook" title="LifecycleHook" class="md-nav__link">
+  <a href="#lifecyclehook" class="md-nav__link">
     LifecycleHook
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="LifecycleHook">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_11" title="Fields" class="md-nav__link">
+  <a href="#fields_11" class="md-nav__link">
     Fields
   </a>
   
@@ -1354,15 +1499,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#metrics" title="Metrics" class="md-nav__link">
+  <a href="#metrics" class="md-nav__link">
     Metrics
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Metrics">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_12" title="Fields" class="md-nav__link">
+  <a href="#fields_12" class="md-nav__link">
     Fields
   </a>
   
@@ -1374,15 +1519,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#podgc" title="PodGC" class="md-nav__link">
+  <a href="#podgc" class="md-nav__link">
     PodGC
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="PodGC">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_13" title="Fields" class="md-nav__link">
+  <a href="#fields_13" class="md-nav__link">
     Fields
   </a>
   
@@ -1394,15 +1539,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#metadata" title="Metadata" class="md-nav__link">
+  <a href="#metadata" class="md-nav__link">
     Metadata
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Metadata">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_14" title="Fields" class="md-nav__link">
+  <a href="#fields_14" class="md-nav__link">
     Fields
   </a>
   
@@ -1414,15 +1559,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#retrystrategy" title="RetryStrategy" class="md-nav__link">
+  <a href="#retrystrategy" class="md-nav__link">
     RetryStrategy
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="RetryStrategy">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_15" title="Fields" class="md-nav__link">
+  <a href="#fields_15" class="md-nav__link">
     Fields
   </a>
   
@@ -1434,15 +1579,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#synchronization" title="Synchronization" class="md-nav__link">
+  <a href="#synchronization" class="md-nav__link">
     Synchronization
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Synchronization">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_16" title="Fields" class="md-nav__link">
+  <a href="#fields_16" class="md-nav__link">
     Fields
   </a>
   
@@ -1454,15 +1599,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#template" title="Template" class="md-nav__link">
+  <a href="#template" class="md-nav__link">
     Template
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Template">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_17" title="Fields" class="md-nav__link">
+  <a href="#fields_17" class="md-nav__link">
     Fields
   </a>
   
@@ -1474,15 +1619,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#ttlstrategy" title="TTLStrategy" class="md-nav__link">
+  <a href="#ttlstrategy" class="md-nav__link">
     TTLStrategy
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="TTLStrategy">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_18" title="Fields" class="md-nav__link">
+  <a href="#fields_18" class="md-nav__link">
     Fields
   </a>
   
@@ -1494,15 +1639,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#volumeclaimgc" title="VolumeClaimGC" class="md-nav__link">
+  <a href="#volumeclaimgc" class="md-nav__link">
     VolumeClaimGC
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="VolumeClaimGC">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_19" title="Fields" class="md-nav__link">
+  <a href="#fields_19" class="md-nav__link">
     Fields
   </a>
   
@@ -1514,15 +1659,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#workflowtemplateref" title="WorkflowTemplateRef" class="md-nav__link">
+  <a href="#workflowtemplateref" class="md-nav__link">
     WorkflowTemplateRef
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="WorkflowTemplateRef">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_20" title="Fields" class="md-nav__link">
+  <a href="#fields_20" class="md-nav__link">
     Fields
   </a>
   
@@ -1534,15 +1679,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#artifactrepositoryrefstatus" title="ArtifactRepositoryRefStatus" class="md-nav__link">
+  <a href="#artifactrepositoryrefstatus" class="md-nav__link">
     ArtifactRepositoryRefStatus
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="ArtifactRepositoryRefStatus">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_21" title="Fields" class="md-nav__link">
+  <a href="#fields_21" class="md-nav__link">
     Fields
   </a>
   
@@ -1554,15 +1699,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#condition" title="Condition" class="md-nav__link">
+  <a href="#condition" class="md-nav__link">
     Condition
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Condition">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_22" title="Fields" class="md-nav__link">
+  <a href="#fields_22" class="md-nav__link">
     Fields
   </a>
   
@@ -1574,15 +1719,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#nodestatus" title="NodeStatus" class="md-nav__link">
+  <a href="#nodestatus" class="md-nav__link">
     NodeStatus
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="NodeStatus">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_23" title="Fields" class="md-nav__link">
+  <a href="#fields_23" class="md-nav__link">
     Fields
   </a>
   
@@ -1594,15 +1739,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#outputs" title="Outputs" class="md-nav__link">
+  <a href="#outputs" class="md-nav__link">
     Outputs
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Outputs">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_24" title="Fields" class="md-nav__link">
+  <a href="#fields_24" class="md-nav__link">
     Fields
   </a>
   
@@ -1614,15 +1759,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#synchronizationstatus" title="SynchronizationStatus" class="md-nav__link">
+  <a href="#synchronizationstatus" class="md-nav__link">
     SynchronizationStatus
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="SynchronizationStatus">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_25" title="Fields" class="md-nav__link">
+  <a href="#fields_25" class="md-nav__link">
     Fields
   </a>
   
@@ -1634,15 +1779,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#artifact" title="Artifact" class="md-nav__link">
+  <a href="#artifact" class="md-nav__link">
     Artifact
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Artifact">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_26" title="Fields" class="md-nav__link">
+  <a href="#fields_26" class="md-nav__link">
     Fields
   </a>
   
@@ -1654,15 +1799,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#parameter" title="Parameter" class="md-nav__link">
+  <a href="#parameter" class="md-nav__link">
     Parameter
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Parameter">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_27" title="Fields" class="md-nav__link">
+  <a href="#fields_27" class="md-nav__link">
     Fields
   </a>
   
@@ -1674,15 +1819,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#templateref" title="TemplateRef" class="md-nav__link">
+  <a href="#templateref" class="md-nav__link">
     TemplateRef
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="TemplateRef">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_28" title="Fields" class="md-nav__link">
+  <a href="#fields_28" class="md-nav__link">
     Fields
   </a>
   
@@ -1694,15 +1839,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#prometheus" title="Prometheus" class="md-nav__link">
+  <a href="#prometheus" class="md-nav__link">
     Prometheus
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Prometheus">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_29" title="Fields" class="md-nav__link">
+  <a href="#fields_29" class="md-nav__link">
     Fields
   </a>
   
@@ -1714,15 +1859,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#retryaffinity" title="RetryAffinity" class="md-nav__link">
+  <a href="#retryaffinity" class="md-nav__link">
     RetryAffinity
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="RetryAffinity">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_30" title="Fields" class="md-nav__link">
+  <a href="#fields_30" class="md-nav__link">
     Fields
   </a>
   
@@ -1734,15 +1879,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#backoff" title="Backoff" class="md-nav__link">
+  <a href="#backoff" class="md-nav__link">
     Backoff
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Backoff">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_31" title="Fields" class="md-nav__link">
+  <a href="#fields_31" class="md-nav__link">
     Fields
   </a>
   
@@ -1754,15 +1899,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#mutex" title="Mutex" class="md-nav__link">
+  <a href="#mutex" class="md-nav__link">
     Mutex
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Mutex">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_32" title="Fields" class="md-nav__link">
+  <a href="#fields_32" class="md-nav__link">
     Fields
   </a>
   
@@ -1774,15 +1919,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#semaphoreref" title="SemaphoreRef" class="md-nav__link">
+  <a href="#semaphoreref" class="md-nav__link">
     SemaphoreRef
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="SemaphoreRef">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_33" title="Fields" class="md-nav__link">
+  <a href="#fields_33" class="md-nav__link">
     Fields
   </a>
   
@@ -1794,15 +1939,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#artifactlocation" title="ArtifactLocation" class="md-nav__link">
+  <a href="#artifactlocation" class="md-nav__link">
     ArtifactLocation
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="ArtifactLocation">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_34" title="Fields" class="md-nav__link">
+  <a href="#fields_34" class="md-nav__link">
     Fields
   </a>
   
@@ -1814,15 +1959,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#containersettemplate" title="ContainerSetTemplate" class="md-nav__link">
+  <a href="#containersettemplate" class="md-nav__link">
     ContainerSetTemplate
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="ContainerSetTemplate">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_35" title="Fields" class="md-nav__link">
+  <a href="#fields_35" class="md-nav__link">
     Fields
   </a>
   
@@ -1834,15 +1979,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#dagtemplate" title="DAGTemplate" class="md-nav__link">
+  <a href="#dagtemplate" class="md-nav__link">
     DAGTemplate
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="DAGTemplate">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_36" title="Fields" class="md-nav__link">
+  <a href="#fields_36" class="md-nav__link">
     Fields
   </a>
   
@@ -1854,15 +1999,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#data" title="Data" class="md-nav__link">
+  <a href="#data" class="md-nav__link">
     Data
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Data">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_37" title="Fields" class="md-nav__link">
+  <a href="#fields_37" class="md-nav__link">
     Fields
   </a>
   
@@ -1874,15 +2019,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#http" title="HTTP" class="md-nav__link">
+  <a href="#http" class="md-nav__link">
     HTTP
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="HTTP">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_38" title="Fields" class="md-nav__link">
+  <a href="#fields_38" class="md-nav__link">
     Fields
   </a>
   
@@ -1894,15 +2039,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#usercontainer" title="UserContainer" class="md-nav__link">
+  <a href="#usercontainer" class="md-nav__link">
     UserContainer
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="UserContainer">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_39" title="Fields" class="md-nav__link">
+  <a href="#fields_39" class="md-nav__link">
     Fields
   </a>
   
@@ -1914,15 +2059,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#inputs" title="Inputs" class="md-nav__link">
+  <a href="#inputs" class="md-nav__link">
     Inputs
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Inputs">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_40" title="Fields" class="md-nav__link">
+  <a href="#fields_40" class="md-nav__link">
     Fields
   </a>
   
@@ -1934,15 +2079,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#memoize" title="Memoize" class="md-nav__link">
+  <a href="#memoize" class="md-nav__link">
     Memoize
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Memoize">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_41" title="Fields" class="md-nav__link">
+  <a href="#fields_41" class="md-nav__link">
     Fields
   </a>
   
@@ -1954,22 +2099,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#plugin" title="Plugin" class="md-nav__link">
+  <a href="#plugin" class="md-nav__link">
     Plugin
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#resourcetemplate" title="ResourceTemplate" class="md-nav__link">
+  <a href="#resourcetemplate" class="md-nav__link">
     ResourceTemplate
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="ResourceTemplate">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_42" title="Fields" class="md-nav__link">
+  <a href="#fields_42" class="md-nav__link">
     Fields
   </a>
   
@@ -1981,15 +2126,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#scripttemplate" title="ScriptTemplate" class="md-nav__link">
+  <a href="#scripttemplate" class="md-nav__link">
     ScriptTemplate
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="ScriptTemplate">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_43" title="Fields" class="md-nav__link">
+  <a href="#fields_43" class="md-nav__link">
     Fields
   </a>
   
@@ -2001,15 +2146,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#workflowstep" title="WorkflowStep" class="md-nav__link">
+  <a href="#workflowstep" class="md-nav__link">
     WorkflowStep
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="WorkflowStep">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_44" title="Fields" class="md-nav__link">
+  <a href="#fields_44" class="md-nav__link">
     Fields
   </a>
   
@@ -2021,15 +2166,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#suspendtemplate" title="SuspendTemplate" class="md-nav__link">
+  <a href="#suspendtemplate" class="md-nav__link">
     SuspendTemplate
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="SuspendTemplate">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_45" title="Fields" class="md-nav__link">
+  <a href="#fields_45" class="md-nav__link">
     Fields
   </a>
   
@@ -2041,15 +2186,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#artifactrepository" title="ArtifactRepository" class="md-nav__link">
+  <a href="#artifactrepository" class="md-nav__link">
     ArtifactRepository
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="ArtifactRepository">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_46" title="Fields" class="md-nav__link">
+  <a href="#fields_46" class="md-nav__link">
     Fields
   </a>
   
@@ -2061,15 +2206,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#memoizationstatus" title="MemoizationStatus" class="md-nav__link">
+  <a href="#memoizationstatus" class="md-nav__link">
     MemoizationStatus
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="MemoizationStatus">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_47" title="Fields" class="md-nav__link">
+  <a href="#fields_47" class="md-nav__link">
     Fields
   </a>
   
@@ -2081,15 +2226,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#nodesynchronizationstatus" title="NodeSynchronizationStatus" class="md-nav__link">
+  <a href="#nodesynchronizationstatus" class="md-nav__link">
     NodeSynchronizationStatus
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="NodeSynchronizationStatus">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_48" title="Fields" class="md-nav__link">
+  <a href="#fields_48" class="md-nav__link">
     Fields
   </a>
   
@@ -2101,15 +2246,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#mutexstatus" title="MutexStatus" class="md-nav__link">
+  <a href="#mutexstatus" class="md-nav__link">
     MutexStatus
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="MutexStatus">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_49" title="Fields" class="md-nav__link">
+  <a href="#fields_49" class="md-nav__link">
     Fields
   </a>
   
@@ -2121,15 +2266,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#semaphorestatus" title="SemaphoreStatus" class="md-nav__link">
+  <a href="#semaphorestatus" class="md-nav__link">
     SemaphoreStatus
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="SemaphoreStatus">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_50" title="Fields" class="md-nav__link">
+  <a href="#fields_50" class="md-nav__link">
     Fields
   </a>
   
@@ -2141,15 +2286,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#archivestrategy" title="ArchiveStrategy" class="md-nav__link">
+  <a href="#archivestrategy" class="md-nav__link">
     ArchiveStrategy
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="ArchiveStrategy">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_51" title="Fields" class="md-nav__link">
+  <a href="#fields_51" class="md-nav__link">
     Fields
   </a>
   
@@ -2161,15 +2306,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#artifactoryartifact" title="ArtifactoryArtifact" class="md-nav__link">
+  <a href="#artifactoryartifact" class="md-nav__link">
     ArtifactoryArtifact
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="ArtifactoryArtifact">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_52" title="Fields" class="md-nav__link">
+  <a href="#fields_52" class="md-nav__link">
     Fields
   </a>
   
@@ -2181,15 +2326,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#gcsartifact" title="GCSArtifact" class="md-nav__link">
+  <a href="#gcsartifact" class="md-nav__link">
     GCSArtifact
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="GCSArtifact">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_53" title="Fields" class="md-nav__link">
+  <a href="#fields_53" class="md-nav__link">
     Fields
   </a>
   
@@ -2201,15 +2346,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#gitartifact" title="GitArtifact" class="md-nav__link">
+  <a href="#gitartifact" class="md-nav__link">
     GitArtifact
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="GitArtifact">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_54" title="Fields" class="md-nav__link">
+  <a href="#fields_54" class="md-nav__link">
     Fields
   </a>
   
@@ -2221,15 +2366,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#hdfsartifact" title="HDFSArtifact" class="md-nav__link">
+  <a href="#hdfsartifact" class="md-nav__link">
     HDFSArtifact
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="HDFSArtifact">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_55" title="Fields" class="md-nav__link">
+  <a href="#fields_55" class="md-nav__link">
     Fields
   </a>
   
@@ -2241,15 +2386,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#httpartifact" title="HTTPArtifact" class="md-nav__link">
+  <a href="#httpartifact" class="md-nav__link">
     HTTPArtifact
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="HTTPArtifact">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_56" title="Fields" class="md-nav__link">
+  <a href="#fields_56" class="md-nav__link">
     Fields
   </a>
   
@@ -2261,15 +2406,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#ossartifact" title="OSSArtifact" class="md-nav__link">
+  <a href="#ossartifact" class="md-nav__link">
     OSSArtifact
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="OSSArtifact">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_57" title="Fields" class="md-nav__link">
+  <a href="#fields_57" class="md-nav__link">
     Fields
   </a>
   
@@ -2281,15 +2426,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#rawartifact" title="RawArtifact" class="md-nav__link">
+  <a href="#rawartifact" class="md-nav__link">
     RawArtifact
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="RawArtifact">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_58" title="Fields" class="md-nav__link">
+  <a href="#fields_58" class="md-nav__link">
     Fields
   </a>
   
@@ -2301,15 +2446,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#s3artifact" title="S3Artifact" class="md-nav__link">
+  <a href="#s3artifact" class="md-nav__link">
     S3Artifact
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="S3Artifact">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_59" title="Fields" class="md-nav__link">
+  <a href="#fields_59" class="md-nav__link">
     Fields
   </a>
   
@@ -2321,15 +2466,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#valuefrom" title="ValueFrom" class="md-nav__link">
+  <a href="#valuefrom" class="md-nav__link">
     ValueFrom
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="ValueFrom">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_60" title="Fields" class="md-nav__link">
+  <a href="#fields_60" class="md-nav__link">
     Fields
   </a>
   
@@ -2341,15 +2486,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#counter" title="Counter" class="md-nav__link">
+  <a href="#counter" class="md-nav__link">
     Counter
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Counter">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_61" title="Fields" class="md-nav__link">
+  <a href="#fields_61" class="md-nav__link">
     Fields
   </a>
   
@@ -2361,15 +2506,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#gauge" title="Gauge" class="md-nav__link">
+  <a href="#gauge" class="md-nav__link">
     Gauge
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Gauge">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_62" title="Fields" class="md-nav__link">
+  <a href="#fields_62" class="md-nav__link">
     Fields
   </a>
   
@@ -2381,15 +2526,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#histogram" title="Histogram" class="md-nav__link">
+  <a href="#histogram" class="md-nav__link">
     Histogram
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Histogram">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_63" title="Fields" class="md-nav__link">
+  <a href="#fields_63" class="md-nav__link">
     Fields
   </a>
   
@@ -2401,15 +2546,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#metriclabel" title="MetricLabel" class="md-nav__link">
+  <a href="#metriclabel" class="md-nav__link">
     MetricLabel
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="MetricLabel">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_64" title="Fields" class="md-nav__link">
+  <a href="#fields_64" class="md-nav__link">
     Fields
   </a>
   
@@ -2421,22 +2566,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#retrynodeantiaffinity" title="RetryNodeAntiAffinity" class="md-nav__link">
+  <a href="#retrynodeantiaffinity" class="md-nav__link">
     RetryNodeAntiAffinity
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#containernode" title="ContainerNode" class="md-nav__link">
+  <a href="#containernode" class="md-nav__link">
     ContainerNode
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="ContainerNode">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_65" title="Fields" class="md-nav__link">
+  <a href="#fields_65" class="md-nav__link">
     Fields
   </a>
   
@@ -2448,15 +2593,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#dagtask" title="DAGTask" class="md-nav__link">
+  <a href="#dagtask" class="md-nav__link">
     DAGTask
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="DAGTask">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_66" title="Fields" class="md-nav__link">
+  <a href="#fields_66" class="md-nav__link">
     Fields
   </a>
   
@@ -2468,15 +2613,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#datasource" title="DataSource" class="md-nav__link">
+  <a href="#datasource" class="md-nav__link">
     DataSource
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="DataSource">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_67" title="Fields" class="md-nav__link">
+  <a href="#fields_67" class="md-nav__link">
     Fields
   </a>
   
@@ -2488,15 +2633,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#transformationstep" title="TransformationStep" class="md-nav__link">
+  <a href="#transformationstep" class="md-nav__link">
     TransformationStep
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="TransformationStep">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_68" title="Fields" class="md-nav__link">
+  <a href="#fields_68" class="md-nav__link">
     Fields
   </a>
   
@@ -2508,15 +2653,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#httpheader" title="HTTPHeader" class="md-nav__link">
+  <a href="#httpheader" class="md-nav__link">
     HTTPHeader
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="HTTPHeader">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_69" title="Fields" class="md-nav__link">
+  <a href="#fields_69" class="md-nav__link">
     Fields
   </a>
   
@@ -2528,15 +2673,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#cache" title="Cache" class="md-nav__link">
+  <a href="#cache" class="md-nav__link">
     Cache
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Cache">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_70" title="Fields" class="md-nav__link">
+  <a href="#fields_70" class="md-nav__link">
     Fields
   </a>
   
@@ -2548,15 +2693,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#continueon" title="ContinueOn" class="md-nav__link">
+  <a href="#continueon" class="md-nav__link">
     ContinueOn
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="ContinueOn">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_71" title="Fields" class="md-nav__link">
+  <a href="#fields_71" class="md-nav__link">
     Fields
   </a>
   
@@ -2568,22 +2713,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#item" title="Item" class="md-nav__link">
+  <a href="#item" class="md-nav__link">
     Item
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#sequence" title="Sequence" class="md-nav__link">
+  <a href="#sequence" class="md-nav__link">
     Sequence
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Sequence">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_72" title="Fields" class="md-nav__link">
+  <a href="#fields_72" class="md-nav__link">
     Fields
   </a>
   
@@ -2595,15 +2740,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#artifactoryartifactrepository" title="ArtifactoryArtifactRepository" class="md-nav__link">
+  <a href="#artifactoryartifactrepository" class="md-nav__link">
     ArtifactoryArtifactRepository
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="ArtifactoryArtifactRepository">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_73" title="Fields" class="md-nav__link">
+  <a href="#fields_73" class="md-nav__link">
     Fields
   </a>
   
@@ -2615,15 +2760,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#gcsartifactrepository" title="GCSArtifactRepository" class="md-nav__link">
+  <a href="#gcsartifactrepository" class="md-nav__link">
     GCSArtifactRepository
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="GCSArtifactRepository">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_74" title="Fields" class="md-nav__link">
+  <a href="#fields_74" class="md-nav__link">
     Fields
   </a>
   
@@ -2635,15 +2780,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#hdfsartifactrepository" title="HDFSArtifactRepository" class="md-nav__link">
+  <a href="#hdfsartifactrepository" class="md-nav__link">
     HDFSArtifactRepository
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="HDFSArtifactRepository">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_75" title="Fields" class="md-nav__link">
+  <a href="#fields_75" class="md-nav__link">
     Fields
   </a>
   
@@ -2655,15 +2800,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#ossartifactrepository" title="OSSArtifactRepository" class="md-nav__link">
+  <a href="#ossartifactrepository" class="md-nav__link">
     OSSArtifactRepository
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="OSSArtifactRepository">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_76" title="Fields" class="md-nav__link">
+  <a href="#fields_76" class="md-nav__link">
     Fields
   </a>
   
@@ -2675,15 +2820,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#s3artifactrepository" title="S3ArtifactRepository" class="md-nav__link">
+  <a href="#s3artifactrepository" class="md-nav__link">
     S3ArtifactRepository
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="S3ArtifactRepository">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_77" title="Fields" class="md-nav__link">
+  <a href="#fields_77" class="md-nav__link">
     Fields
   </a>
   
@@ -2695,15 +2840,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#mutexholding" title="MutexHolding" class="md-nav__link">
+  <a href="#mutexholding" class="md-nav__link">
     MutexHolding
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="MutexHolding">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_78" title="Fields" class="md-nav__link">
+  <a href="#fields_78" class="md-nav__link">
     Fields
   </a>
   
@@ -2715,15 +2860,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#semaphoreholding" title="SemaphoreHolding" class="md-nav__link">
+  <a href="#semaphoreholding" class="md-nav__link">
     SemaphoreHolding
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="SemaphoreHolding">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_79" title="Fields" class="md-nav__link">
+  <a href="#fields_79" class="md-nav__link">
     Fields
   </a>
   
@@ -2735,22 +2880,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#nonestrategy" title="NoneStrategy" class="md-nav__link">
+  <a href="#nonestrategy" class="md-nav__link">
     NoneStrategy
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#tarstrategy" title="TarStrategy" class="md-nav__link">
+  <a href="#tarstrategy" class="md-nav__link">
     TarStrategy
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="TarStrategy">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_80" title="Fields" class="md-nav__link">
+  <a href="#fields_80" class="md-nav__link">
     Fields
   </a>
   
@@ -2762,22 +2907,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#zipstrategy" title="ZipStrategy" class="md-nav__link">
+  <a href="#zipstrategy" class="md-nav__link">
     ZipStrategy
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#header" title="Header" class="md-nav__link">
+  <a href="#header" class="md-nav__link">
     Header
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Header">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_81" title="Fields" class="md-nav__link">
+  <a href="#fields_81" class="md-nav__link">
     Fields
   </a>
   
@@ -2789,15 +2934,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#osslifecyclerule" title="OSSLifecycleRule" class="md-nav__link">
+  <a href="#osslifecyclerule" class="md-nav__link">
     OSSLifecycleRule
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="OSSLifecycleRule">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_82" title="Fields" class="md-nav__link">
+  <a href="#fields_82" class="md-nav__link">
     Fields
   </a>
   
@@ -2809,15 +2954,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#creates3bucketoptions" title="CreateS3BucketOptions" class="md-nav__link">
+  <a href="#creates3bucketoptions" class="md-nav__link">
     CreateS3BucketOptions
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="CreateS3BucketOptions">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_83" title="Fields" class="md-nav__link">
+  <a href="#fields_83" class="md-nav__link">
     Fields
   </a>
   
@@ -2829,15 +2974,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#s3encryptionoptions" title="S3EncryptionOptions" class="md-nav__link">
+  <a href="#s3encryptionoptions" class="md-nav__link">
     S3EncryptionOptions
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="S3EncryptionOptions">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_84" title="Fields" class="md-nav__link">
+  <a href="#fields_84" class="md-nav__link">
     Fields
   </a>
   
@@ -2849,29 +2994,29 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#suppliedvaluefrom" title="SuppliedValueFrom" class="md-nav__link">
+  <a href="#suppliedvaluefrom" class="md-nav__link">
     SuppliedValueFrom
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#amount" title="Amount" class="md-nav__link">
+  <a href="#amount" class="md-nav__link">
     Amount
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#artifactpaths" title="ArtifactPaths" class="md-nav__link">
+  <a href="#artifactpaths" class="md-nav__link">
     ArtifactPaths
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="ArtifactPaths">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_85" title="Fields" class="md-nav__link">
+  <a href="#fields_85" class="md-nav__link">
     Fields
   </a>
   
@@ -2883,15 +3028,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#httpheadersource" title="HTTPHeaderSource" class="md-nav__link">
+  <a href="#httpheadersource" class="md-nav__link">
     HTTPHeaderSource
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="HTTPHeaderSource">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_86" title="Fields" class="md-nav__link">
+  <a href="#fields_86" class="md-nav__link">
     Fields
   </a>
   
@@ -2902,1208 +3047,1438 @@
   
 </li>
       
-      
-      
-      
-      
     </ul>
   
 </nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
     
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item md-nav__item--nested">
-    
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-5-8" type="checkbox" id="nav-5-8">
-    
-    <label class="md-nav__link" for="nav-5-8">
-      CLI Reference
-    </label>
-    <nav class="md-nav" data-md-component="collapsible" data-md-level="2">
-      <label class="md-nav__title" for="nav-5-8">
-        CLI Reference
-      </label>
-      <ul class="md-nav__list" data-md-scrollfix>
-        
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo/" title="argo" class="md-nav__link">
-      argo
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_archive/" title="argo archive" class="md-nav__link">
-      argo archive
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_archive_delete/" title="argo archive delete" class="md-nav__link">
-      argo archive delete
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_archive_get/" title="argo archive get" class="md-nav__link">
-      argo archive get
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_archive_list/" title="argo archive list" class="md-nav__link">
-      argo archive list
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_archive_list-label-keys/" title="argo archive list-label-keys" class="md-nav__link">
-      argo archive list-label-keys
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_archive_list-label-values/" title="argo archive list-label-values" class="md-nav__link">
-      argo archive list-label-values
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_auth/" title="argo auth" class="md-nav__link">
-      argo auth
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_auth_token/" title="argo auth token" class="md-nav__link">
-      argo auth token
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_cluster-template/" title="argo cluster-template" class="md-nav__link">
-      argo cluster-template
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_cluster-template_create/" title="argo cluster-template create" class="md-nav__link">
-      argo cluster-template create
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_cluster-template_delete/" title="argo cluster-template delete" class="md-nav__link">
-      argo cluster-template delete
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_cluster-template_get/" title="argo cluster-template get" class="md-nav__link">
-      argo cluster-template get
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_cluster-template_lint/" title="argo cluster-template lint" class="md-nav__link">
-      argo cluster-template lint
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_cluster-template_list/" title="argo cluster-template list" class="md-nav__link">
-      argo cluster-template list
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_completion/" title="argo completion" class="md-nav__link">
-      argo completion
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_cron/" title="argo cron" class="md-nav__link">
-      argo cron
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_cron_create/" title="argo cron create" class="md-nav__link">
-      argo cron create
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_cron_delete/" title="argo cron delete" class="md-nav__link">
-      argo cron delete
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_cron_get/" title="argo cron get" class="md-nav__link">
-      argo cron get
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_cron_lint/" title="argo cron lint" class="md-nav__link">
-      argo cron lint
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_cron_list/" title="argo cron list" class="md-nav__link">
-      argo cron list
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_cron_resume/" title="argo cron resume" class="md-nav__link">
-      argo cron resume
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_cron_suspend/" title="argo cron suspend" class="md-nav__link">
-      argo cron suspend
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_delete/" title="argo delete" class="md-nav__link">
-      argo delete
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_executor-plugin/" title="argo executor-plugin" class="md-nav__link">
-      argo executor-plugin
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_executor-plugin_build/" title="argo executor-plugin build" class="md-nav__link">
-      argo executor-plugin build
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_get/" title="argo get" class="md-nav__link">
-      argo get
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_lint/" title="argo lint" class="md-nav__link">
-      argo lint
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_list/" title="argo list" class="md-nav__link">
-      argo list
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_logs/" title="argo logs" class="md-nav__link">
-      argo logs
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_node/" title="argo node" class="md-nav__link">
-      argo node
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_resubmit/" title="argo resubmit" class="md-nav__link">
-      argo resubmit
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_resume/" title="argo resume" class="md-nav__link">
-      argo resume
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_retry/" title="argo retry" class="md-nav__link">
-      argo retry
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_server/" title="argo server" class="md-nav__link">
-      argo server
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_stop/" title="argo stop" class="md-nav__link">
-      argo stop
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_submit/" title="argo submit" class="md-nav__link">
-      argo submit
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_suspend/" title="argo suspend" class="md-nav__link">
-      argo suspend
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_template/" title="argo template" class="md-nav__link">
-      argo template
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_template_create/" title="argo template create" class="md-nav__link">
-      argo template create
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_template_delete/" title="argo template delete" class="md-nav__link">
-      argo template delete
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_template_get/" title="argo template get" class="md-nav__link">
-      argo template get
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_template_lint/" title="argo template lint" class="md-nav__link">
-      argo template lint
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_template_list/" title="argo template list" class="md-nav__link">
-      argo template list
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_terminate/" title="argo terminate" class="md-nav__link">
-      argo terminate
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_version/" title="argo version" class="md-nav__link">
-      argo version
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_wait/" title="argo wait" class="md-nav__link">
-      argo wait
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cli/argo_watch/" title="argo watch" class="md-nav__link">
-      argo watch
-    </a>
-  </li>
-
-        
-      </ul>
-    </nav>
-  </li>
-
-        
-      </ul>
-    </nav>
-  </li>
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5_8" type="checkbox" id="__nav_5_8" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5_8">
+          CLI Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="CLI Reference" data-md-level="2">
+        <label class="md-nav__title" for="__nav_5_8">
+          <span class="md-nav__icon md-icon"></span>
+          CLI Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo/" class="md-nav__link">
+        argo
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_archive/" class="md-nav__link">
+        argo archive
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_archive_delete/" class="md-nav__link">
+        argo archive delete
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_archive_get/" class="md-nav__link">
+        argo archive get
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_archive_list/" class="md-nav__link">
+        argo archive list
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_archive_list-label-keys/" class="md-nav__link">
+        argo archive list-label-keys
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_archive_list-label-values/" class="md-nav__link">
+        argo archive list-label-values
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_auth/" class="md-nav__link">
+        argo auth
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_auth_token/" class="md-nav__link">
+        argo auth token
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_cluster-template/" class="md-nav__link">
+        argo cluster-template
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_cluster-template_create/" class="md-nav__link">
+        argo cluster-template create
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_cluster-template_delete/" class="md-nav__link">
+        argo cluster-template delete
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_cluster-template_get/" class="md-nav__link">
+        argo cluster-template get
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_cluster-template_lint/" class="md-nav__link">
+        argo cluster-template lint
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_cluster-template_list/" class="md-nav__link">
+        argo cluster-template list
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_completion/" class="md-nav__link">
+        argo completion
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_cron/" class="md-nav__link">
+        argo cron
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_cron_create/" class="md-nav__link">
+        argo cron create
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_cron_delete/" class="md-nav__link">
+        argo cron delete
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_cron_get/" class="md-nav__link">
+        argo cron get
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_cron_lint/" class="md-nav__link">
+        argo cron lint
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_cron_list/" class="md-nav__link">
+        argo cron list
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_cron_resume/" class="md-nav__link">
+        argo cron resume
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_cron_suspend/" class="md-nav__link">
+        argo cron suspend
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_delete/" class="md-nav__link">
+        argo delete
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_executor-plugin/" class="md-nav__link">
+        argo executor-plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_executor-plugin_build/" class="md-nav__link">
+        argo executor-plugin build
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_get/" class="md-nav__link">
+        argo get
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_lint/" class="md-nav__link">
+        argo lint
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_list/" class="md-nav__link">
+        argo list
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_logs/" class="md-nav__link">
+        argo logs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_node/" class="md-nav__link">
+        argo node
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_resubmit/" class="md-nav__link">
+        argo resubmit
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_resume/" class="md-nav__link">
+        argo resume
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_retry/" class="md-nav__link">
+        argo retry
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_server/" class="md-nav__link">
+        argo server
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_stop/" class="md-nav__link">
+        argo stop
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_submit/" class="md-nav__link">
+        argo submit
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_suspend/" class="md-nav__link">
+        argo suspend
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_template/" class="md-nav__link">
+        argo template
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_template_create/" class="md-nav__link">
+        argo template create
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_template_delete/" class="md-nav__link">
+        argo template delete
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_template_get/" class="md-nav__link">
+        argo template get
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_template_lint/" class="md-nav__link">
+        argo template lint
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_template_list/" class="md-nav__link">
+        argo template list
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_terminate/" class="md-nav__link">
+        argo terminate
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_version/" class="md-nav__link">
+        argo version
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_wait/" class="md-nav__link">
+        argo wait
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_watch/" class="md-nav__link">
+        argo watch
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
 
     
       
       
       
 
-
-  <li class="md-nav__item md-nav__item--nested">
+  
+  
+  
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-6" type="checkbox" id="nav-6">
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_6" type="checkbox" id="__nav_6" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_6">
+          Operator Manual
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Operator Manual" data-md-level="1">
+        <label class="md-nav__title" for="__nav_6">
+          <span class="md-nav__icon md-icon"></span>
+          Operator Manual
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        Installation
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../upgrading/" class="md-nav__link">
+        Upgrading
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../releases/" class="md-nav__link">
+        Releases
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
     
-    <label class="md-nav__link" for="nav-6">
-      Operator Manual
-    </label>
-    <nav class="md-nav" data-md-component="collapsible" data-md-level="1">
-      <label class="md-nav__title" for="nav-6">
-        Operator Manual
-      </label>
-      <ul class="md-nav__list" data-md-scrollfix>
-        
-        
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_6_4" type="checkbox" id="__nav_6_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_6_4">
+          Configuration
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Configuration" data-md-level="2">
+        <label class="md-nav__title" for="__nav_6_4">
+          <span class="md-nav__icon md-icon"></span>
+          Configuration
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
           
-          
-          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../managed-namespace/" class="md-nav__link">
+        Managed Namespace
+      </a>
+    </li>
+  
 
-
-  <li class="md-nav__item">
-    <a href="../installation/" title="Installation" class="md-nav__link">
-      Installation
-    </a>
-  </li>
-
-        
+            
           
-          
-          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configure-artifact-repository/" class="md-nav__link">
+        Configuring Your Artifact Repository
+      </a>
+    </li>
+  
 
-
-  <li class="md-nav__item">
-    <a href="../upgrading/" title="Upgrading" class="md-nav__link">
-      Upgrading
-    </a>
-  </li>
-
-        
+            
           
-          
-          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configure-archive-logs/" class="md-nav__link">
+        Configuring Archive Logs
+      </a>
+    </li>
+  
 
-
-  <li class="md-nav__item">
-    <a href="../releases/" title="Releases" class="md-nav__link">
-      Releases
-    </a>
-  </li>
-
-        
+            
           
-          
-          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflow-controller-configmap/" class="md-nav__link">
+        Workflow Controller Configmap
+      </a>
+    </li>
+  
 
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflow-executors/" class="md-nav__link">
+        Workflow Executors
+      </a>
+    </li>
+  
 
-  <li class="md-nav__item md-nav__item--nested">
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sidecar-injection/" class="md-nav__link">
+        Sidecar Injection
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../default-workflow-specs/" class="md-nav__link">
+        Default Workflow Spec
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../offloading-large-workflows/" class="md-nav__link">
+        Offloading Large Workflows
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflow-archive/" class="md-nav__link">
+        Workflow Archive
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../metrics/" class="md-nav__link">
+        Prometheus Metrics
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../links/" class="md-nav__link">
+        Links
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-6-4" type="checkbox" id="nav-6-4">
-    
-    <label class="md-nav__link" for="nav-6-4">
-      Configuration
-    </label>
-    <nav class="md-nav" data-md-component="collapsible" data-md-level="2">
-      <label class="md-nav__title" for="nav-6-4">
-        Configuration
-      </label>
-      <ul class="md-nav__list" data-md-scrollfix>
-        
-        
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_6_5" type="checkbox" id="__nav_6_5" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_6_5">
+          Argo Server
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Argo Server" data-md-level="2">
+        <label class="md-nav__title" for="__nav_6_5">
+          <span class="md-nav__icon md-icon"></span>
+          Argo Server
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
           
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../managed-namespace/" title="Managed Namespace" class="md-nav__link">
-      Managed Namespace
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../configure-artifact-repository/" title="Configuring Your Artifact Repository" class="md-nav__link">
-      Configuring Your Artifact Repository
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../configure-archive-logs/" title="Configuring Archive Logs" class="md-nav__link">
-      Configuring Archive Logs
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../workflow-controller-configmap/" title="Workflow Controller Configmap" class="md-nav__link">
-      Workflow Controller Configmap
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../workflow-executors/" title="Workflow Executors" class="md-nav__link">
-      Workflow Executors
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../sidecar-injection/" title="Sidecar Injection" class="md-nav__link">
-      Sidecar Injection
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../default-workflow-specs/" title="Default Workflow Spec" class="md-nav__link">
-      Default Workflow Spec
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../offloading-large-workflows/" title="Offloading Large Workflows" class="md-nav__link">
-      Offloading Large Workflows
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../workflow-archive/" title="Workflow Archive" class="md-nav__link">
-      Workflow Archive
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../metrics/" title="Prometheus Metrics" class="md-nav__link">
-      Prometheus Metrics
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../links/" title="Links" class="md-nav__link">
-      Links
-    </a>
-  </li>
-
-        
-      </ul>
-    </nav>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item md-nav__item--nested">
-    
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-6-5" type="checkbox" id="nav-6-5">
-    
-    <label class="md-nav__link" for="nav-6-5">
-      Argo Server
-    </label>
-    <nav class="md-nav" data-md-component="collapsible" data-md-level="2">
-      <label class="md-nav__title" for="nav-6-5">
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../argo-server/" class="md-nav__link">
         Argo Server
-      </label>
-      <ul class="md-nav__list" data-md-scrollfix>
-        
-        
+      </a>
+    </li>
+  
+
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../argo-server-auth-mode/" class="md-nav__link">
+        Argo Server Auth Mode
+      </a>
+    </li>
+  
+
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tls/" class="md-nav__link">
+        Transport Layer Security
+      </a>
+    </li>
+  
+
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../argo-server-sso/" class="md-nav__link">
+        Argo Server SSO
+      </a>
+    </li>
+  
 
-
-  <li class="md-nav__item">
-    <a href="../argo-server/" title="Argo Server" class="md-nav__link">
-      Argo Server
-    </a>
-  </li>
-
-        
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../argo-server-sso-argocd/" class="md-nav__link">
+        Use ArgoCD Dex for authentication
+      </a>
+    </li>
+  
+
+            
           
+        </ul>
+      </nav>
+    </li>
+  
+
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../high-availability/" class="md-nav__link">
+        High-Availability (HA)
+      </a>
+    </li>
+  
 
-
-  <li class="md-nav__item">
-    <a href="../argo-server-auth-mode/" title="Argo Server Auth Mode" class="md-nav__link">
-      Argo Server Auth Mode
-    </a>
-  </li>
-
-        
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../disaster-recovery/" class="md-nav__link">
+        Disaster Recovery (DR)
+      </a>
+    </li>
+  
+
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scaling/" class="md-nav__link">
+        Scaling
+      </a>
+    </li>
+  
+
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cost-optimisation/" class="md-nav__link">
+        Cost Optimisation
+      </a>
+    </li>
+  
 
-
-  <li class="md-nav__item">
-    <a href="../tls/" title="Transport Layer Security" class="md-nav__link">
-      Transport Layer Security
-    </a>
-  </li>
-
-        
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../windows/" class="md-nav__link">
+        Windows Container Support
+      </a>
+    </li>
+  
+
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../environment-variables/" class="md-nav__link">
+        Environment Variables
+      </a>
+    </li>
+  
+
+            
           
-
-
-  <li class="md-nav__item">
-    <a href="../argo-server-sso/" title="Argo Server SSO" class="md-nav__link">
-      Argo Server SSO
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../argo-server-sso-argocd/" title="Use ArgoCD Dex for authentication" class="md-nav__link">
-      Use ArgoCD Dex for authentication
-    </a>
-  </li>
-
-        
-      </ul>
-    </nav>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../high-availability/" title="High-Availability (HA)" class="md-nav__link">
-      High-Availability (HA)
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../disaster-recovery/" title="Disaster Recovery (DR)" class="md-nav__link">
-      Disaster Recovery (DR)
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../scaling/" title="Scaling" class="md-nav__link">
-      Scaling
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../cost-optimisation/" title="Cost Optimisation" class="md-nav__link">
-      Cost Optimisation
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../windows/" title="Windows Container Support" class="md-nav__link">
-      Windows Container Support
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../environment-variables/" title="Environment Variables" class="md-nav__link">
-      Environment Variables
-    </a>
-  </li>
-
-        
-      </ul>
-    </nav>
-  </li>
+        </ul>
+      </nav>
+    </li>
+  
 
     
       
       
       
 
-
-  <li class="md-nav__item md-nav__item--nested">
+  
+  
+  
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-7" type="checkbox" id="nav-7">
-    
-    <label class="md-nav__link" for="nav-7">
-      Developer Guide
-    </label>
-    <nav class="md-nav" data-md-component="collapsible" data-md-level="1">
-      <label class="md-nav__title" for="nav-7">
-        Developer Guide
-      </label>
-      <ul class="md-nav__list" data-md-scrollfix>
-        
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../CONTRIBUTING/" title="Contributing" class="md-nav__link">
-      Contributing
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../mentoring/" title="Mentoring" class="md-nav__link">
-      Mentoring
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../architecture/" title="Architecture" class="md-nav__link">
-      Architecture
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../running-locally/" title="Running Locally" class="md-nav__link">
-      Running Locally
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../versioning/" title="Versioning" class="md-nav__link">
-      Versioning
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../public-api/" title="Public API" class="md-nav__link">
-      Public API
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../static-code-analysis/" title="Static Code Analysis" class="md-nav__link">
-      Static Code Analysis
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../stress-testing/" title="Stress Testing" class="md-nav__link">
-      Stress Testing
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../releasing/" title="Release Instructions" class="md-nav__link">
-      Release Instructions
-    </a>
-  </li>
-
-        
-      </ul>
-    </nav>
-  </li>
-
-    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_7" type="checkbox" id="__nav_7" >
       
       
       
-
-
-  <li class="md-nav__item">
-    <a href="../faq/" title="FAQ" class="md-nav__link">
-      FAQ
-    </a>
-  </li>
-
-    
       
+        <label class="md-nav__link" for="__nav_7">
+          Developer Guide
+          <span class="md-nav__icon md-icon"></span>
+        </label>
       
-      
+      <nav class="md-nav" aria-label="Developer Guide" data-md-level="1">
+        <label class="md-nav__title" for="__nav_7">
+          <span class="md-nav__icon md-icon"></span>
+          Developer Guide
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CONTRIBUTING/" class="md-nav__link">
+        Contributing
+      </a>
+    </li>
+  
 
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mentoring/" class="md-nav__link">
+        Mentoring
+      </a>
+    </li>
+  
 
-  <li class="md-nav__item">
-    <a href="https://github.com/argoproj/argo-workflows/releases" title="Releases ⧉" class="md-nav__link">
-      Releases ⧉
-    </a>
-  </li>
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        Architecture
+      </a>
+    </li>
+  
 
-    
-      
-      
-      
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../running-locally/" class="md-nav__link">
+        Running Locally
+      </a>
+    </li>
+  
 
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../versioning/" class="md-nav__link">
+        Versioning
+      </a>
+    </li>
+  
 
-  <li class="md-nav__item">
-    <a href="../roadmap/" title="Roadmap" class="md-nav__link">
-      Roadmap
-    </a>
-  </li>
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../public-api/" class="md-nav__link">
+        Public API
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../static-code-analysis/" class="md-nav__link">
+        Static Code Analysis
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stress-testing/" class="md-nav__link">
+        Stress Testing
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../releasing/" class="md-nav__link">
+        Release Instructions
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
 
     
       
       
       
 
-
-  <li class="md-nav__item">
-    <a href="https://blog.argoproj.io/" title="Blog ⧉" class="md-nav__link">
-      Blog ⧉
-    </a>
-  </li>
-
-    
-      
-      
-      
-
-
-  <li class="md-nav__item">
-    <a href="https://argoproj.github.io/community/join-slack" title="Slack ⧉" class="md-nav__link">
-      Slack ⧉
-    </a>
-  </li>
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        FAQ
+      </a>
+    </li>
+  
 
     
       
       
       
 
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/argoproj/argo-workflows/releases" class="md-nav__link">
+        Releases ⧉
+      </a>
+    </li>
+  
 
-  <li class="md-nav__item">
-    <a href="https://twitter.com/argoproj" title="Twitter ⧉" class="md-nav__link">
-      Twitter ⧉
-    </a>
-  </li>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../roadmap/" class="md-nav__link">
+        Roadmap
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://blog.argoproj.io/" class="md-nav__link">
+        Blog ⧉
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://argoproj.github.io/community/join-slack" class="md-nav__link">
+        Slack ⧉
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://twitter.com/argoproj" class="md-nav__link">
+        Twitter ⧉
+      </a>
+    </li>
+  
 
     
   </ul>
@@ -4113,29 +4488,35 @@
               </div>
             
             
-              <div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
                 <div class="md-sidebar__scrollwrap">
                   <div class="md-sidebar__inner">
                     
-<nav class="md-nav md-nav--secondary">
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
   
   
     
   
   
-    <label class="md-nav__title" for="__toc">Table of contents</label>
-    <ul class="md-nav__list" data-md-scrollfix>
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#workflow" title="Workflow" class="md-nav__link">
+  <a href="#workflow" class="md-nav__link">
     Workflow
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Workflow">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields" title="Fields" class="md-nav__link">
+  <a href="#fields" class="md-nav__link">
     Fields
   </a>
   
@@ -4147,15 +4528,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#cronworkflow" title="CronWorkflow" class="md-nav__link">
+  <a href="#cronworkflow" class="md-nav__link">
     CronWorkflow
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="CronWorkflow">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_1" title="Fields" class="md-nav__link">
+  <a href="#fields_1" class="md-nav__link">
     Fields
   </a>
   
@@ -4167,15 +4548,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#workflowtemplate" title="WorkflowTemplate" class="md-nav__link">
+  <a href="#workflowtemplate" class="md-nav__link">
     WorkflowTemplate
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="WorkflowTemplate">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_2" title="Fields" class="md-nav__link">
+  <a href="#fields_2" class="md-nav__link">
     Fields
   </a>
   
@@ -4187,15 +4568,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#workflowspec" title="WorkflowSpec" class="md-nav__link">
+  <a href="#workflowspec" class="md-nav__link">
     WorkflowSpec
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="WorkflowSpec">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_3" title="Fields" class="md-nav__link">
+  <a href="#fields_3" class="md-nav__link">
     Fields
   </a>
   
@@ -4207,15 +4588,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#workflowstatus" title="WorkflowStatus" class="md-nav__link">
+  <a href="#workflowstatus" class="md-nav__link">
     WorkflowStatus
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="WorkflowStatus">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_4" title="Fields" class="md-nav__link">
+  <a href="#fields_4" class="md-nav__link">
     Fields
   </a>
   
@@ -4227,15 +4608,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#cronworkflowspec" title="CronWorkflowSpec" class="md-nav__link">
+  <a href="#cronworkflowspec" class="md-nav__link">
     CronWorkflowSpec
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="CronWorkflowSpec">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_5" title="Fields" class="md-nav__link">
+  <a href="#fields_5" class="md-nav__link">
     Fields
   </a>
   
@@ -4247,15 +4628,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#cronworkflowstatus" title="CronWorkflowStatus" class="md-nav__link">
+  <a href="#cronworkflowstatus" class="md-nav__link">
     CronWorkflowStatus
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="CronWorkflowStatus">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_6" title="Fields" class="md-nav__link">
+  <a href="#fields_6" class="md-nav__link">
     Fields
   </a>
   
@@ -4267,15 +4648,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#workflowtemplatespec" title="WorkflowTemplateSpec" class="md-nav__link">
+  <a href="#workflowtemplatespec" class="md-nav__link">
     WorkflowTemplateSpec
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="WorkflowTemplateSpec">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_7" title="Fields" class="md-nav__link">
+  <a href="#fields_7" class="md-nav__link">
     Fields
   </a>
   
@@ -4287,15 +4668,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#arguments" title="Arguments" class="md-nav__link">
+  <a href="#arguments" class="md-nav__link">
     Arguments
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Arguments">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_8" title="Fields" class="md-nav__link">
+  <a href="#fields_8" class="md-nav__link">
     Fields
   </a>
   
@@ -4307,15 +4688,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#artifactrepositoryref" title="ArtifactRepositoryRef" class="md-nav__link">
+  <a href="#artifactrepositoryref" class="md-nav__link">
     ArtifactRepositoryRef
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="ArtifactRepositoryRef">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_9" title="Fields" class="md-nav__link">
+  <a href="#fields_9" class="md-nav__link">
     Fields
   </a>
   
@@ -4327,15 +4708,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#executorconfig" title="ExecutorConfig" class="md-nav__link">
+  <a href="#executorconfig" class="md-nav__link">
     ExecutorConfig
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="ExecutorConfig">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_10" title="Fields" class="md-nav__link">
+  <a href="#fields_10" class="md-nav__link">
     Fields
   </a>
   
@@ -4347,15 +4728,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#lifecyclehook" title="LifecycleHook" class="md-nav__link">
+  <a href="#lifecyclehook" class="md-nav__link">
     LifecycleHook
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="LifecycleHook">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_11" title="Fields" class="md-nav__link">
+  <a href="#fields_11" class="md-nav__link">
     Fields
   </a>
   
@@ -4367,15 +4748,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#metrics" title="Metrics" class="md-nav__link">
+  <a href="#metrics" class="md-nav__link">
     Metrics
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Metrics">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_12" title="Fields" class="md-nav__link">
+  <a href="#fields_12" class="md-nav__link">
     Fields
   </a>
   
@@ -4387,15 +4768,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#podgc" title="PodGC" class="md-nav__link">
+  <a href="#podgc" class="md-nav__link">
     PodGC
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="PodGC">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_13" title="Fields" class="md-nav__link">
+  <a href="#fields_13" class="md-nav__link">
     Fields
   </a>
   
@@ -4407,15 +4788,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#metadata" title="Metadata" class="md-nav__link">
+  <a href="#metadata" class="md-nav__link">
     Metadata
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Metadata">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_14" title="Fields" class="md-nav__link">
+  <a href="#fields_14" class="md-nav__link">
     Fields
   </a>
   
@@ -4427,15 +4808,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#retrystrategy" title="RetryStrategy" class="md-nav__link">
+  <a href="#retrystrategy" class="md-nav__link">
     RetryStrategy
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="RetryStrategy">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_15" title="Fields" class="md-nav__link">
+  <a href="#fields_15" class="md-nav__link">
     Fields
   </a>
   
@@ -4447,15 +4828,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#synchronization" title="Synchronization" class="md-nav__link">
+  <a href="#synchronization" class="md-nav__link">
     Synchronization
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Synchronization">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_16" title="Fields" class="md-nav__link">
+  <a href="#fields_16" class="md-nav__link">
     Fields
   </a>
   
@@ -4467,15 +4848,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#template" title="Template" class="md-nav__link">
+  <a href="#template" class="md-nav__link">
     Template
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Template">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_17" title="Fields" class="md-nav__link">
+  <a href="#fields_17" class="md-nav__link">
     Fields
   </a>
   
@@ -4487,15 +4868,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#ttlstrategy" title="TTLStrategy" class="md-nav__link">
+  <a href="#ttlstrategy" class="md-nav__link">
     TTLStrategy
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="TTLStrategy">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_18" title="Fields" class="md-nav__link">
+  <a href="#fields_18" class="md-nav__link">
     Fields
   </a>
   
@@ -4507,15 +4888,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#volumeclaimgc" title="VolumeClaimGC" class="md-nav__link">
+  <a href="#volumeclaimgc" class="md-nav__link">
     VolumeClaimGC
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="VolumeClaimGC">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_19" title="Fields" class="md-nav__link">
+  <a href="#fields_19" class="md-nav__link">
     Fields
   </a>
   
@@ -4527,15 +4908,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#workflowtemplateref" title="WorkflowTemplateRef" class="md-nav__link">
+  <a href="#workflowtemplateref" class="md-nav__link">
     WorkflowTemplateRef
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="WorkflowTemplateRef">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_20" title="Fields" class="md-nav__link">
+  <a href="#fields_20" class="md-nav__link">
     Fields
   </a>
   
@@ -4547,15 +4928,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#artifactrepositoryrefstatus" title="ArtifactRepositoryRefStatus" class="md-nav__link">
+  <a href="#artifactrepositoryrefstatus" class="md-nav__link">
     ArtifactRepositoryRefStatus
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="ArtifactRepositoryRefStatus">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_21" title="Fields" class="md-nav__link">
+  <a href="#fields_21" class="md-nav__link">
     Fields
   </a>
   
@@ -4567,15 +4948,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#condition" title="Condition" class="md-nav__link">
+  <a href="#condition" class="md-nav__link">
     Condition
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Condition">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_22" title="Fields" class="md-nav__link">
+  <a href="#fields_22" class="md-nav__link">
     Fields
   </a>
   
@@ -4587,15 +4968,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#nodestatus" title="NodeStatus" class="md-nav__link">
+  <a href="#nodestatus" class="md-nav__link">
     NodeStatus
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="NodeStatus">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_23" title="Fields" class="md-nav__link">
+  <a href="#fields_23" class="md-nav__link">
     Fields
   </a>
   
@@ -4607,15 +4988,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#outputs" title="Outputs" class="md-nav__link">
+  <a href="#outputs" class="md-nav__link">
     Outputs
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Outputs">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_24" title="Fields" class="md-nav__link">
+  <a href="#fields_24" class="md-nav__link">
     Fields
   </a>
   
@@ -4627,15 +5008,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#synchronizationstatus" title="SynchronizationStatus" class="md-nav__link">
+  <a href="#synchronizationstatus" class="md-nav__link">
     SynchronizationStatus
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="SynchronizationStatus">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_25" title="Fields" class="md-nav__link">
+  <a href="#fields_25" class="md-nav__link">
     Fields
   </a>
   
@@ -4647,15 +5028,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#artifact" title="Artifact" class="md-nav__link">
+  <a href="#artifact" class="md-nav__link">
     Artifact
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Artifact">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_26" title="Fields" class="md-nav__link">
+  <a href="#fields_26" class="md-nav__link">
     Fields
   </a>
   
@@ -4667,15 +5048,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#parameter" title="Parameter" class="md-nav__link">
+  <a href="#parameter" class="md-nav__link">
     Parameter
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Parameter">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_27" title="Fields" class="md-nav__link">
+  <a href="#fields_27" class="md-nav__link">
     Fields
   </a>
   
@@ -4687,15 +5068,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#templateref" title="TemplateRef" class="md-nav__link">
+  <a href="#templateref" class="md-nav__link">
     TemplateRef
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="TemplateRef">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_28" title="Fields" class="md-nav__link">
+  <a href="#fields_28" class="md-nav__link">
     Fields
   </a>
   
@@ -4707,15 +5088,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#prometheus" title="Prometheus" class="md-nav__link">
+  <a href="#prometheus" class="md-nav__link">
     Prometheus
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Prometheus">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_29" title="Fields" class="md-nav__link">
+  <a href="#fields_29" class="md-nav__link">
     Fields
   </a>
   
@@ -4727,15 +5108,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#retryaffinity" title="RetryAffinity" class="md-nav__link">
+  <a href="#retryaffinity" class="md-nav__link">
     RetryAffinity
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="RetryAffinity">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_30" title="Fields" class="md-nav__link">
+  <a href="#fields_30" class="md-nav__link">
     Fields
   </a>
   
@@ -4747,15 +5128,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#backoff" title="Backoff" class="md-nav__link">
+  <a href="#backoff" class="md-nav__link">
     Backoff
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Backoff">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_31" title="Fields" class="md-nav__link">
+  <a href="#fields_31" class="md-nav__link">
     Fields
   </a>
   
@@ -4767,15 +5148,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#mutex" title="Mutex" class="md-nav__link">
+  <a href="#mutex" class="md-nav__link">
     Mutex
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Mutex">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_32" title="Fields" class="md-nav__link">
+  <a href="#fields_32" class="md-nav__link">
     Fields
   </a>
   
@@ -4787,15 +5168,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#semaphoreref" title="SemaphoreRef" class="md-nav__link">
+  <a href="#semaphoreref" class="md-nav__link">
     SemaphoreRef
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="SemaphoreRef">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_33" title="Fields" class="md-nav__link">
+  <a href="#fields_33" class="md-nav__link">
     Fields
   </a>
   
@@ -4807,15 +5188,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#artifactlocation" title="ArtifactLocation" class="md-nav__link">
+  <a href="#artifactlocation" class="md-nav__link">
     ArtifactLocation
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="ArtifactLocation">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_34" title="Fields" class="md-nav__link">
+  <a href="#fields_34" class="md-nav__link">
     Fields
   </a>
   
@@ -4827,15 +5208,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#containersettemplate" title="ContainerSetTemplate" class="md-nav__link">
+  <a href="#containersettemplate" class="md-nav__link">
     ContainerSetTemplate
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="ContainerSetTemplate">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_35" title="Fields" class="md-nav__link">
+  <a href="#fields_35" class="md-nav__link">
     Fields
   </a>
   
@@ -4847,15 +5228,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#dagtemplate" title="DAGTemplate" class="md-nav__link">
+  <a href="#dagtemplate" class="md-nav__link">
     DAGTemplate
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="DAGTemplate">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_36" title="Fields" class="md-nav__link">
+  <a href="#fields_36" class="md-nav__link">
     Fields
   </a>
   
@@ -4867,15 +5248,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#data" title="Data" class="md-nav__link">
+  <a href="#data" class="md-nav__link">
     Data
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Data">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_37" title="Fields" class="md-nav__link">
+  <a href="#fields_37" class="md-nav__link">
     Fields
   </a>
   
@@ -4887,15 +5268,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#http" title="HTTP" class="md-nav__link">
+  <a href="#http" class="md-nav__link">
     HTTP
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="HTTP">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_38" title="Fields" class="md-nav__link">
+  <a href="#fields_38" class="md-nav__link">
     Fields
   </a>
   
@@ -4907,15 +5288,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#usercontainer" title="UserContainer" class="md-nav__link">
+  <a href="#usercontainer" class="md-nav__link">
     UserContainer
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="UserContainer">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_39" title="Fields" class="md-nav__link">
+  <a href="#fields_39" class="md-nav__link">
     Fields
   </a>
   
@@ -4927,15 +5308,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#inputs" title="Inputs" class="md-nav__link">
+  <a href="#inputs" class="md-nav__link">
     Inputs
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Inputs">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_40" title="Fields" class="md-nav__link">
+  <a href="#fields_40" class="md-nav__link">
     Fields
   </a>
   
@@ -4947,15 +5328,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#memoize" title="Memoize" class="md-nav__link">
+  <a href="#memoize" class="md-nav__link">
     Memoize
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Memoize">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_41" title="Fields" class="md-nav__link">
+  <a href="#fields_41" class="md-nav__link">
     Fields
   </a>
   
@@ -4967,22 +5348,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#plugin" title="Plugin" class="md-nav__link">
+  <a href="#plugin" class="md-nav__link">
     Plugin
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#resourcetemplate" title="ResourceTemplate" class="md-nav__link">
+  <a href="#resourcetemplate" class="md-nav__link">
     ResourceTemplate
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="ResourceTemplate">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_42" title="Fields" class="md-nav__link">
+  <a href="#fields_42" class="md-nav__link">
     Fields
   </a>
   
@@ -4994,15 +5375,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#scripttemplate" title="ScriptTemplate" class="md-nav__link">
+  <a href="#scripttemplate" class="md-nav__link">
     ScriptTemplate
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="ScriptTemplate">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_43" title="Fields" class="md-nav__link">
+  <a href="#fields_43" class="md-nav__link">
     Fields
   </a>
   
@@ -5014,15 +5395,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#workflowstep" title="WorkflowStep" class="md-nav__link">
+  <a href="#workflowstep" class="md-nav__link">
     WorkflowStep
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="WorkflowStep">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_44" title="Fields" class="md-nav__link">
+  <a href="#fields_44" class="md-nav__link">
     Fields
   </a>
   
@@ -5034,15 +5415,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#suspendtemplate" title="SuspendTemplate" class="md-nav__link">
+  <a href="#suspendtemplate" class="md-nav__link">
     SuspendTemplate
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="SuspendTemplate">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_45" title="Fields" class="md-nav__link">
+  <a href="#fields_45" class="md-nav__link">
     Fields
   </a>
   
@@ -5054,15 +5435,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#artifactrepository" title="ArtifactRepository" class="md-nav__link">
+  <a href="#artifactrepository" class="md-nav__link">
     ArtifactRepository
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="ArtifactRepository">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_46" title="Fields" class="md-nav__link">
+  <a href="#fields_46" class="md-nav__link">
     Fields
   </a>
   
@@ -5074,15 +5455,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#memoizationstatus" title="MemoizationStatus" class="md-nav__link">
+  <a href="#memoizationstatus" class="md-nav__link">
     MemoizationStatus
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="MemoizationStatus">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_47" title="Fields" class="md-nav__link">
+  <a href="#fields_47" class="md-nav__link">
     Fields
   </a>
   
@@ -5094,15 +5475,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#nodesynchronizationstatus" title="NodeSynchronizationStatus" class="md-nav__link">
+  <a href="#nodesynchronizationstatus" class="md-nav__link">
     NodeSynchronizationStatus
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="NodeSynchronizationStatus">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_48" title="Fields" class="md-nav__link">
+  <a href="#fields_48" class="md-nav__link">
     Fields
   </a>
   
@@ -5114,15 +5495,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#mutexstatus" title="MutexStatus" class="md-nav__link">
+  <a href="#mutexstatus" class="md-nav__link">
     MutexStatus
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="MutexStatus">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_49" title="Fields" class="md-nav__link">
+  <a href="#fields_49" class="md-nav__link">
     Fields
   </a>
   
@@ -5134,15 +5515,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#semaphorestatus" title="SemaphoreStatus" class="md-nav__link">
+  <a href="#semaphorestatus" class="md-nav__link">
     SemaphoreStatus
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="SemaphoreStatus">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_50" title="Fields" class="md-nav__link">
+  <a href="#fields_50" class="md-nav__link">
     Fields
   </a>
   
@@ -5154,15 +5535,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#archivestrategy" title="ArchiveStrategy" class="md-nav__link">
+  <a href="#archivestrategy" class="md-nav__link">
     ArchiveStrategy
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="ArchiveStrategy">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_51" title="Fields" class="md-nav__link">
+  <a href="#fields_51" class="md-nav__link">
     Fields
   </a>
   
@@ -5174,15 +5555,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#artifactoryartifact" title="ArtifactoryArtifact" class="md-nav__link">
+  <a href="#artifactoryartifact" class="md-nav__link">
     ArtifactoryArtifact
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="ArtifactoryArtifact">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_52" title="Fields" class="md-nav__link">
+  <a href="#fields_52" class="md-nav__link">
     Fields
   </a>
   
@@ -5194,15 +5575,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#gcsartifact" title="GCSArtifact" class="md-nav__link">
+  <a href="#gcsartifact" class="md-nav__link">
     GCSArtifact
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="GCSArtifact">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_53" title="Fields" class="md-nav__link">
+  <a href="#fields_53" class="md-nav__link">
     Fields
   </a>
   
@@ -5214,15 +5595,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#gitartifact" title="GitArtifact" class="md-nav__link">
+  <a href="#gitartifact" class="md-nav__link">
     GitArtifact
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="GitArtifact">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_54" title="Fields" class="md-nav__link">
+  <a href="#fields_54" class="md-nav__link">
     Fields
   </a>
   
@@ -5234,15 +5615,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#hdfsartifact" title="HDFSArtifact" class="md-nav__link">
+  <a href="#hdfsartifact" class="md-nav__link">
     HDFSArtifact
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="HDFSArtifact">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_55" title="Fields" class="md-nav__link">
+  <a href="#fields_55" class="md-nav__link">
     Fields
   </a>
   
@@ -5254,15 +5635,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#httpartifact" title="HTTPArtifact" class="md-nav__link">
+  <a href="#httpartifact" class="md-nav__link">
     HTTPArtifact
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="HTTPArtifact">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_56" title="Fields" class="md-nav__link">
+  <a href="#fields_56" class="md-nav__link">
     Fields
   </a>
   
@@ -5274,15 +5655,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#ossartifact" title="OSSArtifact" class="md-nav__link">
+  <a href="#ossartifact" class="md-nav__link">
     OSSArtifact
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="OSSArtifact">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_57" title="Fields" class="md-nav__link">
+  <a href="#fields_57" class="md-nav__link">
     Fields
   </a>
   
@@ -5294,15 +5675,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#rawartifact" title="RawArtifact" class="md-nav__link">
+  <a href="#rawartifact" class="md-nav__link">
     RawArtifact
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="RawArtifact">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_58" title="Fields" class="md-nav__link">
+  <a href="#fields_58" class="md-nav__link">
     Fields
   </a>
   
@@ -5314,15 +5695,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#s3artifact" title="S3Artifact" class="md-nav__link">
+  <a href="#s3artifact" class="md-nav__link">
     S3Artifact
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="S3Artifact">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_59" title="Fields" class="md-nav__link">
+  <a href="#fields_59" class="md-nav__link">
     Fields
   </a>
   
@@ -5334,15 +5715,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#valuefrom" title="ValueFrom" class="md-nav__link">
+  <a href="#valuefrom" class="md-nav__link">
     ValueFrom
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="ValueFrom">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_60" title="Fields" class="md-nav__link">
+  <a href="#fields_60" class="md-nav__link">
     Fields
   </a>
   
@@ -5354,15 +5735,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#counter" title="Counter" class="md-nav__link">
+  <a href="#counter" class="md-nav__link">
     Counter
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Counter">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_61" title="Fields" class="md-nav__link">
+  <a href="#fields_61" class="md-nav__link">
     Fields
   </a>
   
@@ -5374,15 +5755,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#gauge" title="Gauge" class="md-nav__link">
+  <a href="#gauge" class="md-nav__link">
     Gauge
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Gauge">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_62" title="Fields" class="md-nav__link">
+  <a href="#fields_62" class="md-nav__link">
     Fields
   </a>
   
@@ -5394,15 +5775,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#histogram" title="Histogram" class="md-nav__link">
+  <a href="#histogram" class="md-nav__link">
     Histogram
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Histogram">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_63" title="Fields" class="md-nav__link">
+  <a href="#fields_63" class="md-nav__link">
     Fields
   </a>
   
@@ -5414,15 +5795,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#metriclabel" title="MetricLabel" class="md-nav__link">
+  <a href="#metriclabel" class="md-nav__link">
     MetricLabel
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="MetricLabel">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_64" title="Fields" class="md-nav__link">
+  <a href="#fields_64" class="md-nav__link">
     Fields
   </a>
   
@@ -5434,22 +5815,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#retrynodeantiaffinity" title="RetryNodeAntiAffinity" class="md-nav__link">
+  <a href="#retrynodeantiaffinity" class="md-nav__link">
     RetryNodeAntiAffinity
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#containernode" title="ContainerNode" class="md-nav__link">
+  <a href="#containernode" class="md-nav__link">
     ContainerNode
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="ContainerNode">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_65" title="Fields" class="md-nav__link">
+  <a href="#fields_65" class="md-nav__link">
     Fields
   </a>
   
@@ -5461,15 +5842,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#dagtask" title="DAGTask" class="md-nav__link">
+  <a href="#dagtask" class="md-nav__link">
     DAGTask
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="DAGTask">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_66" title="Fields" class="md-nav__link">
+  <a href="#fields_66" class="md-nav__link">
     Fields
   </a>
   
@@ -5481,15 +5862,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#datasource" title="DataSource" class="md-nav__link">
+  <a href="#datasource" class="md-nav__link">
     DataSource
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="DataSource">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_67" title="Fields" class="md-nav__link">
+  <a href="#fields_67" class="md-nav__link">
     Fields
   </a>
   
@@ -5501,15 +5882,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#transformationstep" title="TransformationStep" class="md-nav__link">
+  <a href="#transformationstep" class="md-nav__link">
     TransformationStep
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="TransformationStep">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_68" title="Fields" class="md-nav__link">
+  <a href="#fields_68" class="md-nav__link">
     Fields
   </a>
   
@@ -5521,15 +5902,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#httpheader" title="HTTPHeader" class="md-nav__link">
+  <a href="#httpheader" class="md-nav__link">
     HTTPHeader
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="HTTPHeader">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_69" title="Fields" class="md-nav__link">
+  <a href="#fields_69" class="md-nav__link">
     Fields
   </a>
   
@@ -5541,15 +5922,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#cache" title="Cache" class="md-nav__link">
+  <a href="#cache" class="md-nav__link">
     Cache
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Cache">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_70" title="Fields" class="md-nav__link">
+  <a href="#fields_70" class="md-nav__link">
     Fields
   </a>
   
@@ -5561,15 +5942,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#continueon" title="ContinueOn" class="md-nav__link">
+  <a href="#continueon" class="md-nav__link">
     ContinueOn
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="ContinueOn">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_71" title="Fields" class="md-nav__link">
+  <a href="#fields_71" class="md-nav__link">
     Fields
   </a>
   
@@ -5581,22 +5962,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#item" title="Item" class="md-nav__link">
+  <a href="#item" class="md-nav__link">
     Item
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#sequence" title="Sequence" class="md-nav__link">
+  <a href="#sequence" class="md-nav__link">
     Sequence
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Sequence">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_72" title="Fields" class="md-nav__link">
+  <a href="#fields_72" class="md-nav__link">
     Fields
   </a>
   
@@ -5608,15 +5989,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#artifactoryartifactrepository" title="ArtifactoryArtifactRepository" class="md-nav__link">
+  <a href="#artifactoryartifactrepository" class="md-nav__link">
     ArtifactoryArtifactRepository
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="ArtifactoryArtifactRepository">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_73" title="Fields" class="md-nav__link">
+  <a href="#fields_73" class="md-nav__link">
     Fields
   </a>
   
@@ -5628,15 +6009,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#gcsartifactrepository" title="GCSArtifactRepository" class="md-nav__link">
+  <a href="#gcsartifactrepository" class="md-nav__link">
     GCSArtifactRepository
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="GCSArtifactRepository">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_74" title="Fields" class="md-nav__link">
+  <a href="#fields_74" class="md-nav__link">
     Fields
   </a>
   
@@ -5648,15 +6029,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#hdfsartifactrepository" title="HDFSArtifactRepository" class="md-nav__link">
+  <a href="#hdfsartifactrepository" class="md-nav__link">
     HDFSArtifactRepository
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="HDFSArtifactRepository">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_75" title="Fields" class="md-nav__link">
+  <a href="#fields_75" class="md-nav__link">
     Fields
   </a>
   
@@ -5668,15 +6049,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#ossartifactrepository" title="OSSArtifactRepository" class="md-nav__link">
+  <a href="#ossartifactrepository" class="md-nav__link">
     OSSArtifactRepository
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="OSSArtifactRepository">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_76" title="Fields" class="md-nav__link">
+  <a href="#fields_76" class="md-nav__link">
     Fields
   </a>
   
@@ -5688,15 +6069,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#s3artifactrepository" title="S3ArtifactRepository" class="md-nav__link">
+  <a href="#s3artifactrepository" class="md-nav__link">
     S3ArtifactRepository
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="S3ArtifactRepository">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_77" title="Fields" class="md-nav__link">
+  <a href="#fields_77" class="md-nav__link">
     Fields
   </a>
   
@@ -5708,15 +6089,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#mutexholding" title="MutexHolding" class="md-nav__link">
+  <a href="#mutexholding" class="md-nav__link">
     MutexHolding
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="MutexHolding">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_78" title="Fields" class="md-nav__link">
+  <a href="#fields_78" class="md-nav__link">
     Fields
   </a>
   
@@ -5728,15 +6109,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#semaphoreholding" title="SemaphoreHolding" class="md-nav__link">
+  <a href="#semaphoreholding" class="md-nav__link">
     SemaphoreHolding
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="SemaphoreHolding">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_79" title="Fields" class="md-nav__link">
+  <a href="#fields_79" class="md-nav__link">
     Fields
   </a>
   
@@ -5748,22 +6129,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#nonestrategy" title="NoneStrategy" class="md-nav__link">
+  <a href="#nonestrategy" class="md-nav__link">
     NoneStrategy
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#tarstrategy" title="TarStrategy" class="md-nav__link">
+  <a href="#tarstrategy" class="md-nav__link">
     TarStrategy
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="TarStrategy">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_80" title="Fields" class="md-nav__link">
+  <a href="#fields_80" class="md-nav__link">
     Fields
   </a>
   
@@ -5775,22 +6156,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#zipstrategy" title="ZipStrategy" class="md-nav__link">
+  <a href="#zipstrategy" class="md-nav__link">
     ZipStrategy
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#header" title="Header" class="md-nav__link">
+  <a href="#header" class="md-nav__link">
     Header
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="Header">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_81" title="Fields" class="md-nav__link">
+  <a href="#fields_81" class="md-nav__link">
     Fields
   </a>
   
@@ -5802,15 +6183,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#osslifecyclerule" title="OSSLifecycleRule" class="md-nav__link">
+  <a href="#osslifecyclerule" class="md-nav__link">
     OSSLifecycleRule
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="OSSLifecycleRule">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_82" title="Fields" class="md-nav__link">
+  <a href="#fields_82" class="md-nav__link">
     Fields
   </a>
   
@@ -5822,15 +6203,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#creates3bucketoptions" title="CreateS3BucketOptions" class="md-nav__link">
+  <a href="#creates3bucketoptions" class="md-nav__link">
     CreateS3BucketOptions
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="CreateS3BucketOptions">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_83" title="Fields" class="md-nav__link">
+  <a href="#fields_83" class="md-nav__link">
     Fields
   </a>
   
@@ -5842,15 +6223,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#s3encryptionoptions" title="S3EncryptionOptions" class="md-nav__link">
+  <a href="#s3encryptionoptions" class="md-nav__link">
     S3EncryptionOptions
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="S3EncryptionOptions">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_84" title="Fields" class="md-nav__link">
+  <a href="#fields_84" class="md-nav__link">
     Fields
   </a>
   
@@ -5862,29 +6243,29 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#suppliedvaluefrom" title="SuppliedValueFrom" class="md-nav__link">
+  <a href="#suppliedvaluefrom" class="md-nav__link">
     SuppliedValueFrom
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#amount" title="Amount" class="md-nav__link">
+  <a href="#amount" class="md-nav__link">
     Amount
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#artifactpaths" title="ArtifactPaths" class="md-nav__link">
+  <a href="#artifactpaths" class="md-nav__link">
     ArtifactPaths
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="ArtifactPaths">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_85" title="Fields" class="md-nav__link">
+  <a href="#fields_85" class="md-nav__link">
     Fields
   </a>
   
@@ -5896,15 +6277,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#httpheadersource" title="HTTPHeaderSource" class="md-nav__link">
+  <a href="#httpheadersource" class="md-nav__link">
     HTTPHeaderSource
   </a>
   
-    <nav class="md-nav">
+    <nav class="md-nav" aria-label="HTTPHeaderSource">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields_86" title="Fields" class="md-nav__link">
+  <a href="#fields_86" class="md-nav__link">
     Fields
   </a>
   
@@ -5914,10 +6295,6 @@
     </nav>
   
 </li>
-      
-      
-      
-      
       
     </ul>
   
@@ -5927,14 +6304,16 @@
               </div>
             
           
-          <div class="md-content">
+          <div class="md-content" data-md-component="content">
             <article class="md-content__inner md-typeset">
               
                 
-                  <a href="https://github.com/argoproj/argo-workflows/edit/master/docs/fields.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
-                
-                
-                <h1 id="field-reference">Field Reference<a class="headerlink" href="#field-reference" title="Permanent link">&para;</a></h1>
+<a href="https://github.com/argoproj/argo-workflows/edit/master/docs/fields.md" title="Edit this page" class="md-content__button md-icon">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+</a>
+
+
+<h1 id="field-reference">Field Reference<a class="headerlink" href="#field-reference" title="Permanent link">&para;</a></h1>
 <h2 id="workflow">Workflow<a class="headerlink" href="#workflow" title="Permanent link">&para;</a></h2>
 <p>Workflow is the definition of a workflow resource</p>
 <details>
@@ -17897,78 +18276,75 @@
 </tr>
 </tbody>
 </table>
-                
-                  
-                
-              
-              
-                
-
 
               
             </article>
           </div>
         </div>
+        
       </main>
       
-        
-<footer class="md-footer">
+        <footer class="md-footer">
   
-    <div class="md-footer-nav">
-      <nav class="md-footer-nav__inner md-grid">
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
         
-          <a href="../ide-setup/" title="IDE Set-Up" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
-            <div class="md-flex__cell md-flex__cell--shrink">
-              <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
-            </div>
-            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
-              <span class="md-flex__ellipsis">
-                <span class="md-footer-nav__direction">
-                  Previous
-                </span>
-                IDE Set-Up
+        <a href="../ide-setup/" class="md-footer__link md-footer__link--prev" aria-label="Previous: IDE Set-Up" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
               </span>
+              IDE Set-Up
             </div>
-          </a>
+          </div>
+        </a>
+      
+      
         
-        
-          <a href="../cli/argo/" title="argo" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
-            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
-              <span class="md-flex__ellipsis">
-                <span class="md-footer-nav__direction">
-                  Next
-                </span>
-                argo
+        <a href="../cli/argo/" class="md-footer__link md-footer__link--next" aria-label="Next: argo" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
               </span>
+              argo
             </div>
-            <div class="md-flex__cell md-flex__cell--shrink">
-              <i class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
-            </div>
-          </a>
-        
-      </nav>
-    </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
   
   <div class="md-footer-meta md-typeset">
     <div class="md-footer-meta__inner md-grid">
-      <div class="md-footer-copyright">
-        
-        powered by
-        <a href="https://www.mkdocs.org">MkDocs</a>
-        and
-        <a href="https://squidfunk.github.io/mkdocs-material/">
-          Material for MkDocs</a>
-      </div>
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
       
     </div>
   </div>
 </footer>
       
     </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../assets/javascripts/workers/search.22074ed6.min.js"}</script>
     
-      <script src="../assets/javascripts/application.dc02f8ce.js"></script>
-      
-      <script>app.initialize({version:"1.0.4",url:{base:".."}})</script>
+    
+      <script src="../assets/javascripts/bundle.960e086b.min.js"></script>
       
     
   </body>
