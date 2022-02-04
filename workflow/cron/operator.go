@@ -258,8 +258,8 @@ func (woc *cronWfOperationCtx) shouldOutstandingWorkflowsBeRun() (time.Time, err
 
 		// We missed the latest execution time
 		if !missedExecutionTime.IsZero() {
-			// If StartingDeadlineSeconds is not set, or we are still within the deadline window, run the Workflow
-			if woc.cronWf.Spec.StartingDeadlineSeconds == nil || *woc.cronWf.Spec.StartingDeadlineSeconds == 0 || now.Before(missedExecutionTime.Add(time.Duration(*woc.cronWf.Spec.StartingDeadlineSeconds)*time.Second)) {
+			// if missedExecutionTime is within StartDeadlineSeconds, We are still within the deadline window, run the Workflow
+			if woc.cronWf.Spec.StartingDeadlineSeconds != nil && now.Before(missedExecutionTime.Add(time.Duration(*woc.cronWf.Spec.StartingDeadlineSeconds)*time.Second)) {
 				woc.log.Infof("%s missed an execution at %s and is within StartingDeadline", woc.cronWf.Name, missedExecutionTime.Format("Mon Jan _2 15:04:05 2006"))
 				return missedExecutionTime, nil
 			}
