@@ -310,7 +310,7 @@ func (s *gatekeeper) rbacAuthorization(claims *types.Claims, req interface{}) (*
 		}
 	}
 	// important! write an audit entry (i.e. log entry) so we know which user performed an operation
-	log.WithFields(log.Fields{"serviceAccount": delegatedAccount.Name, "loginServiceAccount": loginAccount.Name, "subject": claims.Subject, "ssoDelegationAllowed": ssoDelegationAllowed, "ssoDelegated": ssoDelegated}).Info("selected SSO RBAC service account for user")
+	log.WithFields(log.Fields{"serviceAccount": delegatedAccount.Name, "loginServiceAccount": loginAccount.Name, "subject": claims.Subject, "email": claims.Email, "ssoDelegationAllowed": ssoDelegationAllowed, "ssoDelegated": ssoDelegated}).Info("selected SSO RBAC service account for user")
 	return s.getClientsForServiceAccount(claims, delegatedAccount)
 }
 
