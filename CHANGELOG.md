@@ -261,6 +261,14 @@
  * zorulo
  * 大雄
 
+## v3.2.8 (2022-02-04)
+
+ * [8de5416ac](https://github.com/argoproj/argo-workflows/commit/8de5416ac6b8f5640a8603e374d99a18a04b5c8d) fix: Missed workflow should not trigger if Forbidden Concurreny with no StartingDeadlineSeconds (#7746)
+
+### Contributors
+
+ * Saravanan Balasubramanian
+
 ## v3.2.7 (2022-01-27)
 
  * [342e44a28](https://github.com/argoproj/argo-workflows/commit/342e44a28e09a5b062745aa8cbea72339b1217b9) fix: Match cli display pod names with k8s. Fixes #7646 (#7653)
