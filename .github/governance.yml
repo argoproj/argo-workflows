@@ -29,7 +29,7 @@ issue:
       multiple: true
       needs:
         comment: |
-          @$AUTHOR: There are no component labels on this issue. Adding an appropriate label will greatly expedite the process for us. You can add as many as you see fit. **If you are unsure what to do you can ignore this!**
+          @$AUTHOR: There are no component labels on this issue.
 
           * `/component component:cli`
           * `/component component:controller`
@@ -39,6 +39,8 @@ issue:
           * `/component component:server`
           * `/component component:sdks`
           * `/component component:ui`
+
+          If you don't know what component it is, choose controller.
 
     - prefix: v
       list:
@@ -53,10 +55,12 @@ issue:
       multiple: true
       needs:
         comment: |
-          @$AUTHOR: There are no version this issue. You can add as many as you see fit.
+          @$AUTHOR: There is no version label on this issue.
 
           * `/v v3.2`
           * `/v v3.3`
           * `/v v3.4`
           * `/v v3.5`
           * `/v v3.6`
+
+          If your version is not listed (e.g. v2.12 or v3.0), it is not supported. Please upgrade to a newer version.
