@@ -87,13 +87,13 @@ nav:
           - workflow-submitting-workflow.md
           - resuming-workflow-via-automation.md
           - async-pattern.md
-          - security.md
           - running-at-massive-scale.md
       - Plugins:
           - plugins.md
           - executor_plugins.md
           - executor_swagger.md
       - ide-setup.md
+      - security.md
       - Examples: https://github.com/argoproj/argo-workflows/blob/master/examples/README.md
       - Field Reference: fields.md
       - CLI Reference:
