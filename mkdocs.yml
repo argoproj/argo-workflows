@@ -3,14 +3,23 @@ repo_url: https://github.com/argoproj/argo-workflows
 strict: true
 theme:
   name: material
-  palette:
-    primary: blue
   font:
     text: Work Sans
   logo: assets/logo.png
-google_analytics:
-  - UA-105170809-7
-  - auto
+  palette:
+  - scheme: default
+    primary: blue
+    toggle:
+      icon: material/toggle-switch-off-outline
+      name: Switch to dark mode
+  - scheme: slate
+    toggle:
+      icon: material/toggle-switch
+      name: Switch to light mode
+extra:
+  analytics:
+    provider: google
+    property: UA-105170809-7
 markdown_extensions:
   - codehilite
   - admonition
@@ -80,6 +89,7 @@ nav:
           - async-pattern.md
           - security.md
           - running-at-massive-scale.md
+      - Plugins:
           - plugins.md
           - executor_plugins.md
           - executor_swagger.md
@@ -112,6 +122,8 @@ nav:
           - argo cron resume: cli/argo_cron_resume.md
           - argo cron suspend: cli/argo_cron_suspend.md
           - argo delete: cli/argo_delete.md
+          - argo executor-plugin: cli/argo_executor-plugin.md
+          - argo executor-plugin build: cli/argo_executor-plugin_build.md
           - argo get: cli/argo_get.md
           - argo lint: cli/argo_lint.md
           - argo list: cli/argo_list.md

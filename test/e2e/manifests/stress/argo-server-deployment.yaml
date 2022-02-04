@@ -5,6 +5,7 @@ metadata:
 spec:
   template:
     spec:
+      priorityClassName: argo-server
       containers:
         - name: argo-server
           args:
