@@ -9,7 +9,7 @@ Mentors will help you with things like:
 * Understand key concepts and learn your way around the source code
 * Getting your first pull request with a code contribution created, reviewed and merged.
 
-Mentors and mentees must abide by the [code of conduct](https://github.com/cncf/foundation/blob/master/code-of-conduct.md). 
+Mentors and mentees must abide by the [code of conduct](https://github.com/cncf/foundation/blob/master/code-of-conduct.md).
 
 ## How To Get A Mentor
 
@@ -34,7 +34,8 @@ All good things must come to pass. Create a pull request to delete your change.
 
 ## How To Get Help
 
-If you have any problems with your relationship, please concat us:
+If you have any problems with your relationship, please contact us:
 
 * alex_collins@intuit.com
-* TODO - if some want to get help with Alex, then it cannot be alex they email 
+* TODO - if some want to get help with Alex, then it cannot be alex they email
+
