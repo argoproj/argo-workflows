@@ -369,7 +369,11 @@ func GetTemplateGetterString(getter wfv1.TemplateHolder) string {
 // GetTemplateHolderString returns string of TemplateReferenceHolder.
 func GetTemplateHolderString(tmplHolder wfv1.TemplateReferenceHolder) string {
 	if tmplHolder.GetTemplate() != nil {
-		return fmt.Sprintf("%T inlined", tmplHolder)
+		if x := tmplHolder.GetTemplate().Name; x != "" {
+			return fmt.Sprintf("%T (%s)", tmplHolder, x)
+		} else {
+			return fmt.Sprintf("%T inlined", tmplHolder)
+		}
 	} else if x := tmplHolder.GetTemplateName(); x != "" {
 		return fmt.Sprintf("%T (%s)", tmplHolder, x)
 	} else if x := tmplHolder.GetTemplateRef(); x != nil {
