@@ -17,8 +17,6 @@ If this is a regression, please open a regression report instead.
 
 What happened/what you expected to happen?
 
-What version is it working in?
-
 What executor are you using? PNS/Emissary
 
 ## Diagnostics
