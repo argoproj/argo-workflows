@@ -3,14 +3,23 @@ repo_url: https://github.com/argoproj/argo-workflows
 strict: true
 theme:
   name: material
-  palette:
-    primary: blue
   font:
     text: Work Sans
   logo: assets/logo.png
-google_analytics:
-  - UA-105170809-7
-  - auto
+  palette:
+  - scheme: default
+    primary: blue
+    toggle:
+      icon: material/toggle-switch-off-outline
+      name: Switch to dark mode
+  - scheme: slate
+    toggle:
+      icon: material/toggle-switch
+      name: Switch to light mode
+extra:
+  analytics:
+    provider: google
+    property: UA-105170809-7
 markdown_extensions:
   - codehilite
   - admonition
