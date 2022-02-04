@@ -15,7 +15,7 @@ spec:
   workflowMetadata:
     labelsFrom:
       foo:
-        expression: parameters.foo
+        expression: workflow.parameters.foo
   entrypoint: main
   templates:
     - name: main

@@ -494,13 +494,7 @@ func (woc *wfOperationCtx) updateWorkflowMetadata() error {
 		for n, v := range md.Annotations {
 			woc.wf.Annotations[n] = v
 		}
-		parameters := map[string]interface{}{}
-		for _, p := range woc.execWf.Spec.Arguments.Parameters {
-			parameters[p.Name] = p.Value.String()
-		}
-		env := map[string]interface{}{
-			"parameters": parameters,
-		}
+		env := env.GetFuncMap(template.EnvMap(woc.globalParams))
 		for n, f := range md.LabelsFrom {
 			r, err := expr.Eval(f.Expression, env)
 			if err != nil {
