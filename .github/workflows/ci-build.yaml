@@ -166,6 +166,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [ tests ]
     timeout-minutes: 20
+    working-directory: /home/runner/go/src
     env:
       GOPATH: /home/runner/go
     steps:
