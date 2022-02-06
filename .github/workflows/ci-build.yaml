@@ -168,7 +168,7 @@ jobs:
     timeout-minutes: 20
     defaults:
       run:
-        working-directory: /home/runner/go/src/github.com/argoproj/argo-workflows
+        working-directory: go/src/github.com/argoproj/argo-workflows
     env:
       GOPATH: /home/runner/go
     steps:
