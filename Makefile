@@ -13,6 +13,7 @@ GIT_TAG               := $(shell git describe --exact-match --tags --abbrev=0  2
 GIT_TREE_STATE        := $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
 RELEASE_TAG           := $(shell if [[ "$(GIT_TAG)" =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$$ ]]; then echo "true"; else echo "false"; fi)
 DEV_BRANCH            := $(shell [ $(GIT_BRANCH) = master ] || [ `echo $(GIT_BRANCH) | cut -c -8` = release- ] || [ `echo $(GIT_BRANCH) | cut -c -4` = dev- ] || [ $(RELEASE_TAG) = true ] && echo false || echo true)
+SRC                   := $(GOPATH)/src/github.com/argoproj/argo-workflows
 
 GREP_LOGS             := ""
 
@@ -246,8 +247,15 @@ codegen: types swagger docs manifests plugins
 	make --directory sdks/java generate
 	make --directory sdks/python generate
 
+.PHONY: check-pwd
+check-pwd:
+
+ifneq ($(SRC),$(PWD))
+	@echo "⚠️ Code generation will not work if code in not checked out into $(SRC)" >&2
+endif
+
 .PHONY: types
-types: pkg/apis/workflow/v1alpha1/generated.proto pkg/apis/workflow/v1alpha1/openapi_generated.go pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go
+types: check-pwd pkg/apis/workflow/v1alpha1/generated.proto pkg/apis/workflow/v1alpha1/openapi_generated.go pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go
 
 .PHONY: swagger
 swagger: \

@@ -1,0 +1,66 @@
+version: v1
+
+issue:
+  labels:
+    - prefix: kind
+      list:
+        - bug
+        - enhancement
+        - tech-debt
+      multiple: false
+      needs:
+        comment: |
+          @$AUTHOR: There are no 'kind' label on this.
+
+          * `/kind bug`
+          * `/kind enhancement`
+          * `/kind tech-debt`
+
+    - prefix: component
+      list:
+        - component:cli
+        - component:controller
+        - component:docs
+        - component:executor
+        - component:plugins
+        - component:sdks
+        - component:server
+        - component:ui
+      multiple: true
+      needs:
+        comment: |
+          @$AUTHOR: There are no component labels on this issue.
+
+          * `/component component:cli`
+          * `/component component:controller`
+          * `/component component:docs`
+          * `/component component:executor`
+          * `/component component:plugins`
+          * `/component component:server`
+          * `/component component:sdks`
+          * `/component component:ui`
+
+          If you don't know what component it is, choose controller.
+
+    - prefix: v
+      list:
+        - v3.2
+        - v3.3
+        - v3.4
+        - v3.5
+        - v3.6
+        # so it does not matter for an enhancement/tech-debt
+        - enhancement
+        - tech-debt
+      multiple: true
+      needs:
+        comment: |
+          @$AUTHOR: There is no version label on this issue.
+
+          * `/v v3.2`
+          * `/v v3.3`
+          * `/v v3.4`
+          * `/v v3.5`
+          * `/v v3.6`
+
+          If your version is not listed (e.g. v2.12 or v3.0), it is not supported. Please upgrade to a newer version.
