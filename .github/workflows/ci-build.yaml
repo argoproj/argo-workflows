@@ -164,20 +164,15 @@ jobs:
   codegen:
     name: Codegen
     runs-on: ubuntu-latest
-    # needs: [ tests ]
+    needs: [ tests ]
     timeout-minutes: 20
-    defaults:
-      run:
-        working-directory: go/src/github.com/argoproj/argo-workflows
     env:
       GOPATH: /home/runner/go
     steps:
+      - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
           go-version: "1.17"
-      - uses: actions/checkout@v2
-        with:
-          path: /hom/runner/go/src/github.com/argoproj/argo-workflows
       - uses: actions/cache@v2
         with:
           path: |

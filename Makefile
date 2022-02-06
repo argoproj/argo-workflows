@@ -251,8 +251,7 @@ codegen: types swagger docs manifests plugins
 check-pwd:
 
 ifneq ($(SRC),$(PWD))
-	@echo "code must be checked out into $(SRC), not $(PWD)" >&2
-	@exit 1
+	@echo "⚠️ Code generation will not work if code in not checked out into $(SRC)" >&2
 endif
 
 .PHONY: types
