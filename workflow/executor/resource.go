@@ -56,6 +56,7 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, fla
 	if action == "get" && len(out) == 0 {
 		return "", "", "", nil
 	}
+	// iterate multiple resource if possible
 	obj := unstructured.Unstructured{}
 	err = json.Unmarshal(out, &obj)
 	if err != nil {
