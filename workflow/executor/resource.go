@@ -56,21 +56,25 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, fla
 	if action == "get" && len(out) == 0 {
 		return "", "", "", nil
 	}
-	obj := unstructured.Unstructured{}
-	err = json.Unmarshal(out, &obj)
+	objs := []unstructured.Unstructured{}
+	err = json.Unmarshal(out, objs)
 	if err != nil {
 		return "", "", "", err
 	}
-	resourceGroup := obj.GroupVersionKind().Group
-	resourceName := obj.GetName()
-	resourceKind := obj.GroupVersionKind().Kind
-	if resourceName == "" || resourceKind == "" {
-		return "", "", "", errors.New(errors.CodeBadRequest, "Kind and name are both required but at least one of them is missing from the manifest")
+	resourceFullName := ""
+	selfLink := ""
+	for _, obj := range objs {
+		resourceGroup := obj.GroupVersionKind().Group
+		resourceName := obj.GetName()
+		resourceKind := obj.GroupVersionKind().Kind
+		if resourceName == "" || resourceKind == "" {
+			return "", "", "", errors.New(errors.CodeBadRequest, "Kind and name are both required but at least one of them is missing from the manifest")
+		}
+		resourceFullName := fmt.Sprintf("%s.%s/%s", strings.ToLower(resourceKind), resourceGroup, resourceName)
+		selfLink := inferObjectSelfLink(obj)
+		log.Infof("Resource: %s/%s. SelfLink: %s", obj.GetNamespace(), resourceFullName, selfLink)
 	}
-	resourceFullName := fmt.Sprintf("%s.%s/%s", strings.ToLower(resourceKind), resourceGroup, resourceName)
-	selfLink := inferObjectSelfLink(obj)
-	log.Infof("Resource: %s/%s. SelfLink: %s", obj.GetNamespace(), resourceFullName, selfLink)
-	return obj.GetNamespace(), resourceFullName, selfLink, nil
+	return objs[0].GetNamespace(), resourceFullName, selfLink, nil
 }
 
 func inferObjectSelfLink(obj unstructured.Unstructured) string {
