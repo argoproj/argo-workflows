@@ -18,3 +18,11 @@ func NewDataCommand() *cobra.Command {
 	}
 	return &command
 }
+
+// ResourceMetadata describe resources of the workflow object condition
+type ResourceMetadata struct {
+	Namespace string
+	Name      string
+	selfLink  string
+	err       error
+}

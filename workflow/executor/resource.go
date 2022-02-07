@@ -26,10 +26,12 @@ import (
 )
 
 // ExecResource will run kubectl action against a manifest
-func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, flags []string) (string, string, string, error) {
+func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, flags []string) ([]ResourceMetadata, error) {
+	resources := []ResourceMetadata{}
+
 	args, err := we.getKubectlArguments(action, manifestPath, flags)
 	if err != nil {
-		return "", "", "", err
+		return resources, err
 	}
 
 	var out []byte
@@ -48,33 +50,37 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, fla
 			err = errors.Wrap(err, errors.CodeBadRequest, err.Error())
 		}
 		err = errors.Wrap(err, errors.CodeBadRequest, "no more retries "+err.Error())
-		return "", "", "", err
+		return resources, err
 	}
 	if action == "delete" {
-		return "", "", "", nil
+		return resources, nil
 	}
 	if action == "get" && len(out) == 0 {
-		return "", "", "", nil
+		return resources, nil
 	}
 	objs := []unstructured.Unstructured{}
 	err = json.Unmarshal(out, objs)
 	if err != nil {
-		return "", "", "", err
+		return resources, err
 	}
-	resourceFullName := ""
-	selfLink := ""
+
 	for _, obj := range objs {
 		resourceGroup := obj.GroupVersionKind().Group
 		resourceName := obj.GetName()
 		resourceKind := obj.GroupVersionKind().Kind
 		if resourceName == "" || resourceKind == "" {
-			return "", "", "", errors.New(errors.CodeBadRequest, "Kind and name are both required but at least one of them is missing from the manifest")
+			return resources, errors.New(errors.CodeBadRequest, "Kind and name are both required but at least one of them is missing from the manifest")
 		}
 		resourceFullName := fmt.Sprintf("%s.%s/%s", strings.ToLower(resourceKind), resourceGroup, resourceName)
 		selfLink := inferObjectSelfLink(obj)
 		log.Infof("Resource: %s/%s. SelfLink: %s", obj.GetNamespace(), resourceFullName, selfLink)
+		resources = append(resources, ResourceMetadata{
+			Namespace: obj.GetNamespace(),
+			Name:      resourceFullName,
+			selfLink:  selfLink,
+		})
 	}
-	return objs[0].GetNamespace(), resourceFullName, selfLink, nil
+	return resources, nil
 }
 
 func inferObjectSelfLink(obj unstructured.Unstructured) string {
@@ -164,7 +170,7 @@ func (g gjsonLabels) Get(label string) string {
 }
 
 // WaitResource waits for a specific resource to satisfy either the success or failure condition
-func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace, resourceName, selfLink string) error {
+func (we *WorkflowExecutor) WaitResource(ctx context.Context, resources []ResourceMetadata) error {
 	if we.Template.Resource.SuccessCondition == "" && we.Template.Resource.FailureCondition == "" {
 		return nil
 	}
@@ -187,28 +193,30 @@ func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace,
 		log.Infof("Failing for conditions: %s", failSelector)
 		failReqs, _ = failSelector.Requirements()
 	}
-	err := wait.PollImmediateInfinite(envutil.LookupEnvDurationOr("RESOURCE_STATE_CHECK_INTERVAL", time.Second*5),
-		func() (bool, error) {
-			isErrRetryable, err := we.checkResourceState(ctx, selfLink, successReqs, failReqs)
-			if err == nil {
-				log.Infof("Returning from successful wait for resource %s in namespace %s", resourceName, resourceNamespace)
-				return true, nil
-			}
-			if isErrRetryable || argoerr.IsTransientErr(err) {
-				log.Infof("Waiting for resource %s in namespace %s resulted in retryable error: %v", resourceName, resourceNamespace, err)
-				return false, nil
-			}
+	for _, aresource := range resources {
+		err := wait.PollImmediateInfinite(envutil.LookupEnvDurationOr("RESOURCE_STATE_CHECK_INTERVAL", time.Second*5),
+			func() (bool, error) {
+				isErrRetryable, err := we.checkResourceState(ctx, aresource.selfLink, successReqs, failReqs)
+				if err == nil {
+					log.Infof("Returning from successful wait for resource %s in namespace %s", aresource.Name, aresource.Namespace)
+					return true, nil
+				}
+				if isErrRetryable || argoerr.IsTransientErr(err) {
+					log.Infof("Waiting for resource %s in namespace %s resulted in retryable error: %v", aresource.Name, aresource.Namespace, err)
+					return false, nil
+				}
 
-			log.Warnf("Waiting for resource %s in namespace %s resulted in non-retryable error: %v", resourceName, resourceNamespace, err)
-			return false, err
-		})
-	if err != nil {
-		if err == wait.ErrWaitTimeout {
-			log.Warnf("Waiting for resource %s resulted in timeout due to repeated errors", resourceName)
-		} else {
-			log.Warnf("Waiting for resource %s resulted in error %v", resourceName, err)
+				log.Warnf("Waiting for resource %s in namespace %s resulted in non-retryable error: %v", aresource.Name, aresource.Namespace, err)
+				return false, err
+			})
+		if err != nil {
+			if err == wait.ErrWaitTimeout {
+				log.Warnf("Waiting for resource %s resulted in timeout due to repeated errors", aresource.Name)
+			} else {
+				log.Warnf("Waiting for resource %s resulted in error %v", aresource.Name, err)
+			}
+			return err
 		}
-		return err
 	}
 	return nil
 }
@@ -269,58 +277,68 @@ func matchConditions(jsonBytes []byte, successReqs labels.Requirements, failReqs
 }
 
 // SaveResourceParameters will save any resource output parameters
-func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resourceNamespace string, resourceName string) error {
+func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resources []ResourceMetadata) error {
 	if len(we.Template.Outputs.Parameters) == 0 {
 		log.Infof("No output parameters")
 		return nil
 	}
 	log.Infof("Saving resource output parameters")
-	for i, param := range we.Template.Outputs.Parameters {
-		if param.ValueFrom == nil {
-			continue
-		}
-		if resourceNamespace == "" && resourceName == "" {
-			output := ""
-			if param.ValueFrom.Default != nil {
-				output = param.ValueFrom.Default.String()
+	for _, aresource := range resources {
+		for i, param := range we.Template.Outputs.Parameters {
+			if param.ValueFrom == nil {
+				continue
 			}
-			we.Template.Outputs.Parameters[i].Value = wfv1.AnyStringPtr(output)
-			continue
-		}
-		var cmd *exec.Cmd
-		if param.ValueFrom.JSONPath != "" {
-			args := []string{"get", resourceName, "-o", fmt.Sprintf("jsonpath=%s", param.ValueFrom.JSONPath)}
-			if resourceNamespace != "" {
-				args = append(args, "-n", resourceNamespace)
-			}
-			cmd = exec.Command("kubectl", args...)
-		} else if param.ValueFrom.JQFilter != "" {
-			resArgs := []string{resourceName}
-			if resourceNamespace != "" {
-				resArgs = append(resArgs, "-n", resourceNamespace)
-			}
-			cmdStr := fmt.Sprintf("kubectl get %s -o json | jq -rc '%s'", strings.Join(resArgs, " "), param.ValueFrom.JQFilter)
-			cmd = exec.Command("sh", "-c", cmdStr)
-		} else {
-			continue
-		}
-		log.Info(cmd.Args)
-		out, err := cmd.Output()
-		if err != nil {
-			// We have a default value to use instead of returning an error
-			if param.ValueFrom.Default != nil {
-				out = []byte(param.ValueFrom.Default.String())
-			} else {
-				if exErr, ok := err.(*exec.ExitError); ok {
-					log.Errorf("`%s` stderr:\n%s", cmd.Args, string(exErr.Stderr))
+			if aresource.Namespace == "" && aresource.Name == "" {
+				output := ""
+				if param.ValueFrom.Default != nil {
+					output = param.ValueFrom.Default.String()
 				}
-				return errors.InternalWrapError(err)
+				we.Template.Outputs.Parameters[i].Value = wfv1.AnyStringPtr(output)
+				continue
 			}
+			var cmd *exec.Cmd
+			if param.ValueFrom.JSONPath != "" {
+				args := []string{"get", aresource.Name, "-o", fmt.Sprintf("jsonpath=%s", param.ValueFrom.JSONPath)}
+				if aresource.Namespace != "" {
+					args = append(args, "-n", aresource.Namespace)
+				}
+				cmd = exec.Command("kubectl", args...)
+			} else if param.ValueFrom.JQFilter != "" {
+				resArgs := []string{aresource.Name}
+				if aresource.Namespace != "" {
+					resArgs = append(resArgs, "-n", aresource.Namespace)
+				}
+				cmdStr := fmt.Sprintf("kubectl get %s -o json | jq -rc '%s'", strings.Join(resArgs, " "), param.ValueFrom.JQFilter)
+				cmd = exec.Command("sh", "-c", cmdStr)
+			} else {
+				continue
+			}
+			log.Info(cmd.Args)
+			out, err := cmd.Output()
+			if err != nil {
+				// We have a default value to use instead of returning an error
+				if param.ValueFrom.Default != nil {
+					out = []byte(param.ValueFrom.Default.String())
+				} else {
+					if exErr, ok := err.(*exec.ExitError); ok {
+						log.Errorf("`%s` stderr:\n%s", cmd.Args, string(exErr.Stderr))
+					}
+					return errors.InternalWrapError(err)
+				}
+			}
+			output := string(out)
+			we.Template.Outputs.Parameters[i].Value = wfv1.AnyStringPtr(output)
+			log.Infof("Saved output parameter: %s, value: %s", param.Name, output)
 		}
-		output := string(out)
-		we.Template.Outputs.Parameters[i].Value = wfv1.AnyStringPtr(output)
-		log.Infof("Saved output parameter: %s, value: %s", param.Name, output)
 	}
 	err := we.AnnotateOutputs(ctx, nil)
+
 	return err
+}
+
+// ResourceMetadata describe resources of the workflow object condition
+type ResourceMetadata struct {
+	Namespace string
+	Name      string
+	selfLink  string
 }
