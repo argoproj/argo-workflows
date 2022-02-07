@@ -197,7 +197,7 @@ func TestResourceExecRetry(t *testing.T) {
 	retry.DefaultBackoff.Duration = 0
 	os.Setenv("PATH", dirname+"/testdata")
 
-	_, _, _, err := we.ExecResource("", "../../examples/hello-world.yaml", nil)
+	_, err := we.ExecResource("", "../../examples/hello-world.yaml", nil)
 	assert.Error(t, err)
 	assert.Equal(t, "no more retries i/o timeout", err.Error())
 }
