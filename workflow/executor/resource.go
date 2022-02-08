@@ -58,7 +58,7 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, fla
 		return resources, nil
 	}
 	objs := []unstructured.Unstructured{}
-	err = json.Unmarshal(out, objs)
+	err = json.Unmarshal(out, &objs)
 	if err != nil {
 		return resources, err
 	}
