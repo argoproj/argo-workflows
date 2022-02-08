@@ -1225,8 +1225,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#intellij-idea-community-utimate-editions" class="md-nav__link">
-    IntelliJ IDEA (Community &amp; Utimate Editions)
+  <a href="#jetbrains-ides-community-ultimate-editions" class="md-nav__link">
+    JetBrains IDEs (Community &amp; Ultimate Editions)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jetbrains-ides-community-ultimate-editions-kubernetes-plugin" class="md-nav__link">
+    JetBrains IDEs (Community &amp; Ultimate Editions) + Kubernetes Plugin
   </a>
   
 </li>
@@ -2754,8 +2761,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#intellij-idea-community-utimate-editions" class="md-nav__link">
-    IntelliJ IDEA (Community &amp; Utimate Editions)
+  <a href="#jetbrains-ides-community-ultimate-editions" class="md-nav__link">
+    JetBrains IDEs (Community &amp; Ultimate Editions)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jetbrains-ides-community-ultimate-editions-kubernetes-plugin" class="md-nav__link">
+    JetBrains IDEs (Community &amp; Ultimate Editions) + Kubernetes Plugin
   </a>
   
 </li>
@@ -2792,17 +2806,29 @@
 <h1 id="ide-set-up">IDE Set-Up<a class="headerlink" href="#ide-set-up" title="Permanent link">&para;</a></h1>
 <h2 id="validating-argo-yaml-against-the-json-schema">Validating Argo YAML against the JSON Schema<a class="headerlink" href="#validating-argo-yaml-against-the-json-schema" title="Permanent link">&para;</a></h2>
 <p>Argo provides a <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/jsonschema/schema.json">JSON Schema</a> that enables validation of YAML resources in your IDE.</p>
-<h3 id="intellij-idea-community-utimate-editions">IntelliJ IDEA (Community &amp; Utimate Editions)<a class="headerlink" href="#intellij-idea-community-utimate-editions" title="Permanent link">&para;</a></h3>
+<h3 id="jetbrains-ides-community-ultimate-editions">JetBrains IDEs (Community &amp; Ultimate Editions)<a class="headerlink" href="#jetbrains-ides-community-ultimate-editions" title="Permanent link">&para;</a></h3>
 <p>YAML validation is supported natively in IDEA.</p>
 <p>Configure your IDE to reference the Argo schema and map it to your Argo YAML files:</p>
-<p><img alt="IDEA Configure Schema" src="../assets/intellij-ide-step-1-config.png" /></p>
+<p><img alt="JetBrains IDEs Configure Schema" src="../assets/jetbrains-ide-step-1-config.png" /></p>
 <ul>
 <li>The schema is located at <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/jsonschema/schema.json">https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/jsonschema/schema.json</a>.</li>
 <li>Specify a file glob pattern that locates <strong>your</strong> Argo files. The example glob here is for the Argo Github project!</li>
 <li>Note that you may need to restart IDEA to pick up the changes.</li>
 </ul>
 <p>That's it. Open an Argo YAML file and you should see smarter behaviour, including type errors and context-sensitive autocomplete.</p>
-<p><img alt="IDEA Example Functionality" src="../assets/intellij-ide-step-1-example-functionality.png" /></p>
+<p><img alt="JetBrains IDEs Example Functionality" src="../assets/jetbrains-ide-step-1-example-functionality.png" /></p>
+<h3 id="jetbrains-ides-community-ultimate-editions-kubernetes-plugin">JetBrains IDEs (Community &amp; Ultimate Editions) + Kubernetes Plugin<a class="headerlink" href="#jetbrains-ides-community-ultimate-editions-kubernetes-plugin" title="Permanent link">&para;</a></h3>
+<p>If you have the <a href="https://plugins.jetbrains.com/plugin/10485-kubernetes">JetBrains Kubernetes Plugin</a>
+installed in your IDE, the validation can be configured in the Kubernetes plugin settings
+instead of using the internal JSON schema file validator. </p>
+<p><img alt="JetBrains IDEs Configure Schema with Kubernetes Plugin" src="../assets/jetbrains-ide-step-1-kubernetes-config.png" /></p>
+<p>Unlike the previous JSON schema validation method, the plugin detects the necessary validation
+based on Kubernetes resource definition keys and does not require a file glob pattern.
+Like the previously described method:</p>
+<ul>
+<li>The schema is located at <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/jsonschema/schema.json">https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/jsonschema/schema.json</a>.</li>
+<li>Note that you may need to restart IDEA to pick up the changes.</li>
+</ul>
 <h3 id="vscode">VSCode<a class="headerlink" href="#vscode" title="Permanent link">&para;</a></h3>
 <p>The <a href="https://github.com/redhat-developer/vscode-yaml">Red Hat YAML</a> plugin will provide error highlighting and autocompletion for Argo resources.</p>
 <p>Install the Red Hat YAML plugin in VSCode and open extension settings:</p>
