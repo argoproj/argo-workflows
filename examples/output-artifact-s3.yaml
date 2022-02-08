@@ -30,6 +30,10 @@ spec:
           #   Minio: my-minio-endpoint.default:9000
           endpoint: s3.amazonaws.com
           bucket: my-bucket
+          # Specify the bucket region. Note that if you want Argo to figure out this automatically,
+          # you can set additional statement policy that allows `s3:GetBucketLocation` action.
+          # For details, check out: https://argoproj.github.io/argo-workflows/configure-artifact-repository/#configuring-aws-s3
+          region: us-west-2
 
           # NOTE: by default, output artifacts are automatically tarred and gzipped before saving.
           # As a best practice, .tgz or .tar.gz should be suffixed into the key name so the
