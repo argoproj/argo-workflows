@@ -4,13 +4,13 @@
 
 Argo provides a [JSON Schema](https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/jsonschema/schema.json) that enables validation of YAML resources in your IDE.
 
-### IntelliJ IDEA (Community & Utimate Editions)
+### JetBrains IDEs (Community & Ultimate Editions)
 
 YAML validation is supported natively in IDEA.
 
 Configure your IDE to reference the Argo schema and map it to your Argo YAML files:
 
-![IDEA Configure Schema](assets/intellij-ide-step-1-config.png)
+![JetBrains IDEs Configure Schema](assets/jetbrains-ide-step-1-config.png)
 
 - The schema is located at [https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/jsonschema/schema.json](https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/jsonschema/schema.json).
 - Specify a file glob pattern that locates **your** Argo files. The example glob here is for the Argo Github project!
@@ -18,7 +18,22 @@ Configure your IDE to reference the Argo schema and map it to your Argo YAML fil
 
 That's it. Open an Argo YAML file and you should see smarter behaviour, including type errors and context-sensitive autocomplete.
 
-![IDEA Example Functionality](assets/intellij-ide-step-1-example-functionality.png)
+![JetBrains IDEs Example Functionality](assets/jetbrains-ide-step-1-example-functionality.png)
+
+### JetBrains IDEs (Community & Ultimate Editions) + Kubernetes Plugin
+
+If you have the [JetBrains Kubernetes Plugin](https://plugins.jetbrains.com/plugin/10485-kubernetes)
+installed in your IDE, the validation can be configured in the Kubernetes plugin settings
+instead of using the internal JSON schema file validator. 
+
+![JetBrains IDEs Configure Schema with Kubernetes Plugin](assets/jetbrains-ide-step-1-kubernetes-config.png)
+
+Unlike the previous JSON schema validation method, the plugin detects the necessary validation
+based on Kubernetes resource definition keys and does not require a file glob pattern.
+Like the previously described method:
+
+- The schema is located at [https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/jsonschema/schema.json](https://raw.githubusercontent.com/argoproj/argo-workflows/master/api/jsonschema/schema.json).
+- Note that you may need to restart IDEA to pick up the changes.
 
 ### VSCode
 
