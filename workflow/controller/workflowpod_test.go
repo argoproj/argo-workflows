@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -653,8 +654,8 @@ func Test_createWorkflowPod_emissary(t *testing.T) {
 	t.Run("NoCommand", func(t *testing.T) {
 		woc := newWoc()
 		woc.controller.containerRuntimeExecutor = common.ContainerRuntimeExecutorEmissary
-		_, err := woc.createWorkflowPod(context.Background(), "", []apiv1.Container{{}}, &wfv1.Template{}, &createWorkflowPodOpts{})
-		assert.Error(t, err)
+		_, err := woc.createWorkflowPod(context.Background(), "", []apiv1.Container{{}}, &wfv1.Template{Name: "my-tmpl"}, &createWorkflowPodOpts{})
+		assert.EqualError(t, err, "container \"main\" in template \"my-tmpl\", does not have the command specified: when using the emissary executor you must either explicitly specify the command, or list the image's command in the index: https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary")
 	})
 	t.Run("CommandNoArgs", func(t *testing.T) {
 		woc := newWoc()
@@ -680,6 +681,20 @@ func Test_createWorkflowPod_emissary(t *testing.T) {
 			assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary", "--", "my-cmd"}, pod.Spec.Containers[1].Command)
 			assert.Equal(t, []string{"foo"}, pod.Spec.Containers[1].Args)
 		}
+	})
+	t.Run("CommandFromPodSpecPatch", func(t *testing.T) {
+		woc := newWoc()
+		woc.controller.containerRuntimeExecutor = common.ContainerRuntimeExecutorEmissary
+		podSpec := &apiv1.PodSpec{}
+		podSpec.Containers = []apiv1.Container{{
+			Name:    "main",
+			Command: []string{"bar"},
+		}}
+		podSpecPatch, err := json.Marshal(podSpec)
+		assert.NoError(t, err)
+		pod, err := woc.createWorkflowPod(context.Background(), "", []apiv1.Container{{Command: []string{"foo"}}}, &wfv1.Template{PodSpecPatch: string(podSpecPatch)}, &createWorkflowPodOpts{})
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary", "--", "bar"}, pod.Spec.Containers[1].Command)
 	})
 }
 

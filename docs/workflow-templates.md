@@ -155,7 +155,7 @@ spec:
   entrypoint: whalesay
   arguments:
     parameters:
-      - name: global
+      - name: global-parameter
         value: hello
   templates:
     - name: whalesay

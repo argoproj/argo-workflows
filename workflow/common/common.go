@@ -105,6 +105,8 @@ const (
 	EnvVarPodName = "ARGO_POD_NAME"
 	// EnvVarWorkflowName is the name of the workflow for which the an agent is responsible for
 	EnvVarWorkflowName = "ARGO_WORKFLOW_NAME"
+	// EnvVarPluginAddresses is a list of plugin addresses
+	EnvVarPluginAddresses = "ARGO_PLUGIN_ADDRESSES"
 	// EnvVarContainerName container the container's name for the current pod
 	EnvVarContainerName = "ARGO_CONTAINER_NAME"
 	// EnvVarDeadline is the deadline for the pod
@@ -173,6 +175,10 @@ const (
 	GlobalVarWorkflowFailures = "workflow.failures"
 	// GlobalVarWorkflowDuration is the current duration of this workflow
 	GlobalVarWorkflowDuration = "workflow.duration"
+	// GlobalVarWorkflowAnnotations is a JSON string containing all workflow annotations
+	GlobalVarWorkflowAnnotations = "workflow.annotations"
+	// GlobalVarWorkflowLabels is a JSON string containing all workflow labels
+	GlobalVarWorkflowLabels = "workflow.labels"
 	// GlobalVarWorkflowParameters is a JSON string containing all workflow parameters
 	GlobalVarWorkflowParameters = "workflow.parameters"
 	// GlobalVarWorkflowCronScheduleTime is the scheduled timestamp of a Workflow started by a CronWorkflow
@@ -184,6 +190,8 @@ const (
 	LabelValueTypeConfigMapCache = "Cache"
 	// LabelValueTypeConfigMapParameter is a key for configmaps that contains parameter values.
 	LabelValueTypeConfigMapParameter = "Parameter"
+	// LabelValueTypeConfigMapExecutorPlugin is a key for configmaps that contains an executor plugin.
+	LabelValueTypeConfigMapExecutorPlugin = "ExecutorPlugin"
 
 	// LocalVarPodName is a step level variable that references the name of the pod
 	LocalVarPodName = "pod.name"

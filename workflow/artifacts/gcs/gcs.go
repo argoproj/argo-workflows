@@ -33,7 +33,7 @@ type ArtifactDriver struct {
 
 var (
 	_            common.ArtifactDriver = &ArtifactDriver{}
-	defaultRetry                       = wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1}
+	defaultRetry                       = wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1, Cap: time.Minute * 10}
 )
 
 // from https://github.com/googleapis/google-cloud-go/blob/master/storage/go110.go

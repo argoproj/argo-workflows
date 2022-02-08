@@ -13,6 +13,7 @@ dist
 docs
 examples
 manifests
+plugins
 sdks
 test/e2e
 ui/dist

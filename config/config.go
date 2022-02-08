@@ -126,6 +126,9 @@ type Config struct {
 	Images map[string]Image `json:"images,omitempty"`
 
 	RetentionPolicy *RetentionPolicy `json:"retentionPolicy,omitempty"`
+
+	// NavColor is an ui navigation bar background color
+	NavColor string `json:"navColor,omitempty"`
 }
 
 func (c Config) GetContainerRuntimeExecutor(labels labels.Labels) (string, error) {

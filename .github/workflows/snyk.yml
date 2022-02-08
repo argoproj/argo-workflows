@@ -3,27 +3,30 @@ on:
   schedule:
     - cron: "30 2 * * *"
 jobs:
+  # we do not scan images here, they're scanned here: https://app.snyk.io/org/argoproj/projects
+
   golang:
     if: github.repository == 'argoproj/argo-workflows'
     runs-on: ubuntu-latest
+    env:
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
     steps:
       - uses: actions/checkout@master
       - name: Run Snyk to check for vulnerabilities
         uses: snyk/actions/golang@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           args: --severity-threshold=high
+
   node:
     if: github.repository == 'argoproj/argo-workflows'
     runs-on: ubuntu-latest
+    env:
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
     steps:
       - uses: actions/checkout@master
       - run: yarn --cwd ui install
       - name: Run Snyk to check for vulnerabilities
         uses: snyk/actions/node@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           args: --file=ui/package.json --severity-threshold=high
 

@@ -140,7 +140,7 @@ type HDFSArtifactRepository struct {
 	// PathFormat is defines the format of path to store a file. Can reference workflow variables
 	PathFormat string `json:"pathFormat,omitempty" protobuf:"bytes,2,opt,name=pathFormat"`
 
-	// Force copies a file forcibly even if it exists (default: false)
+	// Force copies a file forcibly even if it exists
 	Force bool `json:"force,omitempty" protobuf:"varint,3,opt,name=force"`
 }
 

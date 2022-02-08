@@ -147,7 +147,7 @@ export class SubmitWorkflowPanel extends React.Component<Props, State> {
 
     private displayInputFieldForSingleValue(parameter: Parameter) {
         return (
-            <input
+            <textarea
                 className='argo-field'
                 value={this.getValue(parameter)}
                 onChange={event => {

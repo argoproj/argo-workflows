@@ -266,7 +266,8 @@ func (s *FunctionalSuite) TestEventOnNodeFailSentAsPod() {
 		When().
 		UpdateConfigMap(
 			"workflow-controller-configmap",
-			configMap.Data).
+			configMap.Data,
+			map[string]string{}).
 		// Give controller enough time to update from config map change
 		Wait(5*time.Second).
 		SubmitWorkflow().
@@ -313,7 +314,7 @@ func (s *FunctionalSuite) TestEventOnNodeFailSentAsPod() {
 		).
 		When().
 		// Reset config map to original settings
-		UpdateConfigMap("workflow-controller-configmap", originalData).
+		UpdateConfigMap("workflow-controller-configmap", originalData, map[string]string{}).
 		// Give controller enough time to update from config map change
 		Wait(5 * time.Second)
 }
@@ -480,7 +481,7 @@ func (s *FunctionalSuite) TestPendingRetryWorkflow() {
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: pending-retry-workflow-    
+  generateName: pending-retry-workflow-
 spec:
   entrypoint: dag
   templates:
@@ -652,6 +653,53 @@ spec:
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Contains(t, status.Message, "error in exit template execution")
+		})
+}
+
+func (s *FunctionalSuite) TestWorkflowLifecycleHookWithWorkflowTemplate() {
+	s.Given().
+		WorkflowTemplate(`
+metadata:
+  name: test-exit-handler
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      inputs:
+        parameters:
+        - name: message
+      container:
+        image: argoproj/argosay:v2 
+        command: [cowsay]
+        args: ["{{inputs.parameters.message}}"]
+`).
+		Workflow(`
+metadata:
+  generateName: test-lifecycle-hook-
+spec:
+  entrypoint: hooks-exit-test
+  templates:
+  - name: hooks-exit-test
+    container:
+      image: argoproj/argosay:v2
+    hooks:
+      exit:
+        templateRef:
+          name: test-exit-handler
+          template: main
+        arguments:
+          parameters:
+            - name: message
+              value: "hello world"
+`).
+		When().
+		CreateWorkflowTemplates().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			assert.Empty(t, status.Message)
 		})
 }
 

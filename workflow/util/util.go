@@ -227,6 +227,9 @@ func PopulateSubmitOpts(command *cobra.Command, submitOpts *wfv1.SubmitOpts, inc
 
 // Apply the Submit options into workflow object
 func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
+	if wf == nil {
+		return fmt.Errorf("workflow cannot be nil")
+	}
 	if opts == nil {
 		opts = &wfv1.SubmitOpts{}
 	}
@@ -238,6 +241,10 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 	}
 	if opts.PodPriorityClassName != "" {
 		wf.Spec.PodPriorityClassName = opts.PodPriorityClassName
+	}
+
+	if opts.Priority != nil {
+		wf.Spec.Priority = opts.Priority
 	}
 
 	wfLabels := wf.GetLabels()
@@ -797,7 +804,7 @@ func retryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrato
 				continue
 			}
 		case wfv1.NodeError, wfv1.NodeFailed, wfv1.NodeOmitted:
-			if !strings.HasPrefix(node.Name, onExitNodeName) && (node.Type == wfv1.NodeTypeDAG || node.Type == wfv1.NodeTypeStepGroup) {
+			if !strings.HasPrefix(node.Name, onExitNodeName) && (node.Type == wfv1.NodeTypeDAG || node.Type == wfv1.NodeTypeTaskGroup || node.Type == wfv1.NodeTypeStepGroup) {
 				newNode := node.DeepCopy()
 				newNode.Phase = wfv1.NodeRunning
 				newNode.Message = ""
@@ -815,7 +822,8 @@ func retryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrato
 		}
 		if node.Type == wfv1.NodeTypePod {
 			templateName := getTemplateFromNode(node)
-			podName := PodName(wf.Name, node.Name, templateName, node.ID)
+			version := GetWorkflowPodNameVersion(wf)
+			podName := PodName(wf.Name, node.Name, templateName, node.ID, version)
 			log.Infof("Deleting pod: %s", podName)
 			err := podIf.Delete(ctx, podName, metav1.DeleteOptions{})
 			if err != nil && !apierr.IsNotFound(err) {
@@ -1059,20 +1067,7 @@ func PodSpecPatchMerge(wf *wfv1.Workflow, tmpl *wfv1.Template) (string, error) {
 }
 
 func GetNodeType(tmpl *wfv1.Template) wfv1.NodeType {
-	if tmpl.RetryStrategy != nil {
-		return wfv1.NodeTypeRetry
-	}
-	switch tmpl.GetType() {
-	case wfv1.TemplateTypeContainer, wfv1.TemplateTypeContainerSet, wfv1.TemplateTypeScript, wfv1.TemplateTypeResource, wfv1.TemplateTypeData:
-		return wfv1.NodeTypePod
-	case wfv1.TemplateTypeDAG:
-		return wfv1.NodeTypeDAG
-	case wfv1.TemplateTypeSteps:
-		return wfv1.NodeTypeSteps
-	case wfv1.TemplateTypeSuspend:
-		return wfv1.NodeTypeSuspend
-	}
-	return ""
+	return tmpl.GetNodeType()
 }
 
 // IsWindowsUNCPath checks if path is prefixed with \\

@@ -106,6 +106,7 @@ argo [flags]
 * [argo completion](argo_completion.md)	 - output shell completion code for the specified shell (bash or zsh)
 * [argo cron](argo_cron.md)	 - manage cron workflows
 * [argo delete](argo_delete.md)	 - delete workflows
+* [argo executor-plugin](argo_executor-plugin.md)	 - manage executor plugins
 * [argo get](argo_get.md)	 - display details about a workflow
 * [argo lint](argo_lint.md)	 - validate files or directories of manifests
 * [argo list](argo_list.md)	 - list workflows

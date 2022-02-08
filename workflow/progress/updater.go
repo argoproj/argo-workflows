@@ -31,7 +31,7 @@ func PodProgress(pod *apiv1.Pod, node *wfv1.NodeStatus) wfv1.Progress {
 func UpdateProgress(wf *wfv1.Workflow) {
 	wf.Status.Progress = "0/0"
 	for _, node := range wf.Status.Nodes {
-		if node.Type != wfv1.NodeTypePod {
+		if node.Type != wfv1.NodeTypePod && node.Type != wfv1.NodeTypeHTTP {
 			continue
 		}
 		if node.Progress.IsValid() {
@@ -39,7 +39,7 @@ func UpdateProgress(wf *wfv1.Workflow) {
 		}
 	}
 	for nodeID, node := range wf.Status.Nodes {
-		if node.Type == wfv1.NodeTypePod {
+		if node.Type == wfv1.NodeTypePod && node.Type != wfv1.NodeTypeHTTP {
 			continue
 		}
 		progress := sumProgress(wf, node, make(map[string]bool))
@@ -60,7 +60,7 @@ func sumProgress(wf *wfv1.Workflow, node wfv1.NodeStatus, visited map[string]boo
 		// this will tolerate missing child (will be "") and therefore ignored
 		child := wf.Status.Nodes[childNodeID]
 		progress = progress.Add(sumProgress(wf, child, visited))
-		if child.Type == wfv1.NodeTypePod {
+		if child.Type == wfv1.NodeTypePod || child.Type == wfv1.NodeTypeHTTP {
 			v := child.Progress
 			if v.IsValid() {
 				progress = progress.Add(v)

@@ -140,7 +140,20 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 		}
 		if inParam.ValueFrom != nil && inParam.ValueFrom.ConfigMapKeyRef != nil {
 			if configMapInformer != nil {
-				cmValue, err := GetConfigMapValue(configMapInformer, namespace, inParam.ValueFrom.ConfigMapKeyRef.Name, inParam.ValueFrom.ConfigMapKeyRef.Key)
+				// SubstituteParams is called only at the end of this method. To support parametrization of the configmap
+				// we need to perform a substitution here over the name and the key of the ConfigMapKeyRef.
+				cmName, err := substituteConfigMapKeyRefParam(inParam.ValueFrom.ConfigMapKeyRef.Name, globalParams)
+				if err != nil {
+					log.WithError(err).Error("unable to substitute name for ConfigMapKeyRef")
+					return nil, err
+				}
+				cmKey, err := substituteConfigMapKeyRefParam(inParam.ValueFrom.ConfigMapKeyRef.Key, globalParams)
+				if err != nil {
+					log.WithError(err).Error("unable to substitute key for ConfigMapKeyRef")
+					return nil, err
+				}
+
+				cmValue, err := GetConfigMapValue(configMapInformer, namespace, cmName, cmKey)
 				if err != nil {
 					return nil, errors.Errorf(errors.CodeBadRequest, "unable to retrieve inputs.parameters.%s from ConfigMap: %s", inParam.Name, err)
 				}
@@ -158,12 +171,10 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 	// Performs substitutions of input artifacts
 	artifacts := newTmpl.Inputs.Artifacts
 	for i, inArt := range artifacts {
-		// if artifact has hard-wired location, we prefer that
-		if inArt.HasLocationOrKey() {
-			continue
-		}
+
 		argArt := args.GetArtifactByName(inArt.Name)
-		if !inArt.Optional {
+
+		if !inArt.Optional && !inArt.HasLocationOrKey() {
 			// artifact must be supplied
 			if argArt == nil {
 				return nil, errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s was not supplied", inArt.Name)
@@ -181,6 +192,23 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 	}
 
 	return SubstituteParams(newTmpl, globalParams, localParams)
+}
+
+// substituteConfigMapKeyRefParams check if ConfigMapKeyRef's key is a param and perform the substitution.
+func substituteConfigMapKeyRefParam(in string, globalParams Parameters) (string, error) {
+	if strings.HasPrefix(in, "{{") && strings.HasSuffix(in, "}}") {
+		k := strings.TrimSuffix(strings.TrimPrefix(in, "{{"), "}}")
+		k = strings.Trim(k, " ")
+
+		v, ok := globalParams[k]
+		if !ok {
+			err := errors.InternalError(fmt.Sprintf("parameter %s not found", k))
+			log.WithError(err).Error()
+			return "", err
+		}
+		return v, nil
+	}
+	return in, nil
 }
 
 // SubstituteParams returns a new copy of the template with global, pod, and input parameters substituted

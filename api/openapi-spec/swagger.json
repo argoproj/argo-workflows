@@ -11,8 +11,8 @@
   ],
   "swagger": "2.0",
   "info": {
-    "description": "You can get examples of requests and responses by using the CLI with `--gloglevel=9`, e.g. `argo list --gloglevel=9`",
-    "title": "Argo Server API",
+    "description": "Argo Workflows is an open source container-native workflow engine for orchestrating parallel jobs on Kubernetes. For more information, please see https://argoproj.github.io/argo-workflows/",
+    "title": "Argo Workflows API",
     "version": "VERSION"
   },
   "host": "localhost:2746",
@@ -9494,7 +9494,7 @@
           }
         },
         "force": {
-          "description": "Force copies a file forcibly even if it exists (default: false)",
+          "description": "Force copies a file forcibly even if it exists",
           "type": "boolean"
         },
         "hdfsUser": {
@@ -9543,7 +9543,7 @@
           }
         },
         "force": {
-          "description": "Force copies a file forcibly even if it exists (default: false)",
+          "description": "Force copies a file forcibly even if it exists",
           "type": "boolean"
         },
         "hdfsUser": {
@@ -9710,6 +9710,16 @@
         },
         "managedNamespace": {
           "type": "string"
+        },
+        "modals": {
+          "type": "object",
+          "title": "which modals to show",
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        },
+        "navColor": {
+          "type": "string"
         }
       }
     },
@@ -9771,10 +9781,20 @@
       ],
       "properties": {
         "arguments": {
+          "description": "Arguments hold arguments to the template",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
         },
-        "template": {
+        "expression": {
+          "description": "Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not be retried and the retry strategy will be ignored",
           "type": "string"
+        },
+        "template": {
+          "description": "Template is the name of the template to execute by the hook",
+          "type": "string"
+        },
+        "templateRef": {
+          "description": "TemplateRef is the reference to the template resource to execute by the hook",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TemplateRef"
         }
       }
     },
@@ -10282,6 +10302,10 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ValueFrom"
         }
       }
+    },
+    "io.argoproj.workflow.v1alpha1.Plugin": {
+      "description": "Plugin is an Object with exactly one key",
+      "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.PodGC": {
       "description": "PodGC describes how to delete completed pods as they complete",
@@ -10825,6 +10849,10 @@
           "description": "Set the podPriorityClassName of the workflow",
           "type": "string"
         },
+        "priority": {
+          "description": "Priority is used if controller is configured to process limited number of workflows in parallel, higher priority workflows are processed first.",
+          "type": "integer"
+        },
         "serverDryRun": {
           "description": "ServerDryRun validates the workflow on the server-side without creating it",
           "type": "boolean"
@@ -11009,6 +11037,10 @@
         "parallelism": {
           "description": "Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.",
           "type": "integer"
+        },
+        "plugin": {
+          "description": "Plugin is a plugin template",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Plugin"
         },
         "podSpecPatch": {
           "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).",
@@ -11633,6 +11665,13 @@
           "description": "Executor holds configurations of executor containers of the io.argoproj.workflow.v1alpha1.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorConfig"
         },
+        "hooks": {
+          "description": "Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LifecycleHook"
+          }
+        },
         "hostAliases": {
           "type": "array",
           "items": {
@@ -12139,6 +12178,13 @@
         "executor": {
           "description": "Executor holds configurations of executor containers of the io.argoproj.workflow.v1alpha1.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorConfig"
+        },
+        "hooks": {
+          "description": "Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LifecycleHook"
+          }
         },
         "hostAliases": {
           "type": "array",

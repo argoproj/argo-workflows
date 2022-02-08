@@ -358,6 +358,19 @@ func (s *ArgoServerSuite) TestCookieAuth() {
 		Status(200)
 }
 
+// You could have multiple authorization headers, set by wildcard domain cookies in the case of some SSO implementations
+func (s *ArgoServerSuite) TestMultiCookieAuth() {
+	token := s.bearerToken
+	defer func() { s.bearerToken = token }()
+	s.bearerToken = ""
+	s.e().GET("/api/v1/workflows/argo").
+		WithCookie("authorization", "invalid1").
+		WithCookie("authorization", "Bearer "+token).
+		WithCookie("authorization", "invalid2").
+		Expect().
+		Status(200)
+}
+
 func (s *ArgoServerSuite) TestPermission() {
 	nsName := fixtures.Namespace
 	// Create good serviceaccount
