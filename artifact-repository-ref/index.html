@@ -2715,13 +2715,14 @@
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span><span class="w"></span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span><span class="w"></span>
 <span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="c1"># if you want to use this config map by default - name it &quot;artifact-repositories&quot; </span><span class="w"></span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">artifact-repositories</span><span class="w"></span>
+<span class="w">  </span><span class="c1"># If you want to use this config map by default, name it &quot;artifact-repositories&quot;. Otherwise, you can provide a reference to a</span><span class="w"></span>
+<span class="w">  </span><span class="c1"># different config map in `artifactRepositoryRef.configMap`.</span><span class="w"></span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-artifact-repository</span><span class="w"></span>
 <span class="w">  </span><span class="nt">annotations</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="c1"># v3.0 and after - if you want to use a specific key, put that&#39;s key into this annotation </span><span class="w"></span>
-<span class="w">    </span><span class="nt">workflows.argoproj.io/default-artifact-repository</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default-v1</span><span class="w"></span>
+<span class="w">    </span><span class="c1"># v3.0 and after - if you want to use a specific key, put that key into this annotation.</span><span class="w"></span>
+<span class="w">    </span><span class="nt">workflows.argoproj.io/default-artifact-repository</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default-v1-s3-artifact-repository</span><span class="w"></span>
 <span class="nt">data</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">default-v1</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w"></span>
+<span class="w">  </span><span class="nt">default-v1-s3-artifact-repository</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w"></span>
 <span class="w">    </span><span class="no">s3:</span><span class="w"></span>
 <span class="w">      </span><span class="no">bucket: my-bucket</span><span class="w"></span>
 <span class="w">      </span><span class="no">endpoint: minio:9000</span><span class="w"></span>
@@ -2732,12 +2733,15 @@
 <span class="w">      </span><span class="no">secretKeySecret:</span><span class="w"></span>
 <span class="w">        </span><span class="no">name: my-minio-cred</span><span class="w"></span>
 <span class="w">        </span><span class="no">key: secretkey</span><span class="w"></span>
+<span class="w">  </span><span class="nt">v2-s3-artifact-repository</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w"></span>
+<span class="w">    </span><span class="no">s3:</span><span class="w"></span>
+<span class="w">      </span><span class="no">...</span><span class="w"></span>
 </code></pre></div>
-<p>You can override the repository for a workflow as follows:</p>
+<p>You can override the artifact repository for a workflow as follows:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">spec</span><span class="p">:</span><span class="w"></span>
 <span class="w">  </span><span class="nt">artifactRepositoryRef</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">configMap</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-cm</span><span class="w"> </span><span class="c1"># default is &quot;artifact-repositories&quot;</span><span class="w"></span>
-<span class="w">    </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-key</span><span class="w"> </span><span class="c1"># default can be set by the annotation</span><span class="w"></span>
+<span class="w">    </span><span class="nt">configMap</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-artifact-repository</span><span class="w"> </span><span class="c1"># default is &quot;artifact-repositories&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v2-s3-artifact-repository</span><span class="w"> </span><span class="c1"># default can be set by the `workflows.argoproj.io/default-artifact-repository` annotation in config map.</span><span class="w"></span>
 </code></pre></div>
 <p>This feature gives maximum benefit when used with <a href="../key-only-artifacts/">key-only artifacts</a>.</p>
 <p>Reference: <a href="../fields/#artifactrepositoryref">fields.md#artifactrepositoryref</a>.</p>
