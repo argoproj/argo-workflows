@@ -1132,4 +1132,8 @@ func TestGetExecSpec(t *testing.T) {
 	}
 
 	assert.Equal(t, wf.GetExecSpec().Templates[0].Name, "spec-template")
+
+	wf.Status.StoredWorkflowSpec = nil
+
+	assert.Equal(t, wf.GetExecSpec().Templates[0].Name, "spec-template")
 }

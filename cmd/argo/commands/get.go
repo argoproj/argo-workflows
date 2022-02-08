@@ -125,7 +125,7 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) string {
 		// also isn't set, we will use the 'default' ServiceAccount in the namespace
 		// the workflow will run in.
 		if wf.Spec.WorkflowTemplateRef != nil {
-			serviceAccount = "unset (will run with referred workflow/cluster template ServiceAccount)"
+			serviceAccount = "unset"
 		} else {
 			serviceAccount = "unset (will run with the default ServiceAccount)"
 		}
@@ -157,9 +157,9 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) string {
 	if !wf.Status.ResourcesDuration.IsZero() {
 		out += fmt.Sprintf(fmtStr, "ResourcesDuration:", wf.Status.ResourcesDuration)
 	}
-	if len(wf.Spec.Arguments.Parameters) > 0 {
+	if len(wf.GetExecSpec().Arguments.Parameters) > 0 {
 		out += fmt.Sprintf(fmtStr, "Parameters:", "")
-		for _, param := range wf.Spec.Arguments.Parameters {
+		for _, param := range wf.GetExecSpec().Arguments.Parameters {
 			if param.Value == nil {
 				continue
 			}
