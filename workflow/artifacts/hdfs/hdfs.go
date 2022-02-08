@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 
 	"github.com/argoproj/pkg/file"
-	"gopkg.in/jcmturner/gokrb5.v5/credentials"
-	"gopkg.in/jcmturner/gokrb5.v5/keytab"
+	credentialsv8 "github.com/jcmturner/gokrb5/v8/credentials"
+	keytabv8 "github.com/jcmturner/gokrb5/v8/keytab"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -38,12 +38,12 @@ type KrbOptions struct {
 
 // CCacheOptions is options for ccache
 type CCacheOptions struct {
-	CCache credentials.CCache
+	CCache *credentialsv8.CCache
 }
 
 // KeytabOptions is options for keytab
 type KeytabOptions struct {
-	Keytab   keytab.Keytab
+	Keytab   *keytabv8.Keytab
 	Username string
 	Realm    string
 }
@@ -92,8 +92,8 @@ func CreateDriver(ctx context.Context, ci resource.Interface, art *wfv1.HDFSArti
 		if err != nil {
 			return nil, err
 		}
-		ccache, err := credentials.ParseCCache([]byte(bytes))
-		if err != nil {
+		ccache := new(credentialsv8.CCache)
+		if err := ccache.Unmarshal([]byte(bytes)); err != nil {
 			return nil, err
 		}
 		krbOptions = &KrbOptions{
@@ -109,8 +109,8 @@ func CreateDriver(ctx context.Context, ci resource.Interface, art *wfv1.HDFSArti
 		if err != nil {
 			return nil, err
 		}
-		ktb, err := keytab.Parse([]byte(bytes))
-		if err != nil {
+		ktb := new(keytabv8.Keytab)
+		if err := ktb.Unmarshal([]byte(bytes)); err != nil {
 			return nil, err
 		}
 		krbOptions = &KrbOptions{
