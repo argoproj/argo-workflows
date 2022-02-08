@@ -81,6 +81,10 @@ message Artifact {
   optional string fromExpression = 11;
 }
 
+message ArtifactByManifestRequest {
+  optional Workflow workflow = 1;
+}
+
 // ArtifactLocation describes a location for a single or multiple artifacts.
 // It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).
 // It is also used to describe the location of multiple artifacts such as the archive location

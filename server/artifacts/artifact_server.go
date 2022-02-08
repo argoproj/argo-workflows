@@ -2,6 +2,7 @@ package artifacts
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -73,6 +74,50 @@ func (a *ArtifactServer) getArtifact(w http.ResponseWriter, r *http.Request, isI
 		a.serverInternalError(err, w)
 		return
 	}
+
+	err = a.returnArtifact(ctx, w, r, wf, nodeId, artifactName, isInput)
+
+	if err != nil {
+		a.serverInternalError(err, w)
+		return
+	}
+}
+
+func (a *ArtifactServer) GetOutputArtifactByManifest(w http.ResponseWriter, r *http.Request) {
+	a.getArtifactByManifest(w, r, false)
+}
+
+func (a *ArtifactServer) GetInputArtifactByManifest(w http.ResponseWriter, r *http.Request) {
+	a.getArtifactByManifest(w, r, true)
+}
+
+func (a *ArtifactServer) getArtifactByManifest(w http.ResponseWriter, r *http.Request, isInput bool) {
+	ctx, err := a.gateKeeping(r)
+	if err != nil {
+		w.WriteHeader(401)
+		_, _ = w.Write([]byte(err.Error()))
+		return
+	}
+
+	var req wfv1.ArtifactByManifestRequest
+	err = json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		a.serverInternalError(err, w)
+		return
+	}
+
+	wf := req.Workflow
+	if wf == nil {
+		a.serverInternalError(err, w)
+		return
+	}
+
+	uid := wf.UID
+	path := strings.SplitN(r.URL.Path, "/", 6)
+	nodeId := path[2]
+	artifactName := path[3]
+
+	log.WithFields(log.Fields{"uid": uid, "nodeId": nodeId, "artifactName": artifactName, "isInput": isInput}).Info("Download artifact by manifest")
 
 	err = a.returnArtifact(ctx, w, r, wf, nodeId, artifactName, isInput)
 
