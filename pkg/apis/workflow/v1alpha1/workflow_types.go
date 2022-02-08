@@ -1024,6 +1024,10 @@ func (a *Artifact) CleanPath() error {
 	return nil
 }
 
+type ArtifactByManifestRequest struct {
+	Workflow *Workflow `protobuf:"bytes,1,opt,name=workflow" json:"workflow,omitempty"`
+}
+
 // PodGC describes how to delete completed pods as they complete
 type PodGC struct {
 	// Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"

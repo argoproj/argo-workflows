@@ -100,6 +100,10 @@ message Artifact {
   optional bool deleted = 13;
 }
 
+message ArtifactByManifestRequest {
+  optional Workflow workflow = 1;
+}
+
 // ArtifactGC describes how to delete artifacts from completed Workflows
 message ArtifactGC {
   // Strategy is the strategy to use.
