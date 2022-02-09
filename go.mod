@@ -71,8 +71,8 @@ require (
 	k8s.io/apimachinery v0.21.5
 	k8s.io/client-go v0.21.5
 	k8s.io/klog/v2 v2.8.0
-	k8s.io/kube-openapi v0.0.0-20210305001622-591a79e4bda7
-	k8s.io/utils v0.0.0-20201110183641-67b214c5f920
+	k8s.io/kube-openapi v0.0.0-20220124234850-424119656bbf
+	k8s.io/utils v0.0.0-20210802155522-efc7438f0176
 	sigs.k8s.io/yaml v1.2.0
 	upper.io/db.v3 v3.6.3+incompatible
 )
