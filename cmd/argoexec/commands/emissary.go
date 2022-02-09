@@ -210,6 +210,7 @@ func NewEmissaryCommand() *cobra.Command {
 			} else {
 				logger.Info("not saving outputs - not main container")
 			}
+
 			return cmdErr // this is the error returned from cmd.Wait(), which maybe an exitError
 		},
 	}
