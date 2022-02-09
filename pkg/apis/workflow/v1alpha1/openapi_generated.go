@@ -1260,7 +1260,7 @@ func schema_pkg_apis_workflow_v1alpha1_ContainerSetRetryStrategy(ref common.Refe
 				Properties: map[string]spec.Schema{
 					"duration": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Duration is the time between each retry",
+							Description: "Duration is the time between each retry, examples values are \"300ms\", \"1s\" or \"5m\". Valid time units are \"ns\", \"us\" (or \"µs\"), \"ms\", \"s\", \"m\", \"h\".",
 							Type:        []string{"string"},
 							Format:      "",
 						},

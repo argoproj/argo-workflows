@@ -3957,7 +3957,7 @@ _No description available_
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`duration`|`string`|Duration is the time between each retry|
+|`duration`|`string`|Duration is the time between each retry, examples values are "300ms", "1s" or "5m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".|
 |`retries`|[`IntOrString`](#intorstring)|Nbr of retries|
 
 ## DAGTask

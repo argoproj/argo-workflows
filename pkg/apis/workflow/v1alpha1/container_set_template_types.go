@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"fmt"
+	"time"
 
 	intstr "k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -16,7 +17,8 @@ type ContainerSetTemplate struct {
 }
 
 type ContainerSetRetryStrategy struct {
-	// Duration is the time between each retry
+	// Duration is the time between each retry, examples values are "300ms", "1s" or "5m".
+	// Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
 	Duration string `json:"duration,omitempty" protobuf:"bytes,1,opt,name=duration"`
 
 	// Nbr of retries
@@ -34,10 +36,15 @@ func (t *ContainerSetTemplate) GetRetryStrategy() (wait.Backoff, error) {
 		return backoff, nil
 	}
 
-	baseDuration, err := ParseStringToDuration(t.RetryStrategy.Duration)
+	baseDuration, err := time.ParseDuration(t.RetryStrategy.Duration)
 	if err != nil {
 		return wait.Backoff{}, err
 	}
+
+	if baseDuration < time.Duration(0) {
+		return wait.Backoff{}, fmt.Errorf("duration has to be positive, current duration: %v ", baseDuration)
+	}
+
 	backoff.Duration = baseDuration
 	return backoff, nil
 }

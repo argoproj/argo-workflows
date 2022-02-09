@@ -139,7 +139,7 @@ class IoArgoprojWorkflowV1alpha1ContainerSetRetryStrategy(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            duration (str): Duration is the time between each retry. [optional]  # noqa: E501
+            duration (str): Duration is the time between each retry, examples values are \"300ms\", \"1s\" or \"5m\". Valid time units are \"ns\", \"us\" (or \"µs\"), \"ms\", \"s\", \"m\", \"h\".. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -225,7 +225,7 @@ class IoArgoprojWorkflowV1alpha1ContainerSetRetryStrategy(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            duration (str): Duration is the time between each retry. [optional]  # noqa: E501
+            duration (str): Duration is the time between each retry, examples values are \"300ms\", \"1s\" or \"5m\". Valid time units are \"ns\", \"us\" (or \"µs\"), \"ms\", \"s\", \"m\", \"h\".. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

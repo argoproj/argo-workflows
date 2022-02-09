@@ -4701,7 +4701,7 @@
     "io.argoproj.workflow.v1alpha1.ContainerSetRetryStrategy": {
       "properties": {
         "duration": {
-          "description": "Duration is the time between each retry",
+          "description": "Duration is the time between each retry, examples values are \"300ms\", \"1s\" or \"5m\". Valid time units are \"ns\", \"us\" (or \"µs\"), \"ms\", \"s\", \"m\", \"h\".",
           "type": "string"
         },
         "retries": {

@@ -245,7 +245,8 @@ message ContainerNode {
 }
 
 message ContainerSetRetryStrategy {
-  // Duration is the time between each retry
+  // Duration is the time between each retry, examples values are "300ms", "1s" or "5m".
+  // Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
   optional string duration = 1;
 
   // Nbr of retries

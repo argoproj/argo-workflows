@@ -1141,7 +1141,7 @@ spec:
             args: ['FILE=test.yml; EXITCODE=1; if test -f "$FILE"; then EXITCODE=0; else touch $FILE; fi; exit $EXITCODE']
         retryStrategy:
           retries: 2
-		  duration: "5s"
+          duration: "5s"
 `).
 		When().
 		SubmitWorkflow().
