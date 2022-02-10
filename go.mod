@@ -44,7 +44,7 @@ require (
 	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.7.0
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
-	github.com/soheilhy/cmux v0.1.4
+	github.com/soheilhy/cmux v0.1.5
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.8.1
@@ -62,7 +62,6 @@ require (
 	google.golang.org/api v0.66.0
 	google.golang.org/genproto v0.0.0-20220201184016-50beb8ab5c44
 	google.golang.org/grpc v1.41.1
-	google.golang.org/grpc/examples v0.0.0-20201226181154-53788aa5dcb4 // indirect
 	gopkg.in/go-playground/webhooks.v5 v5.17.0
 	gopkg.in/jcmturner/gokrb5.v5 v5.3.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
