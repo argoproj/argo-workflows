@@ -1502,6 +1502,7 @@ spec:
     sidecars:
     - name: dind
       image: docker:19.03.13-dind          # Docker already provides an image for running a Docker daemon
+      command: [dockerd-entrypoint.sh]
       env:
         - name: DOCKER_TLS_CERTDIR         # Docker TLS env config
           value: ""
