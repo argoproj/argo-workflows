@@ -23,6 +23,7 @@
         "history": "^4.7.2",
         "js-yaml": "^3.13.1",
         "json-merge-patch": "^0.2.3",
+        "lint": "^0.7.0",
         "moment": "^2.24.0",
         "monaco-editor": "0.20.0",
         "prop-types": "^15.7.2",
