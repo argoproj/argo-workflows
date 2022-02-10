@@ -21,3 +21,4 @@ spec:
     sidecars:
     - name: influxdb
       image: influxdb:1.2
+      command: [influxd]
