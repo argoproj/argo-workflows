@@ -1,6 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
+  generateName: hello-world-
   labels:
     workflows.argoproj.io/archive-strategy: "false"
   annotations:
@@ -8,33 +9,10 @@ metadata:
       This is a simple hello world example.
       You can also run it in Python: https://couler-proj.github.io/couler/examples/#hello-world
 spec:
-  entrypoint: hello-world
+  entrypoint: whalesay
   templates:
-    - name: hello-world
-      inputs:
-        parameters:
-          - name: workflowtemplate
-      resource:
-        action: create
-        manifest: |
-          apiVersion: v1
-          kind: Namespace
-          metadata:
-            name: "verify-regression"
-          ---
-          apiVersion: v1
-          kind: ServiceAccount
-          metadata:
-            name: event-router-sa
-            namespace: "verify-regression"
-          ---
-          apiVersion: v1
-          data:
-            config.json: |-
-              {
-                "sink": "stdout"
-              }
-          kind: ConfigMap
-          metadata:
-            name: event-router-cm
-            namespace: "verify-regression"
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
