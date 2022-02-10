@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
 	intstr "k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
-
-	corev1 "k8s.io/api/core/v1"
 )
 
 type ContainerSetTemplate struct {
