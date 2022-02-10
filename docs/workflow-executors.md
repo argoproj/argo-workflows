@@ -13,19 +13,19 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
 This is the most fully featured executor.
 
 * Reliability:
-  * Works on GKE Autopilot
-  * Does not require `init` process to kill sub-processes.
+    * Works on GKE Autopilot
+    * Does not require `init` process to kill sub-processes.
 * More secure:
-  * No `privileged` access
-  * Cannot escape the privileges of the pod's service account
-  * Can [`runAsNonRoot`](workflow-pod-security-context.md).
+    * No `privileged` access
+    * Cannot escape the privileges of the pod's service account
+    * Can [`runAsNonRoot`](workflow-pod-security-context.md).
 * Scalable:
-  * It reads and writes to and from the container's disk and typically does not use any network APIs unless resource
+    * It reads and writes to and from the container's disk and typically does not use any network APIs unless resource
     type template is used.
 * Artifacts:
-  * Output artifacts can be located on the base layer (e.g. `/tmp`).
+    * Output artifacts can be located on the base layer (e.g. `/tmp`).
 * Configuration:
-  * `command` must be specified for containers.
+    * `command` must be specified for containers.
 
 You can determine the command and args as follows:
 

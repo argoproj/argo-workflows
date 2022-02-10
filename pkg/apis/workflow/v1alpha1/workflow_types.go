@@ -173,6 +173,13 @@ func (w *Workflow) GetTTLStrategy() *TTLStrategy {
 	return ttlStrategy
 }
 
+func (w *Workflow) GetExecSpec() *WorkflowSpec {
+	if w.Status.StoredWorkflowSpec != nil {
+		return w.Status.StoredWorkflowSpec
+	}
+	return &w.Spec
+}
+
 var (
 	WorkflowCreatedAfter = func(t time.Time) WorkflowPredicate {
 		return func(wf Workflow) bool {

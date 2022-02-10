@@ -118,13 +118,17 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) string {
 	out := ""
 	out += fmt.Sprintf(fmtStr, "Name:", wf.ObjectMeta.Name)
 	out += fmt.Sprintf(fmtStr, "Namespace:", wf.ObjectMeta.Namespace)
-	serviceAccount := wf.Spec.ServiceAccountName
+	serviceAccount := wf.GetExecSpec().ServiceAccountName
 	if serviceAccount == "" {
 		// if serviceAccountName was not specified in a submitted Workflow, we will
 		// use the serviceAccountName provided in Workflow Defaults (if any). If that
 		// also isn't set, we will use the 'default' ServiceAccount in the namespace
 		// the workflow will run in.
-		serviceAccount = "unset (will run with the default ServiceAccount)"
+		if wf.Spec.WorkflowTemplateRef != nil {
+			serviceAccount = "unset"
+		} else {
+			serviceAccount = "unset (will run with the default ServiceAccount)"
+		}
 	}
 	out += fmt.Sprintf(fmtStr, "ServiceAccount:", serviceAccount)
 	out += fmt.Sprintf(fmtStr, "Status:", printer.WorkflowStatus(wf))
@@ -153,9 +157,9 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) string {
 	if !wf.Status.ResourcesDuration.IsZero() {
 		out += fmt.Sprintf(fmtStr, "ResourcesDuration:", wf.Status.ResourcesDuration)
 	}
-	if len(wf.Spec.Arguments.Parameters) > 0 {
+	if len(wf.GetExecSpec().Arguments.Parameters) > 0 {
 		out += fmt.Sprintf(fmtStr, "Parameters:", "")
-		for _, param := range wf.Spec.Arguments.Parameters {
+		for _, param := range wf.GetExecSpec().Arguments.Parameters {
 			if param.Value == nil {
 				continue
 			}
