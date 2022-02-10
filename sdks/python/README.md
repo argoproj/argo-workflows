@@ -8,11 +8,18 @@ Python >= 3.6
 
 ## Installation
 
-To install the latest development version of the SDK, run the following:
+If you'd like to install the official releases of the SDK on PyPI, please run the following:
+```
+pip install argo-workflows==6.3.0rc2
+```
+
+Otherwise, you can install the latest development version of the SDK via the following:
 
 ```
 pip install git+https://github.com/argoproj/argo-workflows@master#subdirectory=sdks/python/client
 ```
+
+If you have any questions regarding which specific SDK version to use, please see the section on [versioning](#versioning).
 
 ## Getting Started
 
@@ -24,67 +31,69 @@ from pprint import pprint
 import requests
 import yaml
 
-import openapi_client
-from openapi_client.api import workflow_service_api
-from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_create_request import \
+import argo_workflows
+from argo_workflows.api import workflow_service_api
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_create_request import \
     IoArgoprojWorkflowV1alpha1WorkflowCreateRequest
 
-configuration = openapi_client.Configuration(host="https://127.0.0.1:2746")
+configuration = argo_workflows.Configuration(host="https://127.0.0.1:2746")
 configuration.verify_ssl = False
 
 resp = requests.get('https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/hello-world.yaml')
 manifest = yaml.safe_load(resp.text)
-manifest['spec']['serviceAccountName'] = 'argo'
 
-api_client = openapi_client.ApiClient(configuration)
+api_client = argo_workflows.ApiClient(configuration)
 api_instance = workflow_service_api.WorkflowServiceApi(api_client)
-api_response = api_instance.workflow_service_create_workflow(
-	namespace='argo',
-	body=IoArgoprojWorkflowV1alpha1WorkflowCreateRequest(
-		workflow=manifest, _check_type=False))
+api_response = api_instance.create_workflow(
+    namespace="argo",
+    body=IoArgoprojWorkflowV1alpha1WorkflowCreateRequest(workflow=manifest, _check_type=False),
+    _check_return_type=False)
 pprint(api_response)
+
 ```
 
-Note that `_check_type=False` is required here to avoid type checks against `manifest` which is a Python dictionary.
+Note that `_check_type=False` is required here to avoid type checks against `manifest` which is a Python dictionary and `_check_return_type=False` avoids [an existing issue](https://github.com/argoproj/argo-workflows/issues/7293) with OpenAPI generator.
 
-Alternative, you can submit a workflow with an instance of `IoArgoprojWorkflowV1alpha1Workflow` constructed via the SDK like the following:
+Alternative, you can submit a workflow with an instance of `IoArgoprojWorkflowV1alpha1Workflow` constructed via the SDK
+like the following:
 
 ```python
 from pprint import pprint
 
-import openapi_client
-from openapi_client.api import workflow_service_api
-from openapi_client.model.container import Container
-from openapi_client.model.io_argoproj_workflow_v1alpha1_template import \
-    IoArgoprojWorkflowV1alpha1Template
-from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow import (
-    IoArgoprojWorkflowV1alpha1Template, IoArgoprojWorkflowV1alpha1Workflow)
-from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_create_request import \
+import argo_workflows
+from argo_workflows.api import workflow_service_api
+from argo_workflows.model.container import Container
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_template import IoArgoprojWorkflowV1alpha1Template
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_create_request import
     IoArgoprojWorkflowV1alpha1WorkflowCreateRequest
-from openapi_client.model.io_argoproj_workflow_v1alpha1_workflow_spec import \
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_spec import
     IoArgoprojWorkflowV1alpha1WorkflowSpec
-from openapi_client.model.object_meta import ObjectMeta
+from argo_workflows.model.object_meta import ObjectMeta
 
-configuration = openapi_client.Configuration(host="https://127.0.0.1:2746")
+configuration = argo_workflows.Configuration(host="https://127.0.0.1:2746")
 configuration.verify_ssl = False
 
 manifest = IoArgoprojWorkflowV1alpha1Workflow(
-	metadata=ObjectMeta(generate_name='hello-world-'),
-	spec=IoArgoprojWorkflowV1alpha1WorkflowSpec(
-		service_account_name='argo',
-		entrypoint='whalesay',
-		templates=[
-		IoArgoprojWorkflowV1alpha1Template(
-			name='whalesay',
-			container=Container(
-				image='docker/whalesay:latest', command=['cowsay'], args=['hello world']))]))
+    metadata=ObjectMeta(generate_name='hello-world-'),
+    spec=IoArgoprojWorkflowV1alpha1WorkflowSpec(
+        entrypoint='whalesay',
+        templates=[
+            IoArgoprojWorkflowV1alpha1Template(
+                name='whalesay',
+                container=Container(
+                    image='docker/whalesay:latest', command=['cowsay'], args=['hello world']))]))
 
-api_client = openapi_client.ApiClient(configuration)
+api_client = argo_workflows.ApiClient(configuration)
 api_instance = workflow_service_api.WorkflowServiceApi(api_client)
-api_response = api_instance.workflow_service_create_workflow(
-	namespace='argo',
-	body=IoArgoprojWorkflowV1alpha1WorkflowCreateRequest(workflow=manifest))
-pprint(api_response)
+
+if __name__ == '__main__':
+    api_response = api_instance.create_workflow(
+        namespace='argo',
+        body=IoArgoprojWorkflowV1alpha1WorkflowCreateRequest(workflow=manifest),
+        _check_return_type=False)
+    pprint(api_response)
+
 ```
 
 ## Examples
@@ -94,3 +103,14 @@ You can find additional examples [here](examples).
 ## API Reference
 
 You can find the API reference [here](client/docs).
+
+## Versioning
+
+When the Python SDK was migrated to this repository, we kept the `argo-workflows` name for the Python
+package since we wanted to publish it to the same package on PyPI. However, the existing `argo-workflows`
+package was on version `5.0.0` already whereas Argo Workflows was still on `3.x.x`.
+
+In order to make it easier indicate backwards compatibility between the SDK version and the Argo Workflows
+releases, we bump the Python SDK major version by 3 and keep the minor and patch versions. For example,
+Python SDK with version `6.3.0rc2` is released with Argo Workflows `v3.3.0-rc2`. Note that the hyphen
+in `-rc2` is removed intentionally to follow Python package versioning conventions documented in [PEP-0440](https://www.python.org/dev/peps/pep-0440/).

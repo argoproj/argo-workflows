@@ -1,3 +1,4 @@
+import {map} from 'rxjs/operators';
 import {LogEntry, Sensor, SensorList, SensorWatchEvent} from '../../../models/sensor';
 import requests from './requests';
 
@@ -29,7 +30,7 @@ export class SensorService {
     }
 
     public watch(namespace: string) {
-        return requests.loadEventSource(`api/v1/stream/sensors/${namespace}`).map(line => line && (JSON.parse(line).result as SensorWatchEvent));
+        return requests.loadEventSource(`api/v1/stream/sensors/${namespace}`).pipe(map(line => line && (JSON.parse(line).result as SensorWatchEvent)));
     }
 
     public sensorsLogs(namespace: string, name = '', triggerName = '', grep = '', tailLines = -1) {
@@ -46,6 +47,6 @@ export class SensorService {
         if (tailLines >= 0) {
             params.push('podLogOptions.tailLines=' + tailLines);
         }
-        return requests.loadEventSource(`api/v1/stream/sensors/${namespace}/logs?${params.join('&')}`).map(line => line && (JSON.parse(line).result as LogEntry));
+        return requests.loadEventSource(`api/v1/stream/sensors/${namespace}/logs?${params.join('&')}`).pipe(map(line => line && (JSON.parse(line).result as LogEntry)));
     }
 }

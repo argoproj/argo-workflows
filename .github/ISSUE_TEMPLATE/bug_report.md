@@ -7,8 +7,8 @@ labels: ['bug', 'triage']
 Before we start, around 2/3 of issues can be fixed by one of the following:
 
 * Have you double-checked your configuration? Maybe 30% of issues are wrong configuration.
-* Have you tested to see if it is fixed in the latest version? Maybe 20% of issues are fixed by this.
-* Have you tried using the PNS executor instead of Docker? Maybe 50% of artifact related issues are fixed by this.
+* Are you running the latest version? Maybe 20% of issues are fixed by this.
+* Have you tried using the Emissary executor? Maybe 50% of artifact related issues are fixed by this.
 
 If this is a regression, please open a regression report instead.
 -->
@@ -17,23 +17,21 @@ If this is a regression, please open a regression report instead.
 
 What happened/what you expected to happen?
 
-What version of Argo Workflows are you running?
+What executor are you using? PNS/Emissary
 
 ## Diagnostics
 
-Either a workflow that reproduces the bug, or paste you whole workflow YAML, including status, something like:
+Paste the smallest workflow that reproduces the bug. We must be able to run the workflow.
 
 ```yaml
-kubectl get wf -o yaml ${workflow}
+
 ```
 
-What Kubernetes provider are you using?
-
-What executor are you running? Docker/K8SAPI/Kubelet/PNS/Emissary
+What executor are you running? PNS/Emissary
 
 ```bash
 # Logs from the workflow controller:
-kubectl logs -n argo deploy/workflow-controller | grep ${workflow}
+kubectl logs -n argo deploy/workflow-controller | grep ${workflow} 
 
 # If the workflow's pods have not been created, you can skip the rest of the diagnostics.
 

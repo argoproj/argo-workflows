@@ -76,4 +76,7 @@ func TestIsTransientErr(t *testing.T) {
 
 		_ = os.Unsetenv(transientEnvVarKey)
 	})
+	t.Run("ExplicitTransientErr", func(t *testing.T) {
+		assert.True(t, IsTransientErr(NewErrTransient("")))
+	})
 }

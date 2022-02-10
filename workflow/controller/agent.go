@@ -85,9 +85,11 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		}
 	}
 
+	pluginSidecars := woc.getExecutorPlugins()
 	envVars := []apiv1.EnvVar{
 		{Name: common.EnvVarWorkflowName, Value: woc.wf.Name},
 		{Name: common.EnvAgentPatchRate, Value: env.LookupEnvStringOr(common.EnvAgentPatchRate, GetRequeueTime().String())},
+		{Name: common.EnvVarPluginAddresses, Value: wfv1.MustMarshallJSON(addresses(pluginSidecars))},
 	}
 
 	// If the default number of task workers is overridden, then pass it to the agent pod.
@@ -113,8 +115,9 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		Spec: apiv1.PodSpec{
 			RestartPolicy:    apiv1.RestartPolicyOnFailure,
 			ImagePullSecrets: woc.execWf.Spec.ImagePullSecrets,
-			Containers: []apiv1.Container{
-				{
+			Containers: append(
+				pluginSidecars,
+				apiv1.Container{
 					Name:            "main",
 					Command:         []string{"argoexec"},
 					Args:            []string{"agent"},
@@ -122,7 +125,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 					ImagePullPolicy: woc.controller.executorImagePullPolicy(),
 					Env:             envVars,
 				},
-			},
+			),
 		},
 	}
 
@@ -145,4 +148,25 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	}
 	log.Info("Created Agent pod")
 	return created, nil
+}
+
+func (woc *wfOperationCtx) getExecutorPlugins() []apiv1.Container {
+	var sidecars []apiv1.Container
+	namespaces := map[string]bool{} // de-dupes executorPlugins when their namespaces are the same
+	namespaces[woc.controller.namespace] = true
+	namespaces[woc.wf.Namespace] = true
+	for namespace := range namespaces {
+		for _, plug := range woc.controller.executorPlugins[namespace] {
+			sidecars = append(sidecars, plug.Spec.Sidecar.Container)
+		}
+	}
+	return sidecars
+}
+
+func addresses(containers []apiv1.Container) []string {
+	var addresses []string
+	for _, c := range containers {
+		addresses = append(addresses, fmt.Sprintf("http://localhost:%d", c.Ports[0].ContainerPort))
+	}
+	return addresses
 }

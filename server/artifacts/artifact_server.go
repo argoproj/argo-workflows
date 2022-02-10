@@ -2,6 +2,7 @@ package artifacts
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -55,6 +56,10 @@ func (a *ArtifactServer) GetInputArtifact(w http.ResponseWriter, r *http.Request
 
 func (a *ArtifactServer) getArtifact(w http.ResponseWriter, r *http.Request, isInput bool) {
 	requestPath := strings.SplitN(r.URL.Path, "/", 6)
+	if len(requestPath) != 6 {
+		a.serverInternalError(errors.New("request path is not valid"), w)
+		return
+	}
 	namespace := requestPath[2]
 	workflowName := requestPath[3]
 	nodeId := requestPath[4]
@@ -91,8 +96,11 @@ func (a *ArtifactServer) GetInputArtifactByUID(w http.ResponseWriter, r *http.Re
 }
 
 func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request, isInput bool) {
-	requestPath := strings.SplitN(r.URL.Path, "/", 6)
-
+	requestPath := strings.SplitN(r.URL.Path, "/", 5)
+	if len(requestPath) != 5 {
+		a.serverInternalError(errors.New("request path is not valid"), w)
+		return
+	}
 	uid := requestPath[2]
 	nodeId := requestPath[3]
 	artifactName := requestPath[4]
@@ -165,11 +173,7 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 		return fmt.Errorf("artifact not found")
 	}
 
-	ref, err := a.artifactRepositories.Resolve(ctx, wf.Spec.ArtifactRepositoryRef, wf.Namespace)
-	if err != nil {
-		return err
-	}
-	ar, err := a.artifactRepositories.Get(ctx, ref)
+	ar, err := a.artifactRepositories.Get(ctx, wf.Status.ArtifactRepositoryRef)
 	if err != nil {
 		return err
 	}

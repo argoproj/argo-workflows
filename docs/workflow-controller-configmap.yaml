@@ -38,7 +38,7 @@ data:
   nodeEvents: |
     enabled: true
 
-  # uncomment flowing lines if workflow controller runs in a different k8s cluster with the
+  # uncomment following lines if workflow controller runs in a different k8s cluster with the
   # workflow workloads, or needs to communicate with the k8s apiserver using an out-of-cluster
   # kubeconfig secret
   # kubeConfig:
@@ -73,6 +73,9 @@ data:
     - name: Get help
       scope: chat
       url: http://my-chat
+
+  # uncomment following lines if you want to change navigation bar background color
+  # navColor: red
 
   # artifactRepository defines the default location to be used as the artifact repository for
   # container artifacts.

@@ -1,7 +1,5 @@
 # Estimated Duration
 
-![alpha](assets/alpha.svg)
-
 > v2.12 and after
 
 When you run a workflow, the controller will try to estimate its duration.

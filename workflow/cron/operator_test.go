@@ -330,3 +330,69 @@ func TestLastUsedSchedule(t *testing.T) {
 		assert.Equal(t, woc.cronWf.Spec.GetScheduleString(), woc.cronWf.GetLatestSchedule())
 	}
 }
+
+var forbidMissedSchedule = `apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  annotations:
+    cronworkflows.argoproj.io/last-used-schedule: CRON_TZ=America/Los_Angeles 0-36/1
+      21-22 * * *
+  creationTimestamp: "2022-02-04T05:33:24Z"
+  generation: 2
+  name: hello-world
+  namespace: argo
+  resourceVersion: "341102"
+  uid: 9ac888d8-95e3-4f93-8983-0d46c6c7d62a
+spec:
+  concurrencyPolicy: Forbid
+  failedJobsHistoryLimit: 4
+  schedule: 0-36/1 21-22 * * *
+  startingDeadlineSeconds: 0
+  successfulJobsHistoryLimit: 4
+  timezone: America/Los_Angeles
+  workflowSpec:
+    arguments: {}
+    entrypoint: whalesay
+    templates:
+    - container:
+        args:
+        - sleep 600
+        command:
+        - sh
+        - -c
+        image: alpine:3.6
+        name: ""
+        resources: {}
+      inputs: {}
+      metadata: {}
+      name: whalesay
+      outputs: {}
+status:
+  active:
+  - apiVersion: argoproj.io/v1alpha1
+    kind: Workflow
+    name: hello-world-1643952840
+    namespace: argo
+    resourceVersion: "341101"
+    uid: c56a8f98-ff46-4815-9d6f-d9db5cfcd941
+  lastScheduledTime: "2022-02-04T05:34:00Z"
+`
+
+func TestMissedScheduleAfterCronScheduleWithForbid(t *testing.T) {
+	var cronWf v1alpha1.CronWorkflow
+	v1alpha1.MustUnmarshal([]byte(forbidMissedSchedule), &cronWf)
+	// StartingDeadlineSeconds is after the current second, so cron should be run
+	//startingDeadlineSeconds := int64(35)
+	//cronWf.Spec.StartingDeadlineSeconds = &startingDeadlineSeconds
+	t.Run("ForbiddenWithMissedScheduleAfterCron", func(t *testing.T) {
+		cronWf.Spec.StartingDeadlineSeconds = nil
+		woc := &cronWfOperationCtx{
+			cronWf: &cronWf,
+			log:    logrus.WithFields(logrus.Fields{}),
+		}
+		woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleString())
+		missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun()
+		assert.NoError(t, err)
+		assert.True(t, missedExecutionTime.IsZero())
+	})
+}

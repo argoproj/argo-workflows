@@ -231,3 +231,20 @@ func TestArtifactServer_GetOutputArtifactByUID(t *testing.T) {
 	s.GetOutputArtifactByUID(w, r)
 	assert.Equal(t, 401, w.StatusCode)
 }
+
+func TestArtifactServer_GetArtifactByUIDInvalidRequestPath(t *testing.T) {
+	s := newServer()
+	r := &http.Request{}
+	// missing my-artifact part to have a valid URL
+	r.URL = mustParse("/input-artifacts/my-uuid/my-node")
+	w := &testhttp.TestResponseWriter{}
+	s.GetInputArtifactByUID(w, r)
+	// make sure there is no index out of bounds error
+	assert.Equal(t, 500, w.StatusCode)
+	assert.Equal(t, "request path is not valid", w.Output)
+
+	w = &testhttp.TestResponseWriter{}
+	s.GetOutputArtifactByUID(w, r)
+	assert.Equal(t, 500, w.StatusCode)
+	assert.Equal(t, "request path is not valid", w.Output)
+}

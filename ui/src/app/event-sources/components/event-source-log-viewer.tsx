@@ -1,6 +1,7 @@
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 import {Observable} from 'rxjs';
+import {filter, map} from 'rxjs/operators';
 import {EventSource} from '../../../models';
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {Links} from '../../shared/components/links';
@@ -32,15 +33,15 @@ export const EventSourceLogsViewer = ({
         const parts = selectedEvent != null ? selectedEvent.split('-') : ['', ''];
         setError(null);
         setLogLoaded(false);
-        const source = services.eventSource
-            .eventSourcesLogs(namespace, eventSource.metadata.name, parts[0], parts[1], '', 50)
-            .filter(e => !!e)
-            .map(
+        const source = services.eventSource.eventSourcesLogs(namespace, eventSource.metadata.name, parts[0], parts[1], '', 50).pipe(
+            filter(e => !!e),
+            map(
                 e =>
                     Object.entries(e)
                         .map(([key, value]) => key + '=' + value)
                         .join(', ') + '\n'
-            );
+            )
+        );
         const subscription = source.subscribe(() => setLogLoaded(true), setError);
         setLogsObservable(source);
         return () => subscription.unsubscribe();
