@@ -1,7 +1,7 @@
 import {Page, SlidingPanel} from 'argo-ui';
 import * as classNames from 'classnames';
 import * as React from 'react';
-import {useContext, useEffect, useState} from 'react';
+import {useContext, useEffect, useState, useRef} from 'react';
 import {RouteComponentProps} from 'react-router';
 import {execSpec, Link, NodeStatus, Parameter, Workflow} from '../../../../models';
 import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
@@ -55,6 +55,8 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
     const [parameters, setParameters] = useState<Parameter[]>([]);
 
+    let isRunningRedirectHandler = useRef(false);
+
     useEffect(
         useQueryParams(history, p => {
             setTab(p.get('tab') || 'workflow');
@@ -85,7 +87,6 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     const [workflow, setWorkflow] = useState<Workflow>();
     const [links, setLinks] = useState<Link[]>();
     const [error, setError] = useState<Error>();
-
     useEffect(() => {
         services.info
             .getInfo()
@@ -260,7 +261,22 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     setWorkflow(e.object);
                 }
             },
-            setError
+            (err) => {
+                // handle race condition case where new workflow added
+                if(!isRunningRedirectHandler.current) {
+                    services.workflows.get(namespace, name).then((workflow) => {
+                        isRunningRedirectHandler.current = false;
+                    })
+                    .catch(e => {
+                        isRunningRedirectHandler.current = false;
+                        
+                        if (e.status === 404) {
+                            navigation.goto(historyUrl("archived-workflows", {namespace, name, deep: true}));
+                        }
+                    });
+                }
+                setError(err);
+            }
         );
         retryWatch.start();
         return () => retryWatch.stop();
