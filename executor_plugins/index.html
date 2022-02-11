@@ -2936,6 +2936,12 @@
 <span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ARGO_EXECUTOR_PLUGINS</span><span class="w"></span>
 <span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="w"></span>
 </code></pre></div>
+<p>When using the <a href="https://github.com/argoproj/argo-helm/tree/master/charts/argo-workflows">Helm chart</a>, add this to your <code>values.yaml</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">controller</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">extraEnv</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ARGO_EXECUTOR_PLUGINS</span><span class="w"></span>
+<span class="w">      </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="w"></span>
+</code></pre></div>
 <h2 id="template-executor">Template Executor<a class="headerlink" href="#template-executor" title="Permanent link">&para;</a></h2>
 <p>This is a plugin that runs custom "plugin" templates, e.g. for non-pod tasks such as Tekton builds, Spark jobs, sending
 Slack notifications.</p>
@@ -2964,7 +2970,7 @@ Slack notifications.</p>
 <span class="s1">      &quot;hello&quot;: {}</span>
 <span class="s1">    }</span>
 <span class="s1">  }</span>
-<span class="s1">}&#39;</span> 
+<span class="s1">}&#39;</span>
 <span class="c1"># ...</span>
 HTTP/1.1 <span class="m">200</span> OK
 <span class="o">{</span>
@@ -2977,9 +2983,10 @@ HTTP/1.1 <span class="m">200</span> OK
 <p><strong>Tip:</strong> The port number can be anything, but must not conflict with other plugins. Don't use common ports such as 80,
 443, 8080, 8081, 8443. If you plan to publish your plugin, choose a random port number under 10,000 and create a PR to
 add your plugin. If not, use a port number greater than 10,000.</p>
-<p>We'll need to create a script that starts a HTTP server:</p>
+<p>We'll need to create a script that starts a HTTP server. Save this as <code>server.py</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">from</span> <span class="nn">http.server</span> <span class="kn">import</span> <span class="n">BaseHTTPRequestHandler</span><span class="p">,</span> <span class="n">HTTPServer</span>
+<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span>
 
 
 <span class="k">class</span> <span class="nc">Plugin</span><span class="p">(</span><span class="n">BaseHTTPRequestHandler</span><span class="p">):</span>
@@ -2999,6 +3006,7 @@ add your plugin. If not, use a port number greater than 10,000.</p>
     <span class="k">def</span> <span class="nf">do_POST</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">==</span> <span class="s1">&#39;/api/v1/template.execute&#39;</span><span class="p">:</span>
             <span class="n">args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">()</span>
+            <span class="n">pprint</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
             <span class="k">if</span> <span class="s1">&#39;hello&#39;</span> <span class="ow">in</span> <span class="n">args</span><span class="p">[</span><span class="s1">&#39;template&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;plugin&#39;</span><span class="p">,</span> <span class="p">{}):</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">reply</span><span class="p">({</span><span class="s1">&#39;node&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;phase&#39;</span><span class="p">:</span> <span class="s1">&#39;Succeeded&#39;</span><span class="p">,</span> <span class="s1">&#39;message&#39;</span><span class="p">:</span> <span class="s1">&#39;Hello template!&#39;</span><span class="p">}})</span>
             <span class="k">else</span><span class="p">:</span>
@@ -3022,6 +3030,7 @@ the script in the container.</p>
 <li>If the response is <code>{}</code>, then the plugin is saying it cannot execute the plugin template, e.g. it is a Slack plugin,
   but the template is a Tekton job.</li>
 <li>If the status code is 404, then the plugin will not be called again.</li>
+<li>If you save the file as <code>plugin.*</code>, it will be copied to the sidecar container's <code>args</code> field. This is useful for building self-contained plugins in scripting languages like Python or Node.JS.</li>
 </ul>
 <p>Next, create a manifest named <code>plugin.yaml</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span><span class="w"></span>
@@ -3033,6 +3042,7 @@ the script in the container.</p>
 <span class="w">    </span><span class="nt">container</span><span class="p">:</span><span class="w"></span>
 <span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"></span>
 <span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python</span><span class="w"></span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-u</span><span class="w"> </span><span class="c1"># disables output buffering</span><span class="w"></span>
 <span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-c</span><span class="w"></span>
 <span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python:alpine3.6</span><span class="w"></span>
 <span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hello-executor-plugin</span><span class="w"></span>
@@ -3040,6 +3050,7 @@ the script in the container.</p>
 <span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">containerPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4355</span><span class="w"></span>
 <span class="w">      </span><span class="nt">securityContext</span><span class="p">:</span><span class="w"></span>
 <span class="w">        </span><span class="nt">runAsNonRoot</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w"></span>
+<span class="w">        </span><span class="nt">runAsUser</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">65534</span><span class="w"> </span><span class="c1"># nobody</span><span class="w"></span>
 <span class="w">      </span><span class="nt">resources</span><span class="p">:</span><span class="w"></span>
 <span class="w">        </span><span class="nt">requests</span><span class="p">:</span><span class="w"></span>
 <span class="w">          </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;64Mi&quot;</span><span class="w"></span>
@@ -3087,7 +3098,7 @@ kubectl -n argo apply -f hello-executor-plugin-configmap.yaml
 <span class="w">              </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">slack-executor-plugin</span><span class="w"></span>
 <span class="w">              </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">URL</span><span class="w"></span>
 </code></pre></div>
-<p>Refer to the [Kubernetes Secret documentation] for secret best practices and security considerations</p>
+<p>Refer to the <a href="https://kubernetes.io/docs/concepts/configuration/secret/">Kubernetes Secret documentation</a> for secret best practices and security considerations.</p>
 <h3 id="resources-security-context">Resources, Security Context<a class="headerlink" href="#resources-security-context" title="Permanent link">&para;</a></h3>
 <p>We made these mandatory, so no one can create a plugin that uses an unreasonable amount of memory, or run as root unless
 they deliberately do so:</p>
@@ -3110,7 +3121,7 @@ they deliberately do so:</p>
 <ul>
 <li>Connection/socket error - considered transient.</li>
 <li>Timeout - considered transient.</li>
-<li>404 error - method is not supported by the plugin, as a result the method will not be called again.</li>
+<li>404 error - method is not supported by the plugin, as a result the method will not be called again (in the same workflow).</li>
 <li>503 error - considered transient.</li>
 <li>Other 4xx/5xx errors - considered fatal.</li>
 </ul>
