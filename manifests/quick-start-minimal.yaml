@@ -839,6 +839,7 @@ spec:
         - server
         - --auth-mode
         - client
+        env: []
         image: quay.io/argoproj/argocli:latest
         name: argo-server
         ports:
