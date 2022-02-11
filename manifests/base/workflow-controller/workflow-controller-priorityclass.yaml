@@ -1,0 +1,5 @@
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: workflow-controller- priorityclass
+value: 1000000
