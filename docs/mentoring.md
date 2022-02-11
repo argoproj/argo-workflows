@@ -13,7 +13,8 @@ Mentors and mentees must abide by the [code of conduct](https://github.com/cncf/
 
 ## How To Get A Mentor
 
-Create an issue with the title "I would like a mentor".
+Create [a mentoring request](https://github.com/argoproj/argo-workflows/issues/new/choose) with the title "I would like a mentor" and answer the questions in the issue template.
+Note that this is only for general mentoring. For Google Summer of Code, please **do not** create a mentoring request and find the instructions in the relevant section below.
 
 We'll find the right mentor for you.
 
