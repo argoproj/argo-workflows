@@ -1,6 +1,6 @@
 import {Page} from 'argo-ui';
 import * as React from 'react';
-import { StaticContext } from 'react-router';
+import {StaticContext} from 'react-router';
 import {Link, RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
 import {Workflow} from '../../../../models';
@@ -30,14 +30,14 @@ interface State {
     maxStartedAt?: Date;
     workflows?: Workflow[];
     error?: Error;
-    deep: boolean
+    deep: boolean;
 }
 
 const defaultPaginationLimit = 10;
 
 export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, State> {
     private storage: ScopedLocalStorage;
-    
+
     constructor(props: RouteComponentProps<any>, context: any) {
         super(props, context);
         this.storage = new ScopedLocalStorage('ArchiveListOptions');
@@ -56,8 +56,8 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
             selectedPhases: phaseQueryParam.length > 0 ? phaseQueryParam : savedOptions.selectedPhases,
             selectedLabels: labelQueryParam.length > 0 ? labelQueryParam : savedOptions.selectedLabels,
             minStartedAt: this.parseTime(this.queryParam('minStartedAt')) || this.lastMonth(),
-            maxStartedAt: this.parseTime(this.queryParam('maxStartedAt')) || this.nextDay(), 
-            deep: this.parseBool(this.queryParam("deep")),
+            maxStartedAt: this.parseTime(this.queryParam('maxStartedAt')) || this.nextDay(),
+            deep: this.parseBool(this.queryParam('deep'))
         };
     }
 
@@ -76,9 +76,9 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
     }
 
     public componentDidUpdate(prevProps: Readonly<RouteComponentProps<any, StaticContext>>, prevState: Readonly<State>, snapshot?: any): void {
-        if (this.state.deep == true && this.state.workflows && this.state.workflows.length == 1) {
+        if (this.state.deep === true && this.state.workflows && this.state.workflows.length === 1) {
             const workflow = this.state.workflows[0];
-            const url = "/archived-workflows/" + (workflow.metadata.namespace || "argo") + "/" + (workflow.metadata.uid || "");
+            const url = '/archived-workflows/' + (workflow.metadata.namespace || 'argo') + '/' + (workflow.metadata.uid || '');
             this.props.history.push(url);
         }
     }
@@ -141,7 +141,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
     }
 
     private parseBool(bool: string) {
-        if (bool == "true") {
+        if (bool === 'true') {
             return true;
         }
         return false;

@@ -55,7 +55,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
     const [parameters, setParameters] = useState<Parameter[]>([]);
 
-    let isRunningRedirectHandler = useRef(false);
+    const isRunningRedirectHandler = useRef(false);
 
     useEffect(
         useQueryParams(history, p => {
@@ -261,19 +261,21 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     setWorkflow(e.object);
                 }
             },
-            (err) => {
+            err => {
                 // handle race condition case where new workflow added
-                if(!isRunningRedirectHandler.current) {
-                    services.workflows.get(namespace, name).then((workflow) => {
-                        isRunningRedirectHandler.current = false;
-                    })
-                    .catch(e => {
-                        isRunningRedirectHandler.current = false;
-                        
-                        if (e.status === 404) {
-                            navigation.goto(historyUrl("archived-workflows", {namespace, name, deep: true}));
-                        }
-                    });
+                if (!isRunningRedirectHandler.current) {
+                    services.workflows
+                        .get(namespace, name)
+                        .then(() => {
+                            isRunningRedirectHandler.current = false;
+                        })
+                        .catch(e => {
+                            isRunningRedirectHandler.current = false;
+
+                            if (e.status === 404) {
+                                navigation.goto(historyUrl('archived-workflows', {namespace, name, deep: true}));
+                            }
+                        });
                 }
                 setError(err);
             }
