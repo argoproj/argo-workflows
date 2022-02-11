@@ -3,6 +3,7 @@ package executor
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -298,7 +299,16 @@ func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTem
 		}
 		request.Header.Add(header.Name, value)
 	}
+
 	httpClient := http.DefaultClient
+	if httpTemplate.InsecureSkipVerify != nil {
+		transCfg := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: *httpTemplate.InsecureSkipVerify}, // ignore expired SSL certificates
+		}
+		httpClient = &http.Client{Transport: transCfg}
+	}
+
+	// httpClient := http.DefaultClient
 	if httpTemplate.TimeoutSeconds != nil {
 		httpClient.Timeout = time.Duration(*httpTemplate.TimeoutSeconds) * time.Second
 	}
