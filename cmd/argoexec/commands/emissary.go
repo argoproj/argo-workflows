@@ -227,19 +227,19 @@ func createCommand(name string, args []string, template *wfv1.Template) (*exec.C
 	var stdout *os.File
 	var stderr *os.File
 	var err error
-
 	// this may not be that important an optimisation, except for very long logs we don't want to capture
 	if includeScriptOutput || template.SaveLogsAsArtifact() {
 		logger.Info("capturing logs")
-		stdout, err = os.Create(varRunArgo + "/ctr/" + containerName + "/stdout")
+		stdout, err = os.OpenFile(varRunArgo+"/ctr/"+containerName+"/stdout", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err != nil {
 			return nil, nil, nil, fmt.Errorf("failed to open stdout: %w", err)
+
 		}
 		command.Stdout = io.MultiWriter(os.Stdout, stdout)
-
-		stderr, err := os.Create(varRunArgo + "/ctr/" + containerName + "/stderr")
+		stderr, err = os.OpenFile(varRunArgo+"/ctr/"+containerName+"/stderr", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err != nil {
 			return nil, nil, nil, fmt.Errorf("failed to open stderr: %w", err)
+
 		}
 		command.Stderr = io.MultiWriter(os.Stderr, stderr)
 	}
