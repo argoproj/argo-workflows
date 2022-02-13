@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/square/go-jose.v2/jwt"
 	"k8s.io/client-go/kubernetes/fake"
 
 	clusterwftmplpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"

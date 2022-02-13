@@ -65,7 +65,7 @@ require (
 	gopkg.in/go-playground/webhooks.v5 v5.17.0
 	gopkg.in/jcmturner/gokrb5.v5 v5.3.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
-	gopkg.in/square/go-jose.v2 v2.6.0
+	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
 	k8s.io/api v0.21.5
 	k8s.io/apimachinery v0.21.5
 	k8s.io/client-go v0.21.5
@@ -76,7 +76,10 @@ require (
 	upper.io/db.v3 v3.6.3+incompatible
 )
 
-require github.com/go-git/go-git/v5 v5.3.0
+require (
+	github.com/go-git/go-git/v5 v5.3.0
+	github.com/go-jose/go-jose/v3 v3.0.0
+)
 
 require (
 	cloud.google.com/go v0.100.2 // indirect
