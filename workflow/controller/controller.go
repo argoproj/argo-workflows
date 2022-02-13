@@ -797,9 +797,9 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	return true
 }
 
-// enqueueWfFromPodLabel will extract the workflow name from pod label and
-// enqueue workflow for processing
-func (wfc *WorkflowController) enqueueWfFromPodLabel(obj interface{}) error {
+// enqueueWfFromPodLabelAfter will extract the workflow name from pod label and
+// enqueue workflow for processing with ratelimit or delay
+func (wfc *WorkflowController) enqueueWfFromPodLabelAfter(obj interface{}, duration *time.Duration) error {
 	pod, ok := obj.(*apiv1.Pod)
 	if !ok {
 		return fmt.Errorf("Key in index is not a pod")
@@ -811,6 +811,10 @@ func (wfc *WorkflowController) enqueueWfFromPodLabel(obj interface{}) error {
 	if !ok {
 		// Ignore pods unrelated to workflow (this shouldn't happen unless the watch is setup incorrectly)
 		return fmt.Errorf("Watch returned pod unrelated to any workflow")
+	}
+	if duration != nil {
+		wfc.wfQueue.AddAfter(pod.ObjectMeta.Namespace + "/" + workflowName, *duration)
+		return nil
 	}
 	wfc.wfQueue.AddRateLimited(pod.ObjectMeta.Namespace + "/" + workflowName)
 	return nil
@@ -996,7 +1000,7 @@ func (wfc *WorkflowController) newPodInformer(ctx context.Context) cache.SharedI
 	informer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
-				err := wfc.enqueueWfFromPodLabel(obj)
+				err := wfc.enqueueWfFromPodLabelAfter(obj, nil)
 				if err != nil {
 					log.WithError(err).Warn("could not enqueue workflow from pod label on add")
 					return
@@ -1016,7 +1020,14 @@ func (wfc *WorkflowController) newPodInformer(ctx context.Context) cache.SharedI
 					diff.LogChanges(oldPod, newPod)
 					return
 				}
-				err = wfc.enqueueWfFromPodLabel(newVal)
+				// delay process deadlineExceed to allow pod finish annotating
+				if newPod.Status.Reason == common.ErrDeadlineExceeded && oldPod.Status.Reason != common.ErrDeadlineExceeded {
+					duration := time.Duration(1) * time.Second
+					err = wfc.enqueueWfFromPodLabelAfter(newVal, &duration)
+					return
+				} else {
+					err = wfc.enqueueWfFromPodLabelAfter(newVal, nil)
+				}
 				if err != nil {
 					log.WithField("key", key).WithError(err).Warn("could not enqueue workflow from pod label on add")
 					return
@@ -1027,7 +1038,7 @@ func (wfc *WorkflowController) newPodInformer(ctx context.Context) cache.SharedI
 				// key function.
 
 				// Enqueue the workflow for deleted pod
-				_ = wfc.enqueueWfFromPodLabel(obj)
+				_ = wfc.enqueueWfFromPodLabelAfter(obj, nil)
 			},
 		},
 	)
