@@ -1,7 +1,7 @@
 # https://golangci-lint.run/usage/quick-start/
 run:
   concurrency: 4
-  timeout: 5m
+  timeout: 8m
   skip-dirs:
     - dist
     - docs
@@ -21,6 +21,7 @@ run:
     - executor
     - examples
     - functional
+    - plugins
 linters:
   enable:
     - bodyclose

@@ -83,6 +83,9 @@ jobs:
       max-parallel: 4
       matrix:
         include:
+          - test: test-plugins
+            containerRuntimeExecutor: emissary
+            profile: plugins
           - test: test-functional
             containerRuntimeExecutor: emissary
             profile: minimal
@@ -205,10 +208,13 @@ jobs:
       GOPATH: /home/runner/go
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - run: cp server/static/files.go.stub server/static/files.go
       - uses: golangci/golangci-lint-action@v2
         with:
           version: v1.42.0
+      - run: git diff --exit-code
 
   ui:
     name: UI
@@ -218,9 +224,9 @@ jobs:
       NODE_OPTIONS: --max-old-space-size=4096
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
+      - uses: actions/setup-node@v2.5.1
         with:
-          node-version: "14"
+          node-version: "16"
       - uses: actions/cache@v2
         with:
           path: ui/node_modules

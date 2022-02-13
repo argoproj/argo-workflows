@@ -387,8 +387,10 @@ rules:
   - ""
   resources:
   - persistentvolumeclaims
+  - persistentvolumeclaims/finalizers
   verbs:
   - create
+  - update
   - delete
   - get
 - apiGroups:
@@ -606,6 +608,7 @@ spec:
       containers:
       - args:
         - server
+        env: []
         image: quay.io/argoproj/argocli:latest
         name: argo-server
         ports:

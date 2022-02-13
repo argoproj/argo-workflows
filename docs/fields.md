@@ -160,6 +160,8 @@ Workflow is the definition of a workflow resource
 
 - [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
 
+- [`http-success-condition.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-success-condition.yaml)
+
 - [`image-pull-secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/image-pull-secrets.yaml)
 
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
@@ -180,7 +182,7 @@ Workflow is the definition of a workflow resource
 
 - [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-jobs.yaml)
 
-- [`k8s-kubeflow-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-kubeflow-jobs.yaml)
+- [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-json-patch-workflow.yaml)
 
 - [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
 
@@ -190,11 +192,17 @@ Workflow is the definition of a workflow resource
 
 - [`k8s-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch.yaml)
 
+- [`k8s-resource-log-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-resource-log-selector.yaml)
+
 - [`k8s-set-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-set-owner-reference.yaml)
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
 
 - [`key-only-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/key-only-artifact.yaml)
+
+- [`life-cycle-hooks-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-tmpl-level.yaml)
+
+- [`life-cycle-hooks-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-wf-level.yaml)
 
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
@@ -209,8 +217,6 @@ Workflow is the definition of a workflow resource
 - [`loops.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops.yaml)
 
 - [`map-reduce.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/map-reduce.yaml)
-
-- [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/nested-workflow.yaml)
 
@@ -307,10 +313,6 @@ Workflow is the definition of a workflow resource
 - [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-mutex-tmpl-level.yaml)
 
 - [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-mutex-wf-level.yaml)
-
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-tmpl-level.yaml)
-
-- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-wf-level.yaml)
 
 - [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-defaults.yaml)
 
@@ -485,8 +487,6 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`daemon-step.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemon-step.yaml)
 
-- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemoned-stateful-set-with-service.yaml)
-
 - [`dag-coinflip.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-coinflip.yaml)
 
 - [`dag-conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-artifacts.yaml)
@@ -577,6 +577,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
 
+- [`http-success-condition.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-success-condition.yaml)
+
 - [`image-pull-secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/image-pull-secrets.yaml)
 
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
@@ -595,23 +597,19 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
 
-- [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-jobs.yaml)
-
-- [`k8s-kubeflow-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-kubeflow-jobs.yaml)
-
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
+- [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-json-patch-workflow.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
 
-- [`k8s-patch-basic.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch-basic.yaml)
-
 - [`k8s-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch.yaml)
-
-- [`k8s-set-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-set-owner-reference.yaml)
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
 
 - [`key-only-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/key-only-artifact.yaml)
+
+- [`life-cycle-hooks-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-tmpl-level.yaml)
+
+- [`life-cycle-hooks-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-wf-level.yaml)
 
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
@@ -626,8 +624,6 @@ WorkflowSpec is the specification of a Workflow.
 - [`loops.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops.yaml)
 
 - [`map-reduce.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/map-reduce.yaml)
-
-- [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/nested-workflow.yaml)
 
@@ -672,10 +668,6 @@ WorkflowSpec is the specification of a Workflow.
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-spec-yaml-patch.yaml)
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/recursive-for-loop.yaml)
-
-- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-delete-with-flags.yaml)
-
-- [`resource-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-flags.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resubmit.yaml)
 
@@ -725,15 +717,9 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-mutex-wf-level.yaml)
 
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-tmpl-level.yaml)
-
-- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-wf-level.yaml)
-
 - [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-defaults.yaml)
 
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-on-exit.yaml)
-
-- [`testvolume.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/testvolume.yaml)
 
 - [`timeouts-step.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/timeouts-step.yaml)
 
@@ -746,10 +732,6 @@ WorkflowSpec is the specification of a Workflow.
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/volumes-pvc.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/work-avoidance.yaml)
-
-- [`workflow-count-resourcequota.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-count-resourcequota.yaml)
-
-- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
 
 - [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
 
@@ -785,6 +767,7 @@ WorkflowSpec is the specification of a Workflow.
 |`dnsPolicy`|`string`|Set DNS policy for the pod. Defaults to "ClusterFirst". Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'. DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy. To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'.|
 |`entrypoint`|`string`|Entrypoint is a template reference to the starting point of the io.argoproj.workflow.v1alpha1.|
 |`executor`|[`ExecutorConfig`](#executorconfig)|Executor holds configurations of executor containers of the io.argoproj.workflow.v1alpha1.|
+|`hooks`|[`LifecycleHook`](#lifecyclehook)|Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step|
 |`hostAliases`|`Array<`[`HostAlias`](#hostalias)`>`|_No description available_|
 |`hostNetwork`|`boolean`|Host networking requested for this workflow pod. Default to false.|
 |`imagePullSecrets`|`Array<`[`LocalObjectReference`](#localobjectreference)`>`|ImagePullSecrets is a list of references to secrets in the same namespace to use for pulling any images in pods that reference this ServiceAccount. ImagePullSecrets are distinct from Secrets because Secrets can be mounted in the pod, but ImagePullSecrets are only accessed by the kubelet. More info: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod|
@@ -920,8 +903,6 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`daemon-step.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemon-step.yaml)
 
-- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemoned-stateful-set-with-service.yaml)
-
 - [`dag-coinflip.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-coinflip.yaml)
 
 - [`dag-conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-artifacts.yaml)
@@ -1012,6 +993,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
 
+- [`http-success-condition.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-success-condition.yaml)
+
 - [`image-pull-secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/image-pull-secrets.yaml)
 
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
@@ -1030,23 +1013,19 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
 
-- [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-jobs.yaml)
-
-- [`k8s-kubeflow-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-kubeflow-jobs.yaml)
-
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
+- [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-json-patch-workflow.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
 
-- [`k8s-patch-basic.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch-basic.yaml)
-
 - [`k8s-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch.yaml)
-
-- [`k8s-set-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-set-owner-reference.yaml)
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
 
 - [`key-only-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/key-only-artifact.yaml)
+
+- [`life-cycle-hooks-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-tmpl-level.yaml)
+
+- [`life-cycle-hooks-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-wf-level.yaml)
 
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
@@ -1061,8 +1040,6 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`loops.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops.yaml)
 
 - [`map-reduce.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/map-reduce.yaml)
-
-- [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/nested-workflow.yaml)
 
@@ -1107,10 +1084,6 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-spec-yaml-patch.yaml)
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/recursive-for-loop.yaml)
-
-- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-delete-with-flags.yaml)
-
-- [`resource-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-flags.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resubmit.yaml)
 
@@ -1160,15 +1133,9 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-mutex-wf-level.yaml)
 
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-tmpl-level.yaml)
-
-- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-wf-level.yaml)
-
 - [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-defaults.yaml)
 
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-on-exit.yaml)
-
-- [`testvolume.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/testvolume.yaml)
 
 - [`timeouts-step.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/timeouts-step.yaml)
 
@@ -1181,10 +1148,6 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/volumes-pvc.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/work-avoidance.yaml)
-
-- [`workflow-count-resourcequota.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-count-resourcequota.yaml)
-
-- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
 
 - [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
 
@@ -1311,8 +1274,6 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`daemon-step.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemon-step.yaml)
 
-- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemoned-stateful-set-with-service.yaml)
-
 - [`dag-coinflip.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-coinflip.yaml)
 
 - [`dag-conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-artifacts.yaml)
@@ -1403,6 +1364,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
 
+- [`http-success-condition.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-success-condition.yaml)
+
 - [`image-pull-secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/image-pull-secrets.yaml)
 
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
@@ -1421,23 +1384,19 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
 
-- [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-jobs.yaml)
-
-- [`k8s-kubeflow-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-kubeflow-jobs.yaml)
-
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
+- [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-json-patch-workflow.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
 
-- [`k8s-patch-basic.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch-basic.yaml)
-
 - [`k8s-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch.yaml)
-
-- [`k8s-set-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-set-owner-reference.yaml)
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
 
 - [`key-only-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/key-only-artifact.yaml)
+
+- [`life-cycle-hooks-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-tmpl-level.yaml)
+
+- [`life-cycle-hooks-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-wf-level.yaml)
 
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
@@ -1452,8 +1411,6 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`loops.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops.yaml)
 
 - [`map-reduce.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/map-reduce.yaml)
-
-- [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/nested-workflow.yaml)
 
@@ -1498,10 +1455,6 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-spec-yaml-patch.yaml)
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/recursive-for-loop.yaml)
-
-- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-delete-with-flags.yaml)
-
-- [`resource-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-flags.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resubmit.yaml)
 
@@ -1551,15 +1504,9 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-mutex-wf-level.yaml)
 
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-tmpl-level.yaml)
-
-- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-wf-level.yaml)
-
 - [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-defaults.yaml)
 
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-on-exit.yaml)
-
-- [`testvolume.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/testvolume.yaml)
 
 - [`timeouts-step.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/timeouts-step.yaml)
 
@@ -1572,10 +1519,6 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/volumes-pvc.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/work-avoidance.yaml)
-
-- [`workflow-count-resourcequota.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-count-resourcequota.yaml)
-
-- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
 
 - [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
 
@@ -1611,6 +1554,7 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 |`dnsPolicy`|`string`|Set DNS policy for the pod. Defaults to "ClusterFirst". Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'. DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy. To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'.|
 |`entrypoint`|`string`|Entrypoint is a template reference to the starting point of the io.argoproj.workflow.v1alpha1.|
 |`executor`|[`ExecutorConfig`](#executorconfig)|Executor holds configurations of executor containers of the io.argoproj.workflow.v1alpha1.|
+|`hooks`|[`LifecycleHook`](#lifecyclehook)|Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step|
 |`hostAliases`|`Array<`[`HostAlias`](#hostalias)`>`|_No description available_|
 |`hostNetwork`|`boolean`|Host networking requested for this workflow pod. Default to false.|
 |`imagePullSecrets`|`Array<`[`LocalObjectReference`](#localobjectreference)`>`|ImagePullSecrets is a list of references to secrets in the same namespace to use for pulling any images in pods that reference this ServiceAccount. ImagePullSecrets are distinct from Secrets because Secrets can be mounted in the pod, but ImagePullSecrets are only accessed by the kubelet. More info: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod|
@@ -1738,9 +1682,9 @@ Arguments to a template
 
 - [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
 
-- [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
+- [`http-success-condition.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-success-condition.yaml)
 
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
+- [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
 
@@ -1757,8 +1701,6 @@ Arguments to a template
 - [`loops.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops.yaml)
 
 - [`map-reduce.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/map-reduce.yaml)
-
-- [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/nested-workflow.yaml)
 
@@ -1792,8 +1734,6 @@ Arguments to a template
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/recursive-for-loop.yaml)
 
-- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-delete-with-flags.yaml)
-
 - [`retry-conditional.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-conditional.yaml)
 
 - [`scripts-bash.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/scripts-bash.yaml)
@@ -1810,11 +1750,7 @@ Arguments to a template
 
 - [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-mutex-tmpl-level.yaml)
 
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-tmpl-level.yaml)
-
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/work-avoidance.yaml)
-
-- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
 
 - [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
 
@@ -1877,6 +1813,31 @@ ExecutorConfig holds configurations of an executor container.
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`serviceAccountName`|`string`|ServiceAccountName specifies the service account name of the executor container.|
+
+## LifecycleHook
+
+_No description available_
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-artifacts.yaml)
+
+- [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
+
+- [`life-cycle-hooks-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-tmpl-level.yaml)
+
+- [`life-cycle-hooks-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-wf-level.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`arguments`|[`Arguments`](#arguments)|Arguments hold arguments to the template|
+|`expression`|`string`|Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not be retried and the retry strategy will be ignored|
+|`template`|`string`|Template is the name of the template to execute by the hook|
+|`templateRef`|[`TemplateRef`](#templateref)|TemplateRef is the reference to the template resource to execute by the hook|
 
 ## Metrics
 
@@ -1968,7 +1929,7 @@ RetryStrategy provides controls on how to retry a workflow step
 |:----------:|:----------:|---------------|
 |`affinity`|[`RetryAffinity`](#retryaffinity)|Affinity prevents running workflow's step on the same host|
 |`backoff`|[`Backoff`](#backoff)|Backoff is a backoff strategy|
-|`expression`|`string`|Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not be retried and the retry strategy will be ignored/|
+|`expression`|`string`|Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not be retried and the retry strategy will be ignored|
 |`limit`|[`IntOrString`](#intorstring)|Limit is the maximum number of attempts when retrying a container|
 |`retryPolicy`|`string`|RetryPolicy is a policy of NodePhase statuses that will be retried|
 
@@ -1983,10 +1944,6 @@ Synchronization holds synchronization lock configuration
 - [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-mutex-tmpl-level.yaml)
 
 - [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-mutex-wf-level.yaml)
-
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-tmpl-level.yaml)
-
-- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-wf-level.yaml)
 </details>
 
 ### Fields
@@ -2031,6 +1988,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`nodeSelector`|`Map< string , string >`|NodeSelector is a selector to schedule this step of the workflow to be run on the selected node(s). Overrides the selector set at the workflow level.|
 |`outputs`|[`Outputs`](#outputs)|Outputs describe the parameters and artifacts that this template produces|
 |`parallelism`|`integer`|Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.|
+|`plugin`|[`Plugin`](#plugin)|Plugin is a plugin template|
 |`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).|
 |`priority`|`integer`|Priority to apply to workflow pods.|
 |`priorityClassName`|`string`|PriorityClassName to apply to workflow pods.|
@@ -2090,8 +2048,6 @@ WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cron-backfill.yaml)
 
 - [`dag-inline-cronworkflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-cronworkflow.yaml)
-
-- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-of-workflows.yaml)
 
@@ -2223,19 +2179,11 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
 
-- [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-jobs.yaml)
-
-- [`k8s-kubeflow-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-kubeflow-jobs.yaml)
-
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
-
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
 
 - [`key-only-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/key-only-artifact.yaml)
 
 - [`map-reduce.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/map-reduce.yaml)
-
-- [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/nested-workflow.yaml)
 
@@ -2275,10 +2223,6 @@ SynchronizationStatus stores the status of semaphore and mutex.
 - [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-mutex-tmpl-level.yaml)
 
 - [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-mutex-wf-level.yaml)
-
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-tmpl-level.yaml)
-
-- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-wf-level.yaml)
 </details>
 
 ### Fields
@@ -2473,13 +2417,9 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
 
+- [`http-success-condition.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-success-condition.yaml)
+
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
-
-- [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-jobs.yaml)
-
-- [`k8s-kubeflow-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-kubeflow-jobs.yaml)
-
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
 
@@ -2496,8 +2436,6 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`loops.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops.yaml)
 
 - [`map-reduce.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/map-reduce.yaml)
-
-- [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/nested-workflow.yaml)
 
@@ -2531,8 +2469,6 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/recursive-for-loop.yaml)
 
-- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-delete-with-flags.yaml)
-
 - [`retry-conditional.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-conditional.yaml)
 
 - [`scripts-bash.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/scripts-bash.yaml)
@@ -2549,11 +2485,7 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-mutex-tmpl-level.yaml)
 
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-tmpl-level.yaml)
-
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/work-avoidance.yaml)
-
-- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
 
 - [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
 
@@ -2574,11 +2506,46 @@ Parameter indicate a passed string parameter to a service template with an optio
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`default`|`string`|Default is the default value to use for an input parameter if a value was not supplied|
+|`description`|`string`|Description is the parameter description|
 |`enum`|`Array< string >`|Enum holds a list of string values to choose from, for the actual value of the parameter|
 |`globalName`|`string`|GlobalName exports an output parameter to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters|
 |`name`|`string`|Name is the parameter name|
 |`value`|`string`|Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values|
 |`valueFrom`|[`ValueFrom`](#valuefrom)|ValueFrom is the source for the output parameter's value|
+
+## TemplateRef
+
+TemplateRef is a reference of template resource.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
+
+- [`clustertemplates.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
+
+- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
+
+- [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cron-backfill.yaml)
+
+- [`dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/dag.yaml)
+
+- [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/hello-world.yaml)
+
+- [`retry-with-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/retry-with-steps.yaml)
+
+- [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/steps.yaml)
+
+- [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/templates.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`clusterScope`|`boolean`|ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).|
+|`name`|`string`|Name is the resource name of the template.|
+|`template`|`string`|Template is the name of referred template in the resource.|
 
 ## Prometheus
 
@@ -2652,15 +2619,6 @@ Mutex holds Mutex configuration
 ## SemaphoreRef
 
 SemaphoreRef is a reference of Semaphore
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-tmpl-level.yaml)
-
-- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-wf-level.yaml)
-</details>
 
 ### Fields
 | Field Name | Field Type | Description   |
@@ -2806,21 +2764,9 @@ Data is a data template
 
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-path-placeholders.yaml)
 
-- [`simple-parameters-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/configmaps/simple-parameters-configmap.yaml)
-
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
 
 - [`input-artifact-raw.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-raw.yaml)
-
-- [`k8s-set-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-set-owner-reference.yaml)
-
-- [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
-
-- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-delete-with-flags.yaml)
-
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-tmpl-level.yaml)
-
-- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-wf-level.yaml)
 </details>
 
 ### Fields
@@ -2849,11 +2795,17 @@ _No description available_
 
 - [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
 
+- [`http-success-condition.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-success-condition.yaml)
+
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
 
 - [`input-artifact-http.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-http.yaml)
 
 - [`input-artifact-oss.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-oss.yaml)
+
+- [`life-cycle-hooks-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-tmpl-level.yaml)
+
+- [`life-cycle-hooks-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-wf-level.yaml)
 
 - [`sidecar-nginx.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar-nginx.yaml)
 
@@ -2866,6 +2818,7 @@ _No description available_
 |`body`|`string`|Body is content of the HTTP Request|
 |`headers`|`Array<`[`HTTPHeader`](#httpheader)`>`|Headers are an optional list of headers to send with HTTP requests|
 |`method`|`string`|Method is HTTP methods for HTTP Request|
+|`successCondition`|`string`|SuccessCondition is an expression if evaluated to true is considered successful|
 |`timeoutSeconds`|`integer`|TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds|
 |`url`|`string`|URL of the HTTP Request|
 
@@ -2995,6 +2948,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
 
+- [`http-success-condition.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-success-condition.yaml)
+
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
 
 - [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-gcs.yaml)
@@ -3008,8 +2963,6 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 - [`input-artifact-raw.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-raw.yaml)
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
-
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
 
@@ -3028,8 +2981,6 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 - [`loops.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops.yaml)
 
 - [`map-reduce.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/map-reduce.yaml)
-
-- [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/nested-workflow.yaml)
 
@@ -3056,8 +3007,6 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-spec-from-previous-step.yaml)
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/recursive-for-loop.yaml)
-
-- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-delete-with-flags.yaml)
 
 - [`retry-conditional.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-conditional.yaml)
 
@@ -3097,8 +3046,6 @@ Memoization enables caching for the Outputs of the template
 <br>
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
-
-- [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
 </details>
 
 ### Fields
@@ -3107,6 +3054,10 @@ Memoization enables caching for the Outputs of the template
 |`cache`|[`Cache`](#cache)|Cache sets and configures the kind of cache|
 |`key`|`string`|Key is the key to use as the caching key|
 |`maxAge`|`string`|MaxAge is the maximum age (e.g. "180s", "24h") of an entry that is still considered valid. If an entry is older than the MaxAge, it will be ignored.|
+
+## Plugin
+
+Plugin is an Object with exactly one key
 
 ## ResourceTemplate
 
@@ -3118,27 +3069,13 @@ ResourceTemplate is a template subtype to manipulate kubernetes resources
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cron-backfill.yaml)
 
-- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemoned-stateful-set-with-service.yaml)
-
-- [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-jobs.yaml)
-
-- [`k8s-kubeflow-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-kubeflow-jobs.yaml)
-
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
+- [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-json-patch-workflow.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
 
-- [`k8s-patch-basic.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch-basic.yaml)
-
 - [`k8s-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch.yaml)
 
-- [`k8s-set-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-set-owner-reference.yaml)
-
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
-
-- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-delete-with-flags.yaml)
-
-- [`resource-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-flags.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-of-workflows.yaml)
 </details>
@@ -3292,8 +3229,6 @@ WorkflowStep is a reference to a template to execute in a series of step
 
 - [`daemon-step.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemon-step.yaml)
 
-- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemoned-stateful-set-with-service.yaml)
-
 - [`dag-coinflip.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-coinflip.yaml)
 
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-diamond-steps.yaml)
@@ -3324,11 +3259,15 @@ WorkflowStep is a reference to a template to execute in a series of step
 
 - [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
 
+- [`http-success-condition.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-success-condition.yaml)
+
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
 
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
-
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
+
+- [`life-cycle-hooks-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-tmpl-level.yaml)
+
+- [`life-cycle-hooks-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-wf-level.yaml)
 
 - [`loops-maps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-maps.yaml)
 
@@ -3366,10 +3305,6 @@ WorkflowStep is a reference to a template to execute in a series of step
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/recursive-for-loop.yaml)
 
-- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-delete-with-flags.yaml)
-
-- [`resource-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-flags.yaml)
-
 - [`resubmit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resubmit.yaml)
 
 - [`retry-conditional.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-conditional.yaml)
@@ -3395,8 +3330,6 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`suspend-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/suspend-template.yaml)
 
 - [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-mutex-tmpl-level.yaml)
-
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-tmpl-level.yaml)
 
 - [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-defaults.yaml)
 
@@ -3493,40 +3426,6 @@ NodeSynchronizationStatus stores the status of a node
 |:----------:|:----------:|---------------|
 |`waiting`|`string`|Waiting is the name of the lock that this node is waiting for|
 
-## TemplateRef
-
-TemplateRef is a reference of template resource.
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
-
-- [`clustertemplates.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
-
-- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
-
-- [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cron-backfill.yaml)
-
-- [`dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/dag.yaml)
-
-- [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/hello-world.yaml)
-
-- [`retry-with-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/retry-with-steps.yaml)
-
-- [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/steps.yaml)
-
-- [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/templates.yaml)
-</details>
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`clusterScope`|`boolean`|ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).|
-|`name`|`string`|Name is the resource name of the template.|
-|`template`|`string`|Template is the name of referred template in the resource.|
-
 ## MutexStatus
 
 MutexStatus contains which objects hold  mutex locks, and which objects this workflow is waiting on to release locks.
@@ -3549,15 +3448,6 @@ MutexStatus contains which objects hold  mutex locks, and which objects this wor
 ## SemaphoreStatus
 
 _No description available_
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-tmpl-level.yaml)
-
-- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-wf-level.yaml)
-</details>
 
 ### Fields
 | Field Name | Field Type | Description   |
@@ -3674,7 +3564,7 @@ HDFSArtifact is the location of an HDFS artifact
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`addresses`|`Array< string >`|Addresses is accessible addresses of HDFS name nodes|
-|`force`|`boolean`|Force copies a file forcibly even if it exists (default: false)|
+|`force`|`boolean`|Force copies a file forcibly even if it exists|
 |`hdfsUser`|`string`|HDFSUser is the user to access HDFS file system. It is ignored if either ccache or keytab is used.|
 |`krbCCacheSecret`|[`SecretKeySelector`](#secretkeyselector)|KrbCCacheSecret is the secret selector for Kerberos ccache Either ccache or keytab can be set to use Kerberos.|
 |`krbConfigConfigMap`|[`ConfigMapKeySelector`](#configmapkeyselector)|KrbConfig is the configmap selector for Kerberos config as string It must be set if either ccache or keytab is used.|
@@ -3704,11 +3594,17 @@ HTTPArtifact allows an file served on HTTP to be placed as an input artifact in 
 
 - [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
 
+- [`http-success-condition.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-success-condition.yaml)
+
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
 
 - [`input-artifact-http.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-http.yaml)
 
 - [`input-artifact-oss.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-oss.yaml)
+
+- [`life-cycle-hooks-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-tmpl-level.yaml)
+
+- [`life-cycle-hooks-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-wf-level.yaml)
 
 - [`sidecar-nginx.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar-nginx.yaml)
 
@@ -3815,15 +3711,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/handle-large-output-results.yaml)
 
-- [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-jobs.yaml)
-
-- [`k8s-kubeflow-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-kubeflow-jobs.yaml)
-
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
-
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
-
-- [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/nested-workflow.yaml)
 
@@ -3838,8 +3726,6 @@ ValueFrom describes a location in which to obtain the value to a parameter
 - [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/secrets.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/suspend-template-outputs.yaml)
-
-- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
 </details>
 
 ### Fields
@@ -3923,8 +3809,6 @@ MetricLabel is a single label for a prometheus metric
 
 - [`conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-parameters.yaml)
 
-- [`simple-parameters-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/configmaps/simple-parameters-configmap.yaml)
-
 - [`graph-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/container-set-template/graph-workflow.yaml)
 
 - [`outputs-result-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/container-set-template/outputs-result-workflow.yaml)
@@ -3936,8 +3820,6 @@ MetricLabel is a single label for a prometheus metric
 - [`workspace-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/container-set-template/workspace-workflow.yaml)
 
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/custom-metrics.yaml)
-
-- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemoned-stateful-set-with-service.yaml)
 
 - [`dag-conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-artifacts.yaml)
 
@@ -3963,11 +3845,9 @@ MetricLabel is a single label for a prometheus metric
 
 - [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
 
-- [`k8s-kubeflow-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-kubeflow-jobs.yaml)
+- [`http-success-condition.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-success-condition.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
-
-- [`k8s-patch-basic.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch-basic.yaml)
 
 - [`k8s-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch.yaml)
 
@@ -3976,8 +3856,6 @@ MetricLabel is a single label for a prometheus metric
 - [`pod-metadata-wf-field.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-metadata-wf-field.yaml)
 
 - [`pod-metadata.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-metadata.yaml)
-
-- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-delete-with-flags.yaml)
 
 - [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
 
@@ -4011,14 +3889,6 @@ _No description available_
 - [`sequence-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/container-set-template/sequence-workflow.yaml)
 
 - [`workspace-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/container-set-template/workspace-workflow.yaml)
-
-- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemoned-stateful-set-with-service.yaml)
-
-- [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-jobs.yaml)
-
-- [`k8s-kubeflow-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-kubeflow-jobs.yaml)
-
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
 
 - [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-spec-patch-wf-tmpl.yaml)
 
@@ -4251,8 +4121,6 @@ Cache is the configuration for the type of cache to be used
 <br>
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
-
-- [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
 </details>
 
 ### Fields
@@ -4274,8 +4142,6 @@ ContinueOn defines if a workflow should continue even if a task or step fails/er
 
 - [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
 
-- [`resource-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-flags.yaml)
-
 - [`status-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/status-reference.yaml)
 
 - [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/step-level-timeout.yaml)
@@ -4286,25 +4152,6 @@ ContinueOn defines if a workflow should continue even if a task or step fails/er
 |:----------:|:----------:|---------------|
 |`error`|`boolean`|_No description available_|
 |`failed`|`boolean`|_No description available_|
-
-## LifecycleHook
-
-_No description available_
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-artifacts.yaml)
-
-- [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
-</details>
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`arguments`|[`Arguments`](#arguments)|_No description available_|
-|`template`|`string`|_No description available_|
 
 ## Item
 
@@ -4419,7 +4266,7 @@ HDFSArtifactRepository defines the controller configuration for an HDFS artifact
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`addresses`|`Array< string >`|Addresses is accessible addresses of HDFS name nodes|
-|`force`|`boolean`|Force copies a file forcibly even if it exists (default: false)|
+|`force`|`boolean`|Force copies a file forcibly even if it exists|
 |`hdfsUser`|`string`|HDFSUser is the user to access HDFS file system. It is ignored if either ccache or keytab is used.|
 |`krbCCacheSecret`|[`SecretKeySelector`](#secretkeyselector)|KrbCCacheSecret is the secret selector for Kerberos ccache Either ccache or keytab can be set to use Kerberos.|
 |`krbConfigConfigMap`|[`ConfigMapKeySelector`](#configmapkeyselector)|KrbConfig is the configmap selector for Kerberos config as string It must be set if either ccache or keytab is used.|
@@ -4660,15 +4507,7 @@ _No description available_
 
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/handle-large-output-results.yaml)
 
-- [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-jobs.yaml)
-
-- [`k8s-kubeflow-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-kubeflow-jobs.yaml)
-
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
-
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
-
-- [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/nested-workflow.yaml)
 
@@ -4683,8 +4522,6 @@ _No description available_
 - [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/secrets.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/suspend-template-outputs.yaml)
-
-- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
 </details>
 
 ### Fields
@@ -4753,8 +4590,6 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`conditionals.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditionals.yaml)
 
-- [`simple-parameters-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/configmaps/simple-parameters-configmap.yaml)
-
 - [`graph-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/container-set-template/graph-workflow.yaml)
 
 - [`outputs-result-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/container-set-template/outputs-result-workflow.yaml)
@@ -4776,8 +4611,6 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`daemon-nginx.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemon-nginx.yaml)
 
 - [`daemon-step.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemon-step.yaml)
-
-- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemoned-stateful-set-with-service.yaml)
 
 - [`dag-coinflip.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-coinflip.yaml)
 
@@ -4869,6 +4702,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
 
+- [`http-success-condition.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-success-condition.yaml)
+
 - [`image-pull-secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/image-pull-secrets.yaml)
 
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
@@ -4887,23 +4722,19 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
 
-- [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-jobs.yaml)
-
-- [`k8s-kubeflow-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-kubeflow-jobs.yaml)
-
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
+- [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-json-patch-workflow.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
 
-- [`k8s-patch-basic.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch-basic.yaml)
-
 - [`k8s-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch.yaml)
-
-- [`k8s-set-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-set-owner-reference.yaml)
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
 
 - [`key-only-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/key-only-artifact.yaml)
+
+- [`life-cycle-hooks-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-tmpl-level.yaml)
+
+- [`life-cycle-hooks-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-wf-level.yaml)
 
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
@@ -4918,8 +4749,6 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`loops.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops.yaml)
 
 - [`map-reduce.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/map-reduce.yaml)
-
-- [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/nested-workflow.yaml)
 
@@ -4964,10 +4793,6 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-spec-yaml-patch.yaml)
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/recursive-for-loop.yaml)
-
-- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-delete-with-flags.yaml)
-
-- [`resource-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-flags.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resubmit.yaml)
 
@@ -5017,15 +4842,9 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-mutex-wf-level.yaml)
 
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-tmpl-level.yaml)
-
-- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-wf-level.yaml)
-
 - [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-defaults.yaml)
 
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-on-exit.yaml)
-
-- [`testvolume.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/testvolume.yaml)
 
 - [`timeouts-step.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/timeouts-step.yaml)
 
@@ -5038,10 +4857,6 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/volumes-pvc.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/work-avoidance.yaml)
-
-- [`workflow-count-resourcequota.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-count-resourcequota.yaml)
-
-- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
 
 - [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
 
@@ -5196,13 +5011,6 @@ The pod this Toleration is attached to tolerates any taint that matches the trip
 ## PersistentVolumeClaim
 
 PersistentVolumeClaim is a user's request for and claim to a persistent volume
-
-<details>
-<summary>Examples (click to open)</summary>
-<br>
-
-- [`testvolume.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/testvolume.yaml)
-</details>
 
 <details>
 <summary>Examples with this field (click to open)</summary>
@@ -5403,8 +5211,6 @@ A single application container that you want to run within a pod.
 
 - [`daemon-step.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemon-step.yaml)
 
-- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemoned-stateful-set-with-service.yaml)
-
 - [`dag-coinflip.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-coinflip.yaml)
 
 - [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-continue-on-fail.yaml)
@@ -5501,13 +5307,15 @@ A single application container that you want to run within a pod.
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
 
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
-
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
 
 - [`key-only-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/key-only-artifact.yaml)
+
+- [`life-cycle-hooks-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-tmpl-level.yaml)
+
+- [`life-cycle-hooks-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-wf-level.yaml)
 
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
@@ -5520,8 +5328,6 @@ A single application container that you want to run within a pod.
 - [`loops-sequence.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-sequence.yaml)
 
 - [`loops.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops.yaml)
-
-- [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/nested-workflow.yaml)
 
@@ -5605,10 +5411,6 @@ A single application container that you want to run within a pod.
 
 - [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-mutex-wf-level.yaml)
 
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-tmpl-level.yaml)
-
-- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-wf-level.yaml)
-
 - [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-defaults.yaml)
 
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-on-exit.yaml)
@@ -5671,10 +5473,6 @@ Selects a key from a ConfigMap.
 - [`global-parameters-from-configmap-referenced-as-local-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters-from-configmap-referenced-as-local-variable.yaml)
 
 - [`global-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters-from-configmap.yaml)
-
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-tmpl-level.yaml)
-
-- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-wf-level.yaml)
 </details>
 
 ### Fields
@@ -5794,13 +5592,6 @@ Probe describes a health check to be performed against a container to determine 
 
 ContainerPort represents a network port in a single container.
 
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemoned-stateful-set-with-service.yaml)
-</details>
-
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -5833,8 +5624,6 @@ ResourceRequirements describes the compute resource requirements.
 - [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-spec-patch-wf-tmpl.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-spec-yaml-patch.yaml)
-
-- [`testvolume.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/testvolume.yaml)
 
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/volumes-pvc.yaml)
 
@@ -6090,8 +5879,6 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`daemon-step.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemon-step.yaml)
 
-- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemoned-stateful-set-with-service.yaml)
-
 - [`dag-coinflip.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-coinflip.yaml)
 
 - [`dag-conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-artifacts.yaml)
@@ -6182,6 +5969,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
 
+- [`http-success-condition.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-success-condition.yaml)
+
 - [`image-pull-secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/image-pull-secrets.yaml)
 
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
@@ -6200,23 +5989,19 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
 
-- [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-jobs.yaml)
-
-- [`k8s-kubeflow-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-kubeflow-jobs.yaml)
-
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
+- [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-json-patch-workflow.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
 
-- [`k8s-patch-basic.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch-basic.yaml)
-
 - [`k8s-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-patch.yaml)
-
-- [`k8s-set-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-set-owner-reference.yaml)
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
 
 - [`key-only-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/key-only-artifact.yaml)
+
+- [`life-cycle-hooks-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-tmpl-level.yaml)
+
+- [`life-cycle-hooks-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-wf-level.yaml)
 
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
@@ -6231,8 +6016,6 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`loops.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops.yaml)
 
 - [`map-reduce.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/map-reduce.yaml)
-
-- [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/nested-workflow.yaml)
 
@@ -6277,10 +6060,6 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-spec-yaml-patch.yaml)
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/recursive-for-loop.yaml)
-
-- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-delete-with-flags.yaml)
-
-- [`resource-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-flags.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resubmit.yaml)
 
@@ -6330,15 +6109,9 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-mutex-wf-level.yaml)
 
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-tmpl-level.yaml)
-
-- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-wf-level.yaml)
-
 - [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-defaults.yaml)
 
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-on-exit.yaml)
-
-- [`testvolume.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/testvolume.yaml)
 
 - [`timeouts-step.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/timeouts-step.yaml)
 
@@ -6351,10 +6124,6 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/volumes-pvc.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/work-avoidance.yaml)
-
-- [`workflow-count-resourcequota.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-count-resourcequota.yaml)
-
-- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
 
 - [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
 
@@ -6472,8 +6241,6 @@ Adapts a ConfigMap into a volume.The contents of the target ConfigMap's Data fie
 <br>
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
-
-- [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
 </details>
 
 ### Fields
@@ -6825,15 +6592,7 @@ EnvVarSource represents a source for the value of an EnvVar.
 
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/handle-large-output-results.yaml)
 
-- [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-jobs.yaml)
-
-- [`k8s-kubeflow-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-kubeflow-jobs.yaml)
-
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-orchestration.yaml)
-
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
-
-- [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/nested-workflow.yaml)
 
@@ -6848,8 +6607,6 @@ EnvVarSource represents a source for the value of an EnvVar.
 - [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/secrets.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/suspend-template-outputs.yaml)
-
-- [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
 </details>
 
 ### Fields
@@ -7115,8 +6872,6 @@ Adapts a ConfigMap into a projected volume.The contents of the target ConfigMap'
 <br>
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
-
-- [`memoize-simple.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml)
 </details>
 
 ### Fields

@@ -1,7 +1,5 @@
 # Workflow Progress
 
-![alpha](assets/alpha.svg)
-
 > v2.12 and after
 
 When you run a workflow, the controller will report on its progress.

@@ -1,5 +1,7 @@
 # Security
 
+See [SECURITY.md](https://github.com/argoproj/argo-workflows/blob/master/SECURITY.md).
+
 ## Workflow Controller Security
 
 This has three parts.

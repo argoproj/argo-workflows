@@ -51,6 +51,7 @@ type PrintOpts struct {
 	NoHeaders bool
 	Namespace bool
 	Output    string
+	UID       bool
 }
 
 func printTable(wfList []wfv1.Workflow, out io.Writer, opts PrintOpts) {
@@ -62,6 +63,9 @@ func printTable(wfList []wfv1.Workflow, out io.Writer, opts PrintOpts) {
 		_, _ = fmt.Fprint(w, "NAME\tSTATUS\tAGE\tDURATION\tPRIORITY")
 		if opts.Output == "wide" {
 			_, _ = fmt.Fprint(w, "\tP/R/C\tPARAMETERS")
+		}
+		if opts.UID {
+			_, _ = fmt.Fprint(w, "\tUID")
 		}
 		_, _ = fmt.Fprint(w, "\n")
 	}
@@ -80,6 +84,9 @@ func printTable(wfList []wfv1.Workflow, out io.Writer, opts PrintOpts) {
 			pending, running, completed := countPendingRunningCompletedNodes(&wf)
 			_, _ = fmt.Fprintf(w, "\t%d/%d/%d", pending, running, completed)
 			_, _ = fmt.Fprintf(w, "\t%s", parameterString(wf.Spec.Arguments.Parameters))
+		}
+		if opts.UID {
+			_, _ = fmt.Fprintf(w, "\t%s", wf.UID)
 		}
 		_, _ = fmt.Fprintf(w, "\n")
 	}
@@ -107,7 +114,7 @@ func printCostOptimizationNudges(wfList []wfv1.Workflow, out io.Writer) {
 
 // PrintSecurityNudges prints security nudges for single workflow
 func PrintSecurityNudges(wf wfv1.Workflow, out io.Writer) {
-	if wf.Spec.SecurityContext == nil {
+	if wf.GetExecSpec().SecurityContext == nil {
 		_, _ = fmt.Fprintln(out, "\nThis workflow does not have security context set. "+
 			"You can run your workflow pods more securely by setting it.")
 		_, _ = fmt.Fprintln(out, "Learn more at https://argoproj.github.io/argo-workflows/workflow-pod-security-context/")

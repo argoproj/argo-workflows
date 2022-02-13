@@ -1,7 +1,5 @@
 # Data Sourcing and Transformations
 
-![alpha](assets/alpha.svg)
-
 > v3.1 and after
 
 #### Development

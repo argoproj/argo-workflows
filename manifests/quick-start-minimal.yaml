@@ -293,8 +293,10 @@ rules:
   - ""
   resources:
   - persistentvolumeclaims
+  - persistentvolumeclaims/finalizers
   verbs:
   - create
+  - update
   - delete
   - get
 - apiGroups:
@@ -686,7 +688,6 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
-  containerRuntimeExecutor: emissary
   containerRuntimeExecutors: |
     - name: emissary
       selector:
@@ -731,6 +732,10 @@ data:
     path: /metrics
     port: 9090
   namespaceParallelism: "10"
+  retentionPolicy: |
+    completed: 10
+    failed: 3
+    errored: 3
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
@@ -834,6 +839,7 @@ spec:
         - server
         - --auth-mode
         - client
+        env: []
         image: quay.io/argoproj/argocli:latest
         name: argo-server
         ports:

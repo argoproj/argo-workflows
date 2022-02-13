@@ -124,6 +124,11 @@ type Config struct {
 	// The command/args for each image, needed when the command is not specified and the emissary executor is used.
 	// https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary
 	Images map[string]Image `json:"images,omitempty"`
+
+	RetentionPolicy *RetentionPolicy `json:"retentionPolicy,omitempty"`
+
+	// NavColor is an ui navigation bar background color
+	NavColor string `json:"navColor,omitempty"`
 }
 
 func (c Config) GetContainerRuntimeExecutor(labels labels.Labels) (string, error) {

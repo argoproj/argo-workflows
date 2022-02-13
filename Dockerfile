@@ -1,7 +1,7 @@
 #syntax=docker/dockerfile:1.2
 
 ARG DOCKER_CHANNEL=stable
-ARG DOCKER_VERSION=18.09.1
+ARG DOCKER_VERSION=20.10.12
 # NOTE: kubectl version should be one minor version less than https://storage.googleapis.com/kubernetes-release/release/stable.txt
 ARG KUBECTL_VERSION=1.19.6
 ARG JQ_VERSION=1.6
@@ -66,7 +66,7 @@ COPY hack/nsswitch.conf /etc/
 
 ####################################################################################################
 
-FROM node:14.0.0 as argo-ui
+FROM node:16 as argo-ui
 
 COPY ui/package.json ui/yarn.lock ui/
 

@@ -8,7 +8,6 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/antonmedv/expr"
 	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
 	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
 	log "github.com/sirupsen/logrus"
@@ -28,6 +27,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
 	"github.com/argoproj/argo-workflows/v3/server/cache"
 	servertypes "github.com/argoproj/argo-workflows/v3/server/types"
+	"github.com/argoproj/argo-workflows/v3/util/expr/argoexpr"
 	jsonutil "github.com/argoproj/argo-workflows/v3/util/json"
 	"github.com/argoproj/argo-workflows/v3/util/kubeconfig"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -146,28 +146,47 @@ func GetClaims(ctx context.Context) *types.Claims {
 	return config
 }
 
-func getAuthHeader(md metadata.MD) string {
+func getAuthHeaders(md metadata.MD) []string {
 	// looks for the HTTP header `Authorization: Bearer ...`
 	for _, t := range md.Get("authorization") {
-		return t
+		return []string{t}
 	}
 	// check the HTTP cookie
+	// In cases such as wildcard domain cookies, there could be multiple authorization headers
+	var authorizations []string
 	for _, t := range md.Get("cookie") {
 		header := http.Header{}
 		header.Add("Cookie", t)
 		request := http.Request{Header: header}
-		token, err := request.Cookie("authorization")
-		if err == nil {
-			return token.Value
+		cookies := request.Cookies()
+		for _, c := range cookies {
+			if c.Name == "authorization" {
+				authorizations = append(authorizations, c.Value)
+			}
 		}
 	}
-	return ""
+	return authorizations
 }
 
 func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertypes.Clients, *types.Claims, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
-	authorization := getAuthHeader(md)
-	mode, valid := s.Modes.GetMode(authorization)
+	authorizations := getAuthHeaders(md)
+	// Required for GetMode() with Server auth when no auth header specified
+	if len(authorizations) == 0 {
+		authorizations = append(authorizations, "")
+	}
+	valid := false
+	var mode Mode
+	var authorization string
+
+	for _, token := range authorizations {
+		mode, valid = s.Modes.GetMode(token)
+		// Stop checking after the first valid token
+		if valid {
+			authorization = token
+			break
+		}
+	}
 	if !valid {
 		return nil, nil, status.Error(codes.Unauthenticated, "token not valid for running mode")
 	}
@@ -240,13 +259,9 @@ func (s *gatekeeper) getServiceAccount(claims *types.Claims, namespace string) (
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshall claims: %w", err)
 		}
-		result, err := expr.Eval(rule, v)
+		allow, err := argoexpr.EvalBool(rule, v)
 		if err != nil {
 			return nil, fmt.Errorf("failed to evaluate rule: %w", err)
-		}
-		allow, ok := result.(bool)
-		if !ok {
-			return nil, fmt.Errorf("failed to evaluate rule: not a boolean")
 		}
 		if !allow {
 			continue
@@ -295,7 +310,7 @@ func (s *gatekeeper) rbacAuthorization(claims *types.Claims, req interface{}) (*
 		}
 	}
 	// important! write an audit entry (i.e. log entry) so we know which user performed an operation
-	log.WithFields(log.Fields{"serviceAccount": delegatedAccount.Name, "loginServiceAccount": loginAccount.Name, "subject": claims.Subject, "ssoDelegationAllowed": ssoDelegationAllowed, "ssoDelegated": ssoDelegated}).Info("selected SSO RBAC service account for user")
+	log.WithFields(log.Fields{"serviceAccount": delegatedAccount.Name, "loginServiceAccount": loginAccount.Name, "subject": claims.Subject, "email": claims.Email, "ssoDelegationAllowed": ssoDelegationAllowed, "ssoDelegated": ssoDelegated}).Info("selected SSO RBAC service account for user")
 	return s.getClientsForServiceAccount(claims, delegatedAccount)
 }
 

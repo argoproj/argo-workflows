@@ -104,6 +104,10 @@ export interface Parameter {
      * Enum holds a list of string values to choose from, for the actual value of the parameter
      */
     enum?: Array<string>;
+    /**
+     * Description is the parameter description
+     */
+    description?: string;
 }
 
 /**

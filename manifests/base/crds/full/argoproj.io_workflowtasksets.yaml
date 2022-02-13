@@ -2175,6 +2175,8 @@ spec:
                                       properties:
                                         default:
                                           type: string
+                                        description:
+                                          type: string
                                         enum:
                                           items:
                                             type: string
@@ -2576,6 +2578,8 @@ spec:
                                             properties:
                                               default:
                                                 type: string
+                                              description:
+                                                type: string
                                               enum:
                                                 items:
                                                   type: string
@@ -2621,8 +2625,19 @@ spec:
                                             type: object
                                           type: array
                                       type: object
+                                    expression:
+                                      type: string
                                     template:
                                       type: string
+                                    templateRef:
+                                      properties:
+                                        clusterScope:
+                                          type: boolean
+                                        name:
+                                          type: string
+                                        template:
+                                          type: string
+                                      type: object
                                   required:
                                   - template
                                   type: object
@@ -3075,6 +3090,8 @@ spec:
                             type: object
                           type: array
                         method:
+                          type: string
+                        successCondition:
                           type: string
                         timeoutSeconds:
                           format: int64
@@ -3981,6 +3998,8 @@ spec:
                             properties:
                               default:
                                 type: string
+                              description:
+                                type: string
                               enum:
                                 items:
                                   type: string
@@ -4472,6 +4491,8 @@ spec:
                             properties:
                               default:
                                 type: string
+                              description:
+                                type: string
                               enum:
                                 items:
                                   type: string
@@ -4522,6 +4543,8 @@ spec:
                     parallelism:
                       format: int64
                       type: integer
+                    plugin:
+                      type: object
                     podSpecPatch:
                       type: string
                     priority:
@@ -6826,6 +6849,8 @@ spec:
                           items:
                             properties:
                               default:
+                                type: string
+                              description:
                                 type: string
                               enum:
                                 items:

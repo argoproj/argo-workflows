@@ -1,0 +1,43 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: http-template-condition-
+  labels:
+    workflows.argoproj.io/test: "true"
+  annotations:
+    workflows.argoproj.io/description: |
+      Exemplifies usage of successCondition in HTTP template (available since v3.3)
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: http-status-is-201-succeeds
+            template: http-status-is-201
+            arguments:
+              parameters: [{name: url, value: "http://httpstat.us/201"}]  # Returns status code 201
+          - name: http-body-contains-google-succeeds
+            template: http-body-contains-google
+            arguments:
+              parameters: [{name: url, value: "https://google.com"}]  # Returns Google
+    - name: http-status-is-201
+      inputs:
+        parameters:
+          - name: url
+      http:
+        successCondition: "response.statusCode == 201" # Succeed only if status is 201, otherwise fail
+        url: "{{inputs.parameters.url}}"
+    - name: http-body-contains-google
+      inputs:
+        parameters:
+          - name: url
+      http:
+        successCondition: "response.body contains \"google\"" # Succeed only if body contains "google", otherwise fail
+        url: "{{inputs.parameters.url}}"
+    - name: http-headers-contains-cloudflare
+      inputs:
+        parameters:
+          - name: url
+      http:
+        successCondition: "response.headers[\"Server\"][0] == \"cloudflare\"" # Succeed only if response header "Server" is "cloudflare"
+        url: "{{inputs.parameters.url}}"

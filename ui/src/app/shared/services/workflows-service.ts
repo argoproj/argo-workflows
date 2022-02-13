@@ -1,4 +1,5 @@
-import {Observable} from 'rxjs';
+import {EMPTY, from, Observable, of} from 'rxjs';
+import {catchError, filter, map, mergeMap, switchMap} from 'rxjs/operators';
 import * as models from '../../../models';
 import {Event, LogEntry, NodeStatus, Workflow, WorkflowList, WorkflowPhase} from '../../../models';
 import {SubmitOpts} from '../../../models/submit-opts';
@@ -49,29 +50,31 @@ export class WorkflowsService {
         return requests.get(`api/v1/workflows/${namespace}/${name}`).then(res => res.body as Workflow);
     }
 
-    public watch(filter: {
+    public watch(query: {
         namespace?: string;
         name?: string;
         phases?: Array<WorkflowPhase>;
         labels?: Array<string>;
         resourceVersion?: string;
     }): Observable<models.kubernetes.WatchEvent<Workflow>> {
-        const url = `api/v1/workflow-events/${filter.namespace || ''}?${Utils.queryParams(filter).join('&')}`;
-        return requests.loadEventSource(url).map(data => data && (JSON.parse(data).result as models.kubernetes.WatchEvent<Workflow>));
+        const url = `api/v1/workflow-events/${query.namespace || ''}?${Utils.queryParams(query).join('&')}`;
+        return requests.loadEventSource(url).pipe(map(data => data && (JSON.parse(data).result as models.kubernetes.WatchEvent<Workflow>)));
     }
 
     public watchEvents(namespace: string, fieldSelector: string): Observable<Event> {
-        return requests.loadEventSource(`api/v1/stream/events/${namespace}?listOptions.fieldSelector=${fieldSelector}`).map(data => data && (JSON.parse(data).result as Event));
+        return requests
+            .loadEventSource(`api/v1/stream/events/${namespace}?listOptions.fieldSelector=${fieldSelector}`)
+            .pipe(map(data => data && (JSON.parse(data).result as Event)));
     }
 
-    public watchFields(filter: {
+    public watchFields(query: {
         namespace?: string;
         name?: string;
         phases?: Array<WorkflowPhase>;
         labels?: Array<string>;
         resourceVersion?: string;
     }): Observable<models.kubernetes.WatchEvent<Workflow>> {
-        const params = Utils.queryParams(filter);
+        const params = Utils.queryParams(query);
         const fields = [
             'result.object.metadata.name',
             'result.object.metadata.namespace',
@@ -89,8 +92,8 @@ export class WorkflowsService {
             'result.object.spec.suspend'
         ];
         params.push(`fields=${fields.join(',')}`);
-        const url = `api/v1/workflow-events/${filter.namespace || ''}?${params.join('&')}`;
-        return requests.loadEventSource(url).map(data => data && (JSON.parse(data).result as models.kubernetes.WatchEvent<Workflow>));
+        const url = `api/v1/workflow-events/${query.namespace || ''}?${params.join('&')}`;
+        return requests.loadEventSource(url).pipe(map(data => data && (JSON.parse(data).result as models.kubernetes.WatchEvent<Workflow>)));
     }
 
     public retry(name: string, namespace: string) {
@@ -135,26 +138,28 @@ export class WorkflowsService {
         const namespace = workflow.metadata.namespace;
         const name = workflow.metadata.name;
         const podLogsURL = `api/v1/workflows/${namespace}/${name}/log?logOptions.container=${container}&grep=${grep}&logOptions.follow=true${podName ? `&podName=${podName}` : ''}`;
-        return requests
-            .loadEventSource(podLogsURL)
-            .filter(line => !!line)
-            .map(line => JSON.parse(line).result as LogEntry)
-            .filter(e => isString(e.content))
-            .catch(() => {
+        return requests.loadEventSource(podLogsURL).pipe(
+            filter(line => !!line),
+            map(line => JSON.parse(line).result as LogEntry),
+            filter(e => isString(e.content)),
+            catchError(() => {
                 // When an error occurs on an observable, RxJS is hard-coded to unsubscribe from the stream.  In the case
                 // that the connection to the server was interrupted while the node is still pending or running, this is not
                 // correct since we actually want the EventSource to re-connect and continue streaming logs.  In the event
                 // that the pod has completed, then we want to allow the unsubscribe to happen since no additional logs exist.
-                return Observable.fromPromise(this.isWorkflowNodePendingOrRunning(workflow, podName)).switchMap(isPendingOrRunning => {
-                    if (isPendingOrRunning) {
-                        return this.getContainerLogsFromCluster(workflow, podName, container, grep);
-                    }
+                return from(this.isWorkflowNodePendingOrRunning(workflow, podName)).pipe(
+                    switchMap(isPendingOrRunning => {
+                        if (isPendingOrRunning) {
+                            return this.getContainerLogsFromCluster(workflow, podName, container, grep);
+                        }
 
-                    // If our workflow is completed, then simply complete the Observable since nothing else
-                    // should be omitted
-                    return Observable.empty();
-                });
-            });
+                        // If our workflow is completed, then simply complete the Observable since nothing else
+                        // should be omitted
+                        return EMPTY;
+                    })
+                );
+            })
+        );
     }
 
     public async isWorkflowNodePendingOrRunning(workflow: Workflow, nodeId?: string) {
@@ -169,17 +174,18 @@ export class WorkflowsService {
     }
 
     public getContainerLogsFromArtifact(workflow: Workflow, nodeId: string, container: string, grep: string, archived: boolean) {
-        return Observable.of(this.hasArtifactLogs(workflow, nodeId, container))
-            .switchMap(hasArtifactLogs => {
+        return of(this.hasArtifactLogs(workflow, nodeId, container)).pipe(
+            switchMap(hasArtifactLogs => {
                 if (!hasArtifactLogs) {
                     throw new Error('no artifact logs are available');
                 }
 
-                return Observable.fromPromise(requests.get(this.getArtifactLogsUrl(workflow, nodeId, container, archived)));
-            })
-            .mergeMap(r => r.text.split('\n'))
-            .map(content => ({content} as LogEntry))
-            .filter(x => !!x.content.match(grep));
+                return from(requests.get(this.getArtifactLogsUrl(workflow, nodeId, container, archived)));
+            }),
+            mergeMap(r => r.text.split('\n')),
+            map(content => ({content} as LogEntry)),
+            filter(x => !!x.content.match(grep))
+        );
     }
 
     public getContainerLogs(workflow: Workflow, podName: string, nodeId: string, container: string, grep: string, archived: boolean): Observable<LogEntry> {
@@ -191,12 +197,14 @@ export class WorkflowsService {
             return getLogsFromArtifact();
         }
         // return archived log if main container is finished and has artifact
-        return Observable.fromPromise(this.isWorkflowNodePendingOrRunning(workflow, nodeId)).switchMap(isPendingOrRunning => {
-            if (!isPendingOrRunning && this.hasArtifactLogs(workflow, nodeId, container) && container === 'main') {
-                return getLogsFromArtifact();
-            }
-            return this.getContainerLogsFromCluster(workflow, podName, container, grep).catch(getLogsFromArtifact);
-        });
+        return from(this.isWorkflowNodePendingOrRunning(workflow, nodeId)).pipe(
+            switchMap(isPendingOrRunning => {
+                if (!isPendingOrRunning && this.hasArtifactLogs(workflow, nodeId, container) && container === 'main') {
+                    return getLogsFromArtifact();
+                }
+                return this.getContainerLogsFromCluster(workflow, podName, container, grep).pipe(catchError(getLogsFromArtifact));
+            })
+        );
     }
 
     public getArtifactLogsUrl(workflow: Workflow, nodeId: string, container: string, archived: boolean) {

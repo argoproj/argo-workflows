@@ -12,7 +12,7 @@
         "test": "jest"
     },
     "dependencies": {
-        "argo-ui": "https://github.com/argoproj/argo-ui.git",
+        "argo-ui": "https://github.com/argoproj/argo-ui.git#v2.5.0",
         "chart.js": "^2.9.4",
         "chartjs-plugin-annotation": "^0.5.7",
         "classnames": "^2.2.5",
@@ -49,8 +49,11 @@
         "@types/js-yaml": "^3.12.1",
         "@types/prop-types": "^15.5.2",
         "@types/react": "^16.8.5",
+        "@types/react-autocomplete": "^1.8.5",
         "@types/react-datepicker": "^2.11.0",
         "@types/react-dom": "^16.8.2",
+        "@types/react-form": "^2.16.1",
+        "@types/react-helmet": "^6.1.0",
         "@types/react-router-dom": "^4.2.3",
         "@types/superagent": "^3.5.7",
         "@types/swagger-ui-react": "^3.23.2",
@@ -86,7 +89,7 @@
     },
     "resolutions": {
         "lodash": "4.17.21",
-        "prismjs": "1.24.0",
+        "prismjs": "1.26.0",
         "@types/react": "16.8.5"
     }
 }

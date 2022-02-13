@@ -504,7 +504,7 @@ message HDFSArtifact {
   // Path is a file path in HDFS
   optional string path = 2;
 
-  // Force copies a file forcibly even if it exists (default: false)
+  // Force copies a file forcibly even if it exists
   optional bool force = 3;
 }
 
@@ -515,7 +515,7 @@ message HDFSArtifactRepository {
   // PathFormat is defines the format of path to store a file. Can reference workflow variables
   optional string pathFormat = 2;
 
-  // Force copies a file forcibly even if it exists (default: false)
+  // Force copies a file forcibly even if it exists
   optional bool force = 3;
 }
 
@@ -570,6 +570,9 @@ message HTTP {
 
   // TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds
   optional int64 timeoutSeconds = 4;
+
+  // SuccessCondition is an expression if evaluated to true is considered successful
+  optional string successCondition = 6;
 
   // Body is content of the HTTP Request
   optional string body = 5;
@@ -647,9 +650,18 @@ message LabelValues {
 }
 
 message LifecycleHook {
+  // Template is the name of the template to execute by the hook
   optional string template = 1;
 
+  // Arguments hold arguments to the template
   optional Arguments arguments = 2;
+
+  // TemplateRef is the reference to the template resource to execute by the hook
+  optional TemplateRef templateRef = 3;
+
+  // Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not
+  // be retried and the retry strategy will be ignored
+  optional string expression = 4;
 }
 
 // A link to another app.
@@ -903,6 +915,10 @@ message OSSLifecycleRule {
   optional int32 markDeletionAfterDays = 2;
 }
 
+// +kubebuilder:validation:Type=object
+message Object {
+}
+
 // Outputs hold parameters, artifacts, and results from a step
 message Outputs {
   // Parameters holds the list of output parameters produced by a step
@@ -948,6 +964,14 @@ message Parameter {
 
   // Enum holds a list of string values to choose from, for the actual value of the parameter
   repeated string enum = 6;
+
+  // Description is the parameter description
+  optional string description = 7;
+}
+
+// Plugin is an Object with exactly one key
+message Plugin {
+  optional Object object = 1;
 }
 
 // PodGC describes how to delete completed pods as they complete
@@ -1046,7 +1070,7 @@ message RetryStrategy {
   optional RetryAffinity affinity = 4;
 
   // Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not
-  // be retried and the retry strategy will be ignored/
+  // be retried and the retry strategy will be ignored
   optional string expression = 5;
 }
 
@@ -1208,6 +1232,13 @@ message SubmitOpts {
 
   // Annotations adds to metadata.labels
   optional string annotations = 12;
+
+  // Set the podPriorityClassName of the workflow
+  optional string podPriorityClassName = 13;
+
+  // Priority is used if controller is configured to process limited number of workflows in parallel, higher priority workflows
+  // are processed first.
+  optional int32 priority = 14;
 }
 
 // SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
@@ -1308,6 +1339,9 @@ message Template {
 
   // HTTP makes a HTTP request
   optional HTTP http = 42;
+
+  // Plugin is a plugin template
+  optional Plugin plugin = 43;
 
   // Volumes is a list of volumes that can be mounted by containers in a template.
   // +patchStrategy=merge
@@ -1699,6 +1733,10 @@ message WorkflowSpec {
 
   // ArchiveLogs indicates if the container logs should be archived
   optional bool archiveLogs = 40;
+
+  // Hooks holds the lifecycle hook which is invoked at lifecycle of
+  // step, irrespective of the success, failure, or error status of the primary step
+  map<string, LifecycleHook> hooks = 41;
 }
 
 // WorkflowStatus contains overall status information about a workflow
@@ -1867,3 +1905,4 @@ message WorkflowTemplateSpec {
 // ZipStrategy will unzip zipped input artifacts
 message ZipStrategy {
 }
+

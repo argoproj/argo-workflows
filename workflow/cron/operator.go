@@ -73,6 +73,11 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 
 	woc.log.Infof("Running %s", woc.name)
 
+	// If the cron workflow has a schedule that was just updated, update its annotation
+	if woc.cronWf.IsUsingNewSchedule() {
+		woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleString())
+	}
+
 	err := woc.validateCronWorkflow()
 	if err != nil {
 		return
@@ -129,7 +134,7 @@ func getWorkflowObjectReference(wf *v1alpha1.Workflow, runWf *v1alpha1.Workflow)
 }
 
 func (woc *cronWfOperationCtx) persistUpdate(ctx context.Context) {
-	woc.patch(ctx, map[string]interface{}{"status": woc.cronWf.Status})
+	woc.patch(ctx, map[string]interface{}{"status": woc.cronWf.Status, "metadata": map[string]interface{}{"annotations": woc.cronWf.Annotations}})
 }
 
 func (woc *cronWfOperationCtx) persistUpdateActiveWorkflows(ctx context.Context) {
@@ -214,6 +219,10 @@ func (woc *cronWfOperationCtx) runOutstandingWorkflows(ctx context.Context) (boo
 }
 
 func (woc *cronWfOperationCtx) shouldOutstandingWorkflowsBeRun() (time.Time, error) {
+	// If the CronWorkflow schedule was just updated, then do not run any outstanding workflows.
+	if woc.cronWf.IsUsingNewSchedule() {
+		return time.Time{}, nil
+	}
 	// If this CronWorkflow has been run before, check if we have missed any scheduled executions
 	if woc.cronWf.Status.LastScheduledTime != nil {
 		var now time.Time
@@ -225,7 +234,7 @@ func (woc *cronWfOperationCtx) shouldOutstandingWorkflowsBeRun() (time.Time, err
 			}
 			now = time.Now().In(loc)
 
-			cronScheduleString := "CRON_TZ=" + woc.cronWf.Spec.Timezone + " " + woc.cronWf.Spec.Schedule
+			cronScheduleString := woc.cronWf.Spec.GetScheduleString()
 			cronSchedule, err = cron.ParseStandard(cronScheduleString)
 			if err != nil {
 				return time.Time{}, fmt.Errorf("unable to form timezone schedule '%s': %s", cronScheduleString, err)
@@ -249,8 +258,8 @@ func (woc *cronWfOperationCtx) shouldOutstandingWorkflowsBeRun() (time.Time, err
 
 		// We missed the latest execution time
 		if !missedExecutionTime.IsZero() {
-			// If StartingDeadlineSeconds is not set, or we are still within the deadline window, run the Workflow
-			if woc.cronWf.Spec.StartingDeadlineSeconds == nil || *woc.cronWf.Spec.StartingDeadlineSeconds == 0 || now.Before(missedExecutionTime.Add(time.Duration(*woc.cronWf.Spec.StartingDeadlineSeconds)*time.Second)) {
+			// if missedExecutionTime is within StartDeadlineSeconds, We are still within the deadline window, run the Workflow
+			if woc.cronWf.Spec.StartingDeadlineSeconds != nil && now.Before(missedExecutionTime.Add(time.Duration(*woc.cronWf.Spec.StartingDeadlineSeconds)*time.Second)) {
 				woc.log.Infof("%s missed an execution at %s and is within StartingDeadline", woc.cronWf.Name, missedExecutionTime.Format("Mon Jan _2 15:04:05 2006"))
 				return missedExecutionTime, nil
 			}

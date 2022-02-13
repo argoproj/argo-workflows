@@ -13,6 +13,7 @@ GIT_TAG               := $(shell git describe --exact-match --tags --abbrev=0  2
 GIT_TREE_STATE        := $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
 RELEASE_TAG           := $(shell if [[ "$(GIT_TAG)" =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$$ ]]; then echo "true"; else echo "false"; fi)
 DEV_BRANCH            := $(shell [ $(GIT_BRANCH) = master ] || [ `echo $(GIT_BRANCH) | cut -c -8` = release- ] || [ `echo $(GIT_BRANCH) | cut -c -4` = dev- ] || [ $(RELEASE_TAG) = true ] && echo false || echo true)
+SRC                   := $(GOPATH)/src/github.com/argoproj/argo-workflows
 
 GREP_LOGS             := ""
 
@@ -48,6 +49,7 @@ UI                    ?= false
 API                   ?= $(UI)
 GOTEST                ?= go test -v
 PROFILE               ?= minimal
+PLUGINS               ?= $(shell [ $PROFILE = plugins ] && echo false || echo true)
 # by keeping this short we speed up the tests
 DEFAULT_REQUEUE_TIME  ?= 100ms
 # whether or not to start the Argo Service in TLS mode
@@ -90,6 +92,11 @@ ifneq ($(GIT_TAG),)
 override LDFLAGS += -X github.com/argoproj/argo-workflows/v3.gitTag=${GIT_TAG}
 endif
 
+ifndef $(GOPATH)
+	GOPATH=$(shell go env GOPATH)
+	export GOPATH
+endif
+
 ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
 CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
 CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
@@ -129,11 +136,6 @@ define protoc
 
 endef
 
-ifndef $(GOPATH)
-	GOPATH=$(shell go env GOPATH)
-	export GOPATH
-endif
-
 .PHONY: build
 build: clis images
 
@@ -170,6 +172,12 @@ dist/argo-windows-amd64: GOARGS = GOOS=windows GOARCH=amd64
 dist/argo-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
 dist/argo-linux-ppc64le: GOARGS = GOOS=linux GOARCH=ppc64le
 dist/argo-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
+
+dist/argo-windows-%.gz: dist/argo-windows-%
+	gzip --force --keep dist/argo-windows-$*.exe
+
+dist/argo-windows-%: server/static/files.go $(CLI_PKGS) go.sum
+	CGO_ENABLED=0 $(GOARGS) go build -v -ldflags '${LDFLAGS} -extldflags -static' -o $@.exe ./cmd/argo
 
 dist/argo-%.gz: dist/argo-%
 	gzip --force --keep dist/argo-$*
@@ -218,32 +226,36 @@ argoexec-image:
 
 %-image:
 	[ ! -e dist/$* ] || mv dist/$* .
-	docker buildx install
 	docker build \
 		-t $(IMAGE_NAMESPACE)/$*:$(VERSION) \
 		--target $* \
-		--cache-from "type=local,src=/tmp/.buildx-cache" \
-		--cache-to "type=local,dest=/tmp/.buildx-cache" \
-		--output=type=docker .
+		 .
 	[ ! -e $* ] || mv $* dist/
 	docker run --rm -t $(IMAGE_NAMESPACE)/$*:$(VERSION) version
 	if [ $(K3D) = true ]; then k3d image import -c $(K3D_CLUSTER_NAME) $(IMAGE_NAMESPACE)/$*:$(VERSION); fi
 	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$*:$(VERSION) ; fi
 
-scan-images: scan-workflow-controller scan-argoexec scan-argocli
-
-scan-%:
-	docker scan --severity=high $(IMAGE_NAMESPACE)/$*:$(VERSION)
-
 # generation
+plugins/%-plugin-configmap.yaml: ./dist/argo
+	./dist/argo executor-plugin build $(dir $@)
+
+.PHONY: plugins
+plugins: $(shell find plugins -name '*-configmap.yaml')
 
 .PHONY: codegen
-codegen: types swagger docs manifests
+codegen: types swagger docs manifests plugins
 	make --directory sdks/java generate
 	make --directory sdks/python generate
 
+.PHONY: check-pwd
+check-pwd:
+
+ifneq ($(SRC),$(PWD))
+	@echo "⚠️ Code generation will not work if code in not checked out into $(SRC)" >&2
+endif
+
 .PHONY: types
-types: pkg/apis/workflow/v1alpha1/generated.proto pkg/apis/workflow/v1alpha1/openapi_generated.go pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go
+types: check-pwd pkg/apis/workflow/v1alpha1/generated.proto pkg/apis/workflow/v1alpha1/openapi_generated.go pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go
 
 .PHONY: swagger
 swagger: \
@@ -270,7 +282,7 @@ docs: \
 	rm -Rf vendor v3
 	go mod tidy
 	# `go generate ./...` takes around 10s, so we only run on specific packages.
-	go generate ./persist/sqldb ./pkg/apiclient/workflow ./server/auth ./server/auth/sso ./workflow/executor
+	go generate ./persist/sqldb ./pkg/plugins ./pkg/apiclient/workflow ./server/auth ./server/auth/sso ./workflow/executor
 	./hack/check-env-doc.sh
 
 $(GOPATH)/bin/mockery:
@@ -292,16 +304,20 @@ $(GOPATH)/bin/protoc-gen-swagger:
 $(GOPATH)/bin/openapi-gen:
 	go install k8s.io/kube-openapi/cmd/openapi-gen@v0.0.0-20210305001622-591a79e4bda7
 $(GOPATH)/bin/swagger:
-	go install github.com/go-swagger/go-swagger/cmd/swagger@v0.25.0
+	go install github.com/go-swagger/go-swagger/cmd/swagger@v0.28.0
 $(GOPATH)/bin/goimports:
 	go install golang.org/x/tools/cmd/goimports@v0.1.6
 
 pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(PROTO_BINARIES) $(TYPES) $(GOPATH)/src/github.com/gogo/protobuf
+	# These files are generated on a v3/ folder by the tool. Link them to the root folder
+	[ -e ./v3 ] || ln -s . v3
 	$(GOPATH)/bin/go-to-protobuf \
 		--go-header-file=./hack/custom-boilerplate.go.txt \
 		--packages=github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
 		--apimachinery-packages=+k8s.io/apimachinery/pkg/util/intstr,+k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime/schema,+k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/api/core/v1,k8s.io/api/policy/v1beta1 \
 		--proto-import $(GOPATH)/src
+	# Delete the link
+	[ -e ./v3 ] && rm -rf v3
 	touch pkg/apis/workflow/v1alpha1/generated.proto
 
 # this target will also create a .pb.go and a .pb.gw.go file, but in Make 3 we cannot use _grouped target_, instead we must choose
@@ -377,13 +393,13 @@ lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 	rm -Rf v3 vendor
 	# Tidy Go modules
 	go mod tidy
-
 	# Lint Go files
 	$(GOPATH)/bin/golangci-lint run --fix --verbose
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
 test: server/static/files.go dist/argosay
+	go build ./...
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
 
 .PHONY: install
@@ -391,7 +407,11 @@ install: githooks
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 	@echo "installing PROFILE=$(PROFILE), E2E_EXECUTOR=$(E2E_EXECUTOR)"
-	kubectl kustomize --load-restrictor=LoadRestrictionsNone test/e2e/manifests/$(PROFILE) | sed 's|quay.io/argoproj/|$(IMAGE_NAMESPACE)/|' | sed 's/containerRuntimeExecutor: emissary/containerRuntimeExecutor: $(E2E_EXECUTOR)/' | sed 's/namespace: argo/namespace: $(KUBE_NAMESPACE)/' | kubectl -n $(KUBE_NAMESPACE) apply --prune -l app.kubernetes.io/part-of=argo -f -
+	kubectl kustomize --load-restrictor=LoadRestrictionsNone test/e2e/manifests/$(PROFILE) | sed 's|quay.io/argoproj/|$(IMAGE_NAMESPACE)/|' | sed 's/namespace: argo/namespace: $(KUBE_NAMESPACE)/' | kubectl -n $(KUBE_NAMESPACE) apply --prune -l app.kubernetes.io/part-of=argo -f -
+ifneq ($(E2E_EXECUTOR),emissary)
+	# only change the executor from the default it we need to
+	kubectl patch cm/workflow-controller-configmap -p "{\"data\": {\"containerRuntimeExecutor\": \"$(E2E_EXECUTOR)\"}}"
+endif
 ifeq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml
 endif
@@ -443,6 +463,9 @@ endif
 ifneq ($(UI),true)
 	@echo "⚠️  not starting UI. If you want to test the UI, run 'make start UI=true' to start it"
 endif
+ifneq ($(PLUGINS),true)
+	@echo "⚠️  not starting plugins. If you want to test plugins, run 'make start PROFILE=plugins' to start it"
+endif
 	# Check dex, minio, postgres and mysql are in hosts file
 ifeq ($(AUTH_MODE),sso)
 	grep '127.0.0.1[[:blank:]]*dex' /etc/hosts
@@ -452,7 +475,7 @@ endif
 	grep '127.0.0.1[[:blank:]]*mysql' /etc/hosts
 	./hack/port-forward.sh
 ifeq ($(RUN_MODE),local)
-	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) MANAGED_NAMESPACE=$(MANAGED_NAMESPACE) UI=$(UI) API=$(API) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start $(shell if [ -z $GREP_LOGS ]; then echo; else echo "| grep \"$(GREP_LOGS)\""; fi)
+	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) MANAGED_NAMESPACE=$(MANAGED_NAMESPACE) UI=$(UI) API=$(API) PLUGINS=$(PLUGINS) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start $(shell if [ -z $GREP_LOGS ]; then echo; else echo "| grep \"$(GREP_LOGS)\""; fi)
 endif
 
 $(GOPATH)/bin/stern:
@@ -498,20 +521,28 @@ clean:
 # swagger
 
 pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYPES)
+	# These files are generated on a v3/ folder by the tool. Link them to the root folder
+	[ -e ./v3 ] || ln -s . v3
 	$(GOPATH)/bin/openapi-gen \
 	  --go-header-file ./hack/custom-boilerplate.go.txt \
 	  --input-dirs github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
 	  --output-package github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
 	  --report-filename pkg/apis/api-rules/violation_exceptions.list
+	# Delete the link
+	[ -e ./v3 ] && rm -rf v3
 
 
 # generates many other files (listers, informers, client etc).
 pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES)
+	# These files are generated on a v3/ folder by the tool. Link them to the root folder
+	[ -e ./v3 ] || ln -s . v3
 	bash $(GOPATH)/pkg/mod/k8s.io/code-generator@v0.21.5/generate-groups.sh \
 	    "deepcopy,client,informer,lister" \
 	    github.com/argoproj/argo-workflows/v3/pkg/client github.com/argoproj/argo-workflows/v3/pkg/apis \
 	    workflow:v1alpha1 \
 	    --go-header-file ./hack/custom-boilerplate.go.txt
+	# Delete the link
+	[ -e ./v3 ] && rm -rf v3
 
 dist/kubernetes.swagger.json:
 	@mkdir -p dist

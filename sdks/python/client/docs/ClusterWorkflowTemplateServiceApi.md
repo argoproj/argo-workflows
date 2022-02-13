@@ -1,19 +1,19 @@
-# openapi_client.ClusterWorkflowTemplateServiceApi
+# argo_workflows.ClusterWorkflowTemplateServiceApi
 
 All URIs are relative to *http://localhost:2746*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**cluster_workflow_template_service_create_cluster_workflow_template**](ClusterWorkflowTemplateServiceApi.md#cluster_workflow_template_service_create_cluster_workflow_template) | **POST** /api/v1/cluster-workflow-templates | 
-[**cluster_workflow_template_service_delete_cluster_workflow_template**](ClusterWorkflowTemplateServiceApi.md#cluster_workflow_template_service_delete_cluster_workflow_template) | **DELETE** /api/v1/cluster-workflow-templates/{name} | 
-[**cluster_workflow_template_service_get_cluster_workflow_template**](ClusterWorkflowTemplateServiceApi.md#cluster_workflow_template_service_get_cluster_workflow_template) | **GET** /api/v1/cluster-workflow-templates/{name} | 
-[**cluster_workflow_template_service_lint_cluster_workflow_template**](ClusterWorkflowTemplateServiceApi.md#cluster_workflow_template_service_lint_cluster_workflow_template) | **POST** /api/v1/cluster-workflow-templates/lint | 
-[**cluster_workflow_template_service_list_cluster_workflow_templates**](ClusterWorkflowTemplateServiceApi.md#cluster_workflow_template_service_list_cluster_workflow_templates) | **GET** /api/v1/cluster-workflow-templates | 
-[**cluster_workflow_template_service_update_cluster_workflow_template**](ClusterWorkflowTemplateServiceApi.md#cluster_workflow_template_service_update_cluster_workflow_template) | **PUT** /api/v1/cluster-workflow-templates/{name} | 
+[**create_cluster_workflow_template**](ClusterWorkflowTemplateServiceApi.md#create_cluster_workflow_template) | **POST** /api/v1/cluster-workflow-templates | 
+[**delete_cluster_workflow_template**](ClusterWorkflowTemplateServiceApi.md#delete_cluster_workflow_template) | **DELETE** /api/v1/cluster-workflow-templates/{name} | 
+[**get_cluster_workflow_template**](ClusterWorkflowTemplateServiceApi.md#get_cluster_workflow_template) | **GET** /api/v1/cluster-workflow-templates/{name} | 
+[**lint_cluster_workflow_template**](ClusterWorkflowTemplateServiceApi.md#lint_cluster_workflow_template) | **POST** /api/v1/cluster-workflow-templates/lint | 
+[**list_cluster_workflow_templates**](ClusterWorkflowTemplateServiceApi.md#list_cluster_workflow_templates) | **GET** /api/v1/cluster-workflow-templates | 
+[**update_cluster_workflow_template**](ClusterWorkflowTemplateServiceApi.md#update_cluster_workflow_template) | **PUT** /api/v1/cluster-workflow-templates/{name} | 
 
 
-# **cluster_workflow_template_service_create_cluster_workflow_template**
-> IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate cluster_workflow_template_service_create_cluster_workflow_template(body)
+# **create_cluster_workflow_template**
+> IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate create_cluster_workflow_template(body)
 
 
 
@@ -21,21 +21,21 @@ Method | HTTP request | Description
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import cluster_workflow_template_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template_create_request import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateCreateRequest
-from openapi_client.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate
+import argo_workflows
+from argo_workflows.api import cluster_workflow_template_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template_create_request import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateCreateRequest
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = cluster_workflow_template_service_api.ClusterWorkflowTemplateServiceApi(api_client)
     body = IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateCreateRequest(
@@ -407,6 +407,7 @@ with openapi_client.ApiClient() as api_client:
                     parameters=[
                         IoArgoprojWorkflowV1alpha1Parameter(
                             default="default_example",
+                            description="description_example",
                             enum=[
                                 "enum_example",
                             ],
@@ -455,6 +456,205 @@ with openapi_client.ApiClient() as api_client:
                 executor=IoArgoprojWorkflowV1alpha1ExecutorConfig(
                     service_account_name="service_account_name_example",
                 ),
+                hooks={
+                    "key": IoArgoprojWorkflowV1alpha1LifecycleHook(
+                        arguments=IoArgoprojWorkflowV1alpha1Arguments(
+                            artifacts=[
+                                IoArgoprojWorkflowV1alpha1Artifact(
+                                    archive=IoArgoprojWorkflowV1alpha1ArchiveStrategy(
+                                        _none={},
+                                        tar=IoArgoprojWorkflowV1alpha1TarStrategy(
+                                            compression_level=1,
+                                        ),
+                                        zip={},
+                                    ),
+                                    archive_logs=True,
+                                    artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
+                                        password_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        url="url_example",
+                                        username_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                    ),
+                                    _from="_from_example",
+                                    from_expression="from_expression_example",
+                                    gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
+                                        bucket="bucket_example",
+                                        key="key_example",
+                                        service_account_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                    ),
+                                    git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                        depth=1,
+                                        disable_submodules=True,
+                                        fetch=[
+                                            "fetch_example",
+                                        ],
+                                        insecure_ignore_host_key=True,
+                                        password_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        repo="repo_example",
+                                        revision="revision_example",
+                                        ssh_private_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        username_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                    ),
+                                    global_name="global_name_example",
+                                    hdfs=IoArgoprojWorkflowV1alpha1HDFSArtifact(
+                                        addresses=[
+                                            "addresses_example",
+                                        ],
+                                        force=True,
+                                        hdfs_user="hdfs_user_example",
+                                        krb_c_cache_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        krb_config_config_map=ConfigMapKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        krb_keytab_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        krb_realm="krb_realm_example",
+                                        krb_service_principal_name="krb_service_principal_name_example",
+                                        krb_username="krb_username_example",
+                                        path="path_example",
+                                    ),
+                                    http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                        headers=[
+                                            IoArgoprojWorkflowV1alpha1Header(
+                                                name="name_example",
+                                                value="value_example",
+                                            ),
+                                        ],
+                                        url="url_example",
+                                    ),
+                                    mode=1,
+                                    name="name_example",
+                                    optional=True,
+                                    oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                        access_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        bucket="bucket_example",
+                                        create_bucket_if_not_present=True,
+                                        endpoint="endpoint_example",
+                                        key="key_example",
+                                        lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
+                                            mark_deletion_after_days=1,
+                                            mark_infrequent_access_after_days=1,
+                                        ),
+                                        secret_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        security_token="security_token_example",
+                                    ),
+                                    path="path_example",
+                                    raw=IoArgoprojWorkflowV1alpha1RawArtifact(
+                                        data="data_example",
+                                    ),
+                                    recurse_mode=True,
+                                    s3=IoArgoprojWorkflowV1alpha1S3Artifact(
+                                        access_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        bucket="bucket_example",
+                                        create_bucket_if_not_present=IoArgoprojWorkflowV1alpha1CreateS3BucketOptions(
+                                            object_locking=True,
+                                        ),
+                                        encryption_options=IoArgoprojWorkflowV1alpha1S3EncryptionOptions(
+                                            enable_encryption=True,
+                                            kms_encryption_context="kms_encryption_context_example",
+                                            kms_key_id="kms_key_id_example",
+                                            server_side_customer_key_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                        ),
+                                        endpoint="endpoint_example",
+                                        insecure=True,
+                                        key="key_example",
+                                        region="region_example",
+                                        role_arn="role_arn_example",
+                                        secret_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        use_sdk_creds=True,
+                                    ),
+                                    sub_path="sub_path_example",
+                                ),
+                            ],
+                            parameters=[
+                                IoArgoprojWorkflowV1alpha1Parameter(
+                                    default="default_example",
+                                    description="description_example",
+                                    enum=[
+                                        "enum_example",
+                                    ],
+                                    global_name="global_name_example",
+                                    name="name_example",
+                                    value="value_example",
+                                    value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
+                                        config_map_key_ref=ConfigMapKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        default="default_example",
+                                        event="event_example",
+                                        expression="expression_example",
+                                        jq_filter="jq_filter_example",
+                                        json_path="json_path_example",
+                                        parameter="parameter_example",
+                                        path="path_example",
+                                        supplied={},
+                                    ),
+                                ),
+                            ],
+                        ),
+                        expression="expression_example",
+                        template="template_example",
+                        template_ref=IoArgoprojWorkflowV1alpha1TemplateRef(
+                            cluster_scope=True,
+                            name="name_example",
+                            template="template_example",
+                        ),
+                    ),
+                },
                 host_aliases=[
                     HostAlias(
                         hostnames=[
@@ -1585,6 +1785,7 @@ with openapi_client.ApiClient() as api_client:
                                     parameters=[
                                         IoArgoprojWorkflowV1alpha1Parameter(
                                             default="default_example",
+                                            description="description_example",
                                             enum=[
                                                 "enum_example",
                                             ],
@@ -1782,6 +1983,7 @@ with openapi_client.ApiClient() as api_client:
                                             parameters=[
                                                 IoArgoprojWorkflowV1alpha1Parameter(
                                                     default="default_example",
+                                                    description="description_example",
                                                     enum=[
                                                         "enum_example",
                                                     ],
@@ -1806,7 +2008,13 @@ with openapi_client.ApiClient() as api_client:
                                                 ),
                                             ],
                                         ),
+                                        expression="expression_example",
                                         template="template_example",
+                                        template_ref=IoArgoprojWorkflowV1alpha1TemplateRef(
+                                            cluster_scope=True,
+                                            name="name_example",
+                                            template="template_example",
+                                        ),
                                     ),
                                 },
                                 inline=IoArgoprojWorkflowV1alpha1Template(),
@@ -2026,6 +2234,7 @@ with openapi_client.ApiClient() as api_client:
                             ),
                         ],
                         method="method_example",
+                        success_condition="success_condition_example",
                         timeout_seconds=1,
                         url="url_example",
                     ),
@@ -2445,6 +2654,7 @@ with openapi_client.ApiClient() as api_client:
                         parameters=[
                             IoArgoprojWorkflowV1alpha1Parameter(
                                 default="default_example",
+                                description="description_example",
                                 enum=[
                                     "enum_example",
                                 ],
@@ -2684,6 +2894,7 @@ with openapi_client.ApiClient() as api_client:
                         parameters=[
                             IoArgoprojWorkflowV1alpha1Parameter(
                                 default="default_example",
+                                description="description_example",
                                 enum=[
                                     "enum_example",
                                 ],
@@ -2710,6 +2921,7 @@ with openapi_client.ApiClient() as api_client:
                         result="result_example",
                     ),
                     parallelism=1,
+                    plugin={},
                     pod_spec_patch="pod_spec_patch_example",
                     priority=1,
                     priority_class_name="priority_class_name_example",
@@ -3435,6 +3647,7 @@ with openapi_client.ApiClient() as api_client:
                                     parameters=[
                                         IoArgoprojWorkflowV1alpha1Parameter(
                                             default="default_example",
+                                            description="description_example",
                                             enum=[
                                                 "enum_example",
                                             ],
@@ -3628,6 +3841,7 @@ with openapi_client.ApiClient() as api_client:
                                             parameters=[
                                                 IoArgoprojWorkflowV1alpha1Parameter(
                                                     default="default_example",
+                                                    description="description_example",
                                                     enum=[
                                                         "enum_example",
                                                     ],
@@ -3652,7 +3866,13 @@ with openapi_client.ApiClient() as api_client:
                                                 ),
                                             ],
                                         ),
+                                        expression="expression_example",
                                         template="template_example",
+                                        template_ref=IoArgoprojWorkflowV1alpha1TemplateRef(
+                                            cluster_scope=True,
+                                            name="name_example",
+                                            template="template_example",
+                                        ),
                                     ),
                                 },
                                 inline=IoArgoprojWorkflowV1alpha1Template(),
@@ -4970,6 +5190,7 @@ with openapi_client.ApiClient() as api_client:
                                         parameters=[
                                             IoArgoprojWorkflowV1alpha1Parameter(
                                                 default="default_example",
+                                                description="description_example",
                                                 enum=[
                                                     "enum_example",
                                                 ],
@@ -5167,6 +5388,7 @@ with openapi_client.ApiClient() as api_client:
                                                 parameters=[
                                                     IoArgoprojWorkflowV1alpha1Parameter(
                                                         default="default_example",
+                                                        description="description_example",
                                                         enum=[
                                                             "enum_example",
                                                         ],
@@ -5191,7 +5413,13 @@ with openapi_client.ApiClient() as api_client:
                                                     ),
                                                 ],
                                             ),
+                                            expression="expression_example",
                                             template="template_example",
+                                            template_ref=IoArgoprojWorkflowV1alpha1TemplateRef(
+                                                cluster_scope=True,
+                                                name="name_example",
+                                                template="template_example",
+                                            ),
                                         ),
                                     },
                                     inline=IoArgoprojWorkflowV1alpha1Template(),
@@ -5411,6 +5639,7 @@ with openapi_client.ApiClient() as api_client:
                                 ),
                             ],
                             method="method_example",
+                            success_condition="success_condition_example",
                             timeout_seconds=1,
                             url="url_example",
                         ),
@@ -5830,6 +6059,7 @@ with openapi_client.ApiClient() as api_client:
                             parameters=[
                                 IoArgoprojWorkflowV1alpha1Parameter(
                                     default="default_example",
+                                    description="description_example",
                                     enum=[
                                         "enum_example",
                                     ],
@@ -6069,6 +6299,7 @@ with openapi_client.ApiClient() as api_client:
                             parameters=[
                                 IoArgoprojWorkflowV1alpha1Parameter(
                                     default="default_example",
+                                    description="description_example",
                                     enum=[
                                         "enum_example",
                                     ],
@@ -6095,6 +6326,7 @@ with openapi_client.ApiClient() as api_client:
                             result="result_example",
                         ),
                         parallelism=1,
+                        plugin={},
                         pod_spec_patch="pod_spec_patch_example",
                         priority=1,
                         priority_class_name="priority_class_name_example",
@@ -6820,6 +7052,7 @@ with openapi_client.ApiClient() as api_client:
                                         parameters=[
                                             IoArgoprojWorkflowV1alpha1Parameter(
                                                 default="default_example",
+                                                description="description_example",
                                                 enum=[
                                                     "enum_example",
                                                 ],
@@ -7013,6 +7246,7 @@ with openapi_client.ApiClient() as api_client:
                                                 parameters=[
                                                     IoArgoprojWorkflowV1alpha1Parameter(
                                                         default="default_example",
+                                                        description="description_example",
                                                         enum=[
                                                             "enum_example",
                                                         ],
@@ -7037,7 +7271,13 @@ with openapi_client.ApiClient() as api_client:
                                                     ),
                                                 ],
                                             ),
+                                            expression="expression_example",
                                             template="template_example",
+                                            template_ref=IoArgoprojWorkflowV1alpha1TemplateRef(
+                                                cluster_scope=True,
+                                                name="name_example",
+                                                template="template_example",
+                                            ),
                                         ),
                                     },
                                     inline=IoArgoprojWorkflowV1alpha1Template(),
@@ -7829,10 +8069,10 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.cluster_workflow_template_service_create_cluster_workflow_template(body)
+        api_response = api_instance.create_cluster_workflow_template(body)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling ClusterWorkflowTemplateServiceApi->cluster_workflow_template_service_create_cluster_workflow_template: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling ClusterWorkflowTemplateServiceApi->create_cluster_workflow_template: %s\n" % e)
 ```
 
 
@@ -7864,8 +8104,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **cluster_workflow_template_service_delete_cluster_workflow_template**
-> bool, date, datetime, dict, float, int, list, str, none_type cluster_workflow_template_service_delete_cluster_workflow_template(name)
+# **delete_cluster_workflow_template**
+> bool, date, datetime, dict, float, int, list, str, none_type delete_cluster_workflow_template(name)
 
 
 
@@ -7873,19 +8113,19 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import cluster_workflow_template_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+import argo_workflows
+from argo_workflows.api import cluster_workflow_template_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = cluster_workflow_template_service_api.ClusterWorkflowTemplateServiceApi(api_client)
     name = "name_example" # str | 
@@ -7900,18 +8140,18 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.cluster_workflow_template_service_delete_cluster_workflow_template(name)
+        api_response = api_instance.delete_cluster_workflow_template(name)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling ClusterWorkflowTemplateServiceApi->cluster_workflow_template_service_delete_cluster_workflow_template: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling ClusterWorkflowTemplateServiceApi->delete_cluster_workflow_template: %s\n" % e)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.cluster_workflow_template_service_delete_cluster_workflow_template(name, delete_options_grace_period_seconds=delete_options_grace_period_seconds, delete_options_preconditions_uid=delete_options_preconditions_uid, delete_options_preconditions_resource_version=delete_options_preconditions_resource_version, delete_options_orphan_dependents=delete_options_orphan_dependents, delete_options_propagation_policy=delete_options_propagation_policy, delete_options_dry_run=delete_options_dry_run)
+        api_response = api_instance.delete_cluster_workflow_template(name, delete_options_grace_period_seconds=delete_options_grace_period_seconds, delete_options_preconditions_uid=delete_options_preconditions_uid, delete_options_preconditions_resource_version=delete_options_preconditions_resource_version, delete_options_orphan_dependents=delete_options_orphan_dependents, delete_options_propagation_policy=delete_options_propagation_policy, delete_options_dry_run=delete_options_dry_run)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling ClusterWorkflowTemplateServiceApi->cluster_workflow_template_service_delete_cluster_workflow_template: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling ClusterWorkflowTemplateServiceApi->delete_cluster_workflow_template: %s\n" % e)
 ```
 
 
@@ -7949,8 +8189,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **cluster_workflow_template_service_get_cluster_workflow_template**
-> IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate cluster_workflow_template_service_get_cluster_workflow_template(name)
+# **get_cluster_workflow_template**
+> IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate get_cluster_workflow_template(name)
 
 
 
@@ -7958,20 +8198,20 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import cluster_workflow_template_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate
+import argo_workflows
+from argo_workflows.api import cluster_workflow_template_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = cluster_workflow_template_service_api.ClusterWorkflowTemplateServiceApi(api_client)
     name = "name_example" # str | 
@@ -7979,18 +8219,18 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.cluster_workflow_template_service_get_cluster_workflow_template(name)
+        api_response = api_instance.get_cluster_workflow_template(name)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling ClusterWorkflowTemplateServiceApi->cluster_workflow_template_service_get_cluster_workflow_template: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling ClusterWorkflowTemplateServiceApi->get_cluster_workflow_template: %s\n" % e)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.cluster_workflow_template_service_get_cluster_workflow_template(name, get_options_resource_version=get_options_resource_version)
+        api_response = api_instance.get_cluster_workflow_template(name, get_options_resource_version=get_options_resource_version)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling ClusterWorkflowTemplateServiceApi->cluster_workflow_template_service_get_cluster_workflow_template: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling ClusterWorkflowTemplateServiceApi->get_cluster_workflow_template: %s\n" % e)
 ```
 
 
@@ -8023,8 +8263,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **cluster_workflow_template_service_lint_cluster_workflow_template**
-> IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate cluster_workflow_template_service_lint_cluster_workflow_template(body)
+# **lint_cluster_workflow_template**
+> IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate lint_cluster_workflow_template(body)
 
 
 
@@ -8032,21 +8272,21 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import cluster_workflow_template_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template_lint_request import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateLintRequest
-from openapi_client.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate
+import argo_workflows
+from argo_workflows.api import cluster_workflow_template_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template_lint_request import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateLintRequest
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = cluster_workflow_template_service_api.ClusterWorkflowTemplateServiceApi(api_client)
     body = IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateLintRequest(
@@ -8418,6 +8658,7 @@ with openapi_client.ApiClient() as api_client:
                     parameters=[
                         IoArgoprojWorkflowV1alpha1Parameter(
                             default="default_example",
+                            description="description_example",
                             enum=[
                                 "enum_example",
                             ],
@@ -8466,6 +8707,205 @@ with openapi_client.ApiClient() as api_client:
                 executor=IoArgoprojWorkflowV1alpha1ExecutorConfig(
                     service_account_name="service_account_name_example",
                 ),
+                hooks={
+                    "key": IoArgoprojWorkflowV1alpha1LifecycleHook(
+                        arguments=IoArgoprojWorkflowV1alpha1Arguments(
+                            artifacts=[
+                                IoArgoprojWorkflowV1alpha1Artifact(
+                                    archive=IoArgoprojWorkflowV1alpha1ArchiveStrategy(
+                                        _none={},
+                                        tar=IoArgoprojWorkflowV1alpha1TarStrategy(
+                                            compression_level=1,
+                                        ),
+                                        zip={},
+                                    ),
+                                    archive_logs=True,
+                                    artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
+                                        password_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        url="url_example",
+                                        username_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                    ),
+                                    _from="_from_example",
+                                    from_expression="from_expression_example",
+                                    gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
+                                        bucket="bucket_example",
+                                        key="key_example",
+                                        service_account_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                    ),
+                                    git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                        depth=1,
+                                        disable_submodules=True,
+                                        fetch=[
+                                            "fetch_example",
+                                        ],
+                                        insecure_ignore_host_key=True,
+                                        password_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        repo="repo_example",
+                                        revision="revision_example",
+                                        ssh_private_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        username_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                    ),
+                                    global_name="global_name_example",
+                                    hdfs=IoArgoprojWorkflowV1alpha1HDFSArtifact(
+                                        addresses=[
+                                            "addresses_example",
+                                        ],
+                                        force=True,
+                                        hdfs_user="hdfs_user_example",
+                                        krb_c_cache_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        krb_config_config_map=ConfigMapKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        krb_keytab_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        krb_realm="krb_realm_example",
+                                        krb_service_principal_name="krb_service_principal_name_example",
+                                        krb_username="krb_username_example",
+                                        path="path_example",
+                                    ),
+                                    http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                        headers=[
+                                            IoArgoprojWorkflowV1alpha1Header(
+                                                name="name_example",
+                                                value="value_example",
+                                            ),
+                                        ],
+                                        url="url_example",
+                                    ),
+                                    mode=1,
+                                    name="name_example",
+                                    optional=True,
+                                    oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                        access_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        bucket="bucket_example",
+                                        create_bucket_if_not_present=True,
+                                        endpoint="endpoint_example",
+                                        key="key_example",
+                                        lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
+                                            mark_deletion_after_days=1,
+                                            mark_infrequent_access_after_days=1,
+                                        ),
+                                        secret_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        security_token="security_token_example",
+                                    ),
+                                    path="path_example",
+                                    raw=IoArgoprojWorkflowV1alpha1RawArtifact(
+                                        data="data_example",
+                                    ),
+                                    recurse_mode=True,
+                                    s3=IoArgoprojWorkflowV1alpha1S3Artifact(
+                                        access_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        bucket="bucket_example",
+                                        create_bucket_if_not_present=IoArgoprojWorkflowV1alpha1CreateS3BucketOptions(
+                                            object_locking=True,
+                                        ),
+                                        encryption_options=IoArgoprojWorkflowV1alpha1S3EncryptionOptions(
+                                            enable_encryption=True,
+                                            kms_encryption_context="kms_encryption_context_example",
+                                            kms_key_id="kms_key_id_example",
+                                            server_side_customer_key_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                        ),
+                                        endpoint="endpoint_example",
+                                        insecure=True,
+                                        key="key_example",
+                                        region="region_example",
+                                        role_arn="role_arn_example",
+                                        secret_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        use_sdk_creds=True,
+                                    ),
+                                    sub_path="sub_path_example",
+                                ),
+                            ],
+                            parameters=[
+                                IoArgoprojWorkflowV1alpha1Parameter(
+                                    default="default_example",
+                                    description="description_example",
+                                    enum=[
+                                        "enum_example",
+                                    ],
+                                    global_name="global_name_example",
+                                    name="name_example",
+                                    value="value_example",
+                                    value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
+                                        config_map_key_ref=ConfigMapKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        default="default_example",
+                                        event="event_example",
+                                        expression="expression_example",
+                                        jq_filter="jq_filter_example",
+                                        json_path="json_path_example",
+                                        parameter="parameter_example",
+                                        path="path_example",
+                                        supplied={},
+                                    ),
+                                ),
+                            ],
+                        ),
+                        expression="expression_example",
+                        template="template_example",
+                        template_ref=IoArgoprojWorkflowV1alpha1TemplateRef(
+                            cluster_scope=True,
+                            name="name_example",
+                            template="template_example",
+                        ),
+                    ),
+                },
                 host_aliases=[
                     HostAlias(
                         hostnames=[
@@ -9596,6 +10036,7 @@ with openapi_client.ApiClient() as api_client:
                                     parameters=[
                                         IoArgoprojWorkflowV1alpha1Parameter(
                                             default="default_example",
+                                            description="description_example",
                                             enum=[
                                                 "enum_example",
                                             ],
@@ -9793,6 +10234,7 @@ with openapi_client.ApiClient() as api_client:
                                             parameters=[
                                                 IoArgoprojWorkflowV1alpha1Parameter(
                                                     default="default_example",
+                                                    description="description_example",
                                                     enum=[
                                                         "enum_example",
                                                     ],
@@ -9817,7 +10259,13 @@ with openapi_client.ApiClient() as api_client:
                                                 ),
                                             ],
                                         ),
+                                        expression="expression_example",
                                         template="template_example",
+                                        template_ref=IoArgoprojWorkflowV1alpha1TemplateRef(
+                                            cluster_scope=True,
+                                            name="name_example",
+                                            template="template_example",
+                                        ),
                                     ),
                                 },
                                 inline=IoArgoprojWorkflowV1alpha1Template(),
@@ -10037,6 +10485,7 @@ with openapi_client.ApiClient() as api_client:
                             ),
                         ],
                         method="method_example",
+                        success_condition="success_condition_example",
                         timeout_seconds=1,
                         url="url_example",
                     ),
@@ -10456,6 +10905,7 @@ with openapi_client.ApiClient() as api_client:
                         parameters=[
                             IoArgoprojWorkflowV1alpha1Parameter(
                                 default="default_example",
+                                description="description_example",
                                 enum=[
                                     "enum_example",
                                 ],
@@ -10695,6 +11145,7 @@ with openapi_client.ApiClient() as api_client:
                         parameters=[
                             IoArgoprojWorkflowV1alpha1Parameter(
                                 default="default_example",
+                                description="description_example",
                                 enum=[
                                     "enum_example",
                                 ],
@@ -10721,6 +11172,7 @@ with openapi_client.ApiClient() as api_client:
                         result="result_example",
                     ),
                     parallelism=1,
+                    plugin={},
                     pod_spec_patch="pod_spec_patch_example",
                     priority=1,
                     priority_class_name="priority_class_name_example",
@@ -11446,6 +11898,7 @@ with openapi_client.ApiClient() as api_client:
                                     parameters=[
                                         IoArgoprojWorkflowV1alpha1Parameter(
                                             default="default_example",
+                                            description="description_example",
                                             enum=[
                                                 "enum_example",
                                             ],
@@ -11639,6 +12092,7 @@ with openapi_client.ApiClient() as api_client:
                                             parameters=[
                                                 IoArgoprojWorkflowV1alpha1Parameter(
                                                     default="default_example",
+                                                    description="description_example",
                                                     enum=[
                                                         "enum_example",
                                                     ],
@@ -11663,7 +12117,13 @@ with openapi_client.ApiClient() as api_client:
                                                 ),
                                             ],
                                         ),
+                                        expression="expression_example",
                                         template="template_example",
+                                        template_ref=IoArgoprojWorkflowV1alpha1TemplateRef(
+                                            cluster_scope=True,
+                                            name="name_example",
+                                            template="template_example",
+                                        ),
                                     ),
                                 },
                                 inline=IoArgoprojWorkflowV1alpha1Template(),
@@ -12981,6 +13441,7 @@ with openapi_client.ApiClient() as api_client:
                                         parameters=[
                                             IoArgoprojWorkflowV1alpha1Parameter(
                                                 default="default_example",
+                                                description="description_example",
                                                 enum=[
                                                     "enum_example",
                                                 ],
@@ -13178,6 +13639,7 @@ with openapi_client.ApiClient() as api_client:
                                                 parameters=[
                                                     IoArgoprojWorkflowV1alpha1Parameter(
                                                         default="default_example",
+                                                        description="description_example",
                                                         enum=[
                                                             "enum_example",
                                                         ],
@@ -13202,7 +13664,13 @@ with openapi_client.ApiClient() as api_client:
                                                     ),
                                                 ],
                                             ),
+                                            expression="expression_example",
                                             template="template_example",
+                                            template_ref=IoArgoprojWorkflowV1alpha1TemplateRef(
+                                                cluster_scope=True,
+                                                name="name_example",
+                                                template="template_example",
+                                            ),
                                         ),
                                     },
                                     inline=IoArgoprojWorkflowV1alpha1Template(),
@@ -13422,6 +13890,7 @@ with openapi_client.ApiClient() as api_client:
                                 ),
                             ],
                             method="method_example",
+                            success_condition="success_condition_example",
                             timeout_seconds=1,
                             url="url_example",
                         ),
@@ -13841,6 +14310,7 @@ with openapi_client.ApiClient() as api_client:
                             parameters=[
                                 IoArgoprojWorkflowV1alpha1Parameter(
                                     default="default_example",
+                                    description="description_example",
                                     enum=[
                                         "enum_example",
                                     ],
@@ -14080,6 +14550,7 @@ with openapi_client.ApiClient() as api_client:
                             parameters=[
                                 IoArgoprojWorkflowV1alpha1Parameter(
                                     default="default_example",
+                                    description="description_example",
                                     enum=[
                                         "enum_example",
                                     ],
@@ -14106,6 +14577,7 @@ with openapi_client.ApiClient() as api_client:
                             result="result_example",
                         ),
                         parallelism=1,
+                        plugin={},
                         pod_spec_patch="pod_spec_patch_example",
                         priority=1,
                         priority_class_name="priority_class_name_example",
@@ -14831,6 +15303,7 @@ with openapi_client.ApiClient() as api_client:
                                         parameters=[
                                             IoArgoprojWorkflowV1alpha1Parameter(
                                                 default="default_example",
+                                                description="description_example",
                                                 enum=[
                                                     "enum_example",
                                                 ],
@@ -15024,6 +15497,7 @@ with openapi_client.ApiClient() as api_client:
                                                 parameters=[
                                                     IoArgoprojWorkflowV1alpha1Parameter(
                                                         default="default_example",
+                                                        description="description_example",
                                                         enum=[
                                                             "enum_example",
                                                         ],
@@ -15048,7 +15522,13 @@ with openapi_client.ApiClient() as api_client:
                                                     ),
                                                 ],
                                             ),
+                                            expression="expression_example",
                                             template="template_example",
+                                            template_ref=IoArgoprojWorkflowV1alpha1TemplateRef(
+                                                cluster_scope=True,
+                                                name="name_example",
+                                                template="template_example",
+                                            ),
                                         ),
                                     },
                                     inline=IoArgoprojWorkflowV1alpha1Template(),
@@ -15840,10 +16320,10 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.cluster_workflow_template_service_lint_cluster_workflow_template(body)
+        api_response = api_instance.lint_cluster_workflow_template(body)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling ClusterWorkflowTemplateServiceApi->cluster_workflow_template_service_lint_cluster_workflow_template: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling ClusterWorkflowTemplateServiceApi->lint_cluster_workflow_template: %s\n" % e)
 ```
 
 
@@ -15875,8 +16355,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **cluster_workflow_template_service_list_cluster_workflow_templates**
-> IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateList cluster_workflow_template_service_list_cluster_workflow_templates()
+# **list_cluster_workflow_templates**
+> IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateList list_cluster_workflow_templates()
 
 
 
@@ -15884,20 +16364,20 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import cluster_workflow_template_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template_list import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateList
+import argo_workflows
+from argo_workflows.api import cluster_workflow_template_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template_list import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateList
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = cluster_workflow_template_service_api.ClusterWorkflowTemplateServiceApi(api_client)
     list_options_label_selector = "listOptions.labelSelector_example" # str | A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional. (optional)
@@ -15913,10 +16393,10 @@ with openapi_client.ApiClient() as api_client:
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.cluster_workflow_template_service_list_cluster_workflow_templates(list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue)
+        api_response = api_instance.list_cluster_workflow_templates(list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling ClusterWorkflowTemplateServiceApi->cluster_workflow_template_service_list_cluster_workflow_templates: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling ClusterWorkflowTemplateServiceApi->list_cluster_workflow_templates: %s\n" % e)
 ```
 
 
@@ -15956,8 +16436,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **cluster_workflow_template_service_update_cluster_workflow_template**
-> IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate cluster_workflow_template_service_update_cluster_workflow_template(name, body)
+# **update_cluster_workflow_template**
+> IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate update_cluster_workflow_template(name, body)
 
 
 
@@ -15965,21 +16445,21 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import cluster_workflow_template_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template_update_request import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateUpdateRequest
-from openapi_client.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate
+import argo_workflows
+from argo_workflows.api import cluster_workflow_template_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template_update_request import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateUpdateRequest
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_cluster_workflow_template import IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = cluster_workflow_template_service_api.ClusterWorkflowTemplateServiceApi(api_client)
     name = "name_example" # str | DEPRECATED: This field is ignored.
@@ -16347,6 +16827,7 @@ with openapi_client.ApiClient() as api_client:
                     parameters=[
                         IoArgoprojWorkflowV1alpha1Parameter(
                             default="default_example",
+                            description="description_example",
                             enum=[
                                 "enum_example",
                             ],
@@ -16395,6 +16876,205 @@ with openapi_client.ApiClient() as api_client:
                 executor=IoArgoprojWorkflowV1alpha1ExecutorConfig(
                     service_account_name="service_account_name_example",
                 ),
+                hooks={
+                    "key": IoArgoprojWorkflowV1alpha1LifecycleHook(
+                        arguments=IoArgoprojWorkflowV1alpha1Arguments(
+                            artifacts=[
+                                IoArgoprojWorkflowV1alpha1Artifact(
+                                    archive=IoArgoprojWorkflowV1alpha1ArchiveStrategy(
+                                        _none={},
+                                        tar=IoArgoprojWorkflowV1alpha1TarStrategy(
+                                            compression_level=1,
+                                        ),
+                                        zip={},
+                                    ),
+                                    archive_logs=True,
+                                    artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
+                                        password_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        url="url_example",
+                                        username_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                    ),
+                                    _from="_from_example",
+                                    from_expression="from_expression_example",
+                                    gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
+                                        bucket="bucket_example",
+                                        key="key_example",
+                                        service_account_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                    ),
+                                    git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                        depth=1,
+                                        disable_submodules=True,
+                                        fetch=[
+                                            "fetch_example",
+                                        ],
+                                        insecure_ignore_host_key=True,
+                                        password_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        repo="repo_example",
+                                        revision="revision_example",
+                                        ssh_private_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        username_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                    ),
+                                    global_name="global_name_example",
+                                    hdfs=IoArgoprojWorkflowV1alpha1HDFSArtifact(
+                                        addresses=[
+                                            "addresses_example",
+                                        ],
+                                        force=True,
+                                        hdfs_user="hdfs_user_example",
+                                        krb_c_cache_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        krb_config_config_map=ConfigMapKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        krb_keytab_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        krb_realm="krb_realm_example",
+                                        krb_service_principal_name="krb_service_principal_name_example",
+                                        krb_username="krb_username_example",
+                                        path="path_example",
+                                    ),
+                                    http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                        headers=[
+                                            IoArgoprojWorkflowV1alpha1Header(
+                                                name="name_example",
+                                                value="value_example",
+                                            ),
+                                        ],
+                                        url="url_example",
+                                    ),
+                                    mode=1,
+                                    name="name_example",
+                                    optional=True,
+                                    oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                        access_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        bucket="bucket_example",
+                                        create_bucket_if_not_present=True,
+                                        endpoint="endpoint_example",
+                                        key="key_example",
+                                        lifecycle_rule=IoArgoprojWorkflowV1alpha1OSSLifecycleRule(
+                                            mark_deletion_after_days=1,
+                                            mark_infrequent_access_after_days=1,
+                                        ),
+                                        secret_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        security_token="security_token_example",
+                                    ),
+                                    path="path_example",
+                                    raw=IoArgoprojWorkflowV1alpha1RawArtifact(
+                                        data="data_example",
+                                    ),
+                                    recurse_mode=True,
+                                    s3=IoArgoprojWorkflowV1alpha1S3Artifact(
+                                        access_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        bucket="bucket_example",
+                                        create_bucket_if_not_present=IoArgoprojWorkflowV1alpha1CreateS3BucketOptions(
+                                            object_locking=True,
+                                        ),
+                                        encryption_options=IoArgoprojWorkflowV1alpha1S3EncryptionOptions(
+                                            enable_encryption=True,
+                                            kms_encryption_context="kms_encryption_context_example",
+                                            kms_key_id="kms_key_id_example",
+                                            server_side_customer_key_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                        ),
+                                        endpoint="endpoint_example",
+                                        insecure=True,
+                                        key="key_example",
+                                        region="region_example",
+                                        role_arn="role_arn_example",
+                                        secret_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        use_sdk_creds=True,
+                                    ),
+                                    sub_path="sub_path_example",
+                                ),
+                            ],
+                            parameters=[
+                                IoArgoprojWorkflowV1alpha1Parameter(
+                                    default="default_example",
+                                    description="description_example",
+                                    enum=[
+                                        "enum_example",
+                                    ],
+                                    global_name="global_name_example",
+                                    name="name_example",
+                                    value="value_example",
+                                    value_from=IoArgoprojWorkflowV1alpha1ValueFrom(
+                                        config_map_key_ref=ConfigMapKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        default="default_example",
+                                        event="event_example",
+                                        expression="expression_example",
+                                        jq_filter="jq_filter_example",
+                                        json_path="json_path_example",
+                                        parameter="parameter_example",
+                                        path="path_example",
+                                        supplied={},
+                                    ),
+                                ),
+                            ],
+                        ),
+                        expression="expression_example",
+                        template="template_example",
+                        template_ref=IoArgoprojWorkflowV1alpha1TemplateRef(
+                            cluster_scope=True,
+                            name="name_example",
+                            template="template_example",
+                        ),
+                    ),
+                },
                 host_aliases=[
                     HostAlias(
                         hostnames=[
@@ -17525,6 +18205,7 @@ with openapi_client.ApiClient() as api_client:
                                     parameters=[
                                         IoArgoprojWorkflowV1alpha1Parameter(
                                             default="default_example",
+                                            description="description_example",
                                             enum=[
                                                 "enum_example",
                                             ],
@@ -17722,6 +18403,7 @@ with openapi_client.ApiClient() as api_client:
                                             parameters=[
                                                 IoArgoprojWorkflowV1alpha1Parameter(
                                                     default="default_example",
+                                                    description="description_example",
                                                     enum=[
                                                         "enum_example",
                                                     ],
@@ -17746,7 +18428,13 @@ with openapi_client.ApiClient() as api_client:
                                                 ),
                                             ],
                                         ),
+                                        expression="expression_example",
                                         template="template_example",
+                                        template_ref=IoArgoprojWorkflowV1alpha1TemplateRef(
+                                            cluster_scope=True,
+                                            name="name_example",
+                                            template="template_example",
+                                        ),
                                     ),
                                 },
                                 inline=IoArgoprojWorkflowV1alpha1Template(),
@@ -17966,6 +18654,7 @@ with openapi_client.ApiClient() as api_client:
                             ),
                         ],
                         method="method_example",
+                        success_condition="success_condition_example",
                         timeout_seconds=1,
                         url="url_example",
                     ),
@@ -18385,6 +19074,7 @@ with openapi_client.ApiClient() as api_client:
                         parameters=[
                             IoArgoprojWorkflowV1alpha1Parameter(
                                 default="default_example",
+                                description="description_example",
                                 enum=[
                                     "enum_example",
                                 ],
@@ -18624,6 +19314,7 @@ with openapi_client.ApiClient() as api_client:
                         parameters=[
                             IoArgoprojWorkflowV1alpha1Parameter(
                                 default="default_example",
+                                description="description_example",
                                 enum=[
                                     "enum_example",
                                 ],
@@ -18650,6 +19341,7 @@ with openapi_client.ApiClient() as api_client:
                         result="result_example",
                     ),
                     parallelism=1,
+                    plugin={},
                     pod_spec_patch="pod_spec_patch_example",
                     priority=1,
                     priority_class_name="priority_class_name_example",
@@ -19375,6 +20067,7 @@ with openapi_client.ApiClient() as api_client:
                                     parameters=[
                                         IoArgoprojWorkflowV1alpha1Parameter(
                                             default="default_example",
+                                            description="description_example",
                                             enum=[
                                                 "enum_example",
                                             ],
@@ -19568,6 +20261,7 @@ with openapi_client.ApiClient() as api_client:
                                             parameters=[
                                                 IoArgoprojWorkflowV1alpha1Parameter(
                                                     default="default_example",
+                                                    description="description_example",
                                                     enum=[
                                                         "enum_example",
                                                     ],
@@ -19592,7 +20286,13 @@ with openapi_client.ApiClient() as api_client:
                                                 ),
                                             ],
                                         ),
+                                        expression="expression_example",
                                         template="template_example",
+                                        template_ref=IoArgoprojWorkflowV1alpha1TemplateRef(
+                                            cluster_scope=True,
+                                            name="name_example",
+                                            template="template_example",
+                                        ),
                                     ),
                                 },
                                 inline=IoArgoprojWorkflowV1alpha1Template(),
@@ -20910,6 +21610,7 @@ with openapi_client.ApiClient() as api_client:
                                         parameters=[
                                             IoArgoprojWorkflowV1alpha1Parameter(
                                                 default="default_example",
+                                                description="description_example",
                                                 enum=[
                                                     "enum_example",
                                                 ],
@@ -21107,6 +21808,7 @@ with openapi_client.ApiClient() as api_client:
                                                 parameters=[
                                                     IoArgoprojWorkflowV1alpha1Parameter(
                                                         default="default_example",
+                                                        description="description_example",
                                                         enum=[
                                                             "enum_example",
                                                         ],
@@ -21131,7 +21833,13 @@ with openapi_client.ApiClient() as api_client:
                                                     ),
                                                 ],
                                             ),
+                                            expression="expression_example",
                                             template="template_example",
+                                            template_ref=IoArgoprojWorkflowV1alpha1TemplateRef(
+                                                cluster_scope=True,
+                                                name="name_example",
+                                                template="template_example",
+                                            ),
                                         ),
                                     },
                                     inline=IoArgoprojWorkflowV1alpha1Template(),
@@ -21351,6 +22059,7 @@ with openapi_client.ApiClient() as api_client:
                                 ),
                             ],
                             method="method_example",
+                            success_condition="success_condition_example",
                             timeout_seconds=1,
                             url="url_example",
                         ),
@@ -21770,6 +22479,7 @@ with openapi_client.ApiClient() as api_client:
                             parameters=[
                                 IoArgoprojWorkflowV1alpha1Parameter(
                                     default="default_example",
+                                    description="description_example",
                                     enum=[
                                         "enum_example",
                                     ],
@@ -22009,6 +22719,7 @@ with openapi_client.ApiClient() as api_client:
                             parameters=[
                                 IoArgoprojWorkflowV1alpha1Parameter(
                                     default="default_example",
+                                    description="description_example",
                                     enum=[
                                         "enum_example",
                                     ],
@@ -22035,6 +22746,7 @@ with openapi_client.ApiClient() as api_client:
                             result="result_example",
                         ),
                         parallelism=1,
+                        plugin={},
                         pod_spec_patch="pod_spec_patch_example",
                         priority=1,
                         priority_class_name="priority_class_name_example",
@@ -22760,6 +23472,7 @@ with openapi_client.ApiClient() as api_client:
                                         parameters=[
                                             IoArgoprojWorkflowV1alpha1Parameter(
                                                 default="default_example",
+                                                description="description_example",
                                                 enum=[
                                                     "enum_example",
                                                 ],
@@ -22953,6 +23666,7 @@ with openapi_client.ApiClient() as api_client:
                                                 parameters=[
                                                     IoArgoprojWorkflowV1alpha1Parameter(
                                                         default="default_example",
+                                                        description="description_example",
                                                         enum=[
                                                             "enum_example",
                                                         ],
@@ -22977,7 +23691,13 @@ with openapi_client.ApiClient() as api_client:
                                                     ),
                                                 ],
                                             ),
+                                            expression="expression_example",
                                             template="template_example",
+                                            template_ref=IoArgoprojWorkflowV1alpha1TemplateRef(
+                                                cluster_scope=True,
+                                                name="name_example",
+                                                template="template_example",
+                                            ),
                                         ),
                                     },
                                     inline=IoArgoprojWorkflowV1alpha1Template(),
@@ -23769,10 +24489,10 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.cluster_workflow_template_service_update_cluster_workflow_template(name, body)
+        api_response = api_instance.update_cluster_workflow_template(name, body)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling ClusterWorkflowTemplateServiceApi->cluster_workflow_template_service_update_cluster_workflow_template: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling ClusterWorkflowTemplateServiceApi->update_cluster_workflow_template: %s\n" % e)
 ```
 
 

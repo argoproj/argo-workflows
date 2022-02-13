@@ -120,7 +120,7 @@ export const WorkflowTemplateDetails = ({history, location, match}: RouteCompone
                 {!template ? <Loading /> : <WorkflowTemplateEditor template={template} onChange={setTemplate} onError={setError} onTabSelected={setTab} selectedTabKey={tab} />}
             </>
             {template && (
-                <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)} isNarrow={sidePanel === 'submit'}>
+                <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)} isMiddle={sidePanel === 'submit'}>
                     {sidePanel === 'submit' && (
                         <SubmitWorkflowPanel
                             kind='WorkflowTemplate'

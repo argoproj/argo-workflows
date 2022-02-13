@@ -23,7 +23,11 @@ var (
 
 func Executor(e string) Need {
 	return func(s *E2ESuite) (bool, string) {
-		return s.Config.ContainerRuntimeExecutor == e, e
+		v := s.Config.ContainerRuntimeExecutor
+		if v == "" {
+			v = "emissary"
+		}
+		return v == e, e
 	}
 }
 

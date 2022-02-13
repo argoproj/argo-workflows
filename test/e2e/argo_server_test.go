@@ -305,7 +305,7 @@ metadata:
 			func(t *testing.T, e []corev1.Event) {
 				assert.Equal(t, "argo", e[0].InvolvedObject.Namespace)
 				assert.Equal(t, "WorkflowEventBindingError", e[0].Reason)
-				assert.Equal(t, "failed to dispatch event: failed to evaluate workflow template expression: unexpected token EOF (1:1)", e[0].Message)
+				assert.Equal(t, "failed to dispatch event: failed to evaluate workflow template expression: unable to evaluate expression '': unexpected token EOF (1:1)", e[0].Message)
 			},
 		)
 }
@@ -354,6 +354,19 @@ func (s *ArgoServerSuite) TestCookieAuth() {
 	s.bearerToken = ""
 	s.e().GET("/api/v1/workflows/argo").
 		WithHeader("Cookie", "authorization=Bearer "+token).
+		Expect().
+		Status(200)
+}
+
+// You could have multiple authorization headers, set by wildcard domain cookies in the case of some SSO implementations
+func (s *ArgoServerSuite) TestMultiCookieAuth() {
+	token := s.bearerToken
+	defer func() { s.bearerToken = token }()
+	s.bearerToken = ""
+	s.e().GET("/api/v1/workflows/argo").
+		WithCookie("authorization", "invalid1").
+		WithCookie("authorization", "Bearer "+token).
+		WithCookie("authorization", "invalid2").
 		Expect().
 		Status(200)
 }

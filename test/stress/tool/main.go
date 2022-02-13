@@ -2,7 +2,10 @@ package main
 
 import (
 	"context"
+	"flag"
+	"fmt"
 
+	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/clientcmd"
@@ -13,6 +16,7 @@ import (
 )
 
 func main() {
+	ctx := context.Background()
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	configOverrides := &clientcmd.ConfigOverrides{}
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
@@ -22,12 +26,16 @@ func main() {
 	}
 	config.QPS = 512
 	namespace, _, _ := kubeConfig.Namespace()
+
 	w := versioned.NewForConfigOrDie(config).ArgoprojV1alpha1().Workflows(namespace)
+	err = w.DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: "stress"})
+	if err != nil {
+		panic(err)
+	}
 
 	wf := &wfv1.Workflow{}
 	err = yaml.Unmarshal([]byte(`
 metadata:
-  generateName: stress-
   labels:
     stress: "true"
 spec:
@@ -44,12 +52,18 @@ spec:
 		panic(err)
 	}
 
-	ctx := context.Background()
-	for i := 0; i < 10000; i++ {
+	n := 0
+	flag.IntVar(&n, "n", 1, "number of workflows")
+	flag.Parse()
+
+	log.Printf("running %d workflows\n", n)
+
+	for i := 0; i < n; i++ {
+		wf.SetName(fmt.Sprintf("stress-%d", i))
 		_, err := w.Create(ctx, wf, metav1.CreateOptions{})
 		if err != nil {
 			panic(err)
 		}
-		print(i, " ")
+		log.Printf("%s\n", wf.GetName())
 	}
 }

@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/antonmedv/expr"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/expr/argoexpr"
 	"github.com/argoproj/argo-workflows/v3/util/template"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
@@ -247,6 +247,21 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 		// complete (since the DAG itself will have succeeded). To ensure that their exit handlers are run we also run them here. Note that
 		// calls to runOnExitNode are idempotent: it is fine if they are called more than once for the same task.
 		taskNode := dagCtx.getTaskNode(taskName)
+
+		if taskNode != nil {
+			task := dagCtx.GetTask(taskName)
+			scope, err := woc.buildLocalScopeFromTask(dagCtx, task)
+			if err != nil {
+				woc.markNodeError(node.Name, err)
+				return node, err
+			}
+			scope.addParamToScope(fmt.Sprintf("tasks.%s.status", task.Name), string(node.Phase))
+			_, err = woc.executeTmplLifeCycleHook(ctx, woc.globalParams.Merge(scope.getParameters()), dagCtx.GetTask(taskName).Hooks, taskNode, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
+			if err != nil {
+				woc.markNodeError(node.Name, err)
+				return node, err
+			}
+		}
 		if taskNode != nil && taskNode.Fulfilled() {
 			if taskNode.Completed() {
 				// Run the node's onExit node, if any. Since this is a target task, we don't need to consider the status
@@ -356,6 +371,21 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 		// Release acquired lock completed task.
 		if tmpl != nil {
 			woc.controller.syncManager.Release(woc.wf, node.ID, tmpl.Synchronization)
+		}
+
+		task := dagCtx.GetTask(taskName)
+		scope, err := woc.buildLocalScopeFromTask(dagCtx, task)
+		if err != nil {
+			woc.markNodeError(node.Name, err)
+		}
+		scope.addParamToScope(fmt.Sprintf("tasks.%s.status", task.Name), string(node.Phase))
+		hookCompleted, err := woc.executeTmplLifeCycleHook(ctx, woc.globalParams.Merge(scope.getParameters()), dagCtx.GetTask(taskName).Hooks, node, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
+		if err != nil {
+			woc.markNodeError(node.Name, err)
+		}
+		// Check all hooks are completes
+		if !hookCompleted {
+			return
 		}
 
 		if node.Completed() {
@@ -755,14 +785,9 @@ func (d *dagContext) evaluateDependsLogic(taskName string) (bool, bool, error) {
 	}
 
 	evalLogic := strings.Replace(d.GetTaskDependsLogic(taskName), "-", "_", -1)
-	result, err := expr.Eval(evalLogic, evalScope)
+	execute, err := argoexpr.EvalBool(evalLogic, evalScope)
 	if err != nil {
 		return false, false, fmt.Errorf("unable to evaluate expression '%s': %s", evalLogic, err)
 	}
-	execute, ok := result.(bool)
-	if !ok {
-		return false, false, fmt.Errorf("unable to cast expression result '%s': %s", result, err)
-	}
-
 	return execute, true, nil
 }
