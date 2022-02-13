@@ -10,8 +10,10 @@ import (
 )
 
 type ContainerSetTemplate struct {
-	Containers    []ContainerNode            `json:"containers" protobuf:"bytes,4,rep,name=containers"`
-	VolumeMounts  []corev1.VolumeMount       `json:"volumeMounts,omitempty" protobuf:"bytes,3,rep,name=volumeMounts"`
+	Containers   []ContainerNode      `json:"containers" protobuf:"bytes,4,rep,name=containers"`
+	VolumeMounts []corev1.VolumeMount `json:"volumeMounts,omitempty" protobuf:"bytes,3,rep,name=volumeMounts"`
+	// RetryStrategy describes how to retry a container nodes in the container set if it fails.
+	// Nbr of retries(default 0) and sleep duration between retries(default 0s, instant retry) can be set.
 	RetryStrategy *ContainerSetRetryStrategy `json:"retryStrategy,omitempty" protobuf:"bytes,5,opt,name=retryStrategy"`
 }
 

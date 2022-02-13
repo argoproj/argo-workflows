@@ -258,6 +258,8 @@ message ContainerSetTemplate {
 
   repeated k8s.io.api.core.v1.VolumeMount volumeMounts = 3;
 
+  // RetryStrategy describes how to retry a container nodes in the container set if it fails.
+  // Nbr of retries(default 0) and sleep duration between retries(default 0s, instant retry) can be set.
   optional ContainerSetRetryStrategy retryStrategy = 5;
 }
 
