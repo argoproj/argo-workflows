@@ -36,6 +36,7 @@ func TestEmissary(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "0", string(data))
 	})
+
 	t.Run("Exit1", func(t *testing.T) {
 		err := run(x, []string{"exit", "1"})
 		assert.Equal(t, 1, err.(*exec.ExitError).ExitCode())
@@ -126,6 +127,66 @@ func TestEmissary(t *testing.T) {
 		data, err := ioutil.ReadFile(varRunArgo + "/outputs/parameters/tmp/parameter")
 		assert.NoError(t, err)
 		assert.Contains(t, string(data), "hello")
+	})
+	t.Run("RetryContainerSetFail", func(t *testing.T) {
+		err = ioutil.WriteFile(varRunArgo+"/template", []byte(`
+{
+	"outputs": {
+		"artifacts": [
+			{
+				"path": "/tmp/artifact/"
+			}
+		]
+	},
+	"containerSet": {
+		"containers": [
+			{	"name": "main"
+			}
+		],
+		"retryStrategy": 
+		{
+			"retries": 1
+		}
+	}
+}
+`), 0o600)
+		assert.NoError(t, err)
+		_ = os.Remove("test.txt")
+		err = run(x, []string{"sh", "./test/containerSetRetryTest.sh", "/tmp/artifact"})
+		assert.Error(t, err)
+		data, err := ioutil.ReadFile(varRunArgo + "/outputs/artifacts/tmp/artifact.tgz")
+		assert.NoError(t, err)
+		assert.NotEmpty(t, string(data)) // data is tgz format
+	})
+	t.Run("RetryContainerSetSuccess", func(t *testing.T) {
+		err = ioutil.WriteFile(varRunArgo+"/template", []byte(`
+{
+	"outputs": {
+		"artifacts": [
+			{
+				"path": "/tmp/artifact/"
+			}
+		]
+	},
+	"containerSet": {
+		"containers": [
+			{	"name": "main"
+			}
+		],
+		"retryStrategy": 
+		{
+			"retries": 2
+		}
+	}
+}
+`), 0o600)
+		assert.NoError(t, err)
+		_ = os.Remove("test.txt")
+		err = run(x, []string{"sh", "./test/containerSetRetryTest.sh", "/tmp/artifact"})
+		assert.NoError(t, err)
+		data, err := ioutil.ReadFile(varRunArgo + "/outputs/artifacts/tmp/artifact.tgz")
+		assert.NoError(t, err)
+		assert.NotEmpty(t, string(data)) // data is tgz format
 	})
 }
 
