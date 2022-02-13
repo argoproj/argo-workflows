@@ -813,7 +813,7 @@ func (wfc *WorkflowController) enqueueWfFromPodLabelAfter(obj interface{}, durat
 		return fmt.Errorf("Watch returned pod unrelated to any workflow")
 	}
 	if duration != nil {
-		wfc.wfQueue.AddAfter(pod.ObjectMeta.Namespace + "/" + workflowName, *duration)
+		wfc.wfQueue.AddAfter(pod.ObjectMeta.Namespace+"/"+workflowName, *duration)
 		return nil
 	}
 	wfc.wfQueue.AddRateLimited(pod.ObjectMeta.Namespace + "/" + workflowName)
@@ -1024,7 +1024,6 @@ func (wfc *WorkflowController) newPodInformer(ctx context.Context) cache.SharedI
 				if newPod.Status.Reason == common.ErrDeadlineExceeded && oldPod.Status.Reason != common.ErrDeadlineExceeded {
 					duration := time.Duration(1) * time.Second
 					err = wfc.enqueueWfFromPodLabelAfter(newVal, &duration)
-					return
 				} else {
 					err = wfc.enqueueWfFromPodLabelAfter(newVal, nil)
 				}
