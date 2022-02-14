@@ -15,8 +15,7 @@ import (
 )
 
 func TestEmissary(t *testing.T) {
-	tmp, err := ioutil.TempDir("", "")
-	assert.NoError(t, err)
+	tmp := t.TempDir()
 
 	varRunArgo = tmp
 	includeScriptOutput = true
