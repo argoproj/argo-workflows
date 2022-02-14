@@ -31,6 +31,7 @@ See https://argoproj.github.io/argo-workflows/argo-server/
       --namespaced                           run as namespaced mode
   -p, --port int                             Port to listen on (default 2746)
       --sso-namespace string                 namespace that will be used for SSO RBAC. Defaults to installation namespace. Used only in namespaced mode
+      --tls-certificate-secret-name string   The name of a Kubernetes secret that contains the server certificates
       --x-frame-options string               Set X-Frame-Options header in HTTP responses. (default "DENY")
 ```
 

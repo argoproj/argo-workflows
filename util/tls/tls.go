@@ -17,7 +17,6 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/argoproj/argo-workflows/v3/util"
