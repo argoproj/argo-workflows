@@ -24,20 +24,8 @@ export const NewVersionModal = ({version, dismiss}: {version: string; dismiss: (
                     </a>
                     .
                 </li>
-                <li>
-                    Connect with the workflow using
-                    <a href='https://argoproj.github.io/argo-workflows/lifecycle-hooks/?utm_source=argo-ui' target='_blank'>
-                        lifecycle hooks
-                    </a>
-                    .
-                </li>
-                <li>
-                    Pause steps in your workflow with{' '}
-                    <a href='https://argoproj.github.io/argo-workflows/debug-pause/?utm_source=argo-ui' target='_blank'>
-                        Debug pause
-                    </a>
-                    .
-                </li>
+                <li>Connect with the workflow using lifecycle hooks.</li>
+                <li>Pause steps in your workflow with Debug pause.</li>
             </ul>
             <p>
                 <a href='https://blog.argoproj.io/whats-new-in-argo-workflows-v3-3-dd051d2f1c7?utm_source=argo-ui' target='_blank'>
