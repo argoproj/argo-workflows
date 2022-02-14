@@ -9,6 +9,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/pointer"
 )
 
@@ -1095,4 +1096,53 @@ func TestStepSpecGetExitHook(t *testing.T) {
 	step = WorkflowStep{Name: "A", Hooks: LifecycleHooks{"exit": LifecycleHook{Template: "hook"}}}
 	hooks = step.GetExitHook(step.Arguments)
 	assert.Equal(t, "hook", hooks.Template)
+
+}
+
+func TestTemplate_RetryStrategy(t *testing.T) {
+	tmpl := Template{}
+	strategy, err := tmpl.GetRetryStrategy()
+	assert.Nil(t, err)
+	assert.Equal(t, wait.Backoff{Steps: 1}, strategy)
+}
+
+func TestGetExecSpec(t *testing.T) {
+	wf := Workflow{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: "test",
+		},
+		Spec: WorkflowSpec{
+			Templates: []Template{
+				{Name: "spec-template"},
+			},
+		},
+		Status: WorkflowStatus{
+			StoredWorkflowSpec: &WorkflowSpec{
+				Templates: []Template{
+					{Name: "stored-spec-template"},
+				},
+			},
+		},
+	}
+
+	assert.Equal(t, wf.GetExecSpec().Templates[0].Name, "stored-spec-template")
+
+	wf = Workflow{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: "test",
+		},
+		Spec: WorkflowSpec{
+			Templates: []Template{
+				{Name: "spec-template"},
+			},
+		},
+	}
+
+	assert.Equal(t, wf.GetExecSpec().Templates[0].Name, "spec-template")
+
+	wf.Status.StoredWorkflowSpec = nil
+
+	assert.Equal(t, wf.GetExecSpec().Templates[0].Name, "spec-template")
 }

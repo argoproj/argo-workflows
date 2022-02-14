@@ -11,16 +11,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2.3.1
+      - uses: actions/setup-python@v2.3.2
         with:
           python-version: 3.9
       - uses: actions/setup-go@v1
         with:
           go-version: '1.17'
-      - run: pip install mkdocs==1.0.4 mkdocs_material==4.1.1
+      - run: pip install mkdocs==1.2.3 mkdocs_material==8.1.9
       - run: mkdocs build
       - run: make parse-examples
-      - uses: peaceiris/actions-gh-pages@v2.5.0
+      - uses: peaceiris/actions-gh-pages@v2.9.0
         env:
           PERSONAL_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
           PUBLISH_BRANCH: gh-pages

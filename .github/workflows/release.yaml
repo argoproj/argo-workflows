@@ -323,13 +323,13 @@ jobs:
       - uses: actions/setup-node@v2.5.1
         with:
           node-version: "16"
+      - uses: actions/setup-go@v2
+        with:
+          go-version: "1.17"
       - uses: actions/cache@v2
         with:
           path: ui/node_modules
           key: ${{ runner.os }}-node-dep-v1-${{ hashFiles('**/yarn.lock') }}
-      - uses: actions/setup-go@v2
-        with:
-          go-version: "1.17"
       - uses: actions/cache@v2
         with:
           path: /home/runner/.cache/go-build
@@ -339,14 +339,31 @@ jobs:
           path: /home/runner/go/pkg/mod
           key: GOMODCACHE-v2-${{ hashFiles('**/go.mod') }}
       # https://stackoverflow.com/questions/58033366/how-to-get-current-branch-within-github-actions
-      - run: make release-notes VERSION=${GITHUB_REF##*/}
+      - run: |
+          if [ ${GITHUB_REF##*/} = master ]; then
+           echo "VERSION=latest" >> $GITHUB_ENV
+          else
+            echo "VERSION=${GITHUB_REF##*/}" >> $GITHUB_ENV
+          fi
+      - run: go install sigs.k8s.io/bom/cmd/bom@v0.2.0
+      - run: go install github.com/spdx/spdx-sbom-generator/cmd/generator@v0.0.13
+      - run: mkdir -p dist
+      - run: generator -o dist -p .
+      - run: yarn --cwd ui install
+      - run: generator -o dist -p ui
+      - run: bom generate --image quay.io/argoproj/workflow-controller:$VERSION -o dist/workflow-controller.spdx
+      - run: bom generate --image quay.io/argoproj/argocli:$VERSION -o dist/argocli.spdx
+      - run: bom generate --image quay.io/argoproj/argoexec:$VERSION -o dist/argoexec.spdx
+      # pack the boms into one file to make it easy to download
+      - run: tar -zcf dist/sbom.tar.gz dist/*.spdx
+      - run: make release-notes VERSION=$VERSION
       - run: cat release-notes
-      - run: make manifests VERSION=${GITHUB_REF##*/}
+      - run: make manifests VERSION=$VERSION
       - name: Print image tag (please check it is not `:latest`)
         run: |
           grep image: dist/manifests/install.yaml
       - run: go mod download
-      - run: make clis STATIC_FILES=true VERSION=${GITHUB_REF##*/}
+      - run: make clis STATIC_FILES=true VERSION=$VERSION
       - name: Print version (please check it is not dirty)
         run: dist/argo-linux-amd64 version
       - run: make checksums
@@ -364,5 +381,6 @@ jobs:
             dist/argo-*.gz
             dist/argo-*.gz.sha256
             dist/manifests/*.yaml
+            dist/sbom.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

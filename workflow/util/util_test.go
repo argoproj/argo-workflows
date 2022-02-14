@@ -94,11 +94,7 @@ func TestReadFromSingleorMultiplePath(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			dir, err := ioutil.TempDir("", name)
-			if err != nil {
-				t.Error("Could not create temporary directory")
-			}
-			defer os.RemoveAll(dir)
+			dir := t.TempDir()
 			var filePaths []string
 			for i := range tc.fileNames {
 				content := []byte(tc.contents[i])
@@ -145,11 +141,7 @@ func TestReadFromSingleorMultiplePathErrorHandling(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			dir, err := ioutil.TempDir("", name)
-			if err != nil {
-				t.Error("Could not create temporary directory")
-			}
-			defer os.RemoveAll(dir)
+			dir := t.TempDir()
 			var filePaths []string
 			for i := range tc.fileNames {
 				content := []byte(tc.contents[i])

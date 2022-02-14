@@ -6,6 +6,10 @@ the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summar
 
 ## Upgrading to v3.3
 
+### [fce82d572](https://github.com/argoproj/argo-workflows/commit/fce82d5727b89cfe49e8e3568fff40725bd43734) feat: Remove pod workers (#7837)
+
+This PR removes pod workers from the code, the pod informer directly writes into the workflow queue. As a result the `--pod-workers` flag has been removed. 
+
 ### [93c11a24ff](https://github.com/argoproj/argo-workflows/commit/93c11a24ff06049c2197149acd787f702e5c1f9b) feat: Add TLS to Metrics and Telemetry servers (#7041)
 
 This PR adds the ability to send metrics over TLS with a self-signed certificate. In v3.5 this will be enabled by default, so it is recommended that users enable this functionality now.

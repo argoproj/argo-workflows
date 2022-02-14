@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/square/go-jose.v2/jwt"
 )
 
 func TestUnmarshalJSON(t *testing.T) {
