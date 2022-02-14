@@ -11,11 +11,12 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
-	"log"
 	"math/big"
 	"net"
 	"os"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"k8s.io/client-go/kubernetes"
 
@@ -23,6 +24,9 @@ import (
 )
 
 const (
+	// The CA certificate within the Kubernetes secret
+	tlsCaSecretKey = "ca.crt"
+
 	// The key of the tls.crt within the Kubernetes secret
 	tlsCrtSecretKey = "tls.crt"
 
@@ -144,7 +148,23 @@ func GetServerTLSConfigFromSecret(ctx context.Context, kubectlConfig kubernetes.
 		return nil, err
 	}
 
+	capem, err := util.GetSecrets(ctx, kubectlConfig, namespace, tlsKubernetesSecretName, tlsCaSecretKey)
+	if err != nil {
+		return nil, err
+	}
+
+	rootCAs, err := x509.SystemCertPool()
+	if rootCAs != nil {
+		log.Warnf("failed to get system certificate pool: %v, continuing with empty certificate trust", err)
+		rootCAs = x509.NewCertPool()
+	}
+
+	if !rootCAs.AppendCertsFromPEM(capem) {
+		log.Warn("failed to append ca.crt to the trusted CA pool")
+	}
+
 	return &tls.Config{
+		RootCAs:      rootCAs,
 		Certificates: []tls.Certificate{cert},
 		MinVersion:   uint16(tlsMinVersion),
 	}, nil
