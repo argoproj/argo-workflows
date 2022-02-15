@@ -2818,7 +2818,7 @@ _No description available_
 |:----------:|:----------:|---------------|
 |`body`|`string`|Body is content of the HTTP Request|
 |`headers`|`Array<`[`HTTPHeader`](#httpheader)`>`|Headers are an optional list of headers to send with HTTP requests|
-|`insecureSkipVerify`|`boolean`|insecureSkipVerify|
+|`insecureSkipVerify`|`boolean`|insecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client|
 |`method`|`string`|Method is HTTP methods for HTTP Request|
 |`successCondition`|`string`|SuccessCondition is an expression if evaluated to true is considered successful|
 |`timeoutSeconds`|`integer`|TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds|

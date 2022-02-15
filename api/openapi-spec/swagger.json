@@ -9618,7 +9618,7 @@
           }
         },
         "insecureSkipVerify": {
-          "description": "insecureSkipVerify",
+          "description": "insecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client",
           "type": "boolean"
         },
         "method": {

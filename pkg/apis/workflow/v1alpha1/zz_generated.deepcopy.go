@@ -1155,11 +1155,6 @@ func (in *HTTP) DeepCopyInto(out *HTTP) {
 		*out = new(int64)
 		**out = **in
 	}
-	if in.InsecureSkipVerify != nil {
-		in, out := &in.InsecureSkipVerify, &out.InsecureSkipVerify
-		*out = new(bool)
-		**out = **in
-	}
 	return
 }
 

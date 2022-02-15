@@ -300,18 +300,26 @@ func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTem
 		request.Header.Add(header.Name, value)
 	}
 
-	httpClient := http.DefaultClient
-	if httpTemplate.InsecureSkipVerify != nil {
-		transCfg := &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: *httpTemplate.InsecureSkipVerify},
-		}
-		httpClient = &http.Client{Transport: transCfg}
+	// transCfg := &http.Transport{
+	// 	TLSClientConfig: &tls.Config{InsecureSkipVerify: httpTemplate.InsecureSkipVerify},
+	// }
+
+	httpClientSkip := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: httpTemplate.InsecureSkipVerify},
+		},
+	}
+
+	var httpClients = map[bool]*http.Client{
+		false: http.DefaultClient,
+		true:  httpClientSkip,
 	}
 
 	if httpTemplate.TimeoutSeconds != nil {
-		httpClient.Timeout = time.Duration(*httpTemplate.TimeoutSeconds) * time.Second
+		httpClients[httpTemplate.InsecureSkipVerify].Timeout = time.Duration(*httpTemplate.TimeoutSeconds) * time.Second
 	}
-	response, err := httpClient.Do(request)
+
+	response, err := httpClients[httpTemplate.InsecureSkipVerify].Do(request)
 	if err != nil {
 		return nil, err
 	}
