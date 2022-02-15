@@ -576,6 +576,10 @@ message HTTP {
 
   // Body is content of the HTTP Request
   optional string body = 5;
+
+  // insecureSkipVerify
+  // +optional
+  optional bool insecureSkipVerify = 7;
 }
 
 // HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container

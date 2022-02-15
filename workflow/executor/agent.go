@@ -303,12 +303,11 @@ func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTem
 	httpClient := http.DefaultClient
 	if httpTemplate.InsecureSkipVerify != nil {
 		transCfg := &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: *httpTemplate.InsecureSkipVerify}, // ignore expired SSL certificates
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: *httpTemplate.InsecureSkipVerify},
 		}
 		httpClient = &http.Client{Transport: transCfg}
 	}
 
-	// httpClient := http.DefaultClient
 	if httpTemplate.TimeoutSeconds != nil {
 		httpClient.Timeout = time.Duration(*httpTemplate.TimeoutSeconds) * time.Second
 	}

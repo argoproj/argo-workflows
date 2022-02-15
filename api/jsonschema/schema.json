@@ -5331,6 +5331,10 @@
           },
           "type": "array"
         },
+        "insecureSkipVerify": {
+          "description": "insecureSkipVerify",
+          "type": "boolean"
+        },
         "method": {
           "description": "Method is HTTP methods for HTTP Request",
           "type": "string"
