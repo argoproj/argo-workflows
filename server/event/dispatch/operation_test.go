@@ -6,9 +6,9 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/metadata"
-	"gopkg.in/square/go-jose.v2/jwt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
 
