@@ -8969,6 +8969,22 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.ContainerSetRetryStrategy": {
+      "type": "object",
+      "required": [
+        "retries"
+      ],
+      "properties": {
+        "duration": {
+          "description": "Duration is the time between each retry, examples values are \"300ms\", \"1s\" or \"5m\". Valid time units are \"ns\", \"us\" (or \"µs\"), \"ms\", \"s\", \"m\", \"h\".",
+          "type": "string"
+        },
+        "retries": {
+          "description": "Nbr of retries",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.ContainerSetTemplate": {
       "type": "object",
       "required": [
@@ -8980,6 +8996,10 @@
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ContainerNode"
           }
+        },
+        "retryStrategy": {
+          "description": "RetryStrategy describes how to retry a container nodes in the container set if it fails. Nbr of retries(default 0) and sleep duration between retries(default 0s, instant retry) can be set.",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ContainerSetRetryStrategy"
         },
         "volumeMounts": {
           "type": "array",
@@ -9596,6 +9616,10 @@
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPHeader"
           }
+        },
+        "insecureSkipVerify": {
+          "description": "insecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client",
+          "type": "boolean"
         },
         "method": {
           "description": "Method is HTTP methods for HTTP Request",

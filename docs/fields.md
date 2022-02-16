@@ -2672,6 +2672,7 @@ _No description available_
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`containers`|`Array<`[`ContainerNode`](#containernode)`>`|_No description available_|
+|`retryStrategy`|[`ContainerSetRetryStrategy`](#containersetretrystrategy)|RetryStrategy describes how to retry a container nodes in the container set if it fails. Nbr of retries(default 0) and sleep duration between retries(default 0s, instant retry) can be set.|
 |`volumeMounts`|`Array<`[`VolumeMount`](#volumemount)`>`|_No description available_|
 
 ## DAGTemplate
@@ -2817,6 +2818,7 @@ _No description available_
 |:----------:|:----------:|---------------|
 |`body`|`string`|Body is content of the HTTP Request|
 |`headers`|`Array<`[`HTTPHeader`](#httpheader)`>`|Headers are an optional list of headers to send with HTTP requests|
+|`insecureSkipVerify`|`boolean`|insecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client|
 |`method`|`string`|Method is HTTP methods for HTTP Request|
 |`successCondition`|`string`|SuccessCondition is an expression if evaluated to true is considered successful|
 |`timeoutSeconds`|`integer`|TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds|
@@ -3921,6 +3923,43 @@ _No description available_
 |`volumeDevices`|`Array<`[`VolumeDevice`](#volumedevice)`>`|volumeDevices is the list of block devices to be used by the container.|
 |`volumeMounts`|`Array<`[`VolumeMount`](#volumemount)`>`|Pod volumes to mount into the container's filesystem. Cannot be updated.|
 |`workingDir`|`string`|Container's working directory. If not specified, the container runtime's default will be used, which might be configured in the container image. Cannot be updated.|
+
+## ContainerSetRetryStrategy
+
+_No description available_
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`clustertemplates.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
+
+- [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-disable-failFast.yaml)
+
+- [`retry-backoff.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-backoff.yaml)
+
+- [`retry-conditional.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-conditional.yaml)
+
+- [`retry-container-to-completion.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-container-to-completion.yaml)
+
+- [`retry-container.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-container.yaml)
+
+- [`retry-on-error.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-on-error.yaml)
+
+- [`retry-script.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-script.yaml)
+
+- [`retry-with-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-with-steps.yaml)
+
+- [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-defaults.yaml)
+
+- [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/templates.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`duration`|`string`|Duration is the time between each retry, examples values are "300ms", "1s" or "5m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".|
+|`retries`|[`IntOrString`](#intorstring)|Nbr of retries|
 
 ## DAGTask
 

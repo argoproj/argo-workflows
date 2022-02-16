@@ -3286,6 +3286,18 @@ spec:
                           - name
                           type: object
                         type: array
+                      retryStrategy:
+                        properties:
+                          duration:
+                            type: string
+                          retries:
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            x-kubernetes-int-or-string: true
+                        required:
+                        - retries
+                        type: object
                       volumeMounts:
                         items:
                           properties:
@@ -4574,6 +4586,8 @@ spec:
                           - name
                           type: object
                         type: array
+                      insecureSkipVerify:
+                        type: boolean
                       method:
                         type: string
                       successCondition:
@@ -9759,6 +9773,18 @@ spec:
                             - name
                             type: object
                           type: array
+                        retryStrategy:
+                          properties:
+                            duration:
+                              type: string
+                            retries:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              x-kubernetes-int-or-string: true
+                          required:
+                          - retries
+                          type: object
                         volumeMounts:
                           items:
                             properties:
@@ -11047,6 +11073,8 @@ spec:
                             - name
                             type: object
                           type: array
+                        insecureSkipVerify:
+                          type: boolean
                         method:
                           type: string
                         successCondition:

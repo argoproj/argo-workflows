@@ -32,6 +32,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ClusterWorkflowTemplateList":   schema_pkg_apis_workflow_v1alpha1_ClusterWorkflowTemplateList(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Condition":                     schema_pkg_apis_workflow_v1alpha1_Condition(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerNode":                 schema_pkg_apis_workflow_v1alpha1_ContainerNode(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerSetRetryStrategy":     schema_pkg_apis_workflow_v1alpha1_ContainerSetRetryStrategy(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerSetTemplate":          schema_pkg_apis_workflow_v1alpha1_ContainerSetTemplate(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContinueOn":                    schema_pkg_apis_workflow_v1alpha1_ContinueOn(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Counter":                       schema_pkg_apis_workflow_v1alpha1_Counter(ref),
@@ -1251,6 +1252,34 @@ func schema_pkg_apis_workflow_v1alpha1_ContainerNode(ref common.ReferenceCallbac
 	}
 }
 
+func schema_pkg_apis_workflow_v1alpha1_ContainerSetRetryStrategy(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"duration": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Duration is the time between each retry, examples values are \"300ms\", \"1s\" or \"5m\". Valid time units are \"ns\", \"us\" (or \"µs\"), \"ms\", \"s\", \"m\", \"h\".",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"retries": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Nbr of retries",
+							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
+						},
+					},
+				},
+				Required: []string{"retries"},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
+	}
+}
+
 func schema_pkg_apis_workflow_v1alpha1_ContainerSetTemplate(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -1283,12 +1312,18 @@ func schema_pkg_apis_workflow_v1alpha1_ContainerSetTemplate(ref common.Reference
 							},
 						},
 					},
+					"retryStrategy": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RetryStrategy describes how to retry a container nodes in the container set if it fails. Nbr of retries(default 0) and sleep duration between retries(default 0s, instant retry) can be set.",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerSetRetryStrategy"),
+						},
+					},
 				},
 				Required: []string{"containers"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerNode", "k8s.io/api/core/v1.VolumeMount"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerNode", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerSetRetryStrategy", "k8s.io/api/core/v1.VolumeMount"},
 	}
 }
 
@@ -2447,6 +2482,13 @@ func schema_pkg_apis_workflow_v1alpha1_HTTP(ref common.ReferenceCallback) common
 						SchemaProps: spec.SchemaProps{
 							Description: "Body is content of the HTTP Request",
 							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"insecureSkipVerify": {
+						SchemaProps: spec.SchemaProps{
+							Description: "insecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client",
+							Type:        []string{"boolean"},
 							Format:      "",
 						},
 					},

@@ -30,6 +30,9 @@ case ${1:-} in
   sleep)
     sleep "$2"
     ;;
+  sh) 
+    sh "${2:-0}"
+    ;;
   *)
     exit 1
 esac

@@ -82,7 +82,7 @@ export class SubmitWorkflowPanel extends React.Component<Props, State> {
                         {this.state.parameters.length > 0 ? (
                             <>
                                 {this.state.parameters.map((parameter, index) => (
-                                    <div key={parameter.name + '_' + index}>
+                                    <div key={parameter.name + '_' + index} style={{marginBottom: 14}}>
                                         <label>{parameter.name}</label>
                                         {parameter.description && (
                                             <Tooltip content={parameter.description}>
