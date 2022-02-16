@@ -4596,6 +4596,8 @@ spec:
                           - name
                           type: object
                         type: array
+                      insecureSkipVerify:
+                        type: boolean
                       method:
                         type: string
                       successCondition:
@@ -11081,6 +11083,8 @@ spec:
                             - name
                             type: object
                           type: array
+                        insecureSkipVerify:
+                          type: boolean
                         method:
                           type: string
                         successCondition:
@@ -20572,6 +20576,8 @@ spec:
                             - name
                             type: object
                           type: array
+                        insecureSkipVerify:
+                          type: boolean
                         method:
                           type: string
                         successCondition:
@@ -28545,6 +28551,8 @@ spec:
                               - name
                               type: object
                             type: array
+                          insecureSkipVerify:
+                            type: boolean
                           method:
                             type: string
                           successCondition:
@@ -35030,6 +35038,8 @@ spec:
                                 - name
                                 type: object
                               type: array
+                            insecureSkipVerify:
+                              type: boolean
                             method:
                               type: string
                             successCondition:

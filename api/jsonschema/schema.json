@@ -5351,6 +5351,10 @@
           },
           "type": "array"
         },
+        "insecureSkipVerify": {
+          "description": "insecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client",
+          "type": "boolean"
+        },
         "method": {
           "description": "Method is HTTP methods for HTTP Request",
           "type": "string"
