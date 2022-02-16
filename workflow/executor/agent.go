@@ -297,7 +297,14 @@ func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTem
 	if err != nil {
 		return nil, err
 	}
-	request = request.WithContext(ctx)
+
+	if httpTemplate.TimeoutSeconds != nil {
+		ctx, cancel := context.WithTimeout(ctx, time.Duration(*httpTemplate.TimeoutSeconds)*time.Second)
+		defer cancel()
+		request = request.WithContext(ctx)
+	} else {
+		request = request.WithContext(ctx)
+	}
 
 	for _, header := range httpTemplate.Headers {
 		value := header.Value
@@ -309,10 +316,6 @@ func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTem
 			value = string(secret)
 		}
 		request.Header.Add(header.Name, value)
-	}
-
-	if httpTemplate.TimeoutSeconds != nil {
-		httpClients[httpTemplate.InsecureSkipVerify].Timeout = time.Duration(*httpTemplate.TimeoutSeconds) * time.Second
 	}
 
 	response, err := httpClients[httpTemplate.InsecureSkipVerify].Do(request)
