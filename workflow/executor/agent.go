@@ -281,6 +281,17 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Temp
 	return 0, nil
 }
 
+var httpClientSkip *http.Client = &http.Client{
+	Transport: &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	},
+}
+
+var httpClients = map[bool]*http.Client{
+	false: http.DefaultClient,
+	true:  httpClientSkip,
+}
+
 func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTemplate *wfv1.HTTP) (*http.Response, error) {
 	request, err := http.NewRequest(httpTemplate.Method, httpTemplate.URL, bytes.NewBufferString(httpTemplate.Body))
 	if err != nil {
@@ -298,21 +309,6 @@ func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTem
 			value = string(secret)
 		}
 		request.Header.Add(header.Name, value)
-	}
-
-	// transCfg := &http.Transport{
-	// 	TLSClientConfig: &tls.Config{InsecureSkipVerify: httpTemplate.InsecureSkipVerify},
-	// }
-
-	httpClientSkip := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: httpTemplate.InsecureSkipVerify},
-		},
-	}
-
-	var httpClients = map[bool]*http.Client{
-		false: http.DefaultClient,
-		true:  httpClientSkip,
 	}
 
 	if httpTemplate.TimeoutSeconds != nil {
