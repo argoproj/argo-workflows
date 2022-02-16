@@ -44,7 +44,7 @@
           },
           {
             "type": "boolean",
-            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
@@ -151,7 +151,7 @@
           },
           {
             "type": "boolean",
-            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
@@ -289,7 +289,7 @@
           },
           {
             "type": "boolean",
-            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
@@ -579,7 +579,7 @@
           },
           {
             "type": "boolean",
-            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
@@ -987,7 +987,7 @@
           },
           {
             "type": "boolean",
-            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
@@ -1331,7 +1331,7 @@
           },
           {
             "type": "boolean",
-            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
@@ -1570,7 +1570,7 @@
           },
           {
             "type": "boolean",
-            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
@@ -1851,7 +1851,7 @@
           },
           {
             "type": "boolean",
-            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
@@ -2074,7 +2074,7 @@
           },
           {
             "type": "boolean",
-            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
@@ -2169,7 +2169,7 @@
           },
           {
             "type": "boolean",
-            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
@@ -2386,7 +2386,7 @@
           },
           {
             "type": "boolean",
-            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
@@ -2603,7 +2603,7 @@
           },
           {
             "type": "boolean",
-            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
@@ -2742,7 +2742,7 @@
           },
           {
             "type": "boolean",
-            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
@@ -2828,7 +2828,7 @@
           },
           {
             "type": "boolean",
-            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
@@ -2928,7 +2928,7 @@
           },
           {
             "type": "boolean",
-            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
@@ -3248,7 +3248,7 @@
           },
           {
             "type": "boolean",
-            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
@@ -4421,7 +4421,7 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.EmptyDirVolumeSource"
         },
         "ephemeral": {
-          "description": "Ephemeral represents a volume that is handled by a cluster storage driver (Alpha feature).\nThe volume's lifecycle is tied to the pod that defines it - it will be created before the pod starts,\nand deleted when the pod is removed.\n\nUse this if:\na) the volume is only needed while the pod runs,\nb) features of normal volumes like restoring from snapshot or capacity\n   tracking are needed,\nc) the storage driver is specified through a storage class, and\nd) the storage driver supports dynamic volume provisioning through\n   a PersistentVolumeClaim (see EphemeralVolumeSource for more\n   information on the connection between this volume type\n   and PersistentVolumeClaim).\n\nUse PersistentVolumeClaim or one of the vendor-specific\nAPIs for volumes that persist for longer than the lifecycle\nof an individual pod.\n\nUse CSI for light-weight local ephemeral volumes if the CSI driver is meant to\nbe used that way - see the documentation of the driver for\nmore information.\n\nA pod can use both types of ephemeral volumes and\npersistent volumes at the same time.\n\n+optional",
+          "description": "Ephemeral represents a volume that is handled by a cluster storage driver.\nThe volume's lifecycle is tied to the pod that defines it - it will be created before the pod starts,\nand deleted when the pod is removed.\n\nUse this if:\na) the volume is only needed while the pod runs,\nb) features of normal volumes like restoring from snapshot or capacity\n   tracking are needed,\nc) the storage driver is specified through a storage class, and\nd) the storage driver supports dynamic volume provisioning through\n   a PersistentVolumeClaim (see EphemeralVolumeSource for more\n   information on the connection between this volume type\n   and PersistentVolumeClaim).\n\nUse PersistentVolumeClaim or one of the vendor-specific\nAPIs for volumes that persist for longer than the lifecycle\nof an individual pod.\n\nUse CSI for light-weight local ephemeral volumes if the CSI driver is meant to\nbe used that way - see the documentation of the driver for\nmore information.\n\nA pod can use both types of ephemeral volumes and\npersistent volumes at the same time.\n\n+optional",
           "$ref": "#/definitions/io.k8s.api.core.v1.EphemeralVolumeSource"
         },
         "fc": {
@@ -4539,6 +4539,10 @@
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Code": {
       "type": "object",
       "properties": {
+        "image": {
+          "description": "Image is used in preference to Runtime.",
+          "type": "string"
+        },
         "runtime": {
           "type": "string"
         },
@@ -4733,6 +4737,10 @@
         "image": {
           "type": "string"
         },
+        "insecureIgnoreHostKey": {
+          "type": "boolean",
+          "title": "InsecureIgnoreHostKey is the bool value for ignoring check for host key"
+        },
         "passwordSecret": {
           "title": "PasswordSecret is the secret selector to the repository password",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
@@ -4832,6 +4840,40 @@
         }
       }
     },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.JetStream": {
+      "type": "object",
+      "properties": {
+        "auth": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.NATSAuth"
+        },
+        "name": {
+          "type": "string",
+          "title": "+kubebuilder:default=default"
+        },
+        "natsUrl": {
+          "type": "string"
+        },
+        "subject": {
+          "type": "string"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.JetStreamSink": {
+      "type": "object",
+      "properties": {
+        "jetstream": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.JetStream"
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.JetStreamSource": {
+      "type": "object",
+      "properties": {
+        "jetstream": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.JetStream"
+        }
+      }
+    },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Kafka": {
       "type": "object",
       "properties": {
@@ -4861,9 +4903,6 @@
         },
         "net": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.KafkaNET"
-        },
-        "version": {
-          "type": "string"
         }
       }
     },
@@ -4881,17 +4920,56 @@
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.KafkaSink": {
       "type": "object",
       "properties": {
+        "acks": {
+          "title": "+kubebuilder:default=\"all\"",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
+        },
         "async": {
           "type": "boolean"
         },
+        "batchSize": {
+          "title": "+kubebuilder:default=\"100Ki\"",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.api.resource.Quantity"
+        },
+        "compressionType": {
+          "type": "string",
+          "title": "+kubebuilder:default=\"lz4\""
+        },
+        "enableIdempotence": {
+          "type": "boolean",
+          "title": "+kubebuilder:default=true"
+        },
         "kafka": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Kafka"
+        },
+        "linger": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Duration"
+        },
+        "maxInflight": {
+          "type": "integer",
+          "title": "The maximum number of messages to be in-flight when async.\n+kubebuilder:default=20"
+        },
+        "messageTimeout": {
+          "title": "+kubebuilder:default=\"30s\"",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Duration"
         }
       }
     },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.KafkaSource": {
       "type": "object",
       "properties": {
+        "fetchMin": {
+          "title": "+kubebuilder:default=\"100Ki\"",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.api.resource.Quantity"
+        },
+        "fetchWaitMax": {
+          "title": "+kubebuilder:default=\"500ms\"",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Duration"
+        },
+        "groupId": {
+          "description": "GroupID is the consumer group ID. If not specified, a unique deterministic group ID is generated.",
+          "type": "string"
+        },
         "kafka": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Kafka"
         },
@@ -4935,6 +5013,14 @@
           "additionalProperties": {
             "type": "string"
           }
+        }
+      }
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.NATSAuth": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         }
       }
     },
@@ -5097,7 +5183,7 @@
       "type": "object",
       "properties": {
         "auth": {
-          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.STANAuth"
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.NATSAuth"
         },
         "clusterId": {
           "type": "string"
@@ -5121,14 +5207,6 @@
         },
         "subjectPrefix": {
           "type": "string"
-        }
-      }
-    },
-    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.STANAuth": {
-      "type": "object",
-      "properties": {
-        "token": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         }
       }
     },
@@ -5164,8 +5242,14 @@
         "db": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.DBSink"
         },
+        "deadLetterQueue": {
+          "type": "boolean"
+        },
         "http": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.HTTPSink"
+        },
+        "jetstream": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.JetStreamSink"
         },
         "kafka": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.KafkaSink"
@@ -5199,6 +5283,9 @@
         },
         "http": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.HTTPSource"
+        },
+        "jetstream": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.JetStreamSource"
         },
         "kafka": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.KafkaSource"
@@ -5533,6 +5620,10 @@
           "type": "string",
           "title": "ExchangeType is rabbitmq exchange type"
         },
+        "filter": {
+          "title": "Filter\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter"
+        },
         "jsonBody": {
           "type": "boolean",
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional"
@@ -5606,6 +5697,10 @@
       "type": "object",
       "title": "AMQPQueueDeclareConfig holds the configuration of a queue to hold messages and deliver to consumers.\nDeclaring creates a queue if it doesn't already exist, or ensures that an existing queue matches\nthe same parameters\n+k8s:openapi-gen=true",
       "properties": {
+        "arguments": {
+          "type": "string",
+          "title": "Arguments of a queue (also known as \"x-arguments\") used for optional features and plugins\n+optional"
+        },
         "autoDelete": {
           "type": "boolean",
           "title": "AutoDelete removes the queue when no consumers are active\n+optional"
@@ -5633,7 +5728,7 @@
       "title": "AWSLambdaTrigger refers to specification of the trigger to invoke an AWS Lambda function",
       "properties": {
         "accessKey": {
-          "title": "AccessKey refers K8s secret containing aws access key",
+          "title": "AccessKey refers K8s secret containing aws access key\n+optional",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         },
         "functionName": {
@@ -5662,8 +5757,12 @@
           "type": "string",
           "title": "Region is AWS region"
         },
+        "roleARN": {
+          "type": "string",
+          "title": "RoleARN is the Amazon Resource Name (ARN) of the role to assume.\n+optional"
+        },
         "secretKey": {
-          "title": "SecretKey refers K8s secret containing aws secret key",
+          "title": "SecretKey refers K8s secret containing aws secret key\n+optional",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         }
       }
@@ -5773,6 +5872,10 @@
       "type": "object",
       "title": "AzureEventsHubEventSource describes the event source for azure events hub\nMore info at https://docs.microsoft.com/en-us/azure/event-hubs/",
       "properties": {
+        "filter": {
+          "title": "Filter\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter"
+        },
         "fqdn": {
           "type": "string",
           "title": "FQDN of the EventHubs namespace you created\nMore info at https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-get-connection-string"
@@ -5834,6 +5937,82 @@
         }
       }
     },
+    "io.argoproj.events.v1alpha1.BitbucketAuth": {
+      "type": "object",
+      "title": "BitbucketAuth holds the different auth strategies for connecting to Bitbucket",
+      "properties": {
+        "basic": {
+          "title": "Basic is BasicAuth auth strategy.\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.BitbucketBasicAuth"
+        },
+        "token": {
+          "title": "OAuthToken refers to the K8s secret that holds the OAuth Bearer token.\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
+    },
+    "io.argoproj.events.v1alpha1.BitbucketBasicAuth": {
+      "type": "object",
+      "title": "BasicAuth holds the information required to authenticate user via basic auth mechanism",
+      "properties": {
+        "password": {
+          "description": "Password refers to the K8s secret that holds the password.",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "username": {
+          "description": "Username refers to the K8s secret that holds the username.",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
+    },
+    "io.argoproj.events.v1alpha1.BitbucketEventSource": {
+      "type": "object",
+      "title": "BitbucketEventSource describes the event source for Bitbucket",
+      "properties": {
+        "auth": {
+          "description": "Auth information required to connect to Bitbucket.",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.BitbucketAuth"
+        },
+        "deleteHookOnFinish": {
+          "type": "boolean",
+          "title": "DeleteHookOnFinish determines whether to delete the defined Bitbucket hook once the event source is stopped.\n+optional"
+        },
+        "events": {
+          "description": "Events this webhook is subscribed to.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "filter": {
+          "title": "Filter\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter"
+        },
+        "metadata": {
+          "type": "object",
+          "title": "Metadata holds the user defined metadata which will be passed along the event payload.\n+optional",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "owner": {
+          "description": "Owner of the repository.",
+          "type": "string"
+        },
+        "projectKey": {
+          "type": "string",
+          "title": "ProjectKey is the key of the project for which integration needs to setup"
+        },
+        "repositorySlug": {
+          "description": "RepositorySlug is a URL-friendly version of a repository name, automatically generated by Bitbucket for use in the URL.",
+          "type": "string"
+        },
+        "webhook": {
+          "title": "Webhook refers to the configuration required to run an http server",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.WebhookContext"
+        }
+      }
+    },
     "io.argoproj.events.v1alpha1.BitbucketServerEventSource": {
       "type": "object",
       "title": "BitbucketServerEventSource refers to event-source related to Bitbucket Server events",
@@ -5857,6 +6036,10 @@
             "type": "string"
           }
         },
+        "filter": {
+          "title": "Filter\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter"
+        },
         "metadata": {
           "type": "object",
           "title": "Metadata holds the user defined metadata which will passed along the event payload.\n+optional",
@@ -5866,11 +6049,18 @@
         },
         "projectKey": {
           "type": "string",
-          "title": "ProjectKey is the key of project for which integration needs to setup"
+          "title": "DeprecatedProjectKey is the key of project for which integration needs to setup\nDeprecated: use Repositories instead. Will be unsupported in v1.8\n+optional"
+        },
+        "repositories": {
+          "type": "array",
+          "title": "Repositories holds a list of repositories for which integration needs to setup\n+optional",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.BitbucketServerRepository"
+          }
         },
         "repositorySlug": {
           "type": "string",
-          "title": "RepositorySlug is the slug of the repository for which integration needs to setup"
+          "title": "DeprecatedRepositorySlug is the slug of the repository for which integration needs to setup\nDeprecated: use Repositories instead. Will be unsupported in v1.8\n+optional"
         },
         "webhook": {
           "title": "Webhook holds configuration to run a http server",
@@ -5882,19 +6072,37 @@
         }
       }
     },
+    "io.argoproj.events.v1alpha1.BitbucketServerRepository": {
+      "type": "object",
+      "properties": {
+        "projectKey": {
+          "type": "string",
+          "title": "ProjectKey is the key of project for which integration needs to setup"
+        },
+        "repositorySlug": {
+          "type": "string",
+          "title": "RepositorySlug is the slug of the repository for which integration needs to setup"
+        }
+      }
+    },
     "io.argoproj.events.v1alpha1.CalendarEventSource": {
       "type": "object",
       "title": "CalendarEventSource describes a time based dependency. One of the fields (schedule, interval, or recurrence) must be passed.\nSchedule takes precedence over interval; interval takes precedence over recurrence",
       "properties": {
         "exclusionDates": {
+          "description": "ExclusionDates defines the list of DATE-TIME exceptions for recurring events.",
           "type": "array",
           "items": {
             "type": "string"
           }
         },
+        "filter": {
+          "title": "Filter\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter"
+        },
         "interval": {
-          "description": "Interval is a string that describes an interval duration, e.g. 1s, 30m, 2h...",
-          "type": "string"
+          "type": "string",
+          "title": "Interval is a string that describes an interval duration, e.g. 1s, 30m, 2h...\n+optional"
         },
         "metadata": {
           "type": "object",
@@ -5909,7 +6117,7 @@
         },
         "schedule": {
           "type": "string",
-          "title": "Schedule is a cron-like expression. For reference, see: https://en.wikipedia.org/wiki/Cron"
+          "title": "Schedule is a cron-like expression. For reference, see: https://en.wikipedia.org/wiki/Cron\n+optional"
         },
         "timezone": {
           "type": "string",
@@ -5953,6 +6161,28 @@
         "type": {
           "type": "string",
           "title": "Condition type.\n+required"
+        }
+      }
+    },
+    "io.argoproj.events.v1alpha1.ConditionsResetByTime": {
+      "type": "object",
+      "properties": {
+        "cron": {
+          "type": "string",
+          "title": "Cron is a cron-like expression. For reference, see: https://en.wikipedia.org/wiki/Cron"
+        },
+        "timezone": {
+          "type": "string",
+          "title": "+optional"
+        }
+      }
+    },
+    "io.argoproj.events.v1alpha1.ConditionsResetCriteria": {
+      "type": "object",
+      "properties": {
+        "byTime": {
+          "title": "Schedule is a cron-like expression. For reference, see: https://en.wikipedia.org/wiki/Cron",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.ConditionsResetByTime"
         }
       }
     },
@@ -6061,6 +6291,10 @@
           "title": "Backoff holds parameters applied to connection.\n+optional",
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.Backoff"
         },
+        "filter": {
+          "title": "Filter\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter"
+        },
         "jsonBody": {
           "type": "boolean",
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional"
@@ -6136,9 +6370,17 @@
           "title": "Filters and rules governing toleration of success and constraints on the context and data of an event",
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventDependencyFilter"
         },
+        "filtersLogicalOperator": {
+          "description": "FiltersLogicalOperator defines how different filters are evaluated together.\nAvailable values: and (\u0026\u0026), or (||)\nIs optional and if left blank treated as and (\u0026\u0026).",
+          "type": "string"
+        },
         "name": {
           "type": "string",
           "title": "Name is a unique name of this dependency"
+        },
+        "transform": {
+          "title": "Transform transforms the event data",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventDependencyTransformer"
         }
       }
     },
@@ -6157,6 +6399,14 @@
             "$ref": "#/definitions/io.argoproj.events.v1alpha1.DataFilter"
           }
         },
+        "dataLogicalOperator": {
+          "description": "DataLogicalOperator defines how multiple Data filters (if defined) are evaluated together.\nAvailable values: and (\u0026\u0026), or (||)\nIs optional and if left blank treated as and (\u0026\u0026).",
+          "type": "string"
+        },
+        "exprLogicalOperator": {
+          "description": "ExprLogicalOperator defines how multiple Exprs filters (if defined) are evaluated together.\nAvailable values: and (\u0026\u0026), or (||)\nIs optional and if left blank treated as and (\u0026\u0026).",
+          "type": "string"
+        },
         "exprs": {
           "description": "Exprs contains the list of expressions evaluated against the event payload.",
           "type": "array",
@@ -6167,6 +6417,20 @@
         "time": {
           "title": "Time filter on the event with escalation",
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.TimeFilter"
+        }
+      }
+    },
+    "io.argoproj.events.v1alpha1.EventDependencyTransformer": {
+      "type": "object",
+      "title": "EventDependencyTransformer transforms the event",
+      "properties": {
+        "jq": {
+          "type": "string",
+          "title": "JQ holds the jq command applied for transformation\n+optional"
+        },
+        "script": {
+          "type": "string",
+          "title": "Script refers to a Lua script used to transform the event\n+optional"
         }
       }
     },
@@ -6196,6 +6460,14 @@
         "status": {
           "title": "+optional",
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceStatus"
+        }
+      }
+    },
+    "io.argoproj.events.v1alpha1.EventSourceFilter": {
+      "type": "object",
+      "properties": {
+        "expression": {
+          "type": "string"
         }
       }
     },
@@ -6230,6 +6502,13 @@
           "title": "AzureEventsHub event sources",
           "additionalProperties": {
             "$ref": "#/definitions/io.argoproj.events.v1alpha1.AzureEventsHubEventSource"
+          }
+        },
+        "bitbucket": {
+          "type": "object",
+          "title": "Bitbucket event sources",
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.BitbucketEventSource"
           }
         },
         "bitbucketserver": {
@@ -6453,6 +6732,10 @@
           "type": "string",
           "title": "Type of file operations to watch\nRefer https://github.com/fsnotify/fsnotify/blob/master/fsnotify.go for more information"
         },
+        "filter": {
+          "title": "Filter\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter"
+        },
         "metadata": {
           "type": "object",
           "title": "Metadata holds the user defined metadata which will passed along the event payload.\n+optional",
@@ -6481,6 +6764,10 @@
         "config": {
           "type": "string",
           "title": "Config is the event source configuration"
+        },
+        "filter": {
+          "title": "Filter\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter"
         },
         "insecure": {
           "description": "Insecure determines the type of connection.",
@@ -6574,6 +6861,23 @@
         }
       }
     },
+    "io.argoproj.events.v1alpha1.GithubAppCreds": {
+      "type": "object",
+      "properties": {
+        "appID": {
+          "type": "string",
+          "title": "AppID refers to the GitHub App ID for the application you created"
+        },
+        "installationID": {
+          "type": "string",
+          "title": "InstallationID refers to the Installation ID of the GitHub app you created and installed"
+        },
+        "privateKey": {
+          "title": "PrivateKey refers to a K8s secret containing the GitHub app private key",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
+    },
     "io.argoproj.events.v1alpha1.GithubEventSource": {
       "type": "object",
       "title": "GithubEventSource refers to event-source for github related events",
@@ -6596,9 +6900,18 @@
         },
         "events": {
           "type": "array",
+          "title": "Events refer to Github events to which the event source will subscribe",
           "items": {
             "type": "string"
           }
+        },
+        "filter": {
+          "title": "Filter\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter"
+        },
+        "githubApp": {
+          "title": "GitHubApp holds the GitHub app credentials\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.GithubAppCreds"
         },
         "githubBaseURL": {
           "type": "string",
@@ -6610,7 +6923,7 @@
         },
         "id": {
           "type": "string",
-          "title": "Id is the webhook's id\nDeprecated: This is not used at all, will be removed in v1.6"
+          "title": "Id is the webhook's id\nDeprecated: This is not used at all, will be removed in v1.6\n+optional"
         },
         "insecure": {
           "type": "boolean",
@@ -6623,20 +6936,27 @@
             "type": "string"
           }
         },
+        "organizations": {
+          "description": "Organizations holds the names of organizations (used for organization level webhooks). Not required if Repositories is set.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "owner": {
           "type": "string",
-          "title": "DeprecatedOwner refers to GitHub owner name i.e. argoproj\nDeprecated: use Repositories instead. Will be unsupported in v 1.6"
+          "title": "DeprecatedOwner refers to GitHub owner name i.e. argoproj\nDeprecated: use Repositories instead. Will be unsupported in v 1.6\n+optional"
         },
         "repositories": {
+          "description": "Repositories holds the information of repositories, which uses repo owner as the key,\nand list of repo names as the value. Not required if Organizations is set.",
           "type": "array",
-          "title": "Repositories holds the information of repositories, which uses repo owner as the key,\nand list of repo names as the value",
           "items": {
             "$ref": "#/definitions/io.argoproj.events.v1alpha1.OwnedRepositories"
           }
         },
         "repository": {
           "type": "string",
-          "title": "DeprecatedRepository refers to GitHub repo name i.e. argo-events\nDeprecated: use Repositories instead. Will be unsupported in v 1.6"
+          "title": "DeprecatedRepository refers to GitHub repo name i.e. argo-events\nDeprecated: use Repositories instead. Will be unsupported in v 1.6\n+optional"
         },
         "webhook": {
           "title": "Webhook refers to the configuration required to run a http server",
@@ -6671,6 +6991,10 @@
             "type": "string"
           }
         },
+        "filter": {
+          "title": "Filter\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter"
+        },
         "gitlabBaseURL": {
           "type": "string",
           "title": "GitlabBaseURL is the base URL for API requests to a custom endpoint"
@@ -6684,7 +7008,7 @@
         },
         "projectID": {
           "type": "string",
-          "title": "DeprecatedProjectID is the id of project for which integration needs to setup\nDeprecated: use Projects instead. Will be unsupported in v 1.7"
+          "title": "DeprecatedProjectID is the id of project for which integration needs to setup\nDeprecated: use Projects instead. Will be unsupported in v 1.7\n+optional"
         },
         "projects": {
           "type": "array",
@@ -6716,6 +7040,10 @@
         "checkInterval": {
           "type": "string",
           "title": "CheckInterval is a string that describes an interval duration to check the directory state, e.g. 1s, 30m, 2h... (defaults to 1m)"
+        },
+        "filter": {
+          "title": "Filter\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter"
         },
         "hdfsUser": {
           "description": "HDFSUser is the user to access HDFS file system.\nIt is ignored if either ccache or keytab is used.",
@@ -6878,6 +7206,10 @@
           "title": "Consumer group for kafka client\n+optional",
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.KafkaConsumerGroup"
         },
+        "filter": {
+          "title": "Filter\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter"
+        },
         "jsonBody": {
           "type": "boolean",
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional"
@@ -7001,6 +7333,10 @@
           "description": "ConnectionBackoff holds backoff applied to connection.",
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.Backoff"
         },
+        "filter": {
+          "title": "Filter\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter"
+        },
         "jsonBody": {
           "type": "boolean",
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional"
@@ -7078,6 +7414,10 @@
           "description": "ConnectionBackoff holds backoff applied to connection.",
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.Backoff"
         },
+        "filter": {
+          "title": "Filter\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter"
+        },
         "jsonBody": {
           "type": "boolean",
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional"
@@ -7144,6 +7484,10 @@
         "connectionBackoff": {
           "title": "Backoff holds parameters applied to connection.\n+optional",
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.Backoff"
+        },
+        "filter": {
+          "title": "Filter\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter"
         },
         "hostAddress": {
           "type": "string",
@@ -7222,7 +7566,7 @@
         },
         "owner": {
           "type": "string",
-          "title": "Orgnization or user name"
+          "title": "Organization or user name"
         }
       }
     },
@@ -7251,6 +7595,10 @@
         "deleteSubscriptionOnFinish": {
           "type": "boolean",
           "title": "DeleteSubscriptionOnFinish determines whether to delete the GCP PubSub subscription once the event source is stopped.\n+optional"
+        },
+        "filter": {
+          "title": "Filter\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter"
         },
         "jsonBody": {
           "type": "boolean",
@@ -7292,6 +7640,10 @@
         "connectionBackoff": {
           "title": "Backoff holds parameters applied to connection.\n+optional",
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.Backoff"
+        },
+        "filter": {
+          "title": "Filter\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter"
         },
         "jsonBody": {
           "type": "boolean",
@@ -7414,6 +7766,10 @@
         "db": {
           "type": "integer",
           "title": "DB to use. If not specified, default DB 0 will be used.\n+optional"
+        },
+        "filter": {
+          "title": "Filter\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter"
         },
         "hostAddress": {
           "type": "string",
@@ -7603,6 +7959,10 @@
           "title": "AccessKey refers K8s secret containing aws access key",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         },
+        "filter": {
+          "title": "Filter\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter"
+        },
         "metadata": {
           "type": "object",
           "title": "Metadata holds the user defined metadata which will passed along the event payload.\n+optional",
@@ -7643,6 +8003,18 @@
         "accessKey": {
           "title": "AccessKey refers K8s secret containing aws access key",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "dlq": {
+          "type": "boolean",
+          "title": "DLQ specifies if a dead-letter queue is configured for messages that can't be processed successfully.\nIf set to true, messages with invalid payload won't be acknowledged to allow to forward them farther to the dead-letter queue.\nThe default value is false.\n+optional"
+        },
+        "endpoint": {
+          "type": "string",
+          "title": "Endpoint configures connection to a specific SQS endpoint instead of Amazons servers\n+optional"
+        },
+        "filter": {
+          "title": "Filter\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter"
         },
         "jsonBody": {
           "type": "boolean",
@@ -7809,6 +8181,10 @@
       "type": "object",
       "title": "SlackEventSource refers to event-source for Slack related events",
       "properties": {
+        "filter": {
+          "title": "Filter\n+optional",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter"
+        },
         "metadata": {
           "type": "object",
           "title": "Metadata holds the user defined metadata which will passed along the event payload.\n+optional",
@@ -8016,6 +8392,10 @@
         "clientKeySecret": {
           "title": "ClientKeySecret refers to the secret that contains the client key",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "insecureSkipVerify": {
+          "type": "boolean",
+          "title": "If true, skips creation of TLSConfig with certs and creates an empty TLSConfig. (Defaults to false)\n+optional"
         }
       }
     },
@@ -8205,6 +8585,13 @@
         "conditions": {
           "type": "string",
           "title": "Conditions is the conditions to execute the trigger.\nFor example: \"(dep01 || dep02) \u0026\u0026 dep04\"\n+optional"
+        },
+        "conditionsReset": {
+          "type": "array",
+          "title": "Criteria to reset the conditons\n+optional",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.ConditionsResetCriteria"
+          }
         },
         "custom": {
           "title": "CustomTrigger refers to the trigger designed to connect to a gRPC trigger server and execute a custom trigger.\n+optional",
@@ -8840,14 +9227,14 @@
       ],
       "properties": {
         "args": {
-          "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+          "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
           "type": "array",
           "items": {
             "type": "string"
           }
         },
         "command": {
-          "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+          "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
           "type": "array",
           "items": {
             "type": "string"
@@ -8918,7 +9305,7 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
         },
         "securityContext": {
-          "description": "Security options the pod should run with. More info: https://kubernetes.io/docs/concepts/policy/security-context/ More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/",
+          "description": "SecurityContext defines the security options the container should be run with. If set, the fields of SecurityContext override the equivalent fields of PodSecurityContext. More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecurityContext"
         },
         "startupProbe": {
@@ -10611,14 +10998,14 @@
       ],
       "properties": {
         "args": {
-          "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+          "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
           "type": "array",
           "items": {
             "type": "string"
           }
         },
         "command": {
-          "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+          "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
           "type": "array",
           "items": {
             "type": "string"
@@ -10683,7 +11070,7 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
         },
         "securityContext": {
-          "description": "Security options the pod should run with. More info: https://kubernetes.io/docs/concepts/policy/security-context/ More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/",
+          "description": "SecurityContext defines the security options the container should be run with. If set, the fields of SecurityContext override the equivalent fields of PodSecurityContext. More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecurityContext"
         },
         "source": {
@@ -11203,14 +11590,14 @@
       ],
       "properties": {
         "args": {
-          "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+          "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
           "type": "array",
           "items": {
             "type": "string"
           }
         },
         "command": {
-          "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+          "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
           "type": "array",
           "items": {
             "type": "string"
@@ -11279,7 +11666,7 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
         },
         "securityContext": {
-          "description": "Security options the pod should run with. More info: https://kubernetes.io/docs/concepts/policy/security-context/ More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/",
+          "description": "SecurityContext defines the security options the container should be run with. If set, the fields of SecurityContext override the equivalent fields of PodSecurityContext. More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecurityContext"
         },
         "startupProbe": {
@@ -13326,24 +13713,6 @@
         }
       }
     },
-    "io.k8s.api.core.v1.Handler": {
-      "description": "Handler defines a specific action that should be taken",
-      "type": "object",
-      "properties": {
-        "exec": {
-          "description": "One and only one of the following should be specified. Exec specifies the action to take.",
-          "$ref": "#/definitions/io.k8s.api.core.v1.ExecAction"
-        },
-        "httpGet": {
-          "description": "HTTPGet specifies the http request to perform.",
-          "$ref": "#/definitions/io.k8s.api.core.v1.HTTPGetAction"
-        },
-        "tcpSocket": {
-          "description": "TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported",
-          "$ref": "#/definitions/io.k8s.api.core.v1.TCPSocketAction"
-        }
-      }
-    },
     "io.k8s.api.core.v1.HostAlias": {
       "description": "HostAlias holds the mapping between IP and hostnames that will be injected as an entry in the pod's hosts file.",
       "type": "object",
@@ -14868,6 +15237,10 @@
         "fieldManager": {
           "type": "string",
           "title": "fieldManager is a name associated with the actor or entity\nthat is making these changes. The value must be less than or\n128 characters long, and only contain printable characters,\nas defined by https://golang.org/pkg/unicode/#IsPrint.\n+optional"
+        },
+        "fieldValidation": {
+          "type": "string",
+          "title": "fieldValidation determines how the server should respond to\nunknown/duplicate fields in the object in the request.\nIntroduced as alpha in 1.23, older servers or servers with the\n`ServerSideFieldValidation` feature disabled will discard valid values\nspecified in  this param and not perform any server side field validation.\nValid values are:\n- Ignore: ignores unknown/duplicate fields.\n- Warn: responds with a warning for each\nunknown/duplicate field, but successfully serves the request.\n- Strict: fails the request on unknown/duplicate fields.\n+optional"
         }
       }
     },
@@ -14887,7 +15260,7 @@
     "io.k8s.apimachinery.pkg.apis.meta.v1.GroupVersionResource": {
       "description": "+protobuf.options.(gogoproto.goproto_stringer)=false",
       "type": "object",
-      "title": "GroupVersionResource unambiguously identifies a resource.  It doesn't anonymously include GroupVersion\nto avoid automatic coersion.  It doesn't use a GroupVersion to avoid custom marshalling",
+      "title": "GroupVersionResource unambiguously identifies a resource.  It doesn't anonymously include GroupVersion\nto avoid automatic coercion.  It doesn't use a GroupVersion to avoid custom marshalling",
       "properties": {
         "group": {
           "type": "string"

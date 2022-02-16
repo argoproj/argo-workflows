@@ -141,7 +141,7 @@
         },
         "ephemeral": {
           "$ref": "#/definitions/io.k8s.api.core.v1.EphemeralVolumeSource",
-          "description": "Ephemeral represents a volume that is handled by a cluster storage driver (Alpha feature).\nThe volume's lifecycle is tied to the pod that defines it - it will be created before the pod starts,\nand deleted when the pod is removed.\n\nUse this if:\na) the volume is only needed while the pod runs,\nb) features of normal volumes like restoring from snapshot or capacity\n   tracking are needed,\nc) the storage driver is specified through a storage class, and\nd) the storage driver supports dynamic volume provisioning through\n   a PersistentVolumeClaim (see EphemeralVolumeSource for more\n   information on the connection between this volume type\n   and PersistentVolumeClaim).\n\nUse PersistentVolumeClaim or one of the vendor-specific\nAPIs for volumes that persist for longer than the lifecycle\nof an individual pod.\n\nUse CSI for light-weight local ephemeral volumes if the CSI driver is meant to\nbe used that way - see the documentation of the driver for\nmore information.\n\nA pod can use both types of ephemeral volumes and\npersistent volumes at the same time.\n\n+optional"
+          "description": "Ephemeral represents a volume that is handled by a cluster storage driver.\nThe volume's lifecycle is tied to the pod that defines it - it will be created before the pod starts,\nand deleted when the pod is removed.\n\nUse this if:\na) the volume is only needed while the pod runs,\nb) features of normal volumes like restoring from snapshot or capacity\n   tracking are needed,\nc) the storage driver is specified through a storage class, and\nd) the storage driver supports dynamic volume provisioning through\n   a PersistentVolumeClaim (see EphemeralVolumeSource for more\n   information on the connection between this volume type\n   and PersistentVolumeClaim).\n\nUse PersistentVolumeClaim or one of the vendor-specific\nAPIs for volumes that persist for longer than the lifecycle\nof an individual pod.\n\nUse CSI for light-weight local ephemeral volumes if the CSI driver is meant to\nbe used that way - see the documentation of the driver for\nmore information.\n\nA pod can use both types of ephemeral volumes and\npersistent volumes at the same time.\n\n+optional"
         },
         "fc": {
           "$ref": "#/definitions/io.k8s.api.core.v1.FCVolumeSource",
@@ -258,6 +258,10 @@
     },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Code": {
       "properties": {
+        "image": {
+          "description": "Image is used in preference to Runtime.",
+          "type": "string"
+        },
         "runtime": {
           "type": "string"
         },
@@ -452,6 +456,10 @@
         "image": {
           "type": "string"
         },
+        "insecureIgnoreHostKey": {
+          "title": "InsecureIgnoreHostKey is the bool value for ignoring check for host key",
+          "type": "boolean"
+        },
         "passwordSecret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "title": "PasswordSecret is the secret selector to the repository password"
@@ -552,6 +560,40 @@
       },
       "type": "object"
     },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.JetStream": {
+      "properties": {
+        "auth": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.NATSAuth"
+        },
+        "name": {
+          "title": "+kubebuilder:default=default",
+          "type": "string"
+        },
+        "natsUrl": {
+          "type": "string"
+        },
+        "subject": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.JetStreamSink": {
+      "properties": {
+        "jetstream": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.JetStream"
+        }
+      },
+      "type": "object"
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.JetStreamSource": {
+      "properties": {
+        "jetstream": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.JetStream"
+        }
+      },
+      "type": "object"
+    },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Kafka": {
       "properties": {
         "kafkaConfig": {
@@ -580,9 +622,6 @@
         },
         "net": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.KafkaNET"
-        },
-        "version": {
-          "type": "string"
         }
       },
       "type": "object"
@@ -600,17 +639,56 @@
     },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.KafkaSink": {
       "properties": {
+        "acks": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString",
+          "title": "+kubebuilder:default=\"all\""
+        },
         "async": {
+          "type": "boolean"
+        },
+        "batchSize": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.api.resource.Quantity",
+          "title": "+kubebuilder:default=\"100Ki\""
+        },
+        "compressionType": {
+          "title": "+kubebuilder:default=\"lz4\"",
+          "type": "string"
+        },
+        "enableIdempotence": {
+          "title": "+kubebuilder:default=true",
           "type": "boolean"
         },
         "kafka": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Kafka"
+        },
+        "linger": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Duration"
+        },
+        "maxInflight": {
+          "title": "The maximum number of messages to be in-flight when async.\n+kubebuilder:default=20",
+          "type": "integer"
+        },
+        "messageTimeout": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Duration",
+          "title": "+kubebuilder:default=\"30s\""
         }
       },
       "type": "object"
     },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.KafkaSource": {
       "properties": {
+        "fetchMin": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.api.resource.Quantity",
+          "title": "+kubebuilder:default=\"100Ki\""
+        },
+        "fetchWaitMax": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Duration",
+          "title": "+kubebuilder:default=\"500ms\""
+        },
+        "groupId": {
+          "description": "GroupID is the consumer group ID. If not specified, a unique deterministic group ID is generated.",
+          "type": "string"
+        },
         "kafka": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Kafka"
         },
@@ -654,6 +732,14 @@
             "type": "string"
           },
           "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.NATSAuth": {
+      "properties": {
+        "token": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         }
       },
       "type": "object"
@@ -816,7 +902,7 @@
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.STAN": {
       "properties": {
         "auth": {
-          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.STANAuth"
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.NATSAuth"
         },
         "clusterId": {
           "type": "string"
@@ -840,14 +926,6 @@
         },
         "subjectPrefix": {
           "type": "string"
-        }
-      },
-      "type": "object"
-    },
-    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.STANAuth": {
-      "properties": {
-        "token": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         }
       },
       "type": "object"
@@ -883,8 +961,14 @@
         "db": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.DBSink"
         },
+        "deadLetterQueue": {
+          "type": "boolean"
+        },
         "http": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.HTTPSink"
+        },
+        "jetstream": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.JetStreamSink"
         },
         "kafka": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.KafkaSink"
@@ -918,6 +1002,9 @@
         },
         "http": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.HTTPSource"
+        },
+        "jetstream": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.JetStreamSource"
         },
         "kafka": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.KafkaSource"
@@ -1251,6 +1338,10 @@
           "title": "ExchangeType is rabbitmq exchange type",
           "type": "string"
         },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
+        },
         "jsonBody": {
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
           "type": "boolean"
@@ -1324,6 +1415,10 @@
     },
     "io.argoproj.events.v1alpha1.AMQPQueueDeclareConfig": {
       "properties": {
+        "arguments": {
+          "title": "Arguments of a queue (also known as \"x-arguments\") used for optional features and plugins\n+optional",
+          "type": "string"
+        },
         "autoDelete": {
           "title": "AutoDelete removes the queue when no consumers are active\n+optional",
           "type": "boolean"
@@ -1352,7 +1447,7 @@
       "properties": {
         "accessKey": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
-          "title": "AccessKey refers K8s secret containing aws access key"
+          "title": "AccessKey refers K8s secret containing aws access key\n+optional"
         },
         "functionName": {
           "description": "FunctionName refers to the name of the function to invoke.",
@@ -1380,9 +1475,13 @@
           "title": "Region is AWS region",
           "type": "string"
         },
+        "roleARN": {
+          "title": "RoleARN is the Amazon Resource Name (ARN) of the role to assume.\n+optional",
+          "type": "string"
+        },
         "secretKey": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
-          "title": "SecretKey refers K8s secret containing aws secret key"
+          "title": "SecretKey refers K8s secret containing aws secret key\n+optional"
         }
       },
       "title": "AWSLambdaTrigger refers to specification of the trigger to invoke an AWS Lambda function",
@@ -1491,6 +1590,10 @@
     },
     "io.argoproj.events.v1alpha1.AzureEventsHubEventSource": {
       "properties": {
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
+        },
         "fqdn": {
           "title": "FQDN of the EventHubs namespace you created\nMore info at https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-get-connection-string",
           "type": "string"
@@ -1554,6 +1657,82 @@
       "title": "BasicAuth contains the reference to K8s secrets that holds the username and password",
       "type": "object"
     },
+    "io.argoproj.events.v1alpha1.BitbucketAuth": {
+      "properties": {
+        "basic": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.BitbucketBasicAuth",
+          "title": "Basic is BasicAuth auth strategy.\n+optional"
+        },
+        "token": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "title": "OAuthToken refers to the K8s secret that holds the OAuth Bearer token.\n+optional"
+        }
+      },
+      "title": "BitbucketAuth holds the different auth strategies for connecting to Bitbucket",
+      "type": "object"
+    },
+    "io.argoproj.events.v1alpha1.BitbucketBasicAuth": {
+      "properties": {
+        "password": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "Password refers to the K8s secret that holds the password."
+        },
+        "username": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "Username refers to the K8s secret that holds the username."
+        }
+      },
+      "title": "BasicAuth holds the information required to authenticate user via basic auth mechanism",
+      "type": "object"
+    },
+    "io.argoproj.events.v1alpha1.BitbucketEventSource": {
+      "properties": {
+        "auth": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.BitbucketAuth",
+          "description": "Auth information required to connect to Bitbucket."
+        },
+        "deleteHookOnFinish": {
+          "title": "DeleteHookOnFinish determines whether to delete the defined Bitbucket hook once the event source is stopped.\n+optional",
+          "type": "boolean"
+        },
+        "events": {
+          "description": "Events this webhook is subscribed to.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
+        },
+        "metadata": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Metadata holds the user defined metadata which will be passed along the event payload.\n+optional",
+          "type": "object"
+        },
+        "owner": {
+          "description": "Owner of the repository.",
+          "type": "string"
+        },
+        "projectKey": {
+          "title": "ProjectKey is the key of the project for which integration needs to setup",
+          "type": "string"
+        },
+        "repositorySlug": {
+          "description": "RepositorySlug is a URL-friendly version of a repository name, automatically generated by Bitbucket for use in the URL.",
+          "type": "string"
+        },
+        "webhook": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.WebhookContext",
+          "title": "Webhook refers to the configuration required to run an http server"
+        }
+      },
+      "title": "BitbucketEventSource describes the event source for Bitbucket",
+      "type": "object"
+    },
     "io.argoproj.events.v1alpha1.BitbucketServerEventSource": {
       "properties": {
         "accessToken": {
@@ -1575,6 +1754,10 @@
           "title": "Events are bitbucket event to listen to.\nRefer https://confluence.atlassian.com/bitbucketserver/event-payload-938025882.html",
           "type": "array"
         },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
+        },
         "metadata": {
           "additionalProperties": {
             "type": "string"
@@ -1583,11 +1766,18 @@
           "type": "object"
         },
         "projectKey": {
-          "title": "ProjectKey is the key of project for which integration needs to setup",
+          "title": "DeprecatedProjectKey is the key of project for which integration needs to setup\nDeprecated: use Repositories instead. Will be unsupported in v1.8\n+optional",
           "type": "string"
         },
+        "repositories": {
+          "items": {
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.BitbucketServerRepository"
+          },
+          "title": "Repositories holds a list of repositories for which integration needs to setup\n+optional",
+          "type": "array"
+        },
         "repositorySlug": {
-          "title": "RepositorySlug is the slug of the repository for which integration needs to setup",
+          "title": "DeprecatedRepositorySlug is the slug of the repository for which integration needs to setup\nDeprecated: use Repositories instead. Will be unsupported in v1.8\n+optional",
           "type": "string"
         },
         "webhook": {
@@ -1602,16 +1792,34 @@
       "title": "BitbucketServerEventSource refers to event-source related to Bitbucket Server events",
       "type": "object"
     },
+    "io.argoproj.events.v1alpha1.BitbucketServerRepository": {
+      "properties": {
+        "projectKey": {
+          "title": "ProjectKey is the key of project for which integration needs to setup",
+          "type": "string"
+        },
+        "repositorySlug": {
+          "title": "RepositorySlug is the slug of the repository for which integration needs to setup",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "io.argoproj.events.v1alpha1.CalendarEventSource": {
       "properties": {
         "exclusionDates": {
+          "description": "ExclusionDates defines the list of DATE-TIME exceptions for recurring events.",
           "items": {
             "type": "string"
           },
           "type": "array"
         },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
+        },
         "interval": {
-          "description": "Interval is a string that describes an interval duration, e.g. 1s, 30m, 2h...",
+          "title": "Interval is a string that describes an interval duration, e.g. 1s, 30m, 2h...\n+optional",
           "type": "string"
         },
         "metadata": {
@@ -1626,7 +1834,7 @@
           "title": "Persistence hold the configuration for event persistence"
         },
         "schedule": {
-          "title": "Schedule is a cron-like expression. For reference, see: https://en.wikipedia.org/wiki/Cron",
+          "title": "Schedule is a cron-like expression. For reference, see: https://en.wikipedia.org/wiki/Cron\n+optional",
           "type": "string"
         },
         "timezone": {
@@ -1674,6 +1882,28 @@
         }
       },
       "title": "Condition contains details about resource state",
+      "type": "object"
+    },
+    "io.argoproj.events.v1alpha1.ConditionsResetByTime": {
+      "properties": {
+        "cron": {
+          "title": "Cron is a cron-like expression. For reference, see: https://en.wikipedia.org/wiki/Cron",
+          "type": "string"
+        },
+        "timezone": {
+          "title": "+optional",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.events.v1alpha1.ConditionsResetCriteria": {
+      "properties": {
+        "byTime": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.ConditionsResetByTime",
+          "title": "Schedule is a cron-like expression. For reference, see: https://en.wikipedia.org/wiki/Cron"
+        }
+      },
       "type": "object"
     },
     "io.argoproj.events.v1alpha1.ConfigMapPersistence": {
@@ -1779,6 +2009,10 @@
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.Backoff",
           "title": "Backoff holds parameters applied to connection.\n+optional"
         },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
+        },
         "jsonBody": {
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
           "type": "boolean"
@@ -1854,9 +2088,17 @@
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventDependencyFilter",
           "title": "Filters and rules governing toleration of success and constraints on the context and data of an event"
         },
+        "filtersLogicalOperator": {
+          "description": "FiltersLogicalOperator defines how different filters are evaluated together.\nAvailable values: and (\u0026\u0026), or (||)\nIs optional and if left blank treated as and (\u0026\u0026).",
+          "type": "string"
+        },
         "name": {
           "title": "Name is a unique name of this dependency",
           "type": "string"
+        },
+        "transform": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventDependencyTransformer",
+          "title": "Transform transforms the event data"
         }
       },
       "title": "EventDependency describes a dependency",
@@ -1876,6 +2118,14 @@
           "title": "Data filter constraints with escalation",
           "type": "array"
         },
+        "dataLogicalOperator": {
+          "description": "DataLogicalOperator defines how multiple Data filters (if defined) are evaluated together.\nAvailable values: and (\u0026\u0026), or (||)\nIs optional and if left blank treated as and (\u0026\u0026).",
+          "type": "string"
+        },
+        "exprLogicalOperator": {
+          "description": "ExprLogicalOperator defines how multiple Exprs filters (if defined) are evaluated together.\nAvailable values: and (\u0026\u0026), or (||)\nIs optional and if left blank treated as and (\u0026\u0026).",
+          "type": "string"
+        },
         "exprs": {
           "description": "Exprs contains the list of expressions evaluated against the event payload.",
           "items": {
@@ -1888,6 +2138,20 @@
           "title": "Time filter on the event with escalation"
         }
       },
+      "type": "object"
+    },
+    "io.argoproj.events.v1alpha1.EventDependencyTransformer": {
+      "properties": {
+        "jq": {
+          "title": "JQ holds the jq command applied for transformation\n+optional",
+          "type": "string"
+        },
+        "script": {
+          "title": "Script refers to a Lua script used to transform the event\n+optional",
+          "type": "string"
+        }
+      },
+      "title": "EventDependencyTransformer transforms the event",
       "type": "object"
     },
     "io.argoproj.events.v1alpha1.EventPersistence": {
@@ -1919,6 +2183,14 @@
       "title": "EventSource is the definition of a eventsource resource\n+genclient\n+kubebuilder:resource:shortName=es\n+kubebuilder:subresource:status\n+k8s:deepcopy-gen:interfaces=io.k8s.apimachinery/pkg/runtime.Object\n+k8s:openapi-gen=true",
       "type": "object"
     },
+    "io.argoproj.events.v1alpha1.EventSourceFilter": {
+      "properties": {
+        "expression": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "io.argoproj.events.v1alpha1.EventSourceList": {
       "properties": {
         "items": {
@@ -1948,6 +2220,13 @@
             "$ref": "#/definitions/io.argoproj.events.v1alpha1.AzureEventsHubEventSource"
           },
           "title": "AzureEventsHub event sources",
+          "type": "object"
+        },
+        "bitbucket": {
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.BitbucketEventSource"
+          },
+          "title": "Bitbucket event sources",
           "type": "object"
         },
         "bitbucketserver": {
@@ -2172,6 +2451,10 @@
           "title": "Type of file operations to watch\nRefer https://github.com/fsnotify/fsnotify/blob/master/fsnotify.go for more information",
           "type": "string"
         },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
+        },
         "metadata": {
           "additionalProperties": {
             "type": "string"
@@ -2200,6 +2483,10 @@
         "config": {
           "title": "Config is the event source configuration",
           "type": "string"
+        },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
         },
         "insecure": {
           "description": "Insecure determines the type of connection.",
@@ -2294,6 +2581,23 @@
       "title": "GitRemoteConfig contains the configuration of a Git remote",
       "type": "object"
     },
+    "io.argoproj.events.v1alpha1.GithubAppCreds": {
+      "properties": {
+        "appID": {
+          "title": "AppID refers to the GitHub App ID for the application you created",
+          "type": "string"
+        },
+        "installationID": {
+          "title": "InstallationID refers to the Installation ID of the GitHub app you created and installed",
+          "type": "string"
+        },
+        "privateKey": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "title": "PrivateKey refers to a K8s secret containing the GitHub app private key"
+        }
+      },
+      "type": "object"
+    },
     "io.argoproj.events.v1alpha1.GithubEventSource": {
       "properties": {
         "active": {
@@ -2316,7 +2620,16 @@
           "items": {
             "type": "string"
           },
+          "title": "Events refer to Github events to which the event source will subscribe",
           "type": "array"
+        },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
+        },
+        "githubApp": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.GithubAppCreds",
+          "title": "GitHubApp holds the GitHub app credentials\n+optional"
         },
         "githubBaseURL": {
           "title": "GitHub base URL (for GitHub Enterprise)\n+optional",
@@ -2327,7 +2640,7 @@
           "type": "string"
         },
         "id": {
-          "title": "Id is the webhook's id\nDeprecated: This is not used at all, will be removed in v1.6",
+          "title": "Id is the webhook's id\nDeprecated: This is not used at all, will be removed in v1.6\n+optional",
           "type": "string"
         },
         "insecure": {
@@ -2341,19 +2654,26 @@
           "title": "Metadata holds the user defined metadata which will passed along the event payload.\n+optional",
           "type": "object"
         },
+        "organizations": {
+          "description": "Organizations holds the names of organizations (used for organization level webhooks). Not required if Repositories is set.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "owner": {
-          "title": "DeprecatedOwner refers to GitHub owner name i.e. argoproj\nDeprecated: use Repositories instead. Will be unsupported in v 1.6",
+          "title": "DeprecatedOwner refers to GitHub owner name i.e. argoproj\nDeprecated: use Repositories instead. Will be unsupported in v 1.6\n+optional",
           "type": "string"
         },
         "repositories": {
+          "description": "Repositories holds the information of repositories, which uses repo owner as the key,\nand list of repo names as the value. Not required if Organizations is set.",
           "items": {
             "$ref": "#/definitions/io.argoproj.events.v1alpha1.OwnedRepositories"
           },
-          "title": "Repositories holds the information of repositories, which uses repo owner as the key,\nand list of repo names as the value",
           "type": "array"
         },
         "repository": {
-          "title": "DeprecatedRepository refers to GitHub repo name i.e. argo-events\nDeprecated: use Repositories instead. Will be unsupported in v 1.6",
+          "title": "DeprecatedRepository refers to GitHub repo name i.e. argo-events\nDeprecated: use Repositories instead. Will be unsupported in v 1.6\n+optional",
           "type": "string"
         },
         "webhook": {
@@ -2389,6 +2709,10 @@
           },
           "type": "array"
         },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
+        },
         "gitlabBaseURL": {
           "title": "GitlabBaseURL is the base URL for API requests to a custom endpoint",
           "type": "string"
@@ -2401,7 +2725,7 @@
           "type": "object"
         },
         "projectID": {
-          "title": "DeprecatedProjectID is the id of project for which integration needs to setup\nDeprecated: use Projects instead. Will be unsupported in v 1.7",
+          "title": "DeprecatedProjectID is the id of project for which integration needs to setup\nDeprecated: use Projects instead. Will be unsupported in v 1.7\n+optional",
           "type": "string"
         },
         "projects": {
@@ -2434,6 +2758,10 @@
         "checkInterval": {
           "title": "CheckInterval is a string that describes an interval duration to check the directory state, e.g. 1s, 30m, 2h... (defaults to 1m)",
           "type": "string"
+        },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
         },
         "hdfsUser": {
           "description": "HDFSUser is the user to access HDFS file system.\nIt is ignored if either ccache or keytab is used.",
@@ -2596,6 +2924,10 @@
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.KafkaConsumerGroup",
           "title": "Consumer group for kafka client\n+optional"
         },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
+        },
         "jsonBody": {
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
           "type": "boolean"
@@ -2719,6 +3051,10 @@
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.Backoff",
           "description": "ConnectionBackoff holds backoff applied to connection."
         },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
+        },
         "jsonBody": {
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
           "type": "boolean"
@@ -2796,6 +3132,10 @@
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.Backoff",
           "description": "ConnectionBackoff holds backoff applied to connection."
         },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
+        },
         "jsonBody": {
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
           "type": "boolean"
@@ -2862,6 +3202,10 @@
         "connectionBackoff": {
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.Backoff",
           "title": "Backoff holds parameters applied to connection.\n+optional"
+        },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
         },
         "hostAddress": {
           "title": "HostAddress is the address of the host for NSQ lookup",
@@ -2940,7 +3284,7 @@
           "type": "array"
         },
         "owner": {
-          "title": "Orgnization or user name",
+          "title": "Organization or user name",
           "type": "string"
         }
       },
@@ -2970,6 +3314,10 @@
         "deleteSubscriptionOnFinish": {
           "title": "DeleteSubscriptionOnFinish determines whether to delete the GCP PubSub subscription once the event source is stopped.\n+optional",
           "type": "boolean"
+        },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
         },
         "jsonBody": {
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
@@ -3010,6 +3358,10 @@
         "connectionBackoff": {
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.Backoff",
           "title": "Backoff holds parameters applied to connection.\n+optional"
+        },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
         },
         "jsonBody": {
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
@@ -3132,6 +3484,10 @@
         "db": {
           "title": "DB to use. If not specified, default DB 0 will be used.\n+optional",
           "type": "integer"
+        },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
         },
         "hostAddress": {
           "title": "HostAddress refers to the address of the Redis host/server",
@@ -3321,6 +3677,10 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "title": "AccessKey refers K8s secret containing aws access key"
         },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
+        },
         "metadata": {
           "additionalProperties": {
             "type": "string"
@@ -3361,6 +3721,18 @@
         "accessKey": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "title": "AccessKey refers K8s secret containing aws access key"
+        },
+        "dlq": {
+          "title": "DLQ specifies if a dead-letter queue is configured for messages that can't be processed successfully.\nIf set to true, messages with invalid payload won't be acknowledged to allow to forward them farther to the dead-letter queue.\nThe default value is false.\n+optional",
+          "type": "boolean"
+        },
+        "endpoint": {
+          "title": "Endpoint configures connection to a specific SQS endpoint instead of Amazons servers\n+optional",
+          "type": "string"
+        },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
         },
         "jsonBody": {
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
@@ -3527,6 +3899,10 @@
     },
     "io.argoproj.events.v1alpha1.SlackEventSource": {
       "properties": {
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
+        },
         "metadata": {
           "additionalProperties": {
             "type": "string"
@@ -3735,6 +4111,10 @@
         "clientKeySecret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "title": "ClientKeySecret refers to the secret that contains the client key"
+        },
+        "insecureSkipVerify": {
+          "title": "If true, skips creation of TLSConfig with certs and creates an empty TLSConfig. (Defaults to false)\n+optional",
+          "type": "boolean"
         }
       },
       "type": "object"
@@ -3924,6 +4304,13 @@
         "conditions": {
           "title": "Conditions is the conditions to execute the trigger.\nFor example: \"(dep01 || dep02) \u0026\u0026 dep04\"\n+optional",
           "type": "string"
+        },
+        "conditionsReset": {
+          "items": {
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.ConditionsResetCriteria"
+          },
+          "title": "Criteria to reset the conditons\n+optional",
+          "type": "array"
         },
         "custom": {
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.CustomTrigger",
@@ -4565,14 +4952,14 @@
     "io.argoproj.workflow.v1alpha1.ContainerNode": {
       "properties": {
         "args": {
-          "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+          "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
           "items": {
             "type": "string"
           },
           "type": "array"
         },
         "command": {
-          "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+          "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
           "items": {
             "type": "string"
           },
@@ -4644,7 +5031,7 @@
         },
         "securityContext": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecurityContext",
-          "description": "Security options the pod should run with. More info: https://kubernetes.io/docs/concepts/policy/security-context/ More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/"
+          "description": "SecurityContext defines the security options the container should be run with. If set, the fields of SecurityContext override the equivalent fields of PodSecurityContext. More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/"
         },
         "startupProbe": {
           "$ref": "#/definitions/io.k8s.api.core.v1.Probe",
@@ -6344,14 +6731,14 @@
       "description": "ScriptTemplate is a template subtype to enable scripting through code steps",
       "properties": {
         "args": {
-          "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+          "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
           "items": {
             "type": "string"
           },
           "type": "array"
         },
         "command": {
-          "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+          "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
           "items": {
             "type": "string"
           },
@@ -6417,7 +6804,7 @@
         },
         "securityContext": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecurityContext",
-          "description": "Security options the pod should run with. More info: https://kubernetes.io/docs/concepts/policy/security-context/ More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/"
+          "description": "SecurityContext defines the security options the container should be run with. If set, the fields of SecurityContext override the equivalent fields of PodSecurityContext. More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/"
         },
         "source": {
           "description": "Source contains the source code of the script to execute",
@@ -6937,14 +7324,14 @@
       "description": "UserContainer is a container specified by a user.",
       "properties": {
         "args": {
-          "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+          "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
           "items": {
             "type": "string"
           },
           "type": "array"
         },
         "command": {
-          "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+          "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
           "items": {
             "type": "string"
           },
@@ -7014,7 +7401,7 @@
         },
         "securityContext": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecurityContext",
-          "description": "Security options the pod should run with. More info: https://kubernetes.io/docs/concepts/policy/security-context/ More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/"
+          "description": "SecurityContext defines the security options the container should be run with. If set, the fields of SecurityContext override the equivalent fields of PodSecurityContext. More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/"
         },
         "startupProbe": {
           "$ref": "#/definitions/io.k8s.api.core.v1.Probe",
@@ -9091,24 +9478,6 @@
       ],
       "type": "object"
     },
-    "io.k8s.api.core.v1.Handler": {
-      "description": "Handler defines a specific action that should be taken",
-      "properties": {
-        "exec": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.ExecAction",
-          "description": "One and only one of the following should be specified. Exec specifies the action to take."
-        },
-        "httpGet": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.HTTPGetAction",
-          "description": "HTTPGet specifies the http request to perform."
-        },
-        "tcpSocket": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.TCPSocketAction",
-          "description": "TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported"
-        }
-      },
-      "type": "object"
-    },
     "io.k8s.api.core.v1.HostAlias": {
       "description": "HostAlias holds the mapping between IP and hostnames that will be injected as an entry in the pod's hosts file.",
       "properties": {
@@ -10632,6 +11001,10 @@
         "fieldManager": {
           "title": "fieldManager is a name associated with the actor or entity\nthat is making these changes. The value must be less than or\n128 characters long, and only contain printable characters,\nas defined by https://golang.org/pkg/unicode/#IsPrint.\n+optional",
           "type": "string"
+        },
+        "fieldValidation": {
+          "title": "fieldValidation determines how the server should respond to\nunknown/duplicate fields in the object in the request.\nIntroduced as alpha in 1.23, older servers or servers with the\n`ServerSideFieldValidation` feature disabled will discard valid values\nspecified in  this param and not perform any server side field validation.\nValid values are:\n- Ignore: ignores unknown/duplicate fields.\n- Warn: responds with a warning for each\nunknown/duplicate field, but successfully serves the request.\n- Strict: fails the request on unknown/duplicate fields.\n+optional",
+          "type": "string"
         }
       },
       "type": "object"
@@ -10662,7 +11035,7 @@
           "type": "string"
         }
       },
-      "title": "GroupVersionResource unambiguously identifies a resource.  It doesn't anonymously include GroupVersion\nto avoid automatic coersion.  It doesn't use a GroupVersion to avoid custom marshalling",
+      "title": "GroupVersionResource unambiguously identifies a resource.  It doesn't anonymously include GroupVersion\nto avoid automatic coercion.  It doesn't use a GroupVersion to avoid custom marshalling",
       "type": "object"
     },
     "io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelector": {
