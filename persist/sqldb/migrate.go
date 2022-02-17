@@ -55,6 +55,10 @@ func (m migrate) Exec(ctx context.Context) (err error) {
 			if err != nil {
 				return err
 			}
+		} else {
+			if rs.Err() != nil {
+				return rs.Err()
+			}
 		}
 	}
 	dbType := dbTypeFor(m.session)
