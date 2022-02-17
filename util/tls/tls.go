@@ -148,20 +148,21 @@ func GetServerTLSConfigFromSecret(ctx context.Context, kubectlConfig kubernetes.
 		return nil, err
 	}
 
-	// Pull the ca.crt from the Kubernetes secret
-	capem, err := util.GetSecrets(ctx, kubectlConfig, namespace, tlsKubernetesSecretName, tlsCaSecretKey)
-	if err != nil {
-		return nil, err
-	}
-
+	// Retrieve the System Certificate Pool
 	rootCAs, err := x509.SystemCertPool()
 	if err != nil {
 		log.Warnf("failed to get system certificate pool: %v, continuing with empty certificate trust", err)
 		rootCAs = x509.NewCertPool()
 	}
 
-	if !rootCAs.AppendCertsFromPEM(capem) {
-		log.Warn("failed to append ca.crt to the trusted CA pool")
+	// Pull the ca.crt from the Kubernetes secret
+	capem, err := util.GetSecrets(ctx, kubectlConfig, namespace, tlsKubernetesSecretName, tlsCaSecretKey)
+	if err == nil {
+		if !rootCAs.AppendCertsFromPEM(capem) {
+			log.Warn("failed to append ca.crt to the trusted CA pool")
+		}
+	} else {
+		log.Warnf("skipped adding ca.crt to local certificate trusts: %v", err)
 	}
 
 	return &tls.Config{
