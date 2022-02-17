@@ -2748,7 +2748,7 @@
 
 
 <h1 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h1>
-<p>To see how Argo works, you can install it and run examples of simple workflows and workflows that use artifacts.</p>
+<p>To see how Argo Workflows work, you can install it and run examples of simple workflows and workflows that use artifacts.</p>
 <p>Firstly, you'll need a Kubernetes cluster and <code>kubectl</code> set-up</p>
 <h2 id="install-argo-workflows">Install Argo Workflows<a class="headerlink" href="#install-argo-workflows" title="Permanent link">&para;</a></h2>
 <p>To get started quickly, you can use the quick start manifest which will install Argo Workflow as well as some commonly used components:</p>
@@ -2776,11 +2776,21 @@ kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflo
 <p>If you're using running Argo Workflows on a remote cluster (e.g. on EKS or GKE) then <a href="../argo-server/#access-the-argo-workflows-ui">follow these instructions</a>. </p>
 <p>Next, Download the latest Argo CLI from our <a href="https://github.com/argoproj/argo-workflows/releases/latest">releases page</a>.</p>
 <p>Finally, submit an example workflow:  </p>
-<div class="highlight"><pre><span></span><code>argo submit -n argo --watch https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/hello-world.yaml
-argo list -n argo
-argo get -n argo @latest
-argo logs -n argo @latest
-</code></pre></div>
+<p><code>argo submit -n argo --watch https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/hello-world.yaml</code></p>
+<p>The <code>--watch</code> flag used above will allow you to observe the workflow as it runs and the status of whether it succeeds. 
+When the workflow completes, the watch on the workflow will stop.</p>
+<p>You can list all the Workflows you have submitted by running the command below:</p>
+<p><code>argo list -n argo</code></p>
+<p>You will notice the Workflow name has a <code>hello-world-</code> prefix followed by random characters. These characters are used 
+to give Workflows unique names to help identify specific runs of a Workflow. If you submitted this Workflow again, 
+the next Workflow run would have a different name.</p>
+<p>Using the <code>argo get</code> command, you can always review details of a Workflow run. The output for the command below will 
+be the same as the information shown as when you submitted the Workflow:</p>
+<p><code>argo get -n argo @latest</code></p>
+<p>The <code>@latest</code> argument to the CLI is a short cut to view the latest Workflow run that was executed. </p>
+<p>You can also observe the logs of the Workflow run by running the following:</p>
+<p><code>argo logs -n argo @latest</code></p>
+<p>Now that you have understanding of using Workflows, you can check out other <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/README.md">Workflow examples</a> to see additional uses of Worklows.</p>
 
               
             </article>
