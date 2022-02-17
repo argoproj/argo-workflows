@@ -337,7 +337,11 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mustRegisterGWHandler(workflowarchivepkg.RegisterArchivedWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(clusterwftemplatepkg.RegisterClusterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 
-	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) { webhookInterceptor(w, r, gwmux) })
+	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
+		// we must delete this header for API request to prevent "stream terminated by RST_STREAM with error code: PROTOCOL_ERROR" error
+		r.Header.Del("Connection")
+		webhookInterceptor(w, r, gwmux)
+	})
 	mux.HandleFunc("/artifacts/", artifactServer.GetOutputArtifact)
 	mux.HandleFunc("/input-artifacts/", artifactServer.GetInputArtifact)
 	mux.HandleFunc("/artifacts-by-uid/", artifactServer.GetOutputArtifactByUID)
