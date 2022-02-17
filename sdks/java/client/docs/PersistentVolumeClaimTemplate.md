@@ -9,7 +9,7 @@ PersistentVolumeClaimTemplate is used to produce PersistentVolumeClaim objects a
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **metadata** | [**io.kubernetes.client.openapi.models.V1ObjectMeta**](io.kubernetes.client.openapi.models.V1ObjectMeta.md) |  |  [optional]
-**spec** | [**PersistentVolumeClaimSpec**](PersistentVolumeClaimSpec.md) |  |  [optional]
+**spec** | [**PersistentVolumeClaimSpec**](PersistentVolumeClaimSpec.md) |  | 
 
 
 

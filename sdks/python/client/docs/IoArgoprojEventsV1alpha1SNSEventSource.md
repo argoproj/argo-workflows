@@ -5,6 +5,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **access_key** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 
+**filter** | [**IoArgoprojEventsV1alpha1EventSourceFilter**](IoArgoprojEventsV1alpha1EventSourceFilter.md) |  | [optional] 
 **metadata** | **{str: (str,)}** |  | [optional] 
 **region** | **str** |  | [optional] 
 **role_arn** | **str** |  | [optional] 

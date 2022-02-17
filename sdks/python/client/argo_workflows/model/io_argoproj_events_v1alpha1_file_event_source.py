@@ -30,7 +30,9 @@ from argo_workflows.exceptions import ApiAttributeError
 
 
 def lazy_import():
+    from argo_workflows.model.io_argoproj_events_v1alpha1_event_source_filter import IoArgoprojEventsV1alpha1EventSourceFilter
     from argo_workflows.model.io_argoproj_events_v1alpha1_watch_path_config import IoArgoprojEventsV1alpha1WatchPathConfig
+    globals()['IoArgoprojEventsV1alpha1EventSourceFilter'] = IoArgoprojEventsV1alpha1EventSourceFilter
     globals()['IoArgoprojEventsV1alpha1WatchPathConfig'] = IoArgoprojEventsV1alpha1WatchPathConfig
 
 
@@ -88,6 +90,7 @@ class IoArgoprojEventsV1alpha1FileEventSource(ModelNormal):
         lazy_import()
         return {
             'event_type': (str,),  # noqa: E501
+            'filter': (IoArgoprojEventsV1alpha1EventSourceFilter,),  # noqa: E501
             'metadata': ({str: (str,)},),  # noqa: E501
             'polling': (bool,),  # noqa: E501
             'watch_path_config': (IoArgoprojEventsV1alpha1WatchPathConfig,),  # noqa: E501
@@ -100,6 +103,7 @@ class IoArgoprojEventsV1alpha1FileEventSource(ModelNormal):
 
     attribute_map = {
         'event_type': 'eventType',  # noqa: E501
+        'filter': 'filter',  # noqa: E501
         'metadata': 'metadata',  # noqa: E501
         'polling': 'polling',  # noqa: E501
         'watch_path_config': 'watchPathConfig',  # noqa: E501
@@ -147,6 +151,7 @@ class IoArgoprojEventsV1alpha1FileEventSource(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             event_type (str): [optional]  # noqa: E501
+            filter (IoArgoprojEventsV1alpha1EventSourceFilter): [optional]  # noqa: E501
             metadata ({str: (str,)}): [optional]  # noqa: E501
             polling (bool): [optional]  # noqa: E501
             watch_path_config (IoArgoprojEventsV1alpha1WatchPathConfig): [optional]  # noqa: E501
@@ -232,6 +237,7 @@ class IoArgoprojEventsV1alpha1FileEventSource(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             event_type (str): [optional]  # noqa: E501
+            filter (IoArgoprojEventsV1alpha1EventSourceFilter): [optional]  # noqa: E501
             metadata ({str: (str,)}): [optional]  # noqa: E501
             polling (bool): [optional]  # noqa: E501
             watch_path_config (IoArgoprojEventsV1alpha1WatchPathConfig): [optional]  # noqa: E501

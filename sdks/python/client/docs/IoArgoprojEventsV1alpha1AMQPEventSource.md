@@ -10,6 +10,7 @@ Name | Type | Description | Notes
 **exchange_declare** | [**IoArgoprojEventsV1alpha1AMQPExchangeDeclareConfig**](IoArgoprojEventsV1alpha1AMQPExchangeDeclareConfig.md) |  | [optional] 
 **exchange_name** | **str** |  | [optional] 
 **exchange_type** | **str** |  | [optional] 
+**filter** | [**IoArgoprojEventsV1alpha1EventSourceFilter**](IoArgoprojEventsV1alpha1EventSourceFilter.md) |  | [optional] 
 **json_body** | **bool** |  | [optional] 
 **metadata** | **{str: (str,)}** |  | [optional] 
 **queue_bind** | [**IoArgoprojEventsV1alpha1AMQPQueueBindConfig**](IoArgoprojEventsV1alpha1AMQPQueueBindConfig.md) |  | [optional] 

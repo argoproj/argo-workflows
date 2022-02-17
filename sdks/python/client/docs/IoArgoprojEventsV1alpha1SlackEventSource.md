@@ -4,6 +4,7 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**filter** | [**IoArgoprojEventsV1alpha1EventSourceFilter**](IoArgoprojEventsV1alpha1EventSourceFilter.md) |  | [optional] 
 **metadata** | **{str: (str,)}** |  | [optional] 
 **signing_secret** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 
 **token** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 

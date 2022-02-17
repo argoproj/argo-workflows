@@ -87,8 +87,8 @@ class ProjectedVolumeSource(ModelNormal):
         """
         lazy_import()
         return {
-            'sources': ([VolumeProjection],),  # noqa: E501
             'default_mode': (int,),  # noqa: E501
+            'sources': ([VolumeProjection],),  # noqa: E501
         }
 
     @cached_property
@@ -97,8 +97,8 @@ class ProjectedVolumeSource(ModelNormal):
 
 
     attribute_map = {
-        'sources': 'sources',  # noqa: E501
         'default_mode': 'defaultMode',  # noqa: E501
+        'sources': 'sources',  # noqa: E501
     }
 
     read_only_vars = {
@@ -108,11 +108,8 @@ class ProjectedVolumeSource(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, sources, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, *args, **kwargs):  # noqa: E501
         """ProjectedVolumeSource - a model defined in OpenAPI
-
-        Args:
-            sources ([VolumeProjection]): list of volume projections
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -145,7 +142,8 @@ class ProjectedVolumeSource(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            default_mode (int): Mode bits to use on created files by default. Must be a value between 0 and 0777. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.. [optional]  # noqa: E501
+            default_mode (int): Mode bits used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.. [optional]  # noqa: E501
+            sources ([VolumeProjection]): list of volume projections. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -173,7 +171,6 @@ class ProjectedVolumeSource(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.sources = sources
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -194,11 +191,8 @@ class ProjectedVolumeSource(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, sources, *args, **kwargs):  # noqa: E501
+    def __init__(self, *args, **kwargs):  # noqa: E501
         """ProjectedVolumeSource - a model defined in OpenAPI
-
-        Args:
-            sources ([VolumeProjection]): list of volume projections
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -231,7 +225,8 @@ class ProjectedVolumeSource(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            default_mode (int): Mode bits to use on created files by default. Must be a value between 0 and 0777. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.. [optional]  # noqa: E501
+            default_mode (int): Mode bits used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.. [optional]  # noqa: E501
+            sources ([VolumeProjection]): list of volume projections. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -257,7 +252,6 @@ class ProjectedVolumeSource(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.sources = sources
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

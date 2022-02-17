@@ -9,6 +9,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **amqp** | [**Map&lt;String, IoArgoprojEventsV1alpha1AMQPEventSource&gt;**](IoArgoprojEventsV1alpha1AMQPEventSource.md) |  |  [optional]
 **azureEventsHub** | [**Map&lt;String, IoArgoprojEventsV1alpha1AzureEventsHubEventSource&gt;**](IoArgoprojEventsV1alpha1AzureEventsHubEventSource.md) |  |  [optional]
+**bitbucket** | [**Map&lt;String, IoArgoprojEventsV1alpha1BitbucketEventSource&gt;**](IoArgoprojEventsV1alpha1BitbucketEventSource.md) |  |  [optional]
 **bitbucketserver** | [**Map&lt;String, IoArgoprojEventsV1alpha1BitbucketServerEventSource&gt;**](IoArgoprojEventsV1alpha1BitbucketServerEventSource.md) |  |  [optional]
 **calendar** | [**Map&lt;String, IoArgoprojEventsV1alpha1CalendarEventSource&gt;**](IoArgoprojEventsV1alpha1CalendarEventSource.md) |  |  [optional]
 **emitter** | [**Map&lt;String, IoArgoprojEventsV1alpha1EmitterEventSource&gt;**](IoArgoprojEventsV1alpha1EmitterEventSource.md) |  |  [optional]

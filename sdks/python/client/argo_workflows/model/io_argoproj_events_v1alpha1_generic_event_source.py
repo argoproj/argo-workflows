@@ -30,7 +30,9 @@ from argo_workflows.exceptions import ApiAttributeError
 
 
 def lazy_import():
+    from argo_workflows.model.io_argoproj_events_v1alpha1_event_source_filter import IoArgoprojEventsV1alpha1EventSourceFilter
     from argo_workflows.model.secret_key_selector import SecretKeySelector
+    globals()['IoArgoprojEventsV1alpha1EventSourceFilter'] = IoArgoprojEventsV1alpha1EventSourceFilter
     globals()['SecretKeySelector'] = SecretKeySelector
 
 
@@ -89,6 +91,7 @@ class IoArgoprojEventsV1alpha1GenericEventSource(ModelNormal):
         return {
             'auth_secret': (SecretKeySelector,),  # noqa: E501
             'config': (str,),  # noqa: E501
+            'filter': (IoArgoprojEventsV1alpha1EventSourceFilter,),  # noqa: E501
             'insecure': (bool,),  # noqa: E501
             'json_body': (bool,),  # noqa: E501
             'metadata': ({str: (str,)},),  # noqa: E501
@@ -103,6 +106,7 @@ class IoArgoprojEventsV1alpha1GenericEventSource(ModelNormal):
     attribute_map = {
         'auth_secret': 'authSecret',  # noqa: E501
         'config': 'config',  # noqa: E501
+        'filter': 'filter',  # noqa: E501
         'insecure': 'insecure',  # noqa: E501
         'json_body': 'jsonBody',  # noqa: E501
         'metadata': 'metadata',  # noqa: E501
@@ -152,6 +156,7 @@ class IoArgoprojEventsV1alpha1GenericEventSource(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             auth_secret (SecretKeySelector): [optional]  # noqa: E501
             config (str): [optional]  # noqa: E501
+            filter (IoArgoprojEventsV1alpha1EventSourceFilter): [optional]  # noqa: E501
             insecure (bool): Insecure determines the type of connection.. [optional]  # noqa: E501
             json_body (bool): [optional]  # noqa: E501
             metadata ({str: (str,)}): [optional]  # noqa: E501
@@ -239,6 +244,7 @@ class IoArgoprojEventsV1alpha1GenericEventSource(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             auth_secret (SecretKeySelector): [optional]  # noqa: E501
             config (str): [optional]  # noqa: E501
+            filter (IoArgoprojEventsV1alpha1EventSourceFilter): [optional]  # noqa: E501
             insecure (bool): Insecure determines the type of connection.. [optional]  # noqa: E501
             json_body (bool): [optional]  # noqa: E501
             metadata ({str: (str,)}): [optional]  # noqa: E501

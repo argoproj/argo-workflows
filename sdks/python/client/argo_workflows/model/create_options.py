@@ -83,6 +83,7 @@ class CreateOptions(ModelNormal):
         return {
             'dry_run': ([str],),  # noqa: E501
             'field_manager': (str,),  # noqa: E501
+            'field_validation': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -93,6 +94,7 @@ class CreateOptions(ModelNormal):
     attribute_map = {
         'dry_run': 'dryRun',  # noqa: E501
         'field_manager': 'fieldManager',  # noqa: E501
+        'field_validation': 'fieldValidation',  # noqa: E501
     }
 
     read_only_vars = {
@@ -138,6 +140,7 @@ class CreateOptions(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             dry_run ([str]): [optional]  # noqa: E501
             field_manager (str): [optional]  # noqa: E501
+            field_validation (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -221,6 +224,7 @@ class CreateOptions(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             dry_run ([str]): [optional]  # noqa: E501
             field_manager (str): [optional]  # noqa: E501
+            field_validation (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
