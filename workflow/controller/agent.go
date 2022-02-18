@@ -132,8 +132,8 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 						Capabilities: &apiv1.Capabilities{
 							Drop: []apiv1.Capability{"ALL"},
 						},
-						RunAsNonRoot:             pointer.BoolPtr(false),
-						ReadOnlyRootFilesystem:   pointer.BoolPtr(false),
+						RunAsNonRoot:             pointer.BoolPtr(true),
+						ReadOnlyRootFilesystem:   pointer.BoolPtr(true),
 						AllowPrivilegeEscalation: pointer.BoolPtr(false),
 					},
 				},
