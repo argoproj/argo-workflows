@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"k8s.io/utils/pointer"
 	"os"
 
 	log "github.com/sirupsen/logrus"
@@ -115,6 +116,9 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		Spec: apiv1.PodSpec{
 			RestartPolicy:    apiv1.RestartPolicyOnFailure,
 			ImagePullSecrets: woc.execWf.Spec.ImagePullSecrets,
+			SecurityContext: &apiv1.PodSecurityContext{
+				RunAsNonRoot: pointer.BoolPtr(true),
+			},
 			Containers: append(
 				pluginSidecars,
 				apiv1.Container{
@@ -124,6 +128,14 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 					Image:           woc.controller.executorImage(),
 					ImagePullPolicy: woc.controller.executorImagePullPolicy(),
 					Env:             envVars,
+					SecurityContext: &apiv1.SecurityContext{
+						Capabilities: &apiv1.Capabilities{
+							Drop: []apiv1.Capability{"ALL"},
+						},
+						RunAsNonRoot:             pointer.BoolPtr(false),
+						ReadOnlyRootFilesystem:   pointer.BoolPtr(false),
+						AllowPrivilegeEscalation: pointer.BoolPtr(false),
+					},
 				},
 			),
 		},
