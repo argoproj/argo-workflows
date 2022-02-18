@@ -28,6 +28,10 @@ Mentors:
 * [@simster7](https://github.com/simster7) (Simon)
 * [@sarabala1979](https://github.com/sarabala1979) (Bala)
 * [@terrytangyuan](https://github.com/terrytangyuan) (Yuan)
+* [@dinever](https://github.com/dinever) (Peixuan)
+* [@blkperl](https://github.com/blkperl) (William)
+* [@JPZ13](https://github.com/JPZ13) (J.P.)
+* [@tczhao](https://github.com/tczhao) (Tianchu)
 
 ## How To End Your Relationship
 
