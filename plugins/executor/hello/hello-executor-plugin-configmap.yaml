@@ -41,7 +41,7 @@ data:
     command:
     - python
     - -c
-    image: python:alpine3.6
+    image: python:alpine
     name: hello-executor-plugin
     ports:
     - containerPort: 4355
@@ -53,6 +53,11 @@ data:
         cpu: 100m
         memory: 32Mi
     securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+      readOnlyRootFilesystem: true
       runAsNonRoot: true
       runAsUser: 1000
 kind: ConfigMap

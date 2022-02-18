@@ -45,7 +45,7 @@ spec:
             secretKeyRef:
               name: slack-executor-plugin
               key: URL
-      image: python:alpine3.6
+      image: python:alpine
       name: slack-executor-plugin
       ports:
         - containerPort: 7522
@@ -59,3 +59,8 @@ spec:
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
+        readOnlyRootFilesystem: true
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL

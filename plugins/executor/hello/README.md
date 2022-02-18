@@ -2,7 +2,7 @@
 # hello
 
 * Needs: >= v3.3
-* Image: python:alpine3.6
+* Image: python:alpine
 
 This is the "hello world" plugin.
 
