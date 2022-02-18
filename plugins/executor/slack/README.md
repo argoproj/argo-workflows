@@ -2,7 +2,7 @@
 # slack
 
 * Needs: >= v3.3
-* Image: python:alpine3.6
+* Image: python:alpine
 
 This plugin sends a Slack message.
 
