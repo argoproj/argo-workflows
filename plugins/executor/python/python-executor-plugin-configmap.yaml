@@ -106,21 +106,10 @@ metadata:
     workflows.argoproj.io/description: |
       This plugin runs trusted Python expressions.
 
-      Example:
+      Do not use it to run untrusted Python expressions.
 
-      ```yaml
-      apiVersion: argoproj.io/v1alpha1
-      kind: Workflow
-      metadata:
-        generateName: python-example-
-      spec:
-        entrypoint: main
-        templates:
-          - name: main
-            plugin:
-              python:
-                expression: "{{workflow.name}} finished!"
-      ```
+      This plugin make attempts to sandbox the expression. It removes built-ins that would allow disk or network access.
+      The plugin itself is allowed limited CPU and memory, and is, of course, contained.
     workflows.argoproj.io/version: '>= v3.3'
   creationTimestamp: null
   labels:

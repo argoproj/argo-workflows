@@ -6,10 +6,11 @@ metadata:
     workflows.argoproj.io/description: |
       This plugin runs trusted Python expressions.
 
+      Do not use it to run untrusted Python expressions.
+
       This plugin make attempts to sandbox the expression. It removes built-ins that would allow disk or network access.
       The plugin itself is allowed limited CPU and memory, and is, of course, contained.
 
-      However, do not use it to run untrused Python expressions.
     workflows.argoproj.io/version: '>= v3.3'
 spec:
   sidecar:
