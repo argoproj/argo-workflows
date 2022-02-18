@@ -281,11 +281,13 @@ func (c *DocGeneratorContext) addToQueue(ref, jsonFieldName string) {
 }
 
 func (c *DocGeneratorContext) getDesc(key string) string {
-	obj := c.defs[key].(map[string]interface{})
-	if val, ok := obj["description"]; ok {
-		return cleanDesc(val.(string))
-	} else if val, ok := obj["title"]; ok {
-		return cleanDesc(cleanTitle(val.(string)))
+	obj, ok := c.defs[key].(map[string]interface{})
+	if ok {
+		if val, ok := obj["description"]; ok {
+			return cleanDesc(val.(string))
+		} else if val, ok := obj["title"]; ok {
+			return cleanDesc(cleanTitle(val.(string)))
+		}
 	}
 	return "_No description available_"
 }
@@ -304,7 +306,11 @@ func (c *DocGeneratorContext) getTemplate(key string) string {
 	}
 
 	var properties map[string]interface{}
-	if props, ok := c.defs[key].(map[string]interface{})["properties"]; ok {
+	def,ok := c.defs[key].(map[string]interface{})
+	if !ok {
+		return out
+	}
+	if props, ok := def["properties"]; ok {
 		properties = props.(map[string]interface{})
 	} else {
 		return out

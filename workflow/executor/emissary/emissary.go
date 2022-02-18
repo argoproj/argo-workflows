@@ -46,8 +46,8 @@ The wait container can create one file itself, used for terminating the sub-proc
 */
 type emissary struct{}
 
-func New() (executor.ContainerRuntimeExecutor, error) {
-	return &emissary{}, nil
+func New() executor.ContainerRuntimeExecutor {
+	return &emissary{}
 }
 
 func (e *emissary) Init(t wfv1.Template) error {

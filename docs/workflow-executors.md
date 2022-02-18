@@ -8,7 +8,7 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
 
 > v3.1 and after
 
-**default in >= v3.3**
+**default in >= v3.3**, **only option in v3.x**
 
 This is the most fully featured executor.
 
@@ -50,7 +50,7 @@ The emissary will exit with code 64 if it fails. This may indicate a bug in the 
 
 ⚠️Deprecated. 
 
-**default in <= v3.2**
+**default in <= v3.2**, **removed in v3.x**
 
 * Least secure:
     * It requires `privileged` access to `docker.sock` of the host to be mounted which. Often rejected by Open Policy Agent (OPA) or your Pod Security Policy (PSP).
@@ -66,6 +66,8 @@ The emissary will exit with code 64 if it fails. This may indicate a bug in the 
 **Note**: when using docker as workflow executors, messages printed in both `stdout` and `stderr` are captured in the [Argo variable](./variables.md#scripttemplate) `.outputs.result`.
 
 ## Kubelet (kubelet)
+
+**removed in v3.x**
 
 * Secure
     * No `privileged` access
@@ -98,6 +100,8 @@ The emissary will exit with code 64 if it fails. This may indicate a bug in the 
     * No additional configuration needed.
 
 ## Process Namespace Sharing (pns)
+
+**removed in v3.x**
 
 * More secure:
     * No `privileged` access

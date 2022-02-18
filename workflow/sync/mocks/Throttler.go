@@ -3,9 +3,9 @@
 package mocks
 
 import (
-	mock "github.com/stretchr/testify/mock"
-
 	time "time"
+
+	mock "github.com/stretchr/testify/mock"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )

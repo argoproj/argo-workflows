@@ -72,14 +72,11 @@ type WorkflowExecutor struct {
 	readProgressFileTickDuration time.Duration
 }
 
-type Initializer interface {
-	Init(tmpl wfv1.Template) error
-}
-
 //go:generate mockery --name=ContainerRuntimeExecutor
 
 // ContainerRuntimeExecutor is the interface for interacting with a container runtime (e.g. docker)
 type ContainerRuntimeExecutor interface {
+	Init(tmpl wfv1.Template) error
 	// GetFileContents returns the file contents of a file in a container as a string
 	GetFileContents(containerName string, sourcePath string) (string, error)
 
@@ -488,12 +485,6 @@ func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
 
 		var output *wfv1.AnyString
 		if we.isBaseImagePath(param.ValueFrom.Path) {
-			executorType := os.Getenv(common.EnvVarContainerRuntimeExecutor)
-			if executorType == common.ContainerRuntimeExecutorK8sAPI || executorType == common.ContainerRuntimeExecutorKubelet {
-				log.Infof("Copying output parameter %s from base image layer %s is not supported for k8sapi and kubelet executors. "+
-					"Consider using an emptyDir volume: https://argoproj.github.io/argo-workflows/empty-dir/.", param.Name, param.ValueFrom.Path)
-				continue
-			}
 			log.Infof("Copying %s from base image layer", param.ValueFrom.Path)
 			fileContents, err := we.RuntimeExecutor.GetFileContents(common.MainContainerName, param.ValueFrom.Path)
 			if err != nil {
@@ -736,7 +727,8 @@ func (we *WorkflowExecutor) AnnotateOutputs(ctx context.Context, logArt *wfv1.Ar
 	if err != nil {
 		return argoerrs.InternalWrapError(err)
 	}
-	return we.AddAnnotation(ctx, common.AnnotationKeyOutputs, string(outputBytes))
+	log.WithField(common.AnnotationKeyOutputs, string(outputBytes)).Info()
+	return nil
 }
 
 // AddError adds an error to the list of encountered errors during execution
@@ -971,10 +963,7 @@ func (we *WorkflowExecutor) monitorProgress(ctx context.Context, progressFile st
 			return
 		case <-annotationPatchTicker.C:
 			if we.progress != "" {
-				log.WithField("progress", we.progress).Infof("patching pod progress annotation")
-				if err := we.AddAnnotation(ctx, common.AnnotationKeyProgress, string(we.progress)); err != nil {
-					log.WithField("progress", we.progress).WithError(err).Warn("failed to patch progress annotation")
-				}
+				log.WithField(common.AnnotationKeyProgress, string(we.progress)).Info()
 			}
 		case <-fileTicker.C:
 			data, err := ioutil.ReadFile(progressFile)
@@ -1061,8 +1050,5 @@ func (we *WorkflowExecutor) KillSidecars(ctx context.Context) error {
 }
 
 func (we *WorkflowExecutor) Init() error {
-	if i, ok := we.RuntimeExecutor.(Initializer); ok {
-		return i.Init(we.Template)
-	}
-	return nil
+	return we.RuntimeExecutor.Init(we.Template)
 }

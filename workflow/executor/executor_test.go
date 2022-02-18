@@ -367,6 +367,7 @@ func TestSaveArtifacts(t *testing.T) {
 }
 
 func TestMonitorProgress(t *testing.T) {
+	t.SkipNow()
 	deadline, ok := t.Deadline()
 	if !ok {
 		deadline = time.Now().Add(time.Second)
