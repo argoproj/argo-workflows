@@ -124,8 +124,21 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 					Image:           woc.controller.executorImage(),
 					ImagePullPolicy: woc.controller.executorImagePullPolicy(),
 					Env:             envVars,
+					VolumeMounts: []apiv1.VolumeMount{{
+						Name:      "cert",
+						MountPath: "/etc/ssl/certs/ca-certificates",
+						ReadOnly:  true,
+					}},
 				},
 			),
+			Volumes: []apiv1.Volume{{
+				Name: "cert",
+				VolumeSource: apiv1.VolumeSource{
+					Secret: &apiv1.SecretVolumeSource{
+						SecretName: "cert",
+					},
+				},
+			}},
 		},
 	}
 
