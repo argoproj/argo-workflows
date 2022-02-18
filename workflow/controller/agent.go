@@ -3,7 +3,6 @@ package controller
 import (
 	"context"
 	"fmt"
-	"k8s.io/utils/pointer"
 	"os"
 
 	log "github.com/sirupsen/logrus"
@@ -11,6 +10,7 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/utils/pointer"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
