@@ -1,0 +1,53 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: python-example-
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: value
+        value: "1"
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: add-one
+            template: add-one
+            arguments:
+              parameters:
+                - name: value
+                  value: "{{workflow.parameters.value}}"
+          - name: print-sum
+            template: print-sum
+            dependencies:
+              - add-one
+            arguments:
+              parameters:
+                - name: sum
+                  value: "{{tasks.add-one.outputs.parameters.sum}}"
+
+    - name: add-one
+      inputs:
+        parameters:
+          - name: value
+      plugin:
+        python:
+          expression: |
+            {"sum": int(parameters["value"]) + 1}
+      outputs:
+        parameters:
+          - name: sum
+            # you must specify "value" or "valueFrom", but what you specify does not matter
+            valueFrom:
+              supplied: { }
+
+    - name: print-sum
+      inputs:
+        parameters:
+          - name: sum
+      container:
+        image: argoproj/argosay:v2
+        args:
+          - echo
+          - "{{inputs.parameters.sum}}"

@@ -1,0 +1,38 @@
+kind: ExecutorPlugin
+apiVersion: argoproj.io/v1alpha1
+metadata:
+  name: python
+  annotations:
+    workflows.argoproj.io/description: |
+      This plugin runs trusted Python expressions.
+
+      This plugin make attempts to sandbox the expression. It removes built-ins that would allow disk or network access.
+      The plugin itself is allowed limited CPU and memory, and is, of course, contained.
+
+      However, do not use it to run untrused Python expressions.
+    workflows.argoproj.io/version: '>= v3.3'
+spec:
+  sidecar:
+    container:
+      command:
+        - python
+        - -c
+      image: python:alpine
+      name: python-executor-plugin
+      ports:
+        - containerPort: 7984
+      resources:
+        requests:
+          cpu: 100m
+          memory: 32Mi
+        limits:
+          cpu: 200m
+          memory: 64Mi
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        readOnlyRootFilesystem: true
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
