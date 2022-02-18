@@ -39,7 +39,7 @@ func UpdateProgress(wf *wfv1.Workflow) {
 		}
 	}
 	for nodeID, node := range wf.Status.Nodes {
-		if node.Type == wfv1.NodeTypePod && node.Type != wfv1.NodeTypeHTTP {
+		if node.Type == wfv1.NodeTypePod {
 			continue
 		}
 		progress := sumProgress(wf, node, make(map[string]bool))
