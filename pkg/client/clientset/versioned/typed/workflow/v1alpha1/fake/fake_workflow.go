@@ -14,7 +14,7 @@ import (
 	testing "k8s.io/client-go/testing"
 )
 
-// FakeWorkflows implements WorkflowInterface
+// FakeWorkflows implements workflowInterface
 type FakeWorkflows struct {
 	Fake *FakeArgoprojV1alpha1
 	ns   string

@@ -3,6 +3,7 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
+	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"os"
 	"time"
 
@@ -86,6 +87,8 @@ func initExecutor() *executor.WorkflowExecutor {
 	clientset, err := kubernetes.NewForConfig(config)
 	checkErr(err)
 
+	workflowInterface := workflow.NewForConfigOrDie(config)
+
 	restClient := clientset.RESTClient()
 
 	podName, ok := os.LookupEnv(common.EnvVarPodName)
@@ -107,7 +110,7 @@ func initExecutor() *executor.WorkflowExecutor {
 	log.Infof("Creating an executor")
 	cre := emissary.New()
 
-	wfExecutor := executor.NewExecutor(clientset, restClient, podName, namespace, cre, *tmpl, includeScriptOutput, deadline, annotationPatchTickDuration, progressFileTickDuration)
+	wfExecutor := executor.NewExecutor(clientset, workflowInterface, restClient, podName, namespace, cre, *tmpl, includeScriptOutput, deadline, annotationPatchTickDuration, progressFileTickDuration)
 
 	log.
 		WithField("version", version.String()).

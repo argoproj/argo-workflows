@@ -9,9 +9,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"io"
 	"io/fs"
 	"io/ioutil"
+	"k8s.io/apimachinery/pkg/types"
 	"os"
 	"os/signal"
 	"path"
@@ -53,6 +55,7 @@ type WorkflowExecutor struct {
 	IncludeScriptOutput bool
 	Deadline            time.Time
 	ClientSet           kubernetes.Interface
+	workflowInterface   workflow.Interface
 	RESTClient          rest.Interface
 	Namespace           string
 	RuntimeExecutor     ContainerRuntimeExecutor
@@ -106,11 +109,12 @@ func isErrUnknownGetPods(err error) bool {
 }
 
 // NewExecutor instantiates a new workflow executor
-func NewExecutor(clientset kubernetes.Interface, restClient rest.Interface, podName, namespace string, cre ContainerRuntimeExecutor, template wfv1.Template, includeScriptOutput bool, deadline time.Time, annotationPatchTickDuration, readProgressFileTickDuration time.Duration) WorkflowExecutor {
+func NewExecutor(clientset kubernetes.Interface, workflowInterface workflow.Interface, restClient rest.Interface, podName, namespace string, cre ContainerRuntimeExecutor, template wfv1.Template, includeScriptOutput bool, deadline time.Time, annotationPatchTickDuration, readProgressFileTickDuration time.Duration) WorkflowExecutor {
 	log.WithFields(log.Fields{"Steps": executorretry.Steps, "Duration": executorretry.Duration, "Factor": executorretry.Factor, "Jitter": executorretry.Jitter}).Info("Using executor retry strategy")
 	return WorkflowExecutor{
 		PodName:                      podName,
 		ClientSet:                    clientset,
+		workflowInterface:            workflowInterface,
 		RESTClient:                   restClient,
 		Namespace:                    namespace,
 		RuntimeExecutor:              cre,
@@ -722,13 +726,17 @@ func (we *WorkflowExecutor) AnnotateOutputs(ctx context.Context, logArt *wfv1.Ar
 	if !outputs.HasOutputs() {
 		return nil
 	}
-	log.Infof("Annotating pod with output")
-	outputBytes, err := json.Marshal(outputs)
+
+	return we.patchTaskset(ctx, wfv1.NodeResult{Outputs: outputs})
+}
+
+func (we *WorkflowExecutor) patchTaskset(ctx context.Context, result wfv1.NodeResult) error {
+	patch, err := json.Marshal(map[string]interface{}{"status": wfv1.WorkflowTaskSetStatus{Nodes: map[string]wfv1.NodeResult{os.Getenv(common.AnnotationKeyNodeID): result}}})
 	if err != nil {
-		return argoerrs.InternalWrapError(err)
+		return err
 	}
-	log.WithField(common.AnnotationKeyOutputs, string(outputBytes)).Info()
-	return nil
+	_, err = we.workflowInterface.ArgoprojV1alpha1().WorkflowTaskSets(we.Namespace).Patch(ctx, os.Getenv(common.EnvVarWorkflowName), types.MergePatchType, patch, metav1.PatchOptions{})
+	return err
 }
 
 // AddError adds an error to the list of encountered errors during execution
@@ -743,11 +751,6 @@ func (we *WorkflowExecutor) HasError() error {
 		return we.errors[0]
 	}
 	return nil
-}
-
-// AddAnnotation adds an annotation to the workflow pod
-func (we *WorkflowExecutor) AddAnnotation(ctx context.Context, key, value string) error {
-	return common.AddPodAnnotation(ctx, we.ClientSet, we.PodName, we.Namespace, key, value, executorretry.ExecutorRetry)
 }
 
 // isTarball returns whether or not the file is a tarball
@@ -963,7 +966,7 @@ func (we *WorkflowExecutor) monitorProgress(ctx context.Context, progressFile st
 			return
 		case <-annotationPatchTicker.C:
 			if we.progress != "" {
-				log.WithField(common.AnnotationKeyProgress, string(we.progress)).Info()
+				we.patchTaskset(ctx, wfv1.NodeResult{Progress: progress})
 			}
 		case <-fileTicker.C:
 			data, err := ioutil.ReadFile(progressFile)

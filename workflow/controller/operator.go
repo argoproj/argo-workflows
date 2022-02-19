@@ -972,13 +972,6 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 					woc.wf.Status.Nodes[nodeID] = node
 					woc.updated = true
 				}
-				podProgress := progress.PodProgress(pod, &node)
-				if podProgress.IsValid() && node.Progress != podProgress {
-					woc.log.WithField("progress", podProgress).Info("pod progress")
-					node.Progress = podProgress
-					woc.wf.Status.Nodes[nodeID] = node
-					woc.updated = true
-				}
 			}
 			if node.Fulfilled() && !node.IsDaemoned() {
 				if woc.shouldPrintPodSpec(node) {

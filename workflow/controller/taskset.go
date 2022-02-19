@@ -126,12 +126,22 @@ func (woc *wfOperationCtx) reconcileTaskSet(ctx context.Context) error {
 	if workflowTaskSet != nil && len(workflowTaskSet.Status.Nodes) > 0 {
 		for nodeID, taskResult := range workflowTaskSet.Status.Nodes {
 			node := woc.wf.Status.Nodes[nodeID]
-
-			node.Outputs = taskResult.Outputs.DeepCopy()
-			node.Phase = taskResult.Phase
-			node.Message = taskResult.Message
-			node.FinishedAt = metav1.Now()
-
+			if taskResult.Outputs != nil {
+				node.Outputs = taskResult.Outputs
+			}
+			if taskResult.Progress != "" {
+				node.Progress = taskResult.Progress
+			}
+			if taskResult.Phase != "" {
+				node.Phase = taskResult.Phase
+				node.Message = taskResult.Message
+			}
+			if node.Completed() {
+				if node.FinishedAt.IsZero() {
+					node.FinishedAt = metav1.Now()
+				}
+				node.Progress = node.Progress.Complete()
+			}
 			woc.wf.Status.Nodes[nodeID] = node
 			woc.updated = true
 		}
