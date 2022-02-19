@@ -969,6 +969,8 @@ func (we *WorkflowExecutor) monitorProgress(ctx context.Context, progressFile st
 				err := we.patchTaskset(ctx, wfv1.NodeResult{Progress: we.progress})
 				if err != nil {
 					log.WithError(err).Error("failed to update progress")
+				} else {
+					we.progress = ""
 				}
 			}
 		case <-fileTicker.C:
