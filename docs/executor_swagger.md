@@ -917,6 +917,23 @@ referred to by services.
 
 
 
+### <span id="container-set-retry-strategy"></span> ContainerSetRetryStrategy
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| duration | string| `string` |  | | Duration is the time between each retry, examples values are "300ms", "1s" or "5m".
+Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h". |  |
+| retries | [IntOrString](#int-or-string)| `IntOrString` |  | |  |  |
+
+
+
 ### <span id="container-set-template"></span> ContainerSetTemplate
 
 
@@ -929,6 +946,7 @@ referred to by services.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | containers | [][ContainerNode](#container-node)| `[]*ContainerNode` |  | |  |  |
+| retryStrategy | [ContainerSetRetryStrategy](#container-set-retry-strategy)| `ContainerSetRetryStrategy` |  | |  |  |
 | volumeMounts | [][VolumeMount](#volume-mount)| `[]*VolumeMount` |  | |  |  |
 
 
@@ -1642,8 +1660,10 @@ It must be set if keytab is used. |  |
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | body | string| `string` |  | | Body is content of the HTTP Request |  |
-| headers | [][HTTPHeader](#http-header)| `[]*HTTPHeader` |  | | Headers are an optional list of headers to send with HTTP requests |  |
+| headers | [HTTPHeaders](#http-headers)| `HTTPHeaders` |  | |  |  |
+| insecureSkipVerify | boolean| `bool` |  | | insecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client |  |
 | method | string| `string` |  | | Method is HTTP methods for HTTP Request |  |
+| successCondition | string| `string` |  | | SuccessCondition is an expression if evaluated to true is considered successful |  |
 | timeoutSeconds | int64 (formatted integer)| `int64` |  | | TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds |  |
 | url | string| `string` |  | | URL of the HTTP Request |  |
 
@@ -1722,6 +1742,13 @@ It must be set if keytab is used. |  |
 | secretKeyRef | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 
 
+
+### <span id="http-headers"></span> HTTPHeaders
+
+
+  
+
+[][HTTPHeader](#http-header)
 
 ### <span id="handler"></span> Handler
 
@@ -2057,7 +2084,10 @@ until the action is complete, unless the container process fails, in which case 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | arguments | [Arguments](#arguments)| `Arguments` |  | |  |  |
-| template | string| `string` |  | |  |  |
+| expression | string| `string` |  | | Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not
+be retried and the retry strategy will be ignored |  |
+| template | string| `string` |  | | Template is the name of the template to execute by the hook |  |
+| templateRef | [TemplateRef](#template-ref)| `TemplateRef` |  | |  |  |
 
 
 
@@ -2311,6 +2341,7 @@ node(s) with the highest sum are the most preferred.
 | message | string| `string` |  | |  |  |
 | outputs | [Outputs](#outputs)| `Outputs` |  | |  |  |
 | phase | [NodePhase](#node-phase)| `NodePhase` |  | |  |  |
+| progress | [Progress](#progress)| `Progress` |  | |  |  |
 
 
 
@@ -2455,16 +2486,6 @@ save/load the directory appropriately.
 
 
 
-### <span id="object"></span> Object
-
-
-> +kubebuilder:validation:Type=object
-  
-
-
-
-[interface{}](#interface)
-
 ### <span id="object-field-selector"></span> ObjectFieldSelector
 
 
@@ -2579,6 +2600,7 @@ More info: http://kubernetes.io/docs/user-guide/identifiers#names |  |
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | default | [AnyString](#any-string)| `AnyString` |  | |  |  |
+| description | [AnyString](#any-string)| `AnyString` |  | |  |  |
 | enum | [][AnyString](#any-string)| `[]AnyString` |  | | Enum holds a list of string values to choose from, for the actual value of the parameter |  |
 | globalName | string| `string` |  | | GlobalName exports an output parameter to the global scope, making it available as
 '{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters |  |
@@ -2807,6 +2829,16 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified. |  |
 | pdID | string| `string` |  | | ID that identifies Photon Controller persistent disk |  |
 
 
+
+### <span id="plugin"></span> Plugin
+
+
+> Plugin is an Object with exactly one key
+  
+
+
+
+[interface{}](#interface)
 
 ### <span id="pod-affinity"></span> PodAffinity
 
@@ -3076,6 +3108,17 @@ More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#cont
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
 | ProcMountType | string| string | |  |  |
+
+
+
+### <span id="progress"></span> Progress
+
+
+  
+
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| Progress | string| string | |  |  |
 
 
 
@@ -4155,7 +4198,7 @@ run on the selected node(s). Overrides the selector set at the workflow level. |
 | parallelism | int64 (formatted integer)| `int64` |  | | Parallelism limits the max total parallel pods that can execute at the same time within the
 boundaries of this template invocation. If additional steps/dag templates are invoked, the
 pods created by those templates will not be counted towards this total. |  |
-| plugin | [Object](#object)| `Object` |  | |  |  |
+| plugin | [Plugin](#plugin)| `Plugin` |  | |  |  |
 | podSpecPatch | string| `string` |  | | PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
 container fields which are not strings (e.g. resource limits). |  |
 | priority | int32 (formatted integer)| `int32` |  | | Priority to apply to workflow pods. |  |
@@ -4176,7 +4219,7 @@ Sidecars are automatically killed when the main container completes
 | steps | [][ParallelSteps](#parallel-steps)| `[]ParallelSteps` |  | | Steps define a series of sequential/parallel workflow steps |  |
 | suspend | [SuspendTemplate](#suspend-template)| `SuspendTemplate` |  | |  |  |
 | synchronization | [Synchronization](#synchronization)| `Synchronization` |  | |  |  |
-| timeout | string| `string` |  | | Timout allows to set the total node execution timeout duration counting from the node's start time.
+| timeout | string| `string` |  | | Timeout allows to set the total node execution timeout duration counting from the node's start time.
 This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates. |  |
 | tolerations | [][Toleration](#toleration)| `[]*Toleration` |  | | Tolerations to apply to workflow pods.
 +patchStrategy=merge

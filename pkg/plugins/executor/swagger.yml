@@ -928,12 +928,24 @@ definitions:
         $ref: '#/definitions/Protocol'
     title: ContainerPort represents a network port in a single container.
     type: object
+  ContainerSetRetryStrategy:
+    properties:
+      duration:
+        description: |-
+          Duration is the time between each retry, examples values are "300ms", "1s" or "5m".
+          Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
+        type: string
+      retries:
+        $ref: '#/definitions/IntOrString'
+    type: object
   ContainerSetTemplate:
     properties:
       containers:
         items:
           $ref: '#/definitions/ContainerNode'
         type: array
+      retryStrategy:
+        $ref: '#/definitions/ContainerSetRetryStrategy'
       volumeMounts:
         items:
           $ref: '#/definitions/VolumeMount'
@@ -1529,12 +1541,17 @@ definitions:
         description: Body is content of the HTTP Request
         type: string
       headers:
-        description: Headers are an optional list of headers to send with HTTP requests
-        items:
-          $ref: '#/definitions/HTTPHeader'
-        type: array
+        $ref: '#/definitions/HTTPHeaders'
+      insecureSkipVerify:
+        description: insecureSkipVerify is a bool when if set to true will skip TLS
+          verification for the HTTP client
+        type: boolean
       method:
         description: Method is HTTP methods for HTTP Request
+        type: string
+      successCondition:
+        description: SuccessCondition is an expression if evaluated to true is considered
+          successful
         type: string
       timeoutSeconds:
         description: TimeoutSeconds is request timeout for HTTP Request. Default is
@@ -1599,6 +1616,10 @@ definitions:
       secretKeyRef:
         $ref: '#/definitions/SecretKeySelector'
     type: object
+  HTTPHeaders:
+    items:
+      $ref: '#/definitions/HTTPHeader'
+    type: array
   Handler:
     description: |-
       Handler defines a specific action that should be taken
@@ -1866,8 +1887,16 @@ definitions:
     properties:
       arguments:
         $ref: '#/definitions/Arguments'
-      template:
+      expression:
+        description: |-
+          Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not
+          be retried and the retry strategy will be ignored
         type: string
+      template:
+        description: Template is the name of the template to execute by the hook
+        type: string
+      templateRef:
+        $ref: '#/definitions/TemplateRef'
     type: object
   LifecycleHooks:
     additionalProperties:
@@ -2025,6 +2054,8 @@ definitions:
         $ref: '#/definitions/Outputs'
       phase:
         $ref: '#/definitions/NodePhase'
+      progress:
+        $ref: '#/definitions/Progress'
     type: object
   NodeSelector:
     description: |-
@@ -2133,9 +2164,6 @@ definitions:
         format: int32
         type: integer
     type: object
-  Object:
-    description: +kubebuilder:validation:Type=object
-    type: object
   ObjectFieldSelector:
     properties:
       apiVersion:
@@ -2218,6 +2246,8 @@ definitions:
       with an optional default value
     properties:
       default:
+        $ref: '#/definitions/AnyString'
+      description:
         $ref: '#/definitions/AnyString'
       enum:
         description: Enum holds a list of string values to choose from, for the actual
@@ -2478,6 +2508,9 @@ definitions:
         description: ID that identifies Photon Controller persistent disk
         type: string
     title: Represents a Photon Controller persistent disk resource.
+    type: object
+  Plugin:
+    description: Plugin is an Object with exactly one key
     type: object
   PodAffinity:
     properties:
@@ -2753,6 +2786,9 @@ definitions:
         type: integer
     type: object
   ProcMountType:
+    type: string
+  Progress:
+    title: Progress in N/M format. N is number of task complete. M is number of tasks.
     type: string
   ProjectedVolumeSource:
     description: Represents a projected volume source
@@ -3799,7 +3835,7 @@ definitions:
         format: int64
         type: integer
       plugin:
-        $ref: '#/definitions/Object'
+        $ref: '#/definitions/Plugin'
       podSpecPatch:
         description: |-
           PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
@@ -3850,7 +3886,7 @@ definitions:
         $ref: '#/definitions/Synchronization'
       timeout:
         description: |-
-          Timout allows to set the total node execution timeout duration counting from the node's start time.
+          Timeout allows to set the total node execution timeout duration counting from the node's start time.
           This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
         type: string
       tolerations:
