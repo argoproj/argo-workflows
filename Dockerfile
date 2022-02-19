@@ -16,7 +16,6 @@ RUN apt-get update && apt-get --no-install-recommends install -y \
     ca-certificates \
     wget \
     gcc \
-    libcap2-bin \
     zip && \
     apt-get clean \
     && rm -rf \
@@ -45,7 +44,7 @@ ARG DOCKER_CHANNEL
 ARG DOCKER_VERSION
 ARG KUBECTL_VERSION
 
-RUN apk --no-cache add curl procps git tar libcap jq
+RUN apk --no-cache add curl procps git tar jq
 
 COPY hack/arch.sh hack/os.sh /bin/
 
@@ -87,7 +86,6 @@ RUN cat .dockerignore >> .gitignore
 RUN git status --porcelain | cut -c4- | xargs git update-index --skip-worktree
 
 RUN --mount=type=cache,target=/root/.cache/go-build make dist/argoexec
-RUN setcap CAP_SYS_PTRACE,CAP_SYS_CHROOT+ei dist/argoexec
 
 ####################################################################################################
 

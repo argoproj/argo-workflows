@@ -778,6 +778,8 @@ message NodeResult {
   optional string message = 2;
 
   optional Outputs outputs = 3;
+
+  optional string progress = 4;
 }
 
 // NodeStatus contains status information about an individual node in the workflow

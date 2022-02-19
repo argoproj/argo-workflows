@@ -3166,6 +3166,12 @@ func schema_pkg_apis_workflow_v1alpha1_NodeResult(ref common.ReferenceCallback) 
 							Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Outputs"),
 						},
 					},
+					"progress": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 				},
 			},
 		},

@@ -966,7 +966,10 @@ func (we *WorkflowExecutor) monitorProgress(ctx context.Context, progressFile st
 			return
 		case <-annotationPatchTicker.C:
 			if we.progress != "" {
-				we.patchTaskset(ctx, wfv1.NodeResult{Progress: progress})
+				err := we.patchTaskset(ctx, wfv1.NodeResult{Progress: we.progress})
+				if err != nil {
+					log.WithError(err).Error("failed to update progress")
+				}
 			}
 		case <-fileTicker.C:
 			data, err := ioutil.ReadFile(progressFile)

@@ -10022,6 +10022,9 @@
         },
         "phase": {
           "type": "string"
+        },
+        "progress": {
+          "type": "string"
         }
       }
     },
