@@ -19,7 +19,8 @@ RUN iex ((new-object net.webclient).DownloadString('https://chocolatey.org/insta
 
 # install golang, dep and other tools
 RUN choco install golang --version=$env:GOLANG_VERSION ; \
-    choco install make dep docker-cli git.portable 7zip.portable
+    choco install docker-cli --version=v19.03.12 ; \
+    choco install make dep git.portable 7zip.portable
 
 ####################################################################################################
 # argoexec-base
