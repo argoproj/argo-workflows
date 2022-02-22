@@ -5623,7 +5623,7 @@ func Test_processItem(t *testing.T) {
 
 	var newTask wfv1.DAGTask
 	tmpl, _ := template.NewTemplate(string(taskBytes))
-	newTaskName, err := processItem(tmpl, "task-name", 0, items[0], &newTask)
+	newTaskName, err := processItem(tmpl, "task-name", 0, items[0], &newTask, "")
 	if assert.NoError(t, err) {
 		assert.Equal(t, `task-name(0:json:{"list":[0,"1"],"number":2,"string":"foo"},list:[0,"1"],number:2,string:foo)`, newTaskName)
 	}

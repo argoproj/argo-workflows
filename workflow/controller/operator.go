@@ -2994,7 +2994,7 @@ func parseStringToDuration(durationString string) (time.Duration, error) {
 	return suspendDuration, nil
 }
 
-func processItem(tmpl template.Template, name string, index int, item wfv1.Item, obj interface{}) (string, error) {
+func processItem(tmpl template.Template, name string, index int, item wfv1.Item, obj interface{}, whenCondition string) (string, error) {
 	replaceMap := make(map[string]string)
 	var newName string
 
@@ -3035,7 +3035,16 @@ func processItem(tmpl template.Template, name string, index int, item wfv1.Item,
 	default:
 		return "", errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string, number, list, or map. received: %v", index, item)
 	}
-	newStepStr, err := tmpl.Replace(replaceMap, false)
+	var newStepStr string
+	// If when is not parameterised and evaluated to false, we are not executing nor resolving artifact,
+	// we allow parameter substitution to be Unresolved
+	// The parameterised when will get handle by the task-expansion
+	proceed, err := shouldExecute(whenCondition)
+	if err == nil && !proceed {
+		newStepStr, err = tmpl.Replace(replaceMap, true)
+	} else {
+		newStepStr, err = tmpl.Replace(replaceMap, false)
+	}
 	if err != nil {
 		return "", err
 	}
