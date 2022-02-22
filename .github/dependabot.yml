@@ -6,7 +6,7 @@ updates:
       interval: "daily"
     ignore:
     - dependency-name: k8s.io/*
-    open-pull-requests-limit: 1
+    open-pull-requests-limit: 2
 
   - package-ecosystem: "github-actions"
     directory: "/"
