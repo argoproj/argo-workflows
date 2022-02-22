@@ -4,14 +4,16 @@
 package e2e
 
 import (
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
+	"strings"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	v12 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"strings"
-	"testing"
+
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
 
 type HooksSuite struct {
@@ -48,16 +50,15 @@ spec:
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
 			assert.Equal(t, status.Phase, v1alpha1.WorkflowSucceeded)
 		}).ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
-		if strings.Contains(status.Name,"hook"){
+		if strings.Contains(status.Name, "hook") {
 			return true
 		}
 		return false
 	}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *v12.Pod) {
 
-		assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase,)
+		assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase, )
 	})
 }
-
 
 func (s *HooksSuite) TestTemplateLevelHooks() {
 	s.Given().
@@ -89,13 +90,13 @@ spec:
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
 			assert.Equal(t, status.Phase, v1alpha1.WorkflowSucceeded)
 		}).ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
-		if strings.Contains(status.Name,"hook"){
+		if strings.Contains(status.Name, "hook") {
 			return true
 		}
 		return false
 	}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *v12.Pod) {
 
-		assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase,)
+		assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase, )
 	})
 }
 
