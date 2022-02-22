@@ -59,6 +59,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Ramboll Shair](https://ramboll-shair.com/)
 1. [Red Hat](https://www.redhat.com/en)
 1. [Riskified](https://www.riskified.com)
+1. [SAP Concur](https://www.concur.com/)
 1. [SAP Fieldglass](https://www.fieldglass.com/)
 1. [SAP Hybris](https://cx.sap.com/)
 1. [SegmentStream](https://segmentstream.com)
