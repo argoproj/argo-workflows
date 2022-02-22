@@ -13,14 +13,25 @@ Mentors and mentees must abide by the [code of conduct](https://github.com/cncf/
 
 ## How To Get A Mentor
 
-Create [a mentoring request](https://github.com/argoproj/argo-workflows/issues/new/choose) with the title "I would like a mentor" and answer the questions in the issue template.
-Note that this is only for general mentoring. For Google Summer of Code, please **do not** create a mentoring request and find the instructions in the relevant section below.
+We establish and end mentor/mentee relationships using issues. The mentee creates the issue and the mentor is assigned the issue. The relationship ends when the issue is closed.
 
-We'll find the right mentor for you.
+To set expectations:
+
+1. Create [a mentoring request](https://github.com/argoproj/argo-workflows/issues/new/choose) with the title "I would like a mentor" and answer the questions in the template.
+2. A mentor will comment offering to mentor you. It may take a few days for a mentor to respond.
+3. You comment to accept or decline the offer. 
+4. If you accept, then your new mentor will assign the issue to themself.
+5. The mentor may suggest resources to learn Golang or React, or discus the changes that'll fix your bug or enhancement needs.
+6. Work together the create, approve, and merge your pull request.
+7. Once the PR is closed, then the issues is closed. The relationship ends. Congratulations!
+
+If you want more help, just ask.
+
+This is only for general mentoring. For Google Summer of Code, please **do not** create a mentoring request and find the instructions in the relevant section below.
 
 ## How To Become A Mentor
 
-Create a pull request which changes this page to add you to this list:
+Create a pull request which changes this page to add yourself to this list:
 
 Mentors:
 
@@ -32,10 +43,6 @@ Mentors:
 * [@blkperl](https://github.com/blkperl) (William)
 * [@JPZ13](https://github.com/JPZ13) (J.P.)
 * [@tczhao](https://github.com/tczhao) (Tianchu)
-
-## How To End Your Relationship
-
-The mentoring relationship ends as soon as the related code contribution gets merged/closed.
 
 ## How to Participate Google Summer of Code
 
@@ -50,5 +57,4 @@ For program specific questions, please refer to [GSoC FAQ](https://developers.go
 If you have any problems with your relationship, please contact us:
 
 * alex_collins@intuit.com
-<!-- * TODO - if some want to get help with Alex, then it cannot be alex they email -->
-
+* terrytangyuan@gmail.com
