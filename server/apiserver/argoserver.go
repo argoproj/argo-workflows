@@ -19,6 +19,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -309,7 +310,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	if as.tlsConfig != nil {
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(as.tlsConfig)))
 	} else {
-		dialOpts = append(dialOpts, grpc.WithInsecure())
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
 	webhookInterceptor := webhook.Interceptor(as.clients.Kubernetes)

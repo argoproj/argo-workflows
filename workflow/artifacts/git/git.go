@@ -112,7 +112,7 @@ func (g *ArtifactDriver) Save(string, *wfv1.Artifact) error {
 }
 
 func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
-	sshUser := GetUser(path)
+	sshUser := GetUser(inputArtifact.Git.Repo)
 	closer, auth, env, err := g.auth(sshUser)
 	if err != nil {
 		return err

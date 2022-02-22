@@ -13,6 +13,7 @@ GIT_TAG               := $(shell git describe --exact-match --tags --abbrev=0  2
 GIT_TREE_STATE        := $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
 RELEASE_TAG           := $(shell if [[ "$(GIT_TAG)" =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$$ ]]; then echo "true"; else echo "false"; fi)
 DEV_BRANCH            := $(shell [ $(GIT_BRANCH) = master ] || [ `echo $(GIT_BRANCH) | cut -c -8` = release- ] || [ `echo $(GIT_BRANCH) | cut -c -4` = dev- ] || [ $(RELEASE_TAG) = true ] && echo false || echo true)
+SRC                   := $(GOPATH)/src/github.com/argoproj/argo-workflows
 
 GREP_LOGS             := ""
 
@@ -91,6 +92,11 @@ ifneq ($(GIT_TAG),)
 override LDFLAGS += -X github.com/argoproj/argo-workflows/v3.gitTag=${GIT_TAG}
 endif
 
+ifndef $(GOPATH)
+	GOPATH=$(shell go env GOPATH)
+	export GOPATH
+endif
+
 ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
 CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
 CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
@@ -129,11 +135,6 @@ define protoc
      perl -i -pe 's|argoproj/argo-workflows/|argoproj/argo-workflows/v3/|g' `echo "$(1)" | sed 's/proto/pb.go/g'`
 
 endef
-
-ifndef $(GOPATH)
-	GOPATH=$(shell go env GOPATH)
-	export GOPATH
-endif
 
 .PHONY: build
 build: clis images
@@ -225,13 +226,10 @@ argoexec-image:
 
 %-image:
 	[ ! -e dist/$* ] || mv dist/$* .
-	docker buildx install
 	docker build \
 		-t $(IMAGE_NAMESPACE)/$*:$(VERSION) \
 		--target $* \
-		--cache-from "type=local,src=/tmp/.buildx-cache" \
-		--cache-to "type=local,dest=/tmp/.buildx-cache" \
-		--output=type=docker .
+		 .
 	[ ! -e $* ] || mv $* dist/
 	docker run --rm -t $(IMAGE_NAMESPACE)/$*:$(VERSION) version
 	if [ $(K3D) = true ]; then k3d image import -c $(K3D_CLUSTER_NAME) $(IMAGE_NAMESPACE)/$*:$(VERSION); fi
@@ -249,8 +247,15 @@ codegen: types swagger docs manifests plugins
 	make --directory sdks/java generate
 	make --directory sdks/python generate
 
+.PHONY: check-pwd
+check-pwd:
+
+ifneq ($(SRC),$(PWD))
+	@echo "⚠️ Code generation will not work if code in not checked out into $(SRC)" >&2
+endif
+
 .PHONY: types
-types: pkg/apis/workflow/v1alpha1/generated.proto pkg/apis/workflow/v1alpha1/openapi_generated.go pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go
+types: check-pwd pkg/apis/workflow/v1alpha1/generated.proto pkg/apis/workflow/v1alpha1/openapi_generated.go pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go
 
 .PHONY: swagger
 swagger: \

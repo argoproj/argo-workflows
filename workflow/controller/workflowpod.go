@@ -204,7 +204,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      util.PodName(woc.wf.Name, nodeName, tmpl.Name, nodeID),
+			Name:      util.PodName(woc.wf.Name, nodeName, tmpl.Name, nodeID, util.GetPodNameVersion()),
 			Namespace: woc.wf.ObjectMeta.Namespace,
 			Labels: map[string]string{
 				common.LabelKeyWorkflow:  woc.wf.ObjectMeta.Name, // Allows filtering by pods related to specific workflow
@@ -428,7 +428,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 				}
 			}
 			if len(c.Command) == 0 {
-				return nil, fmt.Errorf("when using the emissary executor you must either explicitly specify the command, or list the image's command in the index: https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary")
+				return nil, fmt.Errorf("container %q in template %q, does not have the command specified: when using the emissary executor you must either explicitly specify the command, or list the image's command in the index: https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary", c.Name, tmpl.Name)
 			}
 			c.Command = append([]string{"/var/run/argo/argoexec", "emissary", "--"}, c.Command...)
 		}

@@ -11,37 +11,3 @@ Plugins allow you to extend Argo Workflows to add new capabilities.
   release.
 
 [Executor plugins](executor_plugins.md) can be written and installed by both users and admins.
-
-## Configuration
-
-Plugins are disabled by default. To enable them, start the controller with `ARGO_EXECUTOR_PLUGINS=true`, e.g.
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: workflow-controller
-spec:
-  template:
-    spec:
-      containers:
-        - name: workflow-controller
-          env:
-            - name: ARGO_EXECUTOR_PLUGINS
-              value: "true"
-```
-
-## Failures
-
-A plugin may fail as follows:
-
-* Connection/socket error - considered transient.
-* Timeout - considered transient.
-* 404 error - method is not supported by the plugin, as a result the method will not be called again.
-* 503 error - considered transient.
-* Other 4xx/5xx errors - considered fatal.
-
-Transient errors are retried, all other errors are considered fatal.
-
-Fatal errors will result in failed steps.
-

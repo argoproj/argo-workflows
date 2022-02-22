@@ -32,6 +32,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ClusterWorkflowTemplateList":   schema_pkg_apis_workflow_v1alpha1_ClusterWorkflowTemplateList(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Condition":                     schema_pkg_apis_workflow_v1alpha1_Condition(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerNode":                 schema_pkg_apis_workflow_v1alpha1_ContainerNode(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerSetRetryStrategy":     schema_pkg_apis_workflow_v1alpha1_ContainerSetRetryStrategy(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerSetTemplate":          schema_pkg_apis_workflow_v1alpha1_ContainerSetTemplate(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContinueOn":                    schema_pkg_apis_workflow_v1alpha1_ContinueOn(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Counter":                       schema_pkg_apis_workflow_v1alpha1_Counter(ref),
@@ -1251,6 +1252,34 @@ func schema_pkg_apis_workflow_v1alpha1_ContainerNode(ref common.ReferenceCallbac
 	}
 }
 
+func schema_pkg_apis_workflow_v1alpha1_ContainerSetRetryStrategy(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"duration": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Duration is the time between each retry, examples values are \"300ms\", \"1s\" or \"5m\". Valid time units are \"ns\", \"us\" (or \"µs\"), \"ms\", \"s\", \"m\", \"h\".",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"retries": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Nbr of retries",
+							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
+						},
+					},
+				},
+				Required: []string{"retries"},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
+	}
+}
+
 func schema_pkg_apis_workflow_v1alpha1_ContainerSetTemplate(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -1283,12 +1312,18 @@ func schema_pkg_apis_workflow_v1alpha1_ContainerSetTemplate(ref common.Reference
 							},
 						},
 					},
+					"retryStrategy": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RetryStrategy describes how to retry a container nodes in the container set if it fails. Nbr of retries(default 0) and sleep duration between retries(default 0s, instant retry) can be set.",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerSetRetryStrategy"),
+						},
+					},
 				},
 				Required: []string{"containers"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerNode", "k8s.io/api/core/v1.VolumeMount"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerNode", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerSetRetryStrategy", "k8s.io/api/core/v1.VolumeMount"},
 	}
 }
 
@@ -2450,6 +2485,13 @@ func schema_pkg_apis_workflow_v1alpha1_HTTP(ref common.ReferenceCallback) common
 							Format:      "",
 						},
 					},
+					"insecureSkipVerify": {
+						SchemaProps: spec.SchemaProps{
+							Description: "insecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"url"},
 			},
@@ -2763,6 +2805,13 @@ func schema_pkg_apis_workflow_v1alpha1_LifecycleHook(ref common.ReferenceCallbac
 						SchemaProps: spec.SchemaProps{
 							Description: "TemplateRef is the reference to the template resource to execute by the hook",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TemplateRef"),
+						},
+					},
+					"expression": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not be retried and the retry strategy will be ignored",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},
@@ -6411,11 +6460,26 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 							Format:      "",
 						},
 					},
+					"hooks": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step",
+							Type:        []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.LifecycleHook"),
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.PodGC", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Synchronization", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TTLStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.VolumeClaimGC", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PersistentVolumeClaim", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/api/policy/v1beta1.PodDisruptionBudgetSpec"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.LifecycleHook", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.PodGC", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Synchronization", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TTLStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.VolumeClaimGC", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PersistentVolumeClaim", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/api/policy/v1beta1.PodDisruptionBudgetSpec"},
 	}
 }
 
@@ -7318,6 +7382,21 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateSpec(ref common.Reference
 							Format:      "",
 						},
 					},
+					"hooks": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step",
+							Type:        []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.LifecycleHook"),
+									},
+								},
+							},
+						},
+					},
 					"workflowMetadata": {
 						SchemaProps: spec.SchemaProps{
 							Description: "WorkflowMetadata contains some metadata of the workflow to be refer",
@@ -7328,7 +7407,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateSpec(ref common.Reference
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.PodGC", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Synchronization", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TTLStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.VolumeClaimGC", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PersistentVolumeClaim", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/api/policy/v1beta1.PodDisruptionBudgetSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.LifecycleHook", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.PodGC", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Synchronization", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TTLStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.VolumeClaimGC", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PersistentVolumeClaim", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/api/policy/v1beta1.PodDisruptionBudgetSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 

@@ -10,6 +10,7 @@ takes the major version, adds 3 to it, and prints to stdout the new version, whi
 """
 
 import os
+import re
 
 VERSION_PREFIX = 'v'
 VERSION_INCREMENT = 3
@@ -25,10 +26,15 @@ try:
         print(UNTAGGED_VERSION)  # this goes to sys.stdout, so it's captured by the Makefile
         exit(0)
 
+    rc_version_suffix = re.findall("-rc\d+", git_tag)
+    if len(rc_version_suffix) > 0:
+        git_tag = git_tag.replace(rc_version_suffix[0], '')
     version_digits = [int(i) for i in git_tag.replace(VERSION_PREFIX, '').split('.')]
     version_digits[MAJOR_VERSION_INDEX] += VERSION_INCREMENT
 
     version = '.'.join([str(i) for i in version_digits])
+    if len(rc_version_suffix) > 0:
+        version += rc_version_suffix[0]
     print(version)
     exit(0)
 except Exception as e:

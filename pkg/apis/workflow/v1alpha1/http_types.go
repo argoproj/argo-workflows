@@ -43,4 +43,6 @@ type HTTP struct {
 	SuccessCondition string `json:"successCondition,omitempty" protobuf:"bytes,6,opt,name=successCondition"`
 	// Body is content of the HTTP Request
 	Body string `json:"body,omitempty" protobuf:"bytes,5,opt,name=body"`
+	// insecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client
+	InsecureSkipVerify bool `json:"insecureSkipVerify,omitempty" protobuf:"bytes,7,opt,name=insecureSkipVerify"`
 }

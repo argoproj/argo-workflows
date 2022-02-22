@@ -72,9 +72,17 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 // handleExecutionControlError marks a node as failed with an error message
 func (woc *wfOperationCtx) handleExecutionControlError(nodeID string, wfNodesLock *sync.RWMutex, errorMsg string) {
 	wfNodesLock.Lock()
+	defer wfNodesLock.Unlock()
+
 	node := woc.wf.Status.Nodes[nodeID]
-	wfNodesLock.Unlock()
 	woc.markNodePhase(node.Name, wfv1.NodeFailed, errorMsg)
+
+	// if node is a pod created from ContainerSet template
+	// then need to fail child nodes so they will not hang in Pending after pod deletion
+	for _, nodeID := range node.Children {
+		child := woc.wf.Status.Nodes[nodeID]
+		woc.markNodePhase(child.Name, wfv1.NodeFailed, errorMsg)
+	}
 }
 
 // killDaemonedChildren kill any daemoned pods of a steps or DAG template node.

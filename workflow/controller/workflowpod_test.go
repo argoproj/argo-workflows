@@ -654,8 +654,8 @@ func Test_createWorkflowPod_emissary(t *testing.T) {
 	t.Run("NoCommand", func(t *testing.T) {
 		woc := newWoc()
 		woc.controller.containerRuntimeExecutor = common.ContainerRuntimeExecutorEmissary
-		_, err := woc.createWorkflowPod(context.Background(), "", []apiv1.Container{{}}, &wfv1.Template{}, &createWorkflowPodOpts{})
-		assert.Error(t, err)
+		_, err := woc.createWorkflowPod(context.Background(), "", []apiv1.Container{{}}, &wfv1.Template{Name: "my-tmpl"}, &createWorkflowPodOpts{})
+		assert.EqualError(t, err, "container \"main\" in template \"my-tmpl\", does not have the command specified: when using the emissary executor you must either explicitly specify the command, or list the image's command in the index: https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary")
 	})
 	t.Run("CommandNoArgs", func(t *testing.T) {
 		woc := newWoc()

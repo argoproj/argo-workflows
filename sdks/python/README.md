@@ -8,11 +8,18 @@ Python >= 3.6
 
 ## Installation
 
-To install the latest development version of the SDK, run the following:
+If you'd like to install the official releases of the SDK on PyPI, please run the following:
+```
+pip install argo-workflows==6.3.0rc2
+```
+
+Otherwise, you can install the latest development version of the SDK via the following:
 
 ```
 pip install git+https://github.com/argoproj/argo-workflows@master#subdirectory=sdks/python/client
 ```
+
+If you have any questions regarding which specific SDK version to use, please see the section on [versioning](#versioning).
 
 ## Getting Started
 
@@ -39,7 +46,8 @@ api_client = argo_workflows.ApiClient(configuration)
 api_instance = workflow_service_api.WorkflowServiceApi(api_client)
 api_response = api_instance.create_workflow(
     namespace="argo",
-    body=IoArgoprojWorkflowV1alpha1WorkflowCreateRequest(workflow=manifest, _check_return_type=False, _check_type=False))
+    body=IoArgoprojWorkflowV1alpha1WorkflowCreateRequest(workflow=manifest, _check_type=False),
+    _check_return_type=False)
 pprint(api_response)
 
 ```
@@ -82,7 +90,8 @@ api_instance = workflow_service_api.WorkflowServiceApi(api_client)
 if __name__ == '__main__':
     api_response = api_instance.create_workflow(
         namespace='argo',
-        body=IoArgoprojWorkflowV1alpha1WorkflowCreateRequest(workflow=manifest, _check_return_type=False))
+        body=IoArgoprojWorkflowV1alpha1WorkflowCreateRequest(workflow=manifest),
+        _check_return_type=False)
     pprint(api_response)
 
 ```
@@ -94,3 +103,14 @@ You can find additional examples [here](examples).
 ## API Reference
 
 You can find the API reference [here](client/docs).
+
+## Versioning
+
+When the Python SDK was migrated to this repository, we kept the `argo-workflows` name for the Python
+package since we wanted to publish it to the same package on PyPI. However, the existing `argo-workflows`
+package was on version `5.0.0` already whereas Argo Workflows was still on `3.x.x`.
+
+In order to make it easier indicate backwards compatibility between the SDK version and the Argo Workflows
+releases, we bump the Python SDK major version by 3 and keep the minor and patch versions. For example,
+Python SDK with version `6.3.0rc2` is released with Argo Workflows `v3.3.0-rc2`. Note that the hyphen
+in `-rc2` is removed intentionally to follow Python package versioning conventions documented in [PEP-0440](https://www.python.org/dev/peps/pep-0440/).

@@ -1254,7 +1254,6 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 	if err = verifyNoCycles(tmpl, dagValidationCtx); err != nil {
 		return err
 	}
-
 	err = resolveAllVariables(scope, ctx.globalParams, tmpl.DAG.Target)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.targets %s", tmpl.Name, err.Error())
@@ -1267,6 +1266,10 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		resolvedTmpl := resolvedTemplates[task.Name]
 		// add all tasks outputs to scope so that a nested DAGs can have outputs
 		prefix := fmt.Sprintf("tasks.%s", task.Name)
+		// add self status reference for  hooks
+		if task.Hooks != nil {
+			scope[fmt.Sprintf("%s.status", prefix)] = true
+		}
 		ctx.addOutputsToScope(resolvedTmpl, prefix, scope, false, false)
 		if task.HasExitHook() {
 			ctx.addOutputsToScope(resolvedTmpl, prefix, scope, false, false)
@@ -1326,6 +1329,9 @@ func validateDAGTaskArgumentDependency(arguments wfv1.Arguments, ancestry []stri
 	}
 
 	for _, param := range arguments.Parameters {
+		if param.Value == nil {
+			return errors.Errorf(errors.CodeBadRequest, "missing value for parameter '%s'", param.Name)
+		}
 		if strings.HasPrefix(param.Value.String(), "{{tasks.") {
 			// All parameter values should have been validated, so
 			// index 1 should exist.

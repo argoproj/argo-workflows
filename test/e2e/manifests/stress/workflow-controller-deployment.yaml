@@ -5,6 +5,7 @@ metadata:
 spec:
   template:
     spec:
+      priorityClassName: workflow-controller
       containers:
         - name: workflow-controller
           args:
@@ -16,5 +17,5 @@ spec:
             - --qps=512
             - --workflow-workers=128
           env:
-            - name: PNS_PRIVILEGED
+            - name: ARGO_PPROF
               value: "true"

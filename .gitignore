@@ -37,3 +37,4 @@ git-ask-pass.sh
 /.brew_home
 /go-diagrams/
 /.run/
+sdks/python/client/dist/*

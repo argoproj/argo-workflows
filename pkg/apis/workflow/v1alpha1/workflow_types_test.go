@@ -9,6 +9,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/pointer"
 )
 
@@ -29,6 +30,41 @@ func TestWorkflows(t *testing.T) {
 	t.Run("Filter", func(t *testing.T) {
 		assert.Len(t, wfs.Filter(func(wf Workflow) bool { return true }), 4)
 		assert.Len(t, wfs.Filter(func(wf Workflow) bool { return false }), 0)
+	})
+}
+
+func TestGetTemplateByName(t *testing.T) {
+	t.Run("Spec", func(t *testing.T) {
+		wf := &Workflow{
+			Spec: WorkflowSpec{
+				Templates: []Template{
+					{Name: "my-tmpl"},
+				},
+			},
+		}
+		assert.NotNil(t, wf.GetTemplateByName("my-tmpl"))
+	})
+	t.Run("StoredWorkflowSpec", func(t *testing.T) {
+		wf := &Workflow{
+			Status: WorkflowStatus{
+				StoredWorkflowSpec: &WorkflowSpec{
+					Templates: []Template{
+						{Name: "my-tmpl"},
+					},
+				},
+			},
+		}
+		assert.NotNil(t, wf.GetTemplateByName("my-tmpl"))
+	})
+	t.Run("StoredTemplates", func(t *testing.T) {
+		wf := &Workflow{
+			Status: WorkflowStatus{
+				StoredTemplates: map[string]Template{
+					"": {Name: "my-tmpl"},
+				},
+			},
+		}
+		assert.NotNil(t, wf.GetTemplateByName("my-tmpl"))
 	})
 }
 
@@ -1033,4 +1069,80 @@ func TestTemplateIsLeaf(t *testing.T) {
 func TestTemplateGetType(t *testing.T) {
 	tmpl := Template{HTTP: &HTTP{}}
 	assert.Equal(t, TemplateTypeHTTP, tmpl.GetType())
+}
+
+func TestWfSpecGetExitHook(t *testing.T) {
+	wfSpec := WorkflowSpec{OnExit: "test"}
+	hooks := wfSpec.GetExitHook(wfSpec.Arguments)
+	assert.Equal(t, "test", hooks.Template)
+	wfSpec = WorkflowSpec{Hooks: LifecycleHooks{"exit": LifecycleHook{Template: "hook"}}}
+	hooks = wfSpec.GetExitHook(wfSpec.Arguments)
+	assert.Equal(t, "hook", hooks.Template)
+}
+
+func TestDagSpecGetExitHook(t *testing.T) {
+	dagTask := DAGTask{Name: "A", OnExit: "test"}
+	hooks := dagTask.GetExitHook(dagTask.Arguments)
+	assert.Equal(t, "test", hooks.Template)
+	dagTask = DAGTask{Name: "A", Hooks: LifecycleHooks{"exit": LifecycleHook{Template: "hook"}}}
+	hooks = dagTask.GetExitHook(dagTask.Arguments)
+	assert.Equal(t, "hook", hooks.Template)
+}
+
+func TestStepSpecGetExitHook(t *testing.T) {
+	step := WorkflowStep{Name: "A", OnExit: "test"}
+	hooks := step.GetExitHook(step.Arguments)
+	assert.Equal(t, "test", hooks.Template)
+	step = WorkflowStep{Name: "A", Hooks: LifecycleHooks{"exit": LifecycleHook{Template: "hook"}}}
+	hooks = step.GetExitHook(step.Arguments)
+	assert.Equal(t, "hook", hooks.Template)
+
+}
+
+func TestTemplate_RetryStrategy(t *testing.T) {
+	tmpl := Template{}
+	strategy, err := tmpl.GetRetryStrategy()
+	assert.Nil(t, err)
+	assert.Equal(t, wait.Backoff{Steps: 1}, strategy)
+}
+
+func TestGetExecSpec(t *testing.T) {
+	wf := Workflow{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: "test",
+		},
+		Spec: WorkflowSpec{
+			Templates: []Template{
+				{Name: "spec-template"},
+			},
+		},
+		Status: WorkflowStatus{
+			StoredWorkflowSpec: &WorkflowSpec{
+				Templates: []Template{
+					{Name: "stored-spec-template"},
+				},
+			},
+		},
+	}
+
+	assert.Equal(t, wf.GetExecSpec().Templates[0].Name, "stored-spec-template")
+
+	wf = Workflow{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: "test",
+		},
+		Spec: WorkflowSpec{
+			Templates: []Template{
+				{Name: "spec-template"},
+			},
+		},
+	}
+
+	assert.Equal(t, wf.GetExecSpec().Templates[0].Name, "spec-template")
+
+	wf.Status.StoredWorkflowSpec = nil
+
+	assert.Equal(t, wf.GetExecSpec().Templates[0].Name, "spec-template")
 }

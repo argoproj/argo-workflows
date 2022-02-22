@@ -592,6 +592,12 @@ spec:
   selector:
     app: workflow-controller
 ---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: workflow-controller
+value: 1000000
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -608,6 +614,7 @@ spec:
       containers:
       - args:
         - server
+        env: []
         image: quay.io/argoproj/argocli:latest
         name: argo-server
         ports:
@@ -686,6 +693,7 @@ spec:
           runAsNonRoot: true
       nodeSelector:
         kubernetes.io/os: linux
+      priorityClassName: workflow-controller
       securityContext:
         runAsNonRoot: true
       serviceAccountName: argo

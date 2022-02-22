@@ -616,7 +616,6 @@ func TestDAGStatusReference(t *testing.T) {
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "failed to resolve {{tasks.B.status}}")
 	}
-
 	_, err = validate(dagStatusNoFutureReferenceWhenFutureReferenceHasChild)
 	// Can't reference the status of steps that have not run yet, even if the referenced steps have children
 	if assert.NotNil(t, err) {
@@ -1032,4 +1031,43 @@ spec:
 func TestDAGOutputsResolveTaskAggregatedOutputs(t *testing.T) {
 	_, err := validate(dagOutputsResolveTaskAggregatedOutputs)
 	assert.NoError(t, err)
+}
+
+var dagMissingParamValueInTask = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+spec:
+  entrypoint: root
+  templates:
+    - name: template
+      inputs:
+        parameters:
+          - name: data
+      container:
+        name: main
+        image: alpine
+    - name: root
+      inputs:
+        parameters:
+          - name: anything_param
+      dag:
+        tasks:
+          - name: task
+            template: template
+            arguments:
+              parameters:
+                - name: data
+                  valueFrom:
+                    parameter: "{{inputs.parameters.anything_param}}"
+  arguments:
+    parameters:
+      - name: anything_param
+        value: anything_param
+`
+
+func TestDAGMissingParamValueInTask(t *testing.T) {
+	_, err := validate(dagMissingParamValueInTask)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "templates.root.tasks.task missing value for parameter 'data'")
+	}
 }
