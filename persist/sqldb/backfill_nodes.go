@@ -37,8 +37,8 @@ func (s backfillNodes) apply(session sqlbuilder.Database) (err error) {
 	}()
 
 	for rs.Next() {
-		if rs.Err() != nil {
-			return rs.Err()
+		if err := rs.Err(); err != nil {
+			return err
 		}
 		workflow := ""
 		err := rs.Scan(&workflow)

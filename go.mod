@@ -7,7 +7,7 @@ require (
 	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible
 	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/TwinProduction/go-color v0.0.3
-	github.com/aliyun/aliyun-oss-go-sdk v2.2.0+incompatible
+	github.com/aliyun/aliyun-oss-go-sdk v2.2.1+incompatible
 	github.com/antonmedv/expr v1.9.0
 	github.com/argoproj-labs/argo-dataflow v0.10.0
 	github.com/argoproj/argo-events v0.17.1-0.20220216172345-64cf24e64ddb
@@ -70,7 +70,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20220124234850-424119656bbf
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
 	sigs.k8s.io/yaml v1.3.0
-	upper.io/db.v3 v3.6.3+incompatible
+	upper.io/db.v3 v3.8.0+incompatible
 )
 
 require (

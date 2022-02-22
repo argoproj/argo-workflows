@@ -235,15 +235,8 @@ argoexec-image:
 	if [ $(K3D) = true ]; then k3d image import -c $(K3D_CLUSTER_NAME) $(IMAGE_NAMESPACE)/$*:$(VERSION); fi
 	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$*:$(VERSION) ; fi
 
-# generation
-plugins/%-plugin-configmap.yaml: ./dist/argo
-	./dist/argo executor-plugin build $(dir $@)
-
-.PHONY: plugins
-plugins: $(shell find plugins -name '*-configmap.yaml')
-
 .PHONY: codegen
-codegen: types swagger docs manifests plugins
+codegen: types swagger docs manifests
 	make --directory sdks/java generate
 	make --directory sdks/python generate
 

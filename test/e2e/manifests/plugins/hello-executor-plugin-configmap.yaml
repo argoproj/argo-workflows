@@ -6,22 +6,16 @@ data:
     - |
       import json
       from http.server import BaseHTTPRequestHandler, HTTPServer
-
-
       class Plugin(BaseHTTPRequestHandler):
-
           def args(self):
               return json.loads(self.rfile.read(int(self.headers.get('Content-Length'))))
-
           def reply(self, reply):
               self.send_response(200)
               self.end_headers()
               self.wfile.write(json.dumps(reply).encode("UTF-8"))
-
           def unsupported(self):
               self.send_response(404)
               self.end_headers()
-
           def do_POST(self):
               if self.path == '/api/v1/template.execute':
                   args = self.args()
@@ -33,15 +27,13 @@ data:
                       self.reply({})
               else:
                   self.unsupported()
-
-
       if __name__ == '__main__':
           httpd = HTTPServer(('', 4355), Plugin)
           httpd.serve_forever()
     command:
     - python
     - -c
-    image: python:alpine3.6
+    image: python:alpine
     name: hello-executor-plugin
     ports:
     - containerPort: 4355
@@ -53,6 +45,11 @@ data:
         cpu: 100m
         memory: 32Mi
     securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+      readOnlyRootFilesystem: true
       runAsNonRoot: true
       runAsUser: 1000
 kind: ConfigMap
@@ -60,9 +57,7 @@ metadata:
   annotations:
     workflows.argoproj.io/description: |
       This is the "hello world" plugin.
-
       Example:
-
       ```yaml
       apiVersion: argoproj.io/v1alpha1
       kind: Workflow
