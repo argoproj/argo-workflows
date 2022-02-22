@@ -1,0 +1,70 @@
+# Debug pause
+
+Argo v3.3 introduced the possibility to pause steps for debugging. This feature is currently only supported when using the emissary workflow executor[Emissary Executor](workflow-executors.md#emissary-emissary)
+
+The debug pause feature makes it possible to pause individual steps for debugging before, after or both and then release the steps from the paused state. 
+
+In order to pause a container env variables are used: 
+- `ARGO_DEBUG_PAUSE_AFTER` - to pause a step after execution 
+- `ARGO_DEBUG_PAUSE_BEFORE` - to pause a step before execution
+
+Example workflow:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pause-after-
+spec:
+  entrypoint: whalesay
+  templates:
+    - name: whalesay
+      container:
+        image: argoproj/argosay:v2
+        env:
+          - name: ARGO_DEBUG_PAUSE_AFTER
+            value: 'true'
+```
+
+In order to release a step from a pause state,  marker files are used named `after` or `before` corresponding to when the step is paused. Pausing steps can with benefits be used together with [ephemeral containers](https://kubernetes.io/docs/concepts/workloads/pods/ephemeral-containers/) when a shell is not available in the used container. 
+
+## Example
+
+### Create workflow
+
+1) Create a workflow where the debug pause env in set, in this example `ARGO_DEBUG_PAUSE_AFTER` will be set and thus the step will be paused after execution of the user code. 
+
+pause-after.yaml
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pause-after-
+spec:
+  entrypoint: whalesay
+  templates:
+    - name: whalesay
+      container:
+        image: argoproj/argosay:v2
+        env:
+          - name: ARGO_DEBUG_PAUSE_AFTER
+            value: 'true'
+```
+
+```bash 
+argo submit -n argo --watch pause-after.yaml
+```
+
+2) Create a shell in the container of interest of create a ephemeral container in the pod, in this example ephemeral containers are used. 
+
+```
+kubectl debug -n argo -it POD_NAME --image=busybox --target=main --share-processes
+```
+
+In order to have access to the persistance volume used but the workflow step,  [`--share-processes`](https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/) will have to be used. 
+
+When inside the shell of the ephemeral container deugging of the pod can be done, when done the marker file can be create in order to allow the step continue to run.
+
+```bash
+touch /proc/1/root/run/argo/ctr/main/after
+```
