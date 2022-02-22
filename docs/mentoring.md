@@ -17,7 +17,7 @@ We establish and end mentor/mentee relationships using issues. The mentee create
 
 To set expectations:
 
-1. Create [a mentoring request](https://github.com/argoproj/argo-workflows/issues/new/choose) with the title "I would like a mentor" and answer the questions in the template.
+1. Create [a mentoring request](https://github.com/argoproj/argo-workflows/issues/new?assignees=&labels=mentoring%2Ctriage&template=mentoring_request.md) with the title "I would like a mentor" and answer the questions in the template.
 2. A mentor will comment offering to mentor you. It may take a few days for a mentor to respond.
 3. You comment to accept or decline the offer. 
 4. If you accept, then your new mentor will assign the issue to themself.
