@@ -5,8 +5,9 @@ import (
 )
 
 func NewArchiveCommand() *cobra.Command {
-	var command = &cobra.Command{
-		Use: "archive",
+	command := &cobra.Command{
+		Use:   "archive",
+		Short: "manage the workflow archive",
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.HelpFunc()(cmd, args)
 		},
@@ -14,5 +15,7 @@ func NewArchiveCommand() *cobra.Command {
 	command.AddCommand(NewListCommand())
 	command.AddCommand(NewGetCommand())
 	command.AddCommand(NewDeleteCommand())
+	command.AddCommand(NewListLabelKeyCommand())
+	command.AddCommand(NewListLabelValueCommand())
 	return command
 }

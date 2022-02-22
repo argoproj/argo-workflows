@@ -3,26 +3,50 @@ package file_test
 import (
 	"archive/tar"
 	"bytes"
+	"encoding/base64"
+	"io/ioutil"
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/argoproj/argo/util/file"
+	"github.com/argoproj/argo-workflows/v3/util/file"
 )
 
 // TestCompressContentString ensures compressing then decompressing a content string works as expected
 func TestCompressContentString(t *testing.T) {
-	content := "{\"pod-limits-rrdm8-591645159\":{\"id\":\"pod-limits-rrdm8-591645159\",\"name\":\"pod-limits-rrdm8[0]." +
-		"run-pod(0:0)\",\"displayName\":\"run-pod(0:0)\",\"type\":\"Pod\",\"templateName\":\"run-pod\",\"phase\":" +
-		"\"Succeeded\",\"boundaryID\":\"pod-limits-rrdm8\",\"startedAt\":\"2019-03-07T19:14:50Z\",\"finishedAt\":" +
-		"\"2019-03-07T19:14:55Z\"}}"
+	for _, gzipImpl := range []string{file.GZIP, file.PGZIP} {
+		_ = os.Setenv(file.GZipImplEnvVarKey, gzipImpl)
+		content := "{\"pod-limits-rrdm8-591645159\":{\"id\":\"pod-limits-rrdm8-591645159\",\"name\":\"pod-limits-rrdm8[0]." +
+			"run-pod(0:0)\",\"displayName\":\"run-pod(0:0)\",\"type\":\"Pod\",\"templateName\":\"run-pod\",\"phase\":" +
+			"\"Succeeded\",\"boundaryID\":\"pod-limits-rrdm8\",\"startedAt\":\"2019-03-07T19:14:50Z\",\"finishedAt\":" +
+			"\"2019-03-07T19:14:55Z\"}}"
 
-	compString := file.CompressEncodeString(content)
+		compString := file.CompressEncodeString(content)
 
-	resultString, _ := file.DecodeDecompressString(compString)
+		resultString, _ := file.DecodeDecompressString(compString)
 
-	assert.Equal(t, content, resultString)
+		assert.Equal(t, content, resultString)
+	}
+	_ = os.Unsetenv(file.GZipImplEnvVarKey)
+}
+
+// TestGetGzipReader checks whether we can obtain the Gzip reader based on environment variable.
+func TestGetGzipReader(t *testing.T) {
+	for _, gzipImpl := range []string{file.GZIP, file.PGZIP} {
+		_ = os.Setenv(file.GZipImplEnvVarKey, gzipImpl)
+		rawContent := "this is the content"
+		content := file.CompressEncodeString(rawContent)
+		buf, err := base64.StdEncoding.DecodeString(content)
+		assert.NoError(t, err)
+		bufReader := bytes.NewReader(buf)
+		reader, err := file.GetGzipReader(bufReader)
+		assert.NoError(t, err)
+		res, err := ioutil.ReadAll(reader)
+		assert.NoError(t, err)
+		assert.Equal(t, rawContent, string(res))
+		_ = os.Unsetenv(file.GZipImplEnvVarKey)
+	}
 }
 
 func TestExistsInTar(t *testing.T) {
@@ -35,7 +59,7 @@ func TestExistsInTar(t *testing.T) {
 		var buf bytes.Buffer
 		writer := tar.NewWriter(&buf)
 		for _, f := range files {
-			mode := os.FileMode(0600)
+			mode := os.FileMode(0o600)
 			if f.isDir {
 				mode |= os.ModeDir
 			}

@@ -4,6 +4,7 @@ data:
     connectionPool:
       maxIdleConns: 100
       maxOpenConns: 0
+      connMaxLifetime: 0s
     nodeStatusOffLoad: true
     archive: true
     archiveTTL: 7d
@@ -18,6 +19,10 @@ data:
       passwordSecret:
         name: argo-postgres-config
         key: password
+  retentionPolicy: |
+    completed: 10
+    failed: 3
+    errored: 3
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap

@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: retry-omit-
+spec:
+  entrypoint: main
+  templates:
+    - dag:
+        tasks:
+          - name: F
+            template: fail
+          - name: O
+            depends: F
+            template: pass
+      name: main
+    - name: pass
+      container:
+        image: argoproj/argosay:v2
+    - name: fail
+      container:
+        args:
+          - exit
+          - "1"
+        image: argoproj/argosay:v2
+

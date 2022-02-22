@@ -1,4 +1,3 @@
-import * as classNames from 'classnames';
 import * as React from 'react';
 import {WorkflowDagRenderOptions} from './workflow-dag';
 
@@ -11,26 +10,24 @@ export class WorkflowDagRenderOptionsPanel extends React.Component<WorkflowDagRe
         return (
             <>
                 <a
-                    className={classNames({active: this.props.horizontal})}
                     onClick={() =>
                         this.props.onChange({
                             ...this.workflowDagRenderOptions,
-                            horizontal: !this.props.horizontal
+                            expandNodes: new Set()
                         })
                     }
-                    title='Horizontal layout'>
-                    <i className='fa fa-project-diagram' />
+                    title='Collapse all nodes'>
+                    <i className='fa fa-compress fa-fw' data-fa-transform='rotate-45' />
                 </a>
                 <a
-                    className={classNames({active: this.props.zoom > 1})}
                     onClick={() =>
                         this.props.onChange({
                             ...this.workflowDagRenderOptions,
-                            zoom: this.props.zoom === 1 ? 2 : 1
+                            expandNodes: new Set(['*'])
                         })
                     }
-                    title='Zoom into the timeline'>
-                    2x
+                    title='Expand all nodes'>
+                    <i className='fa fa-expand fa-fw' data-fa-transform='rotate-45' />
                 </a>
             </>
         );

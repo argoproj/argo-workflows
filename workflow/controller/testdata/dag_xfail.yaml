@@ -13,7 +13,7 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/default/workflows/dag-fail-r4gvc
   uid: 558a8d47-9571-11e8-b103-025000000001
 spec:
-  arguments: {}
+
   entrypoint: diamond
   templates:
   - container:

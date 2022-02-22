@@ -1,191 +1,266 @@
-import * as classNames from 'classnames';
-import * as dagre from 'dagre';
 import * as React from 'react';
 
-import * as models from '../../../../models';
+import {NODE_PHASE, NodeStatus} from '../../../../models';
+import {GraphPanel} from '../../../shared/components/graph/graph-panel';
+import {Graph} from '../../../shared/components/graph/types';
 import {Utils} from '../../../shared/utils';
-import {defaultNodesToDisplay} from '../workflow-details/workflow-details';
-
-export const defaultWorkflowDagRenderOptions: WorkflowDagRenderOptions = {
-    horizontal: false,
-    zoom: 1,
-    nodesToDisplay: defaultNodesToDisplay
-};
+import {genres} from './genres';
+import {getCollapsedNodeName, getMessage, getNodeParent, isCollapsedNode} from './graph/collapsible-node';
+import {icons} from './icons';
+import {WorkflowDagRenderOptionsPanel} from './workflow-dag-render-options-panel';
 
 export interface WorkflowDagRenderOptions {
-    horizontal: boolean;
-    zoom: number;
-    nodesToDisplay: string[];
+    expandNodes: Set<string>;
 }
 
-export interface WorkflowDagProps {
-    workflow: models.Workflow;
+interface WorkflowDagProps {
+    workflowName: string;
+    nodes: {[nodeId: string]: NodeStatus};
     selectedNodeId?: string;
-    nodeClicked?: (node: models.NodeStatus) => any;
-    renderOptions: WorkflowDagRenderOptions;
+    nodeSize?: number;
+    hideOptions?: boolean;
+    nodeClicked?: (nodeId: string) => any;
 }
 
-interface Line {
-    x1: number;
-    y1: number;
-    x2: number;
-    y2: number;
-    noArrow: boolean;
+function progress(n: NodeStatus) {
+    if (!n || !n.estimatedDuration) {
+        return null;
+    }
+    return (new Date().getTime() - new Date(n.startedAt).getTime()) / 1000 / n.estimatedDuration;
 }
 
-require('./workflow-dag.scss');
+function getNodeLabelTemplateName(n: NodeStatus): string {
+    return n.templateName || (n.templateRef && n.templateRef.template + '/' + n.templateRef.name) || 'no template';
+}
 
-export class WorkflowDag extends React.Component<WorkflowDagProps> {
-    private get zoom() {
-        return this.props.renderOptions.zoom || 1;
-    }
+function nodeLabel(n: NodeStatus) {
+    const phase = n.type === 'Suspend' && n.phase === 'Running' ? 'Suspended' : n.phase;
+    return {
+        label: Utils.shortNodeName(n),
+        genre: n.type,
+        icon: icons[phase] || icons.Pending,
+        progress: phase === 'Running' && progress(n),
+        classNames: phase,
+        tags: new Set([getNodeLabelTemplateName(n)])
+    };
+}
 
-    private get nodeWidth() {
-        return 32 / this.zoom;
-    }
+const classNames = (() => {
+    const v: {[label: string]: boolean} = {
+        Suspended: true,
+        Collapsed: true
+    };
+    Object.entries(NODE_PHASE).forEach(([, label]) => (v[label] = true));
+    return v;
+})();
 
-    private get nodeHeight() {
-        return 32 / this.zoom;
+export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRenderOptions> {
+    private graph: Graph;
+
+    constructor(props: Readonly<WorkflowDagProps>) {
+        super(props);
+        this.state = {
+            expandNodes: new Set()
+        };
     }
 
     public render() {
-        const graph = new dagre.graphlib.Graph();
-        // https://github.com/dagrejs/dagre/wiki
-        graph.setGraph({
-            edgesep: 20 / this.zoom,
-            nodesep: 50 / this.zoom,
-            rankdir: this.props.renderOptions.horizontal ? 'LR' : 'TB',
-            ranksep: 50 / this.zoom
-        });
-        graph.setDefaultEdgeLabel(() => ({}));
-        const nodes = (this.props.workflow.status && this.props.workflow.status.nodes) || {};
-        Object.values(nodes).forEach(node => {
-            const label = Utils.shortNodeName(node);
-            if (this.filterNode(node)) {
-                graph.setNode(node.id, {label, width: 1, height: 1, ...nodes[node.id]});
-            } else {
-                graph.setNode(node.id, {label, width: this.nodeWidth, height: this.nodeHeight, ...nodes[node.id]});
-            }
-        });
-        Object.keys(nodes).forEach(nodeId => {
-            const node = nodes[nodeId];
-            (node.children || []).forEach(childId => {
-                // make sure workflow is in consistent state and child node exist
-                if (nodes[childId]) {
-                    graph.setEdge(nodeId, childId);
-                }
-            });
-        });
-        const onExitHandlerNodeId = Object.keys(nodes).find(id => nodes[id].name === `${this.props.workflow.metadata.name}.onExit`);
-        if (onExitHandlerNodeId) {
-            this.getOutboundNodes(this.props.workflow.metadata.name).forEach(nodeId => graph.setEdge(nodeId, onExitHandlerNodeId));
-        }
+        this.prepareGraph();
 
-        dagre.layout(graph);
-        const edges: {from: string; to: string; lines: Line[]}[] = [];
-        graph.edges().forEach(edgeInfo => {
-            const edge = graph.edge(edgeInfo);
-            const lines: Line[] = [];
-            if (edge.points.length > 1) {
-                for (let i = 1; i < edge.points.length; i++) {
-                    const toNode = nodes[edgeInfo.w];
-                    lines.push({
-                        x1: edge.points[i - 1].x,
-                        y1: edge.points[i - 1].y,
-                        x2: edge.points[i].x,
-                        y2: edge.points[i].y,
-                        noArrow: this.filterNode(toNode)
-                    });
-                }
-            }
-            edges.push({from: edgeInfo.v, to: edgeInfo.w, lines});
-        });
-        const size = this.getGraphSize(graph.nodes().map(id => graph.node(id)));
+        const tags: {[key: string]: boolean} = {};
+        Object.values(this.props.nodes || {}).forEach(n => (tags[getNodeLabelTemplateName(n)] = true));
+
         return (
-            <div className='workflow-dag' style={{width: size.width, height: size.height}}>
-                {graph.nodes().map(id => {
-                    const node = graph.node(id) as models.NodeStatus & dagre.Node;
-                    const small = this.filterNode(node);
-                    return (
-                        <div key={`node/${id}`}>
-                            <div
-                                key='label'
-                                title={node.label}
-                                className={classNames(
-                                    'workflow-dag__node',
-                                    `fas`,
-                                    'workflow-dag__node-status',
-                                    'workflow-dag__node-status--' + (Utils.isNodeSuspended(node) ? 'suspended' : node.phase.toLocaleLowerCase()),
-                                    {
-                                        active: node.id === this.props.selectedNodeId,
-                                        virtual: this.filterNode(node),
-                                        small
-                                    }
-                                )}
-                                style={{
-                                    left: node.x - node.width / 2,
-                                    top: node.y - node.height / 2,
-                                    width: node.width,
-                                    height: node.height,
-                                    lineHeight: this.nodeHeight + 'px',
-                                    fontSize: 1 / this.zoom + 'em',
-                                    borderRadius: this.nodeWidth / 2 + 'px'
-                                }}
-                                onClick={() => this.props.nodeClicked && this.props.nodeClicked(node)}
-                            />
-                            {!small && (
-                                <div
-                                    key='title'
-                                    className='workflow-dag__node-title'
-                                    style={{
-                                        position: 'absolute',
-                                        left: node.x - node.width,
-                                        top: node.y + node.height / 2,
-                                        width: node.width * 2,
-                                        lineHeight: this.nodeHeight + 'px',
-                                        textAlign: 'center',
-                                        fontSize: 0.75 / this.zoom + 'em'
-                                    }}>
-                                    {node.label}
-                                </div>
-                            )}
-                        </div>
-                    );
-                })}
-                {edges.map(edge => (
-                    <div key={`edge/${edge.from},${edge.to}`} className='workflow-dag__edge'>
-                        {edge.lines.map(line => {
-                            const distance = Math.sqrt(Math.pow(line.x1 - line.x2, 2) + Math.pow(line.y1 - line.y2, 2));
-                            const xMid = (line.x1 + line.x2) / 2;
-                            const yMid = (line.y1 + line.y2) / 2;
-                            const angle = (Math.atan2(line.y1 - line.y2, line.x1 - line.x2) * 180) / Math.PI;
-                            return (
-                                <div
-                                    className={classNames('workflow-dag__line', {'workflow-dag__line--no-arrow': line.noArrow})}
-                                    key={`line/${line.x1},line-${line.x2}->${line.y1},${line.y2}`}
-                                    style={{
-                                        width: distance,
-                                        left: xMid - distance / 2,
-                                        top: yMid,
-                                        transform: ` rotate(${angle}deg)`
-                                    }}
-                                />
-                            );
-                        })}
-                    </div>
-                ))}
-            </div>
+            <GraphPanel
+                storageScope='workflow-dag'
+                graph={this.graph}
+                nodeGenresTitle={'Node Type'}
+                nodeGenres={genres}
+                nodeClassNamesTitle={'Node Phase'}
+                nodeClassNames={classNames}
+                nodeTagsTitle={'Template'}
+                nodeTags={tags}
+                nodeSize={this.props.nodeSize || 32}
+                defaultIconShape='circle'
+                hideNodeTypes={true}
+                hideOptions={this.props.hideOptions}
+                selectedNode={this.props.selectedNodeId}
+                onNodeSelect={id => this.selectNode(id)}
+                options={<WorkflowDagRenderOptionsPanel {...this.state} onChange={workflowDagRenderOptions => this.saveOptions(workflowDagRenderOptions)} />}
+            />
         );
     }
 
+    private saveOptions(newChanges: WorkflowDagRenderOptions) {
+        this.setState(newChanges);
+    }
+
+    private getNode(nodeId: string): NodeStatus {
+        const node: NodeStatus = this.props.nodes[nodeId];
+        if (!node) {
+            return null;
+        }
+        return node;
+    }
+
+    private prepareGraph() {
+        this.graph = new Graph();
+        const edges = this.graph.edges;
+        const nodes = this.graph.nodes;
+
+        interface PrepareNode {
+            nodeName: string;
+            children: string[];
+            parent: string;
+        }
+
+        if (!this.props.nodes) {
+            return;
+        }
+
+        const allNodes = this.props.nodes;
+        const getChildren = (nodeId: string): string[] => {
+            if (!allNodes[nodeId] || !allNodes[nodeId].children) {
+                return [];
+            }
+            return allNodes[nodeId].children.filter(child => allNodes[child]);
+        };
+        const pushChildren = (nodeId: string, isExpanded: boolean, queue: PrepareNode[]): void => {
+            const children: string[] = getChildren(nodeId);
+            if (!children) {
+                return;
+            }
+
+            if (children.length > 3 && !isExpanded) {
+                // Node will be collapsed
+                queue.push({
+                    nodeName: children[0],
+                    parent: nodeId,
+                    children: getChildren(children[0])
+                });
+                const newChildren: string[] = children
+                    .slice(1, children.length - 1)
+                    .map(v => [v])
+                    .reduce((a, b) => a.concat(b), []);
+                queue.push({
+                    nodeName: getCollapsedNodeName(nodeId, children.length - 2 + ' hidden nodes', allNodes[children[0]].type),
+                    parent: nodeId,
+                    children: newChildren
+                });
+                queue.push({
+                    nodeName: children[children.length - 1],
+                    parent: nodeId,
+                    children: getChildren(children[children.length - 1])
+                });
+            } else {
+                // Node will not be collapsed
+                children.map(child =>
+                    queue.push({
+                        nodeName: child,
+                        parent: nodeId,
+                        children: getChildren(child)
+                    })
+                );
+            }
+        };
+
+        const traverse = (root: PrepareNode): void => {
+            const queue: PrepareNode[] = [root];
+            const consideredChildren: Set<string> = new Set<string>();
+            let previousCollapsed: string = '';
+
+            while (queue.length > 0) {
+                const item = queue.pop();
+
+                if (isCollapsedNode(item.nodeName)) {
+                    if (item.nodeName !== previousCollapsed) {
+                        nodes.set(item.nodeName, {
+                            label: getMessage(item.nodeName),
+                            genre: 'Collapsed',
+                            icon: icons.Collapsed,
+                            classNames: 'Collapsed'
+                        });
+                        edges.set({v: item.parent, w: item.nodeName}, {});
+                        previousCollapsed = item.nodeName;
+                    }
+                    continue;
+                }
+                const child = allNodes[item.nodeName];
+                if (!child) {
+                    continue;
+                }
+                const isExpanded: boolean = this.state.expandNodes.has('*') || this.state.expandNodes.has(item.nodeName);
+
+                nodes.set(item.nodeName, nodeLabel(child));
+                edges.set({v: item.parent, w: item.nodeName}, {});
+
+                // If we have already considered the children of this node, don't consider them again
+                if (consideredChildren.has(item.nodeName)) {
+                    continue;
+                }
+                consideredChildren.add(item.nodeName);
+
+                const node: NodeStatus = this.props.nodes[item.nodeName];
+                if (!node || node.phase === NODE_PHASE.OMITTED) {
+                    continue;
+                }
+
+                pushChildren(node.id, isExpanded, queue);
+            }
+        };
+
+        const workflowRoot: PrepareNode = {
+            nodeName: this.props.workflowName,
+            parent: '',
+            children: getChildren(this.props.workflowName)
+        };
+
+        // Traverse the workflow from the root node
+        traverse(workflowRoot);
+
+        const onExitHandlerNodeId = Object.values(allNodes).find(nodeId => nodeId.name === `${this.props.workflowName}.onExit`);
+        if (onExitHandlerNodeId) {
+            this.getOutboundNodes(this.props.workflowName).forEach(v => {
+                const exitHandler = allNodes[onExitHandlerNodeId.id];
+                nodes.set(onExitHandlerNodeId.id, nodeLabel(exitHandler));
+                if (nodes.has(v)) {
+                    edges.set({v, w: onExitHandlerNodeId.id}, {});
+                }
+            });
+            const onExitRoot: PrepareNode = {
+                nodeName: onExitHandlerNodeId.id,
+                parent: '',
+                children: getChildren(onExitHandlerNodeId.id)
+            };
+            // Traverse the onExit tree starting from the onExit node itself
+            traverse(onExitRoot);
+        }
+    }
+
+    private selectNode(nodeId: string) {
+        if (isCollapsedNode(nodeId)) {
+            this.expandNode(nodeId);
+        } else {
+            return this.props.nodeClicked && this.props.nodeClicked(nodeId);
+        }
+    }
+
+    private expandNode(nodeId: string) {
+        if (isCollapsedNode(getNodeParent(nodeId))) {
+            this.expandNode(getNodeParent(nodeId));
+        } else {
+            this.setState({expandNodes: new Set(this.state.expandNodes).add(getNodeParent(nodeId))});
+        }
+    }
+
     private getOutboundNodes(nodeID: string): string[] {
-        const node = this.props.workflow.status.nodes[nodeID];
+        const node = this.getNode(nodeID);
         if (node.type === 'Pod' || node.type === 'Skipped') {
             return [node.id];
         }
         let outbound = Array<string>();
         for (const outboundNodeID of node.outboundNodes || []) {
-            const outNode = this.props.workflow.status.nodes[outboundNodeID];
+            const outNode = this.getNode(outboundNodeID);
             if (outNode.type === 'Pod') {
                 outbound.push(outboundNodeID);
             } else {
@@ -193,23 +268,5 @@ export class WorkflowDag extends React.Component<WorkflowDagProps> {
             }
         }
         return outbound;
-    }
-
-    private filterNode(node: models.NodeStatus) {
-        // Filter the node if it is a virtual node or a Retry node with one child
-        return (
-            !(this.props.renderOptions.nodesToDisplay.includes('type:' + node.type) && this.props.renderOptions.nodesToDisplay.includes('phase:' + node.phase)) ||
-            (node.type === 'Retry' && node.children.length === 1)
-        );
-    }
-
-    private getGraphSize(nodes: dagre.Node[]): {width: number; height: number} {
-        let width = 0;
-        let height = 0;
-        nodes.forEach(node => {
-            width = Math.max(node.x + node.width / 2, width);
-            height = Math.max(node.y + node.height / 2, height);
-        });
-        return {width, height};
     }
 }

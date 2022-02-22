@@ -1,4 +1,5 @@
 import {CronWorkflow, CronWorkflowList} from '../../../models';
+import {Utils} from '../utils';
 import requests from './requests';
 
 export class CronWorkflowService {
@@ -9,9 +10,9 @@ export class CronWorkflowService {
             .then(res => res.body as CronWorkflow);
     }
 
-    public list(namespace: string) {
+    public list(namespace: string, labels: string[] = []) {
         return requests
-            .get(`api/v1/cron-workflows/${namespace}`)
+            .get(`api/v1/cron-workflows/${namespace}?${Utils.queryParams({labels}).join('&')}`)
             .then(res => res.body as CronWorkflowList)
             .then(list => list.items || []);
     }
@@ -29,5 +30,13 @@ export class CronWorkflowService {
 
     public delete(name: string, namespace: string) {
         return requests.delete(`api/v1/cron-workflows/${namespace}/${name}`);
+    }
+
+    public suspend(name: string, namespace: string) {
+        return requests.put(`api/v1/cron-workflows/${namespace}/${name}/suspend`).then(res => res.body as CronWorkflow);
+    }
+
+    public resume(name: string, namespace: string) {
+        return requests.put(`api/v1/cron-workflows/${namespace}/${name}/resume`).then(res => res.body as CronWorkflow);
     }
 }

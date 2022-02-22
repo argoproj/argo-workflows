@@ -8,9 +8,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 type listFlags struct {
@@ -18,15 +18,16 @@ type listFlags struct {
 }
 
 func NewListCommand() *cobra.Command {
-	var (
-		listArgs listFlags
-	)
-	var command = &cobra.Command{
+	var listArgs listFlags
+	command := &cobra.Command{
 		Use:   "list",
 		Short: "list cluster workflow templates",
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient()
-			serviceClient := apiClient.NewClusterWorkflowTemplateServiceClient()
+			ctx, apiClient := client.NewAPIClient(cmd.Context())
+			serviceClient, err := apiClient.NewClusterWorkflowTemplateServiceClient()
+			if err != nil {
+				log.Fatal(err)
+			}
 
 			cwftmplList, err := serviceClient.ListClusterWorkflowTemplates(ctx, &clusterworkflowtemplate.ClusterWorkflowTemplateListRequest{})
 			if err != nil {
@@ -42,7 +43,6 @@ func NewListCommand() *cobra.Command {
 			default:
 				log.Fatalf("Unknown output mode: %s", listArgs.output)
 			}
-
 		},
 	}
 	command.Flags().StringVarP(&listArgs.output, "output", "o", "", "Output format. One of: wide|name")

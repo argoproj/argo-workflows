@@ -1,0 +1,46 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: exit-handler-with-param-
+  labels:
+    workflows.argoproj.io/test: "true"
+  annotations:
+    workflows.argoproj.io/description: |
+      onExitTemplate enables workflow to pass the arguments (parameters/Artifacts) to exit handler template.
+    workflows.argoproj.io/version: '>= 3.1.0'
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: step-1
+            template: output
+            hooks:
+              exit:
+                template: exit
+                arguments:
+                  parameters:
+                    - name: message
+                      value: "{{steps.step-1.outputs.parameters.result}}"
+    
+    - name: output
+      container:
+        image: python:alpine3.6
+        command: [sh, -c]
+        args: ["echo -n hello world > /tmp/hello_world.txt"]
+      outputs:
+        parameters:
+          - name: result
+            valueFrom:
+              default: "Foobar"   # Default value to use if retrieving valueFrom fails. If not provided workflow will fail instead
+              path: /tmp/hello_world.txt
+    
+    - name: exit
+      inputs:
+        parameters:
+          - name: message
+      script:
+        image: python:alpine3.6
+        command: [ python ]
+        source: |
+          print("{{inputs.parameters.message}}")

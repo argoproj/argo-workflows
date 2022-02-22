@@ -48,6 +48,10 @@
         &--skipped {
             background-color: $argo-color-gray-4;
         }
+
+        &--omitted {
+            background-color: $argo-color-gray-4;
+        }
     }
 
     &__start-line {

@@ -1,7 +1,29 @@
 apiVersion: v1
 data:
+  executor: |
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+  containerRuntimeExecutors: |
+    - name: emissary
+      selector:
+        matchLabels:
+          workflows.argoproj.io/container-runtime-executor: emissary
+    - name: pns
+      selector:
+        matchLabels:
+          workflows.argoproj.io/container-runtime-executor: pns
+  images: |
+    argoproj/argosay:v1:
+      command: [cowsay]
+    argoproj/argosay:v2:
+      command: [/argosay]
+    docker/whalesay:latest:
+       command: [cowsay]
+    python:alpine3.6:
+       command: [python3]
   artifactRepository: |
-    archiveLogs: true
     s3:
       bucket: my-bucket
       endpoint: minio:9000
@@ -12,20 +34,27 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
-  featureFlags: |
-    resourcesDuration: true
   metricsConfig: |
-    disableLegacy: true
     enabled: true
     path: /metrics
     port: 9090
+  namespaceParallelism: "10"
   links: |
-    - name: Example Workflow Link
+    - name: Workflow Link
       scope: workflow
-      url: http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}
-    - name: Example Pod Link
+      url: http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
+    - name: Pod Link
       scope: pod
-      url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}
+      url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
+    - name: Pod Logs Link
+      scope: pod-logs
+      url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
+    - name: Event Source Logs Link
+      scope: event-source-logs
+      url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
+    - name: Sensor Logs Link
+      scope: sensor-logs
+      url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap

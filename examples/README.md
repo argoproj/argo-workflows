@@ -1,4 +1,4 @@
-# Argo Workflows: Documentation by Example
+# Documentation by Example
 
 ## Welcome!
 
@@ -6,9 +6,9 @@ Argo is an open source project that provides container-native workflows for Kube
 
 Argo is implemented as a Kubernetes CRD (Custom Resource Definition). As a result, Argo workflows can be managed using `kubectl` and natively integrates with other Kubernetes services such as volumes, secrets, and RBAC. The new Argo software is light-weight and installs in under a minute, and provides complete workflow features including parameter substitution, artifacts, fixtures, loops and recursive workflows.
 
-Many of the Argo examples used in this walkthrough are available at in this directory. If you like this project, please give us a star!
+Many of the Argo examples used in this walkthrough are available in the [`/examples` directory](https://github.com/argoproj/argo-workflows/tree/master/examples) on GitHub. If you like this project, please give us a star!
 
-For a complete description of the Argo workflow spec, please refer to [our spec definitions](https://github.com/argoproj/argo/blob/master/pkg/apis/workflow/v1alpha1/workflow_types.go).
+For a complete description of the Argo workflow spec, please refer to [our spec definitions](https://github.com/argoproj/argo-workflows/blob/master/pkg/apis/workflow/v1alpha1/workflow_types.go).
 
 ## Table of Contents
 
@@ -46,8 +46,7 @@ In case you want to follow along with this walkthrough, here's a quick overview 
 argo submit hello-world.yaml    # submit a workflow spec to Kubernetes
 argo list                       # list current workflows
 argo get hello-world-xxx        # get info about a specific workflow
-argo logs -w hello-world-xxx    # get logs from all steps in a workflow
-argo logs hello-world-xxx-yyy   # get logs from a specific step in a workflow
+argo logs hello-world-xxx       # print the logs from a workflow
 argo delete hello-world-xxx     # delete workflow
 ```
 
@@ -66,7 +65,7 @@ kubectl delete wf hello-world-xxx
 
 Let's start by creating a very simple workflow template to echo "hello world" using the docker/whalesay container image from DockerHub.
 
-You can run this directly from your shell with a simple docker command:
+You can run this directly from your shell with a simple docker command:
 
 ```sh
 $ docker run docker/whalesay cowsay "hello world"
@@ -257,11 +256,11 @@ spec:
 The above workflow spec prints three different flavors of "hello". The `hello-hello-hello` template consists of three `steps`. The first step named `hello1` will be run in sequence whereas the next two steps named `hello2a` and `hello2b` will be run in parallel with each other. Using the argo CLI command, we can graphically display the execution history of this workflow spec, which shows that the steps named `hello2a` and `hello2b` ran in parallel with each other.
 
 ```sh
-STEP                                     PODNAME
- ✔ arguments-parameters-rbm92
- ├---✔ hello1                   steps-rbm92-2023062412
- └-·-✔ hello2a                  steps-rbm92-685171357
-   └-✔ hello2b                  steps-rbm92-634838500
+STEP            TEMPLATE           PODNAME                 DURATION  MESSAGE
+ ✔ steps-z2zdn  hello-hello-hello
+ ├───✔ hello1   whalesay           steps-z2zdn-27420706    2s
+ └─┬─✔ hello2a  whalesay           steps-z2zdn-2006760091  3s
+   └─✔ hello2b  whalesay           steps-z2zdn-2023537710  3s
 ```
 
 ## DAG
@@ -312,12 +311,12 @@ spec:
 The dependency graph may have [multiple roots](./dag-multiroot.yaml). The templates called from a DAG or steps template can themselves be DAG or steps templates. This can allow for complex workflows to be split into manageable pieces.
 
 The DAG logic has a built-in `fail fast` feature to stop scheduling new steps, as soon as it detects that one of the DAG nodes is failed. Then it waits until all DAG nodes are completed before failing the DAG itself.
-The [FailFast](./dag-disable-failFast.yaml) flag default is `true`,  if set to `false`, it will allow a DAG to run all branches of the DAG to completion (either success or failure), regardless of the failed outcomes of branches in the DAG. More info and example about this feature at [here](https://github.com/argoproj/argo/issues/1442).
+The [FailFast](./dag-disable-failFast.yaml) flag default is `true`,  if set to `false`, it will allow a DAG to run all branches of the DAG to completion (either success or failure), regardless of the failed outcomes of branches in the DAG. More info and example about this feature at [here](https://github.com/argoproj/argo-workflows/issues/1442).
 ## Artifacts
 
 **Note:**
 You will need to configure an artifact repository to run this example.
-[Configuring an artifact repository here](../docs/configure-artifact-repository.md).
+[Configuring an artifact repository here](https://argoproj.github.io/argo-workflows/configure-artifact-repository/).
 
 When running workflows, it is very common to have steps that generate or consume artifacts. Often, the output artifacts of one step may be used as input artifacts to a subsequent step.
 
@@ -735,7 +734,7 @@ spec:
 
 ## Conditionals
 
-We also support conditional execution as shown in this example:
+We also support conditional execution. The syntax is implemented by [govaluate](https://github.com/Knetic/govaluate) which offers the support for complex syntax. See in the example:
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -752,11 +751,28 @@ spec:
         template: flip-coin
     # evaluate the result in parallel
     - - name: heads
-        template: heads                 # call heads template if "heads"
+        template: heads                       # call heads template if "heads"
         when: "{{steps.flip-coin.outputs.result}} == heads"
       - name: tails
-        template: tails                 # call tails template if "tails"
+        template: tails                       # call tails template if "tails"
         when: "{{steps.flip-coin.outputs.result}} == tails"
+    - - name: flip-again
+        template: flip-coin
+    - - name: complex-condition
+        template: heads-tails-or-twice-tails
+        # call heads template if first flip was "heads" and second was "tails" OR both were "tails"
+        when: >-
+            ( {{steps.flip-coin.outputs.result}} == heads &&
+              {{steps.flip-again.outputs.result}} == tails
+            ) ||
+            ( {{steps.flip-coin.outputs.result}} == tails &&
+              {{steps.flip-again.outputs.result}} == tails )
+      - name: heads-regex
+        template: heads                       # call heads template if ~ "hea"
+        when: "{{steps.flip-again.outputs.result}} =~ hea"
+      - name: tails-regex
+        template: tails                       # call heads template if ~ "tai"
+        when: "{{steps.flip-again.outputs.result}} =~ tai"
 
   # Return heads or tails based on a random number
   - name: flip-coin
@@ -779,7 +795,21 @@ spec:
       image: alpine:3.6
       command: [sh, -c]
       args: ["echo \"it was tails\""]
+  
+  - name: heads-tails-or-twice-tails
+    container:
+      image: alpine:3.6
+      command: [sh, -c]
+      args: ["echo \"it was heads the first flip and tails the second. Or it was two times tails.\""]
 ```
+
+!!! note
+    If the parameter value contains quotes, it may invalidate the govaluate expression. To handle parameters with 
+    quotes, embed an [expr](https://github.com/antonmedv/expr) expression in the conditional. For example:
+
+    ```yaml
+    when: "{{=inputs.parameters['may-contain-quotes'] == 'example'}}"
+    ```
 
 ## Retrying Failed or Errored Steps
 
@@ -802,6 +832,8 @@ spec:
         duration: "1"      # Must be a string. Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h", "1d"
         factor: 2
         maxDuration: "1m"  # Must be a string. Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h", "1d"
+      affinity:
+        nodeAntiAffinity: {}
     container:
       image: python:alpine3.6
       command: ["python", -c]
@@ -810,8 +842,9 @@ spec:
 ```
 
 * `limit` is the maximum number of times the container will be retried.
-* `retryPolicy` specifies if a container will be retried on failure, error, or both. "Always" retries on both errors and failures. Also available: "OnFailure" (default), "OnError"
+* `retryPolicy` specifies if a container will be retried on failure, error, both, or only transient errors (e.g. i/o or TLS handshake timeout). "Always" retries on both errors and failures. Also available: "OnFailure" (default), "OnError", and "OnTransientError" (available after v3.0.0-rc2).
 * `backoff` is an exponential backoff
+* `nodeAntiAffinity` prevents running steps on the same host.  Current implementation allows only empty `nodeAntiAffinity` (i.e. `nodeAntiAffinity: {}`) and by default it uses label `kubernetes.io/hostname` as the selector.
 
 Providing an empty `retryStrategy` (i.e. `retryStrategy: {}`) will cause a container to retry until completion.
 
@@ -864,24 +897,24 @@ argo get coinflip-recursive-tzcb5
 
 STEP                         PODNAME                              MESSAGE
  ✔ coinflip-recursive-vhph5
- ├---✔ flip-coin             coinflip-recursive-vhph5-2123890397
- └-·-✔ heads                 coinflip-recursive-vhph5-128690560
-   └-○ tails
+ ├───✔ flip-coin             coinflip-recursive-vhph5-2123890397
+ └─┬─✔ heads                 coinflip-recursive-vhph5-128690560
+   └─○ tails
 
 STEP                          PODNAME                              MESSAGE
  ✔ coinflip-recursive-tzcb5
- ├---✔ flip-coin              coinflip-recursive-tzcb5-322836820
- └-·-○ heads
-   └-✔ tails
-     ├---✔ flip-coin          coinflip-recursive-tzcb5-1863890320
-     └-·-○ heads
-       └-✔ tails
-         ├---✔ flip-coin      coinflip-recursive-tzcb5-1768147140
-         └-·-○ heads
-           └-✔ tails
-             ├---✔ flip-coin  coinflip-recursive-tzcb5-4080411136
-             └-·-✔ heads      coinflip-recursive-tzcb5-4080323273
-               └-○ tails
+ ├───✔ flip-coin              coinflip-recursive-tzcb5-322836820
+ └─┬─○ heads
+   └─✔ tails
+     ├───✔ flip-coin          coinflip-recursive-tzcb5-1863890320
+     └─┬─○ heads
+       └─✔ tails
+         ├───✔ flip-coin      coinflip-recursive-tzcb5-1768147140
+         └─┬─○ heads
+           └─✔ tails
+             ├───✔ flip-coin  coinflip-recursive-tzcb5-4080411136
+             └─┬─✔ heads      coinflip-recursive-tzcb5-4080323273
+               └─○ tails
 ```
 
 In the first run, the coin immediately comes up heads and we stop. In the second run, the coin comes up tail three times before it finally comes up heads and we stop.
@@ -904,7 +937,7 @@ metadata:
   generateName: exit-handlers-
 spec:
   entrypoint: intentional-fail
-  onExit: exit-handler                  # invoke exit-hander template at end of the workflow
+  onExit: exit-handler                  # invoke exit-handler template at end of the workflow
   templates:
   # primary workflow template
   - name: intentional-fail
@@ -931,7 +964,7 @@ spec:
     container:
       image: alpine:latest
       command: [sh, -c]
-      args: ["echo send e-mail: {{workflow.name}} {{workflow.status}}"]
+      args: ["echo send e-mail: {{workflow.name}} {{workflow.status}} {{workflow.duration}}"]
   - name: celebrate
     container:
       image: alpine:latest
@@ -1090,43 +1123,43 @@ spec:
         arguments:
           parameters:
             - name: pvc-size
-              # In a real-world example, this could be generated by a previous workfow step.
+              # In a real-world example, this could be generated by a previous workflow step.
               value: '1Gi'
     - - name: generate
         template: whalesay
         arguments:
           parameters:
             - name: pvc-name
-              value: '{{ steps.generate-volume.outputs.parameters.pvc-name }}'
+              value: '{{steps.generate-volume.outputs.parameters.pvc-name}}'
     - - name: print
         template: print-message
         arguments:
           parameters:
             - name: pvc-name
-              value: '{{ steps.generate-volume.outputs.parameters.pvc-name }}'
+              value: '{{steps.generate-volume.outputs.parameters.pvc-name}}'
 
   - name: generate-volume
     inputs:
       parameters:
         - name: pvc-size
-      resource:
-        action: create
-        setOwnerReference: true
-        manifest: |
-          apiVersion: v1
-          kind: PersistentVolumeClaim
-          metadata:
-            generateName: pvc-example-
-          spec:
-            accessModes: ['ReadWriteOnce', 'ReadOnlyMany']
-            resources:
-              requests:
-                storage: '{{inputs.parameters.pvc-size}}'
-      outputs:
-        parameters:
-          - name: pvc-name
-            valueFrom:
-              jsonPath: '{.metadata.name}'
+    resource:
+      action: create
+      setOwnerReference: true
+      manifest: |
+        apiVersion: v1
+        kind: PersistentVolumeClaim
+        metadata:
+          generateName: pvc-example-
+        spec:
+          accessModes: ['ReadWriteOnce', 'ReadOnlyMany']
+          resources:
+            requests:
+              storage: '{{inputs.parameters.pvc-size}}'
+    outputs:
+      parameters:
+        - name: pvc-name
+          valueFrom:
+            jsonPath: '{.metadata.name}'
 
   - name: whalesay
     inputs:
@@ -1196,7 +1229,7 @@ spec:
 
   - name: delay
     suspend:
-      duration: 20    # Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h", "1d"
+      duration: "20"    # Must be a string. Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h", "1d"
 
   - name: whalesay
     container:
@@ -1286,7 +1319,7 @@ spec:
           cpu: 100m
 ```
 
-DAG templates use the tasks prefix to refer to another task, for example `{{tasks.influx.ip}}`.
+Step templates use the `steps` prefix to refer to another step: for example `{{steps.influx.ip}}`. In DAG templates, the `tasks` prefix is used instead: for example `{{tasks.influx.ip}}`.
 
 ## Sidecars
 
@@ -1334,7 +1367,7 @@ spec:
       - name: argo-source
         path: /src
         git:
-          repo: https://github.com/argoproj/argo.git
+          repo: https://github.com/argoproj/argo-workflows.git
           revision: "master"
       # Download kubectl 1.8.0 and place it at /bin/kubectl
       - name: kubectl
@@ -1406,7 +1439,12 @@ spec:
           backoffLimit: 4
 ```
 
+**Note:**
+Currently only a single resource can be managed by a resource template so either a `generateName` or `name` must be provided in the resource's metadata.
+
 Resources created in this way are independent of the workflow. If you want the resource to be deleted when the workflow is deleted then you can use [Kubernetes garbage collection](https://kubernetes.io/docs/concepts/workloads/controllers/garbage-collection/) with the workflow resource as an owner reference ([example](./k8s-owner-reference.yaml)).
+
+You can also collect data about the resource in output parameters (see more at [k8s-jobs.yaml](./k8s-jobs.yaml))
 
 **Note:**
 When patching, the resource will accept another attribute, `mergeStrategy`, which can either be `strategic`, `merge`, or `json`. If this attribute is not supplied, it will default to `strategic`. Keep in mind that Custom Resources cannot be patched with `strategic`, so a different strategy must be chosen. For example, suppose you have the [CronTab CustomResourceDefinition](https://kubernetes.io/docs/tasks/access-kubernetes-api/custom-resources/custom-resource-definitions/#create-a-customresourcedefinition) defined, and the following instance of a CronTab:
@@ -1455,7 +1493,7 @@ spec:
   templates:
   - name: dind-sidecar-example
     container:
-      image: docker:17.10
+      image: docker:19.03.13
       command: [sh, -c]
       args: ["until docker ps; do sleep 3; done; docker run --rm debian:latest cat /etc/os-release"]
       env:
@@ -1463,7 +1501,11 @@ spec:
         value: 127.0.0.1
     sidecars:
     - name: dind
-      image: docker:17.10-dind          # Docker already provides an image for running a Docker daemon
+      image: docker:19.03.13-dind          # Docker already provides an image for running a Docker daemon
+      command: [dockerd-entrypoint.sh]
+      env:
+        - name: DOCKER_TLS_CERTDIR         # Docker TLS env config
+          value: ""
       securityContext:
         privileged: true                # the Docker daemon can only run in a privileged container
       # mirrorVolumeMounts will mount the same volumes specified in the main container
@@ -1518,4 +1560,4 @@ spec:
 
 Continuous integration is a popular application for workflows. Currently, Argo does not provide event triggers for automatically kicking off your CI jobs, but we plan to do so in the near future. Until then, you can easily write a cron job that checks for new commits and kicks off the needed workflow, or use your existing Jenkins server to kick off the workflow.
 
-A good example of a CI workflow spec is provided at https://github.com/argoproj/argo/tree/master/examples/influxdb-ci.yaml. Because it just uses the concepts that we've already covered and is somewhat long, we don't go into details here.
+A good example of a CI workflow spec is provided at https://github.com/argoproj/argo-workflows/tree/master/examples/influxdb-ci.yaml. Because it just uses the concepts that we've already covered and is somewhat long, we don't go into details here.

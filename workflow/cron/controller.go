@@ -2,248 +2,196 @@ package cron
 
 import (
 	"context"
-	"sync"
+	"fmt"
+	"reflect"
 	"time"
 
-	cron "github.com/robfig/cron/v3"
+	"github.com/argoproj/pkg/sync"
 	log "github.com/sirupsen/logrus"
+	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/apimachinery/pkg/types"
+	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/rest"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/dynamic/dynamicinformer"
+	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/pkg/client/informers/externalversions"
-	extv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/util"
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo-workflows/v3/util/env"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/events"
+	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 // Controller is a controller for cron workflows
 type Controller struct {
-	namespace          string
-	managedNamespace   string
-	instanceId         string
-	cron               *cron.Cron
-	nameEntryIDMap     map[string]cron.EntryID
-	nameEntryIDMapLock *sync.Mutex
-	wfClientset        versioned.Interface
-	wfInformer         cache.SharedIndexInformer
-	wfLister           util.WorkflowLister
-	wfQueue            workqueue.RateLimitingInterface
-	cronWfInformer     extv1alpha1.CronWorkflowInformer
-	cronWfQueue        workqueue.RateLimitingInterface
-	restConfig         *rest.Config
+	namespace            string
+	managedNamespace     string
+	instanceId           string
+	cron                 *cronFacade
+	keyLock              sync.KeyLock
+	wfClientset          versioned.Interface
+	wfLister             util.WorkflowLister
+	cronWfInformer       informers.GenericInformer
+	cronWfQueue          workqueue.RateLimitingInterface
+	dynamicInterface     dynamic.Interface
+	metrics              *metrics.Metrics
+	eventRecorderManager events.EventRecorderManager
 }
 
 const (
-	cronWorkflowResyncPeriod    = 20 * time.Minute
-	cronWorkflowWorkers         = 2
-	cronWorkflowWorkflowWorkers = 2
+	cronWorkflowResyncPeriod = 20 * time.Minute
+	cronWorkflowWorkers      = 8
 )
 
-func NewCronController(
-	wfclientset versioned.Interface,
-	restConfig *rest.Config,
-	namespace string,
-	managedNamespace string,
-	instanceId string,
-) *Controller {
+var (
+	cronSyncPeriod = env.LookupEnvDurationOr("CRON_SYNC_PERIOD", 10*time.Second)
+)
+
+func init() {
+	// this make sure we support timezones
+	_, err := time.Parse(time.RFC822, "17 Oct 07 14:03 PST")
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.WithField("cronSyncPeriod", cronSyncPeriod).Info("cron config")
+}
+
+func NewCronController(wfclientset versioned.Interface, dynamicInterface dynamic.Interface, namespace string, managedNamespace string, instanceId string, metrics *metrics.Metrics, eventRecorderManager events.EventRecorderManager) *Controller {
 	return &Controller{
-		wfClientset:        wfclientset,
-		namespace:          namespace,
-		managedNamespace:   managedNamespace,
-		instanceId:         instanceId,
-		cron:               cron.New(),
-		restConfig:         restConfig,
-		nameEntryIDMap:     make(map[string]cron.EntryID),
-		nameEntryIDMapLock: &sync.Mutex{},
-		wfQueue:            workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		cronWfQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		wfClientset:          wfclientset,
+		namespace:            namespace,
+		managedNamespace:     managedNamespace,
+		instanceId:           instanceId,
+		cron:                 newCronFacade(),
+		keyLock:              sync.NewKeyLock(),
+		dynamicInterface:     dynamicInterface,
+		cronWfQueue:          metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "cron_wf_queue"),
+		metrics:              metrics,
+		eventRecorderManager: eventRecorderManager,
 	}
 }
 
 func (cc *Controller) Run(ctx context.Context) {
+	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 	defer cc.cronWfQueue.ShutDown()
-	defer cc.wfQueue.ShutDown()
 	log.Infof("Starting CronWorkflow controller")
 	if cc.instanceId != "" {
 		log.Infof("...with InstanceID: %s", cc.instanceId)
 	}
 
-	cc.cronWfInformer = externalversions.NewSharedInformerFactoryWithOptions(cc.wfClientset, cronWorkflowResyncPeriod, externalversions.WithNamespace(cc.managedNamespace),
-		externalversions.WithTweakListOptions(func(options *v1.ListOptions) {
-			cronWfInformerListOptionsFunc(options, cc.instanceId)
-		})).Argoproj().V1alpha1().CronWorkflows()
+	cc.cronWfInformer = dynamicinformer.NewFilteredDynamicSharedInformerFactory(cc.dynamicInterface, cronWorkflowResyncPeriod, cc.managedNamespace, func(options *v1.ListOptions) {
+		cronWfInformerListOptionsFunc(options, cc.instanceId)
+	}).ForResource(schema.GroupVersionResource{Group: workflow.Group, Version: workflow.Version, Resource: workflow.CronWorkflowPlural})
 	cc.addCronWorkflowInformerHandler()
 
-	cc.wfInformer = util.NewWorkflowInformer(cc.restConfig, cc.managedNamespace, cronWorkflowResyncPeriod, func(options *v1.ListOptions) {
+	wfInformer := util.NewWorkflowInformer(cc.dynamicInterface, cc.managedNamespace, cronWorkflowResyncPeriod, func(options *v1.ListOptions) {
 		wfInformerListOptionsFunc(options, cc.instanceId)
-	})
-	cc.addWorkflowInformerHandler()
+	}, cache.Indexers{})
+	go wfInformer.Run(ctx.Done())
 
-	cc.wfLister = util.NewWorkflowLister(cc.wfInformer)
+	cc.wfLister = util.NewWorkflowLister(wfInformer)
 
 	cc.cron.Start()
 	defer cc.cron.Stop()
 
 	go cc.cronWfInformer.Informer().Run(ctx.Done())
-	go cc.wfInformer.Run(ctx.Done())
+
+	go wait.UntilWithContext(ctx, cc.syncAll, cronSyncPeriod)
 
 	for i := 0; i < cronWorkflowWorkers; i++ {
 		go wait.Until(cc.runCronWorker, time.Second, ctx.Done())
-	}
-
-	for i := 0; i < cronWorkflowWorkflowWorkers; i++ {
-		go wait.Until(cc.runWorkflowWorker, time.Second, ctx.Done())
 	}
 
 	<-ctx.Done()
 }
 
 func (cc *Controller) runCronWorker() {
-	for cc.processNextCronItem() {
+	ctx := context.TODO()
+	for cc.processNextCronItem(ctx) {
 	}
 }
 
-func (cc *Controller) processNextCronItem() bool {
+func (cc *Controller) processNextCronItem(ctx context.Context) bool {
+	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+
 	key, quit := cc.cronWfQueue.Get()
 	if quit {
 		return false
 	}
 	defer cc.cronWfQueue.Done(key)
-	log.Infof("Processing %s", key)
+
+	cc.keyLock.Lock(key.(string))
+	defer cc.keyLock.Unlock(key.(string))
+
+	logCtx := log.WithField("cronWorkflow", key)
+	logCtx.Infof("Processing %s", key)
 
 	obj, exists, err := cc.cronWfInformer.Informer().GetIndexer().GetByKey(key.(string))
 	if err != nil {
-		log.Errorf("Failed to get CronWorkflow '%s' from informer index: %+v", key, err)
+		logCtx.WithError(err).Error(fmt.Sprintf("Failed to get CronWorkflow '%s' from informer index", key))
 		return true
 	}
-	cc.nameEntryIDMapLock.Lock()
-	defer cc.nameEntryIDMapLock.Unlock()
 	if !exists {
-		if entryId, ok := cc.nameEntryIDMap[key.(string)]; ok {
-			log.Infof("Deleting '%s'", key)
-			cc.cron.Remove(entryId)
-			delete(cc.nameEntryIDMap, key.(string))
-		}
+		logCtx.Infof("Deleting '%s'", key)
+		cc.cron.Delete(key.(string))
 		return true
 	}
 
-	cronWf, ok := obj.(*v1alpha1.CronWorkflow)
+	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
-		log.Warnf("Key '%s' in index is not a CronWorkflow", key)
+		logCtx.Errorf("malformed cluster workflow template: expected *unstructured.Unstructured, got %s", reflect.TypeOf(obj).Name())
+		return true
+	}
+	cronWf := &v1alpha1.CronWorkflow{}
+	err = util.FromUnstructuredObj(un, cronWf)
+	if err != nil {
+		cc.eventRecorderManager.Get(un.GetNamespace()).Event(un, apiv1.EventTypeWarning, "Malformed", err.Error())
+		logCtx.WithError(err).Error("malformed cron workflow: could not convert from unstructured")
 		return true
 	}
 
-	cronWorkflowOperationCtx, err := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.wfLister)
+	cronWorkflowOperationCtx := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.metrics)
+
+	err = cronWorkflowOperationCtx.validateCronWorkflow()
 	if err != nil {
-		log.Error(err)
+		logCtx.WithError(err).Error("invalid cron workflow")
 		return true
 	}
 
-	err = cronWorkflowOperationCtx.runOutstandingWorkflows()
+	wfWasRun, err := cronWorkflowOperationCtx.runOutstandingWorkflows(ctx)
 	if err != nil {
-		log.Errorf("could not run outstanding Workflow: %s", err)
+		logCtx.WithError(err).Error("could not run outstanding Workflow")
+		return true
+	} else if wfWasRun {
+		// A workflow was run, so the cron workflow will be requeued. Return here to avoid duplicating work
 		return true
 	}
 
 	// The job is currently scheduled, remove it and re add it.
-	if entryId, ok := cc.nameEntryIDMap[key.(string)]; ok {
-		cc.cron.Remove(entryId)
-		delete(cc.nameEntryIDMap, key.(string))
-	}
+	cc.cron.Delete(key.(string))
 
-	cronSchedule := cronWf.Spec.Schedule
-	if cronWf.Spec.Timezone != "" {
-		cronSchedule = "CRON_TZ=" + cronWf.Spec.Timezone + " " + cronSchedule
-	}
-
-	entryId, err := cc.cron.AddJob(cronSchedule, cronWorkflowOperationCtx)
+	lastScheduledTimeFunc, err := cc.cron.AddJob(key.(string), cronWf.Spec.GetScheduleString(), cronWorkflowOperationCtx)
 	if err != nil {
-		log.Errorf("could not schedule CronWorkflow: %s", err)
-		return true
-	}
-	cc.nameEntryIDMap[key.(string)] = entryId
-
-	log.Infof("CronWorkflow %s added", key.(string))
-
-	return true
-}
-
-func (cc *Controller) runWorkflowWorker() {
-	for cc.processNextWorkflowItem() {
-	}
-}
-
-func (cc *Controller) processNextWorkflowItem() bool {
-	key, quit := cc.wfQueue.Get()
-	if quit {
-		return false
-	}
-	defer cc.wfQueue.Done(key)
-
-	obj, wfExists, err := cc.wfInformer.GetIndexer().GetByKey(key.(string))
-	if err != nil {
-		log.Errorf("Failed to get Workflow '%s' from informer index: %+v", key, err)
+		logCtx.WithError(err).Error("could not schedule CronWorkflow")
 		return true
 	}
 
-	// Check if the workflow no longer exists. If the workflow was deleted while it was an active workflow of a cron
-	// workflow, the cron workflow will reconcile this fact on its own next time it is processed.
-	if !wfExists {
-		log.Warnf("Workflow '%s' no longer exists", key)
-		return true
-	}
+	cronWorkflowOperationCtx.scheduledTimeFunc = lastScheduledTimeFunc
 
-	// The workflow informer receives unstructured objects to deal with the possibility of invalid
-	// workflow manifests that are unable to unmarshal to workflow objects
-	un, ok := obj.(*unstructured.Unstructured)
-	if !ok {
-		log.Warnf("Key '%s' in index is not an unstructured", key)
-		return true
-	}
+	logCtx.Infof("CronWorkflow %s added", key.(string))
 
-	wf, err := util.FromUnstructured(un)
-	if err != nil {
-		log.Warnf("Failed to unmarshal key '%s' to workflow object: %v", key, err)
-		return true
-	}
-
-	if wf.OwnerReferences == nil || len(wf.OwnerReferences) != 1 {
-		log.Warnf("Workflow '%s' stemming from CronWorkflow is malformed", wf.Name)
-		return true
-	}
-
-	// Workflows are run in the same namespace as CronWorkflow
-	nameEntryIdMapKey := wf.Namespace + "/" + wf.OwnerReferences[0].Name
-	var woc *cronWfOperationCtx
-	cc.nameEntryIDMapLock.Lock()
-	defer cc.nameEntryIDMapLock.Unlock()
-	if entryId, ok := cc.nameEntryIDMap[nameEntryIdMapKey]; ok {
-		woc, ok = cc.cron.Entry(entryId).Job.(*cronWfOperationCtx)
-		if !ok {
-			log.Errorf("Parent CronWorkflow '%s' is malformed", nameEntryIdMapKey)
-			return true
-		}
-	} else {
-		log.Warnf("Parent CronWorkflow '%s' no longer exists", nameEntryIdMapKey)
-		return true
-	}
-
-	// If the workflow is completed or was deleted, remove it from Active Workflows
-	if wf.Status.Completed() || !wfExists {
-		log.Warnf("Workflow '%s' from CronWorkflow '%s' completed", wf.Name, woc.cronWf.Name)
-		woc.removeActiveWf(wf)
-	}
-
-	woc.enforceHistoryLimit()
 	return true
 }
 
@@ -270,29 +218,67 @@ func (cc *Controller) addCronWorkflowInformerHandler() {
 	})
 }
 
-func (cc *Controller) addWorkflowInformerHandler() {
-	cc.wfInformer.AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				key, err := cache.MetaNamespaceKeyFunc(obj)
-				if err == nil {
-					cc.wfQueue.Add(key)
-				}
-			},
-			UpdateFunc: func(old, new interface{}) {
-				key, err := cache.MetaNamespaceKeyFunc(new)
-				if err == nil {
-					cc.wfQueue.Add(key)
-				}
-			},
-			DeleteFunc: func(obj interface{}) {
-				key, err := cache.MetaNamespaceKeyFunc(obj)
-				if err == nil {
-					cc.wfQueue.Add(key)
-				}
-			},
-		},
-	)
+func (cc *Controller) syncAll(ctx context.Context) {
+	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+
+	log.Debug("Syncing all CronWorkflows")
+
+	workflows, err := cc.wfLister.List()
+	if err != nil {
+		return
+	}
+	groupedWorkflows := groupWorkflows(workflows)
+
+	cronWorkflows := cc.cronWfInformer.Informer().GetStore().List()
+	for _, obj := range cronWorkflows {
+		un, ok := obj.(*unstructured.Unstructured)
+		if !ok {
+			log.Error("Unable to convert object to unstructured when syncing CronWorkflows")
+			continue
+		}
+		cronWf := &v1alpha1.CronWorkflow{}
+		err := util.FromUnstructuredObj(un, cronWf)
+		if err != nil {
+			log.WithError(err).Error("Unable to convert unstructured to CronWorkflow when syncing CronWorkflows")
+			continue
+		}
+
+		err = cc.syncCronWorkflow(ctx, cronWf, groupedWorkflows[cronWf.UID])
+		if err != nil {
+			log.WithError(err).Error("Unable to sync CronWorkflow")
+			continue
+		}
+	}
+}
+
+func (cc *Controller) syncCronWorkflow(ctx context.Context, cronWf *v1alpha1.CronWorkflow, workflows []v1alpha1.Workflow) error {
+	key := cronWf.Namespace + "/" + cronWf.Name
+	cc.keyLock.Lock(key)
+	defer cc.keyLock.Unlock(key)
+
+	cwoc := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.metrics)
+	err := cwoc.enforceHistoryLimit(ctx, workflows)
+	if err != nil {
+		return err
+	}
+	err = cwoc.reconcileActiveWfs(ctx, workflows)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func groupWorkflows(wfs []*v1alpha1.Workflow) map[types.UID][]v1alpha1.Workflow {
+	cwfChildren := make(map[types.UID][]v1alpha1.Workflow)
+	for _, wf := range wfs {
+		owner := v1.GetControllerOf(wf)
+		if owner == nil || owner.Kind != workflow.CronWorkflowKind {
+			continue
+		}
+		cwfChildren[owner.UID] = append(cwfChildren[owner.UID], *wf)
+	}
+	return cwfChildren
 }
 
 func cronWfInformerListOptionsFunc(options *v1.ListOptions, instanceId string) {

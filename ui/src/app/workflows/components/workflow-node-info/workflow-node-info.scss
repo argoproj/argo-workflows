@@ -2,6 +2,16 @@
 
 .workflow-node-info {
 
+    height: calc(100vh - 2 * #{$top-bar-height});
+    overflow-y: auto;
+
+    .tabs {
+        a {
+            padding-right: 0;
+            padding-left: 0;
+        }
+    }
+
     &__multi-line {
         line-height: 24px;
         display: inline-block;

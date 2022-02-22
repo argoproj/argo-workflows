@@ -17,7 +17,7 @@ func tempFile(dir, prefix, suffix string) (*os.File, error) {
 	if dir == "" {
 		dir = os.TempDir()
 	} else {
-		err := os.MkdirAll(dir, 0700)
+		err := os.MkdirAll(dir, 0o700)
 		if err != nil {
 			return nil, err
 		}

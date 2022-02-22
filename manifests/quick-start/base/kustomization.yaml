@@ -1,14 +1,18 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-bases:
+resources:
   - ../../namespace-install
   - minio
-
-resources:
+  - webhooks
+  - argo-server-sso-secret.yaml
   - workflow-role.yaml
+  - kubelet-executor-clusterrole.yaml
+  - kubelet-executor-default-clusterrolebinding.yaml
   - workflow-default-rolebinding.yaml
   - cluster-workflow-template-rbac.yaml
+  - artifact-repositories-configmap.yaml
 
 patchesStrategicMerge:
   - overlays/workflow-controller-configmap.yaml
+  - overlays/argo-server-deployment.yaml

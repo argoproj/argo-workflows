@@ -1,6 +1,6 @@
 # Workflow Events
 
-![alpha](assets/alpha.svg)
+![GA](assets/ga.svg)
 
 > v2.7.2
 
@@ -13,14 +13,15 @@ Workflow state change:
 * `WorkflowFailed`
 * `WorkflowTimedOut`
 
-Node completion
+Node state change:
 
+* `WorkflowNodeRunning`
 * `WorkflowNodeSucceeded`
 * `WorkflowNodeFailed`
 * `WorkflowNodeError`
 
 
-The involved object is the workflow in both cases. Additionally, for node completion events, annotations indicate the name and type of the involved node:
+The involved object is the workflow in both cases. Additionally, for node state change events, annotations indicate the name and type of the involved node:
 
 ```yaml
 metadata:

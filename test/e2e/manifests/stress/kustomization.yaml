@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../../../manifests/quick-start/minimal
+  - ../../../../manifests/quick-start/base/prometheus
+  - workflow-controller-pprof-service.yaml
+  - workflow-controller-podpriorityclass.yaml
+  - argo-server-podpriorityclass.yaml
+  - minio-podpriorityclass.yaml
+
+patchesStrategicMerge:
+  - workflow-controller-configmap.yaml
+  - workflow-controller-deployment.yaml
+  - argo-server-deployment.yaml
+  - minio-deployment.yaml
+
+commonLabels:
+  "app.kubernetes.io/part-of": "argo"

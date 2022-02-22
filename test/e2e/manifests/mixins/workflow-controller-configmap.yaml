@@ -3,7 +3,13 @@ kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
 data:
-  containerRuntimeExecutor: pns
+  workflowDefaults: |
+    spec:
+      activeDeadlineSeconds: 300
+      ttlStrategy:
+        secondsAfterCompletion: 600
+      podSpecPatch: |
+        terminationGracePeriodSeconds: 3
   executor: |
     imagePullPolicy: Never
     resources:
@@ -13,3 +19,8 @@ data:
       limits:
         cpu: 0.5
         memory: 128Mi
+  retentionPolicy: |
+    completed: 10
+    failed: 2
+    errored: 2
+  kubeletInsecure: "true"

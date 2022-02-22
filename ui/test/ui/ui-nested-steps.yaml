@@ -1,0 +1,50 @@
+# Visual UI test workflow which resulted in strange edges between nodes in a workflow
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: ui-nested-steps-
+spec:
+  entrypoint: ui-nested-steps
+  volumes:
+  - name: workdir
+    emptyDir: {}
+  templates:
+  - name: ui-nested-steps
+    steps:       
+    - - name: LOCATE-FACES
+        template: locate-faces
+      - name: GENERATE-TOKEN
+        template: noop
+    
+    - - name: HANDLE-INDIVIDUAL-FACES
+        template: handle-individual-faces
+        withParam: "{{steps.LOCATE-FACES.outputs.parameters.imagemagick-commands}}"
+
+    - - name: TFJOB
+        template: noop
+        when: "{{steps.LOCATE-FACES.outputs.parameters.imagemagick-commands}} != []"
+
+  - name: locate-faces
+    container:
+      image: argoproj/argosay:v2
+      args: [echo, "[1, 2, 3]", /workdir/result.json]
+      volumeMounts:
+      - name: workdir
+        mountPath: /workdir
+    outputs:
+      parameters:
+      - name: imagemagick-commands
+        valueFrom:
+          path: /workdir/result.json
+
+  - name: handle-individual-faces
+    steps:
+    - - name: CROP-FACE
+        template: noop
+    - - name: VOLUMIZE-RESULT
+        template: noop
+
+  - name: noop
+    container:
+      image: argoproj/argosay:v2
+      args: ["sleep", "1s"]

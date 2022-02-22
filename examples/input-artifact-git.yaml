@@ -13,14 +13,14 @@ spec:
       - name: argo-source
         path: /src
         git:
-          repo: https://github.com/argoproj/argo.git
+          repo: https://github.com/argoproj/argo-workflows.git
           revision: "v2.1.1"
           # For private repositories, create a k8s secret containing the git credentials and
           # reference the secret keys in the secret selectors: usernameSecret, passwordSecret,
           # or sshPrivateKeySecret.
           # NOTE: when authenticating via sshPrivateKeySecret, the repo URL should supplied in its
-          # SSH format (e.g. git@github.com:argoproj/argo.git). Similarly, when authenticating via
-          # basic auth, the URL should be in its HTTP form (e.g. https://github.com/argoproj/argo.git)
+          # SSH format (e.g. git@github.com:argoproj/argo-workflows.git). Similarly, when authenticating via
+          # basic auth, the URL should be in its HTTP form (e.g. https://github.com/argoproj/argo-workflows.git)
           # usernameSecret:
           #   name: github-creds
           #   key: username

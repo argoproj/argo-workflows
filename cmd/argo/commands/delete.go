@@ -2,88 +2,90 @@ package commands
 
 import (
 	"fmt"
-	"time"
+	"os"
 
 	"github.com/argoproj/pkg/errors"
-	argotime "github.com/argoproj/pkg/time"
 	"github.com/spf13/cobra"
-	apierr "k8s.io/apimachinery/pkg/api/errors"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
-	"github.com/argoproj/argo/workflow/common"
-)
-
-var (
-	completedLabelSelector = fmt.Sprintf("%s=true", common.LabelKeyCompleted)
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 // NewDeleteCommand returns a new instance of an `argo delete` command
 func NewDeleteCommand() *cobra.Command {
 	var (
-		selector  string
-		all       bool
-		completed bool
-		older     string
+		flags         listFlags
+		all           bool
+		allNamespaces bool
+		dryRun        bool
 	)
+	command := &cobra.Command{
+		Use:   "delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--resubmitted] [--prefix PREFIX] [--selector SELECTOR]]",
+		Short: "delete workflows",
+		Example: `# Delete a workflow:
 
-	var command = &cobra.Command{
-		Use: "delete WORKFLOW...",
+  argo delete my-wf
+
+# Delete the latest workflow:
+
+  argo delete @latest
+`,
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient()
+			if len(args) == 0 && !(all || allNamespaces || flags.completed || flags.resubmitted || flags.prefix != "" || flags.labels != "" || flags.fields != "" || flags.finishedAfter != "") {
+				cmd.HelpFunc()(cmd, args)
+				os.Exit(1)
+			}
+
+			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient := apiClient.NewWorkflowServiceClient()
-			namespace := client.Namespace()
-			var workflowsToDelete []metav1.ObjectMeta
+			var workflows wfv1.Workflows
+			if !allNamespaces {
+				flags.namespace = client.Namespace()
+			}
 			for _, name := range args {
-				workflowsToDelete = append(workflowsToDelete, metav1.ObjectMeta{
-					Name:      name,
-					Namespace: namespace,
+				workflows = append(workflows, wfv1.Workflow{
+					ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: flags.namespace},
 				})
 			}
-			if all || completed || older != "" {
-				// all is effectively the default, completed takes precedence over all
-				if completed {
-					if selector != "" {
-						selector = selector + "," + completedLabelSelector
-					} else {
-						selector = completedLabelSelector
-					}
-				}
-				// you can mix older with either of these
-				var olderTime *time.Time
-				if older != "" {
-					var err error
-					olderTime, err = argotime.ParseSince(older)
-					errors.CheckError(err)
-				}
-				list, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{
-					Namespace:   namespace,
-					ListOptions: &metav1.ListOptions{LabelSelector: selector},
-				})
+			if all || flags.completed || flags.resubmitted || flags.prefix != "" || flags.labels != "" || flags.fields != "" || flags.finishedAfter != "" {
+				listed, err := listWorkflows(ctx, serviceClient, flags)
 				errors.CheckError(err)
-				for _, wf := range list.Items {
-					if olderTime != nil && (wf.Status.FinishedAt.IsZero() || wf.Status.FinishedAt.After(*olderTime)) {
+				workflows = append(workflows, listed...)
+			}
+
+			if len(workflows) == 0 {
+				fmt.Printf("No resources found\n")
+				return
+			}
+
+			for _, wf := range workflows {
+				if !dryRun {
+					_, err := serviceClient.DeleteWorkflow(ctx, &workflowpkg.WorkflowDeleteRequest{Name: wf.Name, Namespace: wf.Namespace})
+					if err != nil && status.Code(err) == codes.NotFound {
+						fmt.Printf("Workflow '%s' not found\n", wf.Name)
 						continue
 					}
-					workflowsToDelete = append(workflowsToDelete, wf.ObjectMeta)
+					errors.CheckError(err)
+					fmt.Printf("Workflow '%s' deleted\n", wf.Name)
+				} else {
+					fmt.Printf("Workflow '%s' deleted (dry-run)\n", wf.Name)
 				}
-			}
-			for _, md := range workflowsToDelete {
-				_, err := serviceClient.DeleteWorkflow(ctx, &workflowpkg.WorkflowDeleteRequest{Name: md.Name, Namespace: md.Namespace})
-				if err != nil && apierr.IsNotFound(err) {
-					fmt.Printf("Workflow '%s' not found\n", md.Name)
-					continue
-				}
-				errors.CheckError(err)
-				fmt.Printf("Workflow '%s' deleted\n", md.Name)
 			}
 		},
 	}
 
+	command.Flags().BoolVarP(&allNamespaces, "all-namespaces", "A", false, "Delete workflows from all namespaces")
 	command.Flags().BoolVar(&all, "all", false, "Delete all workflows")
-	command.Flags().BoolVar(&completed, "completed", false, "Delete completed workflows")
-	command.Flags().StringVar(&older, "older", "", "Delete completed workflows older than the specified duration (e.g. 10m, 3h, 1d)")
-	command.Flags().StringVarP(&selector, "selector", "l", "", "Selector (label query) to filter on, not including uninitialized ones")
+	command.Flags().BoolVar(&flags.completed, "completed", false, "Delete completed workflows")
+	command.Flags().BoolVar(&flags.resubmitted, "resubmitted", false, "Delete resubmitted workflows")
+	command.Flags().StringVar(&flags.prefix, "prefix", "", "Delete workflows by prefix")
+	command.Flags().StringVar(&flags.finishedAfter, "older", "", "Delete completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)")
+	command.Flags().StringVarP(&flags.labels, "selector", "l", "", "Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
+	command.Flags().StringVar(&flags.fields, "field-selector", "", "Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selectorkey1=value1,key2=value2). The server only supports a limited number of field queries per type.")
+	command.Flags().BoolVar(&dryRun, "dry-run", false, "Do not delete the workflow, only print what would happen")
 	return command
 }

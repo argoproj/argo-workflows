@@ -3,7 +3,7 @@
 package fake
 
 import (
-	v1alpha1 "github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	v1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	rest "k8s.io/client-go/rest"
 	testing "k8s.io/client-go/testing"
 )
@@ -22,6 +22,14 @@ func (c *FakeArgoprojV1alpha1) CronWorkflows(namespace string) v1alpha1.CronWork
 
 func (c *FakeArgoprojV1alpha1) Workflows(namespace string) v1alpha1.WorkflowInterface {
 	return &FakeWorkflows{c, namespace}
+}
+
+func (c *FakeArgoprojV1alpha1) WorkflowEventBindings(namespace string) v1alpha1.WorkflowEventBindingInterface {
+	return &FakeWorkflowEventBindings{c, namespace}
+}
+
+func (c *FakeArgoprojV1alpha1) WorkflowTaskSets(namespace string) v1alpha1.WorkflowTaskSetInterface {
+	return &FakeWorkflowTaskSets{c, namespace}
 }
 
 func (c *FakeArgoprojV1alpha1) WorkflowTemplates(namespace string) v1alpha1.WorkflowTemplateInterface {

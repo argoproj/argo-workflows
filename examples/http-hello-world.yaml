@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: http-template-
+  labels:
+    workflows.argoproj.io/test: "true"
+  annotations:
+    workflows.argoproj.io/description: |
+      Http template will demostrate http template functionality
+    workflows.argoproj.io/version: '>= 3.2.0'
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: good
+            template: http
+            arguments:
+              parameters: [{name: url, value: "https://raw.githubusercontent.com/argoproj/argo-workflows/4e450e250168e6b4d51a126b784e90b11a0162bc/pkg/apis/workflow/v1alpha1/generated.swagger.json"}]
+          - name: bad
+            template: http
+            continueOn:
+              failed: true
+            arguments:
+              parameters: [{name: url, value: "http://openlibrary.org/people/george08/nofound.json"}]
+  
+    - name: http
+      inputs:
+        parameters:
+          - name: url
+      http:
+       # url: http://dummy.restapiexample.com/api/v1/employees
+       url: "{{inputs.parameters.url}}"
+      

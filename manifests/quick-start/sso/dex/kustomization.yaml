@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+commonLabels:
+  "app.kubernetes.io/part-of": "dex"
+
+resources:
+  - dex-cm.yaml
+  - dex-role.yaml
+  - dex-sa.yaml
+  - dex-rb.yaml
+  - dex-deploy.yaml
+  - dev-svc.yaml

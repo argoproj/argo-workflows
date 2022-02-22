@@ -1,55 +1,136 @@
 package controller
 
 import (
+	"context"
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/test"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 // TestDagXfail verifies a DAG can fail properly
 func TestDagXfail(t *testing.T) {
-	wf := test.LoadTestWorkflow("testdata/dag_xfail.yaml")
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/dag_xfail.yaml")
 	woc := newWoc(*wf)
-	woc.operate()
-	assert.Equal(t, string(wfv1.NodeFailed), string(woc.wf.Status.Phase))
+	ctx := context.Background()
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 }
 
 // TestDagRetrySucceeded verifies a DAG will be marked Succeeded if retry was successful
 func TestDagRetrySucceeded(t *testing.T) {
-	wf := test.LoadTestWorkflow("testdata/dag_retry_succeeded.yaml")
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/dag_retry_succeeded.yaml")
 	woc := newWoc(*wf)
-	woc.operate()
-	assert.Equal(t, string(wfv1.NodeSucceeded), string(woc.wf.Status.Phase))
+	ctx := context.Background()
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
 // TestDagRetryExhaustedXfail verifies we fail properly when we exhaust our retries
 func TestDagRetryExhaustedXfail(t *testing.T) {
-	wf := test.LoadTestWorkflow("testdata/dag-exhausted-retries-xfail.yaml")
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/dag-exhausted-retries-xfail.yaml")
 	woc := newWoc(*wf)
-	woc.operate()
-	assert.Equal(t, string(wfv1.NodeFailed), string(woc.wf.Status.Phase))
+	ctx := context.Background()
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 }
 
 // TestDagDisableFailFast test disable fail fast function
 func TestDagDisableFailFast(t *testing.T) {
-	wf := test.LoadTestWorkflow("testdata/dag-disable-fail-fast.yaml")
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/dag-disable-fail-fast.yaml")
 	woc := newWoc(*wf)
-	woc.operate()
-	assert.Equal(t, string(wfv1.NodeFailed), string(woc.wf.Status.Phase))
+	ctx := context.Background()
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 }
 
-func TestGetDagTaskFromNode(t *testing.T) {
-	task := wfv1.DAGTask{Name: "test-task"}
-	d := dagContext{
-		boundaryID: "test-boundary",
-		tasks:      []wfv1.DAGTask{task},
+var dynamicSingleDag = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+ generateName: dag-diamond-
+spec:
+ entrypoint: diamond
+ templates:
+ - name: diamond
+   dag:
+     tasks:
+     - name: A
+       template: %s
+       %s
+     - name: TestSingle
+       template: Succeeded
+       depends: A.%s
+
+ - name: Succeeded
+   container:
+     image: alpine:3.7
+     command: [sh, -c, "exit 0"]
+
+ - name: Failed
+   container:
+     image: alpine:3.7
+     command: [sh, -c, "exit 1"]
+
+ - name: Skipped
+   container:
+     image: alpine:3.7
+     command: [sh, -c, "echo Hello"]
+`
+
+func TestSingleDependency(t *testing.T) {
+	statusMap := map[string]v1.PodPhase{"Succeeded": v1.PodSucceeded, "Failed": v1.PodFailed}
+	var closer context.CancelFunc
+	var controller *WorkflowController
+	for _, status := range []string{"Succeeded", "Failed", "Skipped"} {
+		fmt.Printf("\n\n\nCurrent status %s\n\n\n", status)
+		closer, controller = newController()
+		wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+		// If the status is "skipped" skip the root node.
+		var wfString string
+		if status == "Skipped" {
+			wfString = fmt.Sprintf(dynamicSingleDag, status, `when: "False == True"`, status)
+		} else {
+			wfString = fmt.Sprintf(dynamicSingleDag, status, "", status)
+		}
+		wf := wfv1.MustUnmarshalWorkflow(wfString)
+
+		ctx := context.Background()
+		wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+		assert.Nil(t, err)
+		wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
+		assert.Nil(t, err)
+		woc := newWorkflowOperationCtx(wf, controller)
+
+		woc.operate(ctx)
+		// Mark the status of the pod according to the test
+		if _, ok := statusMap[status]; ok {
+			makePodsPhase(ctx, woc, statusMap[status])
+		} else {
+			makePodsPhase(ctx, woc, v1.PodPending)
+		}
+
+		woc = newWorkflowOperationCtx(woc.wf, controller)
+		woc.operate(ctx)
+		found := false
+		for _, node := range woc.wf.Status.Nodes {
+			if strings.Contains(node.Name, "TestSingle") {
+				found = true
+				assert.Equal(t, wfv1.NodePending, node.Phase)
+			}
+		}
+		assert.True(t, found)
+		if closer != nil {
+			closer()
+		}
 	}
-	node := wfv1.NodeStatus{Name: d.taskNodeName(task.Name)}
-	taskFromNode := d.getTaskFromNode(&node)
-	assert.Equal(t, &task, taskFromNode)
 }
 
 var artifactResolutionWhenSkippedDAG = `
@@ -74,6 +155,16 @@ spec:
           artifacts:
           - name: message
             from: "{{tasks.generate-artifact.outputs.artifacts.hello-art}}"
+      - name: sequence-param
+        template: print-message
+        dependencies: [generate-artifact]
+        when: "false"
+        arguments:
+          artifacts:
+          - name: message
+            from: "{{tasks.generate-artifact.outputs.artifacts.hello-art}}"
+        withSequence:
+          count: "5"
 
   - name: whalesay
     container:
@@ -103,14 +194,322 @@ func TestArtifactResolutionWhenSkippedDAG(t *testing.T) {
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	wf := unmarshalWF(artifactResolutionWhenSkippedDAG)
-	wf, err := wfcset.Create(wf)
+	ctx := context.Background()
+	wf := wfv1.MustUnmarshalWorkflow(artifactResolutionWhenSkippedDAG)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	woc.operate()
-	woc.operate()
-	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	woc.operate(ctx)
+
+	woc = newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+func TestEvaluateDependsLogic(t *testing.T) {
+	testTasks := []wfv1.DAGTask{
+		{
+			Name: "A",
+		},
+		{
+			Name:    "B",
+			Depends: "A",
+		},
+		{
+			Name:    "C", // This task should fail
+			Depends: "A",
+		},
+		{
+			Name:    "should-execute-1",
+			Depends: "A && (C.Succeeded || C.Failed)",
+		},
+		{
+			Name:    "should-execute-2",
+			Depends: "B || C",
+		},
+		{
+			Name:    "should-not-execute",
+			Depends: "B && C",
+		},
+		{
+			Name:    "should-execute-3",
+			Depends: "should-execute-2 || should-not-execute",
+		},
+	}
+
+	d := &dagContext{
+		boundaryName: "test",
+		tasks:        testTasks,
+		wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
+		dependencies: make(map[string][]string),
+		dependsLogic: make(map[string]string),
+	}
+
+	// Task A is running
+	d.wf = &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-wf"},
+		Status: wfv1.WorkflowStatus{
+			Nodes: map[string]wfv1.NodeStatus{
+				d.taskNodeID("A"): {Phase: wfv1.NodeRunning},
+			},
+		},
+	}
+
+	// Task B should not proceed, task A is still running
+	execute, proceed, err := d.evaluateDependsLogic("B")
+	assert.NoError(t, err)
+	assert.False(t, proceed)
+	assert.False(t, execute)
+
+	// Task A succeeded
+	d.wf.Status.Nodes[d.taskNodeID("A")] = wfv1.NodeStatus{Phase: wfv1.NodeSucceeded}
+
+	// Task B and C should proceed and execute
+	execute, proceed, err = d.evaluateDependsLogic("B")
+	assert.NoError(t, err)
+	assert.True(t, proceed)
+	assert.True(t, execute)
+	execute, proceed, err = d.evaluateDependsLogic("C")
+	assert.NoError(t, err)
+	assert.True(t, proceed)
+	assert.True(t, execute)
+	// Other tasks should not
+	execute, proceed, err = d.evaluateDependsLogic("should-execute-1")
+	assert.NoError(t, err)
+	assert.False(t, proceed)
+	assert.False(t, execute)
+
+	// Tasks B succeeded, C failed
+	d.wf.Status.Nodes[d.taskNodeID("B")] = wfv1.NodeStatus{Phase: wfv1.NodeSucceeded}
+	d.wf.Status.Nodes[d.taskNodeID("C")] = wfv1.NodeStatus{Phase: wfv1.NodeFailed}
+
+	// Tasks should-execute-1 and should-execute-2 should proceed and execute
+	execute, proceed, err = d.evaluateDependsLogic("should-execute-1")
+	assert.NoError(t, err)
+	assert.True(t, proceed)
+	assert.True(t, execute)
+	execute, proceed, err = d.evaluateDependsLogic("should-execute-2")
+	assert.NoError(t, err)
+	assert.True(t, proceed)
+	assert.True(t, execute)
+	// Task should-not-execute should proceed, but not execute
+	execute, proceed, err = d.evaluateDependsLogic("should-not-execute")
+	assert.NoError(t, err)
+	assert.True(t, proceed)
+	assert.False(t, execute)
+
+	// Tasks should-execute-1 and should-execute-2 succeeded, should-not-execute skipped
+	d.wf.Status.Nodes[d.taskNodeID("should-execute-1")] = wfv1.NodeStatus{Phase: wfv1.NodeSucceeded}
+	d.wf.Status.Nodes[d.taskNodeID("should-execute-2")] = wfv1.NodeStatus{Phase: wfv1.NodeSucceeded}
+	d.wf.Status.Nodes[d.taskNodeID("should-not-execute")] = wfv1.NodeStatus{Phase: wfv1.NodeSkipped}
+
+	// Tasks should-execute-3 should proceed and execute
+	execute, proceed, err = d.evaluateDependsLogic("should-execute-3")
+	assert.NoError(t, err)
+	assert.True(t, proceed)
+	assert.True(t, execute)
+}
+
+func TestEvaluateAnyAllDependsLogic(t *testing.T) {
+	testTasks := []wfv1.DAGTask{
+		{
+			Name: "A",
+		},
+		{
+			Name: "A-1",
+		},
+		{
+			Name: "A-2",
+		},
+		{
+			Name:    "B",
+			Depends: "A.AnySucceeded",
+		},
+		{
+			Name: "B-1",
+		},
+		{
+			Name: "B-2",
+		},
+		{
+			Name:    "C",
+			Depends: "B.AllFailed",
+		},
+	}
+
+	d := &dagContext{
+		boundaryName: "test",
+		tasks:        testTasks,
+		wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
+		dependencies: make(map[string][]string),
+		dependsLogic: make(map[string]string),
+	}
+
+	// Task A is still running, A-1 succeeded but A-2 failed
+	d.wf = &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-wf"},
+		Status: wfv1.WorkflowStatus{
+			Nodes: map[string]wfv1.NodeStatus{
+				d.taskNodeID("A"): {
+					Phase:    wfv1.NodeRunning,
+					Type:     wfv1.NodeTypeTaskGroup,
+					Children: []string{d.taskNodeID("A-1"), d.taskNodeID("A-2")},
+				},
+				d.taskNodeID("A-1"): {Phase: wfv1.NodeRunning},
+				d.taskNodeID("A-2"): {Phase: wfv1.NodeRunning},
+			},
+		},
+	}
+
+	// Task B should not proceed as task A is still running
+	execute, proceed, err := d.evaluateDependsLogic("B")
+	assert.NoError(t, err)
+	assert.False(t, proceed)
+	assert.False(t, execute)
+
+	// Task A succeeded
+	d.wf.Status.Nodes[d.taskNodeID("A")] = wfv1.NodeStatus{
+		Phase:    wfv1.NodeSucceeded,
+		Type:     wfv1.NodeTypeTaskGroup,
+		Children: []string{d.taskNodeID("A-1"), d.taskNodeID("A-2")},
+	}
+
+	// Task B should proceed, but not execute as none of the children have succeeded yet
+	execute, proceed, err = d.evaluateDependsLogic("B")
+	assert.NoError(t, err)
+	assert.True(t, proceed)
+	assert.False(t, execute)
+
+	// Task A-2 succeeded
+	d.wf.Status.Nodes[d.taskNodeID("A-2")] = wfv1.NodeStatus{Phase: wfv1.NodeSucceeded}
+
+	// Task B should now proceed and execute
+	execute, proceed, err = d.evaluateDependsLogic("B")
+	assert.NoError(t, err)
+	assert.True(t, proceed)
+	assert.True(t, execute)
+
+	// Task B succeeds and B-1 fails
+	d.wf.Status.Nodes[d.taskNodeID("B")] = wfv1.NodeStatus{
+		Phase:    wfv1.NodeSucceeded,
+		Type:     wfv1.NodeTypeTaskGroup,
+		Children: []string{d.taskNodeID("B-1"), d.taskNodeID("B-2")},
+	}
+	d.wf.Status.Nodes[d.taskNodeID("B-1")] = wfv1.NodeStatus{Phase: wfv1.NodeFailed}
+
+	// Task C should proceed, but not execute as not all of B's children have failed yet
+	execute, proceed, err = d.evaluateDependsLogic("C")
+	assert.NoError(t, err)
+	assert.True(t, proceed)
+	assert.False(t, execute)
+
+	d.wf.Status.Nodes[d.taskNodeID("B-2")] = wfv1.NodeStatus{Phase: wfv1.NodeFailed}
+
+	// Task C should now proceed and execute as all of B's children have failed
+	execute, proceed, err = d.evaluateDependsLogic("C")
+	assert.NoError(t, err)
+	assert.True(t, proceed)
+	assert.True(t, execute)
+}
+
+func TestEvaluateDependsLogicWhenDaemonFailed(t *testing.T) {
+	testTasks := []wfv1.DAGTask{
+		{
+			Name: "A",
+		},
+		{
+			Name:    "B",
+			Depends: "A",
+		},
+	}
+
+	d := &dagContext{
+		boundaryName: "test",
+		tasks:        testTasks,
+		wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
+		dependencies: make(map[string][]string),
+		dependsLogic: make(map[string]string),
+	}
+
+	// Task A is running
+	daemon := true
+	d.wf = &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-wf"},
+		Status: wfv1.WorkflowStatus{
+			Nodes: map[string]wfv1.NodeStatus{
+				d.taskNodeID("A"): {Phase: wfv1.NodeRunning, Daemoned: &daemon},
+			},
+		},
+	}
+
+	// Task B should proceed and execute
+	execute, proceed, err := d.evaluateDependsLogic("B")
+	assert.NoError(t, err)
+	assert.True(t, proceed)
+	assert.True(t, execute)
+
+	// Task B running
+	d.wf.Status.Nodes[d.taskNodeID("B")] = wfv1.NodeStatus{Phase: wfv1.NodeRunning}
+
+	// Task A failed or error
+	d.wf.Status.Nodes[d.taskNodeID("A")] = wfv1.NodeStatus{Phase: wfv1.NodeFailed}
+
+	// Task B should proceed and execute
+	execute, proceed, err = d.evaluateDependsLogic("B")
+	assert.NoError(t, err)
+	assert.True(t, proceed)
+	assert.True(t, execute)
+}
+
+func TestAllEvaluateDependsLogic(t *testing.T) {
+	statusMap := map[common.TaskResult]wfv1.NodePhase{
+		common.TaskResultSucceeded: wfv1.NodeSucceeded,
+		common.TaskResultFailed:    wfv1.NodeFailed,
+		common.TaskResultSkipped:   wfv1.NodeSkipped,
+	}
+	for _, status := range []common.TaskResult{common.TaskResultSucceeded, common.TaskResultFailed, common.TaskResultSkipped} {
+		testTasks := []wfv1.DAGTask{
+			{
+				Name: "same",
+			},
+			{
+				Name:    "Run",
+				Depends: fmt.Sprintf("same.%s", status),
+			},
+			{
+				Name:    "NotRun",
+				Depends: fmt.Sprintf("!same.%s", status),
+			},
+		}
+
+		d := &dagContext{
+			boundaryName: "test",
+			tasks:        testTasks,
+			wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
+			dependencies: make(map[string][]string),
+			dependsLogic: make(map[string]string),
+		}
+
+		// Task A is running
+		d.wf = &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{Name: "test-wf"},
+			Status: wfv1.WorkflowStatus{
+				Nodes: map[string]wfv1.NodeStatus{
+					d.taskNodeID("same"): {Phase: statusMap[status]},
+				},
+			},
+		}
+
+		execute, proceed, err := d.evaluateDependsLogic("Run")
+		assert.NoError(t, err)
+		assert.True(t, proceed)
+		assert.True(t, execute)
+		execute, proceed, err = d.evaluateDependsLogic("NotRun")
+		assert.NoError(t, err)
+		assert.True(t, proceed)
+		assert.False(t, execute)
+	}
 }
 
 var dagAssessPhaseContinueOnExpandedTaskVariables = `
@@ -119,13 +518,13 @@ kind: Workflow
 metadata:
   name: parameter-aggregation-one-will-fail2-jt776
 spec:
-  arguments: {}
+  
   entrypoint: parameter-aggregation-one-will-fail2
   templates:
-  - arguments: {}
+  - 
     dag:
       tasks:
-      - arguments: {}
+      - 
         continueOn:
           failed: true
         name: generate
@@ -141,7 +540,7 @@ spec:
         name: one-will-fail
         template: one-will-fail
         withParam: '{{tasks.generate.outputs.result}}'
-      - arguments: {}
+      - 
         continueOn:
           failed: true
         dependencies:
@@ -152,7 +551,7 @@ spec:
     metadata: {}
     name: parameter-aggregation-one-will-fail2
     outputs: {}
-  - arguments: {}
+  - 
     container:
       args:
       - |
@@ -173,7 +572,7 @@ spec:
     metadata: {}
     name: one-will-fail
     outputs: {}
-  - arguments: {}
+  - 
     container:
       command:
       - cowsay
@@ -184,7 +583,7 @@ spec:
     metadata: {}
     name: whalesay
     outputs: {}
-  - arguments: {}
+  - 
     inputs: {}
     metadata: {}
     name: gen-number-list
@@ -377,14 +776,16 @@ func TestDagAssessPhaseContinueOnExpandedTaskVariables(t *testing.T) {
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	wf := unmarshalWF(dagAssessPhaseContinueOnExpandedTaskVariables)
-	wf, err := wfcset.Create(wf)
+	ctx := context.Background()
+	wf := wfv1.MustUnmarshalWorkflow(dagAssessPhaseContinueOnExpandedTaskVariables)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	woc.operate()
-	woc.operate()
-	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
+	woc.operate(ctx)
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
 var dagAssessPhaseContinueOnExpandedTask = `
@@ -393,10 +794,10 @@ kind: Workflow
 metadata:
   name: parameter-aggregation-one-will-fail-69x7k
 spec:
-  arguments: {}
+  
   entrypoint: parameter-aggregation-one-will-fail
   templates:
-  - arguments: {}
+  - 
     dag:
       tasks:
       - arguments:
@@ -410,7 +811,7 @@ spec:
         withItems:
         - 1
         - 2
-      - arguments: {}
+      - 
         continueOn:
           failed: true
         dependencies:
@@ -421,7 +822,7 @@ spec:
     metadata: {}
     name: parameter-aggregation-one-will-fail
     outputs: {}
-  - arguments: {}
+  - 
     container:
       args:
       - |
@@ -442,7 +843,7 @@ spec:
     metadata: {}
     name: one-will-fail
     outputs: {}
-  - arguments: {}
+  - 
     container:
       command:
       - cowsay
@@ -598,14 +999,16 @@ func TestDagAssessPhaseContinueOnExpandedTask(t *testing.T) {
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	wf := unmarshalWF(dagAssessPhaseContinueOnExpandedTask)
-	wf, err := wfcset.Create(wf)
+	ctx := context.Background()
+	wf := wfv1.MustUnmarshalWorkflow(dagAssessPhaseContinueOnExpandedTask)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	woc.operate()
-	woc.operate()
-	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
+	woc.operate(ctx)
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
 var dagWithParamAndGlobalParam = `
@@ -645,13 +1048,14 @@ func TestDAGWithParamAndGlobalParam(t *testing.T) {
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	wf := unmarshalWF(dagWithParamAndGlobalParam)
-	wf, err := wfcset.Create(wf)
+	ctx := context.Background()
+	wf := wfv1.MustUnmarshalWorkflow(dagWithParamAndGlobalParam)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	woc.operate()
-	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }
 
 var terminatingDAGWithRetryStrategyNodes = `
@@ -660,27 +1064,27 @@ kind: Workflow
 metadata:
   name: dag-diamond-xfww2
 spec:
-  arguments: {}
+  
   entrypoint: diamond
   shutdown: Terminate
   templates:
-  - arguments: {}
+  - 
     dag:
       tasks:
-      - arguments: {}
+      - 
         name: A
         template: echo
-      - arguments: {}
+      - 
         dependencies:
         - A
         name: B
         template: echo
-      - arguments: {}
+      - 
         dependencies:
         - A
         name: C
         template: echo
-      - arguments: {}
+      - 
         dependencies:
         - B
         - C
@@ -690,7 +1094,7 @@ spec:
     metadata: {}
     name: diamond
     outputs: {}
-  - arguments: {}
+  - 
     container:
       args:
       - sleep 10
@@ -882,11 +1286,2129 @@ func TestTerminatingDAGWithRetryStrategyNodes(t *testing.T) {
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	wf := unmarshalWF(terminatingDAGWithRetryStrategyNodes)
-	wf, err := wfcset.Create(wf)
+	ctx := context.Background()
+	wf := wfv1.MustUnmarshalWorkflow(terminatingDAGWithRetryStrategyNodes)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	woc.operate()
-	assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+}
+
+var terminateDAGWithMaxDurationLimitExpiredAndMoreAttempts = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-diamond-dj7q5
+spec:
+  
+  entrypoint: diamond
+  templates:
+  - 
+    dag:
+      tasks:
+      - 
+        name: A
+        template: echo
+      - 
+        dependencies:
+        - A
+        name: B
+        template: echo
+    inputs: {}
+    metadata: {}
+    name: diamond
+    outputs: {}
+  - 
+    container:
+      args:
+      - exit 1
+      command:
+      - sh
+      - -c
+      image: alpine:3.7
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: echo
+    outputs: {}
+    retryStrategy:
+      backoff:
+        duration: "1"
+        maxDuration: "5"
+      limit: 10
+status:
+  nodes:
+    dag-diamond-dj7q5:
+      children:
+      - dag-diamond-dj7q5-2391658435
+      displayName: dag-diamond-dj7q5
+      finishedAt: "2020-05-27T15:42:01Z"
+      id: dag-diamond-dj7q5
+      name: dag-diamond-dj7q5
+      phase: Running
+      startedAt: "2020-05-27T15:41:54Z"
+      templateName: diamond
+      templateScope: local/dag-diamond-dj7q5
+      type: DAG
+    dag-diamond-dj7q5-2241203531:
+      boundaryID: dag-diamond-dj7q5
+      displayName: A(1)
+      finishedAt: "2020-05-27T15:41:59Z"
+      hostNodeName: minikube
+      id: dag-diamond-dj7q5-2241203531
+      message: failed with exit code 1
+      name: dag-diamond-dj7q5.A(1)
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: dag-diamond-dj7q5/dag-diamond-dj7q5-2241203531/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "1"
+      phase: Failed
+      resourcesDuration:
+        cpu: 1
+        memory: 0
+      startedAt: "2020-05-27T15:41:57Z"
+      templateName: echo
+      templateScope: local/dag-diamond-dj7q5
+      type: Pod
+    dag-diamond-dj7q5-2391658435:
+      boundaryID: dag-diamond-dj7q5
+      children:
+      - dag-diamond-dj7q5-2845344910
+      - dag-diamond-dj7q5-2241203531
+      displayName: A
+      finishedAt: "2020-05-27T15:42:01Z"
+      id: dag-diamond-dj7q5-2391658435
+      name: dag-diamond-dj7q5.A
+      phase: Running
+      startedAt: "2020-05-27T15:41:54Z"
+      templateName: echo
+      templateScope: local/dag-diamond-dj7q5
+      type: Retry
+    dag-diamond-dj7q5-2845344910:
+      boundaryID: dag-diamond-dj7q5
+      displayName: A(0)
+      finishedAt: "2020-05-27T15:41:56Z"
+      hostNodeName: minikube
+      id: dag-diamond-dj7q5-2845344910
+      message: failed with exit code 1
+      name: dag-diamond-dj7q5.A(0)
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: dag-diamond-dj7q5/dag-diamond-dj7q5-2845344910/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "1"
+      phase: Failed
+      resourcesDuration:
+        cpu: 1
+        memory: 0
+      startedAt: "2020-05-27T15:41:54Z"
+      templateName: echo
+      templateScope: local/dag-diamond-dj7q5
+      type: Pod
+  phase: Running
+  resourcesDuration:
+    cpu: 2
+    memory: 0
+  startedAt: "2020-05-27T15:41:54Z"
+`
+
+// This tests that a DAG with retry strategy in its tasks fails successfully when terminated
+func TestTerminateDAGWithMaxDurationLimitExpiredAndMoreAttempts(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	ctx := context.Background()
+	wf := wfv1.MustUnmarshalWorkflow(terminateDAGWithMaxDurationLimitExpiredAndMoreAttempts)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+
+	retryNode := woc.wf.GetNodeByName("dag-diamond-dj7q5.A")
+	if assert.NotNil(t, retryNode) {
+		assert.Equal(t, wfv1.NodeFailed, retryNode.Phase)
+		assert.Contains(t, retryNode.Message, "Max duration limit exceeded")
+	}
+
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+
+	// This is the crucial part of the test
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+}
+
+var testRetryStrategyNodes = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf-retry-pol
+spec:
+  
+  entrypoint: run-steps
+  onExit: onExit
+  templates:
+  - 
+    inputs: {}
+    metadata: {}
+    name: run-steps
+    outputs: {}
+    steps:
+    - - 
+        name: run-dag
+        template: run-dag
+    - - 
+        name: manual-onExit
+        template: onExit
+  - 
+    dag:
+      tasks:
+      - 
+        name: A
+        template: fail
+      - 
+        dependencies:
+        - A
+        name: B
+        template: onExit
+    inputs: {}
+    metadata: {}
+    name: run-dag
+    outputs: {}
+  - 
+    container:
+      args:
+      - exit 2
+      command:
+      - sh
+      - -c
+      image: alpine
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: fail
+    outputs: {}
+    retryStrategy:
+      limit: 100
+      retryPolicy: OnError
+  - 
+    container:
+      args:
+      - hello world
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: onExit
+    outputs: {}
+status:
+  nodes:
+    wf-retry-pol:
+      children:
+      - wf-retry-pol-3488382045
+      displayName: wf-retry-pol
+      finishedAt: "2020-05-27T16:03:00Z"
+      id: wf-retry-pol
+      name: wf-retry-pol
+      outboundNodes:
+      - wf-retry-pol-2278798366
+      phase: Running
+      startedAt: "2020-05-27T16:02:49Z"
+      templateName: run-steps
+      templateScope: local/wf-retry-pol
+      type: Steps
+    wf-retry-pol-2616013767:
+      boundaryID: wf-retry-pol
+      children:
+      - wf-retry-pol-3151556158
+      displayName: run-dag
+      id: wf-retry-pol-2616013767
+      name: wf-retry-pol[0].run-dag
+      outboundNodes:
+      - wf-retry-pol-3134778539
+      phase: Running
+      startedAt: "2020-05-27T16:02:49Z"
+      templateName: run-dag
+      templateScope: local/wf-retry-pol
+      type: DAG
+    wf-retry-pol-3148069997:
+      boundaryID: wf-retry-pol-2616013767
+      children:
+      - wf-retry-pol-3134778539
+      displayName: A(0)
+      finishedAt: "2020-05-27T16:02:53Z"
+      hostNodeName: minikube
+      id: wf-retry-pol-3148069997
+      message: failed with exit code 2
+      name: wf-retry-pol[0].run-dag.A(0)
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: wf-retry-pol/wf-retry-pol-3148069997/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "2"
+      phase: Failed
+      resourcesDuration:
+        cpu: 2
+        memory: 1
+      startedAt: "2020-05-27T16:02:49Z"
+      templateName: fail
+      templateScope: local/wf-retry-pol
+      type: Pod
+    wf-retry-pol-3151556158:
+      boundaryID: wf-retry-pol-2616013767
+      children:
+      - wf-retry-pol-3148069997
+      displayName: A
+      id: wf-retry-pol-3151556158
+      message: failed with exit code 2
+      name: wf-retry-pol[0].run-dag.A
+      phase: Running
+      startedAt: "2020-05-27T16:02:49Z"
+      templateName: fail
+      templateScope: local/wf-retry-pol
+      type: Retry
+    wf-retry-pol-3488382045:
+      boundaryID: wf-retry-pol
+      children:
+      - wf-retry-pol-2616013767
+      displayName: '[0]'
+      id: wf-retry-pol-3488382045
+      name: wf-retry-pol[0]
+      phase: Running
+      startedAt: "2020-05-27T16:02:49Z"
+      templateName: run-steps
+      templateScope: local/wf-retry-pol
+      type: StepGroup
+  phase: Running
+  resourcesDuration:
+    cpu: 6
+    memory: 2
+  startedAt: "2020-05-27T16:02:49Z"
+`
+
+func TestRetryStrategyNodes(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	ctx := context.Background()
+	wf := wfv1.MustUnmarshalWorkflow(testRetryStrategyNodes)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+	retryNode := woc.wf.GetNodeByName("wf-retry-pol")
+	if assert.NotNil(t, retryNode) {
+		assert.Equal(t, wfv1.NodeFailed, retryNode.Phase)
+	}
+
+	onExitNode := woc.wf.GetNodeByName("wf-retry-pol.onExit")
+	if assert.NotNil(t, onExitNode) {
+		assert.Equal(t, wfv1.NodePending, onExitNode.Phase)
+	}
+
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+}
+
+var testOnExitNodeDAGPhase = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-diamond-88trp
+spec:
+  
+  entrypoint: diamond
+  templates:
+  - 
+    dag:
+      failFast: false
+      tasks:
+      - 
+        name: A
+        template: echo
+      - 
+        dependencies:
+        - A
+        name: B
+        onExit: echo
+        template: echo
+    inputs: {}
+    metadata: {}
+    name: diamond
+    outputs: {}
+  - 
+    container:
+      args:
+      - exit 0
+      command:
+      - sh
+      - -c
+      image: alpine:3.7
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: echo
+    outputs: {}
+  - 
+    container:
+      args:
+      - exit 1
+      command:
+      - sh
+      - -c
+      image: alpine:3.7
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: fail
+    outputs: {}
+status:
+  nodes:
+    dag-diamond-88trp:
+      children:
+      - dag-diamond-88trp-2052796420
+      displayName: dag-diamond-88trp
+      id: dag-diamond-88trp
+      name: dag-diamond-88trp
+      outboundNodes:
+      - dag-diamond-88trp-2103129277
+      phase: Running
+      startedAt: "2020-05-29T18:11:55Z"
+      templateName: diamond
+      templateScope: local/dag-diamond-88trp
+      type: DAG
+    dag-diamond-88trp-2052796420:
+      boundaryID: dag-diamond-88trp
+      children:
+      - dag-diamond-88trp-2103129277
+      displayName: A
+      finishedAt: "2020-05-29T18:11:58Z"
+      hostNodeName: minikube
+      id: dag-diamond-88trp-2052796420
+      name: dag-diamond-88trp.A
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: dag-diamond-88trp/dag-diamond-88trp-2052796420/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 2
+        memory: 1
+      startedAt: "2020-05-29T18:11:55Z"
+      templateName: echo
+      templateScope: local/dag-diamond-88trp
+      type: Pod
+    dag-diamond-88trp-2103129277:
+      boundaryID: dag-diamond-88trp
+      displayName: B
+      finishedAt: "2020-05-29T18:12:01Z"
+      hostNodeName: minikube
+      id: dag-diamond-88trp-2103129277
+      name: dag-diamond-88trp.B
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: dag-diamond-88trp/dag-diamond-88trp-2103129277/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 1
+        memory: 0
+      startedAt: "2020-05-29T18:11:59Z"
+      templateName: echo
+      templateScope: local/dag-diamond-88trp
+      type: Pod
+  phase: Running
+  resourcesDuration:
+    cpu: 5
+    memory: 2
+  startedAt: "2020-05-29T18:11:55Z"
+`
+
+func TestOnExitDAGPhase(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	ctx := context.Background()
+	wf := wfv1.MustUnmarshalWorkflow(testOnExitNodeDAGPhase)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+	retryNode := woc.wf.GetNodeByName("dag-diamond-88trp")
+	if assert.NotNil(t, retryNode) {
+		assert.Equal(t, wfv1.NodeRunning, retryNode.Phase)
+	}
+
+	retryNode = woc.wf.GetNodeByName("dag-diamond-88trp.B.onExit")
+	if assert.NotNil(t, retryNode) {
+		assert.Equal(t, wfv1.NodePending, retryNode.Phase)
+	}
+
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+}
+
+var testOnExitNonLeaf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: exit-handler-bug-example
+spec:
+  
+  entrypoint: dag
+  templates:
+  - 
+    dag:
+      tasks:
+      - 
+        name: step-2
+        onExit: on-exit
+        template: step-template
+      - 
+        dependencies:
+        - step-2
+        name: step-3
+        onExit: on-exit
+        template: step-template
+    inputs: {}
+    metadata: {}
+    name: dag
+    outputs: {}
+  - 
+    container:
+      args:
+      - echo exit-handler-step-{{pod.name}}
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: on-exit
+    outputs: {}
+  - 
+    container:
+      args:
+      - echo step {{pod.name}}
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: step-template
+    outputs: {}
+status:
+  nodes:
+    exit-handler-bug-example:
+      children:
+      - exit-handler-bug-example-3054913383
+      displayName: exit-handler-bug-example
+      finishedAt: "2020-07-07T16:15:54Z"
+      id: exit-handler-bug-example
+      name: exit-handler-bug-example
+      outboundNodes:
+      - exit-handler-bug-example-3038135764
+      phase: Running
+      startedAt: "2020-07-07T16:15:33Z"
+      templateName: dag
+      templateScope: local/exit-handler-bug-example
+      type: DAG
+    exit-handler-bug-example-3054913383:
+      boundaryID: exit-handler-bug-example
+      displayName: step-2
+      finishedAt: "2020-07-07T16:15:37Z"
+      hostNodeName: minikube
+      id: exit-handler-bug-example-3054913383
+      name: exit-handler-bug-example.step-2
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: exit-handler-bug-example/exit-handler-bug-example-3054913383/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 4
+        memory: 2
+      startedAt: "2020-07-07T16:15:33Z"
+      templateName: step-template
+      templateScope: local/exit-handler-bug-example
+      type: Pod
+  phase: Running
+  startedAt: "2020-07-07T16:15:33Z"
+`
+
+func TestOnExitNonLeaf(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	ctx := context.Background()
+	wf := wfv1.MustUnmarshalWorkflow(testOnExitNonLeaf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+	retryNode := woc.wf.GetNodeByName("exit-handler-bug-example.step-2.onExit")
+	if assert.NotNil(t, retryNode) {
+		assert.Equal(t, wfv1.NodePending, retryNode.Phase)
+	}
+
+	assert.Nil(t, woc.wf.GetNodeByName("exit-handler-bug-example.step-3"))
+
+	retryNode.Phase = wfv1.NodeSucceeded
+	woc.wf.Status.Nodes[retryNode.ID] = *retryNode
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+	retryNode = woc.wf.GetNodeByName("exit-handler-bug-example.step-3")
+	if assert.NotNil(t, retryNode) {
+		assert.Equal(t, wfv1.NodePending, retryNode.Phase)
+	}
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+}
+
+var testDagOptionalInputArtifacts = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-optional-inputartifacts
+spec:
+  entrypoint: test
+  templates:
+  - name: condition
+    outputs:
+      artifacts:
+      - {name: A-out, from: '{{tasks.A.outputs.artifacts.A-out}}'}
+    dag:
+      tasks:
+      - {name: A, template: A}
+  - name: A
+    container:
+      args: ['mkdir -p /tmp/outputs/A && echo "exist" > /tmp/outputs/A/data']
+      command: [sh, -c]
+      image: alpine:3.7
+    outputs:
+      artifacts:
+      - {name: A-out, path: /tmp/outputs/A/data}
+  - name: B
+    container:
+      args: ['[ -f /tmp/outputs/condition/data ] && cat /tmp/outputs/condition/data || echo not exist']
+      command: [sh, -c]
+      image: alpine:3.7
+    inputs:
+      artifacts:
+      - {name: B-in, optional: true,  path: /tmp/outputs/condition/data}
+  - name: test
+    dag:
+      tasks:
+      - name: condition
+        template: condition
+        when: 'false'
+      - name: B
+        template: B
+        dependencies: [condition]
+        arguments:
+          artifacts:
+          - {name: B-in, optional: true, from: '{{tasks.condition.outputs.artifacts.A-out}}'}
+  arguments:
+    parameters: []
+status:
+  conditions:
+  - status: "True"
+    type: Completed
+  finishedAt: "2020-07-21T01:56:24Z"
+  nodes:
+    dag-optional-inputartifacts:
+      children:
+      - dag-optional-inputartifacts-3418089753
+      displayName: dag-optional-inputartifacts
+      finishedAt: "2020-07-21T01:56:24Z"
+      id: dag-optional-inputartifacts
+      name: dag-optional-inputartifacts
+      outboundNodes:
+      - dag-optional-inputartifacts-1920355018
+      phase: Running
+      startedAt: "2020-07-21T01:56:18Z"
+      templateName: test
+      templateScope: local/dag-optional-inputartifacts
+      type: DAG
+    dag-optional-inputartifacts-3418089753:
+      boundaryID: dag-optional-inputartifacts
+      children:
+      - dag-optional-inputartifacts-1920355018
+      displayName: condition
+      finishedAt: "2020-07-21T01:56:18Z"
+      id: dag-optional-inputartifacts-3418089753
+      message: when 'false' evaluated false
+      name: dag-optional-inputartifacts.condition
+      phase: Skipped
+      startedAt: "2020-07-21T01:56:18Z"
+      templateName: condition
+      templateScope: local/dag-optional-inputartifacts
+      type: Skipped
+  phase: Running
+  resourcesDuration:
+    cpu: 1
+    memory: 0
+  startedAt: "2020-07-21T01:56:18Z"
+`
+
+func TestDagOptionalInputArtifacts(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(testDagOptionalInputArtifacts)
+	cancel, controller := newController(wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(wf, controller)
+	ctx := context.Background()
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	optionalInputArtifactsNode := woc.wf.GetNodeByName("dag-optional-inputartifacts.B")
+	if assert.NotNil(t, optionalInputArtifactsNode) {
+		assert.Equal(t, wfv1.NodePending, optionalInputArtifactsNode.Phase)
+	}
+}
+
+var testDagTargetTaskOnExit = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-primay-branch-6bnnl
+spec:
+  
+  entrypoint: statis
+  templates:
+  - 
+    container:
+      args:
+      - hello world
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: a
+    outputs: {}
+  - 
+    container:
+      args:
+      - exit!
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: exit
+    outputs: {}
+  - 
+    inputs: {}
+    metadata: {}
+    name: steps
+    outputs: {}
+    steps:
+    - - 
+        name: step-a
+        template: a
+  - 
+    dag:
+      tasks:
+      - 
+        name: A
+        onExit: exit
+        template: steps
+    inputs: {}
+    metadata: {}
+    name: statis
+    outputs: {}
+status:
+  nodes:
+    dag-primay-branch-6bnnl:
+      children:
+      - dag-primay-branch-6bnnl-1650817843
+      displayName: dag-primay-branch-6bnnl
+      finishedAt: "2020-08-10T14:30:19Z"
+      id: dag-primay-branch-6bnnl
+      name: dag-primay-branch-6bnnl
+      outboundNodes:
+      - dag-primay-branch-6bnnl-1181733215
+      phase: Running
+      startedAt: "2020-08-10T14:30:08Z"
+      templateName: statis
+      templateScope: local/dag-primay-branch-6bnnl
+      type: DAG
+    dag-primay-branch-6bnnl-1181733215:
+      boundaryID: dag-primay-branch-6bnnl-1650817843
+      displayName: step-a
+      finishedAt: "2020-08-10T14:30:11Z"
+      hostNodeName: minikube
+      id: dag-primay-branch-6bnnl-1181733215
+      name: dag-primay-branch-6bnnl.A[0].step-a
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: dag-primay-branch-6bnnl/dag-primay-branch-6bnnl-1181733215/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 2
+        memory: 1
+      startedAt: "2020-08-10T14:30:08Z"
+      templateName: a
+      templateScope: local/dag-primay-branch-6bnnl
+      type: Pod
+    dag-primay-branch-6bnnl-1650817843:
+      boundaryID: dag-primay-branch-6bnnl
+      children:
+      - dag-primay-branch-6bnnl-3841864351
+      - dag-primay-branch-6bnnl-1342580575
+      displayName: A
+      finishedAt: "2020-08-10T14:30:13Z"
+      id: dag-primay-branch-6bnnl-1650817843
+      name: dag-primay-branch-6bnnl.A
+      outboundNodes:
+      - dag-primay-branch-6bnnl-1181733215
+      phase: Running
+      startedAt: "2020-08-10T14:30:08Z"
+      templateName: steps
+      templateScope: local/dag-primay-branch-6bnnl
+      type: Steps
+    dag-primay-branch-6bnnl-3841864351:
+      boundaryID: dag-primay-branch-6bnnl-1650817843
+      children:
+      - dag-primay-branch-6bnnl-1181733215
+      displayName: '[0]'
+      finishedAt: "2020-08-10T14:30:13Z"
+      id: dag-primay-branch-6bnnl-3841864351
+      name: dag-primay-branch-6bnnl.A[0]
+      phase: Running
+      startedAt: "2020-08-10T14:30:08Z"
+      templateName: steps
+      templateScope: local/dag-primay-branch-6bnnl
+      type: StepGroup
+  phase: Running
+  resourcesDuration:
+    cpu: 5
+    memory: 2
+  startedAt: "2020-08-10T14:30:08Z"
+`
+
+func TestDagTargetTaskOnExit(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	ctx := context.Background()
+	wf := wfv1.MustUnmarshalWorkflow(testDagTargetTaskOnExit)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+	onExitNode := woc.wf.GetNodeByName("dag-primay-branch-6bnnl.A.onExit")
+	if assert.NotNil(t, onExitNode) {
+		assert.Equal(t, wfv1.NodePending, onExitNode.Phase)
+	}
+}
+
+var testEmptyWithParamDAG = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-hang-pcwmr
+spec:
+  
+  entrypoint: dag
+  templates:
+  - 
+    dag:
+      tasks:
+      - 
+        name: scheduler
+        template: job-scheduler
+      - arguments:
+          parameters:
+          - name: job_name
+            value: '{{item.job_name}}'
+        dependencies:
+        - scheduler
+        name: children
+        template: whalesay
+        withParam: '{{tasks.scheduler.outputs.parameters.scheduled-jobs}}'
+      - 
+        dependencies:
+        - children
+        name: postprocess
+        template: whalesay
+    inputs: {}
+    metadata: {}
+    name: dag
+    outputs: {}
+  - 
+    container:
+      args:
+      - echo Decided not to schedule any jobs
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: job-scheduler
+    outputs:
+      parameters:
+      - name: scheduled-jobs
+        value: '[]'
+  - 
+    container:
+      args:
+      - hello world
+      command:
+      - cowsay
+      image: docker/whalesay
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: whalesay
+    outputs: {}
+status:
+  finishedAt: null
+  nodes:
+    dag-hang-pcwmr:
+      children:
+      - dag-hang-pcwmr-1789179473
+      displayName: dag-hang-pcwmr
+      finishedAt: null
+      id: dag-hang-pcwmr
+      name: dag-hang-pcwmr
+      phase: Running
+      startedAt: "2020-08-11T18:19:28Z"
+      templateName: dag
+      templateScope: local/dag-hang-pcwmr
+      type: DAG
+    dag-hang-pcwmr-1415348083:
+      boundaryID: dag-hang-pcwmr
+      displayName: postprocess
+      finishedAt: "2020-08-11T18:19:40Z"
+      hostNodeName: dech117
+      id: dag-hang-pcwmr-1415348083
+      name: dag-hang-pcwmr.postprocess
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 3
+        memory: 3
+      startedAt: "2020-08-11T18:19:36Z"
+      templateName: whalesay
+      templateScope: local/dag-hang-pcwmr
+      type: Pod
+    dag-hang-pcwmr-1738428083:
+      boundaryID: dag-hang-pcwmr
+      children:
+      - dag-hang-pcwmr-1415348083
+      displayName: children
+      finishedAt: "2020-08-11T18:19:35Z"
+      id: dag-hang-pcwmr-1738428083
+      name: dag-hang-pcwmr.children
+      phase: Succeeded
+      startedAt: "2020-08-11T18:19:35Z"
+      templateName: whalesay
+      templateScope: local/dag-hang-pcwmr
+      type: TaskGroup
+    dag-hang-pcwmr-1789179473:
+      boundaryID: dag-hang-pcwmr
+      children:
+      - dag-hang-pcwmr-1738428083
+      displayName: scheduler
+      finishedAt: "2020-08-11T18:19:33Z"
+      hostNodeName: dech113
+      id: dag-hang-pcwmr-1789179473
+      name: dag-hang-pcwmr.scheduler
+      outputs:
+        exitCode: "0"
+        parameters:
+        - name: scheduled-jobs
+          value: '[]'
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 4
+        memory: 4
+      startedAt: "2020-08-11T18:19:28Z"
+      templateName: job-scheduler
+      templateScope: local/dag-hang-pcwmr
+      type: Pod
+  phase: Running
+  startedAt: "2020-08-11T18:19:28Z"
+`
+
+func TestEmptyWithParamDAG(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	ctx := context.Background()
+	wf := wfv1.MustUnmarshalWorkflow(testEmptyWithParamDAG)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+var testFailsWithParamDAG = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: reproduce-bug-9tpfr
+spec:
+  
+  entrypoint: start
+  serviceAccountName: argo-workflow
+  templates:
+  - 
+    dag:
+      tasks:
+      - 
+        name: gen-tasks
+        template: gen-tasks
+      - arguments:
+          parameters:
+          - name: chunk
+            value: '{{item}}'
+        dependencies:
+        - gen-tasks
+        name: process-tasks
+        template: process-tasks
+        withParam: '{{tasks.gen-tasks.outputs.result}}'
+      - 
+        dependencies:
+        - process-tasks
+        name: finish
+        template: finish
+    inputs: {}
+    metadata: {}
+    name: start
+    outputs: {}
+  - activeDeadlineSeconds: 300
+    
+    inputs: {}
+    metadata: {}
+    name: gen-tasks
+    outputs: {}
+    retryStrategy:
+      backoff:
+        duration: 15s
+        factor: 2
+      limit: 5
+      retryPolicy: Always
+    script:
+      command:
+      - bash
+      image: python:3
+      name: ""
+      resources:
+        requests:
+          cpu: 250m
+      source: |
+        set -e
+        python3 -c 'import os, json; print(json.dumps([str(i) for i in range(10)]))'
+  - activeDeadlineSeconds: 1800
+    
+    inputs:
+      parameters:
+      - name: chunk
+    metadata: {}
+    name: process-tasks
+    outputs: {}
+    retryStrategy:
+      backoff:
+        duration: 15s
+        factor: 2
+      limit: 2
+      retryPolicy: Always
+    script:
+      command:
+      - bash
+      image: python:3
+      name: ""
+      resources:
+        requests:
+          cpu: 100m
+      source: |
+        set -e
+        chunk="{{inputs.parameters.chunk}}"
+        if [[ $chunk == "3" ]]; then
+          echo "failed"
+          exit 1
+        fi
+        echo "process $chunk"
+  - activeDeadlineSeconds: 300
+    
+    inputs: {}
+    metadata: {}
+    name: finish
+    outputs: {}
+    script:
+      command:
+      - sh
+      image: busybox
+      name: ""
+      resources:
+        requests:
+          cpu: 100m
+      source: |
+        echo fin
+status:
+  nodes:
+    reproduce-bug-9tpfr:
+      children:
+      - reproduce-bug-9tpfr-1525049382
+      displayName: reproduce-bug-9tpfr
+      finishedAt: "2020-08-14T03:49:42Z"
+      id: reproduce-bug-9tpfr
+      name: reproduce-bug-9tpfr
+      outboundNodes:
+      - reproduce-bug-9tpfr-247809182
+      phase: Running
+      startedAt: "2020-08-14T03:47:23Z"
+      templateName: start
+      templateScope: local/reproduce-bug-9tpfr
+      type: DAG
+    reproduce-bug-9tpfr-247809182:
+      boundaryID: reproduce-bug-9tpfr
+      displayName: finish
+      finishedAt: "2020-08-14T03:49:42Z"
+      id: reproduce-bug-9tpfr-247809182
+      message: 'omitted: depends condition not met'
+      name: reproduce-bug-9tpfr.finish
+      phase: Omitted
+      startedAt: "2020-08-14T03:49:42Z"
+      templateName: finish
+      templateScope: local/reproduce-bug-9tpfr
+      type: Skipped
+    reproduce-bug-9tpfr-546685502:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-3207714925
+      displayName: process-tasks(6:6)
+      finishedAt: "2020-08-14T03:47:37Z"
+      id: reproduce-bug-9tpfr-546685502
+      inputs:
+        parameters:
+        - name: chunk
+          value: "6"
+      name: reproduce-bug-9tpfr.process-tasks(6:6)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      startedAt: "2020-08-14T03:47:30Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Retry
+    reproduce-bug-9tpfr-585646929:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-247809182
+      displayName: process-tasks(7:7)(0)
+      finishedAt: "2020-08-14T03:47:33Z"
+      hostNodeName: gke-dotdb3-dotdb-pool-c3910e16-nb0l
+      id: reproduce-bug-9tpfr-585646929
+      inputs:
+        parameters:
+        - name: chunk
+          value: "7"
+      name: reproduce-bug-9tpfr.process-tasks(7:7)(0)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 1
+        memory: 1
+      startedAt: "2020-08-14T03:47:30Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Pod
+    reproduce-bug-9tpfr-600389385:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-247809182
+      displayName: process-tasks(5:5)(0)
+      finishedAt: "2020-08-14T03:47:33Z"
+      hostNodeName: gke-dotdb3-dotdb-pool-c3910e16-nb0l
+      id: reproduce-bug-9tpfr-600389385
+      inputs:
+        parameters:
+        - name: chunk
+          value: "5"
+      name: reproduce-bug-9tpfr.process-tasks(5:5)(0)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 1
+        memory: 1
+      startedAt: "2020-08-14T03:47:29Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Pod
+    reproduce-bug-9tpfr-850457006:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-3450100829
+      displayName: process-tasks(2:2)
+      finishedAt: "2020-08-14T03:47:36Z"
+      id: reproduce-bug-9tpfr-850457006
+      inputs:
+        parameters:
+        - name: chunk
+          value: "2"
+      name: reproduce-bug-9tpfr.process-tasks(2:2)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      startedAt: "2020-08-14T03:47:29Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Retry
+    reproduce-bug-9tpfr-988357889:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-247809182
+      displayName: process-tasks(1:1)(0)
+      finishedAt: "2020-08-14T03:47:34Z"
+      hostNodeName: gke-dotdb3-dotdb-pool-3779d805-hkcv
+      id: reproduce-bug-9tpfr-988357889
+      inputs:
+        parameters:
+        - name: chunk
+          value: "1"
+      name: reproduce-bug-9tpfr.process-tasks(1:1)(0)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 2
+        memory: 2
+      startedAt: "2020-08-14T03:47:29Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Pod
+    reproduce-bug-9tpfr-1384515437:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-247809182
+      displayName: process-tasks(8:8)(0)
+      finishedAt: "2020-08-14T03:47:42Z"
+      hostNodeName: gke-dotdb3-dotdb-pool-2e8afe0d-km90
+      id: reproduce-bug-9tpfr-1384515437
+      inputs:
+        parameters:
+        - name: chunk
+          value: "8"
+      name: reproduce-bug-9tpfr.process-tasks(8:8)(0)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 6
+        memory: 6
+      startedAt: "2020-08-14T03:47:30Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Pod
+    reproduce-bug-9tpfr-1525049382:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-3595395365
+      displayName: gen-tasks
+      finishedAt: "2020-08-14T03:47:29Z"
+      id: reproduce-bug-9tpfr-1525049382
+      name: reproduce-bug-9tpfr.gen-tasks
+      outputs:
+        exitCode: "0"
+        result: '["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]'
+      phase: Succeeded
+      startedAt: "2020-08-14T03:47:23Z"
+      templateName: gen-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Retry
+    reproduce-bug-9tpfr-1602779214:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-3522592509
+      displayName: process-tasks(4:4)
+      finishedAt: "2020-08-14T03:47:45Z"
+      id: reproduce-bug-9tpfr-1602779214
+      inputs:
+        parameters:
+        - name: chunk
+          value: "4"
+      name: reproduce-bug-9tpfr.process-tasks(4:4)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      startedAt: "2020-08-14T03:47:29Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Retry
+    reproduce-bug-9tpfr-1670762753:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-2788826366
+      - reproduce-bug-9tpfr-3412607194
+      - reproduce-bug-9tpfr-850457006
+      - reproduce-bug-9tpfr-3505932898
+      - reproduce-bug-9tpfr-1602779214
+      - reproduce-bug-9tpfr-4143798034
+      - reproduce-bug-9tpfr-546685502
+      - reproduce-bug-9tpfr-3415721642
+      - reproduce-bug-9tpfr-3221614398
+      - reproduce-bug-9tpfr-3518128714
+      displayName: process-tasks
+      finishedAt: "2020-08-14T03:49:42Z"
+      id: reproduce-bug-9tpfr-1670762753
+      name: reproduce-bug-9tpfr.process-tasks
+      phase: Failed
+      startedAt: "2020-08-14T03:47:29Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: TaskGroup
+    reproduce-bug-9tpfr-2008331609:
+      boundaryID: reproduce-bug-9tpfr
+      displayName: process-tasks(3:3)(0)
+      finishedAt: "2020-08-14T03:47:42Z"
+      hostNodeName: gke-dotdb3-dotdb-pool-2e8afe0d-km90
+      id: reproduce-bug-9tpfr-2008331609
+      inputs:
+        parameters:
+        - name: chunk
+          value: "3"
+      message: failed with exit code 1
+      name: reproduce-bug-9tpfr.process-tasks(3:3)(0)
+      outputs:
+        exitCode: "1"
+      phase: Failed
+      resourcesDuration:
+        cpu: 6
+        memory: 6
+      startedAt: "2020-08-14T03:47:29Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Pod
+    reproduce-bug-9tpfr-2475724017:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-247809182
+      displayName: process-tasks(9:9)(0)
+      finishedAt: "2020-08-14T03:47:34Z"
+      hostNodeName: gke-dotdb3-dotdb-pool-3779d805-hkcv
+      id: reproduce-bug-9tpfr-2475724017
+      inputs:
+        parameters:
+        - name: chunk
+          value: "9"
+      name: reproduce-bug-9tpfr.process-tasks(9:9)(0)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 1
+        memory: 1
+      startedAt: "2020-08-14T03:47:30Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Pod
+    reproduce-bug-9tpfr-2612472988:
+      boundaryID: reproduce-bug-9tpfr
+      displayName: process-tasks(3:3)(1)
+      finishedAt: "2020-08-14T03:48:05Z"
+      hostNodeName: gke-dotdb3-dotdb-pool-2e8afe0d-km90
+      id: reproduce-bug-9tpfr-2612472988
+      inputs:
+        parameters:
+        - name: chunk
+          value: "3"
+      message: failed with exit code 1
+      name: reproduce-bug-9tpfr.process-tasks(3:3)(1)
+      outputs:
+        exitCode: "1"
+      phase: Failed
+      resourcesDuration:
+        cpu: 2
+        memory: 2
+      startedAt: "2020-08-14T03:48:00Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Pod
+    reproduce-bug-9tpfr-2788826366:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-3662458541
+      displayName: process-tasks(0:0)
+      finishedAt: "2020-08-14T03:47:44Z"
+      id: reproduce-bug-9tpfr-2788826366
+      inputs:
+        parameters:
+        - name: chunk
+          value: "0"
+      name: reproduce-bug-9tpfr.process-tasks(0:0)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      startedAt: "2020-08-14T03:47:29Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Retry
+    reproduce-bug-9tpfr-3207714925:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-247809182
+      displayName: process-tasks(6:6)(0)
+      finishedAt: "2020-08-14T03:47:34Z"
+      hostNodeName: gke-dotdb3-dotdb-pool-3779d805-hkcv
+      id: reproduce-bug-9tpfr-3207714925
+      inputs:
+        parameters:
+        - name: chunk
+          value: "6"
+      name: reproduce-bug-9tpfr.process-tasks(6:6)(0)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 2
+        memory: 2
+      startedAt: "2020-08-14T03:47:30Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Pod
+    reproduce-bug-9tpfr-3221614398:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-1384515437
+      displayName: process-tasks(8:8)
+      finishedAt: "2020-08-14T03:47:44Z"
+      id: reproduce-bug-9tpfr-3221614398
+      inputs:
+        parameters:
+        - name: chunk
+          value: "8"
+      name: reproduce-bug-9tpfr.process-tasks(8:8)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      startedAt: "2020-08-14T03:47:30Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Retry
+    reproduce-bug-9tpfr-3412607194:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-988357889
+      displayName: process-tasks(1:1)
+      finishedAt: "2020-08-14T03:47:36Z"
+      id: reproduce-bug-9tpfr-3412607194
+      inputs:
+        parameters:
+        - name: chunk
+          value: "1"
+      name: reproduce-bug-9tpfr.process-tasks(1:1)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      startedAt: "2020-08-14T03:47:29Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Retry
+    reproduce-bug-9tpfr-3415721642:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-585646929
+      displayName: process-tasks(7:7)
+      finishedAt: "2020-08-14T03:47:36Z"
+      id: reproduce-bug-9tpfr-3415721642
+      inputs:
+        parameters:
+        - name: chunk
+          value: "7"
+      name: reproduce-bug-9tpfr.process-tasks(7:7)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      startedAt: "2020-08-14T03:47:30Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Retry
+    reproduce-bug-9tpfr-3450100829:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-247809182
+      displayName: process-tasks(2:2)(0)
+      finishedAt: "2020-08-14T03:47:33Z"
+      hostNodeName: gke-dotdb3-dotdb-pool-3779d805-hkcv
+      id: reproduce-bug-9tpfr-3450100829
+      inputs:
+        parameters:
+        - name: chunk
+          value: "2"
+      name: reproduce-bug-9tpfr.process-tasks(2:2)(0)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 1
+        memory: 1
+      startedAt: "2020-08-14T03:47:29Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Pod
+    reproduce-bug-9tpfr-3505932898:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-2008331609
+      - reproduce-bug-9tpfr-2612472988
+      - reproduce-bug-9tpfr-4222579959
+      displayName: process-tasks(3:3)
+      finishedAt: "2020-08-14T03:49:42Z"
+      id: reproduce-bug-9tpfr-3505932898
+      inputs:
+        parameters:
+        - name: chunk
+          value: "3"
+      message: No more retries left
+      name: reproduce-bug-9tpfr.process-tasks(3:3)
+      phase: Failed
+      startedAt: "2020-08-14T03:47:29Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Retry
+    reproduce-bug-9tpfr-3518128714:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-2475724017
+      displayName: process-tasks(9:9)
+      finishedAt: "2020-08-14T03:47:37Z"
+      id: reproduce-bug-9tpfr-3518128714
+      inputs:
+        parameters:
+        - name: chunk
+          value: "9"
+      name: reproduce-bug-9tpfr.process-tasks(9:9)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      startedAt: "2020-08-14T03:47:30Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Retry
+    reproduce-bug-9tpfr-3522592509:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-247809182
+      displayName: process-tasks(4:4)(0)
+      finishedAt: "2020-08-14T03:47:42Z"
+      hostNodeName: gke-dotdb3-dotdb-pool-2e8afe0d-km90
+      id: reproduce-bug-9tpfr-3522592509
+      inputs:
+        parameters:
+        - name: chunk
+          value: "4"
+      name: reproduce-bug-9tpfr.process-tasks(4:4)(0)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 6
+        memory: 6
+      startedAt: "2020-08-14T03:47:29Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Pod
+    reproduce-bug-9tpfr-3595395365:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-1670762753
+      displayName: gen-tasks(0)
+      finishedAt: "2020-08-14T03:47:26Z"
+      hostNodeName: gke-dotdb3-dotdb-pool-3779d805-hkcv
+      id: reproduce-bug-9tpfr-3595395365
+      name: reproduce-bug-9tpfr.gen-tasks(0)
+      outputs:
+        exitCode: "0"
+        result: '["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]'
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 1
+        memory: 1
+      startedAt: "2020-08-14T03:47:23Z"
+      templateName: gen-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Pod
+    reproduce-bug-9tpfr-3662458541:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-247809182
+      displayName: process-tasks(0:0)(0)
+      finishedAt: "2020-08-14T03:47:42Z"
+      hostNodeName: gke-dotdb3-dotdb-pool-2e8afe0d-km90
+      id: reproduce-bug-9tpfr-3662458541
+      inputs:
+        parameters:
+        - name: chunk
+          value: "0"
+      name: reproduce-bug-9tpfr.process-tasks(0:0)(0)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 6
+        memory: 6
+      startedAt: "2020-08-14T03:47:29Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Pod
+    reproduce-bug-9tpfr-4143798034:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-600389385
+      displayName: process-tasks(5:5)
+      finishedAt: "2020-08-14T03:47:36Z"
+      id: reproduce-bug-9tpfr-4143798034
+      inputs:
+        parameters:
+        - name: chunk
+          value: "5"
+      name: reproduce-bug-9tpfr.process-tasks(5:5)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      startedAt: "2020-08-14T03:47:29Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Retry
+    reproduce-bug-9tpfr-4222579959:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-247809182
+      displayName: process-tasks(3:3)(2)
+      finishedAt: "2020-08-14T03:48:40Z"
+      hostNodeName: gke-dotdb3-dotdb-pool-3779d805-hkcv
+      id: reproduce-bug-9tpfr-4222579959
+      inputs:
+        parameters:
+        - name: chunk
+          value: "3"
+      message: failed with exit code 1
+      name: reproduce-bug-9tpfr.process-tasks(3:3)(2)
+      outputs:
+        exitCode: "1"
+      phase: Failed
+      resourcesDuration:
+        cpu: 1
+        memory: 1
+      startedAt: "2020-08-14T03:48:37Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Pod
+  phase: Running
+  resourcesDuration:
+    cpu: 36
+    memory: 36
+  startedAt: "2020-08-14T03:47:23Z"
+`
+
+func TestFailsWithParamDAG(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	ctx := context.Background()
+	wf := wfv1.MustUnmarshalWorkflow(testFailsWithParamDAG)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+}
+
+var testLeafContinueOn = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: build-wf-kpxvm
+spec:
+  
+  entrypoint: test-workflow
+  templates:
+  - 
+    dag:
+      tasks:
+      - 
+        name: A
+        template: ok
+      - 
+        continueOn:
+          failed: true
+        dependencies:
+        - A
+        name: B
+        template: fail
+    inputs: {}
+    metadata: {}
+    name: test-workflow
+    outputs: {}
+  - 
+    container:
+      args:
+      - |
+        exit 0
+      command:
+      - sh
+      - -c
+      image: busybox
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: ok
+    outputs: {}
+  - 
+    container:
+      args:
+      - |
+        exit 1
+      command:
+      - sh
+      - -c
+      image: busybox
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: fail
+    outputs: {}
+status:
+  finishedAt: "2020-11-04T16:17:59Z"
+  nodes:
+    build-wf-kpxvm:
+      children:
+      - build-wf-kpxvm-2225940411
+      displayName: build-wf-kpxvm
+      finishedAt: "2020-11-04T16:17:59Z"
+      id: build-wf-kpxvm
+      name: build-wf-kpxvm
+      outboundNodes:
+      - build-wf-kpxvm-2242718030
+      phase: Running
+      progress: 3/3
+      resourcesDuration:
+        cpu: 13
+        memory: 6
+      startedAt: "2020-11-04T16:17:43Z"
+      templateName: test-workflow
+      templateScope: local/build-wf-kpxvm
+      type: DAG
+    build-wf-kpxvm-2225940411:
+      boundaryID: build-wf-kpxvm
+      children:
+      - build-wf-kpxvm-2242718030
+      displayName: A
+      finishedAt: "2020-11-04T16:17:51Z"
+      hostNodeName: minikube
+      id: build-wf-kpxvm-2225940411
+      name: build-wf-kpxvm.A
+      phase: Succeeded
+      startedAt: "2020-11-04T16:17:43Z"
+      templateName: ok
+      templateScope: local/build-wf-kpxvm
+      type: Pod
+    build-wf-kpxvm-2242718030:
+      boundaryID: build-wf-kpxvm
+      displayName: B
+      finishedAt: "2020-11-04T16:17:57Z"
+      hostNodeName: minikube
+      id: build-wf-kpxvm-2242718030
+      message: failed with exit code 1
+      name: build-wf-kpxvm.B
+      phase: Failed
+      startedAt: "2020-11-04T16:17:53Z"
+      templateName: fail
+      templateScope: local/build-wf-kpxvm
+      type: Pod
+  phase: Running
+  progress: 3/3
+  resourcesDuration:
+    cpu: 13
+    memory: 6
+  startedAt: "2020-11-04T16:17:43Z"
+
+`
+
+func TestLeafContinueOn(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(testLeafContinueOn)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	ctx := context.Background()
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+var dagOutputsReferTaskAggregatedOuputs = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: parameter-aggregation-dag-h8b82
+spec:
+
+  entrypoint: parameter-aggregation
+  templates:
+  -
+    dag:
+      tasks:
+      - arguments:
+          parameters:
+          - name: num
+            value: '{{item}}'
+        name: odd-or-even
+        template: odd-or-even
+        withItems:
+        - 1
+        - 2
+    inputs: {}
+    metadata: {}
+    name: parameter-aggregation
+    outputs:
+      parameters:
+      - name: dag-nums
+        valueFrom:
+          parameter: '{{tasks.odd-or-even.outputs.parameters.num}}'
+      - name: dag-evenness
+        valueFrom:
+          parameter: '{{tasks.odd-or-even.outputs.parameters.evenness}}'
+  -
+    container:
+      args:
+      - |
+        sleep 1 &&
+        echo {{inputs.parameters.num}} > /tmp/num &&
+        if [ $(({{inputs.parameters.num}}%2)) -eq 0 ]; then
+          echo "even" > /tmp/even;
+        else
+          echo "odd" > /tmp/even;
+        fi
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs:
+      parameters:
+      - name: num
+    metadata: {}
+    name: odd-or-even
+    outputs:
+      parameters:
+      - name: num
+        valueFrom:
+          path: /tmp/num
+      - name: evenness
+        valueFrom:
+          path: /tmp/even
+status:
+  nodes:
+    parameter-aggregation-dag-h8b82:
+      children:
+      - parameter-aggregation-dag-h8b82-3379492521
+      displayName: parameter-aggregation-dag-h8b82
+      finishedAt: "2020-12-09T15:37:07Z"
+      id: parameter-aggregation-dag-h8b82
+      name: parameter-aggregation-dag-h8b82
+      outboundNodes:
+      - parameter-aggregation-dag-h8b82-3175470584
+      - parameter-aggregation-dag-h8b82-2243926302
+      phase: Running
+      startedAt: "2020-12-09T15:36:46Z"
+      templateName: parameter-aggregation
+      templateScope: local/parameter-aggregation-dag-h8b82
+      type: DAG
+    parameter-aggregation-dag-h8b82-1440345089:
+      boundaryID: parameter-aggregation-dag-h8b82
+      displayName: odd-or-even(1:2)
+      finishedAt: "2020-12-09T15:36:54Z"
+      hostNodeName: minikube
+      id: parameter-aggregation-dag-h8b82-1440345089
+      inputs:
+        parameters:
+        - name: num
+          value: "2"
+      name: parameter-aggregation-dag-h8b82.odd-or-even(1:2)
+      outputs:
+        exitCode: "0"
+        parameters:
+        - name: num
+          value: "2"
+          valueFrom:
+            path: /tmp/num
+        - name: evenness
+          value: even
+          valueFrom:
+            path: /tmp/even
+      phase: Succeeded
+      startedAt: "2020-12-09T15:36:46Z"
+      templateName: odd-or-even
+      templateScope: local/parameter-aggregation-dag-h8b82
+      type: Pod
+    parameter-aggregation-dag-h8b82-3379492521:
+      boundaryID: parameter-aggregation-dag-h8b82
+      children:
+      - parameter-aggregation-dag-h8b82-3572919299
+      - parameter-aggregation-dag-h8b82-1440345089
+      displayName: odd-or-even
+      finishedAt: "2020-12-09T15:36:55Z"
+      id: parameter-aggregation-dag-h8b82-3379492521
+      name: parameter-aggregation-dag-h8b82.odd-or-even
+      phase: Succeeded
+      startedAt: "2020-12-09T15:36:46Z"
+      templateName: odd-or-even
+      templateScope: local/parameter-aggregation-dag-h8b82
+      type: TaskGroup
+    parameter-aggregation-dag-h8b82-3572919299:
+      boundaryID: parameter-aggregation-dag-h8b82
+      displayName: odd-or-even(0:1)
+      finishedAt: "2020-12-09T15:36:53Z"
+      hostNodeName: minikube
+      id: parameter-aggregation-dag-h8b82-3572919299
+      inputs:
+        parameters:
+        - name: num
+          value: "1"
+      name: parameter-aggregation-dag-h8b82.odd-or-even(0:1)
+      outputs:
+        exitCode: "0"
+        parameters:
+        - name: num
+          value: "1"
+          valueFrom:
+            path: /tmp/num
+        - name: evenness
+          value: odd
+          valueFrom:
+            path: /tmp/even
+      phase: Succeeded
+      startedAt: "2020-12-09T15:36:46Z"
+      templateName: odd-or-even
+      templateScope: local/parameter-aggregation-dag-h8b82
+      type: Pod
+  phase: Succeeded
+  startedAt: "2020-12-09T15:36:46Z"
+`
+
+func TestDAGReferTaskAggregatedOutputs(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(dagOutputsReferTaskAggregatedOuputs)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	dagNode := woc.wf.Status.Nodes.FindByDisplayName("parameter-aggregation-dag-h8b82")
+	if assert.NotNil(t, dagNode) {
+		if assert.NotNil(t, dagNode.Outputs) {
+			if assert.Len(t, dagNode.Outputs.Parameters, 2) {
+				assert.Equal(t, `["1","2"]`, dagNode.Outputs.Parameters[0].Value.String())
+				assert.Equal(t, `["odd","even"]`, dagNode.Outputs.Parameters[1].Value.String())
+			}
+		}
+	}
+}
+
+var dagHttpChildrenAssigned = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: http-template-nv52d
+spec:
+  entrypoint: main
+  templates:
+  - dag:
+      tasks:
+      - arguments:
+          parameters:
+          - name: url
+            value: https://raw.githubusercontent.com/argoproj/argo-workflows/4e450e250168e6b4d51a126b784e90b11a0162bc/pkg/apis/workflow/v1alpha1/generated.swagger.json
+        name: good1
+        template: http
+      - arguments:
+          parameters:
+          - name: url
+            value: https://raw.githubusercontent.com/argoproj/argo-workflows/4e450e250168e6b4d51a126b784e90b11a0162bc/pkg/apis/workflow/v1alpha1/generated.swagger.json
+        dependencies:
+        - good1
+        name: good2
+        template: http
+    name: main
+  - http:
+      url: '{{inputs.parameters.url}}'
+    inputs:
+      parameters:
+      - name: url
+    name: http
+status:
+  nodes:
+    http-template-nv52d:
+      children:
+      - http-template-nv52d-444770636
+      displayName: http-template-nv52d
+      id: http-template-nv52d
+      name: http-template-nv52d
+      outboundNodes:
+      - http-template-nv52d-478325874
+      phase: Running
+      startedAt: "2021-10-27T13:46:08Z"
+      templateName: main
+      templateScope: local/http-template-nv52d
+      type: DAG
+    http-template-nv52d-444770636:
+      boundaryID: http-template-nv52d
+      children:
+      - http-template-nv52d-495103493
+      displayName: good1
+      finishedAt: null
+      id: http-template-nv52d-444770636
+      name: http-template-nv52d.good1
+      phase: Succeeded
+      startedAt: "2021-10-27T13:46:08Z"
+      templateName: http
+      templateScope: local/http-template-nv52d
+      type: HTTP
+  phase: Running
+  startedAt: "2021-10-27T13:46:08Z"
+`
+
+func TestDagHttpChildrenAssigned(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(dagHttpChildrenAssigned)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	dagNode := woc.wf.Status.Nodes.FindByDisplayName("good2")
+	assert.NotNil(t, dagNode)
+
+	dagNode = woc.wf.Status.Nodes.FindByDisplayName("good1")
+	if assert.NotNil(t, dagNode) {
+		if assert.Len(t, dagNode.Children, 1) {
+			assert.Equal(t, "http-template-nv52d-495103493", dagNode.Children[0])
+		}
+	}
 }

@@ -10,7 +10,7 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/default/workflows/failed-retries-tjjsc
   uid: c18bba2a-0ad5-11e9-b44e-ea782c392741
 spec:
-  arguments: {}
+
   entrypoint: failed-retries
   templates:
   - inputs: {}
@@ -18,10 +18,10 @@ spec:
     name: failed-retries
     outputs: {}
     steps:
-    - - arguments: {}
+    - -
         name: fail
         template: fail
-      - arguments: {}
+      -
         name: delayed-fail
         template: delayed-fail
   - container:

@@ -10,10 +10,11 @@ import (
 // +genclient
 // +genclient:noStatus
 // +genclient:nonNamespaced
+// +kubebuilder:resource:scope=Cluster,shortName=clusterwftmpl;cwft
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type ClusterWorkflowTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 	Spec              WorkflowTemplateSpec `json:"spec" protobuf:"bytes,2,opt,name=spec"`
 }
 
@@ -54,4 +55,13 @@ func (cwftmpl *ClusterWorkflowTemplate) GetTemplateByName(name string) *Template
 // GetResourceScope returns the template scope of workflow template.
 func (cwftmpl *ClusterWorkflowTemplate) GetResourceScope() ResourceScope {
 	return ResourceScopeCluster
+}
+
+func (cwftmpl *ClusterWorkflowTemplate) GetWorkflowMetadata() *metav1.ObjectMeta {
+	return cwftmpl.Spec.WorkflowMetadata
+}
+
+// GetWorkflowSpec returns the WorkflowSpec of cluster workflow template.
+func (cwftmpl *ClusterWorkflowTemplate) GetWorkflowSpec() *WorkflowSpec {
+	return &cwftmpl.Spec.WorkflowSpec
 }

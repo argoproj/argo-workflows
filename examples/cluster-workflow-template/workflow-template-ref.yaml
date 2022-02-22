@@ -1,0 +1,9 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: cluster-workflow-template-hello-world-
+spec:
+  workflowTemplateRef:
+    name: cluster-workflow-template-submittable
+    clusterScope: true
+

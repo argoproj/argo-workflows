@@ -7,7 +7,7 @@ import (
 	pkgerr "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/argoproj/argo/errors"
+	"github.com/argoproj/argo-workflows/v3/errors"
 )
 
 // stackTracer is interface for error types that have a stack trace

@@ -11,4 +11,5 @@ export interface ContextApis {
     history: History;
 }
 
-export const {Provider, Consumer} = React.createContext<ContextApis>(null);
+export const Context = React.createContext<ContextApis>(null);
+export const {Provider, Consumer} = Context;

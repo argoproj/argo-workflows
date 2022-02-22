@@ -1,4 +1,4 @@
-# Workfow RBAC
+# Workflow RBAC
 
 All pods in a workflow run with the service account specified in `workflow.spec.serviceAccountName`,
 or if omitted, the `default` service account of the workflow's namespace. The amount of access which

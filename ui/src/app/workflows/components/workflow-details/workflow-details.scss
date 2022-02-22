@@ -2,7 +2,7 @@
 
 .workflow-details {
 
-  overflow-y: scroll;
+  overflow-y: hidden;
 
   &, & > .row {
     height: calc(100vh - 2 * #{$top-bar-height});
@@ -33,80 +33,88 @@
         border: 1px solid $argo-color-gray-4;
         border-radius: 5px;
         cursor: default;
-            }
-        }
+      }
+    }
+  }
+
+  &__container {
+    height: calc(100vh - 2 * #{$top-bar-height});
+    max-width: 100%;
+    overflow: auto;
+  }
+
+  &__graph-container {
+    position: relative;
+    height: calc(100vh - 2 * #{$top-bar-height});
+    width: 100%;
+    transition: width 0.2s;
+    float: left;
+    overflow: auto;
+
+    .workflow-dag {
+      margin: 0;
     }
 
-    &__graph-container {
-        position: relative;
-        overflow: auto;
-        height: calc(100vh - 2 * #{$top-bar-height});
-        width: 100%;
-        transition: width 0.2s;
-        float: left;
+    .workflow-timeline {
+      min-height: calc(100vh - 2 * #{$top-bar-height});
+    }
+  }
 
-        .workflow-dag {
-            margin: 3.5em auto;
-        }
-        .workflow-timeline {
-            min-height: calc(100vh - 2 * #{$top-bar-height});
-        }
+  &__step-info {
+    min-height: calc(100vh - 2 * #{$top-bar-height});
+    border-left: 1px solid $argo-color-gray-4;
+    width: 0;
+    transition: width 0.2s;
+    float: right
+  }
+
+  &__step-info-close {
+    display: block;
+    position: absolute;
+    cursor: pointer;
+    top: 1em;
+    right: -1em;
+    z-index: 8;
+    border-radius: 50%;
+    color: $argo-color-gray-5;
+    font-size: 20px;
+    padding: 5px;
+
+    @media screen and (max-width: $argo-breakpoint-md) {
+      top: 8px;
     }
 
-    &__step-info {
-        min-height: calc(100vh - 2 * #{$top-bar-height});
-        border-left: 1px solid $argo-color-gray-4;
-        width: 0;
-        transition: width 0.2s;
-        float: right
+    &:hover {
+      background-color: $argo-color-gray-4;
     }
+  }
 
-    &__step-info-close {
-        display: block;
-        position: absolute;
-        cursor: pointer;
-        top: 1em;
-        right: -1em;
-        z-index: 8;
-        border-radius: 50%;
-        color: $argo-color-gray-5;
-        font-size: 20px;
-        padding: 5px;
+  &--step-node-expanded &__graph-container {
+    width: calc(100% - 570px);
+  }
 
-        @media screen and (max-width: $argo-breakpoint-md) {
-            top: 8px;
-        }
+  &--step-node-expanded &__step-info {
+    width: 570px;
+  }
 
-        &:hover {
-            background-color: $argo-color-gray-4;
-        }
-    }
-
-    &--step-node-expanded &__graph-container {
-        width: calc(100% - 570px);
-    }
-
-    &--step-node-expanded &__step-info {
-        width: 570px;
-    }
-
-    &--step-node-expanded &__step-info-close {
-        right: 1em;
-    }
+  &--step-node-expanded &__step-info-close {
+    right: 1em;
+  }
 
 }
-.badge{
-    position: absolute;
-    margin-left: -.3%;
-    margin-top: -.3%;
-    font-size: 30%;
-    padding: .6em;
-    border-radius: 999px;
-    line-height: .75em;
-    color: white;
-    background: rgba(255, 0, 0, 0.85);
-    text-align: center;
-    min-width: 2em;
-    font-weight: bold;
-    min-height: 2em;
+
+.badge {
+  position: absolute;
+  margin-left: -.3%;
+  margin-top: -.3%;
+  font-size: 30%;
+  padding: .6em;
+  border-radius: 999px;
+  line-height: .75em;
+  color: white;
+  background: rgba(255, 0, 0, 0.85);
+  text-align: center;
+  min-width: 2em;
+  font-weight: bold;
+  min-height: 2em;
 }

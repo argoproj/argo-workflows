@@ -2,11 +2,13 @@ package common
 
 import (
 	"testing"
+	"time"
 
-	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 func TestConvertCronWorkflowToWorkflow(t *testing.T) {
@@ -35,6 +37,7 @@ kind: Workflow
 metadata:
   annotations:
     annotation2: value2
+    workflows.argoproj.io/scheduled-time: "2021-02-19T10:29:05-08:00"
   creationTimestamp: null
   generateName: hello-world-
   labels:
@@ -51,8 +54,7 @@ spec:
   arguments: {}
   entrypoint: whalesay
   templates:
-  - arguments: {}
-    container:
+  - container:
       args:
       - hello world
       command:
@@ -70,9 +72,9 @@ status:
 `
 
 	var cronWf v1alpha1.CronWorkflow
-	err := yaml.Unmarshal([]byte(cronWfString), &cronWf)
-	assert.NoError(t, err)
+	v1alpha1.MustUnmarshal([]byte(cronWfString), &cronWf)
 	wf := ConvertCronWorkflowToWorkflow(&cronWf)
+	wf.GetAnnotations()[AnnotationKeyCronWfScheduledTime] = "2021-02-19T10:29:05-08:00"
 	wfString, err := yaml.Marshal(wf)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedWf, string(wfString))
@@ -92,7 +94,7 @@ spec:
       annotation2: value2
   workflowSpec:
     entrypoint: whalesay
-    templates:
+    templateRef:
       - name: whalesay
         container:
           image: docker/whalesay:latest
@@ -106,6 +108,15 @@ spec:
 	if assert.Contains(t, wf.GetLabels(), LabelKeyControllerInstanceID) {
 		assert.Equal(t, wf.GetLabels()[LabelKeyControllerInstanceID], "test-controller")
 	}
+
+	err = yaml.Unmarshal([]byte(cronWfInstanceIdString), &cronWf)
+	assert.NoError(t, err)
+	scheduledTime, err := time.Parse(time.RFC3339, "2006-01-02T15:04:05-07:00")
+	assert.NoError(t, err)
+	wf = ConvertCronWorkflowToWorkflowWithProperties(&cronWf, "test-name", scheduledTime)
+	assert.Equal(t, "test-name", wf.Name)
+	assert.Len(t, wf.GetAnnotations(), 2)
+	assert.NotEmpty(t, wf.GetAnnotations()[AnnotationKeyCronWfScheduledTime])
 }
 
 const workflowTmpl = `
@@ -116,6 +127,11 @@ metadata:
   labels:
     argo-e2e: true
 spec:
+  workflowMetadata:
+    labels:
+      label1: value1
+    annotations:
+      annotation1: value1
   entrypoint: whalesay-template
   arguments:
     parameters:
@@ -127,20 +143,54 @@ spec:
         parameters:
           - name: message
       container:
-        image: argoproj/argosay:v1
-        command: [cowsay]
-        args: ["{{inputs.parameters.message}}"]
-        imagePullPolicy: IfNotPresent
+        image: argoproj/argosay:v2
+        args: [echo, "{{inputs.parameters.message}}"]
 `
 
 func TestConvertWorkflowTemplateToWorkflow(t *testing.T) {
 	var wfTmpl v1alpha1.WorkflowTemplate
-	err := yaml.Unmarshal([]byte(workflowTmpl), &wfTmpl)
-	if err != nil {
-		panic(err)
-	}
-	wf := ConvertWorkflowTemplateToWorkflow(&wfTmpl)
+	v1alpha1.MustUnmarshal([]byte(workflowTmpl), &wfTmpl)
+	t.Run("ConvertWorkflowFromWFT", func(t *testing.T) {
+		wf := NewWorkflowFromWorkflowTemplate(wfTmpl.Name, wfTmpl.Spec.WorkflowMetadata, false)
+		assert.NotNil(t, wf)
+		assert.Equal(t, "workflow-template-whalesay-template", wf.Labels["workflows.argoproj.io/workflow-template"])
+		assert.NotNil(t, wf.Spec.WorkflowTemplateRef)
+		assert.Equal(t, wfTmpl.Name, wf.Spec.WorkflowTemplateRef.Name)
+		assert.False(t, wf.Spec.WorkflowTemplateRef.ClusterScope)
+		assert.Contains(t, wf.Labels, "label1")
+		assert.Contains(t, wf.Annotations, "annotation1")
+	})
+	t.Run("ConvertWorkflowFromWFTWithNilWorkflowMetadata", func(t *testing.T) {
+		wf := NewWorkflowFromWorkflowTemplate(wfTmpl.Name, nil, false)
+		assert.NotNil(t, wf)
+		assert.Equal(t, "workflow-template-whalesay-template", wf.Labels["workflows.argoproj.io/workflow-template"])
+		assert.NotNil(t, wf.Spec.WorkflowTemplateRef)
+		assert.Equal(t, wfTmpl.Name, wf.Spec.WorkflowTemplateRef.Name)
+		assert.False(t, wf.Spec.WorkflowTemplateRef.ClusterScope)
+	})
+	t.Run("ConvertWorkflowFromWFTWithNilWorkflowMetadataLabels", func(t *testing.T) {
+		wfMetadata := &metav1.ObjectMeta{
+			Labels:      nil,
+			Annotations: nil,
+		}
+		wf := NewWorkflowFromWorkflowTemplate(wfTmpl.Name, wfMetadata, false)
+		assert.NotNil(t, wf)
+		assert.Equal(t, "workflow-template-whalesay-template", wf.Labels["workflows.argoproj.io/workflow-template"])
+		assert.NotNil(t, wf.Spec.WorkflowTemplateRef)
+		assert.Equal(t, wfTmpl.Name, wf.Spec.WorkflowTemplateRef.Name)
+		assert.False(t, wf.Spec.WorkflowTemplateRef.ClusterScope)
+	})
+}
+
+func TestConvertClusterWorkflowTemplateToWorkflow(t *testing.T) {
+	var wfTmpl v1alpha1.WorkflowTemplate
+	v1alpha1.MustUnmarshal([]byte(workflowTmpl), &wfTmpl)
+	wf := NewWorkflowFromWorkflowTemplate(wfTmpl.Name, wfTmpl.Spec.WorkflowMetadata, true)
 	assert.NotNil(t, wf)
-	assert.Equal(t, wf.Labels[LabelKeyWorkflowTemplate], wfTmpl.Name)
-	assert.Equal(t, wf.GenerateName, wfTmpl.Name+"-")
+	assert.Equal(t, "workflow-template-whalesay-template", wf.Labels["workflows.argoproj.io/cluster-workflow-template"])
+	assert.NotNil(t, wf.Spec.WorkflowTemplateRef)
+	assert.Equal(t, wfTmpl.Name, wf.Spec.WorkflowTemplateRef.Name)
+	assert.True(t, wf.Spec.WorkflowTemplateRef.ClusterScope)
+	assert.Contains(t, wf.Labels, "label1")
+	assert.Contains(t, wf.Annotations, "annotation1")
 }

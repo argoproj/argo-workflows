@@ -2,37 +2,40 @@ import {NotificationType, Page, SlidingPanel} from 'argo-ui';
 import * as classNames from 'classnames';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router';
-import {Link, Workflow} from '../../../../models';
+import {execSpec, Link, Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
+import {ErrorNotice} from '../../../shared/components/error-notice';
+import {ProcessURL} from '../../../shared/components/links';
 import {Loading} from '../../../shared/components/loading';
-import {YamlEditor} from '../../../shared/components/yaml/yaml-editor';
+import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
 import {services} from '../../../shared/services';
-import {
-    defaultWorkflowDagRenderOptions,
-    WorkflowArtifacts,
-    WorkflowDag,
-    WorkflowDagRenderOptions,
-    WorkflowLogsViewer,
-    WorkflowNodeInfo,
-    WorkflowParametersPanel,
-    WorkflowSummaryPanel,
-    WorkflowTimeline,
-    WorkflowYamlViewer
-} from '../../../workflows/components';
-import {WorkflowDagRenderOptionsPanel} from '../../../workflows/components/workflow-dag/workflow-dag-render-options-panel';
-import {WorkflowYamlPanel} from '../../../workflows/components/workflow-details/workflow-yaml-panel';
+import {WorkflowArtifacts} from '../../../workflows/components/workflow-artifacts';
+
+import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
+import {getPodName, getTemplateNameFromNode} from '../../../shared/pod-name';
+import {WorkflowResourcePanel} from '../../../workflows/components/workflow-details/workflow-resource-panel';
+import {WorkflowLogsViewer} from '../../../workflows/components/workflow-logs-viewer/workflow-logs-viewer';
+import {WorkflowNodeInfo} from '../../../workflows/components/workflow-node-info/workflow-node-info';
+import {WorkflowPanel} from '../../../workflows/components/workflow-panel/workflow-panel';
+import {WorkflowParametersPanel} from '../../../workflows/components/workflow-parameters-panel';
+import {WorkflowSummaryPanel} from '../../../workflows/components/workflow-summary-panel';
+import {WorkflowTimeline} from '../../../workflows/components/workflow-timeline/workflow-timeline';
+import {WorkflowYamlViewer} from '../../../workflows/components/workflow-yaml-viewer/workflow-yaml-viewer';
 
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 
 interface State {
-    workflowDagRenderOptions: WorkflowDagRenderOptions;
     workflow?: Workflow;
     links?: Link[];
     error?: Error;
 }
 
 export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, State> {
+    private get namespace() {
+        return this.props.match.params.namespace;
+    }
+
     private get uid() {
         return this.props.match.params.uid;
     }
@@ -67,21 +70,25 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
 
     constructor(props: RouteComponentProps<any>, context: any) {
         super(props, context);
-        this.state = {workflowDagRenderOptions: defaultWorkflowDagRenderOptions};
+        this.state = {};
     }
 
     public componentDidMount(): void {
-        services.archivedWorkflows
-            .get(this.uid)
-            .then(workflow => this.setState({workflow}))
+        services.info
+            .getInfo()
+            .then(info => this.setState({links: info.links}))
+            .then(() =>
+                services.archivedWorkflows.get(this.uid).then(workflow =>
+                    this.setState({
+                        error: null,
+                        workflow
+                    })
+                )
+            )
             .catch(error => this.setState({error}));
-        services.info.getInfo().then(info => this.setState({links: info.links}));
     }
 
     public render() {
-        if (this.state.error) {
-            throw this.state.error;
-        }
         const items = [
             {
                 title: 'Resubmit',
@@ -100,7 +107,7 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                 .forEach(link =>
                     items.push({
                         title: link.name,
-                        iconClassName: 'fa fa-link',
+                        iconClassName: 'fa fa-external-link-alt',
                         action: () => this.openLink(link)
                     })
                 );
@@ -113,20 +120,18 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                         items
                     },
                     breadcrumbs: [
+                        {title: 'Archived Workflows', path: uiUrl('archived-workflows')},
                         {
-                            title: 'Archived Workflows',
-                            path: uiUrl('archived-workflows/')
+                            title: this.namespace,
+                            path: uiUrl('archived-workflows/' + this.namespace)
                         },
-                        {title: this.uid}
+                        {
+                            title: this.uid,
+                            path: uiUrl('archived-workflows/' + this.namespace + '/' + this.uid)
+                        }
                     ],
                     tools: (
                         <div className='workflow-details__topbar-buttons'>
-                            {this.tab === 'workflow' && (
-                                <WorkflowDagRenderOptionsPanel
-                                    {...this.state.workflowDagRenderOptions}
-                                    onChange={workflowDagRenderOptions => this.setState({workflowDagRenderOptions})}
-                                />
-                            )}
                             <a className={classNames({active: this.tab === 'summary'})} onClick={() => (this.tab = 'summary')}>
                                 <i className='fa fa-columns' />
                             </a>
@@ -145,35 +150,40 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
     }
 
     private renderArchivedWorkflowDetails() {
+        if (this.state.error) {
+            return <ErrorNotice error={this.state.error} />;
+        }
         if (!this.state.workflow) {
             return <Loading />;
         }
         return (
             <>
                 {this.tab === 'summary' ? (
-                    <div className='argo-container'>
-                        <div className='workflow-details__content'>
-                            <WorkflowSummaryPanel workflow={this.state.workflow} />
-                            {this.state.workflow.spec.arguments && this.state.workflow.spec.arguments.parameters && (
-                                <React.Fragment>
-                                    <h6>Parameters</h6>
-                                    <WorkflowParametersPanel parameters={this.state.workflow.spec.arguments.parameters} />
-                                </React.Fragment>
-                            )}
-                            <h6>Artifacts</h6>
-                            <WorkflowArtifacts workflow={this.state.workflow} archived={true} />
-                            <WorkflowYamlPanel workflow={this.state.workflow} />
+                    <div className='workflow-details__container'>
+                        <div className='argo-container'>
+                            <div className='workflow-details__content'>
+                                <WorkflowSummaryPanel workflow={this.state.workflow} />
+                                {execSpec(this.state.workflow).arguments && execSpec(this.state.workflow).arguments.parameters && (
+                                    <React.Fragment>
+                                        <h6>Parameters</h6>
+                                        <WorkflowParametersPanel parameters={execSpec(this.state.workflow).arguments.parameters} />
+                                    </React.Fragment>
+                                )}
+                                <h6>Artifacts</h6>
+                                <WorkflowArtifacts workflow={this.state.workflow} archived={true} />
+                                <WorkflowResourcePanel workflow={this.state.workflow} />
+                            </div>
                         </div>
                     </div>
                 ) : (
                     <div>
                         <div className='workflow-details__graph-container'>
                             {this.tab === 'workflow' ? (
-                                <WorkflowDag
-                                    renderOptions={this.state.workflowDagRenderOptions}
-                                    workflow={this.state.workflow}
+                                <WorkflowPanel
+                                    workflowMetadata={this.state.workflow.metadata}
+                                    workflowStatus={this.state.workflow.status}
                                     selectedNodeId={this.nodeId}
-                                    nodeClicked={node => (this.nodeId = node.id)}
+                                    nodeClicked={nodeId => (this.nodeId = nodeId)}
                                 />
                             ) : (
                                 <WorkflowTimeline workflow={this.state.workflow} selectedNodeId={this.nodeId} nodeClicked={node => (this.nodeId = node.id)} />
@@ -209,11 +219,14 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                 )}
                 <SlidingPanel isShown={!!this.sidePanel} onClose={() => (this.sidePanel = null)}>
                     {this.sidePanel === 'yaml' && <WorkflowYamlViewer workflow={this.state.workflow} selectedNode={this.node} />}
-                    {this.sidePanel === 'logs' && <WorkflowLogsViewer workflow={this.state.workflow} nodeId={this.nodeId} container={this.container} archived={true} />}
+                    {this.sidePanel === 'logs' && (
+                        <WorkflowLogsViewer workflow={this.state.workflow} initialPodName={this.podName} nodeId={this.nodeId} container={this.container} archived={true} />
+                    )}
                     {this.sidePanel === 'resubmit' && (
-                        <YamlEditor
+                        <ResourceEditor<Workflow>
                             editing={true}
                             title='Resubmit Archived Workflow'
+                            kind='Workflow'
                             value={{
                                 metadata: {
                                     namespace: this.state.workflow.metadata.namespace,
@@ -221,12 +234,11 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                                 },
                                 spec: this.state.workflow.spec
                             }}
-                            onSubmit={(value: Workflow) => {
+                            onSubmit={(value: Workflow) =>
                                 services.workflows
                                     .create(value, value.metadata.namespace)
                                     .then(workflow => (document.location.href = uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)))
-                                    .catch(error => this.setState({error}));
-                            }}
+                            }
                         />
                     )}
                 </SlidingPanel>
@@ -236,6 +248,19 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
 
     private get node() {
         return this.nodeId && this.state.workflow.status.nodes[this.nodeId];
+    }
+
+    private get podName() {
+        if (this.nodeId && this.state.workflow) {
+            const workflowName = this.state.workflow.metadata.name;
+            let annotations: {[name: string]: string} = {};
+            if (typeof this.state.workflow.metadata.annotations !== 'undefined') {
+                annotations = this.state.workflow.metadata.annotations;
+            }
+            const version = annotations[ANNOTATION_KEY_POD_NAME_VERSION];
+            const templateName = getTemplateNameFromNode(this.node);
+            return getPodName(workflowName, this.node.name, templateName, this.nodeId, version);
+        }
     }
 
     private deleteArchivedWorkflow() {
@@ -256,6 +281,23 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
     }
 
     private openLink(link: Link) {
-        document.location.href = link.url.replace('${metadata.namespace}', this.state.workflow.metadata.namespace).replace('${metadata.name}', this.state.workflow.metadata.name);
+        const object = {
+            metadata: {
+                namespace: this.state.workflow.metadata.namespace,
+                name: this.state.workflow.metadata.name
+            },
+            workflow: this.state.workflow,
+            status: {
+                startedAt: this.state.workflow.status.startedAt,
+                finishedAt: this.state.workflow.status.finishedAt
+            }
+        };
+        const url = ProcessURL(link.url, object);
+
+        if ((window.event as MouseEvent).ctrlKey || (window.event as MouseEvent).metaKey) {
+            window.open(url, '_blank');
+        } else {
+            document.location.href = url;
+        }
     }
 }

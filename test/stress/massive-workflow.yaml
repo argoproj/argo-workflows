@@ -1,0 +1,40 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: massive
+  labels:
+    stress: "true"
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: "nodes"
+        value: "1"
+      - name: "sleep"
+        value: "1s"
+  ttlStrategy:
+    secondsAfterSuccess: 60
+  podGC:
+    strategy: OnPodSuccess
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: sleep
+            template: sleep
+            withSequence:
+              count: "{{workflow.parameters.nodes}}"
+    - name: sleep
+      metadata:
+        labels:
+          stress: "true"
+      container:
+        image: argoproj/argosay:v2
+        resources:
+          requests:
+            memory: 64Mi
+            cpu: 0.1
+        args:
+          - sleep
+          - "{{workflow.parameters.sleep}}"

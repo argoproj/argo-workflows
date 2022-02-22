@@ -1,0 +1,43 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: artifact-repository-ref-
+spec:
+  entrypoint: main
+  artifactRepositoryRef:
+    key: my-key
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: generate
+            template: generate
+          - name: consume
+            template: consume
+            dependencies:
+              - generate
+    - name: generate
+      container:
+        image: argoproj/argosay:v2
+        args:
+          - echo
+          - hello
+          - /mnt/file
+      outputs:
+        artifacts:
+          - name: file
+            path: /mnt/file
+            s3:
+              key: my-file
+    - name: consume
+      container:
+        image: argoproj/argosay:v2
+        args:
+          - cat
+          - /tmp/file
+      inputs:
+        artifacts:
+          - name: file
+            path: /tmp/file
+            s3:
+              key: my-file

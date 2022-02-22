@@ -4,20 +4,20 @@ import {Link, RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
+import {ErrorNotice} from '../../../shared/components/error-notice';
+import {ExampleManifests} from '../../../shared/components/example-manifests';
+import {InfoIcon} from '../../../shared/components/fa-icons';
 import {Loading} from '../../../shared/components/loading';
-import {ResourceSubmit} from '../../../shared/components/resource-submit';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Consumer} from '../../../shared/context';
-import {exampleClusterWorkflowTemplate} from '../../../shared/examples';
+import {Footnote} from '../../../shared/footnote';
 import {services} from '../../../shared/services';
-import {Utils} from '../../../shared/utils';
+import {ClusterWorkflowTemplateCreator} from '../cluster-workflow-template-creator';
 
 require('./cluster-workflow-template-list.scss');
 
 interface State {
-    loading: boolean;
-    namespace: string;
     templates?: models.ClusterWorkflowTemplate[];
     error?: Error;
 }
@@ -33,7 +33,7 @@ export class ClusterWorkflowTemplateList extends BasePage<RouteComponentProps<an
 
     constructor(props: RouteComponentProps<any>, context: any) {
         super(props, context);
-        this.state = {loading: true, namespace: this.props.match.params.namespace || Utils.getCurrentNamespace() || ''};
+        this.state = {};
     }
 
     public componentDidMount(): void {
@@ -41,12 +41,6 @@ export class ClusterWorkflowTemplateList extends BasePage<RouteComponentProps<an
     }
 
     public render() {
-        if (this.state.loading) {
-            return <Loading />;
-        }
-        if (this.state.error) {
-            throw this.state.error;
-        }
         return (
             <Consumer>
                 {ctx => (
@@ -66,22 +60,7 @@ export class ClusterWorkflowTemplateList extends BasePage<RouteComponentProps<an
                         }}>
                         {this.renderTemplates()}
                         <SlidingPanel isShown={this.sidePanel !== null} onClose={() => (this.sidePanel = null)}>
-                            <ResourceSubmit<models.WorkflowTemplate>
-                                resourceName={'Cluster Workflow Template'}
-                                defaultResource={exampleClusterWorkflowTemplate()}
-                                validate={wfValue => {
-                                    if (!wfValue || !wfValue.metadata) {
-                                        return {valid: false, message: 'Invalid ClusterWorkflowTemplate: metadata cannot be blank'};
-                                    }
-                                    if (wfValue.metadata.namespace) {
-                                        return {valid: false, message: 'Invalid ClusterWorkflowTemplate: metadata.namespace cannot be set'};
-                                    }
-                                    return {valid: true};
-                                }}
-                                onSubmit={wfTmpl => {
-                                    return services.clusterWorkflowTemplate.create(wfTmpl).then(wf => ctx.navigation.goto(uiUrl(`cluster-workflow-templates/${wf.metadata.name}`)));
-                                }}
-                            />
+                            <ClusterWorkflowTemplateCreator onCreate={wf => ctx.navigation.goto(uiUrl(`cluster-workflow-templates/${wf.metadata.name}`))} />
                         </SlidingPanel>
                     </Page>
                 )}
@@ -90,57 +69,54 @@ export class ClusterWorkflowTemplateList extends BasePage<RouteComponentProps<an
     }
 
     private fetchClusterWorkflowTemplates(): void {
-        services.info
-            .getInfo()
-            .then(() => {
-                return services.clusterWorkflowTemplate.list();
-            })
-            .then(templates => this.setState({templates, loading: false}))
-            .catch(error => this.setState({error, loading: false}));
+        services.clusterWorkflowTemplate
+            .list()
+            .then(templates => this.setState({error: null, templates}))
+            .catch(error => this.setState({error}));
     }
 
     private renderTemplates() {
+        if (this.state.error) {
+            return <ErrorNotice error={this.state.error} />;
+        }
         if (!this.state.templates) {
             return <Loading />;
         }
-        const learnMore = <a href='https://github.com/argoproj/argo/blob/master/docs/cluster-workflow-templates.md'>Learn more</a>;
+        const learnMore = <a href='https://argoproj.github.io/argo-workflows/cluster-workflow-templates/'>Learn more</a>;
         if (this.state.templates.length === 0) {
             return (
                 <ZeroState title='No cluster workflow templates'>
                     <p>You can create new templates here or using the CLI.</p>
-                    <p>{learnMore}.</p>
+                    <p>
+                        <ExampleManifests />. {learnMore}.
+                    </p>
                 </ZeroState>
             );
         }
         return (
-            <div className='row'>
-                <div className='columns small-12'>
-                    <div className='argo-table-list'>
-                        <div className='row argo-table-list__head'>
-                            <div className='columns small-1' />
-                            <div className='columns small-5'>NAME</div>
-                            <div className='columns small-3'>CREATED</div>
-                        </div>
-                        {this.state.templates.map(t => (
-                            <Link
-                                className='row argo-table-list__row'
-                                key={`${t.metadata.namespace}/${t.metadata.name}`}
-                                to={uiUrl(`cluster-workflow-templates/${t.metadata.name}`)}>
-                                <div className='columns small-1'>
-                                    <i className='fa fa-clone' />
-                                </div>
-                                <div className='columns small-5'>{t.metadata.name}</div>
-                                <div className='columns small-3'>
-                                    <Timestamp date={t.metadata.creationTimestamp} />
-                                </div>
-                            </Link>
-                        ))}
+            <>
+                <div className='argo-table-list'>
+                    <div className='row argo-table-list__head'>
+                        <div className='columns small-1' />
+                        <div className='columns small-5'>NAME</div>
+                        <div className='columns small-3'>CREATED</div>
                     </div>
-                    <p>
-                        <i className='fa fa-info-circle' /> Cluster scoped Workflow templates are reusable templates you can create new workflows from. {learnMore}.
-                    </p>
+                    {this.state.templates.map(t => (
+                        <Link className='row argo-table-list__row' key={t.metadata.uid} to={uiUrl(`cluster-workflow-templates/${t.metadata.name}`)}>
+                            <div className='columns small-1'>
+                                <i className='fa fa-clone' />
+                            </div>
+                            <div className='columns small-5'>{t.metadata.name}</div>
+                            <div className='columns small-3'>
+                                <Timestamp date={t.metadata.creationTimestamp} />
+                            </div>
+                        </Link>
+                    ))}
                 </div>
-            </div>
+                <Footnote>
+                    <InfoIcon /> Cluster scoped Workflow templates are reusable templates you can create new workflows from. <ExampleManifests />. {learnMore}.
+                </Footnote>
+            </>
         );
     }
 }

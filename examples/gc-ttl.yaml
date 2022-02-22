@@ -1,7 +1,6 @@
 # This example shows the ability to automatically delete workflows after a specified time period
 # after the workflow completes. The TTLStrategy sets the strategy for how long workflows that are
-# successful, not successful, or completed should live. The former ttlSecondsAfterFinished will be
-# deprecated  and will be replaced with TTLStrategy.SecondsAfterCompleted. 
+# successful, not successful, or completed should live.
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:

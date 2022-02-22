@@ -11,7 +11,7 @@ This document describes the second option in more detail.
 
 ## The pattern
 
-The pattern involves two steps - the first step is a short-running step that triggers a long-running job outside Argo (eg an HTTP submission), and the second step is a `Suspend` step that suspends workflow exection and is ultimately either resumed or stopped (ie failed) via a call to the Argo API when the job outside Argo succeeds or fails.
+The pattern involves two steps - the first step is a short-running step that triggers a long-running job outside Argo (eg an HTTP submission), and the second step is a `Suspend` step that suspends workflow execution and is ultimately either resumed or stopped (ie failed) via a call to the Argo API when the job outside Argo succeeds or fails.
 
 When implemented as a `WorkflowTemplate` it can look something like this:
 
@@ -60,30 +60,34 @@ In this case the ```job-cmd``` parameter can be a command that makes an http cal
 
 On job completion the external job would need to call either resume if successful:
 
+You may need  an [access token](access-token.md).
+
 ```
 curl --request PUT \
-  --url http://localhost:2746/api/v1/workflows/<NAMESPACE>/<WORKFLOWNAME>/resume
+  --url https://localhost:2746/api/v1/workflows/<NAMESPACE>/<WORKFLOWNAME>/resume
   --header 'content-type: application/json' \
+  --header "Authorization: Bearer $ARGO_TOKEN" \
   --data '{
       "namespace": "<NAMESPACE>",
       "name": "<WORKFLOWNAME>",
       "nodeFieldSelector": "inputs.parameters.uuid.value=<UUID>"
     }'  
-  ```
+```
 
 or stop if unsuccessful:
 
 ```
 curl --request PUT \
-  --url http://localhost:2746/api/v1/workflows/<NAMESPACE>/<WORKFLOWNAME>/stop
+  --url https://localhost:2746/api/v1/workflows/<NAMESPACE>/<WORKFLOWNAME>/stop
   --header 'content-type: application/json' \
+  --header "Authorization: Bearer $ARGO_TOKEN" \
   --data '{
       "namespace": "<NAMESPACE>",
       "name": "<WORKFLOWNAME>",
       "nodeFieldSelector": "inputs.parameters.uuid.value=<UUID>",
       "message": "<FAILURE-MESSAGE>"
     }'  
-  ```
+```
 
 ## Retrying failed jobs
 
@@ -94,3 +98,10 @@ Instead you need to use the `--restart-successful` option, eg if using the templ
 ```
 argo retry <WORKFLOWNAME> --restart-successful --node-field-selector templateRef.template=run-external-job,phase=Failed
 ```
+
+See also:
+
+* [access token](access-token.md)
+* [resuming a workflow via automation](resuming-workflow-via-automation.md)
+* [submitting a workflow via automation](submit-workflow-via-automation.md)
+* [one workflow submitting another](workflow-submitting-workflow.md)

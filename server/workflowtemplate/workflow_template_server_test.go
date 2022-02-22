@@ -4,17 +4,18 @@ import (
 	"context"
 	"testing"
 
+	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
-	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	wftFake "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/server/auth"
-	testutil "github.com/argoproj/argo/test/util"
-	"github.com/argoproj/argo/util/instanceid"
-	"github.com/argoproj/argo/workflow/common"
+	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wftFake "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo-workflows/v3/server/auth"
+	"github.com/argoproj/argo-workflows/v3/server/auth/types"
+	"github.com/argoproj/argo-workflows/v3/util/instanceid"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 const unlabelled = `{
@@ -86,7 +87,8 @@ const wftStr2 = `{
 	  "parameters": [
 		{
 			"name": "message",
-			"value": "Hello Argo"
+			"value": "Hello Argo",
+			"description": "message description"
 		}
 	  ]
 	},
@@ -160,20 +162,32 @@ const wftStr3 = `{
 
 func getWorkflowTemplateServer() (workflowtemplatepkg.WorkflowTemplateServiceServer, context.Context) {
 	var unlabelledObj, wftObj1, wftObj2 v1alpha1.WorkflowTemplate
-	testutil.MustUnmarshallJSON(unlabelled, &unlabelledObj)
-	testutil.MustUnmarshallJSON(wftStr2, &wftObj1)
-	testutil.MustUnmarshallJSON(wftStr3, &wftObj2)
+	v1alpha1.MustUnmarshal(unlabelled, &unlabelledObj)
+	v1alpha1.MustUnmarshal(wftStr2, &wftObj1)
+	v1alpha1.MustUnmarshal(wftStr3, &wftObj2)
 	kubeClientSet := fake.NewSimpleClientset()
 	wfClientset := wftFake.NewSimpleClientset(&unlabelledObj, &wftObj1, &wftObj2)
-	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet)
+	ctx := context.WithValue(context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
 	return NewWorkflowTemplateServer(instanceid.NewService("my-instanceid")), ctx
 }
 
 func TestWorkflowTemplateServer_CreateWorkflowTemplate(t *testing.T) {
 	server, ctx := getWorkflowTemplateServer()
+	t.Run("Without parameter values", func(t *testing.T) {
+		var wftReq workflowtemplatepkg.WorkflowTemplateCreateRequest
+		v1alpha1.MustUnmarshal(wftStr1, &wftReq)
+		wftReq.Template.Name = "foo-without-param-values"
+		wftReq.Template.Spec.Arguments.Parameters[0].Value = nil
+		wftRsp, err := server.CreateWorkflowTemplate(ctx, &wftReq)
+		if assert.NoError(t, err) {
+			assert.NotNil(t, wftRsp)
+			assert.Equal(t, "message", wftRsp.Spec.Arguments.Parameters[0].Name)
+			assert.Nil(t, wftRsp.Spec.Arguments.Parameters[0].Value)
+		}
+	})
 	t.Run("Labelled", func(t *testing.T) {
 		var wftReq workflowtemplatepkg.WorkflowTemplateCreateRequest
-		testutil.MustUnmarshallJSON(wftStr1, &wftReq)
+		v1alpha1.MustUnmarshal(wftStr1, &wftReq)
 		wftRsp, err := server.CreateWorkflowTemplate(ctx, &wftReq)
 		if assert.NoError(t, err) {
 			assert.NotNil(t, wftRsp)
@@ -181,13 +195,14 @@ func TestWorkflowTemplateServer_CreateWorkflowTemplate(t *testing.T) {
 	})
 	t.Run("Unlabelled", func(t *testing.T) {
 		var wftReq workflowtemplatepkg.WorkflowTemplateCreateRequest
-		testutil.MustUnmarshallJSON(unlabelled, &wftReq.Template)
+		v1alpha1.MustUnmarshal(unlabelled, &wftReq.Template)
 		wftReq.Namespace = "default"
 		wftReq.Template.Name = "foo"
 		wftRsp, err := server.CreateWorkflowTemplate(ctx, &wftReq)
 		if assert.NoError(t, err) {
 			assert.NotNil(t, wftRsp)
 			assert.Contains(t, wftRsp.Labels, common.LabelKeyControllerInstanceID)
+			assert.Contains(t, wftRsp.Labels, common.LabelKeyCreator)
 		}
 	})
 }
@@ -199,6 +214,8 @@ func TestWorkflowTemplateServer_GetWorkflowTemplate(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.NotNil(t, wftRsp)
 			assert.Equal(t, "workflow-template-whalesay-template2", wftRsp.Name)
+			assert.Equal(t, "message", wftRsp.Spec.Arguments.Parameters[0].Name)
+			assert.Equal(t, "message description", wftRsp.Spec.Arguments.Parameters[0].Description.String())
 		}
 	})
 	t.Run("Unlabelled", func(t *testing.T) {
@@ -245,7 +262,7 @@ func TestWorkflowTemplateServer_UpdateWorkflowTemplate(t *testing.T) {
 	server, ctx := getWorkflowTemplateServer()
 	t.Run("Labelled", func(t *testing.T) {
 		var wftObj1 v1alpha1.WorkflowTemplate
-		testutil.MustUnmarshallJSON(wftStr2, &wftObj1)
+		v1alpha1.MustUnmarshal(wftStr2, &wftObj1)
 		wftObj1.Spec.Templates[0].Container.Image = "alpine:latest"
 		wftRsp, err := server.UpdateWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateUpdateRequest{
 			Namespace: "default",

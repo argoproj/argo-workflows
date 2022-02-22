@@ -5,7 +5,11 @@ export interface WorkflowTemplate {
     apiVersion?: string;
     kind?: string;
     metadata: kubernetes.ObjectMeta;
-    spec: WorkflowSpec;
+    spec: WorkflowTemplateSpec;
+}
+
+export interface WorkflowTemplateSpec extends WorkflowSpec {
+    workflowMetadata?: kubernetes.ObjectMeta;
 }
 
 export interface WorkflowTemplateList {

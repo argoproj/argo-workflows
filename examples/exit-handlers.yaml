@@ -46,7 +46,7 @@ spec:
       #
       # Will print a list of all the failed steps and their messages. For more info look up the jq docs.
       # Note: jq is not installed by default on the "alpine:latest" image, however it can be installed with "apk add jq"
-      args: ["echo send e-mail: {{workflow.name}} {{workflow.status}}. Failed steps {{workflow.failures}}"]
+      args: ["echo send e-mail: {{workflow.name}} {{workflow.status}} {{workflow.duration}}. Failed steps {{workflow.failures}}"]
   - name: celebrate
     container:
       image: alpine:latest

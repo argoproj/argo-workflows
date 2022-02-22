@@ -1,10 +1,11 @@
 import * as React from 'react';
 import {Pagination, parseLimit} from '../pagination';
+import {WarningIcon} from './fa-icons';
 
-export class PaginationPanel extends React.Component<{pagination: Pagination; onChange: (pagination: Pagination) => void}> {
+export class PaginationPanel extends React.Component<{pagination: Pagination; onChange: (pagination: Pagination) => void; numRecords: number}> {
     public render() {
         return (
-            <p>
+            <p style={{paddingBottom: '45px'}}>
                 <button
                     disabled={!this.props.pagination.offset}
                     className='argo-button argo-button--base-o'
@@ -22,19 +23,33 @@ export class PaginationPanel extends React.Component<{pagination: Pagination; on
                     }>
                     Next page <i className='fa fa-chevron-right' />
                 </button>
+                {this.props.pagination.limit > 0 && this.props.pagination.limit <= this.props.numRecords ? (
+                    <>
+                        <WarningIcon /> Workflows cannot be globally sorted when paginated
+                    </>
+                ) : (
+                    <span />
+                )}
                 <small className='fa-pull-right'>
                     <select
                         className='small'
-                        onChange={e =>
-                            this.props.onChange({
-                                offset: this.props.pagination.offset,
-                                limit: parseLimit(e.target.value)
-                            })
-                        }
-                        value={this.props.pagination.limit || 'all'}>
-                        {[5, 10, 20, 50, 100, 500, 'all'].map(limit => (
+                        onChange={e => {
+                            const limit = parseLimit(e.target.value);
+                            const newValue: Pagination = {limit};
+
+                            // Only return the offset if we're actually going to be limiting
+                            // the results we're requesting.  If we're requesting all records,
+                            // we should not skip any by setting an offset.
+                            if (limit) {
+                                newValue.offset = this.props.pagination.offset;
+                            }
+
+                            this.props.onChange(newValue);
+                        }}
+                        value={this.props.pagination.limit || 0}>
+                        {[5, 10, 20, 50, 100, 500, 0].map(limit => (
                             <option key={limit} value={limit}>
-                                {limit}
+                                {limit === 0 ? 'all' : limit}
                             </option>
                         ))}
                     </select>{' '}

@@ -37,7 +37,7 @@ spec:
 
   # Once exported, global outputs are referenceable in later parts of the workflow.
   # In this example, the consume-globals template is invoked after the generate-globals step, as
-  # well as in the onExit handler. and can reference the globals, my-global-param and my-global-art.
+  # well as in the onExit handler, and can reference the globals, my-global-param and my-global-art.
   - name: consume-globals
     steps:
     - - name: consume-global-param
@@ -50,10 +50,14 @@ spec:
             from: "{{workflow.outputs.artifacts.my-global-art}}"
 
   - name: consume-global-param
+    inputs:
+      parameters:
+        - name: param
+          value: "{{workflow.outputs.parameters.my-global-param}}"
     container:
       image: alpine:3.7
       command: [sh, -c]
-      args: ["echo {{workflow.outputs.parameters.my-global-param}}"]
+      args: ["echo {{inputs.parameters.param}}"]
 
   - name: consume-global-art
     inputs:

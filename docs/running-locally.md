@@ -1,108 +1,101 @@
 # Running Locally
-## Pre-requisites:
 
-* Golang
-* Yarn. `brew install yarn` 
-* Docker
-* [Kustomize](https://github.com/kubernetes-sigs/kustomize/blob/master/docs/INSTALL.md)
-* [protoc](http://google.github.io/proto-lens/installing-protoc.html) `brew install protobuf`
-* `jq`
-* Kubernetes Cluster (we recommend Docker for Desktop + K3D, as this will allow you to test RBAC set-up, and is also fast)
+## Requirements
 
-Useful:
+* [Go 1.17](https://golang.org/dl/)
+* [Yarn](https://classic.yarnpkg.com/en/docs/install/#mac-stable)
+* [Docker](https://docs.docker.com/get-docker/)
+* [protoc](http://google.github.io/proto-lens/installing-protoc.html) 
+* [jq](https://stedolan.github.io/jq/download/)
+* A local Kubernetes cluster (`k3d`, `kind`, or `minikube`)
 
-* For a PS1 prompt showing your current kube context: kube-ps1 to help.  `brew install kube-ps1`
+We recommend using [K3D](https://k3d.io/) to set up the local Kubernetes cluster since this will allow you to test RBAC
+set-up and is fast. You can set-up K3D to be part of your default kube config as follows:
 
-K3D tip: You can set-up K3D to be part of your default kube config as follows
+```shell
+k3d cluster start --wait
+```
 
-    cp ~/.kube/config ~/.kube/config.bak
-    cat $(k3d get-kubeconfig --name='k3s-default') >> ~/.kube/config
+Alternatively, you can use [Minikube](https://github.com/kubernetes/minikube) to set up the local Kubernetes cluster.
+Once a local Kubernetes cluster has started via `minikube start`, your kube config will use Minikube's context
+automatically.
 
-Add to /etc/hosts:
+## Developing locally
 
-    127.0.0.1 minio
-    127.0.0.1 postgres
-    127.0.0.1 mysql
+!!! Warning
+    The git repo must be checked out into: `$(GOPATH)/src/github.com/argoproj/argo-workflows`
 
-To install into the “argo” namespace of your cluster: Argo, MinIO (for saving artifacts and logs) and Postgres (for offloading or archiving):
+Add the following to your `/etc/hosts`:
 
-    make start 
+```
+127.0.0.1 dex
+127.0.0.1 minio
+127.0.0.1 postgres
+127.0.0.1 mysql
+```
 
-If you prefer MySQL:
+To run the controller and argo-server API locally, with MinIO inside the "argo" namespace of your cluster:
 
-	make start DB=mysql
-
-You’ll now have
-
-* Argo on https://localhost:2746
-* MinIO  http://localhost:9000 (use admin/password)
-
-Either:
-
-* Postgres on  http://localhost:5432, run `make postgres-cli` to access.
-* MySQL on  http://localhost:3306, run `make mysql-cli` to access.
-
-You need the token to access the CLI or UI:
-
-    eval $(make env)
-
-    ./dist/argo auth token
-
-At this point you’ll have everything you need to use the CLI and UI.
-
-## User Interface
-
-Tip: If you want to make UI changes without a time-consuming build:
-
-    cd ui
-    yarn install
-    yarn start
-
-The UI will start up on http://localhost:8080.
-
-## Debugging
-
-If you want to run controller or argo-server in your IDE (e.g. so you can debug it):
-
-
-Start with only components you don't want to debug;
-
-    make start COMPONENTS=controller
+```shell
+make start API=true
+```
     
-Or
+To start the UI, use `UI=true`:
 
-    make start COMPONENTS=argo-server
+```shell
+make start API=true UI=true
+```
+
+To test the workflow archive, use `PROFILE=mysql`:
+
+```shell
+make start API=true UI=true PROFILE=mysql
+```
     
-To find the command arguments you need to use, you’ll have to look at the `start` target in the `Makefile`.`
+To test SSO integration, use `PROFILE=sso`:
 
-### Running Sonar Locally
-
-This can only be done if you have already created a pull request.
-
-Install the scanner:
-
-```
-brew install sonar-scanner
+```shell
+make start API=true UI=true PROFILE=sso
 ```
 
-Run the tests:
+You’ll now have:
 
+* Argo UI on http://localhost:8080
+* Argo Server API on https://localhost:2746
+* MinIO on http://localhost:9000 (use admin/password)
+* Postgres on http://localhost:5432, run `make postgres-cli` to access.
+* MySQL on http://localhost:3306, run `make mysql-cli` to access.
+
+Before submitting/running workflows, build the executor images with this command:
+
+```shell
+make argoexec-image
 ```
-make test CI=true
-make test-reports/test-report.out
+
+## Committing
+
+Before you commit code and raise a PR, always run:
+
+```shell
+make pre-commit -B
 ```
 
-Perform a scan:
+Please adhere to the following when creating your commits:
 
+* Sign-off your commits.
+* Use [Conventional Commit messages](https://www.conventionalcommits.org/en/v1.0.0/).
+* Suffix the issue number.
+
+Example:
+
+```shell
+git commit --signoff -m 'fix: Fixed broken thing. Fixes #1234'
 ```
-# the key is PR number (e.g. "2666"), the branch is the CI branch, e.g. "pull/2666"
-SONAR_TOKEN=... sonar-scanner -Dsonar.pullrequest.key=... -Dsonar.pullrequest.branch=... 
-```
- 
-## Clean
 
-To clean-up everything:
+Troubleshooting:
 
-    make clean
-    kubectl delete ns argo
-    docker system prune -af
+* When running `make pre-commit -B`, if you encounter errors like
+  `make: *** [pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json] Error 1`,
+  ensure that you have checked out your code into `$(GOPATH)/src/github.com/argoproj/argo-workflows`.
+* If you encounter "out of heap" issues when building UI through Docker, please validate resources allocated to Docker.
+  Compilation may fail if allocated RAM is less than 4Gi.

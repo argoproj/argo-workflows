@@ -19,7 +19,7 @@ export const WorkflowArtifacts = (props: Props) => {
                 const items = nodeOutputs.artifacts || [];
                 return items.map(item =>
                     Object.assign({}, item, {
-                        downloadUrl: '/' + services.workflows.getArtifactDownloadUrl(props.workflow, node.id, item.name, props.archived),
+                        downloadUrl: '/' + services.workflows.getArtifactDownloadUrl(props.workflow, node.id, item.name, props.archived, false),
                         stepName: node.name,
                         dateCreated: node.finishedAt,
                         nodeName
@@ -40,7 +40,7 @@ export const WorkflowArtifacts = (props: Props) => {
         <div className='white-box'>
             <div className='white-box__details'>
                 {artifacts.map(artifact => (
-                    <div className='row white-box__details-row' key={artifact.path}>
+                    <div className='row white-box__details-row' key={artifact.downloadUrl}>
                         <div className='columns small-2'>
                             <span>
                                 <a href={artifact.downloadUrl}>

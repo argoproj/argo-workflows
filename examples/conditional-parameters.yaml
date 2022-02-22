@@ -1,0 +1,55 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: conditional-parameter-
+  labels:
+    workflows.argoproj.io/test: "true"
+  annotations:
+    workflows.argoproj.io/description: |
+      Conditional parameters provide a way to choose the output parameters based on expression.
+
+      In this example the step template has two steps which will run conditionally on `when`.
+
+      Based on that condition, one of step will not be executed. The step template's output parameter will be
+      set from the executed step's output.
+    workflows.argoproj.io/version: '>= 3.1.0'
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: flip-coin
+            template: flip-coin
+        - - name: heads
+            template: heads
+            when: "{{steps.flip-coin.outputs.result}} == heads"
+          - name: tails
+            template: tails
+            when: "{{steps.flip-coin.outputs.result}} == tails"
+      outputs:
+        parameters:
+          - name: stepresult
+            valueFrom:
+              expression: "steps['flip-coin'].outputs.result == 'heads' ? steps.heads.outputs.result : steps.tails.outputs.result"
+
+    - name: flip-coin
+      script:
+        image: python:alpine3.6
+        command: [ python ]
+        source: |
+          import random
+          print("heads" if random.randint(0,1) == 0 else "tails")
+
+    - name: heads
+      script:
+        image: python:alpine3.6
+        command: [ python ]
+        source: |
+          print("heads")
+
+    - name: tails
+      script:
+        image: python:alpine3.6
+        command: [ python ]
+        source: |
+          print("tails")

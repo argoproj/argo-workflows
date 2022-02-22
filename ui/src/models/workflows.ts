@@ -1,5 +1,13 @@
 import * as kubernetes from 'argo-ui/src/models/kubernetes';
 
+export const labels = {
+    clusterWorkflowTemplate: 'workflows.argoproj.io/cluster-workflow-template',
+    completed: 'workflows.argoproj.io/completed',
+    creator: 'workflows.argoproj.io/creator',
+    cronWorkflow: 'workflows.argoproj.io/cron-workflow',
+    workflowTemplate: 'workflows.argoproj.io/workflow-template'
+};
+
 /**
  * Arguments to a template
  */
@@ -19,21 +27,9 @@ export interface Arguments {
  */
 export interface Artifact {
     /**
-     * Artifactory contains artifactory artifact location details
-     */
-    artifactory?: ArtifactoryArtifact;
-    /**
      * From allows an artifact to reference an artifact from a previous step
      */
     from?: string;
-    /**
-     * Git contains git artifact location details
-     */
-    git?: GitArtifact;
-    /**
-     * HTTP contains HTTP artifact location details
-     */
-    http?: HTTPArtifact;
     /**
      * mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.
      */
@@ -46,107 +42,6 @@ export interface Artifact {
      * Path is the container path to the artifact
      */
     path?: string;
-    /**
-     * Raw contains raw artifact location details
-     */
-    raw?: RawArtifact;
-    /**
-     * S3 contains S3 artifact location details
-     */
-    s3?: S3Artifact;
-}
-
-/**
- * ArtifactLocation describes a location for a single or multiple artifacts.
- * It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).
- * It is also used to describe the location of multiple artifacts such as the archive location of a single workflow step,
- * which the executor will use as a default location to store its files.
- */
-export interface ArtifactLocation {
-    /**
-     * Artifactory contains artifactory artifact location details
-     */
-    artifactory?: ArtifactoryArtifact;
-    /**
-     * Git contains git artifact location details
-     */
-    git?: GitArtifact;
-    /**
-     * HTTP contains HTTP artifact location details
-     */
-    http?: HTTPArtifact;
-    /**
-     * Raw contains raw artifact location details
-     */
-    raw?: RawArtifact;
-    /**
-     * S3 contains S3 artifact location details
-     */
-    s3?: S3Artifact;
-}
-
-/**
- * ArtifactoryArtifact is the location of an artifactory artifact
- */
-export interface ArtifactoryArtifact {
-    /**
-     * PasswordSecret is the secret selector to the repository password
-     */
-    passwordSecret?: kubernetes.SecretKeySelector;
-    /**
-     * URL of the artifact
-     */
-    url: string;
-    /**
-     * UsernameSecret is the secret selector to the repository username
-     */
-    usernameSecret?: kubernetes.SecretKeySelector;
-}
-
-/**
- * ArtifactoryAuth describes the secret selectors required for authenticating to artifactory
- */
-export interface ArtifactoryAuth {
-    /**
-     * PasswordSecret is the secret selector to the repository password
-     */
-    passwordSecret?: kubernetes.SecretKeySelector;
-    /**
-     * UsernameSecret is the secret selector to the repository username
-     */
-    usernameSecret?: kubernetes.SecretKeySelector;
-}
-
-/**
- * GitArtifact is the location of an git artifact
- */
-export interface GitArtifact {
-    /**
-     * PasswordSecret is the secret selector to the repository password
-     */
-    passwordSecret?: kubernetes.SecretKeySelector;
-    /**
-     * Repo is the git repository
-     */
-    repo: string;
-    /**
-     * Revision is the git commit, tag, branch to checkout
-     */
-    revision?: string;
-    /**
-     * UsernameSecret is the secret selector to the repository username
-     */
-    usernameSecret?: kubernetes.SecretKeySelector;
-}
-
-/**
- * HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container
- */
-export interface HTTPArtifact {
-    /**
-     * URL of the artifact
-     */
-    url: string;
 }
 
 /**
@@ -192,7 +87,7 @@ export interface Parameter {
     /**
      * Default is the default value to use for an input parameter if a value was not supplied
      */
-    _default?: string;
+    default?: string;
     /**
      * Name is the parameter name
      */
@@ -205,16 +100,14 @@ export interface Parameter {
      * ValueFrom is the source for the output parameter's value
      */
     valueFrom?: ValueFrom;
-}
-
-/**
- * RawArtifact allows raw string content to be placed as an artifact in a container
- */
-export interface RawArtifact {
     /**
-     * Data is the string contents of the artifact
+     * Enum holds a list of string values to choose from, for the actual value of the parameter
      */
-    data: string;
+    enum?: Array<string>;
+    /**
+     * Description is the parameter description
+     */
+    description?: string;
 }
 
 /**
@@ -250,70 +143,6 @@ export interface RetryStrategy {
 }
 
 /**
- * S3Artifact is the location of an S3 artifact
- */
-export interface S3Artifact {
-    /**
-     * AccessKeySecret is the secret selector to the bucket's access key
-     */
-    accessKeySecret: kubernetes.SecretKeySelector;
-    /**
-     * Bucket is the name of the bucket
-     */
-    bucket: string;
-    /**
-     * Endpoint is the hostname of the bucket endpoint
-     */
-    endpoint: string;
-    /**
-     * Insecure will connect to the service with TLS
-     */
-    insecure?: boolean;
-    /**
-     * Key is the key in the bucket where the artifact resides
-     */
-    key: string;
-    /**
-     * Region contains the optional bucket region
-     */
-    region?: string;
-    /**
-     * SecretKeySecret is the secret selector to the bucket's secret key
-     */
-    secretKeySecret: kubernetes.SecretKeySelector;
-}
-
-/**
- * S3Bucket contains the access information required for interfacing with an S3 bucket
- */
-export interface S3Bucket {
-    /**
-     * AccessKeySecret is the secret selector to the bucket's access key
-     */
-    accessKeySecret: kubernetes.SecretKeySelector;
-    /**
-     * Bucket is the name of the bucket
-     */
-    bucket: string;
-    /**
-     * Endpoint is the hostname of the bucket endpoint
-     */
-    endpoint: string;
-    /**
-     * Insecure will connect to the service with TLS
-     */
-    insecure?: boolean;
-    /**
-     * Region contains the optional bucket region
-     */
-    region?: string;
-    /**
-     * SecretKeySecret is the secret selector to the bucket's secret key
-     */
-    secretKeySecret: kubernetes.SecretKeySelector;
-}
-
-/**
  * Script is a template subtype to enable scripting through code steps
  */
 export interface Script {
@@ -332,9 +161,9 @@ export interface Script {
 }
 
 /**
- * Sidecar is a container which runs alongside the main container
+ * UserContainer is is a container specified by a user.
  */
-export interface Sidecar {
+export interface UserContainer {
     /**
      * Arguments to the entrypoint. The docker image's CMD is used if this is not provided.
      * Variable references $(VAR_NAME) are expanded using the container's environment.
@@ -468,6 +297,10 @@ export interface SidecarOptions {
     mirrorVolumeMounts?: boolean;
 }
 
+export interface ContainerNode extends kubernetes.Container {
+    dependencies?: string[];
+}
+
 /**
  * Template is a reusable and composable unit of execution in a workflow
  */
@@ -482,15 +315,13 @@ export interface Template {
      */
     affinity?: kubernetes.Affinity;
     /**
-     * Location in which all files related to the step will be stored (logs, artifacts, etc...).
-     * Can be overridden by individual items in Outputs.
-     * If omitted, will use the default artifact repository location configured in the controller, appended with the <workflowname>/<nodename> in the key.
-     */
-    archiveLocation?: ArtifactLocation;
-    /**
      * Container is the main container image to run in the pod
      */
     container?: kubernetes.Container;
+
+    containerSet?: {
+        containers: ContainerNode[];
+    };
     /**
      * Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness
      */
@@ -526,7 +357,11 @@ export interface Template {
     /**
      * Sidecars is a list of containers which run alongside the main container Sidecars are automatically killed when the main container completes
      */
-    sidecars?: Sidecar[];
+    sidecars?: UserContainer[];
+    /**
+     * InitContainers is a list of containers which run before the main container.
+     */
+    initContainers?: UserContainer[];
     /**
      * Steps define a series of sequential/parallel workflow steps
      */
@@ -536,6 +371,11 @@ export interface Template {
      * DAG template
      */
     dag?: DAGTemplate;
+
+    /**
+     * Suspend template
+     */
+    suspend?: {};
 
     /**
      * Template is the name of the template which is used as the base of this template.
@@ -589,7 +429,9 @@ export interface Workflow {
     status?: WorkflowStatus;
 }
 
-export type NodeType = 'Pod' | 'Steps' | 'StepGroup' | 'DAG' | 'Retry' | 'Skipped' | 'TaskGroup' | 'Suspend';
+export const execSpec = (w: Workflow) => Object.assign({}, w.status.storedWorkflowTemplateSpec, w.spec);
+
+export type NodeType = 'Pod' | 'Container' | 'Steps' | 'StepGroup' | 'DAG' | 'Retry' | 'Skipped' | 'TaskGroup' | 'Suspend';
 
 export interface NodeStatus {
     /**
@@ -640,7 +482,17 @@ export interface NodeStatus {
     finishedAt: kubernetes.Time;
 
     /**
-     * How much resource was used.
+     * Estimated duration in seconds.
+     */
+    estimatedDuration?: number;
+
+    /**
+     * Progress as numerator/denominator.
+     */
+    progress?: string;
+
+    /**
+     * How much resource was requested.
      */
     resourcesDuration?: {[resource: string]: number};
 
@@ -705,6 +557,11 @@ export interface NodeStatus {
      * HostNodeName name of the Kubernetes node on which the Pod is running, if applicable.
      */
     hostNodeName: string;
+
+    /**
+     * Memoization
+     */
+    memoizationStatus: MemoizationStatus;
 }
 
 export interface TemplateRef {
@@ -735,6 +592,15 @@ export interface WorkflowStatus {
     startedAt: kubernetes.Time;
     finishedAt: kubernetes.Time;
     /**
+     * Estimated duration in seconds.
+     */
+    estimatedDuration?: number;
+
+    /**
+     * Progress as numerator/denominator.
+     */
+    progress?: string;
+    /**
      * A human readable message indicating details about why the workflow is in this condition.
      */
     message: string;
@@ -758,23 +624,29 @@ export interface WorkflowStatus {
     storedTemplates: {[name: string]: Template};
 
     /**
-     * ResourcesDuration tracks how much resources were used.
+     * ResourcesDuration tracks how much resources were requested.
      */
     resourcesDuration?: {[resource: string]: number};
 
     /**
      * Conditions is a list of WorkflowConditions
      */
-    conditions?: WorkflowCondition[];
+    conditions?: Condition[];
+
+    /**
+     * StoredWorkflowTemplateSpec is a Workflow Spec of top level WorkflowTemplate.
+     */
+    storedWorkflowTemplateSpec?: WorkflowSpec;
 }
 
-export interface WorkflowCondition {
-    type: WorkflowConditionType;
+export interface Condition {
+    type: ConditionType;
     status: ConditionStatus;
     message: string;
 }
-export type WorkflowConditionType = 'Completed' | 'SpecWarning' | 'MetricsError';
-export type ConditionStatus = 'True' | 'False' | 'Unknown;';
+
+export type ConditionType = 'Completed' | 'SpecWarning' | 'MetricsError' | 'SubmissionError' | 'SpecError';
+export type ConditionStatus = 'True' | 'False' | 'Unknown';
 
 /**
  * WorkflowList is list of Workflow resources
@@ -798,6 +670,33 @@ export interface WorkflowList {
  * WorkflowSpec is the specification of a Workflow.
  */
 export interface WorkflowSpec {
+    /**
+     * Optional duration in seconds relative to the workflow start time which the workflow is
+     * allowed to run before the controller terminates the workflow. A value of zero is used to
+     * terminate a Running workflow
+     */
+    activeDeadlineSeconds?: number;
+    /**
+     * TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it
+     * Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be
+     * deleted after the time to live expires. If this field is unset,
+     * the controller config map will hold the default values.
+     */
+    ttlStrategy?: {
+        secondsAfterCompletion?: number;
+        secondsAfterSuccess?: number;
+        secondsAfterFailure?: number;
+    };
+    /**
+     * PodGC describes the strategy to use when to deleting completed pods
+     */
+    podGC?: {
+        strategy?: string;
+    };
+    /**
+     * SecurityContext holds pod-level security attributes and common container settings.
+     */
+    securityContext?: kubernetes.SecurityContext;
     /**
      * Affinity sets the scheduling constraints for all pods in the workflow. Can be overridden by an affinity specified in the template
      */
@@ -833,7 +732,7 @@ export interface WorkflowSpec {
     /**
      * Templates is a list of workflow templates used in a workflow
      */
-    templates: Template[];
+    templates?: Template[];
     /**
      * VolumeClaimTemplates is a list of claims that containers are allowed to reference.
      * The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow
@@ -848,18 +747,41 @@ export interface WorkflowSpec {
      * Suspend will suspend the workflow and prevent execution of any future steps in the workflow
      */
     suspend?: boolean;
+
+    /**
+     * workflowTemplateRef is the reference to the workflow template resource to execute.
+     */
+    workflowTemplateRef?: WorkflowTemplateRef;
+}
+
+export interface WorkflowTemplateRef {
+    /**
+     * Name is the resource name of the template.
+     */
+    name: string;
+
+    /**
+     * ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
+     */
+    clusterScope?: boolean;
 }
 
 export interface DAGTemplate {
     /**
      * Target are one or more names of targets to execute in a DAG
      */
-    targets: string;
+    targets?: string;
 
     /**
      * Tasks are a list of DAG tasks
      */
     tasks: DAGTask[];
+}
+
+export interface Sequence {
+    start?: number;
+    end?: number;
+    count?: number;
 }
 
 export interface DAGTask {
@@ -873,17 +795,21 @@ export interface DAGTask {
     /**
      * TemplateRef is the reference to the template resource to execute.
      */
-    templateRef: TemplateRef;
+    templateRef?: TemplateRef;
 
     /**
      * Arguments are the parameter and artifact arguments to the template
      */
-    arguments: Arguments;
+    arguments?: Arguments;
 
     /**
      * Dependencies are name of other targets which this depends on
      */
-    dependencies: string[];
+    dependencies?: string[];
+    onExit?: string;
+    withItems?: any[];
+    withParam?: string;
+    withSequence?: Sequence;
 }
 
 /**
@@ -906,17 +832,43 @@ export interface WorkflowStep {
      * When is an expression in which the step should conditionally execute
      */
     when?: string;
+    onExit?: string;
     /**
      * WithParam expands a step into from the value in the parameter
      */
     withParam?: string;
+    withItems?: any[];
+    withSequence?: Sequence;
     /**
      * TemplateRef is the reference to the template resource which is used as the base of this template.
      */
     templateRef?: TemplateRef;
 }
 
-export type NodePhase = 'Pending' | 'Running' | 'Succeeded' | 'Skipped' | 'Failed' | 'Error';
+/**
+ * MemoizationStatus holds information about a node with memoization enabled.
+ */
+
+export interface MemoizationStatus {
+    /**
+     * Hit is true if there was a previous cache entry and false otherwise
+     */
+    hit: boolean;
+    /**
+     * Key is the value used to query the cache for an entry
+     */
+    key: string;
+    /**
+     * Cache name stores the identifier of the cache used for this node
+     */
+    cacheName: string;
+}
+
+export type WorkflowPhase = 'Pending' | 'Running' | 'Succeeded' | 'Failed' | 'Error';
+
+export const WorkflowPhases: WorkflowPhase[] = ['Pending', 'Running', 'Succeeded', 'Failed', 'Error'];
+
+export type NodePhase = '' | 'Pending' | 'Running' | 'Succeeded' | 'Skipped' | 'Failed' | 'Error' | 'Omitted';
 
 export const NODE_PHASE = {
     PENDING: 'Pending',
@@ -924,7 +876,28 @@ export const NODE_PHASE = {
     SUCCEEDED: 'Succeeded',
     SKIPPED: 'Skipped',
     FAILED: 'Failed',
-    ERROR: 'Error'
+    ERROR: 'Error',
+    OMITTED: 'Omitted'
 };
 
+export function getColorForNodePhase(p: NodePhase) {
+    switch (p) {
+        case NODE_PHASE.ERROR:
+        case NODE_PHASE.FAILED:
+            return '#E96D76';
+        case NODE_PHASE.PENDING:
+        case NODE_PHASE.RUNNING:
+            return '#0DADEA';
+        case NODE_PHASE.SUCCEEDED:
+            return '#18BE94';
+        default:
+            return '#6D7F8B';
+    }
+}
+
 export type ResourceScope = 'local' | 'namespaced' | 'cluster';
+
+export interface LogEntry {
+    content: string;
+    podName?: string;
+}

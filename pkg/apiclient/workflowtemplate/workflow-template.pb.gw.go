@@ -20,6 +20,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/grpclog"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -30,6 +31,7 @@ var _ status.Status
 var _ = runtime.String
 var _ = utilities.NewDoubleArray
 var _ = descriptor.ForMessage
+var _ = metadata.Join
 
 func request_WorkflowTemplateService_CreateWorkflowTemplate_0(ctx context.Context, marshaler runtime.Marshaler, client WorkflowTemplateServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq WorkflowTemplateCreateRequest
@@ -183,7 +185,10 @@ func local_request_WorkflowTemplateService_GetWorkflowTemplate_0(ctx context.Con
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_WorkflowTemplateService_GetWorkflowTemplate_0); err != nil {
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_WorkflowTemplateService_GetWorkflowTemplate_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -252,7 +257,10 @@ func local_request_WorkflowTemplateService_ListWorkflowTemplates_0(ctx context.C
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace", err)
 	}
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_WorkflowTemplateService_ListWorkflowTemplates_0); err != nil {
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_WorkflowTemplateService_ListWorkflowTemplates_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -435,7 +443,10 @@ func local_request_WorkflowTemplateService_DeleteWorkflowTemplate_0(ctx context.
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_WorkflowTemplateService_DeleteWorkflowTemplate_0); err != nil {
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_WorkflowTemplateService_DeleteWorkflowTemplate_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -517,11 +528,14 @@ func local_request_WorkflowTemplateService_LintWorkflowTemplate_0(ctx context.Co
 // RegisterWorkflowTemplateServiceHandlerServer registers the http handlers for service WorkflowTemplateService to "mux".
 // UnaryRPC     :call WorkflowTemplateServiceServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
+// Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterWorkflowTemplateServiceHandlerFromEndpoint instead.
 func RegisterWorkflowTemplateServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server WorkflowTemplateServiceServer) error {
 
 	mux.Handle("POST", pattern_WorkflowTemplateService_CreateWorkflowTemplate_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -529,6 +543,7 @@ func RegisterWorkflowTemplateServiceHandlerServer(ctx context.Context, mux *runt
 			return
 		}
 		resp, md, err := local_request_WorkflowTemplateService_CreateWorkflowTemplate_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -542,6 +557,8 @@ func RegisterWorkflowTemplateServiceHandlerServer(ctx context.Context, mux *runt
 	mux.Handle("GET", pattern_WorkflowTemplateService_GetWorkflowTemplate_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -549,6 +566,7 @@ func RegisterWorkflowTemplateServiceHandlerServer(ctx context.Context, mux *runt
 			return
 		}
 		resp, md, err := local_request_WorkflowTemplateService_GetWorkflowTemplate_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -562,6 +580,8 @@ func RegisterWorkflowTemplateServiceHandlerServer(ctx context.Context, mux *runt
 	mux.Handle("GET", pattern_WorkflowTemplateService_ListWorkflowTemplates_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -569,6 +589,7 @@ func RegisterWorkflowTemplateServiceHandlerServer(ctx context.Context, mux *runt
 			return
 		}
 		resp, md, err := local_request_WorkflowTemplateService_ListWorkflowTemplates_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -582,6 +603,8 @@ func RegisterWorkflowTemplateServiceHandlerServer(ctx context.Context, mux *runt
 	mux.Handle("PUT", pattern_WorkflowTemplateService_UpdateWorkflowTemplate_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -589,6 +612,7 @@ func RegisterWorkflowTemplateServiceHandlerServer(ctx context.Context, mux *runt
 			return
 		}
 		resp, md, err := local_request_WorkflowTemplateService_UpdateWorkflowTemplate_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -602,6 +626,8 @@ func RegisterWorkflowTemplateServiceHandlerServer(ctx context.Context, mux *runt
 	mux.Handle("DELETE", pattern_WorkflowTemplateService_DeleteWorkflowTemplate_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -609,6 +635,7 @@ func RegisterWorkflowTemplateServiceHandlerServer(ctx context.Context, mux *runt
 			return
 		}
 		resp, md, err := local_request_WorkflowTemplateService_DeleteWorkflowTemplate_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -622,6 +649,8 @@ func RegisterWorkflowTemplateServiceHandlerServer(ctx context.Context, mux *runt
 	mux.Handle("POST", pattern_WorkflowTemplateService_LintWorkflowTemplate_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
 		if err != nil {
@@ -629,6 +658,7 @@ func RegisterWorkflowTemplateServiceHandlerServer(ctx context.Context, mux *runt
 			return
 		}
 		resp, md, err := local_request_WorkflowTemplateService_LintWorkflowTemplate_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)

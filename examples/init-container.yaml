@@ -19,4 +19,4 @@ spec:
       mirrorVolumeMounts: true
   volumes:
     - name: foo
-      emptyDir:
+      emptyDir: {}

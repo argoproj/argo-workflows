@@ -1,3 +1,6 @@
+//go:build !fields
+// +build !fields
+
 package main
 
 import (
@@ -79,7 +82,7 @@ func cleanDesc(desc string) string {
 
 func getRow(name, objType, desc string) string {
 	if index := strings.Index(desc, "DEPRECATED"); index != -1 {
-		return fmt.Sprintf(depTableRow, name, objType, "~"+desc[:index]+"~ "+desc[index:])
+		return fmt.Sprintf(depTableRow, name, objType, "~"+desc[:index-1]+"~ "+desc[index:])
 	}
 	return fmt.Sprintf(tableRow, name, objType, desc)
 }
@@ -107,7 +110,7 @@ func getExamples(examples Set, summary string) string {
 	for _, example := range sortedSetKeys(examples) {
 		split := strings.Split(example, "/")
 		name := split[len(split)-1]
-		out += fmt.Sprintf(listElement, link(fmt.Sprintf("`%s`", name), "../"+example))
+		out += fmt.Sprintf(listElement, link(fmt.Sprintf("`%s`", name), "https://github.com/argoproj/argo-workflows/blob/master/"+example))
 	}
 	out += dropdownCloser
 	return out
@@ -133,8 +136,8 @@ func getObjectType(field map[string]interface{}, addToQueue func(string)) string
 			addToQueue(refString)
 
 			name := getNameFromFullName(refString)
-			if refString == "io.argoproj.workflow.v1alpha1.WorkflowStep" {
-				return fmt.Sprintf("`Array<Array<`%s`>>`", link(fmt.Sprintf("`%s`", name), fmt.Sprintf("#"+strings.ToLower(name))))
+			if refString == "io.argoproj.workflow.v1alpha1.ParallelSteps" {
+				return fmt.Sprintf("`Array<Array<`%s`>>`", link(fmt.Sprintf("`%s`", "WorkflowStep"), fmt.Sprintf("#"+strings.ToLower("WorkflowStep"))))
 			}
 			return fmt.Sprintf("`Array<`%s`>`", link(fmt.Sprintf("`%s`", name), fmt.Sprintf("#"+strings.ToLower(name))))
 		}
@@ -198,8 +201,10 @@ type Set map[string]bool
 func NewDocGeneratorContext() *DocGeneratorContext {
 	return &DocGeneratorContext{
 		doneFields: make(Set),
-		queue: []string{"io.argoproj.workflow.v1alpha1.Workflow", "io.argoproj.workflow.v1alpha1.CronWorkflow",
-			"io.argoproj.workflow.v1alpha1.WorkflowTemplate"},
+		queue: []string{
+			"io.argoproj.workflow.v1alpha1.Workflow", "io.argoproj.workflow.v1alpha1.CronWorkflow",
+			"io.argoproj.workflow.v1alpha1.WorkflowTemplate",
+		},
 		external: []string{},
 		index:    make(map[string]Set),
 		jsonName: make(map[string]string),
@@ -223,20 +228,27 @@ func (c *DocGeneratorContext) loadFiles() {
 	if err != nil {
 		panic(err)
 	}
+FILES:
 	for _, fileName := range files {
-		bytes, err := ioutil.ReadFile(fileName)
+		bytes, err := ioutil.ReadFile(filepath.Clean(fileName))
 		if err != nil {
 			panic(err)
 		}
 
 		r := regexp.MustCompile(`kind: ([a-zA-Z]+)`)
-		kinds := r.FindAllStringSubmatch(string(bytes), -1)
-		for _, kind := range kinds {
-			if set, ok := c.index[kind[1]]; ok {
+		matches := r.FindAllStringSubmatch(string(bytes), -1)
+		for _, m := range matches {
+			kind := m[1]
+			switch kind {
+			case "ClusterWorkflowTemplate", "CronWorkflow", "Workflow", "WorkflowTemplate":
+			default:
+				continue FILES
+			}
+			if set, ok := c.index[kind]; ok {
 				set[fileName] = true
 			} else {
-				c.index[kind[1]] = make(Set)
-				c.index[kind[1]][fileName] = true
+				c.index[kind] = make(Set)
+				c.index[kind][fileName] = true
 			}
 		}
 
@@ -320,7 +332,7 @@ func (c *DocGeneratorContext) getTemplate(key string) string {
 func (c *DocGeneratorContext) generate() string {
 	c.loadFiles()
 
-	out := fmt.Sprintf("# Argo Fields")
+	out := "# Field Reference"
 	for len(c.queue) > 0 {
 		var temp string
 		temp, c.queue = c.queue[0], c.queue[1:]
@@ -339,8 +351,9 @@ func (c *DocGeneratorContext) generate() string {
 }
 
 func generateDocs() {
+	println("generating docs/fields.md")
 	c := NewDocGeneratorContext()
-	err := ioutil.WriteFile("docs/fields.md", []byte(c.generate()), 0644)
+	err := ioutil.WriteFile("docs/fields.md", []byte(c.generate()), 0o600)
 	if err != nil {
 		panic(err)
 	}

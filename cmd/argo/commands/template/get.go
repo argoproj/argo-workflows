@@ -5,27 +5,27 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/argoproj/pkg/humanize"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/pkg/humanize"
-
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 func NewGetCommand() *cobra.Command {
-	var (
-		output string
-	)
+	var output string
 
-	var command = &cobra.Command{
+	command := &cobra.Command{
 		Use:   "get WORKFLOW_TEMPLATE...",
 		Short: "display details about a workflow template",
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient()
-			serviceClient := apiClient.NewWorkflowTemplateServiceClient()
+			ctx, apiClient := client.NewAPIClient(cmd.Context())
+			serviceClient, err := apiClient.NewWorkflowTemplateServiceClient()
+			if err != nil {
+				log.Fatal(err)
+			}
 			namespace := client.Namespace()
 			for _, name := range args {
 				wftmpl, err := serviceClient.GetWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateGetRequest{

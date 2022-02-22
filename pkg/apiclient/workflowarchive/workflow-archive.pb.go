@@ -6,15 +6,13 @@ package workflowarchive
 import (
 	context "context"
 	fmt "fmt"
-	v1alpha1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	_ "github.com/gogo/protobuf/gogoproto"
+	v1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	proto "github.com/gogo/protobuf/proto"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 	io "io"
-	_ "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	math "math"
 	math_bits "math/bits"
@@ -33,6 +31,7 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type ListArchivedWorkflowsRequest struct {
 	ListOptions          *v1.ListOptions `protobuf:"bytes,1,opt,name=listOptions,proto3" json:"listOptions,omitempty"`
+	NamePrefix           string          `protobuf:"bytes,2,opt,name=namePrefix,proto3" json:"namePrefix,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
 	XXX_unrecognized     []byte          `json:"-"`
 	XXX_sizecache        int32           `json:"-"`
@@ -76,6 +75,13 @@ func (m *ListArchivedWorkflowsRequest) GetListOptions() *v1.ListOptions {
 		return m.ListOptions
 	}
 	return nil
+}
+
+func (m *ListArchivedWorkflowsRequest) GetNamePrefix() string {
+	if m != nil {
+		return m.NamePrefix
+	}
+	return ""
 }
 
 type GetArchivedWorkflowRequest struct {
@@ -211,11 +217,101 @@ func (m *ArchivedWorkflowDeletedResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ArchivedWorkflowDeletedResponse proto.InternalMessageInfo
 
+type ListArchivedWorkflowLabelKeysRequest struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *ListArchivedWorkflowLabelKeysRequest) Reset()         { *m = ListArchivedWorkflowLabelKeysRequest{} }
+func (m *ListArchivedWorkflowLabelKeysRequest) String() string { return proto.CompactTextString(m) }
+func (*ListArchivedWorkflowLabelKeysRequest) ProtoMessage()    {}
+func (*ListArchivedWorkflowLabelKeysRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_95ca9a2d33e8bb19, []int{4}
+}
+func (m *ListArchivedWorkflowLabelKeysRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ListArchivedWorkflowLabelKeysRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ListArchivedWorkflowLabelKeysRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ListArchivedWorkflowLabelKeysRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListArchivedWorkflowLabelKeysRequest.Merge(m, src)
+}
+func (m *ListArchivedWorkflowLabelKeysRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *ListArchivedWorkflowLabelKeysRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ListArchivedWorkflowLabelKeysRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ListArchivedWorkflowLabelKeysRequest proto.InternalMessageInfo
+
+type ListArchivedWorkflowLabelValuesRequest struct {
+	ListOptions          *v1.ListOptions `protobuf:"bytes,1,opt,name=listOptions,proto3" json:"listOptions,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
+	XXX_unrecognized     []byte          `json:"-"`
+	XXX_sizecache        int32           `json:"-"`
+}
+
+func (m *ListArchivedWorkflowLabelValuesRequest) Reset() {
+	*m = ListArchivedWorkflowLabelValuesRequest{}
+}
+func (m *ListArchivedWorkflowLabelValuesRequest) String() string { return proto.CompactTextString(m) }
+func (*ListArchivedWorkflowLabelValuesRequest) ProtoMessage()    {}
+func (*ListArchivedWorkflowLabelValuesRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_95ca9a2d33e8bb19, []int{5}
+}
+func (m *ListArchivedWorkflowLabelValuesRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ListArchivedWorkflowLabelValuesRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ListArchivedWorkflowLabelValuesRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ListArchivedWorkflowLabelValuesRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListArchivedWorkflowLabelValuesRequest.Merge(m, src)
+}
+func (m *ListArchivedWorkflowLabelValuesRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *ListArchivedWorkflowLabelValuesRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ListArchivedWorkflowLabelValuesRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ListArchivedWorkflowLabelValuesRequest proto.InternalMessageInfo
+
+func (m *ListArchivedWorkflowLabelValuesRequest) GetListOptions() *v1.ListOptions {
+	if m != nil {
+		return m.ListOptions
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*ListArchivedWorkflowsRequest)(nil), "workflowarchive.ListArchivedWorkflowsRequest")
 	proto.RegisterType((*GetArchivedWorkflowRequest)(nil), "workflowarchive.GetArchivedWorkflowRequest")
 	proto.RegisterType((*DeleteArchivedWorkflowRequest)(nil), "workflowarchive.DeleteArchivedWorkflowRequest")
 	proto.RegisterType((*ArchivedWorkflowDeletedResponse)(nil), "workflowarchive.ArchivedWorkflowDeletedResponse")
+	proto.RegisterType((*ListArchivedWorkflowLabelKeysRequest)(nil), "workflowarchive.ListArchivedWorkflowLabelKeysRequest")
+	proto.RegisterType((*ListArchivedWorkflowLabelValuesRequest)(nil), "workflowarchive.ListArchivedWorkflowLabelValuesRequest")
 }
 
 func init() {
@@ -223,37 +319,44 @@ func init() {
 }
 
 var fileDescriptor_95ca9a2d33e8bb19 = []byte{
-	// 475 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x54, 0xcd, 0x8a, 0xd4, 0x40,
-	0x10, 0x26, 0x2a, 0x82, 0xbd, 0x07, 0xa5, 0xc5, 0x1f, 0xc2, 0x38, 0xae, 0x39, 0x2d, 0xca, 0x54,
-	0x9b, 0x75, 0x11, 0x2f, 0x1e, 0x56, 0x17, 0xbc, 0x2c, 0x08, 0xb3, 0x07, 0xc1, 0x5b, 0x4f, 0x52,
-	0xdb, 0xd3, 0x4e, 0x26, 0x1d, 0xbb, 0x3b, 0x19, 0x44, 0xbc, 0xf8, 0x0a, 0xde, 0x3d, 0x79, 0x13,
-	0xdf, 0xc3, 0xa3, 0xe0, 0x0b, 0xc8, 0xe0, 0x83, 0x48, 0x7a, 0x92, 0xcd, 0x90, 0x64, 0x67, 0x84,
-	0xbd, 0x55, 0x75, 0x57, 0x7d, 0xdf, 0x57, 0xf5, 0xa5, 0x43, 0x0e, 0xb2, 0x99, 0x60, 0x3c, 0x93,
-	0x51, 0x22, 0x31, 0xb5, 0x6c, 0xa1, 0xf4, 0xec, 0x34, 0x51, 0x0b, 0xae, 0xa3, 0xa9, 0x2c, 0xf0,
-	0x2c, 0x1f, 0x55, 0x07, 0x90, 0x69, 0x65, 0x15, 0xbd, 0xde, 0xaa, 0xf3, 0x47, 0x42, 0xda, 0x69,
-	0x3e, 0x81, 0x48, 0xcd, 0x99, 0x50, 0x42, 0x31, 0x57, 0x37, 0xc9, 0x4f, 0x5d, 0xe6, 0x12, 0x17,
-	0xad, 0xfa, 0xfd, 0x81, 0x50, 0x4a, 0x24, 0x58, 0x12, 0x33, 0x9e, 0xa6, 0xca, 0x72, 0x2b, 0x55,
-	0x6a, 0xaa, 0xdb, 0x83, 0xd9, 0x33, 0x03, 0x52, 0x95, 0xb7, 0x73, 0x1e, 0x4d, 0x65, 0x8a, 0xfa,
-	0x03, 0xab, 0x74, 0x1a, 0x36, 0x47, 0xcb, 0x59, 0x11, 0x32, 0x81, 0x29, 0x6a, 0x6e, 0x31, 0xae,
-	0xba, 0x5e, 0xae, 0x49, 0xe0, 0xda, 0x91, 0xbe, 0x73, 0x41, 0xd3, 0x5a, 0xab, 0x66, 0x45, 0xc8,
-	0x93, 0x6c, 0xca, 0xbb, 0x20, 0x41, 0x43, 0xcd, 0x22, 0xa5, 0xb1, 0x87, 0x28, 0x30, 0x64, 0x70,
-	0x2c, 0x8d, 0x3d, 0x5c, 0x8d, 0x1e, 0xbf, 0xa9, 0x40, 0xcd, 0x18, 0xdf, 0xe7, 0x68, 0x2c, 0x3d,
-	0x21, 0x3b, 0x89, 0x34, 0xf6, 0x75, 0xe6, 0x66, 0xba, 0xeb, 0xed, 0x7a, 0x7b, 0x3b, 0xfb, 0x21,
-	0xac, 0x90, 0x61, 0x7d, 0x28, 0xc8, 0x66, 0xa2, 0x3c, 0x30, 0x50, 0x0e, 0x05, 0x45, 0x08, 0xc7,
-	0x4d, 0xe3, 0x78, 0x1d, 0x25, 0x00, 0xe2, 0xbf, 0xc2, 0x0e, 0x67, 0x4d, 0x79, 0x83, 0x5c, 0xce,
-	0x65, 0xec, 0xa8, 0xae, 0x8d, 0xcb, 0x30, 0x08, 0xc9, 0xbd, 0x23, 0x4c, 0xd0, 0xe2, 0xff, 0xb7,
-	0x3c, 0x20, 0xf7, 0xdb, 0xc5, 0x2b, 0x88, 0x78, 0x8c, 0x26, 0x53, 0xa9, 0xc1, 0xfd, 0xaf, 0x57,
-	0xc8, 0x9d, 0x76, 0xcd, 0x09, 0xea, 0x42, 0x46, 0x48, 0x7f, 0x78, 0xe4, 0x56, 0xef, 0x5e, 0xe8,
-	0x08, 0x5a, 0x9f, 0x0b, 0x6c, 0xda, 0x9f, 0x7f, 0x08, 0x8d, 0x93, 0x50, 0x3b, 0xe9, 0x82, 0x66,
-	0x5f, 0x35, 0x20, 0xd4, 0x4e, 0x42, 0x0d, 0x53, 0x42, 0x07, 0xc1, 0xe7, 0xdf, 0x7f, 0xbf, 0x5c,
-	0x1a, 0x50, 0xdf, 0x19, 0x59, 0x84, 0xac, 0x22, 0x8e, 0x47, 0x8b, 0x33, 0x55, 0xdf, 0x3d, 0x72,
-	0xb3, 0x67, 0xa5, 0xf4, 0x51, 0x47, 0xed, 0xf9, 0x8b, 0xf7, 0x9f, 0x5f, 0x48, 0x6b, 0xb0, 0xe7,
-	0x74, 0x06, 0x74, 0xf7, 0x7c, 0x9d, 0xec, 0x63, 0x2e, 0xe3, 0x4f, 0xf4, 0x9b, 0x47, 0x6e, 0xf7,
-	0x1b, 0x4a, 0xa1, 0x23, 0x78, 0xa3, 0xf3, 0xfe, 0xe3, 0x4e, 0xfd, 0x16, 0xdb, 0x6b, 0x99, 0x0f,
-	0xb7, 0xca, 0x7c, 0x71, 0xf4, 0x73, 0x39, 0xf4, 0x7e, 0x2d, 0x87, 0xde, 0x9f, 0xe5, 0xd0, 0x7b,
-	0xfb, 0x74, 0xdb, 0x93, 0xec, 0xff, 0xeb, 0x4c, 0xae, 0xba, 0x87, 0xf6, 0xe4, 0x5f, 0x00, 0x00,
-	0x00, 0xff, 0xff, 0x61, 0x99, 0xcf, 0x20, 0x9d, 0x04, 0x00, 0x00,
+	// 579 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x95, 0xdf, 0x6a, 0x13, 0x4f,
+	0x14, 0xc7, 0x99, 0xfe, 0xe0, 0x27, 0x9d, 0x5e, 0x28, 0x23, 0x6a, 0x59, 0xd2, 0x34, 0x0e, 0xda,
+	0x46, 0x65, 0x67, 0xdc, 0xb6, 0xa2, 0x97, 0x2a, 0x82, 0x60, 0xd3, 0x2a, 0x29, 0x28, 0x78, 0x23,
+	0x93, 0xec, 0xe9, 0x66, 0xcc, 0x66, 0x67, 0xdd, 0x99, 0x6c, 0x2d, 0xd2, 0x1b, 0x5f, 0xa1, 0xaf,
+	0xe0, 0x43, 0x88, 0x4f, 0xe0, 0xa5, 0xe8, 0x9d, 0x57, 0x12, 0xbc, 0xf2, 0x29, 0x64, 0x27, 0xd9,
+	0x24, 0xe6, 0x3f, 0x58, 0xef, 0x26, 0x27, 0xe7, 0x7c, 0xe7, 0x73, 0xce, 0x7e, 0x0f, 0x83, 0x77,
+	0xe2, 0x66, 0xc0, 0x45, 0x2c, 0xeb, 0xa1, 0x84, 0xc8, 0xf0, 0x23, 0x95, 0x34, 0x0f, 0x43, 0x75,
+	0x24, 0x92, 0x7a, 0x43, 0xa6, 0xd0, 0xff, 0xed, 0xf6, 0x02, 0x2c, 0x4e, 0x94, 0x51, 0xe4, 0xfc,
+	0x48, 0x9e, 0x53, 0x08, 0x94, 0x0a, 0x42, 0xc8, 0x94, 0xb8, 0x88, 0x22, 0x65, 0x84, 0x91, 0x2a,
+	0xd2, 0xdd, 0x74, 0x67, 0xa7, 0x79, 0x4f, 0x33, 0xa9, 0xb2, 0x7f, 0x5b, 0xa2, 0xde, 0x90, 0x11,
+	0x24, 0xc7, 0xbc, 0x77, 0xb1, 0xe6, 0x2d, 0x30, 0x82, 0xa7, 0x1e, 0x0f, 0x20, 0x82, 0x44, 0x18,
+	0xf0, 0x7b, 0x55, 0x7b, 0x81, 0x34, 0x8d, 0x76, 0x8d, 0xd5, 0x55, 0x8b, 0x8b, 0x24, 0x50, 0x71,
+	0xa2, 0x5e, 0xdb, 0x83, 0x9b, 0xdf, 0xae, 0x07, 0x22, 0x79, 0x88, 0xa7, 0x9e, 0x08, 0xe3, 0x86,
+	0x18, 0x93, 0xa3, 0xa7, 0x08, 0x17, 0x2a, 0x52, 0x9b, 0x07, 0x5d, 0x64, 0xff, 0x45, 0x2e, 0x52,
+	0x85, 0x37, 0x6d, 0xd0, 0x86, 0x1c, 0xe0, 0x95, 0x50, 0x6a, 0xf3, 0x34, 0xb6, 0xe8, 0xab, 0xa8,
+	0x84, 0xca, 0x2b, 0x5b, 0x1e, 0xeb, 0xb2, 0xb3, 0x61, 0x76, 0x16, 0x37, 0x83, 0x2c, 0xa0, 0x59,
+	0xc6, 0xce, 0x52, 0x8f, 0x55, 0x06, 0x85, 0xd5, 0x61, 0x15, 0x52, 0xc4, 0x38, 0x12, 0x2d, 0x78,
+	0x96, 0xc0, 0xa1, 0x7c, 0xbb, 0xba, 0x54, 0x42, 0xe5, 0xe5, 0xea, 0x50, 0x84, 0x32, 0xec, 0x3c,
+	0x86, 0x31, 0xa6, 0x1c, 0xe9, 0x02, 0xfe, 0xaf, 0x2d, 0x7d, 0x8b, 0xb2, 0x5c, 0xcd, 0x8e, 0xd4,
+	0xc3, 0x6b, 0x8f, 0x20, 0x04, 0x03, 0x8b, 0x97, 0x5c, 0xc5, 0xeb, 0xa3, 0xc9, 0x5d, 0x09, 0xbf,
+	0x0a, 0x3a, 0x56, 0x91, 0x06, 0xba, 0x81, 0xaf, 0x4d, 0x1a, 0x4d, 0x45, 0xd4, 0x20, 0xdc, 0x85,
+	0xe3, 0x7c, 0x44, 0xf4, 0x04, 0x6f, 0x4c, 0xcd, 0x7b, 0x2e, 0xc2, 0x36, 0xfc, 0xd3, 0x61, 0x6e,
+	0xfd, 0x3a, 0x87, 0xaf, 0x8c, 0xde, 0x7d, 0x00, 0x49, 0x2a, 0xeb, 0x40, 0x3e, 0x21, 0x7c, 0x69,
+	0xe2, 0xe7, 0x25, 0x2e, 0x1b, 0x71, 0x2b, 0x9b, 0x65, 0x03, 0x67, 0x9f, 0x0d, 0x7c, 0xc7, 0x72,
+	0xdf, 0xd9, 0xc3, 0xab, 0xbe, 0xef, 0x58, 0xba, 0x3d, 0xc0, 0xce, 0xa3, 0x2c, 0xb7, 0x1e, 0xeb,
+	0xcf, 0x45, 0x6a, 0x43, 0xe9, 0xfb, 0x6f, 0x3f, 0x4f, 0x97, 0x0a, 0xc4, 0xb1, 0xcb, 0x91, 0x7a,
+	0xbc, 0x47, 0xe1, 0x0f, 0x6c, 0x4c, 0x3e, 0x22, 0x7c, 0x71, 0x82, 0x0d, 0xc8, 0xad, 0x31, 0xf4,
+	0xe9, 0x66, 0x71, 0x9e, 0x9c, 0x1d, 0x38, 0x2d, 0x5b, 0x68, 0x4a, 0x4a, 0xd3, 0xa1, 0xf9, 0xbb,
+	0xb6, 0xf4, 0x4f, 0xc8, 0x07, 0x84, 0x2f, 0x4f, 0x76, 0x24, 0x61, 0x63, 0xf4, 0x33, 0xad, 0xeb,
+	0xdc, 0x1e, 0xcb, 0x9f, 0xe7, 0xdb, 0x1e, 0xe6, 0xcd, 0xf9, 0x98, 0x5f, 0x11, 0x5e, 0x9b, 0x69,
+	0x71, 0x72, 0x67, 0x21, 0x9b, 0x8c, 0xae, 0x84, 0xb3, 0xfb, 0xf7, 0x53, 0xef, 0x6b, 0x52, 0xd7,
+	0xf6, 0xb3, 0x49, 0xae, 0x4f, 0xef, 0xc7, 0x0d, 0xb3, 0x6c, 0xb7, 0x99, 0x21, 0x7f, 0x47, 0x78,
+	0x7d, 0xce, 0x3e, 0x92, 0xbb, 0x8b, 0xb7, 0xf5, 0xc7, 0x06, 0x3b, 0x7b, 0x67, 0xd4, 0x58, 0x57,
+	0x95, 0x72, 0xdb, 0xda, 0x0d, 0xb2, 0x39, 0xb7, 0xb5, 0xd4, 0x16, 0x3c, 0xdc, 0xff, 0xdc, 0x29,
+	0xa2, 0x2f, 0x9d, 0x22, 0xfa, 0xd1, 0x29, 0xa2, 0x97, 0xf7, 0x17, 0x7f, 0x0c, 0x26, 0x3f, 0x65,
+	0xb5, 0xff, 0xed, 0x33, 0xb0, 0xfd, 0x3b, 0x00, 0x00, 0xff, 0xff, 0x42, 0xe1, 0x0d, 0xc1, 0xf2,
+	0x06, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -271,6 +374,8 @@ type ArchivedWorkflowServiceClient interface {
 	ListArchivedWorkflows(ctx context.Context, in *ListArchivedWorkflowsRequest, opts ...grpc.CallOption) (*v1alpha1.WorkflowList, error)
 	GetArchivedWorkflow(ctx context.Context, in *GetArchivedWorkflowRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
 	DeleteArchivedWorkflow(ctx context.Context, in *DeleteArchivedWorkflowRequest, opts ...grpc.CallOption) (*ArchivedWorkflowDeletedResponse, error)
+	ListArchivedWorkflowLabelKeys(ctx context.Context, in *ListArchivedWorkflowLabelKeysRequest, opts ...grpc.CallOption) (*v1alpha1.LabelKeys, error)
+	ListArchivedWorkflowLabelValues(ctx context.Context, in *ListArchivedWorkflowLabelValuesRequest, opts ...grpc.CallOption) (*v1alpha1.LabelValues, error)
 }
 
 type archivedWorkflowServiceClient struct {
@@ -308,11 +413,31 @@ func (c *archivedWorkflowServiceClient) DeleteArchivedWorkflow(ctx context.Conte
 	return out, nil
 }
 
+func (c *archivedWorkflowServiceClient) ListArchivedWorkflowLabelKeys(ctx context.Context, in *ListArchivedWorkflowLabelKeysRequest, opts ...grpc.CallOption) (*v1alpha1.LabelKeys, error) {
+	out := new(v1alpha1.LabelKeys)
+	err := c.cc.Invoke(ctx, "/workflowarchive.ArchivedWorkflowService/ListArchivedWorkflowLabelKeys", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *archivedWorkflowServiceClient) ListArchivedWorkflowLabelValues(ctx context.Context, in *ListArchivedWorkflowLabelValuesRequest, opts ...grpc.CallOption) (*v1alpha1.LabelValues, error) {
+	out := new(v1alpha1.LabelValues)
+	err := c.cc.Invoke(ctx, "/workflowarchive.ArchivedWorkflowService/ListArchivedWorkflowLabelValues", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ArchivedWorkflowServiceServer is the server API for ArchivedWorkflowService service.
 type ArchivedWorkflowServiceServer interface {
 	ListArchivedWorkflows(context.Context, *ListArchivedWorkflowsRequest) (*v1alpha1.WorkflowList, error)
 	GetArchivedWorkflow(context.Context, *GetArchivedWorkflowRequest) (*v1alpha1.Workflow, error)
 	DeleteArchivedWorkflow(context.Context, *DeleteArchivedWorkflowRequest) (*ArchivedWorkflowDeletedResponse, error)
+	ListArchivedWorkflowLabelKeys(context.Context, *ListArchivedWorkflowLabelKeysRequest) (*v1alpha1.LabelKeys, error)
+	ListArchivedWorkflowLabelValues(context.Context, *ListArchivedWorkflowLabelValuesRequest) (*v1alpha1.LabelValues, error)
 }
 
 // UnimplementedArchivedWorkflowServiceServer can be embedded to have forward compatible implementations.
@@ -327,6 +452,12 @@ func (*UnimplementedArchivedWorkflowServiceServer) GetArchivedWorkflow(ctx conte
 }
 func (*UnimplementedArchivedWorkflowServiceServer) DeleteArchivedWorkflow(ctx context.Context, req *DeleteArchivedWorkflowRequest) (*ArchivedWorkflowDeletedResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteArchivedWorkflow not implemented")
+}
+func (*UnimplementedArchivedWorkflowServiceServer) ListArchivedWorkflowLabelKeys(ctx context.Context, req *ListArchivedWorkflowLabelKeysRequest) (*v1alpha1.LabelKeys, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListArchivedWorkflowLabelKeys not implemented")
+}
+func (*UnimplementedArchivedWorkflowServiceServer) ListArchivedWorkflowLabelValues(ctx context.Context, req *ListArchivedWorkflowLabelValuesRequest) (*v1alpha1.LabelValues, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListArchivedWorkflowLabelValues not implemented")
 }
 
 func RegisterArchivedWorkflowServiceServer(s *grpc.Server, srv ArchivedWorkflowServiceServer) {
@@ -387,6 +518,42 @@ func _ArchivedWorkflowService_DeleteArchivedWorkflow_Handler(srv interface{}, ct
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ArchivedWorkflowService_ListArchivedWorkflowLabelKeys_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListArchivedWorkflowLabelKeysRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ArchivedWorkflowServiceServer).ListArchivedWorkflowLabelKeys(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/workflowarchive.ArchivedWorkflowService/ListArchivedWorkflowLabelKeys",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ArchivedWorkflowServiceServer).ListArchivedWorkflowLabelKeys(ctx, req.(*ListArchivedWorkflowLabelKeysRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ArchivedWorkflowService_ListArchivedWorkflowLabelValues_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListArchivedWorkflowLabelValuesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ArchivedWorkflowServiceServer).ListArchivedWorkflowLabelValues(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/workflowarchive.ArchivedWorkflowService/ListArchivedWorkflowLabelValues",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ArchivedWorkflowServiceServer).ListArchivedWorkflowLabelValues(ctx, req.(*ListArchivedWorkflowLabelValuesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _ArchivedWorkflowService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "workflowarchive.ArchivedWorkflowService",
 	HandlerType: (*ArchivedWorkflowServiceServer)(nil),
@@ -402,6 +569,14 @@ var _ArchivedWorkflowService_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteArchivedWorkflow",
 			Handler:    _ArchivedWorkflowService_DeleteArchivedWorkflow_Handler,
+		},
+		{
+			MethodName: "ListArchivedWorkflowLabelKeys",
+			Handler:    _ArchivedWorkflowService_ListArchivedWorkflowLabelKeys_Handler,
+		},
+		{
+			MethodName: "ListArchivedWorkflowLabelValues",
+			Handler:    _ArchivedWorkflowService_ListArchivedWorkflowLabelValues_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -431,6 +606,13 @@ func (m *ListArchivedWorkflowsRequest) MarshalToSizedBuffer(dAtA []byte) (int, e
 	if m.XXX_unrecognized != nil {
 		i -= len(m.XXX_unrecognized)
 		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if len(m.NamePrefix) > 0 {
+		i -= len(m.NamePrefix)
+		copy(dAtA[i:], m.NamePrefix)
+		i = encodeVarintWorkflowArchive(dAtA, i, uint64(len(m.NamePrefix)))
+		i--
+		dAtA[i] = 0x12
 	}
 	if m.ListOptions != nil {
 		{
@@ -542,6 +724,72 @@ func (m *ArchivedWorkflowDeletedResponse) MarshalToSizedBuffer(dAtA []byte) (int
 	return len(dAtA) - i, nil
 }
 
+func (m *ListArchivedWorkflowLabelKeysRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ListArchivedWorkflowLabelKeysRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ListArchivedWorkflowLabelKeysRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ListArchivedWorkflowLabelValuesRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ListArchivedWorkflowLabelValuesRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ListArchivedWorkflowLabelValuesRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.ListOptions != nil {
+		{
+			size, err := m.ListOptions.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintWorkflowArchive(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintWorkflowArchive(dAtA []byte, offset int, v uint64) int {
 	offset -= sovWorkflowArchive(v)
 	base := offset
@@ -561,6 +809,10 @@ func (m *ListArchivedWorkflowsRequest) Size() (n int) {
 	_ = l
 	if m.ListOptions != nil {
 		l = m.ListOptions.Size()
+		n += 1 + l + sovWorkflowArchive(uint64(l))
+	}
+	l = len(m.NamePrefix)
+	if l > 0 {
 		n += 1 + l + sovWorkflowArchive(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
@@ -607,6 +859,34 @@ func (m *ArchivedWorkflowDeletedResponse) Size() (n int) {
 	}
 	var l int
 	_ = l
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *ListArchivedWorkflowLabelKeysRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *ListArchivedWorkflowLabelValuesRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ListOptions != nil {
+		l = m.ListOptions.Size()
+		n += 1 + l + sovWorkflowArchive(uint64(l))
+	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
 	}
@@ -684,16 +964,45 @@ func (m *ListArchivedWorkflowsRequest) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field NamePrefix", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflowArchive
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflowArchive
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflowArchive
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.NamePrefix = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipWorkflowArchive(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthWorkflowArchive
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthWorkflowArchive
 			}
 			if (iNdEx + skippy) > l {
@@ -776,10 +1085,7 @@ func (m *GetArchivedWorkflowRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthWorkflowArchive
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthWorkflowArchive
 			}
 			if (iNdEx + skippy) > l {
@@ -862,10 +1168,7 @@ func (m *DeleteArchivedWorkflowRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthWorkflowArchive
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthWorkflowArchive
 			}
 			if (iNdEx + skippy) > l {
@@ -916,10 +1219,145 @@ func (m *ArchivedWorkflowDeletedResponse) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthWorkflowArchive
 			}
-			if (iNdEx + skippy) < 0 {
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ListArchivedWorkflowLabelKeysRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowWorkflowArchive
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ListArchivedWorkflowLabelKeysRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ListArchivedWorkflowLabelKeysRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipWorkflowArchive(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthWorkflowArchive
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ListArchivedWorkflowLabelValuesRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowWorkflowArchive
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ListArchivedWorkflowLabelValuesRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ListArchivedWorkflowLabelValuesRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ListOptions", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflowArchive
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthWorkflowArchive
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflowArchive
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ListOptions == nil {
+				m.ListOptions = &v1.ListOptions{}
+			}
+			if err := m.ListOptions.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipWorkflowArchive(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthWorkflowArchive
 			}
 			if (iNdEx + skippy) > l {

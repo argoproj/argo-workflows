@@ -1,63 +1,38 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: artifact-passing
-  labels:
-    argo-e2e: true
+  generateName: artifact-passing-
 spec:
-  entrypoint: artifact-example
-  volumes:
-    - name: test-volume
+  entrypoint: main
   templates:
-    - name: artifact-example
-      steps:
-        - - name: generate-artifact
+    - name: main
+      dag:
+        tasks:
+          - name: generate-artifact
             template: generate-message
-        - - name: consume-artifact
+          - name: consume-artifact
             template: print-message
+            dependencies:
+              - generate-artifact
             arguments:
               artifacts:
-                - name: message
-                  from: "{{steps.generate-artifact.outputs.artifacts.hello-art}}"
-          - name: consume-artifact-2
-            template: print-message-with-volume
-            arguments:
-              artifacts:
-                - name: message
-                  from: "{{steps.generate-artifact.outputs.artifacts.hello-art}}"
+                - name: in
+                  from: "{{tasks.generate-artifact.outputs.artifacts.out}}"
 
     - name: generate-message
       container:
-        image: argoproj/argosay:v1
-        command: [sh, -c]
-        args: ["cowsay hello world | tee /tmp/hello_world.txt"]
-        imagePullPolicy: IfNotPresent
+        image: argoproj/argosay:v2
+        args: [ "echo", "hello world", "/mnt/out/message" ]
       outputs:
         artifacts:
-          - name: hello-art
-            path: /tmp/hello_world.txt
+          - name: out
+            path: /mnt/out
 
     - name: print-message
       inputs:
         artifacts:
-          - name: message
-            path: /tmp/message
+          - name: in
+            path: /mnt/in
       container:
-        image: argoproj/argosay:v1
-        imagePullPolicy: IfNotPresent
-        command: [sh, -c]
-        args: ["cat /tmp/message"]
-
-    - name: print-message-with-volume
-      inputs:
-        artifacts:
-          - name: message
-            path: /test-volume/message
-      script:
-        volumeMounts:
-        - mountPath: /test-volume
-          name: test-volume
-        image: argoproj/argosay:v1
-        imagePullPolicy: IfNotPresent
-        command: [sh, -c]
-        args: ["cat /test-volume/message"]
+        image: argoproj/argosay:v2
+        args: [ "cat", "/mnt/in/message" ]

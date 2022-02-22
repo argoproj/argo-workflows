@@ -4,55 +4,116 @@ A workflow executor is a process that conforms to a specific interface that allo
 
 The executor to be used in your workflows can be changed in [the configmap](./workflow-controller-configmap.yaml) under the `containerRuntimeExecutor` key.
 
-## Docker (docker)
+## Emissary (emissary)
 
-**default**
+> v3.1 and after
 
-### Pros
+**default in >= v3.3**
 
-* Most reliable and well-tested executor
-* Supports all workflow examples
-* Highly scalable as it communicates directly with the docker daemon for heavy lifting
-* Output artifacts can be located on the base layer (e.g. /tmp)
+This is the most fully featured executor.
 
-### Cons
+* Reliability:
+    * Works on GKE Autopilot
+    * Does not require `init` process to kill sub-processes.
+* More secure:
+    * No `privileged` access
+    * Cannot escape the privileges of the pod's service account
+    * Can [`runAsNonRoot`](workflow-pod-security-context.md).
+* Scalable:
+    * It reads and writes to and from the container's disk and typically does not use any network APIs unless resource
+    type template is used.
+* Artifacts:
+    * Output artifacts can be located on the base layer (e.g. `/tmp`).
+* Configuration:
+    * `command` must be specified for containers.
 
-* Least secure as it required `docker.sock` of the host to be mounted which is often rejected by OPA.
+You can determine the command and args as follows:
+
+```bash
+docker image inspect -f '{{.Config.Entrypoint}} {{.Config.Cmd}}' argoproj/argosay:v2
+```
+
+[Learn more about command and args](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#notes)
+
+### Image Index
+
+If the emissary cannot determine which command to run, because you did not specify it in your workflow spec, then it
+will look it up in the **image index**. This is nothing more fancy than
+a [configuration item](workflow-controller-configmap.yaml).
+
+### Exit Code 64
+
+The emissary will exit with code 64 if it fails. This may indicate a bug in the emissary.
+
+
+## Docker (docker) 
+
+⚠️Deprecated. 
+
+**default in <= v3.2**
+
+* Least secure:
+    * It requires `privileged` access to `docker.sock` of the host to be mounted which. Often rejected by Open Policy Agent (OPA) or your Pod Security Policy (PSP).
+    * It can escape the privileges of the pod's service account
+    * It cannot [`runAsNonRoot`](workflow-pod-security-context.md).
+* Equal most scalable:
+    * It communicates directly with the local Docker daemon.
+* Artifacts:
+    * Output artifacts can be located on the base layer (e.g. `/tmp`).
+* Configuration:
+    * No additional configuration needed.
+
+**Note**: when using docker as workflow executors, messages printed in both `stdout` and `stderr` are captured in the [Argo variable](./variables.md#scripttemplate) `.outputs.result`.
 
 ## Kubelet (kubelet)
 
-### Pros
-
-* Secure since you cannot escape the privileges of the pod's service account
-* Moderately scalable  Log retrieval and container operations are performed against the kubelet
-
-### Cons
-
-* Additional kubelet configuration may be required
-* Output artifacts can only be saved on volumes (e.g. emptyDir) and not the base image layer (e.g. /tmp)
+* Secure
+    * No `privileged` access
+    * Cannot escape the privileges of the pod's service account
+    * [`runAsNonRoot`](workflow-pod-security-context.md) - TBD, see [#4186](https://github.com/argoproj/argo-workflows/issues/4186)
+* Scalable:
+    * Operations performed against the local Kubelet
+* Artifacts:
+    * Output artifacts must be saved on volumes (e.g. [emptyDir](empty-dir.md)) and not the base image layer (e.g. `/tmp`)
+* Step/Task result:
+    * Warnings that normally goes to stderr will get captured in a step or a dag task's `outputs.result`. May require changes if your pipeline is conditioned on `steps/tasks.name.outputs.result`
+* Configuration:
+    * Additional Kubelet configuration maybe needed
 
 ## Kubernetes API (k8sapi)
 
-### Pros
-
-* Secure since you cannot escape the privileges of the pod's service account
-* No extra configuration is required
-
-### Cons
-
-* Least scalable since log retrieval and container operations are performed against the kubernetes api
-* Output artifacts can only be saved on volumes (e.g. emptyDir) and not the base image layer (e.g. /tmp)
+* Reliability:
+    * Works on GKE Autopilot
+* Most secure:
+    * No `privileged` access
+    * Cannot escape the privileges of the pod's service account
+    * Can [`runAsNonRoot`](workflow-pod-security-context.md)
+* Least scalable:
+    * Log retrieval and container operations performed against the remote Kubernetes API
+* Artifacts:
+    * Output artifacts must be saved on volumes (e.g. [emptyDir](empty-dir.md)) and not the base image layer (e.g. `/tmp`)
+* Step/Task result:
+    * Warnings that normally goes to stderr will get captured in a step or a dag task's `outputs.result`. May require changes if your pipeline is conditioned on `steps/tasks.name.outputs.result`
+* Configuration:
+    * No additional configuration needed.
 
 ## Process Namespace Sharing (pns)
 
-### Pros
-
-* Secure since you cannot escape the privileges of the pod's service account
-* Output artifacts can be located on the base layer (e.g. /tmp)
-* Highly scalable.  Process polling is done over procfs rather than the Kubernetes/Kubelet API
+* More secure:
+    * No `privileged` access
+    * cannot escape the privileges of the pod's service account
+    * Can [`runAsNonRoot`](workflow-pod-security-context.md), if you use volumes (e.g. [emptyDir](empty-dir.md)) for your output artifacts
+    * Processes are visible to other containers in the pod. This includes all information visible in /proc, such as passwords that were passed as arguments or environment variables. These are protected only by regular Unix permissions.
+* Scalable:
+    * Most operations use local `procfs`.
+    * Log retrieval uses the remote Kubernetes API
+* Artifacts:
+    * Output artifacts can be located on the base layer (e.g. `/tmp`)
+    * Cannot capture artifacts from a base layer which has a volume mounted under it
+    * Cannot capture artifacts from base layer if the container is short-lived.
+* Configuration:
+    * No additional configuration needed.
 * Process will no longer run with PID 1
+* [Doesn't work for Windows containers](https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#v1-pod).
 
-### Cons
-
-* Immature
-* Cannot capture artifact directories from base image layer which has a volume mounted under it
+[https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/](https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/)

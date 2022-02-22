@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: dex
+  name: dex
+spec:
+  selector:
+    matchLabels:
+      app: dex
+  template:
+    metadata:
+      labels:
+        app: dex
+    spec:
+      serviceAccountName: dex
+      containers:
+        - name: dex
+          image: quay.io/dexidp/dex:v2.23.0
+          args:
+            - serve
+            - /data/config.yaml
+          ports:
+            - name: http
+              containerPort: 5556
+          volumeMounts:
+            - mountPath: /data
+              name: config
+      volumes:
+        - name: config
+          configMap:
+            name: dex

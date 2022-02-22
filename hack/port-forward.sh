@@ -3,31 +3,56 @@ set -eu -o pipefail
 
 pf() {
   set -eu -o pipefail
-  name=$1
-  resource=$2
-  port=$3
-  pid=$(lsof -i ":$port" | grep -v PID | awk '{print $2}' || true)
-  if [ "$pid" != "" ]; then
-    kill $pid
-  fi
-  kubectl -n argo port-forward "$resource" "$port:$port" > /dev/null &
-  # wait until port forward is established
-	until lsof -i ":$port" > /dev/null ; do sleep 1s ; done
-  info "$name on http://localhost:$port"
+  resource=$1
+  port=$2
+  dest_port=${3:-"$port"}
+  ./hack/free-port.sh $port
+  echo "port-forward $resource $port"
+  kubectl -n argo port-forward "svc/$resource" "$port:$dest_port" > /dev/null &
+	until lsof -i ":$port" > /dev/null ; do sleep 1 ; done
 }
 
-info() {
-    echo '[INFO] ' "$@"
+wait-for() {
+  set -eu -o pipefail
+  echo "wait-for $1"
+  kubectl -n argo wait --timeout 2m --for=condition=Available deploy/$1
 }
 
-pf MinIO pod/minio 9000
+wait-for minio
+pf minio 9000
+
+dex=$(kubectl -n argo get pod -l app=dex -o name)
+if [[ "$dex" != "" ]]; then
+  wait-for dex
+  pf dex 5556
+fi
 
 postgres=$(kubectl -n argo get pod -l app=postgres -o name)
 if [[ "$postgres" != "" ]]; then
-  pf Postgres "$postgres" 5432
+  wait-for postgres
+  pf postgres 5432
 fi
 
 mysql=$(kubectl -n argo get pod -l app=mysql -o name)
 if [[ "$mysql" != "" ]]; then
-  pf MySQL "$mysql" 3306
+	wait-for mysql
+  pf mysql 3306
+fi
+
+if [[ "$(kubectl -n argo get pod -l app=argo-server -o name)" != "" ]]; then
+  wait-for argo-server
+  pf argo-server 2746
+fi
+
+if [[ "$(kubectl -n argo get pod -l app=workflow-controller -o name)" != "" ]]; then
+  wait-for workflow-controller
+  pf workflow-controller-metrics 9090
+  if [[ "$(kubectl -n argo get svc workflow-controller-pprof -o name)" != "" ]]; then
+    pf workflow-controller-pprof 6060
+  fi
+fi
+
+if [[ "$(kubectl -n argo get pod -l app=prometheus -o name)" != "" ]]; then
+  wait-for prometheus
+  pf prometheus 9091 9090
 fi

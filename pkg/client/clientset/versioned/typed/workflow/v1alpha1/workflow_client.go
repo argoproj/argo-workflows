@@ -3,8 +3,8 @@
 package v1alpha1
 
 import (
-	v1alpha1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned/scheme"
+	v1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/scheme"
 	rest "k8s.io/client-go/rest"
 )
 
@@ -13,6 +13,8 @@ type ArgoprojV1alpha1Interface interface {
 	ClusterWorkflowTemplatesGetter
 	CronWorkflowsGetter
 	WorkflowsGetter
+	WorkflowEventBindingsGetter
+	WorkflowTaskSetsGetter
 	WorkflowTemplatesGetter
 }
 
@@ -31,6 +33,14 @@ func (c *ArgoprojV1alpha1Client) CronWorkflows(namespace string) CronWorkflowInt
 
 func (c *ArgoprojV1alpha1Client) Workflows(namespace string) WorkflowInterface {
 	return newWorkflows(c, namespace)
+}
+
+func (c *ArgoprojV1alpha1Client) WorkflowEventBindings(namespace string) WorkflowEventBindingInterface {
+	return newWorkflowEventBindings(c, namespace)
+}
+
+func (c *ArgoprojV1alpha1Client) WorkflowTaskSets(namespace string) WorkflowTaskSetInterface {
+	return newWorkflowTaskSets(c, namespace)
 }
 
 func (c *ArgoprojV1alpha1Client) WorkflowTemplates(namespace string) WorkflowTemplateInterface {

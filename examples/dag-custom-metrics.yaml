@@ -1,0 +1,103 @@
+# The following workflow executes the tasks in parallel and emit the data for each task
+#                       DAG                       <-- The custom metric will emit the status and duration for entire workflow
+#                    /       \
+#                   /         \
+#                  /           \
+#                 /             \
+#                /               \
+#               /                 \
+#              /                   \
+#             /                     \
+#            /                       \
+#           /                         \
+#       TEST-TWO                   TEST-ONE
+#        /     \                     /   \    
+#       /       \                   /     \
+#      /         \                 /       \
+#     /           \               /         \
+# TEST-TWO-B   TEST-TWO-A    TEST-ONE-B  TEST-ONE-B  <-- The custom metric will emit the status and duration for each task in parallel
+
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-task-
+spec:
+  entrypoint: dag-task
+  metrics: # Custom metric workflow level
+    prometheus:
+      - name: playground_workflow_duration
+        help: "Duration gauge by workflow level"
+        labels:
+          - key: "playground_id_workflow"
+            value: "test"
+          - key: status
+            value: "{{workflow.status}}"
+        gauge:
+          realtime: false
+          value: "{{workflow.duration}}"
+      - name: playground_workflow_result_counter
+        help: "Count of workflow execution by result status  - workflow level"
+        labels:
+          - key: "playground_id_workflow_counter"
+            value: "test"
+          - key: status
+            value: "{{workflow.status}}"
+        counter:
+          value: "1"
+  templates:
+  - name: dag-task
+    dag:
+      tasks:
+      - name: TEST-ONE
+        template: echo
+        arguments:
+          parameters: 
+            - name: message
+              value: "console output-->TEST-{{item.command}}"
+            - name: tag
+              value: "{{item.tag}}"
+        withItems:
+          - { tag: TEST-ONE-A, command: ONE-A }
+          - { tag: TEST-ONE-B, command: ONE-B }
+
+      - name: TEST-TWO
+        template: echo
+        arguments:
+          parameters: 
+            - name: message
+              value: "console output-->TEST-{{item.command}}"
+            - name: tag
+              value: "{{item.tag}}"
+        withItems:
+          - { tag: TEST-TWO-A, command: TWO-A }
+          - { tag: TEST-TWO-B, command: TWO-B }
+
+  - name: echo
+    inputs:
+      parameters:
+      - name: message
+      - name: tag
+    metrics: # Custom metric template level
+      prometheus:
+        - name: playground_workflow_duration_task_seconds
+          help: "Duration gauge by task name in seconds - task level"
+          labels:
+            - key: "playground_task_name"
+              value: "{{inputs.parameters.tag}}"
+            - key: status
+              value: "{{status}}"
+          gauge:
+            realtime: false
+            value: "{{duration}}"
+        - name: playground_workflow_result_task_counter
+          help: "Count of task execution by result status  - task level"
+          labels:
+            - key: "playground_task_name_counter"
+              value: "{{inputs.parameters.tag}}"
+            - key: status
+              value: "{{status}}"
+          counter:
+            value: "1"
+    container:
+      image: alpine:3.7
+      command: [echo, "{{inputs.parameters.message}}"]

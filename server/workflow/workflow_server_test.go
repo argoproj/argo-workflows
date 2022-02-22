@@ -2,27 +2,30 @@ package workflow
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"testing"
 
+	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes/fake"
 	ktesting "k8s.io/client-go/testing"
 
-	"github.com/argoproj/argo/persist/sqldb"
-	"github.com/argoproj/argo/persist/sqldb/mocks"
-	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	v1alpha "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/server/auth"
-	testutil "github.com/argoproj/argo/test/util"
-	"github.com/argoproj/argo/util/instanceid"
-	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
+	"github.com/argoproj/argo-workflows/v3/persist/sqldb/mocks"
+	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
+	v1alpha "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo-workflows/v3/server/auth"
+	"github.com/argoproj/argo-workflows/v3/server/auth/types"
+	"github.com/argoproj/argo-workflows/v3/util"
+	"github.com/argoproj/argo-workflows/v3/util/instanceid"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 const unlabelled = `{
@@ -72,11 +75,9 @@ const wf1 = `
         "uid": "6522aff1-1e01-11ea-b443-42010aa80075"
     },
     "spec": {
-        "arguments": {},
         "entrypoint": "whalesay",
         "templates": [
             {
-                "arguments": {},
                 "container": {
                     "args": [
                         "hello world"
@@ -114,6 +115,7 @@ const wf1 = `
     }
 }
 `
+
 const wf2 = `
 {
     "apiVersion": "argoproj.io/v1alpha1",
@@ -134,11 +136,11 @@ const wf2 = `
         "uid": "91066a6c-1ddc-11ea-b443-42010aa80075"
     },
     "spec": {
-        "arguments": {},
+        
         "entrypoint": "whalesay",
         "templates": [
             {
-                "arguments": {},
+                
                 "container": {
                     "args": [
                         "hello world"
@@ -176,6 +178,7 @@ const wf2 = `
     }
 }
 `
+
 const wf3 = `
 {
     "apiVersion": "argoproj.io/v1alpha1",
@@ -196,11 +199,11 @@ const wf3 = `
         "uid": "6522aff1-1e01-11ea-b443-42010aa80075"
     },
     "spec": {
-        "arguments": {},
+        
         "entrypoint": "whalesay",
         "templates": [
             {
-                "arguments": {},
+                
                 "container": {
                     "args": [
                         "hello world"
@@ -238,6 +241,7 @@ const wf3 = `
     }
 }
 `
+
 const wf4 = `
 {
     "apiVersion": "argoproj.io/v1alpha1",
@@ -258,11 +262,11 @@ const wf4 = `
         "uid": "91066a6c-1ddc-11ea-b443-42010aa80075"
     },
     "spec": {
-        "arguments": {},
+        
         "entrypoint": "whalesay",
         "templates": [
             {
-                "arguments": {},
+                
                 "container": {
                     "args": [
                         "hello world"
@@ -300,6 +304,7 @@ const wf4 = `
     }
 }
 `
+
 const wf5 = `
 {
     "apiVersion": "argoproj.io/v1alpha1",
@@ -320,11 +325,11 @@ const wf5 = `
         "uid": "6522aff1-1e01-11ea-b443-42010aa80075"
     },
     "spec": {
-        "arguments": {},
+        
         "entrypoint": "whalesay",
         "templates": [
             {
-                "arguments": {},
+                
                 "container": {
                     "args": [
                         "hello world"
@@ -390,6 +395,7 @@ const failedWf = `
     }
 }
 `
+
 const workflow1 = `
 {
   "namespace": "default",
@@ -419,6 +425,7 @@ const workflow1 = `
   }
 }
 `
+
 const workflowtmpl = `
 {
   "apiVersion": "argoproj.io/v1alpha1",
@@ -428,12 +435,19 @@ const workflowtmpl = `
     "namespace": "workflows"
   },
   "spec": {
+	"workflowMetadata": {
+	 "Labels": {
+		"labelTest": "test"
+	 },
+	 "annotations": {
+		"annotationTest": "test"
+	 }
+	},
     "entrypoint": "whalesay-template",
     "arguments": {
       "parameters": [
         {
-          "name": "message",
-          "value": "hello world"
+          "name": "message"
         }
       ]
     },
@@ -461,6 +475,7 @@ const workflowtmpl = `
   }
 }
 `
+
 const cronwf = `
 {
   "apiVersion": "argoproj.io/v1alpha1",
@@ -497,15 +512,23 @@ const cronwf = `
   }
 }
 `
+
 const clusterworkflowtmpl = `
 {
   "apiVersion": "argoproj.io/v1alpha1",
   "kind": "ClusterWorkflowTemplate",
   "metadata": {
-    "name": "cluster-workflow-template-whalesay-template",
-    "namespace": "workflows"
+    "name": "cluster-workflow-template-whalesay-template"
   },
   "spec": {
+	"workflowMetadata": {
+	 "Labels": {
+		"labelTest": "test"
+	 },
+	 "annotations": {
+		"annotationTest": "test"
+	 }
+	},
     "entrypoint": "whalesay-template",
     "arguments": {
       "parameters": [
@@ -541,23 +564,22 @@ const clusterworkflowtmpl = `
 `
 
 func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
-
 	var unlabelledObj, wfObj1, wfObj2, wfObj3, wfObj4, wfObj5, failedWfObj v1alpha1.Workflow
 	var wftmpl v1alpha1.WorkflowTemplate
 	var cwfTmpl v1alpha1.ClusterWorkflowTemplate
 	var cronwfObj v1alpha1.CronWorkflow
 
-	testutil.MustUnmarshallJSON(unlabelled, &unlabelledObj)
-	testutil.MustUnmarshallJSON(wf1, &wfObj1)
-	testutil.MustUnmarshallJSON(wf1, &wfObj1)
-	testutil.MustUnmarshallJSON(wf2, &wfObj2)
-	testutil.MustUnmarshallJSON(wf3, &wfObj3)
-	testutil.MustUnmarshallJSON(wf4, &wfObj4)
-	testutil.MustUnmarshallJSON(wf5, &wfObj5)
-	testutil.MustUnmarshallJSON(failedWf, &failedWfObj)
-	testutil.MustUnmarshallJSON(workflowtmpl, &wftmpl)
-	testutil.MustUnmarshallJSON(cronwf, &cronwfObj)
-	testutil.MustUnmarshallJSON(clusterworkflowtmpl, &cwfTmpl)
+	v1alpha1.MustUnmarshal(unlabelled, &unlabelledObj)
+	v1alpha1.MustUnmarshal(wf1, &wfObj1)
+	v1alpha1.MustUnmarshal(wf1, &wfObj1)
+	v1alpha1.MustUnmarshal(wf2, &wfObj2)
+	v1alpha1.MustUnmarshal(wf3, &wfObj3)
+	v1alpha1.MustUnmarshal(wf4, &wfObj4)
+	v1alpha1.MustUnmarshal(wf5, &wfObj5)
+	v1alpha1.MustUnmarshal(failedWf, &failedWfObj)
+	v1alpha1.MustUnmarshal(workflowtmpl, &wftmpl)
+	v1alpha1.MustUnmarshal(cronwf, &cronwfObj)
+	v1alpha1.MustUnmarshal(clusterworkflowtmpl, &cwfTmpl)
 
 	offloadNodeStatusRepo := &mocks.OffloadNodeStatusRepo{}
 	offloadNodeStatusRepo.On("IsEnabled", mock.Anything).Return(true)
@@ -566,7 +588,7 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 	kubeClientSet := fake.NewSimpleClientset()
 	wfClientset := v1alpha.NewSimpleClientset(&unlabelledObj, &wfObj1, &wfObj2, &wfObj3, &wfObj4, &wfObj5, &failedWfObj, &wftmpl, &cronwfObj, &cwfTmpl)
 	wfClientset.PrependReactor("create", "workflows", generateNameReactor)
-	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet)
+	ctx := context.WithValue(context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
 	return server, ctx
 }
 
@@ -581,10 +603,7 @@ func generateNameReactor(action ktesting.Action) (handled bool, ret runtime.Obje
 }
 
 func getWorkflow(ctx context.Context, server workflowpkg.WorkflowServiceServer, namespace string, wfName string) (*v1alpha1.Workflow, error) {
-	return server.GetWorkflow(ctx, &workflowpkg.WorkflowGetRequest{
-		Name:      wfName,
-		Namespace: namespace,
-	})
+	return server.GetWorkflow(ctx, &workflowpkg.WorkflowGetRequest{Name: wfName, Namespace: namespace})
 }
 
 func getWorkflowList(ctx context.Context, server workflowpkg.WorkflowServiceServer, namespace string) (*v1alpha1.WorkflowList, error) {
@@ -594,11 +613,12 @@ func getWorkflowList(ctx context.Context, server workflowpkg.WorkflowServiceServ
 func TestCreateWorkflow(t *testing.T) {
 	server, ctx := getWorkflowServer()
 	var req workflowpkg.WorkflowCreateRequest
-	testutil.MustUnmarshallJSON(workflow1, &req)
+	v1alpha1.MustUnmarshal(workflow1, &req)
 	wf, err := server.CreateWorkflow(ctx, &req)
 	if assert.NoError(t, err) {
 		assert.NotNil(t, wf)
 		assert.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID)
+		assert.Contains(t, wf.Labels, common.LabelKeyCreator)
 	}
 }
 
@@ -613,13 +633,31 @@ func (t testWatchWorkflowServer) Send(*workflowpkg.WorkflowWatchEvent) error {
 func TestWatchWorkflows(t *testing.T) {
 	server, ctx := getWorkflowServer()
 	wf := &v1alpha1.Workflow{
-		Status: v1alpha1.WorkflowStatus{Phase: v1alpha1.NodeSucceeded},
+		Status: v1alpha1.WorkflowStatus{Phase: v1alpha1.WorkflowSucceeded},
 	}
-	assert.NoError(t, json.Unmarshal([]byte(wf1), &wf))
+	v1alpha1.MustUnmarshal([]byte(wf1), &wf)
 	ctx, cancel := context.WithCancel(ctx)
 	go func() {
 		err := server.WatchWorkflows(&workflowpkg.WatchWorkflowsRequest{}, &testWatchWorkflowServer{testServerStream{ctx}})
-		assert.EqualError(t, err, "context canceled")
+		assert.NoError(t, err)
+	}()
+	cancel()
+}
+
+func TestWatchLatestWorkflow(t *testing.T) {
+	server, ctx := getWorkflowServer()
+	wf := &v1alpha1.Workflow{
+		Status: v1alpha1.WorkflowStatus{Phase: v1alpha1.WorkflowSucceeded},
+	}
+	v1alpha1.MustUnmarshal([]byte(wf1), &wf)
+	ctx, cancel := context.WithCancel(ctx)
+	go func() {
+		err := server.WatchWorkflows(&workflowpkg.WatchWorkflowsRequest{
+			ListOptions: &metav1.ListOptions{
+				FieldSelector: util.GenerateFieldSelectorFromWorkflowName("@latest"),
+			},
+		}, &testWatchWorkflowServer{testServerStream{ctx}})
+		assert.NoError(t, err)
 	}()
 	cancel()
 }
@@ -636,6 +674,35 @@ func TestGetWorkflowWithNotFound(t *testing.T) {
 		_, err := getWorkflow(ctx, server, "test", "unlabelled")
 		assert.Error(t, err)
 	})
+}
+
+func TestGetLatestWorkflow(t *testing.T) {
+	_, ctx := getWorkflowServer()
+	wfClient := ctx.Value(auth.WfKey).(versioned.Interface)
+	wf, err := getLatestWorkflow(ctx, wfClient, "test")
+	if assert.NoError(t, err) {
+		assert.Equal(t, wf.Name, "hello-world-9tql2-test")
+	}
+}
+
+func TestGetWorkflow(t *testing.T) {
+	server, ctx := getWorkflowServer()
+	s := server.(*workflowServer)
+	wfClient := auth.GetWfClient(ctx)
+	wf, err := s.getWorkflow(ctx, wfClient, "test", "hello-world-9tql2-test", metav1.GetOptions{})
+	if assert.NoError(t, err) {
+		assert.NotNil(t, wf)
+	}
+}
+
+func TestValidateWorkflow(t *testing.T) {
+	server, ctx := getWorkflowServer()
+	s := server.(*workflowServer)
+	wfClient := auth.GetWfClient(ctx)
+	wf, err := s.getWorkflow(ctx, wfClient, "test", "hello-world-9tql2-test", metav1.GetOptions{})
+	if assert.NoError(t, err) {
+		assert.NoError(t, s.validateWorkflow(wf))
+	}
 }
 
 func TestListWorkflow(t *testing.T) {
@@ -664,6 +731,10 @@ func TestDeleteWorkflow(t *testing.T) {
 		_, err := server.DeleteWorkflow(ctx, &workflowpkg.WorkflowDeleteRequest{Name: "unlabelled", Namespace: "workflows"})
 		assert.Error(t, err)
 	})
+	t.Run("Latest", func(t *testing.T) {
+		_, err := server.DeleteWorkflow(ctx, &workflowpkg.WorkflowDeleteRequest{Name: "@latest", Namespace: "workflows"})
+		assert.NoError(t, err)
+	})
 }
 
 func TestRetryWorkflow(t *testing.T) {
@@ -676,6 +747,10 @@ func TestRetryWorkflow(t *testing.T) {
 	})
 	t.Run("Unlabelled", func(t *testing.T) {
 		_, err := server.RetryWorkflow(ctx, &workflowpkg.WorkflowRetryRequest{Name: "unlabelled", Namespace: "workflows"})
+		assert.Error(t, err)
+	})
+	t.Run("Latest", func(t *testing.T) {
+		_, err := server.RetryWorkflow(ctx, &workflowpkg.WorkflowRetryRequest{Name: "latest", Namespace: "workflows"})
 		assert.Error(t, err)
 	})
 }
@@ -744,7 +819,7 @@ func TestStopWorkflow(t *testing.T) {
 	wf, err = server.StopWorkflow(ctx, &rsmWfReq)
 	if assert.NoError(t, err) {
 		assert.NotNil(t, wf)
-		assert.Equal(t, v1alpha1.NodeRunning, wf.Status.Phase)
+		assert.Equal(t, v1alpha1.WorkflowRunning, wf.Status.Phase)
 	}
 }
 
@@ -760,16 +835,23 @@ func TestResubmitWorkflow(t *testing.T) {
 		_, err := server.ResubmitWorkflow(ctx, &workflowpkg.WorkflowResubmitRequest{Name: "unlabelled", Namespace: "workflows"})
 		assert.Error(t, err)
 	})
+	t.Run("Latest", func(t *testing.T) {
+		wf, err := server.ResubmitWorkflow(ctx, &workflowpkg.WorkflowResubmitRequest{Name: "@latest", Namespace: "workflows"})
+		if assert.NoError(t, err) {
+			assert.NotNil(t, wf)
+		}
+	})
 }
 
 func TestLintWorkflow(t *testing.T) {
 	server, ctx := getWorkflowServer()
 	wf := &v1alpha1.Workflow{}
-	testutil.MustUnmarshallJSON(unlabelled, &wf)
+	v1alpha1.MustUnmarshal(unlabelled, &wf)
 	linted, err := server.LintWorkflow(ctx, &workflowpkg.WorkflowLintRequest{Workflow: wf})
 	if assert.NoError(t, err) {
 		assert.NotNil(t, linted)
 		assert.Contains(t, linted.Labels, common.LabelKeyControllerInstanceID)
+		assert.Contains(t, linted.Labels, common.LabelKeyCreator)
 	}
 }
 
@@ -797,15 +879,32 @@ func TestPodLogs(t *testing.T) {
 
 func TestSubmitWorkflowFromResource(t *testing.T) {
 	server, ctx := getWorkflowServer()
-	t.Run("SubmitFromWorkflowTemplate", func(t *testing.T) {
-		wf, err := server.SubmitWorkflow(ctx, &workflowpkg.WorkflowSubmitRequest{
+	t.Run("SubmitFromWorkflowTemplate fails if missing parameters", func(t *testing.T) {
+		_, err := server.SubmitWorkflow(ctx, &workflowpkg.WorkflowSubmitRequest{
 			Namespace:    "workflows",
 			ResourceKind: "workflowtemplate",
 			ResourceName: "workflow-template-whalesay-template",
 		})
+		assert.EqualError(t, err, "spec.arguments.message.value is required")
+	})
+	t.Run("SubmitFromWorkflowTemplate", func(t *testing.T) {
+		opts := v1alpha1.SubmitOpts{
+			Parameters: []string{
+				"message=hello",
+			},
+		}
+		wf, err := server.SubmitWorkflow(ctx, &workflowpkg.WorkflowSubmitRequest{
+			Namespace:     "workflows",
+			ResourceKind:  "workflowtemplate",
+			ResourceName:  "workflow-template-whalesay-template",
+			SubmitOptions: &opts,
+		})
 		if assert.NoError(t, err) {
 			assert.NotNil(t, wf)
 			assert.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID)
+			assert.Contains(t, wf.Labels, common.LabelKeyCreator)
+			assert.Contains(t, wf.Labels, "labelTest")
+			assert.Contains(t, wf.Annotations, "annotationTest")
 		}
 	})
 	t.Run("SubmitFromCronWorkflow", func(t *testing.T) {
@@ -817,6 +916,7 @@ func TestSubmitWorkflowFromResource(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.NotNil(t, wf)
 			assert.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID)
+			assert.Contains(t, wf.Labels, common.LabelKeyCreator)
 		}
 	})
 	t.Run("SubmitFromClusterWorkflowTemplate", func(t *testing.T) {
@@ -828,6 +928,9 @@ func TestSubmitWorkflowFromResource(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.NotNil(t, wf)
 			assert.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID)
+			assert.Contains(t, wf.Labels, common.LabelKeyCreator)
+			assert.Contains(t, wf.Labels, "labelTest")
+			assert.Contains(t, wf.Annotations, "annotationTest")
 		}
 	})
 }

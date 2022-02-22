@@ -2,8 +2,7 @@ package apiclient
 
 import "google.golang.org/grpc/metadata"
 
-type panicIntermediary struct {
-}
+type panicIntermediary struct{}
 
 func (w abstractIntermediary) Header() (metadata.MD, error) {
 	panic("implement me")

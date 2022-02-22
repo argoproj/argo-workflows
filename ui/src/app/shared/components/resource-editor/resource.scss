@@ -1,0 +1,20 @@
+@import 'node_modules/argo-ui/src/styles/config';
+
+.resource {
+  padding-top: 1em;
+  white-space: pre;
+  color: $argo-color-gray-7;
+  width: 100%;
+  min-height: 300px;
+}
+
+.resource-editor-panel {
+  &__editor {
+    border: 1px solid $argo-color-gray-3;
+    border-radius: 5px;
+    margin-top: 1em;
+    padding-bottom: 1em;
+    overflow: hidden;
+  }
+}
+

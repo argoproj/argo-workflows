@@ -1,29 +1,25 @@
 # Resource Duration
 
-![alpha](assets/alpha.svg)
+![GA](assets/ga.svg)
 
 > v2.7 and after
 
 Argo Workflows provides an indication of how much resource your workflow has used and saves this 
 information. This is intended to be an **indicative but not accurate** value.
 
-## Configuration
-
-This is only set if [the feature flags is enabled in config](workflow-controller-configmap.yaml).
-
 ## Calculation
 
-The calculation is always an estimate, and is calculated by [../util/resource/duration.go](../util/resource/duration.go) 
+The calculation is always an estimate, and is calculated by [duration.go](https://github.com/argoproj/argo-workflows/blob/master/util/resource/duration.go) 
 based on container duration, specified pod resource requests, limits, or (for memory and CPU) 
 defaults. 
 
 Each indicator is divided by a common denominator depending on resource type.
 
-### Base amounts
+### Base Amounts
 
-Each resource type has a "base amount" used to normalize usage across containers.
+Each resource type has a denominator used to make large values smaller.
 
- * CPU: `1000m`
+ * CPU: `1`
  * Memory: `1Gi`
  * Storage: `10Gi`
  * Ephemeral Storage: `10Gi`
@@ -35,7 +31,7 @@ the container's Resource Duration.
 For example, if you've requested `100Mi` of memory (one tenth of the base amount), and the container 
 runs 120sec, then the reported Resource Duration will be `12sec * (1Gi memory)`. 
 
-### Request defaults
+### Request Defaults
 
 If `requests` are not set for a container, Kubernetes defaults to `limits`. If `limits` are not set,
 Argo falls back to `100m` for CPU and `100Mi` for memory. 
@@ -49,8 +45,8 @@ A pod that runs for 3min, with a CPU limit of `2000m`, no memory request and an 
 resource limit of `1`:
 
 ```
-CPU:    3min * 2000m / 1000m = 6min * (1000m cpu)
-Memory: 3min * 100Mi / 1Gi   = 18sec * (1Gi memory)
+CPU:    3min * 2000m / 1000m = 6min * (1 cpu)
+Memory: 3min * 100Mi / 1Gi   = 18sec * (100Mi memory)
 GPU:    3min * 1     / 1     = 2min * (1 nvidia.com/gpu)
 ```
 

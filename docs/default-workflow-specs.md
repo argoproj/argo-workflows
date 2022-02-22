@@ -1,13 +1,13 @@
 # Default Workflow Spec
 
-![alpha](assets/alpha.svg)
+![GA](assets/ga.svg)
 
 > v2.7 and after
 
 ## Introduction
 
 Default Workflow spec values can be set at the controller config map that will apply to all Workflows executed from said controller.
-If a Workflow has a value that also has a default value set in the config map, thw Workflow's value will take precedence.
+If a Workflow has a value that also has a default value set in the config map, the Workflow's value will take precedence.
 
 ## Setting Default Workflow Values
 

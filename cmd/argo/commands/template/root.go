@@ -5,7 +5,7 @@ import (
 )
 
 func NewTemplateCommand() *cobra.Command {
-	var command = &cobra.Command{
+	command := &cobra.Command{
 		Use:   "template",
 		Short: "manipulate workflow templates",
 		Run: func(cmd *cobra.Command, args []string) {

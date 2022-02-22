@@ -6,15 +6,16 @@ import (
 	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 
-	client "github.com/argoproj/argo/cmd/argo/commands/client"
-	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
+	client "github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 )
 
 func NewDeleteCommand() *cobra.Command {
-	var command = &cobra.Command{
-		Use: "delete UID...",
+	command := &cobra.Command{
+		Use:   "delete UID...",
+		Short: "delete a workflow in the archive",
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient()
+			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient, err := apiClient.NewArchivedWorkflowServiceClient()
 			errors.CheckError(err)
 			for _, uid := range args {

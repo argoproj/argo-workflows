@@ -8,7 +8,7 @@ spec:
   templates:
   - name: retry-script
     retryStrategy:
-      limit: 10
+      limit: "10"
     script:
       image: python:alpine3.6
       command: ["python"]

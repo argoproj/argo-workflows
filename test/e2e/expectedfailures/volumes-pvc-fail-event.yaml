@@ -4,8 +4,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: volumes-pvc-fail-event-
-  labels:
-    argo-e2e: true
 spec:
   entrypoint: volumes-pvc-example
   volumeClaimTemplates:

@@ -1,11 +1,11 @@
 package v1alpha1
 
 import (
-	"github.com/argoproj/argo/pkg/apis/workflow"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 )
 
 // SchemeGroupVersion is group version used to register these objects
@@ -34,12 +34,16 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
 		&Workflow{},
 		&WorkflowList{},
+		&WorkflowEventBinding{},
+		&WorkflowEventBindingList{},
 		&WorkflowTemplate{},
 		&WorkflowTemplateList{},
 		&CronWorkflow{},
 		&CronWorkflowList{},
 		&ClusterWorkflowTemplate{},
 		&ClusterWorkflowTemplateList{},
+		&WorkflowTaskSet{},
+		&WorkflowTaskSetList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

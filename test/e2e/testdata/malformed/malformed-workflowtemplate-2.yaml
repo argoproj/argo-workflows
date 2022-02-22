@@ -1,0 +1,10 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: malformed
+  labels:
+    argo-e2e: "true"
+spec:
+  templates:
+    - container:
+        image: argoproj/argosay:v2

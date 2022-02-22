@@ -1,0 +1,109 @@
+# This example shows how to use a PVC and optional input artifacts to avoid work.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: work-avoidance-
+spec:
+  entrypoint: main
+
+  volumeClaimTemplates:
+    - metadata:
+        name: work
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 10Mi
+
+  onExit: save-markers
+
+  templates:
+    - name: main
+      steps:
+        - - name: load-markers
+            template: load-markers
+        - - name: echo
+            template: echo
+            arguments:
+              parameters:
+                - name: num
+                  value: "{{item}}"
+            withSequence:
+              count: "3"
+
+    - name: load-markers
+      inputs:
+        artifacts:
+          - name: markers
+            path: /work/markers
+            optional: true
+            s3:
+              key: work-avoidance-markers
+              bucket: my-bucket
+              endpoint: minio:9000
+              insecure: true
+              accessKeySecret:
+                name: my-minio-cred
+                key: accesskey
+              secretKeySecret:
+                name: my-minio-cred
+                key: secretkey
+      container:
+        image: docker/whalesay:latest
+        command:
+          - mkdir
+          - -p
+          - /work/markers
+        volumeMounts:
+          - name: work
+            mountPath: /work
+
+    - name: echo
+      inputs:
+        parameters:
+          - name: num
+      script:
+        image: docker/whalesay:latest
+        command:
+          - bash
+          - -eux
+        source: |
+          marker=/work/markers/$(date +%Y-%m-%d)-echo-{{inputs.parameters.num}}
+          if [ -e  ${marker} ]; then
+            echo "work already done"
+            exit 0
+          fi
+          echo "working very hard"
+          # toss a virtual coin and exit 1 if 1
+          if [ $(($(($RANDOM%10))%2)) -eq 1 ]; then
+            echo "oh no!"
+            exit 1
+          fi
+          touch ${marker}
+        volumeMounts:
+          - name: work
+            mountPath: /work
+
+    - name: save-markers
+      container:
+        image: docker/whalesay:latest
+        command:
+          - "true"
+        volumeMounts:
+          - name: work
+            mountPath: /work
+      outputs:
+        artifacts:
+          - name: markers
+            path: /work/markers
+            s3:
+              key: work-avoidance-markers
+              bucket: my-bucket
+              endpoint: minio:9000
+              insecure: true
+              accessKeySecret:
+                name: my-minio-cred
+                key: accesskey
+              secretKeySecret:
+                name: my-minio-cred
+                key: secretkey

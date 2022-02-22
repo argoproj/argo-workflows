@@ -2,12 +2,9 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: basic-2
-  labels:
-    argo-e2e: true
 spec:
   entrypoint: run-workflow
   templates:
     - name: run-workflow
       container:
-        image: argoproj/argosay:v1
-        imagePullPolicy: IfNotPresent
+        image: argoproj/argosay:v2

@@ -6,26 +6,29 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
-
-	log "github.com/sirupsen/logrus"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 )
 
-func runCli(name string, args ...string) (string, error) {
+func errorln(args ...interface{}) {
+	_, _ = fmt.Fprint(os.Stderr, args...)
+}
+
+func Exec(name string, args ...string) (string, error) {
 	cmd := exec.Command(name, args...)
 	cmd.Env = os.Environ()
-	log.Info(cmd.String())
+	_, _ = fmt.Println(cmd.String())
 	output, err := runWithTimeout(cmd)
 	// Command completed before timeout. Print output and error if it exists.
 	if err != nil {
-		log.Error(err)
+		errorln(err)
 	}
 	for _, s := range strings.Split(output, "\n") {
-		log.Info(s)
+		_, _ = fmt.Println(s)
 	}
 	return output, err
 }
@@ -56,7 +59,7 @@ func LoadObject(text string) (runtime.Object, error) {
 	var yaml string
 	if strings.HasPrefix(text, "@") {
 		file := strings.TrimPrefix(text, "@")
-		f, err := ioutil.ReadFile(file)
+		f, err := ioutil.ReadFile(filepath.Clean(file))
 		if err != nil {
 			return nil, err
 		}

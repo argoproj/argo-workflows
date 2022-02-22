@@ -3,7 +3,7 @@ kind: ClusterWorkflowTemplate
 metadata:
   name: cluster-workflow-template-whalesay-template
   labels:
-    argo-e2e: true
+    workflows.argoproj.io/test: "true"
 spec:
   entrypoint: whalesay-template
   arguments:
@@ -16,7 +16,6 @@ spec:
         parameters:
           - name: message
       container:
-        image: argoproj/argosay:v1
-        command: [cowsay]
-        args: ["{{inputs.parameters.message}}"]
+        image: argoproj/argosay:v2
+        args: ["echo", "{{inputs.parameters.message}}"]
         imagePullPolicy: IfNotPresent

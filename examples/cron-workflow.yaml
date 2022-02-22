@@ -17,4 +17,4 @@ spec:
         container:
           image: docker/whalesay:latest
           command: [cowsay]
-          args: ["🕓 hello world"]
+          args: ["🕓 hello world. Scheduled on: {{workflow.scheduledTime}}"]

@@ -10,8 +10,8 @@ You cannot horizontally scale the controller.
 
 You can scale the controller vertically:
 
-- If you have workflows with many steps, increase `--pod-workers`.
-- If you have many workflows, increase `--workflow-workers`. 
+- If you have many workflows, increase `--workflow-workers` and `--workflow-ttl-workers`. 
+- Increase both `--qps` and `--burst`.
 
 You will need to increase the controller's memory and CPU.
 
@@ -40,10 +40,10 @@ data:
 
 > v2.9 and after
 
-You'll may need to pass the instance ID to the CLI:
+You may need to pass the instance ID to the CLI:
 
 ```
-argo --instance-id i1 submit my-wf.yaml
+argo --instanceid i1 submit my-wf.yaml
 ```
 
 You do not need to have one instance ID per namespace, you could have many or few.

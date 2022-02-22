@@ -12,17 +12,15 @@ import (
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/pkg/apiclient/cronworkflow"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 func NewGetCommand() *cobra.Command {
-	var (
-		output string
-	)
+	var output string
 
-	var command = &cobra.Command{
+	command := &cobra.Command{
 		Use:   "get CRON_WORKFLOW...",
 		Short: "display details about a cron workflow",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -31,8 +29,9 @@ func NewGetCommand() *cobra.Command {
 				os.Exit(1)
 			}
 
-			ctx, apiClient := client.NewAPIClient()
-			serviceClient := apiClient.NewCronWorkflowServiceClient()
+			ctx, apiClient := client.NewAPIClient(cmd.Context())
+			serviceClient, err := apiClient.NewCronWorkflowServiceClient()
+			errors.CheckError(err)
 			namespace := client.Namespace()
 
 			for _, arg := range args {
@@ -61,36 +60,57 @@ func printCronWorkflow(wf *wfv1.CronWorkflow, outFmt string) {
 		outBytes, _ := yaml.Marshal(wf)
 		fmt.Print(string(outBytes))
 	case "wide", "":
-		printCronWorkflowTemplate(wf)
+		fmt.Print(getCronWorkflowGet(wf))
 	default:
 		log.Fatalf("Unknown output format: %s", outFmt)
 	}
 }
 
-func printCronWorkflowTemplate(wf *wfv1.CronWorkflow) {
+func getCronWorkflowGet(cwf *wfv1.CronWorkflow) string {
 	const fmtStr = "%-30s %v\n"
-	fmt.Printf(fmtStr, "Name:", wf.ObjectMeta.Name)
-	fmt.Printf(fmtStr, "Namespace:", wf.ObjectMeta.Namespace)
-	fmt.Printf(fmtStr, "Created:", humanize.Timestamp(wf.ObjectMeta.CreationTimestamp.Time))
-	fmt.Printf(fmtStr, "Schedule:", wf.Spec.Schedule)
-	fmt.Printf(fmtStr, "Suspended:", wf.Spec.Suspend)
-	if wf.Spec.Timezone != "" {
-		fmt.Printf(fmtStr, "Timezone:", wf.Spec.Timezone)
+
+	out := ""
+	out += fmt.Sprintf(fmtStr, "Name:", cwf.ObjectMeta.Name)
+	out += fmt.Sprintf(fmtStr, "Namespace:", cwf.ObjectMeta.Namespace)
+	out += fmt.Sprintf(fmtStr, "Created:", humanize.Timestamp(cwf.ObjectMeta.CreationTimestamp.Time))
+	out += fmt.Sprintf(fmtStr, "Schedule:", cwf.Spec.Schedule)
+	out += fmt.Sprintf(fmtStr, "Suspended:", cwf.Spec.Suspend)
+	if cwf.Spec.Timezone != "" {
+		out += fmt.Sprintf(fmtStr, "Timezone:", cwf.Spec.Timezone)
 	}
-	if wf.Spec.StartingDeadlineSeconds != nil {
-		fmt.Printf(fmtStr, "StartingDeadlineSeconds:", *wf.Spec.StartingDeadlineSeconds)
+	if cwf.Spec.StartingDeadlineSeconds != nil {
+		out += fmt.Sprintf(fmtStr, "StartingDeadlineSeconds:", *cwf.Spec.StartingDeadlineSeconds)
 	}
-	if wf.Spec.ConcurrencyPolicy != "" {
-		fmt.Printf(fmtStr, "ConcurrencyPolicy:", wf.Spec.ConcurrencyPolicy)
+	if cwf.Spec.ConcurrencyPolicy != "" {
+		out += fmt.Sprintf(fmtStr, "ConcurrencyPolicy:", cwf.Spec.ConcurrencyPolicy)
 	}
-	if wf.Status.LastScheduledTime != nil {
-		fmt.Printf(fmtStr, "LastScheduledTime:", humanize.Timestamp(wf.Status.LastScheduledTime.Time))
+	if cwf.Status.LastScheduledTime != nil {
+		out += fmt.Sprintf(fmtStr, "LastScheduledTime:", humanize.Timestamp(cwf.Status.LastScheduledTime.Time))
 	}
-	if len(wf.Status.Active) > 0 {
+
+	next, err := GetNextRuntime(cwf)
+	if err == nil {
+		out += fmt.Sprintf(fmtStr, "NextScheduledTime:", humanize.Timestamp(next)+" (assumes workflow-controller is in UTC)")
+	}
+
+	if len(cwf.Status.Active) > 0 {
 		var activeWfNames []string
-		for _, activeWf := range wf.Status.Active {
+		for _, activeWf := range cwf.Status.Active {
 			activeWfNames = append(activeWfNames, activeWf.Name)
 		}
-		fmt.Printf(fmtStr, "Active Workflows:", strings.Join(activeWfNames, ", "))
+		out += fmt.Sprintf(fmtStr, "Active Workflows:", strings.Join(activeWfNames, ", "))
 	}
+	if len(cwf.Status.Conditions) > 0 {
+		out += cwf.Status.Conditions.DisplayString(fmtStr, map[wfv1.ConditionType]string{wfv1.ConditionTypeSubmissionError: "✖"})
+	}
+	if len(cwf.Spec.WorkflowSpec.Arguments.Parameters) > 0 {
+		out += fmt.Sprintf(fmtStr, "Workflow Parameters:", "")
+		for _, param := range cwf.Spec.WorkflowSpec.Arguments.Parameters {
+			if !param.HasValue() {
+				continue
+			}
+			out += fmt.Sprintf(fmtStr, "  "+param.Name+":", param.GetValue())
+		}
+	}
+	return out
 }

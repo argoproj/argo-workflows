@@ -22,10 +22,21 @@ type TemplateHolder interface {
 	GetResourceScope() ResourceScope
 }
 
+// WorkflowSpecHolder is an object that holds a WorkflowSpec; e.g., WorkflowTemplate, and ClusterWorkflowTemplate
+type WorkflowSpecHolder interface {
+	metav1.Object
+	GetWorkflowMetadata() *metav1.ObjectMeta
+	GetWorkflowSpec() *WorkflowSpec
+}
+
 // TemplateReferenceHolder is an object that holds a reference to other templates; e.g. WorkflowStep, DAGTask, and NodeStatus
 type TemplateReferenceHolder interface {
-	GetTemplateName() string
+	// GetTemplate returns the template. This maybe nil. This is first precedence.
+	GetTemplate() *Template
+	// GetTemplateRef returns the template ref. This maybe nil. This is second precedence.
 	GetTemplateRef() *TemplateRef
+	// GetTemplateName returns the template name. This maybe empty. This is last precedence.
+	GetTemplateName() string
 }
 
 // SubmitOpts are workflow submission options
@@ -50,4 +61,11 @@ type SubmitOpts struct {
 	Labels string `json:"labels,omitempty" protobuf:"bytes,10,opt,name=labels"`
 	// OwnerReference creates a metadata.ownerReference
 	OwnerReference *metav1.OwnerReference `json:"ownerReference,omitempty" protobuf:"bytes,11,opt,name=ownerReference"`
+	// Annotations adds to metadata.labels
+	Annotations string `json:"annotations,omitempty" protobuf:"bytes,12,opt,name=annotations"`
+	// Set the podPriorityClassName of the workflow
+	PodPriorityClassName string `json:"podPriorityClassName,omitempty" protobuf:"bytes,13,opt,name=podPriorityClassName"`
+	// Priority is used if controller is configured to process limited number of workflows in parallel, higher priority workflows
+	// are processed first.
+	Priority *int32 `json:"priority,omitempty" protobuf:"bytes,14,opt,name=priority"`
 }

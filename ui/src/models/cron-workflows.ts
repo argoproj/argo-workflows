@@ -1,5 +1,5 @@
 import * as kubernetes from 'argo-ui/src/models/kubernetes';
-import {WorkflowSpec} from './workflows';
+import {Condition, WorkflowSpec} from './workflows';
 
 export interface CronWorkflow {
     apiVersion?: string;
@@ -9,10 +9,13 @@ export interface CronWorkflow {
     status?: CronWorkflowStatus;
 }
 
+export type ConcurrencyPolicy = 'Allow' | 'Forbid' | 'Replace';
+
 export interface CronWorkflowSpec {
     workflowSpec: WorkflowSpec;
+    workflowMetadata?: kubernetes.ObjectMeta;
     schedule: string;
-    concurrencyPolicy?: string;
+    concurrencyPolicy?: ConcurrencyPolicy;
     suspend?: boolean;
     startingDeadlineSeconds?: number;
     successfulJobsHistoryLimit?: number;
@@ -21,8 +24,9 @@ export interface CronWorkflowSpec {
 }
 
 export interface CronWorkflowStatus {
-    active: kubernetes.ObjectReference;
+    active: kubernetes.ObjectReference[];
     lastScheduledTime: kubernetes.Time;
+    conditions?: Condition[];
 }
 
 export interface CronWorkflowList {

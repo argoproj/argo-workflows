@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
-	"os"
 	"strings"
 	"time"
 
@@ -12,7 +11,8 @@ import (
 	"upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/env"
 )
 
 const OffloadNodeStatusDisabled = "Workflow has offloaded nodes, but offloading has been disabled"
@@ -26,7 +26,7 @@ type OffloadNodeStatusRepo interface {
 	Save(uid, namespace string, nodes wfv1.Nodes) (string, error)
 	Get(uid, version string) (wfv1.Nodes, error)
 	List(namespace string) (map[UUIDVersion]wfv1.Nodes, error)
-	ListOldOffloads(namespace string) ([]UUIDVersion, error)
+	ListOldOffloads(namespace string) (map[string][]string, error)
 	Delete(uid, version string) error
 	IsEnabled() bool
 }
@@ -34,14 +34,7 @@ type OffloadNodeStatusRepo interface {
 func NewOffloadNodeStatusRepo(session sqlbuilder.Database, clusterName, tableName string) (OffloadNodeStatusRepo, error) {
 	// this environment variable allows you to make Argo Workflows delete offloaded data more or less aggressively,
 	// useful for testing
-	text, ok := os.LookupEnv("OFFLOAD_NODE_STATUS_TTL")
-	if !ok {
-		text = "5m"
-	}
-	ttl, err := time.ParseDuration(text)
-	if err != nil {
-		return nil, err
-	}
+	ttl := env.LookupEnvDurationOr("OFFLOAD_NODE_STATUS_TTL", 5*time.Minute)
 	log.WithField("ttl", ttl).Info("Node status offloading config")
 	return &nodeOffloadRepo{session: session, clusterName: clusterName, tableName: tableName, ttl: ttl}, nil
 }
@@ -77,7 +70,6 @@ func nodeStatusVersion(s wfv1.Nodes) (string, string, error) {
 }
 
 func (wdc *nodeOffloadRepo) Save(uid, namespace string, nodes wfv1.Nodes) (string, error) {
-
 	marshalled, version, err := nodeStatusVersion(nodes)
 	if err != nil {
 		return "", err
@@ -186,7 +178,7 @@ func (wdc *nodeOffloadRepo) List(namespace string) (map[UUIDVersion]wfv1.Nodes, 
 	return res, nil
 }
 
-func (wdc *nodeOffloadRepo) ListOldOffloads(namespace string) ([]UUIDVersion, error) {
+func (wdc *nodeOffloadRepo) ListOldOffloads(namespace string) (map[string][]string, error) {
 	log.WithFields(log.Fields{"namespace": namespace}).Debug("Listing old offloaded nodes")
 	var records []UUIDVersion
 	err := wdc.session.
@@ -199,7 +191,11 @@ func (wdc *nodeOffloadRepo) ListOldOffloads(namespace string) ([]UUIDVersion, er
 	if err != nil {
 		return nil, err
 	}
-	return records, nil
+	x := make(map[string][]string)
+	for _, r := range records {
+		x[r.UID] = append(x[r.UID], r.Version)
+	}
+	return x, nil
 }
 
 func (wdc *nodeOffloadRepo) Delete(uid, version string) error {

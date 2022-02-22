@@ -4,22 +4,23 @@ import (
 	"context"
 	"testing"
 
+	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/client-go/kubernetes/fake"
 
-	clusterwftmplpkg "github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	wftFake "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/server/auth"
-	testutil "github.com/argoproj/argo/test/util"
-	"github.com/argoproj/argo/util/instanceid"
-	"github.com/argoproj/argo/workflow/common"
+	clusterwftmplpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wftFake "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo-workflows/v3/server/auth"
+	"github.com/argoproj/argo-workflows/v3/server/auth/types"
+	"github.com/argoproj/argo-workflows/v3/util/instanceid"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 var unlabelled, cwftObj2, cwftObj3 v1alpha1.ClusterWorkflowTemplate
 
 func init() {
-	testutil.MustUnmarshallJSON(`{
+	v1alpha1.MustUnmarshal(`{
     "apiVersion": "argoproj.io/v1alpha1",
     "kind": "ClusterWorkflowTemplate",
     "metadata": {
@@ -58,7 +59,7 @@ func init() {
     }
 }`, &unlabelled)
 
-	testutil.MustUnmarshallJSON(`{
+	v1alpha1.MustUnmarshal(`{
   "apiVersion": "argoproj.io/v1alpha1",
   "kind": "ClusterWorkflowTemplate",
   "metadata": {
@@ -101,7 +102,7 @@ func init() {
   }
 }`, &cwftObj2)
 
-	testutil.MustUnmarshallJSON(`{
+	v1alpha1.MustUnmarshal(`{
   "apiVersion": "argoproj.io/v1alpha1",
   "kind": "ClusterWorkflowTemplate",
   "metadata": {
@@ -147,23 +148,39 @@ func init() {
 func getClusterWorkflowTemplateServer() (clusterwftmplpkg.ClusterWorkflowTemplateServiceServer, context.Context) {
 	kubeClientSet := fake.NewSimpleClientset()
 	wfClientset := wftFake.NewSimpleClientset(&unlabelled, &cwftObj2, &cwftObj3)
-	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet)
+	ctx := context.WithValue(context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
 	return NewClusterWorkflowTemplateServer(instanceid.NewService("my-instanceid")), ctx
 }
 
 func TestWorkflowTemplateServer_CreateClusterWorkflowTemplate(t *testing.T) {
 	server, ctx := getClusterWorkflowTemplateServer()
-	cwftReq := clusterwftmplpkg.ClusterWorkflowTemplateCreateRequest{
-		Template: unlabelled.DeepCopy(),
-	}
-	cwftReq.Template.Name = "foo"
-	assert.NotContains(t, cwftReq.Template.Labels, common.LabelKeyControllerInstanceID)
-	cwftRsp, err := server.CreateClusterWorkflowTemplate(ctx, &cwftReq)
-	if assert.NoError(t, err) {
-		assert.NotNil(t, cwftRsp)
-		// ensure the label is added
-		assert.Contains(t, cwftRsp.Labels, common.LabelKeyControllerInstanceID)
-	}
+	t.Run("Without parameter values", func(t *testing.T) {
+		tmpl := unlabelled.DeepCopy()
+		tmpl.Name = "foo-without-param-values"
+		tmpl.Spec.Arguments.Parameters[0].Value = nil
+		req := clusterwftmplpkg.ClusterWorkflowTemplateCreateRequest{
+			Template: tmpl,
+		}
+		resp, err := server.CreateClusterWorkflowTemplate(ctx, &req)
+		if assert.NoError(t, err) {
+			assert.Equal(t, "message", resp.Spec.Arguments.Parameters[0].Name)
+			assert.Nil(t, resp.Spec.Arguments.Parameters[0].Value)
+		}
+	})
+	t.Run("With parameter values", func(t *testing.T) {
+		cwftReq := clusterwftmplpkg.ClusterWorkflowTemplateCreateRequest{
+			Template: unlabelled.DeepCopy(),
+		}
+		cwftReq.Template.Name = "foo-with-param-values"
+		assert.NotContains(t, cwftReq.Template.Labels, common.LabelKeyControllerInstanceID)
+		cwftRsp, err := server.CreateClusterWorkflowTemplate(ctx, &cwftReq)
+		if assert.NoError(t, err) {
+			assert.NotNil(t, cwftRsp)
+			// ensure the label is added
+			assert.Contains(t, cwftRsp.Labels, common.LabelKeyControllerInstanceID)
+			assert.Contains(t, cwftRsp.Labels, common.LabelKeyCreator)
+		}
+	})
 }
 
 func TestWorkflowTemplateServer_GetClusterWorkflowTemplate(t *testing.T) {
@@ -223,6 +240,21 @@ func TestWorkflowTemplateServer_LintClusterWorkflowTemplate(t *testing.T) {
 		})
 		if assert.NoError(t, err) {
 			assert.Contains(t, resp.Labels, common.LabelKeyControllerInstanceID)
+			assert.Contains(t, resp.Labels, common.LabelKeyCreator)
+		}
+	})
+
+	t.Run("Without param values", func(t *testing.T) {
+		tmpl := unlabelled.DeepCopy()
+		tmpl.Name = "foo-without-param-values"
+		tmpl.Spec.Arguments.Parameters[0].Value = nil
+		req := clusterwftmplpkg.ClusterWorkflowTemplateLintRequest{
+			Template: tmpl,
+		}
+		resp, err := server.LintClusterWorkflowTemplate(ctx, &req)
+		if assert.NoError(t, err) {
+			assert.Equal(t, "message", resp.Spec.Arguments.Parameters[0].Name)
+			assert.Nil(t, resp.Spec.Arguments.Parameters[0].Value)
 		}
 	})
 }

@@ -4,20 +4,21 @@ import (
 	"context"
 	"testing"
 
+	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
 
-	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	wftFake "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/server/auth"
-	testutil "github.com/argoproj/argo/test/util"
-	"github.com/argoproj/argo/util/instanceid"
-	"github.com/argoproj/argo/workflow/common"
+	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wftFake "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo-workflows/v3/server/auth"
+	"github.com/argoproj/argo-workflows/v3/server/auth/types"
+	"github.com/argoproj/argo-workflows/v3/util/instanceid"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 func Test_cronWorkflowServiceServer(t *testing.T) {
 	var unlabelled, cronWf wfv1.CronWorkflow
-	testutil.MustUnmarshallYAML(`apiVersion: argoproj.io/v1alpha1
+	wfv1.MustUnmarshal(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
 metadata:
   name: my-name
@@ -42,7 +43,7 @@ spec:
           command: ["sh", -c]
           args: ["echo hello"]`, &cronWf)
 
-	testutil.MustUnmarshallYAML(`apiVersion: argoproj.io/v1alpha1
+	wfv1.MustUnmarshal(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
 metadata:
   name: unlabelled
@@ -51,7 +52,7 @@ metadata:
 
 	wfClientset := wftFake.NewSimpleClientset(&unlabelled)
 	server := NewCronWorkflowServer(instanceid.NewService("my-instanceid"))
-	ctx := context.WithValue(context.TODO(), auth.WfKey, wfClientset)
+	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
 
 	t.Run("CreateCronWorkflow", func(t *testing.T) {
 		created, err := server.CreateCronWorkflow(ctx, &cronworkflowpkg.CreateCronWorkflowRequest{
@@ -61,6 +62,7 @@ metadata:
 		if assert.NoError(t, err) {
 			assert.NotNil(t, created)
 			assert.Contains(t, created.Labels, common.LabelKeyControllerInstanceID)
+			assert.Contains(t, created.Labels, common.LabelKeyCreator)
 		}
 	})
 	t.Run("LintWorkflow", func(t *testing.T) {
@@ -71,6 +73,7 @@ metadata:
 		if assert.NoError(t, err) {
 			assert.NotNil(t, wf)
 			assert.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID)
+			assert.Contains(t, wf.Labels, common.LabelKeyCreator)
 		}
 	})
 	t.Run("ListCronWorkflows", func(t *testing.T) {
@@ -92,6 +95,12 @@ metadata:
 		})
 	})
 	t.Run("UpdateCronWorkflow", func(t *testing.T) {
+		t.Run("Invalid", func(t *testing.T) {
+			x := cronWf.DeepCopy()
+			x.Spec.Schedule = "invalid"
+			_, err := server.UpdateCronWorkflow(ctx, &cronworkflowpkg.UpdateCronWorkflowRequest{Namespace: "my-ns", CronWorkflow: x})
+			assert.Error(t, err)
+		})
 		t.Run("Labelled", func(t *testing.T) {
 			cronWf, err := server.UpdateCronWorkflow(ctx, &cronworkflowpkg.UpdateCronWorkflowRequest{Namespace: "my-ns", CronWorkflow: &cronWf})
 			if assert.NoError(t, err) {

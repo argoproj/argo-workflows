@@ -1,4 +1,4 @@
-# pod gc provides the ability to delete pods automatically without deleting the workflow
+# Pod GC provides the ability to delete pods automatically without deleting the workflow.
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -7,7 +7,7 @@ spec:
   entrypoint: pod-gc-strategy
 
   podGC:
-    # pod gc strategy must be one of the following
+    # Pod GC strategy must be one of the following:
     # * OnPodCompletion - delete pods immediately when pod is completed (including errors/failures)
     # * OnPodSuccess - delete pods immediately when pod is successful
     # * OnWorkflowCompletion - delete pods when workflow is completed

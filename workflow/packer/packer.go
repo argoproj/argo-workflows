@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/util/file"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/file"
 )
 
 const envVarName = "MAX_WORKFLOW_SIZE"
@@ -71,7 +71,8 @@ func CompressWorkflowIfNeeded(wf *wfv1.Workflow) error {
 }
 
 func compressWorkflow(wf *wfv1.Workflow) error {
-	nodeContent, err := json.Marshal(wf.Status.Nodes)
+	nodes := wf.Status.Nodes
+	nodeContent, err := json.Marshal(nodes)
 	if err != nil {
 		return err
 	}
@@ -80,10 +81,17 @@ func compressWorkflow(wf *wfv1.Workflow) error {
 	// still too large?
 	large, err := IsLargeWorkflow(wf)
 	if err != nil {
+		wf.Status.CompressedNodes = ""
+		wf.Status.Nodes = nodes
 		return err
 	}
 	if large {
-		compressedSize, _ := getSize(wf)
+		compressedSize, err := getSize(wf)
+		wf.Status.CompressedNodes = ""
+		wf.Status.Nodes = nodes
+		if err != nil {
+			return err
+		}
 		return fmt.Errorf("%s compressed size %d > maxSize %d", tooLarge, compressedSize, getMaxWorkflowSize())
 	}
 	return nil

@@ -5,8 +5,8 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/util/labels"
-	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/util/labels"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 type Service interface {
@@ -55,7 +55,6 @@ func (s *service) Validate(obj metav1.Object) error {
 		}
 	} else if val, ok := l[common.LabelKeyControllerInstanceID]; ok && val == s.instanceID {
 		return nil
-
 	}
 	return fmt.Errorf("'%s' is not managed by the current Argo Server", obj.GetName())
 }

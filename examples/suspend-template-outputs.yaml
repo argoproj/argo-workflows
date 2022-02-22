@@ -1,0 +1,42 @@
+# This example uses a suspend template that expects outputs to be provided to it. These outputs may be provided by the CLI
+# with the 'argo node set' command, the API with the '/set' endpoint, or directly via K8s.
+#
+# Example:
+#   argo node set suspend-outputs -p message="Hello, world!" --node-field-selector displayName=approve
+#   argo node set suspend-outputs --message="Test message" --node-field-selector displayName=approve
+#   argo resume suspend-outputs
+
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: suspend-outputs
+spec:
+  entrypoint: suspend
+  templates:
+  - name: suspend
+    steps:
+    - - name: approve
+        template: approve
+    - - name: release
+        template: whalesay
+        arguments:
+          parameters:
+            - name: message
+              value: "{{steps.approve.outputs.parameters.message}}"
+
+  - name: approve
+    suspend: {}
+    outputs:
+      parameters:
+        - name: message
+          valueFrom:
+            supplied: {}
+
+  - name: whalesay
+    inputs:
+      parameters:
+        - name: message
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]

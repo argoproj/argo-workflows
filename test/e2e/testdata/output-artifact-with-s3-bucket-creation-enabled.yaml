@@ -1,0 +1,33 @@
+# This example demonstrates bucket-creation enabled for s3 output artifacts, when the target bucket does not exist.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: output-artifact-with-s3-bucket-creation-enabled-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: generate-artifact
+            template: whalesay
+
+    - name: whalesay
+      container:
+        image: argoproj/argosay:v2
+        args: [ "echo", "hello world", "/tmp/hello_world.txt" ]
+      outputs:
+        artifacts:
+          - name: hello-art
+            path: /tmp/hello_world.txt
+            s3:
+              bucket: bucket-that-does-not-exist-2
+              key: my-outputs/hello_world.txt.tgz
+              endpoint: minio:9000
+              insecure: true
+              createBucketIfNotPresent: {}
+              accessKeySecret:
+                name: my-minio-cred
+                key: accesskey
+              secretKeySecret:
+                name: my-minio-cred
+                key: secretkey

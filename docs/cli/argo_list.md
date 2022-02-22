@@ -1,0 +1,62 @@
+## argo list
+
+list workflows
+
+```
+argo list [flags]
+```
+
+### Options
+
+```
+  -A, --all-namespaces          Show workflows from all namespaces
+      --chunk-size int          Return large lists in chunks rather than all at once. Pass 0 to disable.
+      --completed               Show completed workflows. Mutually exclusive with --running.
+      --field-selector string   Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selectorkey1=value1,key2=value2). The server only supports a limited number of field queries per type.
+  -h, --help                    help for list
+      --no-headers              Don't print headers (default print headers).
+      --older string            List completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)
+  -o, --output string           Output format. One of: name|wide|yaml|json
+      --prefix string           Filter workflows by prefix
+      --resubmitted             Show resubmitted workflows
+      --running                 Show running workflows. Mutually exclusive with --completed.
+  -l, --selector string         Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)
+      --since string            Show only workflows created after than a relative duration
+      --status strings          Filter by status (comma separated)
+```
+
+### Options inherited from parent commands
+
+```
+      --argo-base-href string          An path to use with HTTP client (e.g. due to BASE_HREF). Defaults to the ARGO_BASE_HREF environment variable.
+      --argo-http1                     If true, use the HTTP client. Defaults to the ARGO_HTTP1 environment variable.
+  -s, --argo-server host:port          API server host:port. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.
+      --as string                      Username to impersonate for the operation
+      --as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.
+      --certificate-authority string   Path to a cert file for the certificate authority
+      --client-certificate string      Path to a client certificate file for TLS
+      --client-key string              Path to a client key file for TLS
+      --cluster string                 The name of the kubeconfig cluster to use
+      --context string                 The name of the kubeconfig context to use
+      --gloglevel int                  Set the glog logging level
+      --insecure-skip-tls-verify       If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure
+  -k, --insecure-skip-verify           If true, the Argo Server's certificate will not be checked for validity. This will make your HTTPS connections insecure. Defaults to the ARGO_INSECURE_SKIP_VERIFY environment variable.
+      --instanceid string              submit with a specific controller's instance id label. Default to the ARGO_INSTANCEID environment variable.
+      --kubeconfig string              Path to a kube config. Only required if out-of-cluster
+      --loglevel string                Set the logging level. One of: debug|info|warn|error (default "info")
+  -n, --namespace string               If present, the namespace scope for this CLI request
+      --password string                Password for basic authentication to the API server
+      --request-timeout string         The length of time to wait before giving up on a single server request. Non-zero values should contain a corresponding time unit (e.g. 1s, 2m, 3h). A value of zero means don't timeout requests. (default "0")
+  -e, --secure                         Whether or not the server is using TLS with the Argo Server. Defaults to the ARGO_SECURE environment variable. (default true)
+      --server string                  The address and port of the Kubernetes API server
+      --tls-server-name string         If provided, this name will be used to validate server certificate. If this is not provided, hostname used to contact the server is used.
+      --token string                   Bearer token for authentication to the API server
+      --user string                    The name of the kubeconfig user to use
+      --username string                Username for basic authentication to the API server
+  -v, --verbose                        Enabled verbose logging, i.e. --loglevel debug
+```
+
+### SEE ALSO
+
+* [argo](argo.md)	 - argo is the command line interface to Argo
+

@@ -1,0 +1,37 @@
+# This example demonstrates the use of a Synchronization lock on template execution. Synchronization lock limits
+# the number of concurrent template execution across the workflows in the namespace which has same Synchronization lock.
+# Synchronization limit value can be configured in configmap. Eg.:
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: my-config
+# data:
+#   template: "3"
+#---
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: synchronization-tmpl-level-
+spec:
+  entrypoint: synchronization-tmpl-level-example
+  templates:
+  - name: synchronization-tmpl-level-example
+    steps:
+    - - name: synchronization-acquire-lock
+        template: acquire-lock
+        arguments:
+          parameters:
+          - name: seconds
+            value: "{{item}}"
+        withParam: '["1","2","3","4","5"]'
+
+  - name: acquire-lock
+    synchronization:
+      semaphore:
+        configMapKeyRef:
+          name: my-config
+          key: template
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["sleep 10; echo acquired lock"]

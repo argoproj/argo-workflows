@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: test-cron-wf-basic
+  labels:
+    argo-e2e: "true"
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: "Allow"
+  startingDeadlineSeconds: 0
+  successfulJobsHistoryLimit: 4
+  failedJobsHistoryLimit: 2
+  workflowMetadata:
+    labels:
+      argo-e2e: "true"
+  workflowSpec:
+    entrypoint: whalesay
+    templates:
+      - name: whalesay
+        container:
+          image: python:alpine3.6
+          command: ["sh", -c]
+          args: ["echo hello"]
+
+---
+
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: basic
+  labels:
+    argo-e2e: "true"
+spec:
+  workflowMetadata:
+    labels:
+      argo-e2e: "true"
+  entrypoints: main
+  templates:
+    - container:
+        image: argoproj/argosay:v2

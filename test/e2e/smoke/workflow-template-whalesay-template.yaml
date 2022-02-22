@@ -3,9 +3,10 @@ kind: WorkflowTemplate
 metadata:
   name: workflow-template-whalesay-template
   labels:
-    argo-e2e: true
+    workflows.argoproj.io/test: "true"
 spec:
   entrypoint: whalesay-template
+  onExit: on-exit
   arguments:
     parameters:
       - name: message
@@ -16,7 +17,9 @@ spec:
         parameters:
           - name: message
       container:
-        image: argoproj/argosay:v1
-        command: [cowsay]
-        args: ["{{inputs.parameters.message}}"]
-        imagePullPolicy: IfNotPresent
+        image: argoproj/argosay:v2
+        args: ["echo", "{{inputs.parameters.message}}"]
+    - name: on-exit
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "Exit Handler"]

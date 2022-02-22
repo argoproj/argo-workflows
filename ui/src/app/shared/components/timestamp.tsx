@@ -1,15 +1,19 @@
+import {Ticker} from 'argo-ui';
 import * as React from 'react';
-import Moment from 'react-moment';
+import {ago} from '../duration';
 
-export const Timestamp = ({date}: {date: string | number}) => {
+export const Timestamp = ({date}: {date: Date | string | number}) => {
+    const tooltip = (utc: Date | string | number) => {
+        return utc.toString() + '\n' + new Date(utc.toString()).toLocaleString();
+    };
     return (
         <span>
-            {date === null ? (
+            {date === null || date === undefined ? (
                 '-'
             ) : (
-                <Moment fromNow={true} withTitle={true}>
-                    {date}
-                </Moment>
+                <span title={tooltip(date)}>
+                    <Ticker intervalMs={1000}>{() => ago(new Date(date))}</Ticker>
+                </span>
             )}
         </span>
     );

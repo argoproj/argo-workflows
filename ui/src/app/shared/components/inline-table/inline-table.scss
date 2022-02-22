@@ -1,0 +1,21 @@
+@import 'node_modules/argo-ui/src/styles/config';
+
+.it {
+  padding: 1em 0;
+  &--row {
+    display: flex;
+  }
+
+  &--col {
+    line-height: 2em;
+  }
+
+  &--key {
+    display: flex;
+    align-items: center;
+    border-right: 1px solid $argo-color-gray-3;
+    min-width: 150px;
+    padding-right: 10px;
+    margin-right: 10px;
+  }
+}

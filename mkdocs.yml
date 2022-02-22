@@ -1,0 +1,192 @@
+site_name: Argo Workflows - The workflow engine for Kubernetes
+repo_url: https://github.com/argoproj/argo-workflows
+strict: true
+theme:
+  name: material
+  font:
+    text: Work Sans
+  logo: assets/logo.png
+  palette:
+  - scheme: default
+    primary: blue
+    toggle:
+      icon: material/toggle-switch-off-outline
+      name: Switch to dark mode
+  - scheme: slate
+    toggle:
+      icon: material/toggle-switch
+      name: Switch to light mode
+extra:
+  analytics:
+    provider: google
+    property: UA-105170809-7
+markdown_extensions:
+  - codehilite
+  - admonition
+  - pymdownx.superfences
+  - pymdownx.details
+  - toc:
+      permalink: true
+nav:
+  - Overview: README.md
+  - core-concepts.md
+  - quick-start.md
+  - training.md
+  - User Guide:
+      # topics are ones that can be done using the UI only
+      - Beginner:
+          - workflow-concepts.md
+          - cli.md
+          - variables.md
+      # topics that don't require kubectl or re-configuration
+      - Intermediate:
+          - service-accounts.md
+          - workflow-rbac.md
+          - node-field-selector.md
+          - empty-dir.md
+          - workflow-templates.md
+          - workflow-inputs.md
+          - cluster-workflow-templates.md
+          - cron-workflows.md
+          - cron-backfill.md
+          - templates.md
+          - http-template.md
+          - container-set-template.md
+          - template-defaults.md
+          - work-avoidance.md
+          - enhanced-depends-logic.md
+          - data-sourcing-and-transformation.md
+          - artifact-repository-ref.md
+          - key-only-artifacts.md
+          - conditional-artifacts-parameters.md
+          - resource-duration.md
+          - estimated-duration.md
+          - workflow-pod-security-context.md
+          - progress.md
+          - workflow-creator.md
+          - synchronization.md
+          - workflow-of-workflows.md
+          - memoization.md
+          - tolerating-pod-deletion.md
+          - widgets.md
+          - retries.md
+      # all other topics, including API access
+      - Advanced:
+          - workflow-restrictions.md
+          - workflow-notifications.md
+          - workflow-events.md
+          - kubectl.md
+          - access-token.md
+          - swagger.md
+          - rest-api.md
+          - rest-examples.md
+          - client-libraries.md
+          - events.md
+          - webhooks.md
+          - submit-workflow-via-automation.md
+          - workflow-submitting-workflow.md
+          - resuming-workflow-via-automation.md
+          - async-pattern.md
+          - running-at-massive-scale.md
+      - Plugins:
+          - plugins.md
+          - executor_plugins.md
+          - executor_swagger.md
+      - ide-setup.md
+      - security.md
+      - Examples: https://github.com/argoproj/argo-workflows/blob/master/examples/README.md
+      - Field Reference: fields.md
+      - CLI Reference:
+          - argo: cli/argo.md
+          - argo archive: cli/argo_archive.md
+          - argo archive delete: cli/argo_archive_delete.md
+          - argo archive get: cli/argo_archive_get.md
+          - argo archive list: cli/argo_archive_list.md
+          - argo archive list-label-keys: cli/argo_archive_list-label-keys.md
+          - argo archive list-label-values: cli/argo_archive_list-label-values.md
+          - argo auth: cli/argo_auth.md
+          - argo auth token: cli/argo_auth_token.md
+          - argo cluster-template: cli/argo_cluster-template.md
+          - argo cluster-template create: cli/argo_cluster-template_create.md
+          - argo cluster-template delete: cli/argo_cluster-template_delete.md
+          - argo cluster-template get: cli/argo_cluster-template_get.md
+          - argo cluster-template lint: cli/argo_cluster-template_lint.md
+          - argo cluster-template list: cli/argo_cluster-template_list.md
+          - argo completion: cli/argo_completion.md
+          - argo cron: cli/argo_cron.md
+          - argo cron create: cli/argo_cron_create.md
+          - argo cron delete: cli/argo_cron_delete.md
+          - argo cron get: cli/argo_cron_get.md
+          - argo cron lint: cli/argo_cron_lint.md
+          - argo cron list: cli/argo_cron_list.md
+          - argo cron resume: cli/argo_cron_resume.md
+          - argo cron suspend: cli/argo_cron_suspend.md
+          - argo delete: cli/argo_delete.md
+          - argo executor-plugin: cli/argo_executor-plugin.md
+          - argo executor-plugin build: cli/argo_executor-plugin_build.md
+          - argo get: cli/argo_get.md
+          - argo lint: cli/argo_lint.md
+          - argo list: cli/argo_list.md
+          - argo logs: cli/argo_logs.md
+          - argo node: cli/argo_node.md
+          - argo resubmit: cli/argo_resubmit.md
+          - argo resume: cli/argo_resume.md
+          - argo retry: cli/argo_retry.md
+          - argo server: cli/argo_server.md
+          - argo stop: cli/argo_stop.md
+          - argo submit: cli/argo_submit.md
+          - argo suspend: cli/argo_suspend.md
+          - argo template: cli/argo_template.md
+          - argo template create: cli/argo_template_create.md
+          - argo template delete: cli/argo_template_delete.md
+          - argo template get: cli/argo_template_get.md
+          - argo template lint: cli/argo_template_lint.md
+          - argo template list: cli/argo_template_list.md
+          - argo terminate: cli/argo_terminate.md
+          - argo version: cli/argo_version.md
+          - argo wait: cli/argo_wait.md
+          - argo watch: cli/argo_watch.md
+  - Operator Manual:
+      - installation.md
+      - upgrading.md
+      - releases.md
+      - Configuration:
+          - managed-namespace.md
+          - configure-artifact-repository.md
+          - configure-archive-logs.md
+          - workflow-controller-configmap.md
+          - workflow-executors.md
+          - sidecar-injection.md
+          - default-workflow-specs.md
+          - offloading-large-workflows.md
+          - workflow-archive.md
+          - metrics.md
+          - links.md
+      - Argo Server:
+          - argo-server.md
+          - argo-server-auth-mode.md
+          - tls.md
+          - argo-server-sso.md
+          - argo-server-sso-argocd.md
+      - high-availability.md
+      - disaster-recovery.md
+      - scaling.md
+      - cost-optimisation.md
+      - windows.md
+      - environment-variables.md
+  - Developer Guide:
+      - CONTRIBUTING.md
+      - mentoring.md
+      - architecture.md
+      - running-locally.md
+      - versioning.md
+      - public-api.md
+      - static-code-analysis.md
+      - stress-testing.md
+      - releasing.md
+  - FAQ: faq.md
+  - Releases ⧉: https://github.com/argoproj/argo-workflows/releases
+  - Roadmap: roadmap.md
+  - Blog ⧉: https://blog.argoproj.io/
+  - Slack ⧉: https://argoproj.github.io/community/join-slack
+  - Twitter ⧉: https://twitter.com/argoproj

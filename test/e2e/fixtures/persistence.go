@@ -4,9 +4,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"upper.io/db.v3/lib/sqlbuilder"
 
-	"github.com/argoproj/argo/config"
-	"github.com/argoproj/argo/persist/sqldb"
-	"github.com/argoproj/argo/util/instanceid"
+	"github.com/argoproj/argo-workflows/v3/config"
+	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
+	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 )
 
 type Persistence struct {
@@ -15,12 +15,7 @@ type Persistence struct {
 	workflowArchive       sqldb.WorkflowArchive
 }
 
-func newPersistence(kubeClient kubernetes.Interface) *Persistence {
-	configController := config.NewController(Namespace, "workflow-controller-configmap", kubeClient)
-	wcConfig, err := configController.Get()
-	if err != nil {
-		panic(err)
-	}
+func newPersistence(kubeClient kubernetes.Interface, wcConfig *config.Config) *Persistence {
 	persistence := wcConfig.Persistence
 	if persistence != nil {
 		if persistence.PostgreSQL != nil {

@@ -1,17 +1,12 @@
-# Argo Workflow Architecture
+# Architecture
 
-> v2.5 and after
+## Diagram
 
-From v2.5, you can run Argo WF in two modes: "local" and "hosted". 
-
-![diagram](assets/architecture-v2-5.png)
-
-> v2.4 and before
+![diagram](assets/diagram.png)
 
 ## Argo Workflow Overview
 
 ![diagram](assets/overview.jpeg)
-
 
 ## Workflow controller architecture
 

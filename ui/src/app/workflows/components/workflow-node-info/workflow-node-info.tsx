@@ -1,14 +1,22 @@
-import {Duration, Tabs, Ticker} from 'argo-ui';
-import * as classNames from 'classnames';
+import {Tabs, Ticker, Tooltip} from 'argo-ui';
 import * as moment from 'moment';
 import * as React from 'react';
 
 import * as models from '../../../../models';
+import {Artifact, NodeStatus, Workflow} from '../../../../models';
+import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
+import {Button} from '../../../shared/components/button';
+import {ClipboardText} from '../../../shared/components/clipboard-text';
+import {DropDownButton} from '../../../shared/components/drop-down-button';
+import {DurationPanel} from '../../../shared/components/duration-panel';
+import {InlineTable} from '../../../shared/components/inline-table/inline-table';
+import {Links} from '../../../shared/components/links';
+import {Phase} from '../../../shared/components/phase';
 import {Timestamp} from '../../../shared/components/timestamp';
+import {getPodName, getTemplateNameFromNode} from '../../../shared/pod-name';
 import {ResourcesDuration} from '../../../shared/resources-duration';
 import {services} from '../../../shared/services';
 import {getResolvedTemplates} from '../../../shared/template-resolution';
-import {Utils} from '../../../shared/utils';
 
 require('./workflow-node-info.scss');
 
@@ -17,19 +25,53 @@ function nodeDuration(node: models.NodeStatus, now: moment.Moment) {
     return endTime.diff(moment(node.startedAt)) / 1000;
 }
 
+// Iterate over the node's subtree and find pod in error or fail
+function failHosts(node: models.NodeStatus, workflow: models.Workflow) {
+    const hosts = new Array<string>();
+    const toVisit = [node.id];
+    while (toVisit.length > 0) {
+        const nodeNameToVisit = toVisit[toVisit.length - 1];
+        toVisit.pop();
+
+        if (nodeNameToVisit in workflow.status.nodes) {
+            const nodeToVisit = workflow.status.nodes[nodeNameToVisit];
+            if (
+                nodeToVisit.type === 'Pod' &&
+                (nodeToVisit.phase === models.NODE_PHASE.FAILED || nodeToVisit.phase === models.NODE_PHASE.ERROR) &&
+                hosts.indexOf(nodeToVisit.hostNodeName) === -1
+            ) {
+                hosts.push(nodeToVisit.hostNodeName);
+            }
+            if (nodeToVisit.children) {
+                for (const child of nodeToVisit.children) {
+                    toVisit.push(child);
+                }
+            }
+        }
+    }
+    const uniqueHosts = hosts.filter((v: string, i: number) => hosts.indexOf(v) === i);
+    return uniqueHosts.join('\n');
+}
+
 interface Props {
     node: models.NodeStatus;
     workflow: models.Workflow;
     links: models.Link[];
     archived: boolean;
     onShowContainerLogs: (nodeId: string, container: string) => any;
+    onShowEvents?: () => void;
     onShowYaml?: (nodeId: string) => any;
+    onTabSelected?: (tabSelected: string) => void;
+    selectedTabKey?: string;
+    onResume?: () => void;
 }
 
 const AttributeRow = (attr: {title: string; value: any}) => (
     <div className='row white-box__details-row' key={attr.title}>
-        <div className='columns small-3'>{attr.title}</div>
-        <div className='columns small-9'>{attr.value}</div>
+        <div className='columns small-4'>{attr.title}</div>
+        <div className='columns columns--narrower-height small-8' style={{whiteSpace: 'pre-wrap'}}>
+            {attr.value}
+        </div>
     </div>
 );
 const AttributeRows = (props: {attributes: {title: string; value: any}[]}) => (
@@ -40,17 +82,24 @@ const AttributeRows = (props: {attributes: {title: string; value: any}[]}) => (
     </div>
 );
 
-export const WorkflowNodeSummary = (props: Props) => {
+const WorkflowNodeSummary = (props: Props) => {
+    const {workflow, node} = props;
+
+    let annotations: {[name: string]: string} = {};
+    if (typeof workflow.metadata.annotations !== 'undefined') {
+        annotations = workflow.metadata.annotations;
+    }
+    const version = annotations[ANNOTATION_KEY_POD_NAME_VERSION];
+    const templateName = getTemplateNameFromNode(node);
+
+    const podName = getPodName(workflow.metadata.name, node.name, templateName, node.id, version);
+
     const attributes = [
-        {title: 'NAME', value: props.node.name},
+        {title: 'NAME', value: <ClipboardText text={props.node.name} />},
         {title: 'TYPE', value: props.node.type},
         {
             title: 'PHASE',
-            value: (
-                <span>
-                    <i className={classNames('fa', Utils.statusIconClasses(props.node.phase))} aria-hidden='true' /> {props.node.phase}
-                </span>
-            )
+            value: <Phase value={props.node.phase} />
         },
         ...(props.node.message
             ? [
@@ -64,15 +113,51 @@ export const WorkflowNodeSummary = (props: Props) => {
         {title: 'END TIME', value: <Timestamp date={props.node.finishedAt} />},
         {
             title: 'DURATION',
+            value: <Ticker>{now => <DurationPanel duration={nodeDuration(props.node, now)} phase={props.node.phase} estimatedDuration={props.node.estimatedDuration} />}</Ticker>
+        },
+        {title: 'PROGRESS', value: props.node.progress || '-'},
+        {
+            title: 'MEMOIZATION',
             value: (
-                <Ticker disabled={props.workflow.status && props.workflow.status.phase !== models.NODE_PHASE.RUNNING}>
-                    {now => <Duration durationMs={nodeDuration(props.node, now)} />}
-                </Ticker>
+                <InlineTable
+                    rows={
+                        props.node.memoizationStatus
+                            ? [
+                                  {
+                                      left: <div> KEY </div>,
+                                      right: <div> {props.node.memoizationStatus.key} </div>
+                                  },
+                                  {
+                                      left: <div> CACHE NAME </div>,
+                                      right: <div> {props.node.memoizationStatus.cacheName} </div>
+                                  },
+                                  {
+                                      left: <div> HIT? </div>,
+                                      right: <div> {props.node.memoizationStatus.hit ? 'YES' : 'NO'} </div>
+                                  }
+                              ]
+                            : [{left: <div> N/A </div>, right: null}]
+                    }
+                />
             )
         }
     ];
     if (props.node.type === 'Pod') {
-        attributes.splice(2, 0, {title: 'POD NAME', value: props.node.id}, {title: 'HOST NODE NAME', value: props.node.hostNodeName});
+        attributes.splice(
+            2,
+            0,
+            {title: 'POD NAME', value: <ClipboardText text={podName} />},
+            {
+                title: 'HOST NODE NAME',
+                value: <ClipboardText text={props.node.hostNodeName} />
+            }
+        );
+    }
+    if (props.node.type === 'Retry') {
+        attributes.push({
+            title: 'FAIL HOSTS',
+            value: <pre className='workflow-node-info__multi-line'>{failHosts(props.node, props.workflow)}</pre>
+        });
     }
     if (props.node.resourcesDuration) {
         attributes.push({
@@ -80,105 +165,196 @@ export const WorkflowNodeSummary = (props: Props) => {
             value: <ResourcesDuration resourcesDuration={props.node.resourcesDuration} />
         });
     }
+    const showLogs = (x = 'main') => props.onShowContainerLogs(props.node.id, x);
     return (
         <div className='white-box'>
             <div className='white-box__details'>{<AttributeRows attributes={attributes} />}</div>
             <div>
-                <button className='argo-button argo-button--base-o' onClick={() => props.onShowYaml && props.onShowYaml(props.node.id)}>
-                    YAML
-                </button>{' '}
+                {props.node.type === 'Suspend' && props.onResume && (
+                    <Button icon='play' onClick={() => props.onResume()}>
+                        RESUME
+                    </Button>
+                )}{' '}
+                {props.node.type !== 'Container' && props.onShowYaml && <Button onClick={() => props.onShowYaml(props.node.id)}>MANIFEST</Button>}{' '}
+                {props.node.type === 'Pod' && props.onShowContainerLogs && (
+                    <DropDownButton
+                        onClick={() => showLogs()}
+                        items={[
+                            {onClick: () => showLogs('init'), value: 'init logs'},
+                            {onClick: () => showLogs('wait'), value: 'wait logs'}
+                        ]}>
+                        <i className='fa fa-bars' /> main logs
+                    </DropDownButton>
+                )}{' '}
+                {props.node.type === 'Pod' && props.onShowEvents && (
+                    <Button icon='bell' onClick={() => props.onShowEvents()}>
+                        EVENTS
+                    </Button>
+                )}{' '}
+                {props.node.type === 'Container' && props.onShowContainerLogs && (
+                    <Button icon='bars' onClick={() => props.onShowContainerLogs(props.node.name.replace(/.[^.]*$/, ''), props.node.name.replace(/.*\./, ''))}>
+                        logs
+                    </Button>
+                )}{' '}
                 {props.node.type === 'Pod' && (
-                    <button className='argo-button argo-button--base-o' onClick={() => props.onShowContainerLogs && props.onShowContainerLogs(props.node.id, 'main')}>
-                        LOGS
-                    </button>
+                    <Links
+                        button={true}
+                        object={{
+                            metadata: {
+                                namespace: props.workflow.metadata.namespace,
+                                name: props.node.id
+                            },
+                            workflow: props.workflow,
+                            status: {
+                                startedAt: props.node.startedAt,
+                                finishedAt: props.node.finishedAt
+                            }
+                        }}
+                        scope='pod'
+                    />
                 )}
-                {props.links &&
-                    props.links
-                        .filter(link => link.scope === 'pod')
-                        .map(link => (
-                            <a
-                                className='argo-button argo-button--base-o'
-                                href={link.url.replace('${metadata.namespace}', props.workflow.metadata.namespace).replace('${metadata.name}', props.node.id)}>
-                                <i className='fa fa-link' /> {link.name}
-                            </a>
-                        ))}
             </div>
         </div>
     );
 };
 
-export const WorkflowNodeInputs = (props: {inputs: models.Inputs}) => {
-    const parameters = (props.inputs.parameters || []).map(artifact => ({
-        title: artifact.name,
-        value: artifact.value
-    }));
-    const artifacts = (props.inputs.artifacts || []).map(artifact => ({
-        title: artifact.name,
-        value: artifact.path
-    }));
+const WorkflowNodeInputs = (props: Props) => (
+    <>
+        <h5>Inputs</h5>
+        <WorkflowNodeParameters parameters={props.node.inputs && props.node.inputs.parameters} />
+        <WorkflowNodeArtifacts {...props} isInput={true} artifacts={props.node.inputs && props.node.inputs.artifacts} />
+    </>
+);
+
+const WorkflowNodeOutputs = (props: Props) => (
+    <>
+        <h5>Outputs</h5>
+        <div className='white-box'>
+            <div className='white-box__details'>
+                <div className='row'>
+                    <WorkflowNodeResult result={props.node.outputs && props.node.outputs.result} />
+                    <WorkflowNodeExitCode exitCode={props.node.outputs && props.node.outputs.exitCode} />
+                </div>
+            </div>
+        </div>
+        <WorkflowNodeParameters parameters={props.node.outputs && props.node.outputs.parameters} />
+        <WorkflowNodeArtifacts {...props} isInput={false} artifacts={props.node.outputs && props.node.outputs.artifacts} />
+    </>
+);
+
+const WorkflowNodeParameters = ({parameters}: {parameters: models.Parameter[]}) => {
     return (
         <div className='white-box'>
             <div className='white-box__details'>
-                {parameters.length > 0 && [
-                    <div className='row white-box__details-row' key='title'>
-                        <p>Parameters</p>
-                    </div>,
-                    <AttributeRows key='attrs' attributes={parameters} />
-                ]}
-                {artifacts.length > 0 && [
-                    <div className='row white-box__details-row' key='title'>
-                        <p>Artifacts</p>
-                    </div>,
-                    <AttributeRows key='attrs' attributes={artifacts} />
-                ]}
+                {parameters && parameters.length > 0 ? (
+                    <>
+                        <div className='row white-box__details-row' key='title'>
+                            <p>Parameters</p>
+                        </div>
+                        <AttributeRows key='attrs' attributes={parameters.map(x => ({title: x.name, value: x.value}))} />
+                    </>
+                ) : (
+                    <div className='row'>
+                        <div className='columns small-12 text-center'>No parameters</div>
+                    </div>
+                )}
             </div>
         </div>
     );
 };
 
-function hasEnv(container: models.kubernetes.Container | models.Sidecar | models.Script): container is models.kubernetes.Container | models.Sidecar {
-    return (container as models.kubernetes.Container | models.Sidecar).env !== undefined;
+const WorkflowNodeResult = ({result}: {result: string}) =>
+    result ? (
+        <>
+            <div className='columns small-3'>Result</div>
+            <div className='columns small-3'>{result}</div>
+        </>
+    ) : (
+        <div className='columns small-6 text-center'>No result</div>
+    );
+
+const WorkflowNodeExitCode = ({exitCode}: {exitCode: number}) =>
+    exitCode ? (
+        <>
+            <div className='columns small-3'>Exit code</div>
+            <div className='columns small-3'>{exitCode}</div>
+        </>
+    ) : (
+        <div className='columns 6 text-center'>No exit code</div>
+    );
+
+function hasEnv(container: models.kubernetes.Container | models.UserContainer | models.Script): container is models.kubernetes.Container | models.UserContainer {
+    return (container as models.kubernetes.Container | models.UserContainer).env !== undefined;
 }
 
-export const WorkflowNodeContainer = (props: {
+const EnvVar = (props: {env: models.kubernetes.EnvVar}) => {
+    const {env} = props;
+    const secret = env.valueFrom?.secretKeyRef;
+    const secretValue = secret ? (
+        <>
+            <Tooltip content={'The value of this environment variable has been hidden for security reasons because it comes from a kubernetes secret.'} arrow={false}>
+                <i className='fa fa-key' />
+            </Tooltip>
+            {secret.name}/{secret.key}
+        </>
+    ) : (
+        undefined
+    );
+
+    return (
+        <pre key={env.name}>
+            {env.name}={env.value || secretValue}
+        </pre>
+    );
+};
+
+const WorkflowNodeContainer = (props: {
     nodeId: string;
-    container: models.kubernetes.Container | models.Sidecar | models.Script;
+    container: models.kubernetes.Container | models.UserContainer | models.Script;
     onShowContainerLogs: (nodeId: string, container: string) => any;
+    onShowEvents: () => void;
 }) => {
     const container = {name: 'main', args: Array<string>(), source: '', ...props.container};
+    const maybeQuote = (v: string) => (v.includes(' ') ? `'${v}'` : v);
     const attributes = [
         {title: 'NAME', value: container.name || 'main'},
         {title: 'IMAGE', value: container.image},
         {
             title: 'COMMAND',
-            value: <span className='workflow-node-info__multi-line'>{(container.command || []).join(' ')}</span>
+            value: <pre className='workflow-node-info__multi-line'>{(container.command || []).map(maybeQuote).join(' ')}</pre>
         },
         container.source
-            ? {title: 'SOURCE', value: <span className='workflow-node-info__multi-line'>{container.source}</span>}
+            ? {title: 'SOURCE', value: <pre className='workflow-node-info__multi-line'>{container.source}</pre>}
             : {
                   title: 'ARGS',
-                  value: <span className='workflow-node-info__multi-line'>{(container.args || []).join(' ')}</span>
+                  value: <pre className='workflow-node-info__multi-line'>{(container.args || []).map(maybeQuote).join(' ')}</pre>
               },
         hasEnv(container)
             ? {
                   title: 'ENV',
-                  value: <span className='workflow-node-info__multi-line'>{(container.env || []).map(e => `${e.name}=${e.value}`).join('\n')}</span>
+                  value: (
+                      <pre className='workflow-node-info__multi-line'>
+                          {(container.env || []).map(e => (
+                              <EnvVar env={e} />
+                          ))}
+                      </pre>
+                  )
               }
-            : {title: 'ENV', value: <span className='workflow-node-info__multi-line' />}
+            : {title: 'ENV', value: <pre className='workflow-node-info__multi-line' />}
     ];
     return (
         <div className='white-box'>
             <div className='white-box__details'>{<AttributeRows attributes={attributes} />}</div>
             <div>
-                <button className='argo-button argo-button--base-o' onClick={() => props.onShowContainerLogs && props.onShowContainerLogs(props.nodeId, container.name)}>
+                <Button outline={true} icon='bars' onClick={() => props.onShowContainerLogs && props.onShowContainerLogs(props.nodeId, container.name)}>
                     LOGS
-                </button>
+                </Button>
             </div>
         </div>
     );
 };
 
-export class WorkflowNodeContainers extends React.Component<Props, {selectedSidecar: string}> {
+class WorkflowNodeContainers extends React.Component<Props, {selectedSidecar: string}> {
     constructor(props: Props) {
         super(props);
         this.state = {selectedSidecar: null};
@@ -186,7 +362,7 @@ export class WorkflowNodeContainers extends React.Component<Props, {selectedSide
 
     public render() {
         const template = getResolvedTemplates(this.props.workflow, this.props.node);
-        if (!template || (!template.container && !template.script)) {
+        if (!template || (!template.container && !template.containerSet && !template.script)) {
             return (
                 <div className='white-box'>
                     <div className='row'>
@@ -195,16 +371,23 @@ export class WorkflowNodeContainers extends React.Component<Props, {selectedSide
                 </div>
             );
         }
-        const container =
-            (this.state.selectedSidecar && template.sidecars && template.sidecars.find(item => item.name === this.state.selectedSidecar)) || template.container || template.script;
+        const containers = (template.containerSet ? template.containerSet.containers : []).concat(template.sidecars || []);
+
+        const container = (this.state.selectedSidecar && containers.find(item => item.name === this.state.selectedSidecar)) || template.container || template.script;
+
         return (
             <div className='workflow-node-info__containers'>
                 {this.state.selectedSidecar && <i className='fa fa-angle-left workflow-node-info__sidecar-back' onClick={() => this.setState({selectedSidecar: null})} />}
-                <WorkflowNodeContainer nodeId={this.props.node.id} container={container} onShowContainerLogs={this.props.onShowContainerLogs} />
-                {!this.state.selectedSidecar && template.sidecars && template.sidecars.length > 0 && (
+                <WorkflowNodeContainer
+                    nodeId={this.props.node.id}
+                    container={container}
+                    onShowContainerLogs={this.props.onShowContainerLogs}
+                    onShowEvents={this.props.onShowEvents}
+                />
+                {!this.state.selectedSidecar && (
                     <div>
                         <p>SIDECARS:</p>
-                        {template.sidecars.map(sidecar => (
+                        {containers.map(sidecar => (
                             <div className='workflow-node-info__sidecar' key={sidecar.name} onClick={() => this.setState({selectedSidecar: sidecar.name})}>
                                 <span>{sidecar.name}</span> <i className='fa fa-angle-right' />
                             </div>
@@ -216,13 +399,12 @@ export class WorkflowNodeContainers extends React.Component<Props, {selectedSide
     }
 }
 
-export const WorkflowNodeArtifacts = (props: Props) => {
+const WorkflowNodeArtifacts = (props: {workflow: Workflow; node: NodeStatus; archived: boolean; isInput: boolean; artifacts: Artifact[]}) => {
     const artifacts =
-        (props.node.outputs &&
-            props.node.outputs.artifacts &&
-            props.node.outputs.artifacts.map(artifact =>
+        (props.artifacts &&
+            props.artifacts.map(artifact =>
                 Object.assign({}, artifact, {
-                    downloadUrl: services.workflows.getArtifactDownloadUrl(props.workflow, props.node.id, artifact.name, props.archived),
+                    downloadUrl: services.workflows.getArtifactDownloadUrl(props.workflow, props.node.id, artifact.name, props.archived, props.isInput),
                     stepName: props.node.name,
                     dateCreated: props.node.finishedAt,
                     nodeName: props.node.name
@@ -233,12 +415,12 @@ export const WorkflowNodeArtifacts = (props: Props) => {
         <div className='white-box'>
             {artifacts.length === 0 && (
                 <div className='row'>
-                    <div className='columns small-12 text-center'>No data to display</div>
+                    <div className='columns small-12 text-center'>No artifacts</div>
                 </div>
             )}
             {artifacts.length > 0 && props.archived && (
                 <p>
-                    <i className='fa fa-exclamation-triangle' /> Artifacts for archived workflows maybe be overwritten by a more recent workflow with the same name.
+                    <i className='fa fa-exclamation-triangle' /> Artifacts for archived workflows may be overwritten by a more recent workflow with the same name.
                 </p>
             )}
             {artifacts.map(artifact => (
@@ -258,7 +440,7 @@ export const WorkflowNodeArtifacts = (props: Props) => {
                             <span title={artifact.path} className='muted'>
                                 {artifact.path}
                             </span>
-                            <span title={artifact.dateCreated.toString()} className='muted'>
+                            <span title={artifact.dateCreated} className='muted'>
                                 <Timestamp date={artifact.dateCreated} />
                             </span>
                         </div>
@@ -274,6 +456,8 @@ export const WorkflowNodeInfo = (props: Props) => (
         <Tabs
             navCenter={true}
             navTransparent={true}
+            onTabSelected={props.onTabSelected}
+            selectedTabKey={props.selectedTabKey}
             tabs={[
                 {
                     title: 'SUMMARY',
@@ -281,21 +465,30 @@ export const WorkflowNodeInfo = (props: Props) => (
                     content: (
                         <div>
                             <WorkflowNodeSummary {...props} />
-                            {props.node.inputs && <WorkflowNodeInputs inputs={props.node.inputs} />}
                         </div>
                     )
-                },
-                {
-                    title: 'CONTAINERS',
-                    key: 'containers',
-                    content: <WorkflowNodeContainers {...props} />
-                },
-                {
-                    title: 'ARTIFACTS',
-                    key: 'artifacts',
-                    content: <WorkflowNodeArtifacts {...props} />
                 }
-            ]}
+            ].concat(
+                props.node.type !== 'Container'
+                    ? [
+                          {
+                              title: 'CONTAINERS',
+                              key: 'containers',
+                              content: <WorkflowNodeContainers {...props} />
+                          },
+                          {
+                              title: 'INPUTS/OUTPUTS',
+                              key: 'inputs-outputs',
+                              content: (
+                                  <>
+                                      <WorkflowNodeInputs {...props} />
+                                      <WorkflowNodeOutputs {...props} />
+                                  </>
+                              )
+                          }
+                      ]
+                    : []
+            )}
         />
     </div>
 );

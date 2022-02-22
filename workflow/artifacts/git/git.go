@@ -1,157 +1,222 @@
 package git
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"os/user"
+	"path/filepath"
+	"regexp"
 	"strings"
 
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/transport"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	ssh2 "github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
-	git "gopkg.in/src-d/go-git.v4"
-	"gopkg.in/src-d/go-git.v4/config"
-	"gopkg.in/src-d/go-git.v4/plumbing/transport"
-	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
-	ssh2 "gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
 
-	"github.com/argoproj/argo/errors"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 )
 
-// GitArtifactDriver is the artifact driver for a git repo
-type GitArtifactDriver struct {
+// ArtifactDriver is the artifact driver for a git repo
+type ArtifactDriver struct {
 	Username              string
 	Password              string
 	SSHPrivateKey         string
 	InsecureIgnoreHostKey bool
+	DisableSubmodules     bool
 }
 
-// Load download artifacts from an git URL
-func (g *GitArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
+var _ common.ArtifactDriver = &ArtifactDriver{}
+
+var sshURLRegex = regexp.MustCompile("^(ssh://)?([^/:]*?)@[^@]+$")
+
+func GetUser(url string) string {
+	matches := sshURLRegex.FindStringSubmatch(url)
+	if len(matches) > 2 {
+		return matches[2]
+	}
+	// default to `git` user unless username is specified in SSH url
+	return "git"
+}
+
+func (g *ArtifactDriver) auth(sshUser string) (func(), transport.AuthMethod, []string, error) {
 	if g.SSHPrivateKey != "" {
 		signer, err := ssh.ParsePrivateKey([]byte(g.SSHPrivateKey))
 		if err != nil {
-			return errors.InternalWrapError(err)
+			return nil, nil, nil, err
 		}
-		auth := &ssh2.PublicKeys{User: "git", Signer: signer}
+		privateKeyFile, err := ioutil.TempFile("", "id_rsa.")
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		err = ioutil.WriteFile(privateKeyFile.Name(), []byte(g.SSHPrivateKey), 0o600)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		auth := &ssh2.PublicKeys{User: sshUser, Signer: signer}
 		if g.InsecureIgnoreHostKey {
 			auth.HostKeyCallback = ssh.InsecureIgnoreHostKey()
 		}
-		return gitClone(path, inputArtifact, auth, g.SSHPrivateKey)
+		args := []string{"ssh", "-i", privateKeyFile.Name()}
+		if g.InsecureIgnoreHostKey {
+			args = append(args, "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null")
+		} else {
+			args = append(args, "-o", "StrictHostKeyChecking=yes", "-o")
+		}
+		env := []string{"GIT_SSH_COMMAND=" + strings.Join(args, " ")}
+		if g.InsecureIgnoreHostKey {
+			auth.HostKeyCallback = ssh.InsecureIgnoreHostKey()
+			env = append(env, "GIT_SSL_NO_VERIFY=true")
+		}
+		return func() { _ = os.Remove(privateKeyFile.Name()) },
+			auth,
+			env,
+			nil
 	}
 	if g.Username != "" || g.Password != "" {
-		auth := &http.BasicAuth{Username: g.Username, Password: g.Password}
-		return gitClone(path, inputArtifact, auth, "")
+		filename := filepath.Join(os.TempDir(), "git-ask-pass.sh")
+		_, err := os.Stat(filename)
+		if os.IsNotExist(err) {
+			//nolint:gosec
+			err := ioutil.WriteFile(filename, []byte(`#!/bin/sh
+case "$1" in
+Username*) echo "${GIT_USERNAME}" ;;
+Password*) echo "${GIT_PASSWORD}" ;;
+esac
+`), 0o755)
+			if err != nil {
+				return nil, nil, nil, err
+			}
+		}
+		return func() {},
+			&http.BasicAuth{Username: g.Username, Password: g.Password},
+			[]string{
+				"GIT_ASKPASS=" + filename,
+				"GIT_USERNAME=" + g.Username,
+				"GIT_PASSWORD=" + g.Password,
+			},
+			nil
 	}
-	return gitClone(path, inputArtifact, nil, "")
+	return func() {}, nil, nil, nil
 }
 
 // Save is unsupported for git output artifacts
-func (g *GitArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
-	return errors.Errorf(errors.CodeBadRequest, "Git output artifacts unsupported")
+func (g *ArtifactDriver) Save(string, *wfv1.Artifact) error {
+	return errors.New("git output artifacts unsupported")
 }
 
-func writePrivateKey(key string, insecureIgnoreHostKey bool) error {
-	usr, err := user.Current()
+func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
+	sshUser := GetUser(inputArtifact.Git.Repo)
+	closer, auth, env, err := g.auth(sshUser)
 	if err != nil {
-		return errors.InternalWrapError(err)
+		return err
 	}
-	sshDir := fmt.Sprintf("%s/.ssh", usr.HomeDir)
-	err = os.MkdirAll(sshDir, 0700)
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
+	defer closer()
 
-	if insecureIgnoreHostKey {
-		sshConfig := `Host *
-	StrictHostKeyChecking no
-	UserKnownHostsFile /dev/null`
-		err = ioutil.WriteFile(fmt.Sprintf("%s/config", sshDir), []byte(sshConfig), 0644)
-		if err != nil {
-			return errors.InternalWrapError(err)
-		}
+	var recurseSubmodules = git.DefaultSubmoduleRecursionDepth
+	if inputArtifact.Git.DisableSubmodules {
+		log.Info("Recursive cloning of submodules is disabled")
+		recurseSubmodules = git.NoRecurseSubmodules
 	}
-	err = ioutil.WriteFile(fmt.Sprintf("%s/id_rsa", sshDir), []byte(key), 0600)
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
-
-	return nil
-}
-
-func gitClone(path string, inputArtifact *wfv1.Artifact, auth transport.AuthMethod, privateKey string) error {
-	cloneOptions := git.CloneOptions{
+	repo, err := git.PlainClone(path, false, &git.CloneOptions{
 		URL:               inputArtifact.Git.Repo,
-		RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
+		RecurseSubmodules: recurseSubmodules,
 		Auth:              auth,
+		Depth:             inputArtifact.Git.GetDepth(),
+	})
+	switch err {
+	case transport.ErrEmptyRemoteRepository:
+		log.Info("Cloned an empty repository ")
+		r, err := git.PlainInit(path, false)
+		if err != nil {
+			return err
+		}
+		if _, err := r.CreateRemote(&config.RemoteConfig{Name: git.DefaultRemoteName, URLs: []string{inputArtifact.Git.Repo}}); err != nil {
+			return err
+		}
+		branchName := inputArtifact.Git.Revision
+		if branchName == "" {
+			branchName = "master"
+		}
+		if err = r.CreateBranch(&config.Branch{Name: branchName, Remote: git.DefaultRemoteName, Merge: plumbing.Master}); err != nil {
+			return err
+		}
+		return nil
+	default:
+		return err
+	case nil:
+		// fallthrough ...
 	}
-	if inputArtifact.Git.Depth != nil {
-		cloneOptions.Depth = int(*inputArtifact.Git.Depth)
-	}
-
-	repo, err := git.PlainClone(path, false, &cloneOptions)
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
-
 	if inputArtifact.Git.Fetch != nil {
 		refSpecs := make([]config.RefSpec, len(inputArtifact.Git.Fetch))
 		for i, spec := range inputArtifact.Git.Fetch {
 			refSpecs[i] = config.RefSpec(spec)
 		}
-
 		fetchOptions := git.FetchOptions{
+			Auth:     auth,
 			RefSpecs: refSpecs,
+			Depth:    inputArtifact.Git.GetDepth(),
 		}
-		if inputArtifact.Git.Depth != nil {
-			fetchOptions.Depth = int(*inputArtifact.Git.Depth)
-		}
-
 		err = fetchOptions.Validate()
 		if err != nil {
-			return errors.InternalWrapError(err)
+			return err
 		}
-
 		err = repo.Fetch(&fetchOptions)
-		if err != nil {
-			return errors.InternalWrapError(err)
+		if isAlreadyUpToDateErr(err) {
+			return err
 		}
 	}
-
 	if inputArtifact.Git.Revision != "" {
 		// We still rely on forking git for checkout, since go-git does not have a reliable
 		// way of resolving revisions (e.g. mybranch, HEAD^, v1.2.3)
-		log.Infof("Checking out revision %s", inputArtifact.Git.Revision)
-		cmd := exec.Command("git", "checkout", inputArtifact.Git.Revision)
+		rev := getRevisionForCheckout(inputArtifact.Git.Revision)
+		log.Info("Checking out revision ", rev)
+		cmd := exec.Command("git", "checkout", rev)
 		cmd.Dir = path
+		cmd.Env = env
 		output, err := cmd.Output()
 		if err != nil {
-			if exErr, ok := err.(*exec.ExitError); ok {
-				log.Errorf("`%s` stderr:\n%s", cmd.Args, string(exErr.Stderr))
-				return errors.InternalError(strings.Split(string(exErr.Stderr), "\n")[0])
-			}
-			return errors.InternalWrapError(err)
+			return g.error(err, cmd)
 		}
-		log.Errorf("`%s` stdout:\n%s", cmd.Args, string(output))
-		if privateKey != "" {
-			err := writePrivateKey(privateKey, inputArtifact.Git.InsecureIgnoreHostKey)
+		log.Infof("`%s` stdout:\n%s", cmd.Args, string(output))
+		if !inputArtifact.Git.DisableSubmodules {
+			submodulesCmd := exec.Command("git", "submodule", "update", "--init", "--recursive", "--force")
+			submodulesCmd.Dir = path
+			submodulesCmd.Env = env
+			submoduleOutput, err := submodulesCmd.Output()
 			if err != nil {
-				return errors.InternalWrapError(err)
+				return g.error(err, cmd)
 			}
+			log.Infof("`%s` stdout:\n%s", cmd.Args, string(submoduleOutput))
 		}
-		submodulesCmd := exec.Command("git", "submodule", "update", "--init", "--recursive", "--force")
-		submodulesCmd.Dir = path
-		submoduleOutput, err := submodulesCmd.Output()
-		if err != nil {
-			if exErr, ok := err.(*exec.ExitError); ok {
-				log.Errorf("`%s` stderr:\n%s", submodulesCmd.Args, string(exErr.Stderr))
-				return errors.InternalError(strings.Split(string(exErr.Stderr), "\n")[0])
-			}
-			return errors.InternalWrapError(err)
-		}
-		log.Errorf("`%s` stdout:\n%s", submodulesCmd.Args, string(submoduleOutput))
 	}
 	return nil
+}
+
+// getRevisionForCheckout trims "refs/heads/" from the revision name (if present)
+// so that `git checkout` will succeed.
+func getRevisionForCheckout(revision string) string {
+	return strings.TrimPrefix(revision, "refs/heads/")
+}
+
+func isAlreadyUpToDateErr(err error) bool {
+	return err != nil && err.Error() != "already up-to-date"
+}
+
+func (g *ArtifactDriver) error(err error, cmd *exec.Cmd) error {
+	if exErr, ok := err.(*exec.ExitError); ok {
+		log.Errorf("`%s` stderr:\n%s", cmd.Args, string(exErr.Stderr))
+		return errors.New(strings.Split(string(exErr.Stderr), "\n")[0])
+	}
+	return err
+}
+
+func (g *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
+	return nil, fmt.Errorf("ListObjects is currently not supported for this artifact type, but it will be in a future version")
 }

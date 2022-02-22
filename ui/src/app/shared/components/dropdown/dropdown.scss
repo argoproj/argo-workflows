@@ -1,0 +1,67 @@
+@import 'node_modules/argo-ui/src/styles/config';
+
+.argo-dropdown {
+    display: inline-block;
+
+    &__anchor {
+        cursor: pointer;
+    }
+
+    &__content {
+        position: fixed;
+        z-index: $notifications-z-index;
+        padding: 1rem;
+        background-color: $white-color;
+        box-shadow: 0 0 4px rgba(#000, .2);
+        transition: opacity .2s, transform .2s, visibility .2s;
+
+        &:not(.opened) {
+            transform: translateY(-30%);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity .2s, transform .2s .2s, visibility .2s;
+        }
+
+        &.is-menu {
+            overflow: auto;
+            max-height: 600px;
+            padding: 10px;
+            border: 0;
+
+            ul {
+                margin: 0;
+                list-style-type: none;
+                white-space: nowrap;
+                text-align: left;
+                cursor: pointer;
+                min-width: 150px;
+                column-count: 3;
+                column-gap: 10px;
+
+                li {
+                    padding: 0.5em 1em;
+                    font-size: 14px;
+                    color: $argo-color-gray-6;
+                    cursor: pointer;
+                    border-bottom: none !important;
+
+                    i {
+                        margin-right: 2px;
+                    }
+
+                    &.title {
+                        font-weight: bolder;
+                    }
+
+                    &:hover {
+                        background-color: $argo-color-gray-1;
+                    }
+
+                    &:last-child {
+                        border-bottom: none;
+                    }
+                }
+            }
+        }
+    }
+}

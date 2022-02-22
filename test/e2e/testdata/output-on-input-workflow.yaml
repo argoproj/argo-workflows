@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: output-on-input-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+        args: [ echo , hi, /file ]
+      inputs:
+        artifacts:
+          - name: in-0
+            path: /file
+            raw:
+              data: hi
+      outputs:
+        artifacts:
+          - name: out-0
+            path: /file

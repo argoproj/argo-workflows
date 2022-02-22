@@ -6,14 +6,15 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 
-	clusterworkflowtmplpkg "github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
-	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
-	infopkg "github.com/argoproj/argo/pkg/apiclient/info"
-	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
-	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
-	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
+	clusterworkflowtmplpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
+	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
+	infopkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/info"
+	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
+	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
+	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
 )
 
 const (
@@ -24,6 +25,8 @@ const (
 type argoServerClient struct {
 	*grpc.ClientConn
 }
+
+var _ Client = &argoServerClient{}
 
 func newArgoServerClient(opts ArgoServerOpts, auth string) (context.Context, Client, error) {
 	conn, err := newClientConn(opts)
@@ -37,20 +40,20 @@ func (a *argoServerClient) NewWorkflowServiceClient() workflowpkg.WorkflowServic
 	return workflowpkg.NewWorkflowServiceClient(a.ClientConn)
 }
 
-func (a *argoServerClient) NewCronWorkflowServiceClient() cronworkflowpkg.CronWorkflowServiceClient {
-	return cronworkflowpkg.NewCronWorkflowServiceClient(a.ClientConn)
+func (a *argoServerClient) NewCronWorkflowServiceClient() (cronworkflowpkg.CronWorkflowServiceClient, error) {
+	return cronworkflowpkg.NewCronWorkflowServiceClient(a.ClientConn), nil
 }
 
-func (a *argoServerClient) NewWorkflowTemplateServiceClient() workflowtemplatepkg.WorkflowTemplateServiceClient {
-	return workflowtemplatepkg.NewWorkflowTemplateServiceClient(a.ClientConn)
+func (a *argoServerClient) NewWorkflowTemplateServiceClient() (workflowtemplatepkg.WorkflowTemplateServiceClient, error) {
+	return workflowtemplatepkg.NewWorkflowTemplateServiceClient(a.ClientConn), nil
 }
 
 func (a *argoServerClient) NewArchivedWorkflowServiceClient() (workflowarchivepkg.ArchivedWorkflowServiceClient, error) {
 	return workflowarchivepkg.NewArchivedWorkflowServiceClient(a.ClientConn), nil
 }
 
-func (a *argoServerClient) NewClusterWorkflowTemplateServiceClient() clusterworkflowtmplpkg.ClusterWorkflowTemplateServiceClient {
-	return clusterworkflowtmplpkg.NewClusterWorkflowTemplateServiceClient(a.ClientConn)
+func (a *argoServerClient) NewClusterWorkflowTemplateServiceClient() (clusterworkflowtmplpkg.ClusterWorkflowTemplateServiceClient, error) {
+	return clusterworkflowtmplpkg.NewClusterWorkflowTemplateServiceClient(a.ClientConn), nil
 }
 
 func (a *argoServerClient) NewInfoServiceClient() (infopkg.InfoServiceClient, error) {
@@ -58,7 +61,7 @@ func (a *argoServerClient) NewInfoServiceClient() (infopkg.InfoServiceClient, er
 }
 
 func newClientConn(opts ArgoServerOpts) (*grpc.ClientConn, error) {
-	creds := grpc.WithInsecure()
+	creds := grpc.WithTransportCredentials(insecure.NewCredentials())
 	if opts.Secure {
 		creds = grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: opts.InsecureSkipVerify}))
 	}
