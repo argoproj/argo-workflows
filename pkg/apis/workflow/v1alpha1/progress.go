@@ -9,6 +9,12 @@ import (
 // Progress in N/M format. N is number of task complete. M is number of tasks.
 type Progress string
 
+const (
+	ProgressUndefined = Progress("")
+	ProgressZero      = Progress("0/0") // zero value (not the same as "no progress)
+	ProgressDefault   = Progress("0/1")
+)
+
 func NewProgress(n, m int64) (Progress, bool) {
 	return ParseProgress(fmt.Sprintf("%v/%v", n, m))
 }
