@@ -47,6 +47,7 @@ spec:
     daemon: true
     container:
       image: influxdb:1.2
+      command: ["influxd"]
       readinessProbe:
         httpGet:
           path: /ping

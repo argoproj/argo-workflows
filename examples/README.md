@@ -1300,6 +1300,7 @@ spec:
       limit: 10                         # retry container if it fails
     container:
       image: influxdb:1.2
+      command: ["influxd"]
       readinessProbe:                   # wait for readinessProbe to succeed
         httpGet:
           path: /ping
