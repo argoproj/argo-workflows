@@ -40,7 +40,6 @@ spec:
 
     - name: http
       http:
-        # url: http://dummy.restapiexample.com/api/v1/employees
         url: "https://raw.githubusercontent.com/argoproj/argo-workflows/4e450e250168e6b4d51a126b784e90b11a0162bc/pkg/apis/workflow/v1alpha1/generated.swagger.json"
 `).When().
 		SubmitWorkflow().
