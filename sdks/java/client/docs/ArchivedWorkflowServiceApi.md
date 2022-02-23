@@ -9,6 +9,7 @@ Method | HTTP request | Description
 [**archivedWorkflowServiceListArchivedWorkflowLabelKeys**](ArchivedWorkflowServiceApi.md#archivedWorkflowServiceListArchivedWorkflowLabelKeys) | **GET** /api/v1/archived-workflows-label-keys | 
 [**archivedWorkflowServiceListArchivedWorkflowLabelValues**](ArchivedWorkflowServiceApi.md#archivedWorkflowServiceListArchivedWorkflowLabelValues) | **GET** /api/v1/archived-workflows-label-values | 
 [**archivedWorkflowServiceListArchivedWorkflows**](ArchivedWorkflowServiceApi.md#archivedWorkflowServiceListArchivedWorkflows) | **GET** /api/v1/archived-workflows | 
+[**archivedWorkflowServiceRetryArchivedWorkflow**](ArchivedWorkflowServiceApi.md#archivedWorkflowServiceRetryArchivedWorkflow) | **PUT** /api/v1/archived-workflows/{namespace}/{uid}/retry | 
 
 
 <a name="archivedWorkflowServiceDeleteArchivedWorkflow"></a>
@@ -338,6 +339,71 @@ No authorization required
 ### HTTP request headers
 
  - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | A successful response. |  -  |
+**0** | An unexpected error response. |  -  |
+
+<a name="archivedWorkflowServiceRetryArchivedWorkflow"></a>
+# **archivedWorkflowServiceRetryArchivedWorkflow**
+> IoArgoprojWorkflowV1alpha1Workflow archivedWorkflowServiceRetryArchivedWorkflow(namespace, uid, body)
+
+
+
+### Example
+```java
+// Import classes:
+import io.argoproj.workflow.ApiClient;
+import io.argoproj.workflow.ApiException;
+import io.argoproj.workflow.Configuration;
+import io.argoproj.workflow.models.*;
+import io.argoproj.workflow.apis.ArchivedWorkflowServiceApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("http://localhost:2746");
+
+    ArchivedWorkflowServiceApi apiInstance = new ArchivedWorkflowServiceApi(defaultClient);
+    String namespace = "namespace_example"; // String | 
+    String uid = "uid_example"; // String | 
+    IoArgoprojWorkflowV1alpha1RetryArchivedWorkflowRequest body = new IoArgoprojWorkflowV1alpha1RetryArchivedWorkflowRequest(); // IoArgoprojWorkflowV1alpha1RetryArchivedWorkflowRequest | 
+    try {
+      IoArgoprojWorkflowV1alpha1Workflow result = apiInstance.archivedWorkflowServiceRetryArchivedWorkflow(namespace, uid, body);
+      System.out.println(result);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling ArchivedWorkflowServiceApi#archivedWorkflowServiceRetryArchivedWorkflow");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **namespace** | **String**|  |
+ **uid** | **String**|  |
+ **body** | [**IoArgoprojWorkflowV1alpha1RetryArchivedWorkflowRequest**](IoArgoprojWorkflowV1alpha1RetryArchivedWorkflowRequest.md)|  |
+
+### Return type
+
+[**IoArgoprojWorkflowV1alpha1Workflow**](IoArgoprojWorkflowV1alpha1Workflow.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
  - **Accept**: application/json
 
 ### HTTP response details

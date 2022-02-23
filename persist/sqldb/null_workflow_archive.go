@@ -17,6 +17,10 @@ func (r *nullWorkflowArchive) IsEnabled() bool {
 	return false
 }
 
+func (r *nullWorkflowArchive) ValidateWorkflow(wf *wfv1.Workflow) error {
+	return nil
+}
+
 func (r *nullWorkflowArchive) ArchiveWorkflow(*wfv1.Workflow) error {
 	return nil
 }

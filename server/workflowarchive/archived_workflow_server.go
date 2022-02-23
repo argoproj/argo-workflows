@@ -19,16 +19,24 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
+	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 type archivedWorkflowServer struct {
-	wfArchive sqldb.WorkflowArchive
+	wfArchive             sqldb.WorkflowArchive
+	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
+	hydrator              hydrator.Interface
 }
 
 // NewWorkflowArchiveServer returns a new archivedWorkflowServer
-func NewWorkflowArchiveServer(wfArchive sqldb.WorkflowArchive) workflowarchivepkg.ArchivedWorkflowServiceServer {
-	return &archivedWorkflowServer{wfArchive: wfArchive}
+func NewWorkflowArchiveServer(wfArchive sqldb.WorkflowArchive, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo) workflowarchivepkg.ArchivedWorkflowServiceServer {
+	return &archivedWorkflowServer{wfArchive: wfArchive, offloadNodeStatusRepo: offloadNodeStatusRepo, hydrator: hydrator.New(offloadNodeStatusRepo)}
 }
+
+// func NewWorkflowServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo) workflowpkg.WorkflowServiceServer {
+// 	return &workflowServer{instanceIDService, offloadNodeStatusRepo, hydrator.New(offloadNodeStatusRepo)}
+// }
 
 func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req *workflowarchivepkg.ListArchivedWorkflowsRequest) (*wfv1.WorkflowList, error) {
 	options := req.ListOptions
@@ -187,4 +195,27 @@ func (w *archivedWorkflowServer) ListArchivedWorkflowLabelValues(ctx context.Con
 		return nil, status.Error(codes.NotFound, "not found")
 	}
 	return labels, err
+}
+
+func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req *workflowarchivepkg.RetryArchivedWorkflowRequest) (*wfv1.Workflow, error) {
+	wfClient := auth.GetWfClient(ctx)
+	kubeClient := auth.GetKubeClient(ctx)
+
+	wf, err := w.wfArchive.GetWorkflow(req.Uid)
+	if err != nil {
+		return nil, err
+	}
+
+	err = w.wfArchive.ValidateWorkflow(wf)
+	if err != nil {
+		return nil, err
+	}
+
+	// retry archive workflow needs wf passed
+
+	wf, err = util.RetryArchiveWorkflow(ctx, kubeClient, w.hydrator, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wf, wf.Name, req.RestartSuccessful, req.NodeFieldSelector)
+	if err != nil {
+		return nil, err
+	}
+	return wf, nil
 }

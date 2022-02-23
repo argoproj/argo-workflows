@@ -739,7 +739,11 @@ func RetryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrato
 	var updated *wfv1.Workflow
 	err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
 		var err error
-		updated, err = retryWorkflow(ctx, kubeClient, hydrator, wfClient, name, restartSuccessful, nodeFieldSelector)
+		wf, err := wfClient.Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+		updated, err = retryWorkflow(ctx, kubeClient, hydrator, wfClient, wf, name, restartSuccessful, nodeFieldSelector, false)
 		return !errorsutil.IsTransientErr(err), err
 	})
 	if err != nil {
@@ -748,17 +752,37 @@ func RetryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrato
 	return updated, err
 }
 
-func retryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrator hydrator.Interface, wfClient v1alpha1.WorkflowInterface, name string, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
-	wf, err := wfClient.Get(ctx, name, metav1.GetOptions{})
+// RetryArchiveWF
+// take archiveClient to get wf
+func RetryArchiveWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrator hydrator.Interface, wfClient v1alpha1.WorkflowInterface, wf *wfv1.Workflow, name string, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
+	var updated *wfv1.Workflow
+	err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
+		var err error
+		// wf, err := w.wfArchive.GetWorkflow(req.Uid)
+		// if err != nil {
+		// 	return nil, err
+		// }
+		updated, err = retryWorkflow(ctx, kubeClient, hydrator, wfClient, wf, name, restartSuccessful, nodeFieldSelector, true)
+		return !errorsutil.IsTransientErr(err), err
+	})
 	if err != nil {
 		return nil, err
 	}
+	return updated, err
+}
+
+// retryWorkflow takes a wf in method signature instead and has boolean to determine if this is from archive or not - archive means we must create the workflow before update
+func retryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrator hydrator.Interface, wfClient v1alpha1.WorkflowInterface, wf *wfv1.Workflow, name string, restartSuccessful bool, nodeFieldSelector string, retryArchive bool) (*wfv1.Workflow, error) {
+	// wf, err := wfClient.Get(ctx, name, metav1.GetOptions{})
+	// if err != nil {
+	// 	return nil, err
+	// }
 	switch wf.Status.Phase {
 	case wfv1.WorkflowFailed, wfv1.WorkflowError:
 	default:
 		return nil, errors.Errorf(errors.CodeBadRequest, "workflow must be Failed/Error to retry")
 	}
-	err = hydrator.Hydrate(wf)
+	err := hydrator.Hydrate(wf)
 	if err != nil {
 		return nil, err
 	}
@@ -870,6 +894,11 @@ func retryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrato
 	newWF.Status.StoredTemplates = make(map[string]wfv1.Template)
 	for id, tmpl := range wf.Status.StoredTemplates {
 		newWF.Status.StoredTemplates[id] = tmpl
+	}
+
+	// need to wfClient.Create() for ArchiveWorkflow as they don't exist currently
+	if !retryArchive {
+		wfClient.Create(ctx, newWF, metav1.CreateOptions{})
 	}
 
 	return wfClient.Update(ctx, newWF, metav1.UpdateOptions{})

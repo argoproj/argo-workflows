@@ -163,3 +163,17 @@ func (_m *WorkflowArchive) ListWorkflowsLabelValues(key string) (*v1alpha1.Label
 
 	return r0, r1
 }
+
+// ValidateWorkflow provides a mock function with given fields: wf
+func (_m *WorkflowArchive) ValidateWorkflow(wf *v1alpha1.Workflow) error {
+	ret := _m.Called(wf)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(*v1alpha1.Workflow) error); ok {
+		r0 = rf(wf)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
