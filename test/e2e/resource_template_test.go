@@ -29,8 +29,11 @@ spec:
   entrypoint: main
   templates:
     - name: main
+      executor:
+        serviceAccountName: argo
       resource:
         action: create
+        setOwnerReference: true
         successCondition: status.phase == Succeeded
         failureCondition: status.phase == Failed
         manifest: |
@@ -40,6 +43,8 @@ spec:
             generateName: k8s-wf-resource-
           spec:
             entrypoint: main
+            executor:
+              serviceAccountName: argo
             templates:
               - name: main
                 container:
@@ -63,13 +68,12 @@ kind: Workflow
 metadata:
   generateName: k8s-resource-tmpl-with-pod-
 spec:
-  serviceAccount: argo
   entrypoint: main
   templates:
     - name: main
-      serviceAccountName: argo
       resource:
         action: create
+        setOwnerReference: true
         successCondition: status.phase == Succeeded
         failureCondition: status.phase == Failed
         manifest: |

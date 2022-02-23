@@ -10,6 +10,9 @@ resources:
   - kubelet-executor-clusterrole.yaml
   - kubelet-executor-default-clusterrolebinding.yaml
   - workflow-default-rolebinding.yaml
+  - executor-serviceaccount.yaml
+  - executor-rolebinding.yaml
+  - zero-permissions-serviceaccount.yaml
   - cluster-workflow-template-rbac.yaml
   - artifact-repositories-configmap.yaml
 

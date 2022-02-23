@@ -253,7 +253,17 @@ metadata:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
+  name: executor
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
   name: github.com
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: zero-permissions
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -581,6 +591,19 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
+  name: executor
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: workflow-role
+subjects:
+- kind: ServiceAccount
+  name: executor
+  namespace: argo
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
   name: github.com
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -698,10 +721,21 @@ data:
         matchLabels:
           workflows.argoproj.io/container-runtime-executor: pns
   executor: |
+    serviceAccountName: executor
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 8737
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
     resources:
       requests:
         cpu: 10m
         memory: 64Mi
+      limits:
+        cpu: 500m
+        memory: 128Mi
   images: |
     argoproj/argosay:v1:
       command: [cowsay]
@@ -755,6 +789,37 @@ data:
     completed: 10
     failed: 3
     errored: 3
+  workflowDefaults: |
+    spec:
+      activeDeadlineSeconds: 300
+      ttlStrategy:
+        secondsAfterCompletion: 600
+      podSpecPatch: |
+        terminationGracePeriodSeconds: 3
+        containers:
+        - name: main
+          serviceAccountName: zero-permissions
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 8737
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 128Mi
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 8737
+      automountServiceAccountToken: false
+      serviceAccountName: zero-permissions
+      executor:
+        serviceAccountName: argo
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
