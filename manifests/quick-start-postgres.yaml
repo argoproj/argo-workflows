@@ -203,6 +203,8 @@ spec:
         type: object
     served: true
     storage: true
+    subresources:
+      status: {}
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -466,9 +468,14 @@ rules:
   resources:
   - pods
   verbs:
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
   - get
   - watch
-  - patch
 - apiGroups:
   - ""
   resources:
@@ -501,12 +508,14 @@ rules:
   - argoproj.io
   resources:
   - workflowtasksets
-  - workflowtasksets/finalizers
   verbs:
   - list
   - watch
-  - get
-  - update
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflowtasksets/status
+  verbs:
   - patch
 ---
 apiVersion: rbac.authorization.k8s.io/v1

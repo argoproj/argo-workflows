@@ -176,7 +176,7 @@ func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alp
 
 			ae.log.Info("Processing Patch")
 
-			_, err = taskSetInterface.Patch(ctx, ae.WorkflowName, types.MergePatchType, patch, metav1.PatchOptions{})
+			_, err = taskSetInterface.Patch(ctx, ae.WorkflowName, types.MergePatchType, patch, metav1.PatchOptions{}, "status")
 			if err != nil {
 				isTransientErr := errors.IsTransientErr(err)
 				ae.log.WithError(err).

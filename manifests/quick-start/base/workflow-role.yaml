@@ -4,7 +4,14 @@ kind: Role
 metadata:
   name: workflow-role
 rules:
-  # pod get/watch is used to identify the container IDs of the current pod
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - patch
+  # pod get/watch is used to identify the container IDs of the current pod.
+  # This is not needed for the emissary executor.
   - apiGroups:
       - ""
     resources:
@@ -12,10 +19,8 @@ rules:
     verbs:
       - get
       - watch
-      # pod patch is used to annotate the step's outputs back to controller (e.g. artifact location)
-      # This is ONLY needed if the step/task has outputs that are used by another step or task.
-      - patch
   # logs get/watch are used to get the pods logs for script outputs, and for log archival
+  # This is not needed for the emissary executor.
   - apiGroups:
       - ""
     resources:
@@ -48,16 +53,17 @@ rules:
     verbs:
       - create
       - get
-  # This allows agent pod to update the taskset.
-  # This is only needed for http templates.
+  # This allows executor to patch the taskset.
   - apiGroups:
       - argoproj.io
     resources:
       - workflowtasksets
-      - workflowtasksets/finalizers
     verbs:
       - list
       - watch
-      - get
-      - update
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - workflowtasksets/status
+    verbs:
       - patch
