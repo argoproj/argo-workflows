@@ -25,7 +25,6 @@ func TestWorkflowTemplateRef(t *testing.T) {
 	// verify we copy these values
 	assert.Len(t, woc.volumes, 1, "volumes from workflow template")
 	// and these
-	assert.Equal(t, "my-sa", woc.globalParams["workflow.serviceAccountName"])
 	assert.Equal(t, "77", woc.globalParams["workflow.priority"])
 }
 

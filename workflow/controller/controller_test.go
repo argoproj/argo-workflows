@@ -582,7 +582,6 @@ metadata:
   name: workflow-template-whalesay-template
   namespace: default
 spec:
-  serviceAccountName: my-sa
   priority: 77
   templates:
   - name: whalesay-template

@@ -2,10 +2,11 @@ package controller
 
 import (
 	"fmt"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	log "github.com/sirupsen/logrus"
 
+	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
+
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 // setupServiceAccount sets up service account and token.

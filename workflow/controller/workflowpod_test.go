@@ -186,6 +186,8 @@ func TestScriptTemplateWithoutVolumeOptionalArtifact(t *testing.T) {
 func TestWFLevelServiceAccount(t *testing.T) {
 	woc := newWoc()
 	woc.execWf.Spec.ServiceAccountName = "foo"
+	err := createServiceAccountWithToken(woc, "foo", "foo-token")
+	assert.NoError(t, err)
 	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
 	assert.NoError(t, err)
 
@@ -205,6 +207,10 @@ func TestTmplServiceAccount(t *testing.T) {
 	woc := newWoc()
 	woc.execWf.Spec.ServiceAccountName = "foo"
 	woc.execWf.Spec.Templates[0].ServiceAccountName = "tmpl"
+	err := createServiceAccountWithToken(woc, "foo", "foo-token")
+	assert.NoError(t, err)
+	err = createServiceAccountWithToken(woc, "tmpl", "tmpl-token")
+	assert.NoError(t, err)
 	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
 	assert.NoError(t, err)
 
@@ -216,7 +222,7 @@ func TestTmplServiceAccount(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Equal(t, pod.Spec.ServiceAccountName, "tmpl")
+	assert.Len(t, pod.Spec.Containers[1].VolumeMounts, 1)
 }
 
 // TestWFLevelAutomountServiceAccountToken verifies the ability to carry forward workflow level AutomountServiceAccountToken to Podspec.
@@ -238,7 +244,7 @@ func TestWFLevelAutomountServiceAccountToken(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Len(t, pod.Spec.Volumes, 2)
+	assert.Len(t, pod.Spec.Volumes, 3)
 }
 
 func createServiceAccountWithToken(woc *wfOperationCtx, serviceAccountName string, secretName string) error {
@@ -272,7 +278,7 @@ func TestTmplLevelAutomountServiceAccountToken(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Equal(t, *pod.Spec.AutomountServiceAccountToken, false)
+	assert.Len(t, pod.Spec.Containers[1].VolumeMounts, 1)
 }
 
 // verifyServiceAccountTokenVolumeMount is a helper function to verify service account token volume in a container.
@@ -302,8 +308,8 @@ func TestWFLevelExecutorServiceAccountName(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Equal(t, woc.getExecutorServiceAccountTokenVolumeName(), pod.Spec.Volumes[1].Name)
-	assert.Equal(t, "foo-token", pod.Spec.Volumes[1].VolumeSource.Secret.SecretName)
+	assert.Equal(t, woc.getExecutorServiceAccountTokenVolumeName(), pod.Spec.Volumes[2].Name)
+	assert.Equal(t, "foo-token", pod.Spec.Volumes[2].VolumeSource.Secret.SecretName)
 
 	waitCtr := pod.Spec.Containers[0]
 	verifyServiceAccountTokenVolumeMount(t, waitCtr, woc.getExecutorServiceAccountTokenVolumeName(), "/var/run/secrets/kubernetes.io/serviceaccount")
@@ -329,8 +335,8 @@ func TestTmplLevelExecutorServiceAccountName(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Equal(t, woc.getExecutorServiceAccountTokenVolumeName(), pod.Spec.Volumes[1].Name)
-	assert.Equal(t, "tmpl-token", pod.Spec.Volumes[1].VolumeSource.Secret.SecretName)
+	assert.Equal(t, woc.getExecutorServiceAccountTokenVolumeName(), pod.Spec.Volumes[2].Name)
+	assert.Equal(t, "tmpl-token", pod.Spec.Volumes[2].VolumeSource.Secret.SecretName)
 
 	waitCtr := pod.Spec.Containers[0]
 	verifyServiceAccountTokenVolumeMount(t, waitCtr, woc.getExecutorServiceAccountTokenVolumeName(), "/var/run/secrets/kubernetes.io/serviceaccount")
@@ -740,10 +746,10 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, pods.Items, 1)
 		pod := pods.Items[0]
-		assert.Equal(t, 4, len(pod.Spec.Volumes))
+		assert.Equal(t, 5, len(pod.Spec.Volumes))
 		assert.Equal(t, "var-run-argo", pod.Spec.Volumes[0].Name)
 		assert.Equal(t, "docker-sock", pod.Spec.Volumes[1].Name)
-		assert.Equal(t, "volume-name", pod.Spec.Volumes[3].Name)
+		assert.Equal(t, "volume-name", pod.Spec.Volumes[4].Name)
 		assert.Equal(t, 2, len(pod.Spec.Containers[1].VolumeMounts))
 		assert.Equal(t, "volume-name", pod.Spec.Containers[1].VolumeMounts[0].Name)
 		assert.Equal(t, "var-run-argo", pod.Spec.Containers[1].VolumeMounts[1].Name)
@@ -765,9 +771,9 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, pods.Items, 1)
 		pod := pods.Items[0]
-		assert.Equal(t, 3, len(pod.Spec.Volumes))
+		assert.Equal(t, 4, len(pod.Spec.Volumes))
 		assert.Equal(t, "var-run-argo", pod.Spec.Volumes[0].Name)
-		assert.Equal(t, "volume-name", pod.Spec.Volumes[2].Name)
+		assert.Equal(t, "volume-name", pod.Spec.Volumes[3].Name)
 		assert.Equal(t, 2, len(pod.Spec.Containers[1].VolumeMounts))
 		assert.Equal(t, "volume-name", pod.Spec.Containers[1].VolumeMounts[0].Name)
 		assert.Equal(t, "var-run-argo", pod.Spec.Containers[1].VolumeMounts[1].Name)
@@ -789,9 +795,9 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, pods.Items, 1)
 		pod := pods.Items[0]
-		assert.Equal(t, 3, len(pod.Spec.Volumes))
+		assert.Equal(t, 4, len(pod.Spec.Volumes))
 		assert.Equal(t, "var-run-argo", pod.Spec.Volumes[0].Name)
-		assert.Equal(t, "volume-name", pod.Spec.Volumes[2].Name)
+		assert.Equal(t, "volume-name", pod.Spec.Volumes[3].Name)
 		assert.Equal(t, 2, len(pod.Spec.Containers[1].VolumeMounts))
 		assert.Equal(t, "volume-name", pod.Spec.Containers[1].VolumeMounts[0].Name)
 		assert.Equal(t, "var-run-argo", pod.Spec.Containers[1].VolumeMounts[1].Name)
@@ -813,9 +819,9 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, pods.Items, 1)
 		pod := pods.Items[0]
-		if assert.Len(t, pod.Spec.Volumes, 3) {
+		if assert.Len(t, pod.Spec.Volumes, 4) {
 			assert.Equal(t, "var-run-argo", pod.Spec.Volumes[0].Name)
-			assert.Equal(t, "volume-name", pod.Spec.Volumes[2].Name)
+			assert.Equal(t, "volume-name", pod.Spec.Volumes[3].Name)
 		}
 		if assert.Len(t, pod.Spec.InitContainers, 1) {
 			init := pod.Spec.InitContainers[0]
@@ -879,9 +885,9 @@ func TestVolumesPodSubstitution(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Equal(t, 4, len(pod.Spec.Volumes))
-	assert.Equal(t, "volume-name", pod.Spec.Volumes[3].Name)
-	assert.Equal(t, "test-name", pod.Spec.Volumes[3].PersistentVolumeClaim.ClaimName)
+	assert.Equal(t, 5, len(pod.Spec.Volumes))
+	assert.Equal(t, "volume-name", pod.Spec.Volumes[4].Name)
+	assert.Equal(t, "test-name", pod.Spec.Volumes[4].PersistentVolumeClaim.ClaimName)
 	assert.Equal(t, 2, len(pod.Spec.Containers[1].VolumeMounts))
 	assert.Equal(t, "volume-name", pod.Spec.Containers[1].VolumeMounts[0].Name)
 }

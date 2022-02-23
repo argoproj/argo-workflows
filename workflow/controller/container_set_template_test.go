@@ -43,6 +43,7 @@ spec:
 	assert.NoError(t, err)
 
 	assert.ElementsMatch(t, []corev1.Volume{
+		{Name: woc.getMainServiceAccountVolumeName(), VolumeSource: corev1.VolumeSource{Secret: &corev1.SecretVolumeSource{SecretName: "kube-api-secret"}}},
 		{Name: woc.getExecutorServiceAccountTokenVolumeName(), VolumeSource: corev1.VolumeSource{Secret: &corev1.SecretVolumeSource{SecretName: "kube-api-secret"}}},
 		{Name: "var-run-argo", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 		{Name: "workspace", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
@@ -111,6 +112,7 @@ spec:
 	assert.NoError(t, err)
 
 	assert.ElementsMatch(t, []corev1.Volume{
+		woc.getMainServiceAccountTokenVolume(defaultSecretName),
 		woc.getServiceAccountTokenVolume(woc.getExecutorServiceAccountTokenVolumeName(), defaultSecretName),
 		{Name: "var-run-argo", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 		{Name: "workspace", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
@@ -193,6 +195,7 @@ spec:
 	assert.NoError(t, err)
 
 	assert.ElementsMatch(t, []corev1.Volume{
+		{Name: woc.getMainServiceAccountVolumeName(), VolumeSource: corev1.VolumeSource{Secret: &corev1.SecretVolumeSource{SecretName: "kube-api-secret"}}},
 		{Name: woc.getExecutorServiceAccountTokenVolumeName(), VolumeSource: corev1.VolumeSource{Secret: &corev1.SecretVolumeSource{SecretName: "kube-api-secret"}}},
 		{Name: "var-run-argo", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 		{Name: "workspace", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},

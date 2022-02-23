@@ -4192,7 +4192,6 @@ kind: Workflow
 metadata:
   name: output-value-global-variables-wf
 spec:
-  serviceAccountName: testServiceAccountName
   entrypoint: tell-workflow-global-variables
   templates:
   - name: tell-workflow-global-variables
@@ -4200,8 +4199,6 @@ spec:
       parameters:
       - name: namespace
         value: "{{workflow.namespace}}"
-      - name: serviceAccountName
-        value: "{{workflow.serviceAccountName}}"
     container:
       image: busybox
 `
@@ -4221,9 +4218,6 @@ func TestResolvePlaceholdersInGlobalVariables(t *testing.T) {
 	namespaceValue := template.Outputs.Parameters[0].Value
 	assert.NotNil(t, namespaceValue)
 	assert.Equal(t, defaultManagedNamespace, namespaceValue.String())
-	serviceAccountNameValue := template.Outputs.Parameters[1].Value
-	assert.NotNil(t, serviceAccountNameValue)
-	assert.Equal(t, "testServiceAccountName", serviceAccountNameValue.String())
 }
 
 var unsuppliedArgValue = `
