@@ -28,7 +28,7 @@ spec:
             value: 'true'
 ```
 
-In order to release a step from a pause state, marker files are used named `/var/run/argo/ctr/CONTAINER_NAME/after` or `/var/run/argo/ctr/CONTAINER_NAME/before` corresponding to when the step is paused. Replace `CONTAINER_NAME` with the name of the container that is paused. Pausing steps can be used together with [ephemeral containers](https://kubernetes.io/docs/concepts/workloads/pods/ephemeral-containers/) when a shell is not available in the used container. 
+In order to release a step from a pause state, marker files are used named `/var/run/argo/ctr/main/after` or `/var/run/argo/ctr/main/before` corresponding to when the step is paused. Pausing steps can be used together with [ephemeral containers](https://kubernetes.io/docs/concepts/workloads/pods/ephemeral-containers/) when a shell is not available in the used container.
 
 ## Example
 
@@ -63,7 +63,7 @@ kubectl debug -n argo -it POD_NAME --image=busybox --target=main --share-process
 
 In order to have access to the persistance volume used by the workflow step,  [`--share-processes`](https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/) will have to be used. 
 
-The ephemeral container can be used to perform debugging operations. When debugging has been completed, create the marker file to allow the workflow step to continue.
+The ephemeral container can be used to perform debugging operations. When debugging has been completed, create the marker file to allow the workflow step to continue. When using process name space sharing container filesystems are visible to other containers in the pod through the /proc/$pid/root link.
 
 ```bash
 touch /proc/1/root/run/argo/ctr/main/after
