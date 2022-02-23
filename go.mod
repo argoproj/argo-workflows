@@ -10,7 +10,7 @@ require (
 	github.com/aliyun/aliyun-oss-go-sdk v2.2.1+incompatible
 	github.com/antonmedv/expr v1.9.0
 	github.com/argoproj-labs/argo-dataflow v0.10.0
-	github.com/argoproj/argo-events v0.17.1-0.20220216172345-64cf24e64ddb
+	github.com/argoproj/argo-events v0.17.1-0.20220223155401-ddda8800f9f8
 	github.com/argoproj/pkg v0.11.0
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/blushft/go-diagrams v0.0.0-20201006005127-c78c821223d9
@@ -20,7 +20,7 @@ require (
 	github.com/emicklei/go-restful v2.15.0+incompatible // indirect
 	github.com/evanphx/json-patch v5.6.0+incompatible
 	github.com/fatih/structs v1.1.0 // indirect
-	github.com/gavv/httpexpect/v2 v2.2.0
+	github.com/gavv/httpexpect/v2 v2.3.1
 	github.com/go-openapi/jsonreference v0.19.6
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/gogo/protobuf v1.3.2
@@ -48,7 +48,7 @@ require (
 	github.com/spf13/viper v1.10.1
 	github.com/stretchr/testify v1.7.0
 	github.com/tidwall/gjson v1.13.0
-	github.com/valyala/fasthttp v1.22.0 // indirect
+	github.com/valyala/fasthttp v1.27.0 // indirect
 	github.com/valyala/fasttemplate v1.2.1
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonschema v1.2.0
@@ -57,9 +57,9 @@ require (
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/time v0.0.0-20220210224613-90d013bbcef8
-	google.golang.org/api v0.68.0
-	google.golang.org/genproto v0.0.0-20220204002441-d6cc3cc0770e
-	google.golang.org/grpc v1.43.0
+	google.golang.org/api v0.70.0
+	google.golang.org/genproto v0.0.0-20220218161850-94dd64e39d7c
+	google.golang.org/grpc v1.44.0
 	gopkg.in/go-playground/webhooks.v5 v5.17.0
 	gopkg.in/jcmturner/gokrb5.v5 v5.3.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
@@ -75,7 +75,7 @@ require (
 
 require (
 	cloud.google.com/go v0.100.2 // indirect
-	cloud.google.com/go/compute v1.2.0 // indirect
+	cloud.google.com/go/compute v1.3.0 // indirect
 	cloud.google.com/go/iam v0.1.1 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest v0.11.18 // indirect
@@ -91,7 +91,7 @@ require (
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
 	github.com/acomagu/bufpipe v1.0.3 // indirect
 	github.com/ajg/form v1.5.1 // indirect
-	github.com/andybalholm/brotli v1.0.1 // indirect
+	github.com/andybalholm/brotli v1.0.2 // indirect
 	github.com/awalterschulze/gographviz v0.0.0-20200901124122-0eecad45bd71 // indirect
 	github.com/aws/aws-sdk-go v1.42.50 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
