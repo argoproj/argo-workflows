@@ -2398,12 +2398,6 @@ type ManifestFrom struct {
 	Path string `json:"path,omitempty" protobuf:"bytes,1,opt,name=path"`
 }
 
-func (t *ResourceTemplate) HasManifest() bool {
-	return t.Manifest != "" || t.ManifestFrom != nil
-}
-
-func (t *ResourceTemplate) GetManifest()
-
 // GetType returns the type of this template
 func (tmpl *Template) GetType() TemplateType {
 	if tmpl.Container != nil {
