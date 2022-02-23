@@ -28,7 +28,7 @@ spec:
             value: 'true'
 ```
 
-In order to release a step from a pause state,  marker files are used named `after` or `before` corresponding to when the step is paused. Pausing steps can be used together with [ephemeral containers](https://kubernetes.io/docs/concepts/workloads/pods/ephemeral-containers/) when a shell is not available in the used container. 
+In order to release a step from a pause state, marker files are used named `/var/run/argo/ctr/CONTAINER_NAME/after` or `/var/run/argo/ctr/CONTAINER_NAME/before` corresponding to when the step is paused. Replace `CONTAINER_NAME` with the name of the container that is paused. Pausing steps can be used together with [ephemeral containers](https://kubernetes.io/docs/concepts/workloads/pods/ephemeral-containers/) when a shell is not available in the used container. 
 
 ## Example
 
