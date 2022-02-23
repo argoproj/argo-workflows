@@ -5,8 +5,8 @@ Lifecycle describes actions that the management system should take in response t
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**post_start** | [**Handler**](Handler.md) |  | [optional] 
-**pre_stop** | [**Handler**](Handler.md) |  | [optional] 
+**post_start** | [**LifecycleHandler**](LifecycleHandler.md) |  | [optional] 
+**pre_stop** | [**LifecycleHandler**](LifecycleHandler.md) |  | [optional] 
 **any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

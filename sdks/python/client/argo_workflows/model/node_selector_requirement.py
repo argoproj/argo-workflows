@@ -55,6 +55,14 @@ class NodeSelectorRequirement(ModelNormal):
     """
 
     allowed_values = {
+        ('operator',): {
+            'DOESNOTEXIST': "DoesNotExist",
+            'EXISTS': "Exists",
+            'GT': "Gt",
+            'IN': "In",
+            'LT': "Lt",
+            'NOTIN': "NotIn",
+        },
     }
 
     validations = {
@@ -109,7 +117,7 @@ class NodeSelectorRequirement(ModelNormal):
 
         Args:
             key (str): The label key that the selector applies to.
-            operator (str): Represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.
+            operator (str): Represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.  Possible enum values:  - `\"DoesNotExist\"`  - `\"Exists\"`  - `\"Gt\"`  - `\"In\"`  - `\"Lt\"`  - `\"NotIn\"`
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -197,7 +205,7 @@ class NodeSelectorRequirement(ModelNormal):
 
         Args:
             key (str): The label key that the selector applies to.
-            operator (str): Represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.
+            operator (str): Represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.  Possible enum values:  - `\"DoesNotExist\"`  - `\"Exists\"`  - `\"Gt\"`  - `\"In\"`  - `\"Lt\"`  - `\"NotIn\"`
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types

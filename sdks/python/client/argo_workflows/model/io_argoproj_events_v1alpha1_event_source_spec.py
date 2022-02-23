@@ -32,6 +32,7 @@ from argo_workflows.exceptions import ApiAttributeError
 def lazy_import():
     from argo_workflows.model.io_argoproj_events_v1alpha1_amqp_event_source import IoArgoprojEventsV1alpha1AMQPEventSource
     from argo_workflows.model.io_argoproj_events_v1alpha1_azure_events_hub_event_source import IoArgoprojEventsV1alpha1AzureEventsHubEventSource
+    from argo_workflows.model.io_argoproj_events_v1alpha1_bitbucket_event_source import IoArgoprojEventsV1alpha1BitbucketEventSource
     from argo_workflows.model.io_argoproj_events_v1alpha1_bitbucket_server_event_source import IoArgoprojEventsV1alpha1BitbucketServerEventSource
     from argo_workflows.model.io_argoproj_events_v1alpha1_calendar_event_source import IoArgoprojEventsV1alpha1CalendarEventSource
     from argo_workflows.model.io_argoproj_events_v1alpha1_emitter_event_source import IoArgoprojEventsV1alpha1EmitterEventSource
@@ -59,6 +60,7 @@ def lazy_import():
     from argo_workflows.model.io_argoproj_events_v1alpha1_webhook_context import IoArgoprojEventsV1alpha1WebhookContext
     globals()['IoArgoprojEventsV1alpha1AMQPEventSource'] = IoArgoprojEventsV1alpha1AMQPEventSource
     globals()['IoArgoprojEventsV1alpha1AzureEventsHubEventSource'] = IoArgoprojEventsV1alpha1AzureEventsHubEventSource
+    globals()['IoArgoprojEventsV1alpha1BitbucketEventSource'] = IoArgoprojEventsV1alpha1BitbucketEventSource
     globals()['IoArgoprojEventsV1alpha1BitbucketServerEventSource'] = IoArgoprojEventsV1alpha1BitbucketServerEventSource
     globals()['IoArgoprojEventsV1alpha1CalendarEventSource'] = IoArgoprojEventsV1alpha1CalendarEventSource
     globals()['IoArgoprojEventsV1alpha1EmitterEventSource'] = IoArgoprojEventsV1alpha1EmitterEventSource
@@ -141,6 +143,7 @@ class IoArgoprojEventsV1alpha1EventSourceSpec(ModelNormal):
         return {
             'amqp': ({str: (IoArgoprojEventsV1alpha1AMQPEventSource,)},),  # noqa: E501
             'azure_events_hub': ({str: (IoArgoprojEventsV1alpha1AzureEventsHubEventSource,)},),  # noqa: E501
+            'bitbucket': ({str: (IoArgoprojEventsV1alpha1BitbucketEventSource,)},),  # noqa: E501
             'bitbucketserver': ({str: (IoArgoprojEventsV1alpha1BitbucketServerEventSource,)},),  # noqa: E501
             'calendar': ({str: (IoArgoprojEventsV1alpha1CalendarEventSource,)},),  # noqa: E501
             'emitter': ({str: (IoArgoprojEventsV1alpha1EmitterEventSource,)},),  # noqa: E501
@@ -178,6 +181,7 @@ class IoArgoprojEventsV1alpha1EventSourceSpec(ModelNormal):
     attribute_map = {
         'amqp': 'amqp',  # noqa: E501
         'azure_events_hub': 'azureEventsHub',  # noqa: E501
+        'bitbucket': 'bitbucket',  # noqa: E501
         'bitbucketserver': 'bitbucketserver',  # noqa: E501
         'calendar': 'calendar',  # noqa: E501
         'emitter': 'emitter',  # noqa: E501
@@ -250,6 +254,7 @@ class IoArgoprojEventsV1alpha1EventSourceSpec(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             amqp ({str: (IoArgoprojEventsV1alpha1AMQPEventSource,)}): [optional]  # noqa: E501
             azure_events_hub ({str: (IoArgoprojEventsV1alpha1AzureEventsHubEventSource,)}): [optional]  # noqa: E501
+            bitbucket ({str: (IoArgoprojEventsV1alpha1BitbucketEventSource,)}): [optional]  # noqa: E501
             bitbucketserver ({str: (IoArgoprojEventsV1alpha1BitbucketServerEventSource,)}): [optional]  # noqa: E501
             calendar ({str: (IoArgoprojEventsV1alpha1CalendarEventSource,)}): [optional]  # noqa: E501
             emitter ({str: (IoArgoprojEventsV1alpha1EmitterEventSource,)}): [optional]  # noqa: E501
@@ -360,6 +365,7 @@ class IoArgoprojEventsV1alpha1EventSourceSpec(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             amqp ({str: (IoArgoprojEventsV1alpha1AMQPEventSource,)}): [optional]  # noqa: E501
             azure_events_hub ({str: (IoArgoprojEventsV1alpha1AzureEventsHubEventSource,)}): [optional]  # noqa: E501
+            bitbucket ({str: (IoArgoprojEventsV1alpha1BitbucketEventSource,)}): [optional]  # noqa: E501
             bitbucketserver ({str: (IoArgoprojEventsV1alpha1BitbucketServerEventSource,)}): [optional]  # noqa: E501
             calendar ({str: (IoArgoprojEventsV1alpha1CalendarEventSource,)}): [optional]  # noqa: E501
             emitter ({str: (IoArgoprojEventsV1alpha1EmitterEventSource,)}): [optional]  # noqa: E501

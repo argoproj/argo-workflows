@@ -30,9 +30,13 @@ from argo_workflows.exceptions import ApiAttributeError
 
 
 def lazy_import():
+    from argo_workflows.model.io_argoproj_events_v1alpha1_event_source_filter import IoArgoprojEventsV1alpha1EventSourceFilter
+    from argo_workflows.model.io_argoproj_events_v1alpha1_github_app_creds import IoArgoprojEventsV1alpha1GithubAppCreds
     from argo_workflows.model.io_argoproj_events_v1alpha1_owned_repositories import IoArgoprojEventsV1alpha1OwnedRepositories
     from argo_workflows.model.io_argoproj_events_v1alpha1_webhook_context import IoArgoprojEventsV1alpha1WebhookContext
     from argo_workflows.model.secret_key_selector import SecretKeySelector
+    globals()['IoArgoprojEventsV1alpha1EventSourceFilter'] = IoArgoprojEventsV1alpha1EventSourceFilter
+    globals()['IoArgoprojEventsV1alpha1GithubAppCreds'] = IoArgoprojEventsV1alpha1GithubAppCreds
     globals()['IoArgoprojEventsV1alpha1OwnedRepositories'] = IoArgoprojEventsV1alpha1OwnedRepositories
     globals()['IoArgoprojEventsV1alpha1WebhookContext'] = IoArgoprojEventsV1alpha1WebhookContext
     globals()['SecretKeySelector'] = SecretKeySelector
@@ -96,11 +100,14 @@ class IoArgoprojEventsV1alpha1GithubEventSource(ModelNormal):
             'content_type': (str,),  # noqa: E501
             'delete_hook_on_finish': (bool,),  # noqa: E501
             'events': ([str],),  # noqa: E501
+            'filter': (IoArgoprojEventsV1alpha1EventSourceFilter,),  # noqa: E501
+            'github_app': (IoArgoprojEventsV1alpha1GithubAppCreds,),  # noqa: E501
             'github_base_url': (str,),  # noqa: E501
             'github_upload_url': (str,),  # noqa: E501
             'id': (str,),  # noqa: E501
             'insecure': (bool,),  # noqa: E501
             'metadata': ({str: (str,)},),  # noqa: E501
+            'organizations': ([str],),  # noqa: E501
             'owner': (str,),  # noqa: E501
             'repositories': ([IoArgoprojEventsV1alpha1OwnedRepositories],),  # noqa: E501
             'repository': (str,),  # noqa: E501
@@ -119,11 +126,14 @@ class IoArgoprojEventsV1alpha1GithubEventSource(ModelNormal):
         'content_type': 'contentType',  # noqa: E501
         'delete_hook_on_finish': 'deleteHookOnFinish',  # noqa: E501
         'events': 'events',  # noqa: E501
+        'filter': 'filter',  # noqa: E501
+        'github_app': 'githubApp',  # noqa: E501
         'github_base_url': 'githubBaseURL',  # noqa: E501
         'github_upload_url': 'githubUploadURL',  # noqa: E501
         'id': 'id',  # noqa: E501
         'insecure': 'insecure',  # noqa: E501
         'metadata': 'metadata',  # noqa: E501
+        'organizations': 'organizations',  # noqa: E501
         'owner': 'owner',  # noqa: E501
         'repositories': 'repositories',  # noqa: E501
         'repository': 'repository',  # noqa: E501
@@ -177,13 +187,16 @@ class IoArgoprojEventsV1alpha1GithubEventSource(ModelNormal):
             content_type (str): [optional]  # noqa: E501
             delete_hook_on_finish (bool): [optional]  # noqa: E501
             events ([str]): [optional]  # noqa: E501
+            filter (IoArgoprojEventsV1alpha1EventSourceFilter): [optional]  # noqa: E501
+            github_app (IoArgoprojEventsV1alpha1GithubAppCreds): [optional]  # noqa: E501
             github_base_url (str): [optional]  # noqa: E501
             github_upload_url (str): [optional]  # noqa: E501
             id (str): [optional]  # noqa: E501
             insecure (bool): [optional]  # noqa: E501
             metadata ({str: (str,)}): [optional]  # noqa: E501
+            organizations ([str]): Organizations holds the names of organizations (used for organization level webhooks). Not required if Repositories is set.. [optional]  # noqa: E501
             owner (str): [optional]  # noqa: E501
-            repositories ([IoArgoprojEventsV1alpha1OwnedRepositories]): [optional]  # noqa: E501
+            repositories ([IoArgoprojEventsV1alpha1OwnedRepositories]): Repositories holds the information of repositories, which uses repo owner as the key, and list of repo names as the value. Not required if Organizations is set.. [optional]  # noqa: E501
             repository (str): [optional]  # noqa: E501
             webhook (IoArgoprojEventsV1alpha1WebhookContext): [optional]  # noqa: E501
             webhook_secret (SecretKeySelector): [optional]  # noqa: E501
@@ -273,13 +286,16 @@ class IoArgoprojEventsV1alpha1GithubEventSource(ModelNormal):
             content_type (str): [optional]  # noqa: E501
             delete_hook_on_finish (bool): [optional]  # noqa: E501
             events ([str]): [optional]  # noqa: E501
+            filter (IoArgoprojEventsV1alpha1EventSourceFilter): [optional]  # noqa: E501
+            github_app (IoArgoprojEventsV1alpha1GithubAppCreds): [optional]  # noqa: E501
             github_base_url (str): [optional]  # noqa: E501
             github_upload_url (str): [optional]  # noqa: E501
             id (str): [optional]  # noqa: E501
             insecure (bool): [optional]  # noqa: E501
             metadata ({str: (str,)}): [optional]  # noqa: E501
+            organizations ([str]): Organizations holds the names of organizations (used for organization level webhooks). Not required if Repositories is set.. [optional]  # noqa: E501
             owner (str): [optional]  # noqa: E501
-            repositories ([IoArgoprojEventsV1alpha1OwnedRepositories]): [optional]  # noqa: E501
+            repositories ([IoArgoprojEventsV1alpha1OwnedRepositories]): Repositories holds the information of repositories, which uses repo owner as the key, and list of repo names as the value. Not required if Organizations is set.. [optional]  # noqa: E501
             repository (str): [optional]  # noqa: E501
             webhook (IoArgoprojEventsV1alpha1WebhookContext): [optional]  # noqa: E501
             webhook_secret (SecretKeySelector): [optional]  # noqa: E501

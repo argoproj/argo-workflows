@@ -30,8 +30,10 @@ from argo_workflows.exceptions import ApiAttributeError
 
 
 def lazy_import():
+    from argo_workflows.model.io_argoproj_events_v1alpha1_event_source_filter import IoArgoprojEventsV1alpha1EventSourceFilter
     from argo_workflows.model.io_argoproj_events_v1alpha1_tls_config import IoArgoprojEventsV1alpha1TLSConfig
     from argo_workflows.model.secret_key_selector import SecretKeySelector
+    globals()['IoArgoprojEventsV1alpha1EventSourceFilter'] = IoArgoprojEventsV1alpha1EventSourceFilter
     globals()['IoArgoprojEventsV1alpha1TLSConfig'] = IoArgoprojEventsV1alpha1TLSConfig
     globals()['SecretKeySelector'] = SecretKeySelector
 
@@ -91,6 +93,7 @@ class IoArgoprojEventsV1alpha1RedisEventSource(ModelNormal):
         return {
             'channels': ([str],),  # noqa: E501
             'db': (int,),  # noqa: E501
+            'filter': (IoArgoprojEventsV1alpha1EventSourceFilter,),  # noqa: E501
             'host_address': (str,),  # noqa: E501
             'metadata': ({str: (str,)},),  # noqa: E501
             'namespace': (str,),  # noqa: E501
@@ -106,6 +109,7 @@ class IoArgoprojEventsV1alpha1RedisEventSource(ModelNormal):
     attribute_map = {
         'channels': 'channels',  # noqa: E501
         'db': 'db',  # noqa: E501
+        'filter': 'filter',  # noqa: E501
         'host_address': 'hostAddress',  # noqa: E501
         'metadata': 'metadata',  # noqa: E501
         'namespace': 'namespace',  # noqa: E501
@@ -156,6 +160,7 @@ class IoArgoprojEventsV1alpha1RedisEventSource(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             channels ([str]): [optional]  # noqa: E501
             db (int): [optional]  # noqa: E501
+            filter (IoArgoprojEventsV1alpha1EventSourceFilter): [optional]  # noqa: E501
             host_address (str): [optional]  # noqa: E501
             metadata ({str: (str,)}): [optional]  # noqa: E501
             namespace (str): [optional]  # noqa: E501
@@ -244,6 +249,7 @@ class IoArgoprojEventsV1alpha1RedisEventSource(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             channels ([str]): [optional]  # noqa: E501
             db (int): [optional]  # noqa: E501
+            filter (IoArgoprojEventsV1alpha1EventSourceFilter): [optional]  # noqa: E501
             host_address (str): [optional]  # noqa: E501
             metadata ({str: (str,)}): [optional]  # noqa: E501
             namespace (str): [optional]  # noqa: E501

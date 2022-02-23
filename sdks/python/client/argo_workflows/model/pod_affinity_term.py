@@ -89,6 +89,7 @@ class PodAffinityTerm(ModelNormal):
         return {
             'topology_key': (str,),  # noqa: E501
             'label_selector': (LabelSelector,),  # noqa: E501
+            'namespace_selector': (LabelSelector,),  # noqa: E501
             'namespaces': ([str],),  # noqa: E501
         }
 
@@ -100,6 +101,7 @@ class PodAffinityTerm(ModelNormal):
     attribute_map = {
         'topology_key': 'topologyKey',  # noqa: E501
         'label_selector': 'labelSelector',  # noqa: E501
+        'namespace_selector': 'namespaceSelector',  # noqa: E501
         'namespaces': 'namespaces',  # noqa: E501
     }
 
@@ -148,7 +150,8 @@ class PodAffinityTerm(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             label_selector (LabelSelector): [optional]  # noqa: E501
-            namespaces ([str]): namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means \"this pod's namespace\". [optional]  # noqa: E501
+            namespace_selector (LabelSelector): [optional]  # noqa: E501
+            namespaces ([str]): namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means \"this pod's namespace\". [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -235,7 +238,8 @@ class PodAffinityTerm(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             label_selector (LabelSelector): [optional]  # noqa: E501
-            namespaces ([str]): namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means \"this pod's namespace\". [optional]  # noqa: E501
+            namespace_selector (LabelSelector): [optional]  # noqa: E501
+            namespaces ([str]): namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means \"this pod's namespace\". [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

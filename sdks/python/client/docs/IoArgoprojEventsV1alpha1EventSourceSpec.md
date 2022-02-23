@@ -6,6 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **amqp** | [**{str: (IoArgoprojEventsV1alpha1AMQPEventSource,)}**](IoArgoprojEventsV1alpha1AMQPEventSource.md) |  | [optional] 
 **azure_events_hub** | [**{str: (IoArgoprojEventsV1alpha1AzureEventsHubEventSource,)}**](IoArgoprojEventsV1alpha1AzureEventsHubEventSource.md) |  | [optional] 
+**bitbucket** | [**{str: (IoArgoprojEventsV1alpha1BitbucketEventSource,)}**](IoArgoprojEventsV1alpha1BitbucketEventSource.md) |  | [optional] 
 **bitbucketserver** | [**{str: (IoArgoprojEventsV1alpha1BitbucketServerEventSource,)}**](IoArgoprojEventsV1alpha1BitbucketServerEventSource.md) |  | [optional] 
 **calendar** | [**{str: (IoArgoprojEventsV1alpha1CalendarEventSource,)}**](IoArgoprojEventsV1alpha1CalendarEventSource.md) |  | [optional] 
 **emitter** | [**{str: (IoArgoprojEventsV1alpha1EmitterEventSource,)}**](IoArgoprojEventsV1alpha1EmitterEventSource.md) |  | [optional] 

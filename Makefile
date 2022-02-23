@@ -295,7 +295,7 @@ $(GOPATH)/bin/protoc-gen-grpc-gateway:
 $(GOPATH)/bin/protoc-gen-swagger:
 	go install github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v1.16.0
 $(GOPATH)/bin/openapi-gen:
-	go install k8s.io/kube-openapi/cmd/openapi-gen@v0.0.0-20210305001622-591a79e4bda7
+	go install k8s.io/kube-openapi/cmd/openapi-gen@v0.0.0-20220124234850-424119656bbf
 $(GOPATH)/bin/swagger:
 	go install github.com/go-swagger/go-swagger/cmd/swagger@v0.28.0
 $(GOPATH)/bin/goimports:
@@ -539,7 +539,7 @@ pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES)
 
 dist/kubernetes.swagger.json:
 	@mkdir -p dist
-	./hack/recurl.sh dist/kubernetes.swagger.json https://raw.githubusercontent.com/kubernetes/kubernetes/v1.17.5/api/openapi-spec/swagger.json
+	./hack/recurl.sh dist/kubernetes.swagger.json https://raw.githubusercontent.com/kubernetes/kubernetes/v1.23.3/api/openapi-spec/swagger.json
 
 pkg/apiclient/_.secondary.swagger.json: hack/swagger/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
 	rm -Rf v3 vendor

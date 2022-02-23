@@ -95,6 +95,7 @@ class IoArgoprojEventsV1alpha1AWSLambdaTrigger(ModelNormal):
             'parameters': ([IoArgoprojEventsV1alpha1TriggerParameter],),  # noqa: E501
             'payload': ([IoArgoprojEventsV1alpha1TriggerParameter],),  # noqa: E501
             'region': (str,),  # noqa: E501
+            'role_arn': (str,),  # noqa: E501
             'secret_key': (SecretKeySelector,),  # noqa: E501
         }
 
@@ -110,6 +111,7 @@ class IoArgoprojEventsV1alpha1AWSLambdaTrigger(ModelNormal):
         'parameters': 'parameters',  # noqa: E501
         'payload': 'payload',  # noqa: E501
         'region': 'region',  # noqa: E501
+        'role_arn': 'roleARN',  # noqa: E501
         'secret_key': 'secretKey',  # noqa: E501
     }
 
@@ -160,6 +162,7 @@ class IoArgoprojEventsV1alpha1AWSLambdaTrigger(ModelNormal):
             parameters ([IoArgoprojEventsV1alpha1TriggerParameter]): [optional]  # noqa: E501
             payload ([IoArgoprojEventsV1alpha1TriggerParameter]): Payload is the list of key-value extracted from an event payload to construct the request payload.. [optional]  # noqa: E501
             region (str): [optional]  # noqa: E501
+            role_arn (str): [optional]  # noqa: E501
             secret_key (SecretKeySelector): [optional]  # noqa: E501
         """
 
@@ -248,6 +251,7 @@ class IoArgoprojEventsV1alpha1AWSLambdaTrigger(ModelNormal):
             parameters ([IoArgoprojEventsV1alpha1TriggerParameter]): [optional]  # noqa: E501
             payload ([IoArgoprojEventsV1alpha1TriggerParameter]): Payload is the list of key-value extracted from an event payload to construct the request payload.. [optional]  # noqa: E501
             region (str): [optional]  # noqa: E501
+            role_arn (str): [optional]  # noqa: E501
             secret_key (SecretKeySelector): [optional]  # noqa: E501
         """
 

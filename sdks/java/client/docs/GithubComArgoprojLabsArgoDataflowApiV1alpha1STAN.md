@@ -7,7 +7,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**auth** | [**GithubComArgoprojLabsArgoDataflowApiV1alpha1STANAuth**](GithubComArgoprojLabsArgoDataflowApiV1alpha1STANAuth.md) |  |  [optional]
+**auth** | [**GithubComArgoprojLabsArgoDataflowApiV1alpha1NATSAuth**](GithubComArgoprojLabsArgoDataflowApiV1alpha1NATSAuth.md) |  |  [optional]
 **clusterId** | **String** |  |  [optional]
 **maxInflight** | **Integer** |  |  [optional]
 **name** | **String** |  |  [optional]
