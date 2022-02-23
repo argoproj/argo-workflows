@@ -43,6 +43,7 @@ spec:
 	assert.NoError(t, err)
 
 	assert.ElementsMatch(t, []corev1.Volume{
+		{Name: woc.getExecutorServiceAccountTokenVolumeName(), VolumeSource: corev1.VolumeSource{Secret: &corev1.SecretVolumeSource{SecretName: "kube-api-secret"}}},
 		{Name: "var-run-argo", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 		{Name: "workspace", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 	}, pod.Spec.Volumes)
@@ -54,6 +55,7 @@ spec:
 		switch c.Name {
 		case common.WaitContainerName:
 			assert.ElementsMatch(t, []corev1.VolumeMount{
+				woc.getExecutorServiceAccountTokenVolumeMount(),
 				{Name: "var-run-argo", MountPath: "/var/run/argo"},
 			}, c.VolumeMounts)
 		case "ctr-0":
@@ -109,6 +111,7 @@ spec:
 	assert.NoError(t, err)
 
 	assert.ElementsMatch(t, []corev1.Volume{
+		woc.getServiceAccountTokenVolume(woc.getExecutorServiceAccountTokenVolumeName(), defaultSecretName),
 		{Name: "var-run-argo", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 		{Name: "workspace", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 		{Name: "input-artifacts", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
@@ -117,6 +120,7 @@ spec:
 	if assert.Len(t, pod.Spec.InitContainers, 1) {
 		c := pod.Spec.InitContainers[0]
 		assert.ElementsMatch(t, []corev1.VolumeMount{
+			woc.getExecutorServiceAccountTokenVolumeMount(),
 			{Name: "input-artifacts", MountPath: "/argo/inputs/artifacts"},
 			{Name: "workspace", MountPath: "/mainctrfs/workspace"},
 			{Name: "var-run-argo", MountPath: "/var/run/argo"},
@@ -128,6 +132,7 @@ spec:
 		switch c.Name {
 		case common.WaitContainerName:
 			assert.ElementsMatch(t, []corev1.VolumeMount{
+				woc.getExecutorServiceAccountTokenVolumeMount(),
 				{Name: "workspace", MountPath: "/mainctrfs/workspace"},
 				{Name: "input-artifacts", MountPath: "/mainctrfs/in/in-0", SubPath: "in-0"},
 				{Name: "var-run-argo", MountPath: "/var/run/argo"},
@@ -148,6 +153,7 @@ func TestContainerSetTemplateWithOutputArtifacts(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(`
 metadata:
   name: pod
+  namespace: my-ns
 spec:
   entrypoint: main
   templates:
@@ -187,6 +193,7 @@ spec:
 	assert.NoError(t, err)
 
 	assert.ElementsMatch(t, []corev1.Volume{
+		{Name: woc.getExecutorServiceAccountTokenVolumeName(), VolumeSource: corev1.VolumeSource{Secret: &corev1.SecretVolumeSource{SecretName: "kube-api-secret"}}},
 		{Name: "var-run-argo", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 		{Name: "workspace", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 	}, pod.Spec.Volumes)
@@ -198,6 +205,7 @@ spec:
 		switch c.Name {
 		case common.WaitContainerName:
 			assert.ElementsMatch(t, []corev1.VolumeMount{
+				woc.getExecutorServiceAccountTokenVolumeMount(),
 				{Name: "workspace", MountPath: "/mainctrfs/workspace"},
 				{Name: "var-run-argo", MountPath: "/var/run/argo"},
 			}, c.VolumeMounts)

@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -110,6 +111,9 @@ type wfOperationCtx struct {
 	execWf *wfv1.Workflow
 
 	taskSet map[string]wfv1.Template
+
+	// unguessable random nonce for service account that prevents container/script steps from mounting the service account
+	serviceAccountNonce string
 }
 
 var (
@@ -140,6 +144,7 @@ type failedNodeStatus struct {
 
 // newWorkflowOperationCtx creates and initializes a new wfOperationCtx object.
 func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOperationCtx {
+	wf.SetNamespace(wfc.managedNamespace)
 	// NEVER modify objects from the store. It's a read-only, local cache.
 	// You can use DeepCopy() to make a deep copy of original object and modify this copy
 	// Or create a copy manually for better performance
@@ -162,6 +167,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		eventRecorder:          wfc.eventRecorderManager.Get(wf.Namespace),
 		preExecutionNodePhases: make(map[string]wfv1.NodePhase),
 		taskSet:                make(map[string]wfv1.Template),
+		serviceAccountNonce:    rand.String(5),
 	}
 
 	if woc.wf.Status.Nodes == nil {
@@ -2889,8 +2895,19 @@ func (woc *wfOperationCtx) executeResource(ctx context.Context, nodeName string,
 		tmpl.Resource.Manifest = string(bytes)
 	}
 
-	mainCtr := woc.newExecContainer(common.MainContainerName, tmpl)
-	mainCtr.Command = []string{"argoexec", "resource", tmpl.Resource.Action}
+	mainCtr := &apiv1.Container{
+		Name:            common.MainContainerName,
+		Command:         []string{"argoexec"},
+		Args:            []string{"resource", tmpl.Resource.Action},
+		Env:             woc.createEnvVars(),
+		Image:           woc.controller.executorImage(),
+		ImagePullPolicy: woc.controller.executorImagePullPolicy(),
+		Resources:       woc.controller.Config.GetExecutor().Resources,
+		VolumeMounts: []apiv1.VolumeMount{
+			woc.getMainServiceAccountTokenVolumeMount(),
+		},
+		SecurityContext: woc.controller.Config.GetExecutor().SecurityContext,
+	}
 	_, err := woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{*mainCtr}, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline})
 	if err != nil {
 		return woc.requeueIfTransientErr(err, node.Name)
@@ -2912,7 +2929,7 @@ func (woc *wfOperationCtx) executeData(ctx context.Context, nodeName string, tem
 		return node, fmt.Errorf("could not marshal data in transformation: %w", err)
 	}
 
-	mainCtr := woc.newExecContainer(common.MainContainerName, tmpl)
+	mainCtr := woc.newExecContainer(common.MainContainerName)
 	mainCtr.Command = []string{"argoexec", "data", string(dataTemplate)}
 	_, err = woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{*mainCtr}, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline, includeScriptOutput: true})
 	if err != nil {

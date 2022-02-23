@@ -92,6 +92,9 @@ type WorkflowController struct {
 	dynamicInterface dynamic.Interface
 	wfclientset      wfclientset.Interface
 
+	// used to find the correct service account token to mount on the executor containers
+	serviceAccountInformer cache.SharedIndexInformer
+
 	// datastructures to support the processing of workflows and workflow pods
 	wfInformer            cache.SharedIndexInformer
 	wftmplInformer        wfextvv1alpha1.WorkflowTemplateInformer
@@ -235,6 +238,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		WithField("podCleanup", podCleanupWorkers).
 		Info("Current Worker Numbers")
 
+	wfc.serviceAccountInformer = wfc.newServiceAccountInformer()
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListOptions, indexers)
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
 	wfc.wfTaskSetInformer = wfc.newWorkflowTaskSetInformer()
@@ -254,6 +258,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	go wfc.runConfigMapWatcher(ctx.Done())
 	go wfc.configController.Run(ctx.Done(), wfc.updateConfig)
+	go wfc.serviceAccountInformer.Run(ctx.Done())
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
@@ -261,7 +266,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	go wfc.wfTaskSetInformer.Informer().Run(ctx.Done())
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
-	if !cache.WaitForCacheSync(ctx.Done(), wfc.wfInformer.HasSynced, wfc.wftmplInformer.Informer().HasSynced, wfc.podInformer.HasSynced, wfc.configMapInformer.HasSynced) {
+	if !cache.WaitForCacheSync(ctx.Done(), wfc.serviceAccountInformer.HasSynced, wfc.wfInformer.HasSynced, wfc.wftmplInformer.Informer().HasSynced, wfc.podInformer.HasSynced, wfc.configMapInformer.HasSynced) {
 		log.Fatal("Timed out waiting for caches to sync")
 	}
 
@@ -1112,10 +1117,7 @@ func (wfc *WorkflowController) setWorkflowDefaults(wf *wfv1.Workflow) error {
 }
 
 func (wfc *WorkflowController) GetManagedNamespace() string {
-	if wfc.managedNamespace != "" {
-		return wfc.managedNamespace
-	}
-	return wfc.Config.Namespace
+	return wfc.managedNamespace
 }
 
 func (wfc *WorkflowController) GetContainerRuntimeExecutor(labels labels.Labels) string {
@@ -1223,6 +1225,10 @@ func (wfc *WorkflowController) syncPodPhaseMetrics() {
 		}
 		wfc.metrics.SetPodPhaseGauge(phase, len(objs))
 	}
+}
+
+func (wfc *WorkflowController) newServiceAccountInformer() cache.SharedIndexInformer {
+	return v1.NewServiceAccountInformer(wfc.kubeclientset, wfc.managedNamespace, 20*time.Minute, cache.Indexers{})
 }
 
 func (wfc *WorkflowController) newWorkflowTaskSetInformer() wfextvv1alpha1.WorkflowTaskSetInformer {

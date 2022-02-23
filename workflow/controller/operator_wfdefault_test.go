@@ -232,7 +232,7 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 		defer cancel()
 		controller.Config.WorkflowDefaults = wfDefault
 
-		wf := wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Namespace: "default"}, Spec: wfv1.WorkflowSpec{WorkflowTemplateRef: &wfv1.WorkflowTemplateRef{Name: "workflow-template-submittable"}}}
+		wf := wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Namespace: defaultManagedNamespace}, Spec: wfv1.WorkflowSpec{WorkflowTemplateRef: &wfv1.WorkflowTemplateRef{Name: "workflow-template-submittable"}}}
 		woc := newWorkflowOperationCtx(&wf, controller)
 		woc.operate(ctx)
 		resultSpec.WorkflowTemplateRef = &wfv1.WorkflowTemplateRef{Name: "workflow-template-submittable"}
@@ -250,7 +250,7 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 		}
 
 		wf := wfv1.Workflow{
-			ObjectMeta: metav1.ObjectMeta{Namespace: "default"},
+			ObjectMeta: metav1.ObjectMeta{Namespace: defaultManagedNamespace},
 			Spec: wfv1.WorkflowSpec{
 				WorkflowTemplateRef: &wfv1.WorkflowTemplateRef{Name: "workflow-template-submittable"},
 				Entrypoint:          "Test",
@@ -286,7 +286,7 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 		}
 
 		wf := wfv1.Workflow{
-			ObjectMeta: metav1.ObjectMeta{Namespace: "default"},
+			ObjectMeta: metav1.ObjectMeta{Namespace: defaultManagedNamespace},
 			Spec: wfv1.WorkflowSpec{
 				WorkflowTemplateRef: &wfv1.WorkflowTemplateRef{Name: "workflow-template-submittable"},
 				Entrypoint:          "Test",

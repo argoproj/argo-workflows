@@ -252,7 +252,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	woc.addArchiveLocation(tmpl)
 
-	err = woc.setupServiceAccount(ctx, pod, tmpl)
+	err = woc.setupServiceAccount(pod, tmpl)
 	if err != nil {
 		return nil, err
 	}
@@ -284,7 +284,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	// Add init container only if it needs input artifacts. This is also true for
 	// script templates (which needs to populate the script)
 	if len(tmpl.Inputs.Artifacts) > 0 || tmpl.GetType() == wfv1.TemplateTypeScript || woc.getContainerRuntimeExecutor() == common.ContainerRuntimeExecutorEmissary {
-		initCtr := woc.newInitContainer(tmpl)
+		initCtr := woc.newInitContainer()
 		pod.Spec.InitContainers = []apiv1.Container{initCtr}
 	}
 
@@ -545,25 +545,24 @@ func substitutePodParams(pod *apiv1.Pod, globalParams common.Parameters, tmpl *w
 	return &newSpec, nil
 }
 
-func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container {
-	ctr := woc.newExecContainer(common.InitContainerName, tmpl)
+func (woc *wfOperationCtx) newInitContainer() apiv1.Container {
+	ctr := woc.newExecContainer(common.InitContainerName)
 	ctr.Command = []string{"argoexec", "init", "--loglevel", getExecutorLogLevel()}
 	return *ctr
 }
 
 func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) *apiv1.Container {
-	ctr := woc.newExecContainer(common.WaitContainerName, tmpl)
+	ctr := woc.newExecContainer(common.WaitContainerName)
 	ctr.Command = []string{"argoexec", "wait", "--loglevel", getExecutorLogLevel()}
 	switch woc.getContainerRuntimeExecutor() {
 	case common.ContainerRuntimeExecutorPNS:
 		ctr.SecurityContext = &apiv1.SecurityContext{
 			Capabilities: &apiv1.Capabilities{
-				Add: []apiv1.Capability{
-					// necessary to access main's root filesystem when run with a different user id
-					apiv1.Capability("SYS_PTRACE"),
-					apiv1.Capability("SYS_CHROOT"),
-				},
+				Drop: []apiv1.Capability{"ALL"},
+				// necessary to access main's root filesystem when run with a different user id
+				Add: []apiv1.Capability{"SYS_PTRACE", "SYS_CHROOT"},
 			},
+			RunAsNonRoot: nil,
 		}
 		// PNS_PRIVILEGED allows you to always set privileged on for PNS, this seems to be needed for certain systems
 		// https://github.com/argoproj/argo-workflows/issues/1256
@@ -684,23 +683,17 @@ func (woc *wfOperationCtx) createVolumes(tmpl *wfv1.Template) []apiv1.Volume {
 	return volumes
 }
 
-func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *apiv1.Container {
+func (woc *wfOperationCtx) newExecContainer(name string) *apiv1.Container {
 	exec := apiv1.Container{
 		Name:            name,
 		Image:           woc.controller.executorImage(),
 		ImagePullPolicy: woc.controller.executorImagePullPolicy(),
 		Env:             woc.createEnvVars(),
-	}
-	if woc.controller.Config.Executor != nil {
-		exec.Args = woc.controller.Config.Executor.Args
-		if woc.controller.Config.Executor.SecurityContext != nil {
-			exec.SecurityContext = woc.controller.Config.Executor.SecurityContext.DeepCopy()
-		}
-	}
-	if isResourcesSpecified(woc.controller.Config.Executor) {
-		exec.Resources = *woc.controller.Config.Executor.Resources.DeepCopy()
-	} else if woc.controller.Config.ExecutorResources != nil {
-		exec.Resources = *woc.controller.Config.ExecutorResources.DeepCopy()
+		Resources:       woc.controller.Config.GetExecutor().Resources,
+		VolumeMounts: []apiv1.VolumeMount{
+			woc.getExecutorServiceAccountTokenVolumeMount(),
+		},
+		SecurityContext: woc.controller.Config.GetExecutor().SecurityContext,
 	}
 	if woc.controller.Config.KubeConfig != nil {
 		path := woc.controller.Config.KubeConfig.MountPath
@@ -718,20 +711,6 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 			SubPath:   woc.controller.Config.KubeConfig.SecretKey,
 		})
 		exec.Args = append(exec.Args, "--kubeconfig="+path)
-	}
-
-	executorServiceAccountName := ""
-	if tmpl.Executor != nil && tmpl.Executor.ServiceAccountName != "" {
-		executorServiceAccountName = tmpl.Executor.ServiceAccountName
-	} else if woc.execWf.Spec.Executor != nil && woc.execWf.Spec.Executor.ServiceAccountName != "" {
-		executorServiceAccountName = woc.execWf.Spec.Executor.ServiceAccountName
-	}
-	if executorServiceAccountName != "" {
-		exec.VolumeMounts = append(exec.VolumeMounts, apiv1.VolumeMount{
-			Name:      common.ServiceAccountTokenVolumeName,
-			MountPath: common.ServiceAccountTokenMountPath,
-			ReadOnly:  true,
-		})
 	}
 	return &exec
 }
@@ -1069,49 +1048,6 @@ func (woc *wfOperationCtx) IsArchiveLogs(tmpl *wfv1.Template) bool {
 		}
 	}
 	return archiveLogs
-}
-
-// setupServiceAccount sets up service account and token.
-func (woc *wfOperationCtx) setupServiceAccount(ctx context.Context, pod *apiv1.Pod, tmpl *wfv1.Template) error {
-	if tmpl.ServiceAccountName != "" {
-		pod.Spec.ServiceAccountName = tmpl.ServiceAccountName
-	} else if woc.execWf.Spec.ServiceAccountName != "" {
-		pod.Spec.ServiceAccountName = woc.execWf.Spec.ServiceAccountName
-	}
-
-	var automountServiceAccountToken *bool
-	if tmpl.AutomountServiceAccountToken != nil {
-		automountServiceAccountToken = tmpl.AutomountServiceAccountToken
-	} else if woc.execWf.Spec.AutomountServiceAccountToken != nil {
-		automountServiceAccountToken = woc.execWf.Spec.AutomountServiceAccountToken
-	}
-	if automountServiceAccountToken != nil && !*automountServiceAccountToken {
-		pod.Spec.AutomountServiceAccountToken = automountServiceAccountToken
-	}
-
-	executorServiceAccountName := ""
-	if tmpl.Executor != nil && tmpl.Executor.ServiceAccountName != "" {
-		executorServiceAccountName = tmpl.Executor.ServiceAccountName
-	} else if woc.execWf.Spec.Executor != nil && woc.execWf.Spec.Executor.ServiceAccountName != "" {
-		executorServiceAccountName = woc.execWf.Spec.Executor.ServiceAccountName
-	}
-	if executorServiceAccountName != "" {
-		tokenName, err := common.GetServiceAccountTokenName(ctx, woc.controller.kubeclientset, pod.Namespace, executorServiceAccountName)
-		if err != nil {
-			return err
-		}
-		pod.Spec.Volumes = append(pod.Spec.Volumes, apiv1.Volume{
-			Name: common.ServiceAccountTokenVolumeName,
-			VolumeSource: apiv1.VolumeSource{
-				Secret: &apiv1.SecretVolumeSource{
-					SecretName: tokenName,
-				},
-			},
-		})
-	} else if automountServiceAccountToken != nil && !*automountServiceAccountToken {
-		return errors.Errorf(errors.CodeBadRequest, "executor.serviceAccountName must not be empty if automountServiceAccountToken is false")
-	}
-	return nil
 }
 
 // addScriptStagingVolume sets up a shared staging volume between the init container

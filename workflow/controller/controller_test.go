@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
@@ -121,26 +123,43 @@ func (t testEventRecorderManager) Get(string) record.EventRecorder {
 
 var _ events.EventRecorderManager = &testEventRecorderManager{}
 
+const (
+	defaultManagedNamespace = "default"
+	defaultSecretName       = "kube-api-secret"
+)
+
 func newController(options ...interface{}) (context.CancelFunc, *WorkflowController) {
 	// get all the objects and add to the fake
 	var objects []runtime.Object
 	for _, opt := range options {
 		switch v := opt.(type) {
-		case *wfv1.Workflow:
-			objects = append(objects, v)
 		case runtime.Object:
 			objects = append(objects, v)
 		}
+	}
+
+	for _, obj := range objects {
+		if strings.HasPrefix(obj.(schema.ObjectKind).GroupVersionKind().Kind, "Cluster") {
+			continue
+		}
+		obj.(metav1.Object).SetNamespace(defaultManagedNamespace)
 	}
 
 	wfclientset := fakewfclientset.NewSimpleClientset(objects...)
 	dynamicClient := dynamicfake.NewSimpleDynamicClient(scheme.Scheme, objects...)
 	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 0)
 	ctx, cancel := context.WithCancel(context.Background())
-	kube := fake.NewSimpleClientset()
+	kube := fake.NewSimpleClientset(&apiv1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "default",
+			Namespace: defaultManagedNamespace,
+		},
+		Secrets: []apiv1.ObjectReference{{
+			Name: defaultSecretName,
+		}},
+	})
 	wfc := &WorkflowController{
 		Config: config.Config{
-			ExecutorImage: "executor:latest",
 			Images: map[string]config.Image{
 				"my-image": {
 					Command: []string{"my-cmd"},
@@ -156,6 +175,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 				S3Bucket: wfv1.S3Bucket{Endpoint: "my-endpoint", Bucket: "my-bucket"},
 			},
 		}),
+		managedNamespace:          defaultManagedNamespace,
 		kubeclientset:             kube,
 		dynamicInterface:          dynamicClient,
 		wfclientset:               wfclientset,
@@ -165,7 +185,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		estimatorFactory:          estimation.DummyEstimatorFactory,
 		eventRecorderManager:      &testEventRecorderManager{eventRecorder: record.NewFakeRecorder(64)},
 		archiveLabelSelector:      labels.Everything(),
-		cacheFactory:              controllercache.NewCacheFactory(kube, "default"),
+		cacheFactory:              controllercache.NewCacheFactory(kube, defaultManagedNamespace),
 		progressPatchTickDuration: envutil.LookupEnvDurationOr(common.EnvVarProgressPatchTickDuration, 1*time.Minute),
 		progressFileTickDuration:  envutil.LookupEnvDurationOr(common.EnvVarProgressFileTickDuration, 3*time.Second),
 	}
@@ -189,6 +209,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 
 	// always compare to WorkflowController.Run to see what this block of code should be doing
 	{
+		wfc.serviceAccountInformer = wfc.newServiceAccountInformer()
 		wfc.wfInformer = util.NewWorkflowInformer(dynamicClient, "", 0, wfc.tweakListOptions, indexers)
 		wfc.wfTaskSetInformer = informerFactory.Argoproj().V1alpha1().WorkflowTaskSets()
 		wfc.wftmplInformer = informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
@@ -198,6 +219,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		wfc.createSynchronizationManager(ctx)
 		_ = wfc.initManagers(ctx)
 
+		go wfc.serviceAccountInformer.Run(ctx.Done())
 		go wfc.wfInformer.Run(ctx.Done())
 		go wfc.wftmplInformer.Informer().Run(ctx.Done())
 		go wfc.podInformer.Run(ctx.Done())
@@ -206,6 +228,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
 		// wfc.waitForCacheSync() takes minimum 100ms, we can be faster
 		for _, c := range []cache.SharedIndexInformer{
+			wfc.serviceAccountInformer,
 			wfc.wfInformer,
 			wfc.wftmplInformer.Informer(),
 			wfc.podInformer,
@@ -262,7 +285,7 @@ func unmarshalArtifact(yamlStr string) *wfv1.Artifact {
 }
 
 func expectWorkflow(ctx context.Context, controller *WorkflowController, name string, test func(wf *wfv1.Workflow)) {
-	wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows("").Get(ctx, name, metav1.GetOptions{})
+	wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(defaultManagedNamespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		panic(err)
 	}
@@ -666,7 +689,7 @@ func TestNotifySemaphoreConfigUpdate(t *testing.T) {
 
 	cm := apiv1.ConfigMap{ObjectMeta: metav1.ObjectMeta{
 		Name:      "my-config",
-		Namespace: "default",
+		Namespace: defaultManagedNamespace,
 	}}
 	assert.Equal(3, controller.wfQueue.Len())
 

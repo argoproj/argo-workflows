@@ -263,7 +263,7 @@ status:
 `
 
 func TestResumeWorkflowByNodeName(t *testing.T) {
-	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("my-ns")
 	origWf := wfv1.MustUnmarshalWorkflow(suspendedWf)
 
 	ctx := context.Background()
@@ -290,7 +290,7 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 }
 
 func TestStopWorkflowByNodeName(t *testing.T) {
-	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("my-ns")
 	origWf := wfv1.MustUnmarshalWorkflow(suspendedWf)
 
 	ctx := context.Background()
@@ -442,7 +442,7 @@ status:
 `
 
 func TestUpdateSuspendedNode(t *testing.T) {
-	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("my-ns")
 	origWf := wfv1.MustUnmarshalWorkflow(susWorkflow)
 
 	ctx := context.Background()
@@ -804,7 +804,7 @@ status:
 `
 
 func TestDeepDeleteNodes(t *testing.T) {
-	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("my-ns")
 	kubeClient := &kubefake.Clientset{}
 	origWf := wfv1.MustUnmarshalWorkflow(deepDeleteOfNodes)
 

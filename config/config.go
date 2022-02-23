@@ -8,6 +8,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/utils/pointer"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
@@ -25,20 +26,14 @@ type Config struct {
 	// NodeEvents configures how node events are emitted
 	NodeEvents NodeEvents `json:"nodeEvents,omitempty"`
 
-	// ExecutorImage is the image name of the executor to use when running pods
-	// DEPRECATED: use --executor-image flag to workflow-controller instead
-	ExecutorImage string `json:"executorImage,omitempty"`
-
-	// ExecutorImagePullPolicy is the imagePullPolicy of the executor to use when running pods
-	// DEPRECATED: use `executor.imagePullPolicy` in configmap instead
-	ExecutorImagePullPolicy string `json:"executorImagePullPolicy,omitempty"`
+	// 	DefaultServiceAccountName is the default service account to use for the executor. Defaults to "default".
+	DefaultServiceAccountName string `json:"defaultServiceAccountName,omitempty"`
 
 	// Executor holds container customizations for the executor to use when running pods
 	Executor *apiv1.Container `json:"executor,omitempty"`
 
-	// ExecutorResources specifies the resource requirements that will be used for the executor sidecar
-	// DEPRECATED: use `executor.resources` in configmap instead
-	ExecutorResources *apiv1.ResourceRequirements `json:"executorResources,omitempty"`
+	// 	DefaultExecutorServiceAccountName is the default service account to use for the executor. Defaults to "default".
+	DefaultExecutorServiceAccountName string `json:"defaultExecutorServiceAccountName,omitempty"`
 
 	// MainContainer holds container customization for the main container
 	MainContainer *apiv1.Container `json:"mainContainer,omitempty"`
@@ -59,10 +54,6 @@ type Config struct {
 
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
 	ArtifactRepository wfv1.ArtifactRepository `json:"artifactRepository,omitempty"`
-
-	// Namespace is a label selector filter to limit the controller's watch to a specific namespace
-	// DEPRECATED: support will be remove in a future release
-	Namespace string `json:"namespace,omitempty"`
 
 	// InstanceID is a label selector to limit the controller's watch to a specific instance. It
 	// contains an arbitrary value that is carried forward into its pod labels, under the key
@@ -131,6 +122,20 @@ type Config struct {
 	NavColor string `json:"navColor,omitempty"`
 }
 
+func (c Config) GetDefaultServiceAccountName() string {
+	if c.DefaultServiceAccountName != "" {
+		return c.DefaultServiceAccountName
+	}
+	return "default"
+}
+
+func (c Config) GetDefaultExecutorServiceAccountName() string {
+	if c.DefaultExecutorServiceAccountName != "" {
+		return c.DefaultExecutorServiceAccountName
+	}
+	return "default"
+}
+
 func (c Config) GetContainerRuntimeExecutor(labels labels.Labels) (string, error) {
 	name, err := c.ContainerRuntimeExecutors.Select(labels)
 	if err != nil {
@@ -158,6 +163,19 @@ func (c Config) GetPodGCDeleteDelayDuration() time.Duration {
 	}
 
 	return c.PodGCDeleteDelayDuration.Duration
+}
+
+func (c Config) GetExecutor() *apiv1.Container {
+	if c.Executor != nil {
+		return c.Executor
+	}
+	return &apiv1.Container{
+		SecurityContext: &apiv1.SecurityContext{
+			Capabilities:             &apiv1.Capabilities{Drop: []apiv1.Capability{"ALL"}},
+			RunAsNonRoot:             pointer.BoolPtr(true),
+			AllowPrivilegeEscalation: pointer.BoolPtr(false),
+		},
+	}
 }
 
 // PodSpecLogStrategy contains the configuration for logging the pod spec in controller log for debugging purpose

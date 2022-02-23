@@ -689,21 +689,6 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 	if tmpl.Parallelism != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.parallelism is only valid for steps and dag templates", tmpl.Name)
 	}
-	var automountServiceAccountToken *bool
-	if tmpl.AutomountServiceAccountToken != nil {
-		automountServiceAccountToken = tmpl.AutomountServiceAccountToken
-	} else if ctx.wf != nil && ctx.wf.Spec.AutomountServiceAccountToken != nil {
-		automountServiceAccountToken = ctx.wf.Spec.AutomountServiceAccountToken
-	}
-	executorServiceAccountName := ""
-	if tmpl.Executor != nil && tmpl.Executor.ServiceAccountName != "" {
-		executorServiceAccountName = tmpl.Executor.ServiceAccountName
-	} else if ctx.wf != nil && ctx.wf.Spec.Executor != nil && ctx.wf.Spec.Executor.ServiceAccountName != "" {
-		executorServiceAccountName = ctx.wf.Spec.Executor.ServiceAccountName
-	}
-	if automountServiceAccountToken != nil && !*automountServiceAccountToken && executorServiceAccountName == "" {
-		return errors.Errorf(errors.CodeBadRequest, "templates.%s.executor.serviceAccountName must not be empty if automountServiceAccountToken is false", tmpl.Name)
-	}
 	return nil
 }
 

@@ -183,8 +183,8 @@ func TestCronWorkflowConditionSubmissionError(t *testing.T) {
 	testMetrics := metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{})
 	woc := &cronWfOperationCtx{
 		wfClientset:       cs,
-		wfClient:          cs.ArgoprojV1alpha1().Workflows(""),
-		cronWfIf:          cs.ArgoprojV1alpha1().CronWorkflows(""),
+		wfClient:          cs.ArgoprojV1alpha1().Workflows("default"),
+		cronWfIf:          cs.ArgoprojV1alpha1().CronWorkflows("default"),
 		cronWf:            &cronWf,
 		log:               logrus.WithFields(logrus.Fields{}),
 		metrics:           testMetrics,
@@ -237,8 +237,8 @@ func TestSpecError(t *testing.T) {
 	testMetrics := metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{})
 	woc := &cronWfOperationCtx{
 		wfClientset: cs,
-		wfClient:    cs.ArgoprojV1alpha1().Workflows(""),
-		cronWfIf:    cs.ArgoprojV1alpha1().CronWorkflows(""),
+		wfClient:    cs.ArgoprojV1alpha1().Workflows("default"),
+		cronWfIf:    cs.ArgoprojV1alpha1().CronWorkflows("default"),
 		cronWf:      &cronWf,
 		log:         logrus.WithFields(logrus.Fields{}),
 		metrics:     testMetrics,
@@ -261,15 +261,15 @@ func TestScheduleTimeParam(t *testing.T) {
 	testMetrics := metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{})
 	woc := &cronWfOperationCtx{
 		wfClientset:       cs,
-		wfClient:          cs.ArgoprojV1alpha1().Workflows(""),
-		cronWfIf:          cs.ArgoprojV1alpha1().CronWorkflows(""),
+		wfClient:          cs.ArgoprojV1alpha1().Workflows("default"),
+		cronWfIf:          cs.ArgoprojV1alpha1().CronWorkflows("default"),
 		cronWf:            &cronWf,
 		log:               logrus.WithFields(logrus.Fields{}),
 		metrics:           testMetrics,
 		scheduledTimeFunc: inferScheduledTime,
 	}
 	woc.Run()
-	wsl, err := cs.ArgoprojV1alpha1().Workflows("").List(context.Background(), v1.ListOptions{})
+	wsl, err := cs.ArgoprojV1alpha1().Workflows("default").List(context.Background(), v1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, wsl.Items.Len(), 1)
 	wf := wsl.Items[0]
@@ -311,8 +311,8 @@ func TestLastUsedSchedule(t *testing.T) {
 	testMetrics := metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{})
 	woc := &cronWfOperationCtx{
 		wfClientset:       cs,
-		wfClient:          cs.ArgoprojV1alpha1().Workflows(""),
-		cronWfIf:          cs.ArgoprojV1alpha1().CronWorkflows(""),
+		wfClient:          cs.ArgoprojV1alpha1().Workflows("default"),
+		cronWfIf:          cs.ArgoprojV1alpha1().CronWorkflows("default"),
 		cronWf:            &cronWf,
 		log:               logrus.WithFields(logrus.Fields{}),
 		metrics:           testMetrics,

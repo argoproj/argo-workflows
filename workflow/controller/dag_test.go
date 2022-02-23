@@ -91,7 +91,7 @@ func TestSingleDependency(t *testing.T) {
 	for _, status := range []string{"Succeeded", "Failed", "Skipped"} {
 		fmt.Printf("\n\n\nCurrent status %s\n\n\n", status)
 		closer, controller = newController()
-		wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+		wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows(defaultManagedNamespace)
 
 		// If the status is "skipped" skip the root node.
 		var wfString string
@@ -192,7 +192,7 @@ spec:
 func TestArtifactResolutionWhenSkippedDAG(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows(defaultManagedNamespace)
 
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(artifactResolutionWhenSkippedDAG)
@@ -774,7 +774,7 @@ status:
 func TestDagAssessPhaseContinueOnExpandedTaskVariables(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows(defaultManagedNamespace)
 
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(dagAssessPhaseContinueOnExpandedTaskVariables)
@@ -997,7 +997,7 @@ status:
 func TestDagAssessPhaseContinueOnExpandedTask(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows(defaultManagedNamespace)
 
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(dagAssessPhaseContinueOnExpandedTask)
@@ -1046,7 +1046,7 @@ spec:
 func TestDAGWithParamAndGlobalParam(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows(defaultManagedNamespace)
 
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(dagWithParamAndGlobalParam)
@@ -1284,7 +1284,7 @@ status:
 func TestTerminatingDAGWithRetryStrategyNodes(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows(defaultManagedNamespace)
 
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(terminatingDAGWithRetryStrategyNodes)
@@ -1442,7 +1442,7 @@ status:
 func TestTerminateDAGWithMaxDurationLimitExpiredAndMoreAttempts(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows(defaultManagedNamespace)
 
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(terminateDAGWithMaxDurationLimitExpiredAndMoreAttempts)
@@ -1631,7 +1631,7 @@ status:
 func TestRetryStrategyNodes(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows(defaultManagedNamespace)
 
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(testRetryStrategyNodes)
@@ -1796,7 +1796,7 @@ status:
 func TestOnExitDAGPhase(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows(defaultManagedNamespace)
 
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(testOnExitNodeDAGPhase)
@@ -1926,7 +1926,7 @@ status:
 func TestOnExitNonLeaf(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows(defaultManagedNamespace)
 
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(testOnExitNonLeaf)
@@ -2194,7 +2194,7 @@ status:
 func TestDagTargetTaskOnExit(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows(defaultManagedNamespace)
 
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(testDagTargetTaskOnExit)
@@ -2346,7 +2346,7 @@ status:
 func TestEmptyWithParamDAG(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows(defaultManagedNamespace)
 
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(testEmptyWithParamDAG)
@@ -3023,7 +3023,7 @@ status:
 func TestFailsWithParamDAG(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows(defaultManagedNamespace)
 
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(testFailsWithParamDAG)

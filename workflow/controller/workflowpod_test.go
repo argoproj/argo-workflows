@@ -19,7 +19,6 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/config"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/test/util"
 	armocks "github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories/mocks"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	wfutil "github.com/argoproj/argo-workflows/v3/workflow/util"
@@ -224,7 +223,7 @@ func TestTmplServiceAccount(t *testing.T) {
 func TestWFLevelAutomountServiceAccountToken(t *testing.T) {
 	woc := newWoc()
 	ctx := context.Background()
-	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo", "foo-token")
+	err := createServiceAccountWithToken(woc, "foo", "foo-token")
 	assert.NoError(t, err)
 
 	falseValue := false
@@ -239,14 +238,24 @@ func TestWFLevelAutomountServiceAccountToken(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Equal(t, *pod.Spec.AutomountServiceAccountToken, false)
+	assert.Len(t, pod.Spec.Volumes, 2)
+}
+
+func createServiceAccountWithToken(woc *wfOperationCtx, serviceAccountName string, secretName string) error {
+	return woc.controller.serviceAccountInformer.GetStore().Add(&apiv1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: defaultManagedNamespace,
+			Name:      serviceAccountName,
+		},
+		Secrets: []apiv1.ObjectReference{{Name: secretName}},
+	})
 }
 
 // TestTmplLevelAutomountServiceAccountToken verifies the ability to carry forward template level AutomountServiceAccountToken to Podspec.
 func TestTmplLevelAutomountServiceAccountToken(t *testing.T) {
 	woc := newWoc()
 	ctx := context.Background()
-	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo", "foo-token")
+	err := createServiceAccountWithToken(woc, "foo", "foo-token")
 	assert.NoError(t, err)
 
 	trueValue := true
@@ -273,14 +282,14 @@ func verifyServiceAccountTokenVolumeMount(t *testing.T, ctr apiv1.Container, vol
 			return
 		}
 	}
-	t.Fatalf("%v does not have serviceAccountToken mounted properly (name: %s, mountPath: %s)", ctr, volName, mountPath)
+	t.Fatalf("%v does not have serviceAccountToken mounted properly (name: %s, mountPath: %s)", ctr.VolumeMounts, volName, mountPath)
 }
 
 // TestWFLevelExecutorServiceAccountName verifies the ability to carry forward workflow level AutomountServiceAccountToken to Podspec.
 func TestWFLevelExecutorServiceAccountName(t *testing.T) {
 	woc := newWoc()
 	ctx := context.Background()
-	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo", "foo-token")
+	err := createServiceAccountWithToken(woc, "foo", "foo-token")
 	assert.NoError(t, err)
 
 	woc.execWf.Spec.Executor = &wfv1.ExecutorConfig{ServiceAccountName: "foo"}
@@ -293,20 +302,20 @@ func TestWFLevelExecutorServiceAccountName(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Equal(t, "exec-sa-token", pod.Spec.Volumes[1].Name)
+	assert.Equal(t, woc.getExecutorServiceAccountTokenVolumeName(), pod.Spec.Volumes[1].Name)
 	assert.Equal(t, "foo-token", pod.Spec.Volumes[1].VolumeSource.Secret.SecretName)
 
 	waitCtr := pod.Spec.Containers[0]
-	verifyServiceAccountTokenVolumeMount(t, waitCtr, "exec-sa-token", "/var/run/secrets/kubernetes.io/serviceaccount")
+	verifyServiceAccountTokenVolumeMount(t, waitCtr, woc.getExecutorServiceAccountTokenVolumeName(), "/var/run/secrets/kubernetes.io/serviceaccount")
 }
 
 // TestTmplLevelExecutorServiceAccountName verifies the ability to carry forward template level AutomountServiceAccountToken to Podspec.
 func TestTmplLevelExecutorServiceAccountName(t *testing.T) {
 	woc := newWoc()
 	ctx := context.Background()
-	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo", "foo-token")
+	err := createServiceAccountWithToken(woc, "foo", "foo-token")
 	assert.NoError(t, err)
-	_, err = util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "tmpl", "tmpl-token")
+	err = createServiceAccountWithToken(woc, "tmpl", "tmpl-token")
 	assert.NoError(t, err)
 
 	woc.execWf.Spec.Executor = &wfv1.ExecutorConfig{ServiceAccountName: "foo"}
@@ -320,11 +329,11 @@ func TestTmplLevelExecutorServiceAccountName(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Equal(t, "exec-sa-token", pod.Spec.Volumes[1].Name)
+	assert.Equal(t, woc.getExecutorServiceAccountTokenVolumeName(), pod.Spec.Volumes[1].Name)
 	assert.Equal(t, "tmpl-token", pod.Spec.Volumes[1].VolumeSource.Secret.SecretName)
 
 	waitCtr := pod.Spec.Containers[0]
-	verifyServiceAccountTokenVolumeMount(t, waitCtr, "exec-sa-token", "/var/run/secrets/kubernetes.io/serviceaccount")
+	verifyServiceAccountTokenVolumeMount(t, waitCtr, woc.getExecutorServiceAccountTokenVolumeName(), "/var/run/secrets/kubernetes.io/serviceaccount")
 }
 
 // TestTmplLevelExecutorServiceAccountName verifies the ability to carry forward template level AutomountServiceAccountToken to Podspec.
@@ -332,9 +341,9 @@ func TestTmplLevelExecutorSecurityContext(t *testing.T) {
 	var user int64 = 1000
 	ctx := context.Background()
 	woc := newWoc()
-	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo", "foo-token")
+	err := createServiceAccountWithToken(woc, "foo", "foo-token")
 	assert.NoError(t, err)
-	_, err = util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "tmpl", "tmpl-token")
+	err = createServiceAccountWithToken(woc, "tmpl", "tmpl-token")
 	assert.NoError(t, err)
 
 	woc.controller.Config.Executor = &apiv1.Container{SecurityContext: &apiv1.SecurityContext{RunAsUser: &user}}
@@ -343,7 +352,7 @@ func TestTmplLevelExecutorSecurityContext(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
 	assert.NoError(t, err)
-	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
+	pods, err := woc.controller.kubeclientset.CoreV1().Pods(defaultManagedNamespace).List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
@@ -731,10 +740,10 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, pods.Items, 1)
 		pod := pods.Items[0]
-		assert.Equal(t, 3, len(pod.Spec.Volumes))
+		assert.Equal(t, 4, len(pod.Spec.Volumes))
 		assert.Equal(t, "var-run-argo", pod.Spec.Volumes[0].Name)
 		assert.Equal(t, "docker-sock", pod.Spec.Volumes[1].Name)
-		assert.Equal(t, "volume-name", pod.Spec.Volumes[2].Name)
+		assert.Equal(t, "volume-name", pod.Spec.Volumes[3].Name)
 		assert.Equal(t, 2, len(pod.Spec.Containers[1].VolumeMounts))
 		assert.Equal(t, "volume-name", pod.Spec.Containers[1].VolumeMounts[0].Name)
 		assert.Equal(t, "var-run-argo", pod.Spec.Containers[1].VolumeMounts[1].Name)
@@ -756,9 +765,9 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, pods.Items, 1)
 		pod := pods.Items[0]
-		assert.Equal(t, 2, len(pod.Spec.Volumes))
+		assert.Equal(t, 3, len(pod.Spec.Volumes))
 		assert.Equal(t, "var-run-argo", pod.Spec.Volumes[0].Name)
-		assert.Equal(t, "volume-name", pod.Spec.Volumes[1].Name)
+		assert.Equal(t, "volume-name", pod.Spec.Volumes[2].Name)
 		assert.Equal(t, 2, len(pod.Spec.Containers[1].VolumeMounts))
 		assert.Equal(t, "volume-name", pod.Spec.Containers[1].VolumeMounts[0].Name)
 		assert.Equal(t, "var-run-argo", pod.Spec.Containers[1].VolumeMounts[1].Name)
@@ -780,9 +789,9 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, pods.Items, 1)
 		pod := pods.Items[0]
-		assert.Equal(t, 2, len(pod.Spec.Volumes))
+		assert.Equal(t, 3, len(pod.Spec.Volumes))
 		assert.Equal(t, "var-run-argo", pod.Spec.Volumes[0].Name)
-		assert.Equal(t, "volume-name", pod.Spec.Volumes[1].Name)
+		assert.Equal(t, "volume-name", pod.Spec.Volumes[2].Name)
 		assert.Equal(t, 2, len(pod.Spec.Containers[1].VolumeMounts))
 		assert.Equal(t, "volume-name", pod.Spec.Containers[1].VolumeMounts[0].Name)
 		assert.Equal(t, "var-run-argo", pod.Spec.Containers[1].VolumeMounts[1].Name)
@@ -804,22 +813,22 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, pods.Items, 1)
 		pod := pods.Items[0]
-		if assert.Len(t, pod.Spec.Volumes, 2) {
+		if assert.Len(t, pod.Spec.Volumes, 3) {
 			assert.Equal(t, "var-run-argo", pod.Spec.Volumes[0].Name)
-			assert.Equal(t, "volume-name", pod.Spec.Volumes[1].Name)
+			assert.Equal(t, "volume-name", pod.Spec.Volumes[2].Name)
 		}
 		if assert.Len(t, pod.Spec.InitContainers, 1) {
 			init := pod.Spec.InitContainers[0]
-			if assert.Len(t, init.VolumeMounts, 1) {
-				assert.Equal(t, "var-run-argo", init.VolumeMounts[0].Name)
+			if assert.Len(t, init.VolumeMounts, 2) {
+				assert.Equal(t, "var-run-argo", init.VolumeMounts[1].Name)
 			}
 		}
 		containers := pod.Spec.Containers
 		if assert.Len(t, containers, 2) {
 			wait := containers[0]
-			if assert.Len(t, wait.VolumeMounts, 2) {
-				assert.Equal(t, "volume-name", wait.VolumeMounts[0].Name)
-				assert.Equal(t, "var-run-argo", wait.VolumeMounts[1].Name)
+			if assert.Len(t, wait.VolumeMounts, 3) {
+				assert.Equal(t, "volume-name", wait.VolumeMounts[1].Name)
+				assert.Equal(t, "var-run-argo", wait.VolumeMounts[2].Name)
 			}
 			main := containers[1]
 			assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary", "--", "cowsay"}, main.Command)
@@ -870,9 +879,9 @@ func TestVolumesPodSubstitution(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Equal(t, 3, len(pod.Spec.Volumes))
-	assert.Equal(t, "volume-name", pod.Spec.Volumes[2].Name)
-	assert.Equal(t, "test-name", pod.Spec.Volumes[2].PersistentVolumeClaim.ClaimName)
+	assert.Equal(t, 4, len(pod.Spec.Volumes))
+	assert.Equal(t, "volume-name", pod.Spec.Volumes[3].Name)
+	assert.Equal(t, "test-name", pod.Spec.Volumes[3].PersistentVolumeClaim.ClaimName)
 	assert.Equal(t, 2, len(pod.Spec.Containers[1].VolumeMounts))
 	assert.Equal(t, "volume-name", pod.Spec.Containers[1].VolumeMounts[0].Name)
 }
@@ -1556,8 +1565,8 @@ func TestHybridWfVolumesWindows(t *testing.T) {
 	ctx := context.Background()
 	mainCtr := woc.execWf.Spec.Templates[0].Container
 	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
-	assert.Equal(t, "\\\\.\\pipe\\docker_engine", pod.Spec.Containers[0].VolumeMounts[0].MountPath)
-	assert.Equal(t, false, pod.Spec.Containers[0].VolumeMounts[0].ReadOnly)
+	assert.Equal(t, "\\\\.\\pipe\\docker_engine", pod.Spec.Containers[0].VolumeMounts[1].MountPath)
+	assert.Equal(t, false, pod.Spec.Containers[0].VolumeMounts[1].ReadOnly)
 	assert.Equal(t, (*apiv1.HostPathType)(nil), pod.Spec.Volumes[1].HostPath.Type)
 }
 
@@ -1617,8 +1626,8 @@ func TestHybridWfVolumesLinux(t *testing.T) {
 	ctx := context.Background()
 	mainCtr := woc.execWf.Spec.Templates[0].Container
 	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
-	assert.Equal(t, "/var/run/docker.sock", pod.Spec.Containers[0].VolumeMounts[0].MountPath)
-	assert.Equal(t, true, pod.Spec.Containers[0].VolumeMounts[0].ReadOnly)
+	assert.Equal(t, "/var/run/docker.sock", pod.Spec.Containers[0].VolumeMounts[1].MountPath)
+	assert.Equal(t, true, pod.Spec.Containers[0].VolumeMounts[1].ReadOnly)
 	assert.Equal(t, &hostPathSocket, pod.Spec.Volumes[1].HostPath.Type)
 }
 

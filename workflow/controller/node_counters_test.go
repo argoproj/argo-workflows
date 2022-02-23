@@ -16,7 +16,7 @@ func getWfOperationCtx() *wfOperationCtx {
 		wf: &v1alpha1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "1",
-				Namespace: "default",
+				Namespace: defaultManagedNamespace,
 			},
 			Status: v1alpha1.WorkflowStatus{
 				Nodes: map[string]v1alpha1.NodeStatus{

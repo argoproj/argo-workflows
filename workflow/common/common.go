@@ -213,11 +213,10 @@ const (
 	// LocalVarRetriesLastDuration is a variable that references information about the last retry's duration, in seconds
 	LocalVarRetriesLastDuration = "lastRetry.duration"
 
-	KubeConfigDefaultMountPath    = "/kube/config"
-	KubeConfigDefaultVolumeName   = "kubeconfig"
-	ServiceAccountTokenMountPath  = "/var/run/secrets/kubernetes.io/serviceaccount" //nolint:gosec
-	ServiceAccountTokenVolumeName = "exec-sa-token"                                 //nolint:gosec
-	SecretVolMountPath            = "/argo/secret"
+	KubeConfigDefaultMountPath   = "/kube/config"
+	KubeConfigDefaultVolumeName  = "kubeconfig"
+	ServiceAccountTokenMountPath = "/var/run/secrets/kubernetes.io/serviceaccount" //nolint:gosec
+	SecretVolMountPath           = "/argo/secret"
 
 	// ArgoProgressPath defines the path to a file used for self reporting progress
 	ArgoProgressPath = "/var/run/argo/progress"

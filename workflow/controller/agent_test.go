@@ -90,7 +90,7 @@ status:
 		defer cancel()
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
-		tslist, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").List(ctx, v1.ListOptions{})
+		tslist, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(defaultManagedNamespace).List(ctx, v1.ListOptions{})
 		assert.NoError(t, err)
 		assert.NotEmpty(t, tslist.Items)
 		assert.Len(t, tslist.Items, 1)
@@ -100,7 +100,7 @@ status:
 			assert.Equal(t, ts.Namespace, wf.Namespace)
 			assert.Len(t, ts.Spec.Tasks, 1)
 		}
-		pods, err := woc.controller.kubeclientset.CoreV1().Pods("default").List(ctx, v1.ListOptions{})
+		pods, err := woc.controller.kubeclientset.CoreV1().Pods(defaultManagedNamespace).List(ctx, v1.ListOptions{})
 		assert.NoError(t, err)
 		assert.NotEmpty(t, pods.Items)
 		assert.Len(t, pods.Items, 1)
@@ -115,7 +115,7 @@ status:
 		controller.Config.InstanceID = "testID"
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
-		tslist, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").List(ctx, v1.ListOptions{})
+		tslist, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(defaultManagedNamespace).List(ctx, v1.ListOptions{})
 		assert.NoError(t, err)
 		assert.NotEmpty(t, tslist.Items)
 		assert.Len(t, tslist.Items, 1)
@@ -125,7 +125,7 @@ status:
 			assert.Equal(t, ts.Namespace, wf.Namespace)
 			assert.Len(t, ts.Spec.Tasks, 1)
 		}
-		pods, err := woc.controller.kubeclientset.CoreV1().Pods("default").List(ctx, v1.ListOptions{})
+		pods, err := woc.controller.kubeclientset.CoreV1().Pods(defaultManagedNamespace).List(ctx, v1.ListOptions{})
 		assert.NoError(t, err)
 		assert.NotEmpty(t, pods.Items)
 		assert.Len(t, pods.Items, 1)

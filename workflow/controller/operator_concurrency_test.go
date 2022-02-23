@@ -135,7 +135,7 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 	}, workflowExistenceFunc)
 	var cm v1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
-	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	_, err := controller.kubeclientset.CoreV1().ConfigMaps(defaultManagedNamespace).Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	t.Run("TmplLevelAcquireAndRelease", func(t *testing.T) {
@@ -196,7 +196,7 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 	}, workflowExistenceFunc)
 	var cm v1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
-	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	_, err := controller.kubeclientset.CoreV1().ConfigMaps(defaultManagedNamespace).Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	t.Run("ScriptTmplLevelAcquireAndRelease", func(t *testing.T) {
@@ -256,7 +256,7 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 	}, workflowExistenceFunc)
 	var cm v1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
-	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	_, err := controller.kubeclientset.CoreV1().ConfigMaps(defaultManagedNamespace).Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	t.Run("ResourceTmplLevelAcquireAndRelease", func(t *testing.T) {
@@ -438,7 +438,7 @@ func TestSynchronizationWithRetry(t *testing.T) {
 	}, workflowExistenceFunc)
 	var cm v1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
-	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	_, err := controller.kubeclientset.CoreV1().ConfigMaps(defaultManagedNamespace).Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(err)
 	t.Run("WorkflowWithRetry", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(RetryWfWithSemaphore)
@@ -646,13 +646,13 @@ func TestSynchronizationWithStep(t *testing.T) {
 	}, workflowExistenceFunc)
 	var cm v1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
-	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	_, err := controller.kubeclientset.CoreV1().ConfigMaps(defaultManagedNamespace).Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(err)
 
 	t.Run("StepWithSychronization", func(t *testing.T) {
 		// First workflow Acquire the lock
 		wf := wfv1.MustUnmarshalWorkflow(StepWithSync)
-		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Create(ctx, wf, metav1.CreateOptions{})
+		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(defaultManagedNamespace).Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(err)
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
@@ -663,7 +663,7 @@ func TestSynchronizationWithStep(t *testing.T) {
 		// Second workflow try to acquire the lock and wait for lock
 		wf1 := wfv1.MustUnmarshalWorkflow(StepWithSync)
 		wf1.Name = "step2"
-		wf1, err = controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Create(ctx, wf1, metav1.CreateOptions{})
+		wf1, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(defaultManagedNamespace).Create(ctx, wf1, metav1.CreateOptions{})
 		assert.NoError(err)
 		woc1 := newWorkflowOperationCtx(wf1, controller)
 		woc1.operate(ctx)
@@ -723,13 +723,13 @@ func TestSynchronizationWithStepRetry(t *testing.T) {
 	}, workflowExistenceFunc)
 	var cm v1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
-	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	_, err := controller.kubeclientset.CoreV1().ConfigMaps(defaultManagedNamespace).Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(err)
 
 	t.Run("StepRetryWithSynchronization", func(t *testing.T) {
 		// First workflow Acquire the lock
 		wf := wfv1.MustUnmarshalWorkflow(wfWithStepRetry)
-		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Create(ctx, wf, metav1.CreateOptions{})
+		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(defaultManagedNamespace).Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(err)
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
