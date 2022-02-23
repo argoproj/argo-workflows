@@ -1,12 +1,10 @@
 # Debug pause
 
-> v3.3  and after
+> v3.3 and after
 
 ## Introduction
 
-This feature makes it easier to debug workflow steps by allowing users to specify if a steps should be paused. Currently this feature is only supported when using the emissary workflow executor[Emissary Executor](workflow-executors.md#emissary-emissary)
-
-The `debug pause` feature makes it possible to pause individual workflow steps for debugging before, after or both and then release the steps from the paused state. 
+The `debug pause` feature makes it possible to pause individual workflow steps for debugging before, after or both and then release the steps from the paused state. Currently this feature is only supported when using the [Emissary Executor](workflow-executors.md#emissary-emissary)
 
 In order to pause a container env variables are used: 
 - `ARGO_DEBUG_PAUSE_AFTER` - to pause a step after execution 
@@ -30,7 +28,7 @@ spec:
             value: 'true'
 ```
 
-In order to release a step from a pause state,  marker files are used named `after` or `before` corresponding to when the step is paused. Pausing steps can with benefits be used together with [ephemeral containers](https://kubernetes.io/docs/concepts/workloads/pods/ephemeral-containers/) when a shell is not available in the used container. 
+In order to release a step from a pause state,  marker files are used named `after` or `before` corresponding to when the step is paused. Pausing steps can be used together with [ephemeral containers](https://kubernetes.io/docs/concepts/workloads/pods/ephemeral-containers/) when a shell is not available in the used container. 
 
 ## Example
 
@@ -65,7 +63,7 @@ kubectl debug -n argo -it POD_NAME --image=busybox --target=main --share-process
 
 In order to have access to the persistance volume used by the workflow step,  [`--share-processes`](https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/) will have to be used. 
 
-When inside the shell of the ephemeral container deugging of the pod can be done, when done the marker file can be create in order to allow the step continue to run. To create the marker file to release the step:
+The ephemeral container can be used to perform debugging operations. When debugging has been completed, create the marker file to allow the workflow step to continue.
 
 ```bash
 touch /proc/1/root/run/argo/ctr/main/after
