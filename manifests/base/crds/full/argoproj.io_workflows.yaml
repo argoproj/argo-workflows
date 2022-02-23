@@ -6171,6 +6171,11 @@ spec:
                         type: array
                       manifest:
                         type: string
+                      manifestFrom:
+                        properties:
+                          path:
+                            type: string
+                        type: object
                       mergeStrategy:
                         type: string
                       setOwnerReference:
@@ -12832,6 +12837,11 @@ spec:
                           type: array
                         manifest:
                           type: string
+                        manifestFrom:
+                          properties:
+                            path:
+                              type: string
+                          type: object
                         mergeStrategy:
                           type: string
                         setOwnerReference:
@@ -22565,6 +22575,11 @@ spec:
                           type: array
                         manifest:
                           type: string
+                        manifestFrom:
+                          properties:
+                            path:
+                              type: string
+                          type: object
                         mergeStrategy:
                           type: string
                         setOwnerReference:
@@ -30716,6 +30731,11 @@ spec:
                             type: array
                           manifest:
                             type: string
+                          manifestFrom:
+                            properties:
+                              path:
+                                type: string
+                            type: object
                           mergeStrategy:
                             type: string
                           setOwnerReference:
@@ -37377,6 +37397,11 @@ spec:
                               type: array
                             manifest:
                               type: string
+                            manifestFrom:
+                              properties:
+                                path:
+                                  type: string
+                              type: object
                             mergeStrategy:
                               type: string
                             setOwnerReference:

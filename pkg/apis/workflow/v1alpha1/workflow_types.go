@@ -2371,6 +2371,9 @@ type ResourceTemplate struct {
 	// Manifest contains the kubernetes manifest
 	Manifest string `json:"manifest,omitempty" protobuf:"bytes,3,opt,name=manifest"`
 
+	// ManifestFrom is the source for a single kubernetes manifest
+	ManifestFrom *ManifestFrom `json:"manifestFrom,omitempty" protobuf:"bytes,8,opt,name=manifestFrom"`
+
 	// SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.
 	SetOwnerReference bool `json:"setOwnerReference,omitempty" protobuf:"varint,4,opt,name=setOwnerReference"`
 
@@ -2389,6 +2392,17 @@ type ResourceTemplate struct {
 	// ]
 	Flags []string `json:"flags,omitempty" protobuf:"varint,7,opt,name=flags"`
 }
+
+type ManifestFrom struct {
+	// Path contains the path to the kubernetes manifest
+	Path string `json:"path,omitempty" protobuf:"bytes,1,opt,name=path"`
+}
+
+func (t *ResourceTemplate) HasManifest() bool {
+	return t.Manifest != "" || t.ManifestFrom != nil
+}
+
+func (t *ResourceTemplate) GetManifest()
 
 // GetType returns the type of this template
 func (tmpl *Template) GetType() TemplateType {

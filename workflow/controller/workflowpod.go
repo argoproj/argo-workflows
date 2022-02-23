@@ -282,8 +282,8 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	pod.ObjectMeta.Annotations[common.AnnotationKeyDefaultContainer] = defaultContainer
 
 	// Add init container only if it needs input artifacts. This is also true for
-	// script templates (which needs to populate the script)
-	if len(tmpl.Inputs.Artifacts) > 0 || tmpl.GetType() == wfv1.TemplateTypeScript || woc.getContainerRuntimeExecutor() == common.ContainerRuntimeExecutorEmissary {
+	// resource and script templates (which needs to populate the script)
+	if len(tmpl.Inputs.Artifacts) > 0 || tmpl.GetType() == wfv1.TemplateTypeScript || tmpl.GetType() == wfv1.TemplateTypeResource || woc.getContainerRuntimeExecutor() == common.ContainerRuntimeExecutorEmissary {
 		initCtr := woc.newInitContainer(tmpl)
 		pod.Spec.InitContainers = []apiv1.Container{initCtr}
 	}
@@ -816,7 +816,7 @@ func addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *w
 // These are either specified in the workflow.spec.volumes or the workflow.spec.volumeClaimTemplate section
 func addVolumeReferences(pod *apiv1.Pod, vols []apiv1.Volume, tmpl *wfv1.Template, pvcs []apiv1.Volume) error {
 	switch tmpl.GetType() {
-	case wfv1.TemplateTypeContainer, wfv1.TemplateTypeContainerSet, wfv1.TemplateTypeScript, wfv1.TemplateTypeData:
+	case wfv1.TemplateTypeContainer, wfv1.TemplateTypeContainerSet, wfv1.TemplateTypeScript, wfv1.TemplateTypeResource, wfv1.TemplateTypeData:
 	default:
 		return nil
 	}

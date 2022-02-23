@@ -249,6 +249,9 @@ func (we *WorkflowExecutor) StageFiles() error {
 		filePath = common.ExecutorScriptSourcePath
 		body = []byte(we.Template.Script.Source)
 	case wfv1.TemplateTypeResource:
+		if we.Template.Resource.ManifestFrom != nil {
+			return nil
+		}
 		log.Infof("Loading manifest to %s", common.ExecutorResourceManifestPath)
 		filePath = common.ExecutorResourceManifestPath
 		body = []byte(we.Template.Resource.Manifest)
