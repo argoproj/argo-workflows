@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	v12 "k8s.io/api/core/v1"
+	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -42,10 +42,10 @@ spec:
 
     - name: http
       http:
-        url: "https://raw.githubusercontent.com/argoproj/argo-workflows/4e450e250168e6b4d51a126b784e90b11a0162bc/pkg/apis/workflow/v1alpha1/generated.swagger.json"
+        url: "http://httpstat.us"
 `).When().
 		SubmitWorkflow().
-		WaitForWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
 			assert.Equal(t, status.Phase, v1alpha1.WorkflowSucceeded)
@@ -54,7 +54,7 @@ spec:
 			return true
 		}
 		return false
-	}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *v12.Pod) {
+	}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 
 		assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase, )
 	})
@@ -82,10 +82,10 @@ spec:
             template: http
     - name: http
       http:
-        url: "https://raw.githubusercontent.com/argoproj/argo-workflows/4e450e250168e6b4d51a126b784e90b11a0162bc/pkg/apis/workflow/v1alpha1/generated.swagger.json"
+        url: "http://httpstat.us"
 `).When().
 		SubmitWorkflow().
-		WaitForWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
 			assert.Equal(t, status.Phase, v1alpha1.WorkflowSucceeded)
@@ -94,7 +94,7 @@ spec:
 			return true
 		}
 		return false
-	}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *v12.Pod) {
+	}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 
 		assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase, )
 	})
