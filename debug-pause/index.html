@@ -13,7 +13,7 @@
     
     
       
-        <title>Kubectl - Argo Workflows - The workflow engine for Kubernetes</title>
+        <title>Debug pause - Argo Workflows - The workflow engine for Kubernetes</title>
       
     
     
@@ -72,7 +72,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#kubectl" class="md-skip">
+        <a href="#debug-pause" class="md-skip">
           Skip to content
         </a>
       
@@ -104,7 +104,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Kubectl
+              Debug pause
             
           </span>
         </div>
@@ -919,21 +919,11 @@
               
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../kubectl/" class="md-nav__link">
         Kubectl
       </a>
-      
     </li>
   
 
@@ -1111,11 +1101,59 @@
               
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="../debug-pause/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Debug pause
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         Debug pause
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    Introduction
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    Example
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2704,6 +2742,28 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    Introduction
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    Example
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -2714,20 +2774,61 @@
             <article class="md-content__inner md-typeset">
               
                 
-<a href="https://github.com/argoproj/argo-workflows/edit/master/docs/kubectl.md" title="Edit this page" class="md-content__button md-icon">
+<a href="https://github.com/argoproj/argo-workflows/edit/master/docs/debug-pause.md" title="Edit this page" class="md-content__button md-icon">
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
 </a>
 
 
-<h1 id="kubectl">Kubectl<a class="headerlink" href="#kubectl" title="Permanent link">&para;</a></h1>
-<p>You can also create Workflows directly with <code>kubectl</code>. However, the Argo CLI offers extra features
-that <code>kubectl</code> does not, such as YAML validation, workflow visualization, parameter passing, retries
-and resubmits, suspend and resume, and more.</p>
-<div class="highlight"><pre><span></span><code>kubectl create -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/hello-world.yaml
-kubectl get wf -n argo
-kubectl get wf hello-world-xxx -n argo
-kubectl get po -n argo --selector<span class="o">=</span>workflows.argoproj.io/workflow<span class="o">=</span>hello-world-xxx
-kubectl logs hello-world-yyy -c main -n argo
+<h1 id="debug-pause">Debug pause<a class="headerlink" href="#debug-pause" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p>v3.3 and after</p>
+</blockquote>
+<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">&para;</a></h2>
+<p>The <code>debug pause</code> feature makes it possible to pause individual workflow steps for debugging before, after or both and then release the steps from the paused state. Currently this feature is only supported when using the <a href="../workflow-executors/#emissary-emissary">Emissary Executor</a></p>
+<p>In order to pause a container env variables are used: 
+- <code>ARGO_DEBUG_PAUSE_AFTER</code> - to pause a step after execution 
+- <code>ARGO_DEBUG_PAUSE_BEFORE</code> - to pause a step before execution</p>
+<p>Example workflow:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span><span class="w"></span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span><span class="w"></span>
+<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">generateName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pause-after-</span><span class="w"></span>
+<span class="nt">spec</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">whalesay</span><span class="w"></span>
+<span class="w">  </span><span class="nt">templates</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">whalesay</span><span class="w"></span>
+<span class="w">      </span><span class="nt">container</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj/argosay:v2</span><span class="w"></span>
+<span class="w">        </span><span class="nt">env</span><span class="p">:</span><span class="w"></span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ARGO_DEBUG_PAUSE_AFTER</span><span class="w"></span>
+<span class="w">            </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;true&#39;</span><span class="w"></span>
+</code></pre></div>
+<p>In order to release a step from a pause state, marker files are used named <code>/var/run/argo/ctr/main/after</code> or <code>/var/run/argo/ctr/main/before</code> corresponding to when the step is paused. Pausing steps can be used together with <a href="https://kubernetes.io/docs/concepts/workloads/pods/ephemeral-containers/">ephemeral containers</a> when a shell is not available in the used container.</p>
+<h2 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h2>
+<p>1) Create a workflow where the debug pause env in set, in this example <code>ARGO_DEBUG_PAUSE_AFTER</code> will be set and thus the step will be paused after execution of the user code. </p>
+<p>pause-after.yaml
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span><span class="w"></span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span><span class="w"></span>
+<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">generateName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pause-after-</span><span class="w"></span>
+<span class="nt">spec</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">whalesay</span><span class="w"></span>
+<span class="w">  </span><span class="nt">templates</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">whalesay</span><span class="w"></span>
+<span class="w">      </span><span class="nt">container</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj/argosay:v2</span><span class="w"></span>
+<span class="w">        </span><span class="nt">env</span><span class="p">:</span><span class="w"></span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ARGO_DEBUG_PAUSE_AFTER</span><span class="w"></span>
+<span class="w">            </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;true&#39;</span><span class="w"></span>
+</code></pre></div></p>
+<div class="highlight"><pre><span></span><code>argo submit -n argo --watch pause-after.yaml
+</code></pre></div>
+<p>2) Create a shell in the container of interest of create a ephemeral container in the pod, in this example ephemeral containers are used. </p>
+<div class="highlight"><pre><span></span><code>kubectl debug -n argo -it POD_NAME --image=busybox --target=main --share-processes
+</code></pre></div>
+<p>In order to have access to the persistance volume used by the workflow step,  <a href="https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/"><code>--share-processes</code></a> will have to be used. </p>
+<p>The ephemeral container can be used to perform debugging operations. When debugging has been completed, create the marker file to allow the workflow step to continue. When using process name space sharing container filesystems are visible to other containers in the pod through the /proc/$pid/root link.</p>
+<div class="highlight"><pre><span></span><code>touch /proc/1/root/run/argo/ctr/main/after
 </code></pre></div>
 
               
@@ -2742,7 +2843,7 @@ kubectl logs hello-world-yyy -c main -n argo
     <nav class="md-footer__inner md-grid" aria-label="Footer">
       
         
-        <a href="../workflow-events/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Workflow Events" rel="prev">
+        <a href="../running-at-massive-scale/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Running At Massive Scale" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
           </div>
@@ -2751,20 +2852,20 @@ kubectl logs hello-world-yyy -c main -n argo
               <span class="md-footer__direction">
                 Previous
               </span>
-              Workflow Events
+              Running At Massive Scale
             </div>
           </div>
         </a>
       
       
         
-        <a href="../access-token/" class="md-footer__link md-footer__link--next" aria-label="Next: Access Token" rel="next">
+        <a href="../plugins/" class="md-footer__link md-footer__link--next" aria-label="Next: Plugins" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              Access Token
+              Plugins
             </div>
           </div>
           <div class="md-footer__button md-icon">
