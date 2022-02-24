@@ -17,7 +17,6 @@ RUN apt-get update && apt-get --no-install-recommends install -y \
     wget \
     gcc \
     libcap2-bin \
-    socat \
     zip && \
     apt-get clean \
     && rm -rf \
