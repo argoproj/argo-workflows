@@ -3,6 +3,7 @@ kind: Workflow
 metadata:
   generateName: label-value-from-
   annotations:
+    workflows.argoproj.io/version: ">= v3.3.0"
     workflows.argoproj.io/description: |
       This examples show you how to add labels based on an expression.
       You can then query workflows based on the parameters they were invoked with.
