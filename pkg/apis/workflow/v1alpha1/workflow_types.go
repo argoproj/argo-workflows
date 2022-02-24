@@ -17,6 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/argoproj/argo-workflows/v3/util/slice"
 )
@@ -2505,6 +2506,10 @@ func (tmpl *Template) HasOutput() bool {
 // if logs should be saved as an artifact
 func (tmpl *Template) SaveLogsAsArtifact() bool {
 	return tmpl != nil && tmpl.ArchiveLocation.IsArchiveLogs() && (tmpl.ContainerSet == nil || tmpl.ContainerSet.HasContainerNamed("main"))
+}
+
+func (t *Template) GetRetryStrategy() (wait.Backoff, error) {
+	return t.ContainerSet.GetRetryStrategy()
 }
 
 // DAGTemplate is a template subtype for directed acyclic graph templates

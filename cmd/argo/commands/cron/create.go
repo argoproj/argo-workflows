@@ -101,7 +101,7 @@ func CreateCronWorkflows(ctx context.Context, filePaths []string, cliOpts *cliCr
 			CronWorkflow: &cronWf,
 		})
 		if err != nil {
-			log.Fatalf("Failed to create workflow template: %v", err)
+			log.Fatalf("Failed to create cron workflow: %v", err)
 		}
 		fmt.Print(getCronWorkflowGet(created))
 	}
@@ -122,6 +122,6 @@ func unmarshalCronWorkflows(wfBytes []byte, strict bool) []wfv1.CronWorkflow {
 	if err == nil {
 		return yamlWfs
 	}
-	log.Fatalf("Failed to parse workflow template: %v", err)
+	log.Fatalf("Failed to parse cron workflow: %v", err)
 	return nil
 }

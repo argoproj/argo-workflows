@@ -8,3 +8,4 @@ Pipfile.lock
 /client/test
 /client/test-requirements.txt
 /client/.gitignore
+/client/LICENSE

@@ -10,6 +10,7 @@ Name | Type | Description | Notes
 **parameters** | [**[IoArgoprojEventsV1alpha1TriggerParameter]**](IoArgoprojEventsV1alpha1TriggerParameter.md) |  | [optional] 
 **payload** | [**[IoArgoprojEventsV1alpha1TriggerParameter]**](IoArgoprojEventsV1alpha1TriggerParameter.md) | Payload is the list of key-value extracted from an event payload to construct the request payload. | [optional] 
 **region** | **str** |  | [optional] 
+**role_arn** | **str** |  | [optional] 
 **secret_key** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 
 **any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 

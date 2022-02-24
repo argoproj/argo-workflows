@@ -90,7 +90,6 @@ class GithubComArgoprojLabsArgoDataflowApiV1alpha1KafkaConfig(ModelNormal):
             'brokers': ([str],),  # noqa: E501
             'max_message_bytes': (int,),  # noqa: E501
             'net': (GithubComArgoprojLabsArgoDataflowApiV1alpha1KafkaNET,),  # noqa: E501
-            'version': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -102,7 +101,6 @@ class GithubComArgoprojLabsArgoDataflowApiV1alpha1KafkaConfig(ModelNormal):
         'brokers': 'brokers',  # noqa: E501
         'max_message_bytes': 'maxMessageBytes',  # noqa: E501
         'net': 'net',  # noqa: E501
-        'version': 'version',  # noqa: E501
     }
 
     read_only_vars = {
@@ -149,7 +147,6 @@ class GithubComArgoprojLabsArgoDataflowApiV1alpha1KafkaConfig(ModelNormal):
             brokers ([str]): [optional]  # noqa: E501
             max_message_bytes (int): [optional]  # noqa: E501
             net (GithubComArgoprojLabsArgoDataflowApiV1alpha1KafkaNET): [optional]  # noqa: E501
-            version (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -234,7 +231,6 @@ class GithubComArgoprojLabsArgoDataflowApiV1alpha1KafkaConfig(ModelNormal):
             brokers ([str]): [optional]  # noqa: E501
             max_message_bytes (int): [optional]  # noqa: E501
             net (GithubComArgoprojLabsArgoDataflowApiV1alpha1KafkaNET): [optional]  # noqa: E501
-            version (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

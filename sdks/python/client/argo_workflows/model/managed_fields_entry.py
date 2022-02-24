@@ -86,6 +86,7 @@ class ManagedFieldsEntry(ModelNormal):
             'fields_v1': (bool, date, datetime, dict, float, int, list, str, none_type,),  # noqa: E501
             'manager': (str,),  # noqa: E501
             'operation': (str,),  # noqa: E501
+            'subresource': (str,),  # noqa: E501
             'time': (datetime,),  # noqa: E501
         }
 
@@ -100,6 +101,7 @@ class ManagedFieldsEntry(ModelNormal):
         'fields_v1': 'fieldsV1',  # noqa: E501
         'manager': 'manager',  # noqa: E501
         'operation': 'operation',  # noqa: E501
+        'subresource': 'subresource',  # noqa: E501
         'time': 'time',  # noqa: E501
     }
 
@@ -149,6 +151,7 @@ class ManagedFieldsEntry(ModelNormal):
             fields_v1 (bool, date, datetime, dict, float, int, list, str, none_type): FieldsV1 stores a set of fields in a data structure like a Trie, in JSON format.  Each key is either a '.' representing the field itself, and will always map to an empty set, or a string representing a sub-field or item. The string will follow one of these four formats: 'f:<name>', where <name> is the name of a field in a struct, or key in a map 'v:<value>', where <value> is the exact json formatted value of a list item 'i:<index>', where <index> is position of a item in a list 'k:<keys>', where <keys> is a map of  a list item's key fields to their unique values If a key maps to an empty Fields value, the field that key represents is part of the set.  The exact format is defined in sigs.k8s.io/structured-merge-diff. [optional]  # noqa: E501
             manager (str): Manager is an identifier of the workflow managing these fields.. [optional]  # noqa: E501
             operation (str): Operation is the type of operation which lead to this ManagedFieldsEntry being created. The only valid values for this field are 'Apply' and 'Update'.. [optional]  # noqa: E501
+            subresource (str): Subresource is the name of the subresource used to update that object, or empty string if the object was updated through the main resource. The value of this field is used to distinguish between managers, even if they share the same name. For example, a status update will be distinct from a regular update using the same manager name. Note that the APIVersion field is not related to the Subresource field and it always corresponds to the version of the main resource.. [optional]  # noqa: E501
             time (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
         """
 
@@ -236,6 +239,7 @@ class ManagedFieldsEntry(ModelNormal):
             fields_v1 (bool, date, datetime, dict, float, int, list, str, none_type): FieldsV1 stores a set of fields in a data structure like a Trie, in JSON format.  Each key is either a '.' representing the field itself, and will always map to an empty set, or a string representing a sub-field or item. The string will follow one of these four formats: 'f:<name>', where <name> is the name of a field in a struct, or key in a map 'v:<value>', where <value> is the exact json formatted value of a list item 'i:<index>', where <index> is position of a item in a list 'k:<keys>', where <keys> is a map of  a list item's key fields to their unique values If a key maps to an empty Fields value, the field that key represents is part of the set.  The exact format is defined in sigs.k8s.io/structured-merge-diff. [optional]  # noqa: E501
             manager (str): Manager is an identifier of the workflow managing these fields.. [optional]  # noqa: E501
             operation (str): Operation is the type of operation which lead to this ManagedFieldsEntry being created. The only valid values for this field are 'Apply' and 'Update'.. [optional]  # noqa: E501
+            subresource (str): Subresource is the name of the subresource used to update that object, or empty string if the object was updated through the main resource. The value of this field is used to distinguish between managers, even if they share the same name. For example, a status update will be distinct from a regular update using the same manager name. Note that the APIVersion field is not related to the Subresource field and it always corresponds to the version of the main resource.. [optional]  # noqa: E501
             time (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
         """
 

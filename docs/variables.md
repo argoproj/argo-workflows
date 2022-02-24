@@ -118,7 +118,7 @@ Trim a string:
 sprig.trim(inputs.parameters['my-string-param'])
 ```
 
-!!! Warning In Sprig functions, errors are not often not raised. E.g. if `int` is used on an invalid value, it
+!!! Warning In Sprig functions, errors are often not raised. E.g. if `int` is used on an invalid value, it
 returns `0`. Please review the Sprig documentation to understand which functions do and which do not.
 
 ## Reference

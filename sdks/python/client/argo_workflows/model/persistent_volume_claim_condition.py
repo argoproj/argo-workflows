@@ -55,6 +55,10 @@ class PersistentVolumeClaimCondition(ModelNormal):
     """
 
     allowed_values = {
+        ('type',): {
+            'FILESYSTEMRESIZEPENDING': "FileSystemResizePending",
+            'RESIZING': "Resizing",
+        },
     }
 
     validations = {
@@ -115,7 +119,7 @@ class PersistentVolumeClaimCondition(ModelNormal):
 
         Args:
             status (str):
-            type (str):
+            type (str):    Possible enum values:  - `\"FileSystemResizePending\"` - controller resize is finished and a file system resize is pending on node  - `\"Resizing\"` - a user trigger resize of pvc has been started
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -206,7 +210,7 @@ class PersistentVolumeClaimCondition(ModelNormal):
 
         Args:
             status (str):
-            type (str):
+            type (str):    Possible enum values:  - `\"FileSystemResizePending\"` - controller resize is finished and a file system resize is pending on node  - `\"Resizing\"` - a user trigger resize of pvc has been started
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types

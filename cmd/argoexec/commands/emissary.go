@@ -2,6 +2,7 @@ package commands
 
 import (
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -17,6 +18,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"k8s.io/client-go/util/retry"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/archive"
@@ -107,31 +109,6 @@ func NewEmissaryCommand() *cobra.Command {
 				return fmt.Errorf("failed to find name in PATH: %w", err)
 			}
 
-			command := exec.Command(name, args...)
-			command.Env = os.Environ()
-			command.SysProcAttr = &syscall.SysProcAttr{}
-			osspecific.Setpgid(command.SysProcAttr)
-			command.Stdout = os.Stdout
-			command.Stderr = os.Stderr
-
-			// this may not be that important an optimisation, except for very long logs we don't want to capture
-			if includeScriptOutput || template.SaveLogsAsArtifact() {
-				logger.Info("capturing logs")
-				stdout, err := os.Create(varRunArgo + "/ctr/" + containerName + "/stdout")
-				if err != nil {
-					return fmt.Errorf("failed to open stdout: %w", err)
-				}
-				defer func() { _ = stdout.Close() }()
-				command.Stdout = io.MultiWriter(os.Stdout, stdout)
-
-				stderr, err := os.Create(varRunArgo + "/ctr/" + containerName + "/stderr")
-				if err != nil {
-					return fmt.Errorf("failed to open stderr: %w", err)
-				}
-				defer func() { _ = stderr.Close() }()
-				command.Stderr = io.MultiWriter(os.Stderr, stderr)
-			}
-
 			if _, ok := os.LookupEnv("ARGO_DEBUG_PAUSE_BEFORE"); ok {
 				for {
 					// User can create the file: /ctr/NAME_OF_THE_CONTAINER/before
@@ -144,23 +121,53 @@ func NewEmissaryCommand() *cobra.Command {
 					break
 				}
 			}
-			if err := command.Start(); err != nil {
-				return err
+
+			backoff, err := template.GetRetryStrategy()
+			if err != nil {
+				return fmt.Errorf("failed to get retry strategy: %w", err)
 			}
 
-			go func() {
-				for {
-					data, _ := ioutil.ReadFile(filepath.Clean(varRunArgo + "/ctr/" + containerName + "/signal"))
-					_ = os.Remove(varRunArgo + "/ctr/" + containerName + "/signal")
-					s, _ := strconv.Atoi(string(data))
-					if s > 0 {
-						_ = osspecific.Kill(command.Process.Pid, syscall.Signal(s))
-					}
-					time.Sleep(2 * time.Second)
+			var command *exec.Cmd
+			var stdout *os.File
+			var stderr *os.File
+			cmdErr := retry.OnError(backoff, func(error) bool { return true }, func() error {
+				if stdout != nil {
+					stdout.Close()
 				}
-			}()
+				if stderr != nil {
+					stderr.Close()
+				}
+				command, stdout, stderr, err = createCommand(name, args, template)
+				if err != nil {
+					return fmt.Errorf("failed to create command: %w", err)
+				}
 
-			cmdErr := command.Wait()
+				if err := command.Start(); err != nil {
+					return err
+				}
+
+				ctx, cancel := context.WithCancel(context.Background())
+				defer cancel()
+				go func() {
+					for {
+						select {
+						case <-ctx.Done():
+							return
+						default:
+							data, _ := ioutil.ReadFile(filepath.Clean(varRunArgo + "/ctr/" + containerName + "/signal"))
+							_ = os.Remove(varRunArgo + "/ctr/" + containerName + "/signal")
+							s, _ := strconv.Atoi(string(data))
+							if s > 0 {
+								_ = osspecific.Kill(command.Process.Pid, syscall.Signal(s))
+							}
+							time.Sleep(2 * time.Second)
+						}
+					}
+				}()
+				return command.Wait()
+			})
+			defer stdout.Close()
+			defer stderr.Close()
 
 			if _, ok := os.LookupEnv("ARGO_DEBUG_PAUSE_AFTER"); ok {
 				for {
@@ -207,6 +214,36 @@ func NewEmissaryCommand() *cobra.Command {
 			return cmdErr // this is the error returned from cmd.Wait(), which maybe an exitError
 		},
 	}
+}
+
+func createCommand(name string, args []string, template *wfv1.Template) (*exec.Cmd, *os.File, *os.File, error) {
+	command := exec.Command(name, args...)
+	command.Env = os.Environ()
+	command.SysProcAttr = &syscall.SysProcAttr{}
+	osspecific.Setpgid(command.SysProcAttr)
+	command.Stdout = os.Stdout
+	command.Stderr = os.Stderr
+
+	var stdout *os.File
+	var stderr *os.File
+	var err error
+	// this may not be that important an optimisation, except for very long logs we don't want to capture
+	if includeScriptOutput || template.SaveLogsAsArtifact() {
+		logger.Info("capturing logs")
+		stdout, err = os.OpenFile(varRunArgo+"/ctr/"+containerName+"/stdout", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("failed to open stdout: %w", err)
+
+		}
+		command.Stdout = io.MultiWriter(os.Stdout, stdout)
+		stderr, err = os.OpenFile(varRunArgo+"/ctr/"+containerName+"/stderr", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("failed to open stderr: %w", err)
+
+		}
+		command.Stderr = io.MultiWriter(os.Stderr, stderr)
+	}
+	return command, stdout, stderr, nil
 }
 
 func saveArtifact(srcPath string) error {

@@ -83,10 +83,10 @@ class Condition(ModelNormal):
         return {
             'last_transition_time': (datetime,),  # noqa: E501
             'message': (str,),  # noqa: E501
-            'observed_generation': (str,),  # noqa: E501
             'reason': (str,),  # noqa: E501
             'status': (str,),  # noqa: E501
             'type': (str,),  # noqa: E501
+            'observed_generation': (int,),  # noqa: E501
         }
 
     @cached_property
@@ -97,10 +97,10 @@ class Condition(ModelNormal):
     attribute_map = {
         'last_transition_time': 'lastTransitionTime',  # noqa: E501
         'message': 'message',  # noqa: E501
-        'observed_generation': 'observedGeneration',  # noqa: E501
         'reason': 'reason',  # noqa: E501
         'status': 'status',  # noqa: E501
         'type': 'type',  # noqa: E501
+        'observed_generation': 'observedGeneration',  # noqa: E501
     }
 
     read_only_vars = {
@@ -110,8 +110,15 @@ class Condition(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, last_transition_time, message, reason, status, type, *args, **kwargs):  # noqa: E501
         """Condition - a model defined in OpenAPI
+
+        Args:
+            last_transition_time (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.
+            message (str): message is a human readable message indicating details about the transition. This may be an empty string.
+            reason (str): reason contains a programmatic identifier indicating the reason for the condition's last transition. Producers of specific condition types may define expected values and meanings for this field, and whether the values are considered a guaranteed API. The value should be a CamelCase string. This field may not be empty.
+            status (str): status of the condition, one of True, False, Unknown.
+            type (str): type of condition in CamelCase or in foo.example.com/CamelCase.
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -144,12 +151,7 @@ class Condition(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            last_transition_time (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
-            message (str): [optional]  # noqa: E501
-            observed_generation (str): [optional]  # noqa: E501
-            reason (str): [optional]  # noqa: E501
-            status (str): [optional]  # noqa: E501
-            type (str): [optional]  # noqa: E501
+            observed_generation (int): observedGeneration represents the .metadata.generation that the condition was set based upon. For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date with respect to the current state of the instance.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -177,6 +179,11 @@ class Condition(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
+        self.last_transition_time = last_transition_time
+        self.message = message
+        self.reason = reason
+        self.status = status
+        self.type = type
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -197,8 +204,15 @@ class Condition(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, *args, **kwargs):  # noqa: E501
+    def __init__(self, last_transition_time, message, reason, status, type, *args, **kwargs):  # noqa: E501
         """Condition - a model defined in OpenAPI
+
+        Args:
+            last_transition_time (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.
+            message (str): message is a human readable message indicating details about the transition. This may be an empty string.
+            reason (str): reason contains a programmatic identifier indicating the reason for the condition's last transition. Producers of specific condition types may define expected values and meanings for this field, and whether the values are considered a guaranteed API. The value should be a CamelCase string. This field may not be empty.
+            status (str): status of the condition, one of True, False, Unknown.
+            type (str): type of condition in CamelCase or in foo.example.com/CamelCase.
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -231,12 +245,7 @@ class Condition(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            last_transition_time (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
-            message (str): [optional]  # noqa: E501
-            observed_generation (str): [optional]  # noqa: E501
-            reason (str): [optional]  # noqa: E501
-            status (str): [optional]  # noqa: E501
-            type (str): [optional]  # noqa: E501
+            observed_generation (int): observedGeneration represents the .metadata.generation that the condition was set based upon. For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date with respect to the current state of the instance.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -262,6 +271,11 @@ class Condition(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
+        self.last_transition_time = last_transition_time
+        self.message = message
+        self.reason = reason
+        self.status = status
+        self.type = type
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

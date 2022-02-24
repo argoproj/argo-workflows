@@ -39,3 +39,4 @@ git-ask-pass.sh
 /.run/
 sdks/python/client/dist/*
 /v3/
+/cmd/argoexec/commands/test.txt

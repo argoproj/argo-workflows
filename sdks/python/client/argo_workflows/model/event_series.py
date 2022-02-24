@@ -83,7 +83,6 @@ class EventSeries(ModelNormal):
         return {
             'count': (int,),  # noqa: E501
             'last_observed_time': (datetime,),  # noqa: E501
-            'state': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -94,7 +93,6 @@ class EventSeries(ModelNormal):
     attribute_map = {
         'count': 'count',  # noqa: E501
         'last_observed_time': 'lastObservedTime',  # noqa: E501
-        'state': 'state',  # noqa: E501
     }
 
     read_only_vars = {
@@ -140,7 +138,6 @@ class EventSeries(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             count (int): Number of occurrences in this series up to the last heartbeat time. [optional]  # noqa: E501
             last_observed_time (datetime): MicroTime is version of Time with microsecond level precision.. [optional]  # noqa: E501
-            state (str): State of this Series: Ongoing or Finished Deprecated. Planned removal for 1.18. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -224,7 +221,6 @@ class EventSeries(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             count (int): Number of occurrences in this series up to the last heartbeat time. [optional]  # noqa: E501
             last_observed_time (datetime): MicroTime is version of Time with microsecond level precision.. [optional]  # noqa: E501
-            state (str): State of this Series: Ongoing or Finished Deprecated. Planned removal for 1.18. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
