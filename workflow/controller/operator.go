@@ -953,41 +953,28 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 		defer wfNodesLock.Unlock()
 		if node, ok := woc.wf.Status.Nodes[nodeID]; ok {
 			if newState := woc.assessNodeStatus(pod, &node); newState != nil {
-				woc.wf.Status.Nodes[nodeID] = *newState
-				woc.addOutputsToGlobalScope(node.Outputs)
-				if node.MemoizationStatus != nil {
-					if node.Succeeded() {
-						c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
-						err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
+				woc.addOutputsToGlobalScope(newState.Outputs)
+				if newState.MemoizationStatus != nil {
+					if newState.Succeeded() {
+						c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, newState.MemoizationStatus.CacheName)
+						err := c.Save(ctx, newState.MemoizationStatus.Key, newState.ID, newState.Outputs)
 						if err != nil {
-							woc.log.WithFields(log.Fields{"nodeID": node.ID}).WithError(err).Error("Failed to save node outputs to cache")
-							node.Phase = wfv1.NodeError
+							woc.log.WithFields(log.Fields{"nodeID": newState.ID}).WithError(err).Error("Failed to save node outputs to cache")
+							newState.Phase = wfv1.NodeError
+							newState.Message = err.Error()
 						}
 					}
 				}
-				if node.Phase == wfv1.NodeRunning {
+				if newState.Phase == wfv1.NodeRunning {
 					podRunningCondition.Status = metav1.ConditionTrue
 				}
+				woc.wf.Status.Nodes[nodeID] = *newState
 				woc.updated = true
-			}
-			node := woc.wf.Status.Nodes[nodeID]
-			if node.Type == wfv1.NodeTypePod {
-				if node.HostNodeName != pod.Spec.NodeName {
-					node.HostNodeName = pod.Spec.NodeName
-					woc.wf.Status.Nodes[nodeID] = node
-					woc.updated = true
-				}
-				podProgress := progress.PodProgress(pod, &node)
-				if podProgress.IsValid() && node.Progress != podProgress {
-					woc.log.WithField("progress", podProgress).Info("pod progress")
-					node.Progress = podProgress
-					woc.wf.Status.Nodes[nodeID] = node
-					woc.updated = true
-				}
-			}
-			if node.Fulfilled() && !node.IsDaemoned() {
-				if woc.shouldPrintPodSpec(node) {
-					printPodSpecLog(pod, woc.wf.Name)
+				// warning!  when the node completes, the daemoned flag will be unset, so we must check the old node
+				if !node.IsDaemoned() && !node.Completed() && newState.Completed() {
+					if woc.shouldPrintPodSpec(newState) {
+						printPodSpecLog(pod, woc.wf.Name)
+					}
 				}
 			}
 			switch pod.Status.Phase {
@@ -1068,7 +1055,7 @@ func recentlyStarted(node wfv1.NodeStatus) bool {
 }
 
 // shouldPrintPodSpec return eligible to print to the pod spec
-func (woc *wfOperationCtx) shouldPrintPodSpec(node wfv1.NodeStatus) bool {
+func (woc *wfOperationCtx) shouldPrintPodSpec(node *wfv1.NodeStatus) bool {
 	return woc.controller.Config.PodSpecLogStrategy.AllPods ||
 		(woc.controller.Config.PodSpecLogStrategy.FailedPod && node.FailedOrError())
 }
@@ -1128,58 +1115,59 @@ func printPodSpecLog(pod *apiv1.Pod, wfName string) {
 
 // assessNodeStatus compares the current state of a pod with its corresponding node
 // and returns the new node status if something changed
-func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
-	var newPhase wfv1.NodePhase
-	var newDaemonStatus *bool
-	var message string
-	updated := false
+func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus) *wfv1.NodeStatus {
+	new := old.DeepCopy()
+	tmpl := woc.GetNodeTemplate(old)
 	switch pod.Status.Phase {
 	case apiv1.PodPending:
-		newPhase = wfv1.NodePending
-		newDaemonStatus = pointer.BoolPtr(false)
-		message = getPendingReason(pod)
+		new.Phase = wfv1.NodePending
+		new.Message = getPendingReason(pod)
+		new.Daemoned = nil
 	case apiv1.PodSucceeded:
-		newPhase = wfv1.NodeSucceeded
-		newDaemonStatus = pointer.BoolPtr(false)
+		new.Phase = wfv1.NodeSucceeded
+		new.Daemoned = nil
 	case apiv1.PodFailed:
 		// ignore pod failure for daemoned steps
-		if node.IsDaemoned() {
-			newPhase = wfv1.NodeSucceeded
+		if tmpl.IsDaemon() {
+			new.Phase = wfv1.NodeSucceeded
 		} else {
-			newPhase, message = woc.inferFailedReason(pod)
-			woc.log.WithField("displayName", node.DisplayName).WithField("templateName", node.TemplateName).
-				WithField("pod", pod.Name).Infof("Pod failed: %s", message)
+			new.Phase, new.Message = woc.inferFailedReason(pod, tmpl)
 		}
-		newDaemonStatus = pointer.BoolPtr(false)
+		new.Daemoned = nil
 	case apiv1.PodRunning:
-		newPhase = wfv1.NodeRunning
-		tmpl := woc.findTemplate(pod)
-		if !node.Fulfilled() && tmpl != nil && tmpl.Daemon != nil && *tmpl.Daemon {
-			// pod is running and template is marked daemon. check if everything is ready
-			for _, ctrStatus := range pod.Status.ContainerStatuses {
-				if !ctrStatus.Ready {
-					return nil
+		// Daemons are a special case we need to understand the rules:
+		// A node transitions into "daemoned" only if it's a daemon template and it becomes running AND ready.
+		// A node will be unmarked "daemoned" when its boundary node completes, anywhere killDaemonedChildren is called.
+		if tmpl.IsDaemon() {
+			if !old.Fulfilled() {
+				// pod is running and template is marked daemon. check if everything is ready
+				for _, ctrStatus := range pod.Status.ContainerStatuses {
+					if !ctrStatus.Ready {
+						return nil
+					}
+				}
+				// proceed to mark node as running and daemoned
+				new.Phase = wfv1.NodeRunning
+				new.Daemoned = pointer.BoolPtr(true)
+				if !old.IsDaemoned() {
+					woc.log.WithField("nodeId", old.ID).Info("Node became daemoned")
 				}
 			}
-			// proceed to mark node status as running (and daemoned)
-			newPhase = wfv1.NodeRunning
-			newDaemonStatus = pointer.BoolPtr(true)
-			woc.log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
+		} else {
+			new.Phase = wfv1.NodeRunning
 		}
 		if tmpl != nil {
 			woc.cleanUpPod(pod, *tmpl)
 		}
 	default:
-		newPhase = wfv1.NodeError
-		message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.ObjectMeta.Name, pod.Status.Phase)
-		woc.log.WithField("displayName", node.DisplayName).WithField("templateName", node.TemplateName).
-			WithField("pod", pod.Name).Error(message)
+		new.Phase = wfv1.NodeError
+		new.Message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.ObjectMeta.Name, pod.Status.Phase)
 	}
 
 	// if it's ContainerSetTemplate pod then the inner container names should match to some node names,
 	// in this case need to update nodes according to container status
 	for _, c := range pod.Status.ContainerStatuses {
-		ctrNodeName := fmt.Sprintf("%s.%s", node.Name, c.Name)
+		ctrNodeName := fmt.Sprintf("%s.%s", old.Name, c.Name)
 		if woc.wf.GetNodeByName(ctrNodeName) == nil {
 			continue
 		}
@@ -1204,64 +1192,65 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		}
 	}
 
-	if !node.Completed() {
-		if newDaemonStatus != nil {
-			if !*newDaemonStatus {
-				// if the daemon status switched to false, we prefer to just unset daemoned status field
-				// (as opposed to setting it to false)
-				newDaemonStatus = nil
-			}
-			if (newDaemonStatus != nil && node.Daemoned == nil) || (newDaemonStatus == nil && node.Daemoned != nil) {
-				woc.log.Infof("Setting node %v daemoned: %v -> %v", node.ID, node.Daemoned, newDaemonStatus)
-				node.Daemoned = newDaemonStatus
-				updated = true
-				if pod.Status.PodIP != "" && pod.Status.PodIP != node.PodIP {
-					// only update Pod IP for daemoned nodes to reduce number of updates
-					woc.log.Infof("Updating daemon node %s IP %s -> %s", node.ID, node.PodIP, pod.Status.PodIP)
-					node.PodIP = pod.Status.PodIP
-				}
-			}
-		}
+	// only update Pod IP for daemoned nodes to reduce number of updates
+	if !new.Completed() && new.IsDaemoned() {
+		new.PodIP = pod.Status.PodIP
+	}
 
-		// we only need to update these values if the container transitions to complete
-		if newPhase.Fulfilled() {
-			// outputs are mixed between the annotation (parameters, artifacts, and result) and the pod's status (exit code)
-			if exitCode := getExitCode(pod); exitCode != nil {
-				woc.log.Infof("Updating node %s exit code %d", node.ID, *exitCode)
-				node.Outputs = &wfv1.Outputs{ExitCode: pointer.StringPtr(fmt.Sprintf("%d", int(*exitCode)))}
-				if outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]; ok {
-					woc.log.Infof("Setting node %v outputs: %s", node.ID, outputStr)
-					if err := json.Unmarshal([]byte(outputStr), node.Outputs); err != nil { // I don't expect an error to ever happen in production
-						node.Phase = wfv1.NodeError
-						node.Message = err.Error()
-					}
-				}
-			}
+	// both exit code and outputs maybe know before the pod terminates, we risk loosing them to pod being deleted
+	// if we do not capture them
+	if exitCode := getExitCode(pod); exitCode != nil {
+		if new.Outputs == nil {
+			new.Outputs = &wfv1.Outputs{}
 		}
+		new.Outputs.ExitCode = pointer.StringPtr(fmt.Sprint(*exitCode))
+	}
 
-		if node.Phase != newPhase {
-			woc.log.Infof("Updating node %s status %s -> %s", node.ID, node.Phase, newPhase)
-			// if we are transitioning from Pending to a different state, clear out pending message
-			if node.Phase == wfv1.NodePending {
-				node.Message = ""
-			}
-			updated = true
-			node.Phase = newPhase
+	if x, ok := pod.Annotations[common.AnnotationKeyOutputs]; ok {
+		if new.Outputs == nil {
+			new.Outputs = &wfv1.Outputs{}
 		}
-		if message != "" && node.Message != message {
-			woc.log.Infof("Updating node %s message: %s", node.ID, message)
-			updated = true
-			node.Message = message
+		if err := json.Unmarshal([]byte(x), new.Outputs); err != nil {
+			new.Phase = wfv1.NodeError
+			new.Message = err.Error()
 		}
 	}
-	if node.Fulfilled() && node.FinishedAt.IsZero() {
-		updated = true
-		node.FinishedAt = getLatestFinishedAt(pod)
-		node.ResourcesDuration = resource.DurationForPod(pod)
+
+	new.HostNodeName = pod.Spec.NodeName
+
+	if !new.Progress.IsValid() {
+		new.Progress = wfv1.ProgressDefault
 	}
-	if updated {
-		return node
+
+	if x, ok := pod.Annotations[common.AnnotationKeyProgress]; ok {
+		if p, ok := wfv1.ParseProgress(x); ok {
+			new.Progress = p
+		}
 	}
+
+	// if we are transitioning from Pending to a different state, clear out unchanged message
+	if old.Phase == wfv1.NodePending && new.Phase != wfv1.NodePending && old.Message == new.Message {
+		new.Message = ""
+	}
+
+	if new.Fulfilled() && new.FinishedAt.IsZero() {
+		new.FinishedAt = getLatestFinishedAt(pod)
+		new.ResourcesDuration = resource.DurationForPod(pod)
+	}
+
+	if !reflect.DeepEqual(old, new) {
+		log.WithField("nodeID", old.ID).
+			WithField("old.phase", old.Phase).
+			WithField("new.phase", new.Phase).
+			WithField("old.message", old.Message).
+			WithField("new.message", new.Message).
+			WithField("old.progress", old.Progress).
+			WithField("new.progress", new.Progress).
+			Info("node changed")
+		return new
+	}
+	log.WithField("nodeID", old.ID).
+		Info("node unchanged")
 	return nil
 }
 
@@ -1333,13 +1322,11 @@ func getPendingReason(pod *apiv1.Pod) string {
 
 // inferFailedReason returns metadata about a Failed pod to be used in its NodeStatus
 // Returns a tuple of the new phase and message
-func (woc *wfOperationCtx) inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
+func (woc *wfOperationCtx) inferFailedReason(pod *apiv1.Pod, tmpl *wfv1.Template) (wfv1.NodePhase, string) {
 	if pod.Status.Message != "" {
 		// Pod has a nice error message. Use that.
 		return wfv1.NodeFailed, pod.Status.Message
 	}
-
-	tmpl := woc.findTemplate(pod)
 
 	// We only get one message to set for the overall node status.
 	// If multiple containers failed, in order of preference:
@@ -2050,15 +2037,6 @@ func (woc *wfOperationCtx) hasDaemonNodes() bool {
 		}
 	}
 	return false
-}
-
-func (woc *wfOperationCtx) findTemplate(pod *apiv1.Pod) *wfv1.Template {
-	nodeName := pod.Annotations[common.AnnotationKeyNodeName]
-	node := woc.wf.GetNodeByName(nodeName)
-	if node == nil {
-		return nil // I don't expect this to happen in production, just in tests
-	}
-	return woc.GetNodeTemplate(node)
 }
 
 func (woc *wfOperationCtx) GetNodeTemplate(node *wfv1.NodeStatus) *wfv1.Template {
