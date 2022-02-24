@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	authorizationv1 "k8s.io/api/authorization/v1"
@@ -16,6 +17,7 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
 
+	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb/mocks"
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -28,8 +30,8 @@ func Test_archivedWorkflowServer(t *testing.T) {
 	kubeClient := &kubefake.Clientset{}
 	wfClient := &argofake.Clientset{}
 	offloadNodeStatusRepo := &mocks.OffloadNodeStatusRepo{}
-	// offloadNodeStatusRepo.On("IsEnabled", mock.Anything).Return(true)
-	// offloadNodeStatusRepo.On("List", mock.Anything).Return(map[sqldb.UUIDVersion]v1alpha1.Nodes{}, nil)
+	offloadNodeStatusRepo.On("IsEnabled", mock.Anything).Return(true)
+	offloadNodeStatusRepo.On("List", mock.Anything).Return(map[sqldb.UUIDVersion]wfv1.Nodes{}, nil)
 	w := NewWorkflowArchiveServer(repo, offloadNodeStatusRepo)
 	allowed := true
 	kubeClient.AddReactor("create", "selfsubjectaccessreviews", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {

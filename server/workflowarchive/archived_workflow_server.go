@@ -34,10 +34,6 @@ func NewWorkflowArchiveServer(wfArchive sqldb.WorkflowArchive, offloadNodeStatus
 	return &archivedWorkflowServer{wfArchive: wfArchive, offloadNodeStatusRepo: offloadNodeStatusRepo, hydrator: hydrator.New(offloadNodeStatusRepo)}
 }
 
-// func NewWorkflowServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo) workflowpkg.WorkflowServiceServer {
-// 	return &workflowServer{instanceIDService, offloadNodeStatusRepo, hydrator.New(offloadNodeStatusRepo)}
-// }
-
 func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req *workflowarchivepkg.ListArchivedWorkflowsRequest) (*wfv1.WorkflowList, error) {
 	options := req.ListOptions
 	namePrefix := req.NamePrefix
@@ -211,9 +207,8 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 		return nil, err
 	}
 
-	// retry archive workflow needs wf passed
-
-	wf, err = util.RetryArchiveWorkflow(ctx, kubeClient, w.hydrator, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wf, wf.Name, req.RestartSuccessful, req.NodeFieldSelector)
+	// could send archive and name instead
+	wf, err = util.RetryArchiveWorkflow(ctx, kubeClient, w.hydrator, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), w.wfArchive, req.Uid, req.RestartSuccessful, req.NodeFieldSelector)
 	if err != nil {
 		return nil, err
 	}
