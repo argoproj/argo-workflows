@@ -275,6 +275,11 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			return
 		}
 
+		if err := woc.updateWorkflowMetadata(); err != nil {
+			woc.markWorkflowError(ctx, err)
+			return
+		}
+
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 
 		// Workflow will not be requeued if workflow steps are in pending state.
@@ -479,6 +484,31 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	if err != nil {
 		woc.log.WithError(err).Warn("failed to delete PVCs")
 	}
+}
+
+func (woc *wfOperationCtx) updateWorkflowMetadata() error {
+	if md := woc.execWf.Spec.WorkflowMetadata; md != nil {
+		for n, v := range md.Labels {
+			woc.wf.Labels[n] = v
+		}
+		for n, v := range md.Annotations {
+			woc.wf.Annotations[n] = v
+		}
+		env := env.GetFuncMap(template.EnvMap(woc.globalParams))
+		for n, f := range md.LabelsFrom {
+			r, err := expr.Eval(f.Expression, env)
+			if err != nil {
+				return fmt.Errorf("failed to evaluate label %q expression %q: %w", n, f.Expression, err)
+			}
+			v, ok := r.(string)
+			if !ok {
+				return fmt.Errorf("failed to evaluate label %q expression %q evaluted to %T but must be a string", n, f.Expression, r)
+			}
+			woc.wf.Labels[n] = v
+		}
+		woc.updated = true
+	}
+	return nil
 }
 
 func (woc *wfOperationCtx) getContainerRuntimeExecutor() string {
@@ -3497,7 +3527,7 @@ func (woc *wfOperationCtx) setStoredWfSpec() error {
 			return err
 		}
 		// Join WFT and WfDefault metadata to Workflow metadata.
-		wfutil.JoinWorkflowMetaData(&woc.wf.ObjectMeta, wftHolder.GetWorkflowMetadata(), &wfDefault.ObjectMeta)
+		wfutil.JoinWorkflowMetaData(&woc.wf.ObjectMeta, &wfDefault.ObjectMeta)
 		workflowTemplateSpec = wftHolder.GetWorkflowSpec()
 	}
 	// Update the Entrypoint, ShutdownStrategy and Suspend
