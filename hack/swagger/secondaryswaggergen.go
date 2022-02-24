@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/go-openapi/jsonreference"
-	"github.com/go-openapi/spec"
+	"k8s.io/kube-openapi/pkg/validation/spec"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )

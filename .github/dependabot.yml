@@ -6,7 +6,9 @@ updates:
       interval: "daily"
     ignore:
     - dependency-name: k8s.io/*
-    open-pull-requests-limit: 1
+    - dependency-name: github.com/grpc-ecosystem/*
+    - dependency-name: google.golang.org/grpc
+    open-pull-requests-limit: 2
 
   - package-ecosystem: "github-actions"
     directory: "/"

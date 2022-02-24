@@ -3,6 +3,7 @@ package executor
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -280,12 +281,30 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Temp
 	return 0, nil
 }
 
+var httpClientSkip *http.Client = &http.Client{
+	Transport: &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	},
+}
+
+var httpClients = map[bool]*http.Client{
+	false: http.DefaultClient,
+	true:  httpClientSkip,
+}
+
 func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTemplate *wfv1.HTTP) (*http.Response, error) {
 	request, err := http.NewRequest(httpTemplate.Method, httpTemplate.URL, bytes.NewBufferString(httpTemplate.Body))
 	if err != nil {
 		return nil, err
 	}
-	request = request.WithContext(ctx)
+
+	if httpTemplate.TimeoutSeconds != nil {
+		ctx, cancel := context.WithTimeout(ctx, time.Duration(*httpTemplate.TimeoutSeconds)*time.Second)
+		defer cancel()
+		request = request.WithContext(ctx)
+	} else {
+		request = request.WithContext(ctx)
+	}
 
 	for _, header := range httpTemplate.Headers {
 		value := header.Value
@@ -298,11 +317,8 @@ func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTem
 		}
 		request.Header.Add(header.Name, value)
 	}
-	httpClient := http.DefaultClient
-	if httpTemplate.TimeoutSeconds != nil {
-		httpClient.Timeout = time.Duration(*httpTemplate.TimeoutSeconds) * time.Second
-	}
-	response, err := httpClient.Do(request)
+
+	response, err := httpClients[httpTemplate.InsecureSkipVerify].Do(request)
 	if err != nil {
 		return nil, err
 	}

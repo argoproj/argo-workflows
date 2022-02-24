@@ -32,6 +32,7 @@ from argo_workflows.exceptions import ApiAttributeError
 def lazy_import():
     from argo_workflows.model.github_com_argoproj_labs_argo_dataflow_api_v1alpha1_db_sink import GithubComArgoprojLabsArgoDataflowApiV1alpha1DBSink
     from argo_workflows.model.github_com_argoproj_labs_argo_dataflow_api_v1alpha1_http_sink import GithubComArgoprojLabsArgoDataflowApiV1alpha1HTTPSink
+    from argo_workflows.model.github_com_argoproj_labs_argo_dataflow_api_v1alpha1_jet_stream_sink import GithubComArgoprojLabsArgoDataflowApiV1alpha1JetStreamSink
     from argo_workflows.model.github_com_argoproj_labs_argo_dataflow_api_v1alpha1_kafka_sink import GithubComArgoprojLabsArgoDataflowApiV1alpha1KafkaSink
     from argo_workflows.model.github_com_argoproj_labs_argo_dataflow_api_v1alpha1_log import GithubComArgoprojLabsArgoDataflowApiV1alpha1Log
     from argo_workflows.model.github_com_argoproj_labs_argo_dataflow_api_v1alpha1_s3_sink import GithubComArgoprojLabsArgoDataflowApiV1alpha1S3Sink
@@ -39,6 +40,7 @@ def lazy_import():
     from argo_workflows.model.github_com_argoproj_labs_argo_dataflow_api_v1alpha1_volume_sink import GithubComArgoprojLabsArgoDataflowApiV1alpha1VolumeSink
     globals()['GithubComArgoprojLabsArgoDataflowApiV1alpha1DBSink'] = GithubComArgoprojLabsArgoDataflowApiV1alpha1DBSink
     globals()['GithubComArgoprojLabsArgoDataflowApiV1alpha1HTTPSink'] = GithubComArgoprojLabsArgoDataflowApiV1alpha1HTTPSink
+    globals()['GithubComArgoprojLabsArgoDataflowApiV1alpha1JetStreamSink'] = GithubComArgoprojLabsArgoDataflowApiV1alpha1JetStreamSink
     globals()['GithubComArgoprojLabsArgoDataflowApiV1alpha1KafkaSink'] = GithubComArgoprojLabsArgoDataflowApiV1alpha1KafkaSink
     globals()['GithubComArgoprojLabsArgoDataflowApiV1alpha1Log'] = GithubComArgoprojLabsArgoDataflowApiV1alpha1Log
     globals()['GithubComArgoprojLabsArgoDataflowApiV1alpha1S3Sink'] = GithubComArgoprojLabsArgoDataflowApiV1alpha1S3Sink
@@ -100,7 +102,9 @@ class GithubComArgoprojLabsArgoDataflowApiV1alpha1Sink(ModelNormal):
         lazy_import()
         return {
             'db': (GithubComArgoprojLabsArgoDataflowApiV1alpha1DBSink,),  # noqa: E501
+            'dead_letter_queue': (bool,),  # noqa: E501
             'http': (GithubComArgoprojLabsArgoDataflowApiV1alpha1HTTPSink,),  # noqa: E501
+            'jetstream': (GithubComArgoprojLabsArgoDataflowApiV1alpha1JetStreamSink,),  # noqa: E501
             'kafka': (GithubComArgoprojLabsArgoDataflowApiV1alpha1KafkaSink,),  # noqa: E501
             'log': (GithubComArgoprojLabsArgoDataflowApiV1alpha1Log,),  # noqa: E501
             'name': (str,),  # noqa: E501
@@ -116,7 +120,9 @@ class GithubComArgoprojLabsArgoDataflowApiV1alpha1Sink(ModelNormal):
 
     attribute_map = {
         'db': 'db',  # noqa: E501
+        'dead_letter_queue': 'deadLetterQueue',  # noqa: E501
         'http': 'http',  # noqa: E501
+        'jetstream': 'jetstream',  # noqa: E501
         'kafka': 'kafka',  # noqa: E501
         'log': 'log',  # noqa: E501
         'name': 'name',  # noqa: E501
@@ -167,7 +173,9 @@ class GithubComArgoprojLabsArgoDataflowApiV1alpha1Sink(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             db (GithubComArgoprojLabsArgoDataflowApiV1alpha1DBSink): [optional]  # noqa: E501
+            dead_letter_queue (bool): [optional]  # noqa: E501
             http (GithubComArgoprojLabsArgoDataflowApiV1alpha1HTTPSink): [optional]  # noqa: E501
+            jetstream (GithubComArgoprojLabsArgoDataflowApiV1alpha1JetStreamSink): [optional]  # noqa: E501
             kafka (GithubComArgoprojLabsArgoDataflowApiV1alpha1KafkaSink): [optional]  # noqa: E501
             log (GithubComArgoprojLabsArgoDataflowApiV1alpha1Log): [optional]  # noqa: E501
             name (str): [optional]  # noqa: E501
@@ -256,7 +264,9 @@ class GithubComArgoprojLabsArgoDataflowApiV1alpha1Sink(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             db (GithubComArgoprojLabsArgoDataflowApiV1alpha1DBSink): [optional]  # noqa: E501
+            dead_letter_queue (bool): [optional]  # noqa: E501
             http (GithubComArgoprojLabsArgoDataflowApiV1alpha1HTTPSink): [optional]  # noqa: E501
+            jetstream (GithubComArgoprojLabsArgoDataflowApiV1alpha1JetStreamSink): [optional]  # noqa: E501
             kafka (GithubComArgoprojLabsArgoDataflowApiV1alpha1KafkaSink): [optional]  # noqa: E501
             log (GithubComArgoprojLabsArgoDataflowApiV1alpha1Log): [optional]  # noqa: E501
             name (str): [optional]  # noqa: E501

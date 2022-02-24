@@ -4,6 +4,7 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**arguments** | **str** |  | [optional] 
 **auto_delete** | **bool** |  | [optional] 
 **durable** | **bool** |  | [optional] 
 **exclusive** | **bool** |  | [optional] 

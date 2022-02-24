@@ -10,6 +10,7 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/utils/pointer"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -115,6 +116,9 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		Spec: apiv1.PodSpec{
 			RestartPolicy:    apiv1.RestartPolicyOnFailure,
 			ImagePullSecrets: woc.execWf.Spec.ImagePullSecrets,
+			SecurityContext: &apiv1.PodSecurityContext{
+				RunAsNonRoot: pointer.BoolPtr(true),
+			},
 			Containers: append(
 				pluginSidecars,
 				apiv1.Container{
@@ -124,11 +128,22 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 					Image:           woc.controller.executorImage(),
 					ImagePullPolicy: woc.controller.executorImagePullPolicy(),
 					Env:             envVars,
+
 					VolumeMounts: []apiv1.VolumeMount{{
 						Name:      "cert",
 						MountPath: "/etc/ssl/certs/ca-certificates",
 						ReadOnly:  true,
 					}},
+
+					SecurityContext: &apiv1.SecurityContext{
+						Capabilities: &apiv1.Capabilities{
+							Drop: []apiv1.Capability{"ALL"},
+						},
+						RunAsNonRoot:             pointer.BoolPtr(true),
+						RunAsUser:                pointer.Int64Ptr(8737),
+						ReadOnlyRootFilesystem:   pointer.BoolPtr(true),
+						AllowPrivilegeEscalation: pointer.BoolPtr(false),
+					},
 				},
 			),
 			Volumes: []apiv1.Volume{{

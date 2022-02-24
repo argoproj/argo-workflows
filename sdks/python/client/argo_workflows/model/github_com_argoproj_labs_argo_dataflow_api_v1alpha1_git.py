@@ -93,6 +93,7 @@ class GithubComArgoprojLabsArgoDataflowApiV1alpha1Git(ModelNormal):
             'command': ([str],),  # noqa: E501
             'env': ([EnvVar],),  # noqa: E501
             'image': (str,),  # noqa: E501
+            'insecure_ignore_host_key': (bool,),  # noqa: E501
             'password_secret': (SecretKeySelector,),  # noqa: E501
             'path': (str,),  # noqa: E501
             'ssh_private_key_secret': (SecretKeySelector,),  # noqa: E501
@@ -110,6 +111,7 @@ class GithubComArgoprojLabsArgoDataflowApiV1alpha1Git(ModelNormal):
         'command': 'command',  # noqa: E501
         'env': 'env',  # noqa: E501
         'image': 'image',  # noqa: E501
+        'insecure_ignore_host_key': 'insecureIgnoreHostKey',  # noqa: E501
         'password_secret': 'passwordSecret',  # noqa: E501
         'path': 'path',  # noqa: E501
         'ssh_private_key_secret': 'sshPrivateKeySecret',  # noqa: E501
@@ -162,6 +164,7 @@ class GithubComArgoprojLabsArgoDataflowApiV1alpha1Git(ModelNormal):
             command ([str]): [optional]  # noqa: E501
             env ([EnvVar]): [optional]  # noqa: E501
             image (str): [optional]  # noqa: E501
+            insecure_ignore_host_key (bool): [optional]  # noqa: E501
             password_secret (SecretKeySelector): [optional]  # noqa: E501
             path (str): +kubebuilder:default=.. [optional]  # noqa: E501
             ssh_private_key_secret (SecretKeySelector): [optional]  # noqa: E501
@@ -252,6 +255,7 @@ class GithubComArgoprojLabsArgoDataflowApiV1alpha1Git(ModelNormal):
             command ([str]): [optional]  # noqa: E501
             env ([EnvVar]): [optional]  # noqa: E501
             image (str): [optional]  # noqa: E501
+            insecure_ignore_host_key (bool): [optional]  # noqa: E501
             password_secret (SecretKeySelector): [optional]  # noqa: E501
             path (str): +kubebuilder:default=.. [optional]  # noqa: E501
             ssh_private_key_secret (SecretKeySelector): [optional]  # noqa: E501

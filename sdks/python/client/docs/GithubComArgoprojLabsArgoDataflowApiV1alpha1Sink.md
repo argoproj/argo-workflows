@@ -5,7 +5,9 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **db** | [**GithubComArgoprojLabsArgoDataflowApiV1alpha1DBSink**](GithubComArgoprojLabsArgoDataflowApiV1alpha1DBSink.md) |  | [optional] 
+**dead_letter_queue** | **bool** |  | [optional] 
 **http** | [**GithubComArgoprojLabsArgoDataflowApiV1alpha1HTTPSink**](GithubComArgoprojLabsArgoDataflowApiV1alpha1HTTPSink.md) |  | [optional] 
+**jetstream** | [**GithubComArgoprojLabsArgoDataflowApiV1alpha1JetStreamSink**](GithubComArgoprojLabsArgoDataflowApiV1alpha1JetStreamSink.md) |  | [optional] 
 **kafka** | [**GithubComArgoprojLabsArgoDataflowApiV1alpha1KafkaSink**](GithubComArgoprojLabsArgoDataflowApiV1alpha1KafkaSink.md) |  | [optional] 
 **log** | [**GithubComArgoprojLabsArgoDataflowApiV1alpha1Log**](GithubComArgoprojLabsArgoDataflowApiV1alpha1Log.md) |  | [optional] 
 **name** | **str** |  | [optional] 

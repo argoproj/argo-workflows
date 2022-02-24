@@ -7,6 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **auth_secret** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 
 **config** | **str** |  | [optional] 
+**filter** | [**IoArgoprojEventsV1alpha1EventSourceFilter**](IoArgoprojEventsV1alpha1EventSourceFilter.md) |  | [optional] 
 **insecure** | **bool** | Insecure determines the type of connection. | [optional] 
 **json_body** | **bool** |  | [optional] 
 **metadata** | **{str: (str,)}** |  | [optional] 

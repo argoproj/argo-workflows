@@ -30,8 +30,8 @@ from argo_workflows.exceptions import ApiAttributeError
 
 
 def lazy_import():
-    from argo_workflows.model.handler import Handler
-    globals()['Handler'] = Handler
+    from argo_workflows.model.lifecycle_handler import LifecycleHandler
+    globals()['LifecycleHandler'] = LifecycleHandler
 
 
 class Lifecycle(ModelNormal):
@@ -87,8 +87,8 @@ class Lifecycle(ModelNormal):
         """
         lazy_import()
         return {
-            'post_start': (Handler,),  # noqa: E501
-            'pre_stop': (Handler,),  # noqa: E501
+            'post_start': (LifecycleHandler,),  # noqa: E501
+            'pre_stop': (LifecycleHandler,),  # noqa: E501
         }
 
     @cached_property
@@ -142,8 +142,8 @@ class Lifecycle(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            post_start (Handler): [optional]  # noqa: E501
-            pre_stop (Handler): [optional]  # noqa: E501
+            post_start (LifecycleHandler): [optional]  # noqa: E501
+            pre_stop (LifecycleHandler): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -225,8 +225,8 @@ class Lifecycle(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            post_start (Handler): [optional]  # noqa: E501
-            pre_stop (Handler): [optional]  # noqa: E501
+            post_start (LifecycleHandler): [optional]  # noqa: E501
+            pre_stop (LifecycleHandler): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

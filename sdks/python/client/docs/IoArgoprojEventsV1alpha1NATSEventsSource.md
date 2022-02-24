@@ -6,6 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **auth** | [**IoArgoprojEventsV1alpha1NATSAuth**](IoArgoprojEventsV1alpha1NATSAuth.md) |  | [optional] 
 **connection_backoff** | [**IoArgoprojEventsV1alpha1Backoff**](IoArgoprojEventsV1alpha1Backoff.md) |  | [optional] 
+**filter** | [**IoArgoprojEventsV1alpha1EventSourceFilter**](IoArgoprojEventsV1alpha1EventSourceFilter.md) |  | [optional] 
 **json_body** | **bool** |  | [optional] 
 **metadata** | **{str: (str,)}** |  | [optional] 
 **subject** | **str** |  | [optional] 
