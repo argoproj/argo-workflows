@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/util/retry"
 	"net/http"
 	"time"
 
@@ -176,27 +178,33 @@ func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alp
 
 			ae.log.Info("Processing Patch")
 
-			_, err = taskSetInterface.Patch(ctx, ae.WorkflowName, types.MergePatchType, patch, metav1.PatchOptions{}, "status")
-			if apierr.IsForbidden(err) {
-				ae.log.Warn("forbidden to patch workflowtaskset/status,  falling back to less secure patching workflowtaskset, please updated your agent's RBAC")
-				_, err = taskSetInterface.Patch(ctx, ae.WorkflowName, types.MergePatchType, patch, metav1.PatchOptions{})
-			}
-			if err != nil {
-				isTransientErr := errors.IsTransientErr(err)
+			err = retry.OnError(wait.Backoff{
+				Duration: time.Second,
+				Factor:   2,
+				Jitter:   0.1,
+				Steps:    5,
+				Cap:      30 * time.Second,
+			}, errors.IsTransientErr, func() error {
+				_, err := taskSetInterface.Patch(ctx, ae.WorkflowName, types.MergePatchType, patch, metav1.PatchOptions{}, "status")
+				if apierr.IsForbidden(err) {
+					ae.log.Warn("forbidden to patch workflowtaskset/status,  falling back to less secure patching workflowtaskset, please updated your agent's RBAC")
+					_, err = taskSetInterface.Patch(ctx, ae.WorkflowName, types.MergePatchType, patch, metav1.PatchOptions{})
+				}
+				return err
+			})
+
+			if err != nil && !errors.IsTransientErr(err) {
 				ae.log.WithError(err).
-					WithField("is_transient_error", isTransientErr).
 					Error("TaskSet Patch Failed")
 
 				// If this is not a transient error, then it's likely that the contents of the patch have caused the error.
 				// To avoid a deadlock with the workflow overall, or an infinite loop, fail and propagate the error messages
 				// to the nodes.
 				// If this is a transient error, then simply do nothing and another patch will be retried in the next tick.
-				if !isTransientErr {
-					for node := range nodeResults {
-						nodeResults[node] = wfv1.NodeResult{
-							Phase:   wfv1.NodeError,
-							Message: fmt.Sprintf("HTTP request completed successfully but an error occurred when patching its result: %s", err),
-						}
+				for node := range nodeResults {
+					nodeResults[node] = wfv1.NodeResult{
+						Phase:   wfv1.NodeError,
+						Message: fmt.Sprintf("HTTP request completed successfully but an error occurred when patching its result: %s", err),
 					}
 				}
 				continue
