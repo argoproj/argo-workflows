@@ -95,6 +95,8 @@ class IoArgoprojEventsV1alpha1EventDependencyFilter(ModelNormal):
         return {
             'context': (IoArgoprojEventsV1alpha1EventContext,),  # noqa: E501
             'data': ([IoArgoprojEventsV1alpha1DataFilter],),  # noqa: E501
+            'data_logical_operator': (str,),  # noqa: E501
+            'expr_logical_operator': (str,),  # noqa: E501
             'exprs': ([IoArgoprojEventsV1alpha1ExprFilter],),  # noqa: E501
             'time': (IoArgoprojEventsV1alpha1TimeFilter,),  # noqa: E501
         }
@@ -107,6 +109,8 @@ class IoArgoprojEventsV1alpha1EventDependencyFilter(ModelNormal):
     attribute_map = {
         'context': 'context',  # noqa: E501
         'data': 'data',  # noqa: E501
+        'data_logical_operator': 'dataLogicalOperator',  # noqa: E501
+        'expr_logical_operator': 'exprLogicalOperator',  # noqa: E501
         'exprs': 'exprs',  # noqa: E501
         'time': 'time',  # noqa: E501
     }
@@ -154,6 +158,8 @@ class IoArgoprojEventsV1alpha1EventDependencyFilter(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             context (IoArgoprojEventsV1alpha1EventContext): [optional]  # noqa: E501
             data ([IoArgoprojEventsV1alpha1DataFilter]): [optional]  # noqa: E501
+            data_logical_operator (str): DataLogicalOperator defines how multiple Data filters (if defined) are evaluated together. Available values: and (&&), or (||) Is optional and if left blank treated as and (&&).. [optional]  # noqa: E501
+            expr_logical_operator (str): ExprLogicalOperator defines how multiple Exprs filters (if defined) are evaluated together. Available values: and (&&), or (||) Is optional and if left blank treated as and (&&).. [optional]  # noqa: E501
             exprs ([IoArgoprojEventsV1alpha1ExprFilter]): Exprs contains the list of expressions evaluated against the event payload.. [optional]  # noqa: E501
             time (IoArgoprojEventsV1alpha1TimeFilter): [optional]  # noqa: E501
         """
@@ -239,6 +245,8 @@ class IoArgoprojEventsV1alpha1EventDependencyFilter(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             context (IoArgoprojEventsV1alpha1EventContext): [optional]  # noqa: E501
             data ([IoArgoprojEventsV1alpha1DataFilter]): [optional]  # noqa: E501
+            data_logical_operator (str): DataLogicalOperator defines how multiple Data filters (if defined) are evaluated together. Available values: and (&&), or (||) Is optional and if left blank treated as and (&&).. [optional]  # noqa: E501
+            expr_logical_operator (str): ExprLogicalOperator defines how multiple Exprs filters (if defined) are evaluated together. Available values: and (&&), or (||) Is optional and if left blank treated as and (&&).. [optional]  # noqa: E501
             exprs ([IoArgoprojEventsV1alpha1ExprFilter]): Exprs contains the list of expressions evaluated against the event payload.. [optional]  # noqa: E501
             time (IoArgoprojEventsV1alpha1TimeFilter): [optional]  # noqa: E501
         """

@@ -15,6 +15,23 @@ export const NewVersionModal = ({version, dismiss}: {version: string; dismiss: (
             <h4 className='new-version-modal-title'>
                 It looks like <b>{version}</b> has just been installed!
             </h4>
+            <h5>v3.3</h5>
+            <ul className='new-version-modal-bullets'>
+                <li>
+                    Write your own types of step with{' '}
+                    <a href='https://argoproj.github.io/argo-workflows/plugins/?utm_source=argo-ui' target='_blank'>
+                        plugin templates
+                    </a>
+                    .
+                </li>
+                <li>Connect with the workflow using lifecycle hooks.</li>
+                <li>Pause steps in your workflow with Debug pause.</li>
+            </ul>
+            <p>
+                <a href='https://blog.argoproj.io/whats-new-in-argo-workflows-v3-3-dd051d2f1c7?utm_source=argo-ui' target='_blank'>
+                    Learn more
+                </a>
+            </p>
             <h5>v3.2</h5>
             <ul className='new-version-modal-bullets'>
                 <li>

@@ -490,7 +490,7 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 
 	for i, item := range items {
 		var newStep wfv1.WorkflowStep
-		newStepName, err := processItem(t, step.Name, i, item, &newStep)
+		newStepName, err := processItem(t, step.Name, i, item, &newStep, step.When)
 		if err != nil {
 			return nil, err
 		}

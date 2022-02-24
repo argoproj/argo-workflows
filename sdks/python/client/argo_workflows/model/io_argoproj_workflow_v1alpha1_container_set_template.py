@@ -31,8 +31,10 @@ from argo_workflows.exceptions import ApiAttributeError
 
 def lazy_import():
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_container_node import IoArgoprojWorkflowV1alpha1ContainerNode
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_container_set_retry_strategy import IoArgoprojWorkflowV1alpha1ContainerSetRetryStrategy
     from argo_workflows.model.volume_mount import VolumeMount
     globals()['IoArgoprojWorkflowV1alpha1ContainerNode'] = IoArgoprojWorkflowV1alpha1ContainerNode
+    globals()['IoArgoprojWorkflowV1alpha1ContainerSetRetryStrategy'] = IoArgoprojWorkflowV1alpha1ContainerSetRetryStrategy
     globals()['VolumeMount'] = VolumeMount
 
 
@@ -90,6 +92,7 @@ class IoArgoprojWorkflowV1alpha1ContainerSetTemplate(ModelNormal):
         lazy_import()
         return {
             'containers': ([IoArgoprojWorkflowV1alpha1ContainerNode],),  # noqa: E501
+            'retry_strategy': (IoArgoprojWorkflowV1alpha1ContainerSetRetryStrategy,),  # noqa: E501
             'volume_mounts': ([VolumeMount],),  # noqa: E501
         }
 
@@ -100,6 +103,7 @@ class IoArgoprojWorkflowV1alpha1ContainerSetTemplate(ModelNormal):
 
     attribute_map = {
         'containers': 'containers',  # noqa: E501
+        'retry_strategy': 'retryStrategy',  # noqa: E501
         'volume_mounts': 'volumeMounts',  # noqa: E501
     }
 
@@ -147,6 +151,7 @@ class IoArgoprojWorkflowV1alpha1ContainerSetTemplate(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            retry_strategy (IoArgoprojWorkflowV1alpha1ContainerSetRetryStrategy): [optional]  # noqa: E501
             volume_mounts ([VolumeMount]): [optional]  # noqa: E501
         """
 
@@ -233,6 +238,7 @@ class IoArgoprojWorkflowV1alpha1ContainerSetTemplate(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            retry_strategy (IoArgoprojWorkflowV1alpha1ContainerSetRetryStrategy): [optional]  # noqa: E501
             volume_mounts ([VolumeMount]): [optional]  # noqa: E501
         """
 

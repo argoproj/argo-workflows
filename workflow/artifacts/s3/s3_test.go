@@ -264,12 +264,7 @@ func TestLoadS3Artifact(t *testing.T) {
 }
 
 func TestSaveS3Artifact(t *testing.T) {
-	tempDir, err := ioutil.TempDir("", "example")
-	if err != nil {
-		panic(err)
-	}
-
-	defer os.RemoveAll(tempDir) // clean up
+	tempDir := t.TempDir()
 
 	tempFile := filepath.Join(tempDir, "tmpfile")
 	if err := ioutil.WriteFile(tempFile, []byte("temporary file's content"), 0o600); err != nil {

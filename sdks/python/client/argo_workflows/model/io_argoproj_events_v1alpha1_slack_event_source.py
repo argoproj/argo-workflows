@@ -30,8 +30,10 @@ from argo_workflows.exceptions import ApiAttributeError
 
 
 def lazy_import():
+    from argo_workflows.model.io_argoproj_events_v1alpha1_event_source_filter import IoArgoprojEventsV1alpha1EventSourceFilter
     from argo_workflows.model.io_argoproj_events_v1alpha1_webhook_context import IoArgoprojEventsV1alpha1WebhookContext
     from argo_workflows.model.secret_key_selector import SecretKeySelector
+    globals()['IoArgoprojEventsV1alpha1EventSourceFilter'] = IoArgoprojEventsV1alpha1EventSourceFilter
     globals()['IoArgoprojEventsV1alpha1WebhookContext'] = IoArgoprojEventsV1alpha1WebhookContext
     globals()['SecretKeySelector'] = SecretKeySelector
 
@@ -89,6 +91,7 @@ class IoArgoprojEventsV1alpha1SlackEventSource(ModelNormal):
         """
         lazy_import()
         return {
+            'filter': (IoArgoprojEventsV1alpha1EventSourceFilter,),  # noqa: E501
             'metadata': ({str: (str,)},),  # noqa: E501
             'signing_secret': (SecretKeySelector,),  # noqa: E501
             'token': (SecretKeySelector,),  # noqa: E501
@@ -101,6 +104,7 @@ class IoArgoprojEventsV1alpha1SlackEventSource(ModelNormal):
 
 
     attribute_map = {
+        'filter': 'filter',  # noqa: E501
         'metadata': 'metadata',  # noqa: E501
         'signing_secret': 'signingSecret',  # noqa: E501
         'token': 'token',  # noqa: E501
@@ -148,6 +152,7 @@ class IoArgoprojEventsV1alpha1SlackEventSource(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            filter (IoArgoprojEventsV1alpha1EventSourceFilter): [optional]  # noqa: E501
             metadata ({str: (str,)}): [optional]  # noqa: E501
             signing_secret (SecretKeySelector): [optional]  # noqa: E501
             token (SecretKeySelector): [optional]  # noqa: E501
@@ -233,6 +238,7 @@ class IoArgoprojEventsV1alpha1SlackEventSource(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            filter (IoArgoprojEventsV1alpha1EventSourceFilter): [optional]  # noqa: E501
             metadata ({str: (str,)}): [optional]  # noqa: E501
             signing_secret (SecretKeySelector): [optional]  # noqa: E501
             token (SecretKeySelector): [optional]  # noqa: E501

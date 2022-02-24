@@ -31,7 +31,9 @@ from argo_workflows.exceptions import ApiAttributeError
 
 def lazy_import():
     from argo_workflows.model.io_argoproj_events_v1alpha1_event_dependency_filter import IoArgoprojEventsV1alpha1EventDependencyFilter
+    from argo_workflows.model.io_argoproj_events_v1alpha1_event_dependency_transformer import IoArgoprojEventsV1alpha1EventDependencyTransformer
     globals()['IoArgoprojEventsV1alpha1EventDependencyFilter'] = IoArgoprojEventsV1alpha1EventDependencyFilter
+    globals()['IoArgoprojEventsV1alpha1EventDependencyTransformer'] = IoArgoprojEventsV1alpha1EventDependencyTransformer
 
 
 class IoArgoprojEventsV1alpha1EventDependency(ModelNormal):
@@ -90,7 +92,9 @@ class IoArgoprojEventsV1alpha1EventDependency(ModelNormal):
             'event_name': (str,),  # noqa: E501
             'event_source_name': (str,),  # noqa: E501
             'filters': (IoArgoprojEventsV1alpha1EventDependencyFilter,),  # noqa: E501
+            'filters_logical_operator': (str,),  # noqa: E501
             'name': (str,),  # noqa: E501
+            'transform': (IoArgoprojEventsV1alpha1EventDependencyTransformer,),  # noqa: E501
         }
 
     @cached_property
@@ -102,7 +106,9 @@ class IoArgoprojEventsV1alpha1EventDependency(ModelNormal):
         'event_name': 'eventName',  # noqa: E501
         'event_source_name': 'eventSourceName',  # noqa: E501
         'filters': 'filters',  # noqa: E501
+        'filters_logical_operator': 'filtersLogicalOperator',  # noqa: E501
         'name': 'name',  # noqa: E501
+        'transform': 'transform',  # noqa: E501
     }
 
     read_only_vars = {
@@ -149,7 +155,9 @@ class IoArgoprojEventsV1alpha1EventDependency(ModelNormal):
             event_name (str): [optional]  # noqa: E501
             event_source_name (str): [optional]  # noqa: E501
             filters (IoArgoprojEventsV1alpha1EventDependencyFilter): [optional]  # noqa: E501
+            filters_logical_operator (str): FiltersLogicalOperator defines how different filters are evaluated together. Available values: and (&&), or (||) Is optional and if left blank treated as and (&&).. [optional]  # noqa: E501
             name (str): [optional]  # noqa: E501
+            transform (IoArgoprojEventsV1alpha1EventDependencyTransformer): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -234,7 +242,9 @@ class IoArgoprojEventsV1alpha1EventDependency(ModelNormal):
             event_name (str): [optional]  # noqa: E501
             event_source_name (str): [optional]  # noqa: E501
             filters (IoArgoprojEventsV1alpha1EventDependencyFilter): [optional]  # noqa: E501
+            filters_logical_operator (str): FiltersLogicalOperator defines how different filters are evaluated together. Available values: and (&&), or (||) Is optional and if left blank treated as and (&&).. [optional]  # noqa: E501
             name (str): [optional]  # noqa: E501
+            transform (IoArgoprojEventsV1alpha1EventDependencyTransformer): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

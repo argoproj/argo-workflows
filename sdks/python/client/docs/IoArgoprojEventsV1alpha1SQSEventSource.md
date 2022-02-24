@@ -5,6 +5,9 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **access_key** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 
+**dlq** | **bool** |  | [optional] 
+**endpoint** | **str** |  | [optional] 
+**filter** | [**IoArgoprojEventsV1alpha1EventSourceFilter**](IoArgoprojEventsV1alpha1EventSourceFilter.md) |  | [optional] 
 **json_body** | **bool** |  | [optional] 
 **metadata** | **{str: (str,)}** |  | [optional] 
 **queue** | **str** |  | [optional] 
