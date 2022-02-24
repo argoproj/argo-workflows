@@ -1016,6 +1016,7 @@ func (wfc *WorkflowController) newPodInformer(ctx context.Context) cache.SharedI
 					diff.LogChanges(oldPod, newPod)
 					return
 				}
+				err = wfc.enqueueWfFromPodLabel(newVal)
 				if err != nil {
 					log.WithField("key", key).WithError(err).Warn("could not enqueue workflow from pod label on add")
 					return
