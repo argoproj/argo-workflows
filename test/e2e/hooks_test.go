@@ -53,7 +53,7 @@ spec:
 		return strings.Contains(status.Name, "hook")
 	}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 
-		assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase, )
+		assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
 	})
 }
 
@@ -90,7 +90,7 @@ spec:
 		return strings.Contains(status.Name, "hook")
 	}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 
-		assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase, )
+		assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
 	})
 }
 
