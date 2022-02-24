@@ -255,7 +255,7 @@ func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNa
 			Labels:      wftmpl.ObjectMeta.Labels,
 			Annotations: wftmpl.ObjectMeta.Annotations,
 		},
-		Spec: wftmpl.Spec.WorkflowSpec,
+		Spec: wftmpl.Spec,
 	}
 	opts.IgnoreEntrypoint = wf.Spec.Entrypoint == ""
 	opts.WorkflowTemplateValidation = true
@@ -273,7 +273,7 @@ func ValidateClusterWorkflowTemplate(wftmplGetter templateresolution.WorkflowTem
 			Labels:      cwftmpl.ObjectMeta.Labels,
 			Annotations: cwftmpl.ObjectMeta.Annotations,
 		},
-		Spec: cwftmpl.Spec.WorkflowSpec,
+		Spec: cwftmpl.Spec,
 	}
 	opts.IgnoreEntrypoint = wf.Spec.Entrypoint == ""
 	opts.WorkflowTemplateValidation = true

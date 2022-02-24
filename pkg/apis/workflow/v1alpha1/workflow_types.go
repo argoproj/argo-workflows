@@ -385,6 +385,23 @@ type WorkflowSpec struct {
 	// Hooks holds the lifecycle hook which is invoked at lifecycle of
 	// step, irrespective of the success, failure, or error status of the primary step
 	Hooks LifecycleHooks `json:"hooks,omitempty" protobuf:"bytes,41,opt,name=hooks"`
+
+	// WorkflowMetadata contains some metadata of the workflow to be refer
+	WorkflowMetadata *WorkflowMetadata `json:"workflowMetadata,omitempty" protobuf:"bytes,42,opt,name=workflowMetadata"`
+}
+
+type LabelValueFrom struct {
+	Expression string `json:"expression" protobuf:"bytes,1,opt,name=expression"`
+}
+
+type WorkflowMetadata struct {
+	Labels      map[string]string         `json:"labels,omitempty" protobuf:"bytes,1,rep,name=labels"`
+	Annotations map[string]string         `json:"annotations,omitempty" protobuf:"bytes,2,rep,name=annotations"`
+	LabelsFrom  map[string]LabelValueFrom `json:"labelsFrom,omitempty" protobuf:"bytes,3,rep,name=labelsFrom"`
+}
+
+func (in *WorkflowMetadata) AsObjectMeta() *metav1.ObjectMeta {
+	return &metav1.ObjectMeta{Labels: in.Labels, Annotations: in.Annotations}
 }
 
 func (wfs *WorkflowSpec) GetExitHook(args Arguments) *LifecycleHook {

@@ -99,7 +99,7 @@ func (o *Operation) dispatch(ctx context.Context, wfeb wfv1.WorkflowEventBinding
 		if err != nil {
 			return nil, fmt.Errorf("failed to validate workflow template instanceid: %w", err)
 		}
-		wf := common.NewWorkflowFromWorkflowTemplate(tmpl.GetName(), tmpl.GetWorkflowMetadata(), ref.ClusterScope)
+		wf := common.NewWorkflowFromWorkflowTemplate(tmpl.GetName(), ref.ClusterScope)
 		o.instanceIDService.Label(wf)
 		err = o.populateWorkflowMetadata(wf, &submit.ObjectMeta)
 		if err != nil {
