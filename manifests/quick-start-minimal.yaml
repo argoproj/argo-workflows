@@ -435,6 +435,18 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
+  name: executor
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
   name: submit-workflow-template
 rules:
 - apiGroups:
@@ -455,59 +467,6 @@ rules:
   - workflows
   verbs:
   - create
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: workflow-role
-rules:
-- apiGroups:
-  - ""
-  resources:
-  - pods
-  verbs:
-  - get
-  - watch
-  - patch
-- apiGroups:
-  - ""
-  resources:
-  - pods/log
-  verbs:
-  - get
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - pods/exec
-  verbs:
-  - create
-- apiGroups:
-  - ""
-  resources:
-  - configmaps
-  verbs:
-  - create
-  - get
-  - update
-- apiGroups:
-  - argoproj.io
-  resources:
-  - workflows
-  verbs:
-  - create
-  - get
-- apiGroups:
-  - argoproj.io
-  resources:
-  - workflowtasksets
-  - workflowtasksets/finalizers
-  verbs:
-  - list
-  - watch
-  - get
-  - update
-  - patch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -543,16 +502,16 @@ rules:
   - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
+kind: RoleBinding
 metadata:
-  name: kubelet-executor
-rules:
-- apiGroups:
-  - ""
-  resources:
-  - nodes/proxy
-  verbs:
-  - get
+  name: agent-default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: agent
+subjects:
+- kind: ServiceAccount
+  name: default
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -581,6 +540,18 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
+  name: executor-default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: executor
+subjects:
+- kind: ServiceAccount
+  name: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
   name: github.com
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -594,11 +565,11 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: workflow-default-binding
+  name: workflow-manager-default
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: workflow-role
+  name: executor
 subjects:
 - kind: ServiceAccount
   name: default
@@ -627,19 +598,6 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: argo-server
-  namespace: argo
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: kubelet-executor-default
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: kubelet-executor
-subjects:
-- kind: ServiceAccount
-  name: default
   namespace: argo
 ---
 apiVersion: v1
