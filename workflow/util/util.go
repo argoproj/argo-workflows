@@ -894,7 +894,7 @@ func retryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrato
 	}
 
 	// workflow must be recreated on server if archived
-	if !retryArchive {
+	if retryArchive {
 		newWF, err = wfClient.Create(ctx, newWF, metav1.CreateOptions{})
 		if err != nil {
 			return nil, fmt.Errorf("unable to create workflow: %s", err)
