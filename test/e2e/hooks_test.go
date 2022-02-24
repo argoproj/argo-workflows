@@ -50,10 +50,7 @@ spec:
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
 			assert.Equal(t, status.Phase, v1alpha1.WorkflowSucceeded)
 		}).ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
-		if strings.Contains(status.Name, "hook") {
-			return true
-		}
-		return false
+		return strings.Contains(status.Name, "hook")
 	}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 
 		assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase, )
@@ -90,10 +87,7 @@ spec:
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
 			assert.Equal(t, status.Phase, v1alpha1.WorkflowSucceeded)
 		}).ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
-		if strings.Contains(status.Name, "hook") {
-			return true
-		}
-		return false
+		return strings.Contains(status.Name, "hook")
 	}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 
 		assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase, )
