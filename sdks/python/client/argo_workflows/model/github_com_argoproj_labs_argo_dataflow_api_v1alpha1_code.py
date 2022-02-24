@@ -81,6 +81,7 @@ class GithubComArgoprojLabsArgoDataflowApiV1alpha1Code(ModelNormal):
                 and the value is attribute type.
         """
         return {
+            'image': (str,),  # noqa: E501
             'runtime': (str,),  # noqa: E501
             'source': (str,),  # noqa: E501
         }
@@ -91,6 +92,7 @@ class GithubComArgoprojLabsArgoDataflowApiV1alpha1Code(ModelNormal):
 
 
     attribute_map = {
+        'image': 'image',  # noqa: E501
         'runtime': 'runtime',  # noqa: E501
         'source': 'source',  # noqa: E501
     }
@@ -136,6 +138,7 @@ class GithubComArgoprojLabsArgoDataflowApiV1alpha1Code(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            image (str): Image is used in preference to Runtime.. [optional]  # noqa: E501
             runtime (str): [optional]  # noqa: E501
             source (str): [optional]  # noqa: E501
         """
@@ -219,6 +222,7 @@ class GithubComArgoprojLabsArgoDataflowApiV1alpha1Code(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            image (str): Image is used in preference to Runtime.. [optional]  # noqa: E501
             runtime (str): [optional]  # noqa: E501
             source (str): [optional]  # noqa: E501
         """

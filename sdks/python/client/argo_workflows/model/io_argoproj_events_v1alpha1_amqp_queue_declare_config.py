@@ -81,6 +81,7 @@ class IoArgoprojEventsV1alpha1AMQPQueueDeclareConfig(ModelNormal):
                 and the value is attribute type.
         """
         return {
+            'arguments': (str,),  # noqa: E501
             'auto_delete': (bool,),  # noqa: E501
             'durable': (bool,),  # noqa: E501
             'exclusive': (bool,),  # noqa: E501
@@ -94,6 +95,7 @@ class IoArgoprojEventsV1alpha1AMQPQueueDeclareConfig(ModelNormal):
 
 
     attribute_map = {
+        'arguments': 'arguments',  # noqa: E501
         'auto_delete': 'autoDelete',  # noqa: E501
         'durable': 'durable',  # noqa: E501
         'exclusive': 'exclusive',  # noqa: E501
@@ -142,6 +144,7 @@ class IoArgoprojEventsV1alpha1AMQPQueueDeclareConfig(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            arguments (str): [optional]  # noqa: E501
             auto_delete (bool): [optional]  # noqa: E501
             durable (bool): [optional]  # noqa: E501
             exclusive (bool): [optional]  # noqa: E501
@@ -228,6 +231,7 @@ class IoArgoprojEventsV1alpha1AMQPQueueDeclareConfig(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            arguments (str): [optional]  # noqa: E501
             auto_delete (bool): [optional]  # noqa: E501
             durable (bool): [optional]  # noqa: E501
             exclusive (bool): [optional]  # noqa: E501

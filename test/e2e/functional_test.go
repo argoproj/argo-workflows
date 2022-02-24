@@ -1121,3 +1121,52 @@ spec:
 		})
 
 }
+
+func (s *FunctionalSuite) TestContainerSetRetryFail() {
+	s.Given().
+		Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: containerset-retry-success-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      containerSet:
+        containers:
+          - name: a
+            image: argoproj/argosay:v2
+            command: [sh, -c]
+            args: ['FILE=test.yml; EXITCODE=1; if test -f "$FILE"; then EXITCODE=0; else touch $FILE; fi; exit $EXITCODE']
+        retryStrategy:
+          retries: 2
+          duration: "5s"
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
+func (s *FunctionalSuite) TestContainerSetRetrySuccess() {
+	s.Given().
+		Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: containerset-no-retry-fail-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      containerSet:
+        containers:
+          - name: a
+            image: argoproj/argosay:v2
+            command: [sh, -c]
+            args: ['FILE=test.yml; EXITCODE=1; if test -f "$FILE"; then EXITCODE=0; else touch $FILE; fi; exit $EXITCODE']
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeFailed)
+}

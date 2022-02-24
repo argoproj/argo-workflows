@@ -31,9 +31,11 @@ from argo_workflows.exceptions import ApiAttributeError
 
 def lazy_import():
     from argo_workflows.model.se_linux_options import SELinuxOptions
+    from argo_workflows.model.seccomp_profile import SeccompProfile
     from argo_workflows.model.sysctl import Sysctl
     from argo_workflows.model.windows_security_context_options import WindowsSecurityContextOptions
     globals()['SELinuxOptions'] = SELinuxOptions
+    globals()['SeccompProfile'] = SeccompProfile
     globals()['Sysctl'] = Sysctl
     globals()['WindowsSecurityContextOptions'] = WindowsSecurityContextOptions
 
@@ -92,10 +94,12 @@ class PodSecurityContext(ModelNormal):
         lazy_import()
         return {
             'fs_group': (int,),  # noqa: E501
+            'fs_group_change_policy': (str,),  # noqa: E501
             'run_as_group': (int,),  # noqa: E501
             'run_as_non_root': (bool,),  # noqa: E501
             'run_as_user': (int,),  # noqa: E501
             'se_linux_options': (SELinuxOptions,),  # noqa: E501
+            'seccomp_profile': (SeccompProfile,),  # noqa: E501
             'supplemental_groups': ([int],),  # noqa: E501
             'sysctls': ([Sysctl],),  # noqa: E501
             'windows_options': (WindowsSecurityContextOptions,),  # noqa: E501
@@ -108,10 +112,12 @@ class PodSecurityContext(ModelNormal):
 
     attribute_map = {
         'fs_group': 'fsGroup',  # noqa: E501
+        'fs_group_change_policy': 'fsGroupChangePolicy',  # noqa: E501
         'run_as_group': 'runAsGroup',  # noqa: E501
         'run_as_non_root': 'runAsNonRoot',  # noqa: E501
         'run_as_user': 'runAsUser',  # noqa: E501
         'se_linux_options': 'seLinuxOptions',  # noqa: E501
+        'seccomp_profile': 'seccompProfile',  # noqa: E501
         'supplemental_groups': 'supplementalGroups',  # noqa: E501
         'sysctls': 'sysctls',  # noqa: E501
         'windows_options': 'windowsOptions',  # noqa: E501
@@ -158,13 +164,15 @@ class PodSecurityContext(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            fs_group (int): A special supplemental group that applies to all containers in a pod. Some volume types allow the Kubelet to change the ownership of that volume to be owned by the pod:  1. The owning GID will be the FSGroup 2. The setgid bit is set (new files created in the volume will be owned by FSGroup) 3. The permission bits are OR'd with rw-rw----  If unset, the Kubelet will not modify the ownership and permissions of any volume.. [optional]  # noqa: E501
-            run_as_group (int): The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container.. [optional]  # noqa: E501
+            fs_group (int): A special supplemental group that applies to all containers in a pod. Some volume types allow the Kubelet to change the ownership of that volume to be owned by the pod:  1. The owning GID will be the FSGroup 2. The setgid bit is set (new files created in the volume will be owned by FSGroup) 3. The permission bits are OR'd with rw-rw----  If unset, the Kubelet will not modify the ownership and permissions of any volume. Note that this field cannot be set when spec.os.name is windows.. [optional]  # noqa: E501
+            fs_group_change_policy (str): fsGroupChangePolicy defines behavior of changing ownership and permission of the volume before being exposed inside Pod. This field will only apply to volume types which support fsGroup based ownership(and permissions). It will have no effect on ephemeral volume types such as: secret, configmaps and emptydir. Valid values are \"OnRootMismatch\" and \"Always\". If not specified, \"Always\" is used. Note that this field cannot be set when spec.os.name is windows.. [optional]  # noqa: E501
+            run_as_group (int): The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container. Note that this field cannot be set when spec.os.name is windows.. [optional]  # noqa: E501
             run_as_non_root (bool): Indicates that the container must run as a non-root user. If true, the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does. If unset or false, no such validation will be performed. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.. [optional]  # noqa: E501
-            run_as_user (int): The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container.. [optional]  # noqa: E501
+            run_as_user (int): The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container. Note that this field cannot be set when spec.os.name is windows.. [optional]  # noqa: E501
             se_linux_options (SELinuxOptions): [optional]  # noqa: E501
-            supplemental_groups ([int]): A list of groups applied to the first process run in each container, in addition to the container's primary GID.  If unspecified, no groups will be added to any container.. [optional]  # noqa: E501
-            sysctls ([Sysctl]): Sysctls hold a list of namespaced sysctls used for the pod. Pods with unsupported sysctls (by the container runtime) might fail to launch.. [optional]  # noqa: E501
+            seccomp_profile (SeccompProfile): [optional]  # noqa: E501
+            supplemental_groups ([int]): A list of groups applied to the first process run in each container, in addition to the container's primary GID.  If unspecified, no groups will be added to any container. Note that this field cannot be set when spec.os.name is windows.. [optional]  # noqa: E501
+            sysctls ([Sysctl]): Sysctls hold a list of namespaced sysctls used for the pod. Pods with unsupported sysctls (by the container runtime) might fail to launch. Note that this field cannot be set when spec.os.name is windows.. [optional]  # noqa: E501
             windows_options (WindowsSecurityContextOptions): [optional]  # noqa: E501
         """
 
@@ -247,13 +255,15 @@ class PodSecurityContext(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            fs_group (int): A special supplemental group that applies to all containers in a pod. Some volume types allow the Kubelet to change the ownership of that volume to be owned by the pod:  1. The owning GID will be the FSGroup 2. The setgid bit is set (new files created in the volume will be owned by FSGroup) 3. The permission bits are OR'd with rw-rw----  If unset, the Kubelet will not modify the ownership and permissions of any volume.. [optional]  # noqa: E501
-            run_as_group (int): The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container.. [optional]  # noqa: E501
+            fs_group (int): A special supplemental group that applies to all containers in a pod. Some volume types allow the Kubelet to change the ownership of that volume to be owned by the pod:  1. The owning GID will be the FSGroup 2. The setgid bit is set (new files created in the volume will be owned by FSGroup) 3. The permission bits are OR'd with rw-rw----  If unset, the Kubelet will not modify the ownership and permissions of any volume. Note that this field cannot be set when spec.os.name is windows.. [optional]  # noqa: E501
+            fs_group_change_policy (str): fsGroupChangePolicy defines behavior of changing ownership and permission of the volume before being exposed inside Pod. This field will only apply to volume types which support fsGroup based ownership(and permissions). It will have no effect on ephemeral volume types such as: secret, configmaps and emptydir. Valid values are \"OnRootMismatch\" and \"Always\". If not specified, \"Always\" is used. Note that this field cannot be set when spec.os.name is windows.. [optional]  # noqa: E501
+            run_as_group (int): The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container. Note that this field cannot be set when spec.os.name is windows.. [optional]  # noqa: E501
             run_as_non_root (bool): Indicates that the container must run as a non-root user. If true, the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does. If unset or false, no such validation will be performed. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.. [optional]  # noqa: E501
-            run_as_user (int): The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container.. [optional]  # noqa: E501
+            run_as_user (int): The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container. Note that this field cannot be set when spec.os.name is windows.. [optional]  # noqa: E501
             se_linux_options (SELinuxOptions): [optional]  # noqa: E501
-            supplemental_groups ([int]): A list of groups applied to the first process run in each container, in addition to the container's primary GID.  If unspecified, no groups will be added to any container.. [optional]  # noqa: E501
-            sysctls ([Sysctl]): Sysctls hold a list of namespaced sysctls used for the pod. Pods with unsupported sysctls (by the container runtime) might fail to launch.. [optional]  # noqa: E501
+            seccomp_profile (SeccompProfile): [optional]  # noqa: E501
+            supplemental_groups ([int]): A list of groups applied to the first process run in each container, in addition to the container's primary GID.  If unspecified, no groups will be added to any container. Note that this field cannot be set when spec.os.name is windows.. [optional]  # noqa: E501
+            sysctls ([Sysctl]): Sysctls hold a list of namespaced sysctls used for the pod. Pods with unsupported sysctls (by the container runtime) might fail to launch. Note that this field cannot be set when spec.os.name is windows.. [optional]  # noqa: E501
             windows_options (WindowsSecurityContextOptions): [optional]  # noqa: E501
         """
 

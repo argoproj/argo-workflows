@@ -6,6 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **channels** | **[str]** |  | [optional] 
 **db** | **int** |  | [optional] 
+**filter** | [**IoArgoprojEventsV1alpha1EventSourceFilter**](IoArgoprojEventsV1alpha1EventSourceFilter.md) |  | [optional] 
 **host_address** | **str** |  | [optional] 
 **metadata** | **{str: (str,)}** |  | [optional] 
 **namespace** | **str** |  | [optional] 

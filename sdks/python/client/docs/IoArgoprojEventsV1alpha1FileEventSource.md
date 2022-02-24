@@ -6,6 +6,7 @@ FileEventSource describes an event-source for file related events.
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **event_type** | **str** |  | [optional] 
+**filter** | [**IoArgoprojEventsV1alpha1EventSourceFilter**](IoArgoprojEventsV1alpha1EventSourceFilter.md) |  | [optional] 
 **metadata** | **{str: (str,)}** |  | [optional] 
 **polling** | **bool** |  | [optional] 
 **watch_path_config** | [**IoArgoprojEventsV1alpha1WatchPathConfig**](IoArgoprojEventsV1alpha1WatchPathConfig.md) |  | [optional] 

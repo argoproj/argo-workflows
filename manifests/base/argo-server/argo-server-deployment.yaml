@@ -20,6 +20,7 @@ spec:
               drop:
                 - ALL
           args: [ server ]
+          env: []
           ports:
             - name: web
               containerPort: 2746

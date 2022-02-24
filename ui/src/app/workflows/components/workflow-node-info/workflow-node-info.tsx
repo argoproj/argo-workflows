@@ -69,7 +69,7 @@ interface Props {
 const AttributeRow = (attr: {title: string; value: any}) => (
     <div className='row white-box__details-row' key={attr.title}>
         <div className='columns small-4'>{attr.title}</div>
-        <div className='columns columns--narrower-height small-8' style={{whiteSpace: 'pre'}}>
+        <div className='columns columns--narrower-height small-8' style={{whiteSpace: 'pre-wrap'}}>
             {attr.value}
         </div>
     </div>

@@ -89,8 +89,8 @@ class PersistentVolumeClaimTemplate(ModelNormal):
         """
         lazy_import()
         return {
-            'metadata': (ObjectMeta,),  # noqa: E501
             'spec': (PersistentVolumeClaimSpec,),  # noqa: E501
+            'metadata': (ObjectMeta,),  # noqa: E501
         }
 
     @cached_property
@@ -99,8 +99,8 @@ class PersistentVolumeClaimTemplate(ModelNormal):
 
 
     attribute_map = {
-        'metadata': 'metadata',  # noqa: E501
         'spec': 'spec',  # noqa: E501
+        'metadata': 'metadata',  # noqa: E501
     }
 
     read_only_vars = {
@@ -110,8 +110,11 @@ class PersistentVolumeClaimTemplate(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, spec, *args, **kwargs):  # noqa: E501
         """PersistentVolumeClaimTemplate - a model defined in OpenAPI
+
+        Args:
+            spec (PersistentVolumeClaimSpec):
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -145,7 +148,6 @@ class PersistentVolumeClaimTemplate(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             metadata (ObjectMeta): [optional]  # noqa: E501
-            spec (PersistentVolumeClaimSpec): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -173,6 +175,7 @@ class PersistentVolumeClaimTemplate(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
+        self.spec = spec
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -193,8 +196,11 @@ class PersistentVolumeClaimTemplate(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, *args, **kwargs):  # noqa: E501
+    def __init__(self, spec, *args, **kwargs):  # noqa: E501
         """PersistentVolumeClaimTemplate - a model defined in OpenAPI
+
+        Args:
+            spec (PersistentVolumeClaimSpec):
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -228,7 +234,6 @@ class PersistentVolumeClaimTemplate(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             metadata (ObjectMeta): [optional]  # noqa: E501
-            spec (PersistentVolumeClaimSpec): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -254,6 +259,7 @@ class PersistentVolumeClaimTemplate(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
+        self.spec = spec
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

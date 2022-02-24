@@ -15,38 +15,35 @@ func TestUpdater(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Namespace: ns, Name: "wf"},
 		Status: wfv1.WorkflowStatus{
 			Nodes: wfv1.Nodes{
-				"pod-1": wfv1.NodeStatus{Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, Progress: wfv1.Progress("50/50")},
-				"pod-2": wfv1.NodeStatus{Type: wfv1.NodeTypePod, Progress: wfv1.Progress("50/150")},
-				"pod-3": wfv1.NodeStatus{Type: wfv1.NodeTypePod, Progress: wfv1.Progress("50/100")},
-				"wf":    wfv1.NodeStatus{Children: []string{"pod-1", "pod-2", "pod-3"}},
+				"pod-1": wfv1.NodeStatus{Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, Progress: wfv1.Progress("25/50")},
+				"pod-2": wfv1.NodeStatus{Phase: wfv1.NodeRunning, Type: wfv1.NodeTypePod, Progress: wfv1.Progress("50/150")},
+				"http":  wfv1.NodeStatus{Phase: wfv1.NodeFailed, Type: wfv1.NodeTypeHTTP},
+				"plug":  wfv1.NodeStatus{Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePlugin},
+				"dag":   wfv1.NodeStatus{Children: []string{"pod-1", "pod-2", "http", "plug"}},
 			},
 		},
 	}
 
 	UpdateProgress(wf)
 
-	assert.Equal(t, wfv1.Progress("50/50"), wf.Status.Nodes["pod-1"].Progress)
-	assert.Equal(t, wfv1.Progress("50/150"), wf.Status.Nodes["pod-2"].Progress)
-	assert.Equal(t, wfv1.Progress("50/100"), wf.Status.Nodes["pod-3"].Progress)
-	assert.Equal(t, wfv1.Progress("150/300"), wf.Status.Nodes["wf"].Progress)
-	assert.Equal(t, wfv1.Progress("150/300"), wf.Status.Progress)
+	nodes := wf.Status.Nodes
+	assert.Equal(t, wfv1.Progress("50/50"), nodes["pod-1"].Progress, "succeeded pod is completed")
+	assert.Equal(t, wfv1.Progress("50/150"), nodes["pod-2"].Progress, "running pod is unchanged")
+	assert.Equal(t, wfv1.Progress("0/1"), nodes["http"].Progress, "failed http is unchanged")
+	assert.Equal(t, wfv1.Progress("1/1"), nodes["plug"].Progress, "succeeded plug is completed")
+	assert.Equal(t, wfv1.Progress("101/202"), nodes["dag"].Progress, "dag is summed up")
+	assert.Equal(t, wfv1.Progress("101/202"), wf.Status.Progress, "wf is sum total")
 }
 
-func TestUpdaterWithHTTPNode(t *testing.T) {
-	ns := "my-ns"
-	wf := &wfv1.Workflow{
-		ObjectMeta: metav1.ObjectMeta{Namespace: ns, Name: "wf"},
-		Status: wfv1.WorkflowStatus{
-			Nodes: wfv1.Nodes{
-				"http": wfv1.NodeStatus{Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeHTTP, Progress: wfv1.Progress("1/1")},
-				"wf":   wfv1.NodeStatus{Children: []string{"http"}},
-			},
-		},
-	}
-
-	UpdateProgress(wf)
-
-	assert.Equal(t, wfv1.Progress("1/1"), wf.Status.Nodes["http"].Progress)
-	assert.Equal(t, wfv1.Progress("1/1"), wf.Status.Nodes["wf"].Progress)
-	assert.Equal(t, wfv1.Progress("1/1"), wf.Status.Progress)
+func Test_executes(t *testing.T) {
+	assert.False(t, executable(""))
+	assert.True(t, executable(wfv1.NodeTypePod))
+	assert.True(t, executable(wfv1.NodeTypeContainer))
+	assert.False(t, executable(wfv1.NodeTypeSteps))
+	assert.False(t, executable(wfv1.NodeTypeStepGroup))
+	assert.False(t, executable(wfv1.NodeTypeDAG))
+	assert.False(t, executable(wfv1.NodeTypeTaskGroup))
+	assert.True(t, executable(wfv1.NodeTypeSuspend))
+	assert.True(t, executable(wfv1.NodeTypeHTTP))
+	assert.True(t, executable(wfv1.NodeTypePlugin))
 }

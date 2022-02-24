@@ -7,6 +7,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**filter** | [**IoArgoprojEventsV1alpha1EventSourceFilter**](IoArgoprojEventsV1alpha1EventSourceFilter.md) |  |  [optional]
 **fqdn** | **String** |  |  [optional]
 **hubName** | **String** |  |  [optional]
 **metadata** | **Map&lt;String, String&gt;** |  |  [optional]

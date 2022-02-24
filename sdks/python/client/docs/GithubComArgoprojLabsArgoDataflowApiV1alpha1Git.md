@@ -8,6 +8,7 @@ Name | Type | Description | Notes
 **command** | **[str]** |  | [optional] 
 **env** | [**[EnvVar]**](EnvVar.md) |  | [optional] 
 **image** | **str** |  | [optional] 
+**insecure_ignore_host_key** | **bool** |  | [optional] 
 **password_secret** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 
 **path** | **str** | +kubebuilder:default&#x3D;. | [optional] 
 **ssh_private_key_secret** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 

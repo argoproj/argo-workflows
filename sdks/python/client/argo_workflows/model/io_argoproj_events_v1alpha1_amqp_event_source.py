@@ -36,6 +36,7 @@ def lazy_import():
     from argo_workflows.model.io_argoproj_events_v1alpha1_amqp_queue_declare_config import IoArgoprojEventsV1alpha1AMQPQueueDeclareConfig
     from argo_workflows.model.io_argoproj_events_v1alpha1_backoff import IoArgoprojEventsV1alpha1Backoff
     from argo_workflows.model.io_argoproj_events_v1alpha1_basic_auth import IoArgoprojEventsV1alpha1BasicAuth
+    from argo_workflows.model.io_argoproj_events_v1alpha1_event_source_filter import IoArgoprojEventsV1alpha1EventSourceFilter
     from argo_workflows.model.io_argoproj_events_v1alpha1_tls_config import IoArgoprojEventsV1alpha1TLSConfig
     from argo_workflows.model.secret_key_selector import SecretKeySelector
     globals()['IoArgoprojEventsV1alpha1AMQPConsumeConfig'] = IoArgoprojEventsV1alpha1AMQPConsumeConfig
@@ -44,6 +45,7 @@ def lazy_import():
     globals()['IoArgoprojEventsV1alpha1AMQPQueueDeclareConfig'] = IoArgoprojEventsV1alpha1AMQPQueueDeclareConfig
     globals()['IoArgoprojEventsV1alpha1Backoff'] = IoArgoprojEventsV1alpha1Backoff
     globals()['IoArgoprojEventsV1alpha1BasicAuth'] = IoArgoprojEventsV1alpha1BasicAuth
+    globals()['IoArgoprojEventsV1alpha1EventSourceFilter'] = IoArgoprojEventsV1alpha1EventSourceFilter
     globals()['IoArgoprojEventsV1alpha1TLSConfig'] = IoArgoprojEventsV1alpha1TLSConfig
     globals()['SecretKeySelector'] = SecretKeySelector
 
@@ -107,6 +109,7 @@ class IoArgoprojEventsV1alpha1AMQPEventSource(ModelNormal):
             'exchange_declare': (IoArgoprojEventsV1alpha1AMQPExchangeDeclareConfig,),  # noqa: E501
             'exchange_name': (str,),  # noqa: E501
             'exchange_type': (str,),  # noqa: E501
+            'filter': (IoArgoprojEventsV1alpha1EventSourceFilter,),  # noqa: E501
             'json_body': (bool,),  # noqa: E501
             'metadata': ({str: (str,)},),  # noqa: E501
             'queue_bind': (IoArgoprojEventsV1alpha1AMQPQueueBindConfig,),  # noqa: E501
@@ -129,6 +132,7 @@ class IoArgoprojEventsV1alpha1AMQPEventSource(ModelNormal):
         'exchange_declare': 'exchangeDeclare',  # noqa: E501
         'exchange_name': 'exchangeName',  # noqa: E501
         'exchange_type': 'exchangeType',  # noqa: E501
+        'filter': 'filter',  # noqa: E501
         'json_body': 'jsonBody',  # noqa: E501
         'metadata': 'metadata',  # noqa: E501
         'queue_bind': 'queueBind',  # noqa: E501
@@ -186,6 +190,7 @@ class IoArgoprojEventsV1alpha1AMQPEventSource(ModelNormal):
             exchange_declare (IoArgoprojEventsV1alpha1AMQPExchangeDeclareConfig): [optional]  # noqa: E501
             exchange_name (str): [optional]  # noqa: E501
             exchange_type (str): [optional]  # noqa: E501
+            filter (IoArgoprojEventsV1alpha1EventSourceFilter): [optional]  # noqa: E501
             json_body (bool): [optional]  # noqa: E501
             metadata ({str: (str,)}): [optional]  # noqa: E501
             queue_bind (IoArgoprojEventsV1alpha1AMQPQueueBindConfig): [optional]  # noqa: E501
@@ -281,6 +286,7 @@ class IoArgoprojEventsV1alpha1AMQPEventSource(ModelNormal):
             exchange_declare (IoArgoprojEventsV1alpha1AMQPExchangeDeclareConfig): [optional]  # noqa: E501
             exchange_name (str): [optional]  # noqa: E501
             exchange_type (str): [optional]  # noqa: E501
+            filter (IoArgoprojEventsV1alpha1EventSourceFilter): [optional]  # noqa: E501
             json_body (bool): [optional]  # noqa: E501
             metadata ({str: (str,)}): [optional]  # noqa: E501
             queue_bind (IoArgoprojEventsV1alpha1AMQPQueueBindConfig): [optional]  # noqa: E501

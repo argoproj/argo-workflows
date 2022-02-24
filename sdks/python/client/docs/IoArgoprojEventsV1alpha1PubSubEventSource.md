@@ -7,6 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **credential_secret** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 
 **delete_subscription_on_finish** | **bool** |  | [optional] 
+**filter** | [**IoArgoprojEventsV1alpha1EventSourceFilter**](IoArgoprojEventsV1alpha1EventSourceFilter.md) |  | [optional] 
 **json_body** | **bool** |  | [optional] 
 **metadata** | **{str: (str,)}** |  | [optional] 
 **project_id** | **str** |  | [optional] 

@@ -7,6 +7,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**arguments** | **String** |  |  [optional]
 **autoDelete** | **Boolean** |  |  [optional]
 **durable** | **Boolean** |  |  [optional]
 **exclusive** | **Boolean** |  |  [optional]

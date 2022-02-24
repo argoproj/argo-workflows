@@ -21,6 +21,15 @@ spec:
               value: "true"
 ```
 
+When using the [Helm chart](https://github.com/argoproj/argo-helm/tree/master/charts/argo-workflows), add this to your `values.yaml`:
+
+```yaml
+controller:
+  extraEnv:
+    - name: ARGO_EXECUTOR_PLUGINS
+      value: "true"
+```
+
 ## Template Executor
 
 This is a plugin that runs custom "plugin" templates, e.g. for non-pod tasks such as Tekton builds, Spark jobs, sending
@@ -55,7 +64,7 @@ curl http://localhost:4355//api/v1/template.execute -d \
       "hello": {}
     }
   }
-}' 
+}'
 # ...
 HTTP/1.1 200 OK
 {
@@ -70,11 +79,12 @@ HTTP/1.1 200 OK
 443, 8080, 8081, 8443. If you plan to publish your plugin, choose a random port number under 10,000 and create a PR to
 add your plugin. If not, use a port number greater than 10,000.
 
-We'll need to create a script that starts a HTTP server:
+We'll need to create a script that starts a HTTP server. Save this as `server.py`:
 
 ```python
 import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from pprint import pprint
 
 
 class Plugin(BaseHTTPRequestHandler):
@@ -94,6 +104,7 @@ class Plugin(BaseHTTPRequestHandler):
     def do_POST(self):
         if self.path == '/api/v1/template.execute':
             args = self.args()
+            pprint(args)
             if 'hello' in args['template'].get('plugin', {}):
                 self.reply({'node': {'phase': 'Succeeded', 'message': 'Hello template!'}})
             else:
@@ -119,6 +130,7 @@ Some things to note here:
 * If the response is `{}`, then the plugin is saying it cannot execute the plugin template, e.g. it is a Slack plugin,
   but the template is a Tekton job.
 * If the status code is 404, then the plugin will not be called again.
+* If you save the file as `plugin.*`, it will be copied to the sidecar container's `args` field. This is useful for building self-contained plugins in scripting languages like Python or Node.JS.
 
 Next, create a manifest named `plugin.yaml`:
 
@@ -132,6 +144,7 @@ spec:
     container:
       command:
         - python
+        - -u # disables output buffering
         - -c
       image: python:alpine3.6
       name: hello-executor-plugin
@@ -139,6 +152,7 @@ spec:
         - containerPort: 4355
       securityContext:
         runAsNonRoot: true
+        runAsUser: 65534 # nobody
       resources:
         requests:
           memory: "64Mi"
@@ -203,7 +217,7 @@ spec:
               key: URL
 ```
 
-Refer to the [Kubernetes Secret documentation] for secret best practices and security considerations
+Refer to the [Kubernetes Secret documentation](https://kubernetes.io/docs/concepts/configuration/secret/) for secret best practices and security considerations.
 
 ### Resources, Security Context
 
@@ -232,7 +246,7 @@ A plugin may fail as follows:
 
 * Connection/socket error - considered transient.
 * Timeout - considered transient.
-* 404 error - method is not supported by the plugin, as a result the method will not be called again.
+* 404 error - method is not supported by the plugin, as a result the method will not be called again (in the same workflow).
 * 503 error - considered transient.
 * Other 4xx/5xx errors - considered fatal.
 
@@ -275,7 +289,7 @@ kubectl get cm -l workflows.argoproj.io/configmap-type=ExecutorPlugin
 
 ## Examples and Community Contributed Plugins
 
-[Show examples and community contributed plugins](https://github.com/argoproj/argo-workflows/tree/master/plugins)
+[Show examples and community contributed plugins](https://github.com/argoproj-labs?q=argo+workflows+plugin&type=all&language=&sort=)
 .
 
 ## Publishing Your Plugin

@@ -38,3 +38,4 @@ git-ask-pass.sh
 /go-diagrams/
 /.run/
 sdks/python/client/dist/*
+/cmd/argoexec/commands/test.txt

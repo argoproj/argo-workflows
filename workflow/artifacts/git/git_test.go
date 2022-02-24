@@ -28,11 +28,10 @@ func TestGitArtifactDriverLoad_HTTPS(t *testing.T) {
 			t.Skip("not running an GITHUB_TOKEN not set")
 		}
 		_ = os.Remove("git-ask-pass.sh")
-		tmp, err := ioutil.TempDir("", "")
-		assert.NoError(t, err)
+		tmp := t.TempDir()
 		driver := &ArtifactDriver{Username: os.Getenv("GITHUB_TOKEN")}
 		assert.NotEmpty(t, driver.Username)
-		err = driver.Load(&wfv1.Artifact{
+		err := driver.Load(&wfv1.Artifact{
 			ArtifactLocation: wfv1.ArtifactLocation{
 				Git: &wfv1.GitArtifact{
 					Repo:     tt.url,
@@ -67,8 +66,7 @@ func TestGitArtifactDriverLoad_SSL(t *testing.T) {
 				t.Skip(key + " does not exist")
 			}
 			assert.NoError(t, err)
-			tmp, err := ioutil.TempDir("", "")
-			assert.NoError(t, err)
+			tmp := t.TempDir()
 			println(tmp)
 			driver := &ArtifactDriver{SSHPrivateKey: string(data)}
 			err = driver.Load(&wfv1.Artifact{

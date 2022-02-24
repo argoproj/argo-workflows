@@ -495,6 +495,9 @@ func (s *workflowServer) SetWorkflow(ctx context.Context, req *workflowpkg.Workf
 }
 
 func (s *workflowServer) LintWorkflow(ctx context.Context, req *workflowpkg.WorkflowLintRequest) (*wfv1.Workflow, error) {
+	if req.Workflow == nil {
+		return nil, fmt.Errorf("unable to get a workflow")
+	}
 	wfClient := auth.GetWfClient(ctx)
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
