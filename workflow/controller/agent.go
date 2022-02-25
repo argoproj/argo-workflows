@@ -165,7 +165,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 					ImagePullPolicy: woc.controller.executorImagePullPolicy(),
 					Env:             envVars,
 
-					VolumeMounts: woc.getCertVolumeMount(ctx, "cert"),
+					VolumeMounts: woc.getCertVolumeMount(ctx, "argo-workflows-agent-ca-certificates"),
 
 					SecurityContext: &apiv1.SecurityContext{
 						Capabilities: &apiv1.Capabilities{
@@ -178,7 +178,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 					},
 				},
 			),
-			Volumes: woc.getCertVolume(ctx, "cert"),
+			Volumes: woc.getCertVolume(ctx, "argo-workflows-agent-ca-certificates"),
 		},
 	}
 
