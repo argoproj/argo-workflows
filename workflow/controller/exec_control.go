@@ -92,7 +92,7 @@ func (woc *wfOperationCtx) killDaemonedChildren(nodeID string) {
 		if childNode.BoundaryID != nodeID {
 			continue
 		}
-		if childNode.Daemoned == nil || !*childNode.Daemoned {
+		if !childNode.IsDaemoned() {
 			continue
 		}
 		woc.controller.queuePodForCleanup(woc.wf.Namespace, childNode.ID, shutdownPod)
