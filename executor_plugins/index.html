@@ -2969,7 +2969,7 @@ Slack notifications.</p>
 <li>A <code>plugin.yaml</code> configuration file, that is turned into a config map so the controller can discover the plugin.</li>
 </ol>
 <p>A template executor plugin services HTTP POST requests on <code>/api/v1/template.execute</code>:</p>
-<div class="highlight"><pre><span></span><code>curl http://localhost:4355//api/v1/template.execute -d <span class="se">\</span>
+<div class="highlight"><pre><span></span><code>curl http://localhost:4355/api/v1/template.execute -d <span class="se">\</span>
 <span class="s1">&#39;{</span>
 <span class="s1">  &quot;workflow&quot;: {</span>
 <span class="s1">    &quot;metadata&quot;: {</span>
