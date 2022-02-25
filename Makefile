@@ -404,7 +404,7 @@ install: githooks
 ifneq ($(E2E_EXECUTOR),emissary)
 	# only change the executor from the default it we need to
 	kubectl patch cm/workflow-controller-configmap -p "{\"data\": {\"containerRuntimeExecutor\": \"$(E2E_EXECUTOR)\"}}"
-	kubectl apply -f manifests/quick-start/base/executor/$(E2E_EXECUTOR) -l app.kubernetes.io/part-of=argo
+	kubectl apply -f manifests/quick-start/base/executor/$(E2E_EXECUTOR)
 endif
 ifeq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml

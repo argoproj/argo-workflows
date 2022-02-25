@@ -452,6 +452,9 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
+  annotations:
+    workflows.argoproj.io/description: |
+      Recomended minimum permissions for the `emissary` executor.
   name: executor
 rules:
 - apiGroups:
@@ -603,7 +606,7 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: executor
+  name: workflow-manager
 subjects:
 - kind: ServiceAccount
   name: default

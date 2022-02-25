@@ -6,7 +6,7 @@ resources:
   - minio
   - webhooks
   - argo-server-sso-secret.yaml
-  - executor-rbac/emissary/executor-role.yaml
+  - executor/emissary/executor-role.yaml
   - executor-default-rolebinding.yaml
   - workflow-manager-role.yaml
   - workflow-manager-default-rolebinding.yaml
