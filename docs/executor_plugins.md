@@ -49,7 +49,7 @@ We need the following:
 A template executor plugin services HTTP POST requests on `/api/v1/template.execute`:
 
 ```shell
-curl http://localhost:4355//api/v1/template.execute -d \
+curl http://localhost:4355/api/v1/template.execute -d \
 '{
   "workflow": {
     "metadata": {
