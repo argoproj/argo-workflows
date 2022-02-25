@@ -15698,6 +15698,26 @@ spec:
                   - name
                   type: object
                 type: array
+              workflowMetadata:
+                properties:
+                  annotations:
+                    additionalProperties:
+                      type: string
+                    type: object
+                  labels:
+                    additionalProperties:
+                      type: string
+                    type: object
+                  labelsFrom:
+                    additionalProperties:
+                      properties:
+                        expression:
+                          type: string
+                      required:
+                      - expression
+                      type: object
+                    type: object
+                type: object
               workflowTemplateRef:
                 properties:
                   clusterScope:
@@ -40223,6 +40243,26 @@ spec:
                       - name
                       type: object
                     type: array
+                  workflowMetadata:
+                    properties:
+                      annotations:
+                        additionalProperties:
+                          type: string
+                        type: object
+                      labels:
+                        additionalProperties:
+                          type: string
+                        type: object
+                      labelsFrom:
+                        additionalProperties:
+                          properties:
+                            expression:
+                              type: string
+                          required:
+                          - expression
+                          type: object
+                        type: object
+                    type: object
                   workflowTemplateRef:
                     properties:
                       clusterScope:
