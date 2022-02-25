@@ -6,10 +6,14 @@ resources:
   - minio
   - webhooks
   - argo-server-sso-secret.yaml
-  - workflow-role.yaml
-  - kubelet-executor-clusterrole.yaml
-  - kubelet-executor-default-clusterrolebinding.yaml
-  - workflow-default-rolebinding.yaml
+  - executor/emissary/executor-role.yaml
+  - executor-default-rolebinding.yaml
+  - pod-manager-role.yaml
+  - pod-manager-default-rolebinding.yaml
+  - workflow-manager-role.yaml
+  - workflow-manager-default-rolebinding.yaml
+  - agent-role.yaml
+  - agent-default-rolebinding.yaml
   - cluster-workflow-template-rbac.yaml
   - artifact-repositories-configmap.yaml
 
