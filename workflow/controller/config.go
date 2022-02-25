@@ -10,7 +10,6 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/config"
-	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
@@ -24,9 +23,6 @@ func (wfc *WorkflowController) updateConfig(v interface{}) error {
 		return err
 	}
 	log.Info("Configuration:\n" + string(bytes))
-	if wfc.cliExecutorImage == "" && config.ExecutorImage == "" {
-		return errors.Errorf(errors.CodeBadRequest, "ConfigMap does not have executorImage")
-	}
 	wfc.Config = *config
 	if wfc.session != nil {
 		err := wfc.session.Close()
@@ -96,16 +92,14 @@ func (wfc *WorkflowController) executorImage() string {
 	if wfc.cliExecutorImage != "" {
 		return wfc.cliExecutorImage
 	}
-	return wfc.Config.ExecutorImage
+	return wfc.Config.GetExecutor().Image
 }
 
 // executorImagePullPolicy returns the imagePullPolicy to use for the workflow executor
 func (wfc *WorkflowController) executorImagePullPolicy() apiv1.PullPolicy {
 	if wfc.cliExecutorImagePullPolicy != "" {
 		return apiv1.PullPolicy(wfc.cliExecutorImagePullPolicy)
-	} else if wfc.Config.Executor != nil && wfc.Config.Executor.ImagePullPolicy != "" {
-		return wfc.Config.Executor.ImagePullPolicy
 	} else {
-		return apiv1.PullPolicy(wfc.Config.ExecutorImagePullPolicy)
+		return wfc.Config.GetExecutor().ImagePullPolicy
 	}
 }

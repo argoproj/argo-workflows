@@ -1115,7 +1115,7 @@ func (wfc *WorkflowController) GetManagedNamespace() string {
 	if wfc.managedNamespace != "" {
 		return wfc.managedNamespace
 	}
-	return wfc.Config.Namespace
+	return wfc.managedNamespace
 }
 
 func (wfc *WorkflowController) GetContainerRuntimeExecutor(labels labels.Labels) string {
