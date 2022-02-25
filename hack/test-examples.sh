@@ -3,6 +3,8 @@ set -eu -o pipefail
 
 # Load the configmaps that contains the parameter values used for certain examples.
 kubectl apply -f examples/configmaps/simple-parameters-configmap.yaml
+# Needed for examples/selected-executor-workflow.yaml.
+kubectl apply -f manifests/quick-start/base/executor/pns/executor-role.yaml
 
 echo "Checking for banned images..."
 grep -lR 'workflows.argoproj.io/test' examples/*  | while read f ; do
