@@ -8,6 +8,8 @@ resources:
   - argo-server-sso-secret.yaml
   - executor/emissary/executor-role.yaml
   - executor-default-rolebinding.yaml
+  - pod-manager-role.yaml
+  - pod-manager-default-rolebinding.yaml
   - workflow-manager-role.yaml
   - workflow-manager-default-rolebinding.yaml
   - agent-role.yaml
