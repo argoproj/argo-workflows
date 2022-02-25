@@ -2054,6 +2054,20 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#upgrading-to-v34" class="md-nav__link">
+    Upgrading to v3.4
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#06d4bf76f-fix-reduce-agent-permissions-fixes-7986-7987" class="md-nav__link">
+    06d4bf76f fix: Reduce agent permissions. Fixes #7986 (#7987)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#upgrading-to-v33" class="md-nav__link">
     Upgrading to v3.3
   </a>
@@ -2890,6 +2904,20 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#upgrading-to-v34" class="md-nav__link">
+    Upgrading to v3.4
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#06d4bf76f-fix-reduce-agent-permissions-fixes-7986-7987" class="md-nav__link">
+    06d4bf76f fix: Reduce agent permissions. Fixes #7986 (#7987)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#upgrading-to-v33" class="md-nav__link">
     Upgrading to v3.3
   </a>
@@ -3066,6 +3094,23 @@
 <h1 id="upgrading">Upgrading<a class="headerlink" href="#upgrading" title="Permanent link">&para;</a></h1>
 <p>Breaking changes  typically (sometimes we don't realise they are breaking) have "!" in the commit message, as per
 the <a href="https://www.conventionalcommits.org/en/v1.0.0/#summary">conventional commits</a>.</p>
+<h3 id="upgrading-to-v34">Upgrading to v3.4<a class="headerlink" href="#upgrading-to-v34" title="Permanent link">&para;</a></h3>
+<h3 id="06d4bf76f-fix-reduce-agent-permissions-fixes-7986-7987"><a href="https://github.com/argoproj/argo-workflows/commit/06d4bf76f">06d4bf76f</a> fix: Reduce agent permissions. Fixes #7986 (#7987)<a class="headerlink" href="#06d4bf76f-fix-reduce-agent-permissions-fixes-7986-7987" title="Permanent link">&para;</a></h3>
+<p>The PR changes the permissions used by the agent to report back the outcome of HTTP template requests. The permission <code>patch workflowtasksets/status</code> replaces <code>patch workflowtasksets</code>, for example:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rbac.authorization.k8s.io/v1</span><span class="w"></span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Role</span><span class="w"></span>
+<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">agent</span><span class="w"></span>
+<span class="nt">rules</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">apiGroups</span><span class="p">:</span><span class="w"></span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io</span><span class="w"></span>
+<span class="w">    </span><span class="nt">resources</span><span class="p">:</span><span class="w"></span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflowtasksets/status</span><span class="w"></span>
+<span class="w">    </span><span class="nt">verbs</span><span class="p">:</span><span class="w"></span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">patch</span><span class="w"></span>
+</code></pre></div>
+<p>Workflows running during any upgrade should be give both permissions.</p>
+<p>See <a href="https://github.com/argoproj/argo-workflows/issues/8013">#8013</a>.</p>
 <h2 id="upgrading-to-v33">Upgrading to v3.3<a class="headerlink" href="#upgrading-to-v33" title="Permanent link">&para;</a></h2>
 <h3 id="fce82d572-feat-remove-pod-workers-7837"><a href="https://github.com/argoproj/argo-workflows/commit/fce82d5727b89cfe49e8e3568fff40725bd43734">fce82d572</a> feat: Remove pod workers (#7837)<a class="headerlink" href="#fce82d572-feat-remove-pod-workers-7837" title="Permanent link">&para;</a></h3>
 <p>This PR removes pod workers from the code, the pod informer directly writes into the workflow queue. As a result the <code>--pod-workers</code> flag has been removed. </p>
