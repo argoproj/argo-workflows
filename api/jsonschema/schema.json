@@ -4852,7 +4852,7 @@
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
         },
         "spec": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplateSpec"
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowSpec"
         }
       },
       "required": [
@@ -5909,6 +5909,17 @@
           "type": "array"
         }
       },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.LabelValueFrom": {
+      "properties": {
+        "expression": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "expression"
+      ],
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.LabelValues": {
@@ -7720,6 +7731,29 @@
       ],
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.WorkflowMetadata": {
+      "properties": {
+        "annotations": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "labelsFrom": {
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LabelValueFrom"
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.WorkflowResubmitRequest": {
       "properties": {
         "memoized": {
@@ -7982,6 +8016,10 @@
           "x-kubernetes-patch-merge-key": "name",
           "x-kubernetes-patch-strategy": "merge"
         },
+        "workflowMetadata": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowMetadata",
+          "description": "WorkflowMetadata contains some metadata of the workflow to be refer"
+        },
         "workflowTemplateRef": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplateRef",
           "description": "WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution"
@@ -8223,7 +8261,7 @@
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
         },
         "spec": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplateSpec"
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowSpec"
         }
       },
       "required": [
@@ -8307,211 +8345,6 @@
         "name": {
           "description": "Name is the resource name of the workflow template.",
           "type": "string"
-        }
-      },
-      "type": "object"
-    },
-    "io.argoproj.workflow.v1alpha1.WorkflowTemplateSpec": {
-      "description": "WorkflowTemplateSpec is a spec of WorkflowTemplate.",
-      "properties": {
-        "activeDeadlineSeconds": {
-          "description": "Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the io.argoproj.workflow.v1alpha1. A value of zero is used to terminate a Running workflow",
-          "type": "integer"
-        },
-        "affinity": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.Affinity",
-          "description": "Affinity sets the scheduling constraints for all pods in the io.argoproj.workflow.v1alpha1. Can be overridden by an affinity specified in the template"
-        },
-        "archiveLogs": {
-          "description": "ArchiveLogs indicates if the container logs should be archived",
-          "type": "boolean"
-        },
-        "arguments": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments",
-          "description": "Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{io.argoproj.workflow.v1alpha1.parameters.myparam}}"
-        },
-        "artifactRepositoryRef": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactRepositoryRef",
-          "description": "ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config."
-        },
-        "automountServiceAccountToken": {
-          "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.",
-          "type": "boolean"
-        },
-        "dnsConfig": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.PodDNSConfig",
-          "description": "PodDNSConfig defines the DNS parameters of a pod in addition to those generated from DNSPolicy."
-        },
-        "dnsPolicy": {
-          "description": "Set DNS policy for the pod. Defaults to \"ClusterFirst\". Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'. DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy. To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'.",
-          "type": "string"
-        },
-        "entrypoint": {
-          "description": "Entrypoint is a template reference to the starting point of the io.argoproj.workflow.v1alpha1.",
-          "type": "string"
-        },
-        "executor": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorConfig",
-          "description": "Executor holds configurations of executor containers of the io.argoproj.workflow.v1alpha1."
-        },
-        "hooks": {
-          "additionalProperties": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LifecycleHook"
-          },
-          "description": "Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step",
-          "type": "object"
-        },
-        "hostAliases": {
-          "items": {
-            "$ref": "#/definitions/io.k8s.api.core.v1.HostAlias"
-          },
-          "type": "array",
-          "x-kubernetes-patch-merge-key": "ip",
-          "x-kubernetes-patch-strategy": "merge"
-        },
-        "hostNetwork": {
-          "description": "Host networking requested for this workflow pod. Default to false.",
-          "type": "boolean"
-        },
-        "imagePullSecrets": {
-          "description": "ImagePullSecrets is a list of references to secrets in the same namespace to use for pulling any images in pods that reference this ServiceAccount. ImagePullSecrets are distinct from Secrets because Secrets can be mounted in the pod, but ImagePullSecrets are only accessed by the kubelet. More info: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod",
-          "items": {
-            "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
-          },
-          "type": "array",
-          "x-kubernetes-patch-merge-key": "name",
-          "x-kubernetes-patch-strategy": "merge"
-        },
-        "metrics": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metrics",
-          "description": "Metrics are a list of metrics emitted from this Workflow"
-        },
-        "nodeSelector": {
-          "additionalProperties": {
-            "type": "string"
-          },
-          "description": "NodeSelector is a selector which will result in all pods of the workflow to be scheduled on the selected node(s). This is able to be overridden by a nodeSelector specified in the template.",
-          "type": "object"
-        },
-        "onExit": {
-          "description": "OnExit is a template reference which is invoked at the end of the workflow, irrespective of the success, failure, or error of the primary io.argoproj.workflow.v1alpha1.",
-          "type": "string"
-        },
-        "parallelism": {
-          "description": "Parallelism limits the max total parallel pods that can execute at the same time in a workflow",
-          "type": "integer"
-        },
-        "podDisruptionBudget": {
-          "$ref": "#/definitions/io.k8s.api.policy.v1beta1.PodDisruptionBudgetSpec",
-          "description": "PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods. Controller will automatically add the selector with workflow name, if selector is empty. Optional: Defaults to empty."
-        },
-        "podGC": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.PodGC",
-          "description": "PodGC describes the strategy to use when to deleting completed pods"
-        },
-        "podMetadata": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metadata",
-          "description": "PodMetadata defines additional metadata that should be applied to workflow pods"
-        },
-        "podPriority": {
-          "description": "Priority to apply to workflow pods.",
-          "type": "integer"
-        },
-        "podPriorityClassName": {
-          "description": "PriorityClassName to apply to workflow pods.",
-          "type": "string"
-        },
-        "podSpecPatch": {
-          "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).",
-          "type": "string"
-        },
-        "priority": {
-          "description": "Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.",
-          "type": "integer"
-        },
-        "retryStrategy": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.RetryStrategy",
-          "description": "RetryStrategy for all templates in the io.argoproj.workflow.v1alpha1."
-        },
-        "schedulerName": {
-          "description": "Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither specified.",
-          "type": "string"
-        },
-        "securityContext": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.PodSecurityContext",
-          "description": "SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field."
-        },
-        "serviceAccountName": {
-          "description": "ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.",
-          "type": "string"
-        },
-        "shutdown": {
-          "description": "Shutdown will shutdown the workflow according to its ShutdownStrategy",
-          "type": "string"
-        },
-        "suspend": {
-          "description": "Suspend will suspend the workflow and prevent execution of any future steps in the workflow",
-          "type": "boolean"
-        },
-        "synchronization": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Synchronization",
-          "description": "Synchronization holds synchronization lock configuration for this Workflow"
-        },
-        "templateDefaults": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template",
-          "description": "TemplateDefaults holds default template values that will apply to all templates in the Workflow, unless overridden on the template-level"
-        },
-        "templates": {
-          "description": "Templates is a list of workflow templates used in a workflow",
-          "items": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
-          },
-          "type": "array",
-          "x-kubernetes-patch-merge-key": "name",
-          "x-kubernetes-patch-strategy": "merge"
-        },
-        "tolerations": {
-          "description": "Tolerations to apply to workflow pods.",
-          "items": {
-            "$ref": "#/definitions/io.k8s.api.core.v1.Toleration"
-          },
-          "type": "array",
-          "x-kubernetes-patch-merge-key": "key",
-          "x-kubernetes-patch-strategy": "merge"
-        },
-        "ttlStrategy": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TTLStrategy",
-          "description": "TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values."
-        },
-        "volumeClaimGC": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.VolumeClaimGC",
-          "description": "VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows"
-        },
-        "volumeClaimTemplates": {
-          "description": "VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow",
-          "items": {
-            "$ref": "#/definitions/io.k8s.api.core.v1.PersistentVolumeClaim"
-          },
-          "type": "array",
-          "x-kubernetes-patch-merge-key": "name",
-          "x-kubernetes-patch-strategy": "merge"
-        },
-        "volumes": {
-          "description": "Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1.",
-          "items": {
-            "$ref": "#/definitions/io.k8s.api.core.v1.Volume"
-          },
-          "type": "array",
-          "x-kubernetes-patch-merge-key": "name",
-          "x-kubernetes-patch-strategy": "merge"
-        },
-        "workflowMetadata": {
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta",
-          "description": "WorkflowMetadata contains some metadata of the workflow to be refer"
-        },
-        "workflowTemplateRef": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplateRef",
-          "description": "WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution"
         }
       },
       "type": "object"

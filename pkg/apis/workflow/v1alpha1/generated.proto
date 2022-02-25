@@ -216,7 +216,7 @@ message Cache {
 message ClusterWorkflowTemplate {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
-  optional WorkflowTemplateSpec spec = 2;
+  optional WorkflowSpec spec = 2;
 }
 
 // ClusterWorkflowTemplateList is list of ClusterWorkflowTemplate resources
@@ -658,6 +658,10 @@ message Item {
 // LabelKeys is list of keys
 message LabelKeys {
   repeated string items = 1;
+}
+
+message LabelValueFrom {
+  optional string expression = 1;
 }
 
 // Labels is list of workflow labels
@@ -1587,6 +1591,14 @@ message WorkflowList {
   repeated Workflow items = 2;
 }
 
+message WorkflowMetadata {
+  map<string, string> labels = 1;
+
+  map<string, string> annotations = 2;
+
+  map<string, LabelValueFrom> labelsFrom = 3;
+}
+
 // WorkflowSpec is the specification of a Workflow.
 message WorkflowSpec {
   // Templates is a list of workflow templates used in a workflow
@@ -1753,6 +1765,9 @@ message WorkflowSpec {
   // Hooks holds the lifecycle hook which is invoked at lifecycle of
   // step, irrespective of the success, failure, or error status of the primary step
   map<string, LifecycleHook> hooks = 41;
+
+  // WorkflowMetadata contains some metadata of the workflow to be refer
+  optional WorkflowMetadata workflowMetadata = 42;
 }
 
 // WorkflowStatus contains overall status information about a workflow
@@ -1859,6 +1874,7 @@ message WorkflowStep {
 // +genclient
 // +kubebuilder:resource:shortName=wfts
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:subresource:status
 message WorkflowTaskSet {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
@@ -1890,7 +1906,7 @@ message WorkflowTaskSetStatus {
 message WorkflowTemplate {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
-  optional WorkflowTemplateSpec spec = 2;
+  optional WorkflowSpec spec = 2;
 }
 
 // WorkflowTemplateList is list of WorkflowTemplate resources
@@ -1908,14 +1924,6 @@ message WorkflowTemplateRef {
 
   // ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
   optional bool clusterScope = 2;
-}
-
-// WorkflowTemplateSpec is a spec of WorkflowTemplate.
-message WorkflowTemplateSpec {
-  optional WorkflowSpec workflowSpec = 1;
-
-  // WorkflowMetadata contains some metadata of the workflow to be refer
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta workflowMeta = 2;
 }
 
 // ZipStrategy will unzip zipped input artifacts

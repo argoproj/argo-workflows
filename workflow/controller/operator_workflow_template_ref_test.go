@@ -20,7 +20,7 @@ func TestWorkflowTemplateRef(t *testing.T) {
 	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wfv1.MustUnmarshalWorkflow(wfWithTmplRef), controller)
 	woc.operate(ctx)
-	assert.Equal(t, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl).Spec.WorkflowSpec.Templates, woc.execWf.Spec.Templates)
+	assert.Equal(t, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl).Spec.Templates, woc.execWf.Spec.Templates)
 	assert.Equal(t, woc.wf.Spec.Entrypoint, woc.execWf.Spec.Entrypoint)
 	// verify we copy these values
 	assert.Len(t, woc.volumes, 1, "volumes from workflow template")

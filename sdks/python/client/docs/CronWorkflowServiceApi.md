@@ -8740,6 +8740,19 @@ with argo_workflows.ApiClient() as api_client:
                             ),
                         ),
                     ],
+                    workflow_metadata=IoArgoprojWorkflowV1alpha1WorkflowMetadata(
+                        annotations={
+                            "key": "key_example",
+                        },
+                        labels={
+                            "key": "key_example",
+                        },
+                        labels_from={
+                            "key": IoArgoprojWorkflowV1alpha1LabelValueFrom(
+                                expression="expression_example",
+                            ),
+                        },
+                    ),
                     workflow_template_ref=IoArgoprojWorkflowV1alpha1WorkflowTemplateRef(
                         cluster_scope=True,
                         name="name_example",
@@ -17691,6 +17704,19 @@ with argo_workflows.ApiClient() as api_client:
                             ),
                         ),
                     ],
+                    workflow_metadata=IoArgoprojWorkflowV1alpha1WorkflowMetadata(
+                        annotations={
+                            "key": "key_example",
+                        },
+                        labels={
+                            "key": "key_example",
+                        },
+                        labels_from={
+                            "key": IoArgoprojWorkflowV1alpha1LabelValueFrom(
+                                expression="expression_example",
+                            ),
+                        },
+                    ),
                     workflow_template_ref=IoArgoprojWorkflowV1alpha1WorkflowTemplateRef(
                         cluster_scope=True,
                         name="name_example",
@@ -26714,6 +26740,19 @@ with argo_workflows.ApiClient() as api_client:
                             ),
                         ),
                     ],
+                    workflow_metadata=IoArgoprojWorkflowV1alpha1WorkflowMetadata(
+                        annotations={
+                            "key": "key_example",
+                        },
+                        labels={
+                            "key": "key_example",
+                        },
+                        labels_from={
+                            "key": IoArgoprojWorkflowV1alpha1LabelValueFrom(
+                                expression="expression_example",
+                            ),
+                        },
+                    ),
                     workflow_template_ref=IoArgoprojWorkflowV1alpha1WorkflowTemplateRef(
                         cluster_scope=True,
                         name="name_example",
