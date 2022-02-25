@@ -1,28 +1,8 @@
 package progress
 
 import (
-	apiv1 "k8s.io/api/core/v1"
-
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
-
-// PodProgress reads the progress annotation of a pod and ensures it's valid and synced
-// with the node status.
-func PodProgress(pod *apiv1.Pod, node *wfv1.NodeStatus) wfv1.Progress {
-	progress := wfv1.ProgressDefault
-	if node.Progress.IsValid() {
-		progress = node.Progress
-	}
-
-	if annotation, ok := pod.Annotations[common.AnnotationKeyProgress]; ok {
-		v, ok := wfv1.ParseProgress(annotation)
-		if ok {
-			progress = v
-		}
-	}
-	return progress
-}
 
 // UpdateProgress ensures the workflow's progress is updated with the individual node progress.
 // This func can perform any repair work needed
