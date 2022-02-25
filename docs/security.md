@@ -38,12 +38,7 @@ Workflow pods run using either:
 
 There is no restriction on which service account in a namespace may be used.
 
-This service account typically needs the following permissions:
-
-* Get/watch/patch pods.
-* Get/watch pod logs.
-
-See [workflow-role.yaml](https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/quick-start/base/workflow-role.yaml).
+This service account typically needs [permissions](workflow-rbac.md).
 
 Different service accounts should be used if a workflow pod needs to have elevated permissions, e.g. to create other resources.
 
