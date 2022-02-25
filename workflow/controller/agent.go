@@ -70,6 +70,42 @@ func assessAgentPodStatus(pod *apiv1.Pod) (wfv1.WorkflowPhase, string) {
 	return newPhase, message
 }
 
+func (woc *wfOperationCtx) secretExists(ctx context.Context, name string) (bool, error) {
+	_, err := woc.controller.kubeclientset.CoreV1().Secrets(woc.wf.Namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		if apierr.IsNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+func (woc *wfOperationCtx) getCertVolumeMount(ctx context.Context, name string) []apiv1.VolumeMount {
+	if _, err := woc.secretExists(ctx, name); err != nil {
+		return []apiv1.VolumeMount{{
+			Name:      name,
+			MountPath: "/etc/ssl/certs/ca-certificates",
+			ReadOnly:  true,
+		}}
+	}
+	return nil
+}
+
+func (woc *wfOperationCtx) getCertVolume(ctx context.Context, name string) []apiv1.Volume {
+	if _, err := woc.secretExists(ctx, name); err != nil {
+		return []apiv1.Volume{{
+			Name: name,
+			VolumeSource: apiv1.VolumeSource{
+				Secret: &apiv1.SecretVolumeSource{
+					SecretName: name,
+				},
+			},
+		}}
+	}
+	return nil
+}
+
 func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, error) {
 	podName := woc.getAgentPodName()
 	log := woc.log.WithField("podName", podName)
@@ -129,11 +165,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 					ImagePullPolicy: woc.controller.executorImagePullPolicy(),
 					Env:             envVars,
 
-					VolumeMounts: []apiv1.VolumeMount{{
-						Name:      "cert",
-						MountPath: "/etc/ssl/certs/ca-certificates",
-						ReadOnly:  true,
-					}},
+					VolumeMounts: woc.getCertVolumeMount(ctx, "cert"),
 
 					SecurityContext: &apiv1.SecurityContext{
 						Capabilities: &apiv1.Capabilities{
@@ -146,14 +178,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 					},
 				},
 			),
-			Volumes: []apiv1.Volume{{
-				Name: "cert",
-				VolumeSource: apiv1.VolumeSource{
-					Secret: &apiv1.SecretVolumeSource{
-						SecretName: "cert",
-					},
-				},
-			}},
+			Volumes: woc.getCertVolume(ctx, "cert"),
 		},
 	}
 
