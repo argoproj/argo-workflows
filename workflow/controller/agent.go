@@ -82,7 +82,12 @@ func (woc *wfOperationCtx) secretExists(ctx context.Context, name string) (bool,
 }
 
 func (woc *wfOperationCtx) getCertVolumeMount(ctx context.Context, name string) []apiv1.VolumeMount {
-	if _, err := woc.secretExists(ctx, name); err != nil {
+	exists, err := woc.secretExists(ctx, name)
+	if err != nil {
+		woc.log.WithError(err).Errorf("Failed to check if secret %s exists", name)
+		return nil
+	}
+	if exists {
 		return []apiv1.VolumeMount{{
 			Name:      name,
 			MountPath: "/etc/ssl/certs/ca-certificates",
@@ -93,7 +98,12 @@ func (woc *wfOperationCtx) getCertVolumeMount(ctx context.Context, name string) 
 }
 
 func (woc *wfOperationCtx) getCertVolume(ctx context.Context, name string) []apiv1.Volume {
-	if _, err := woc.secretExists(ctx, name); err != nil {
+	exists, err := woc.secretExists(ctx, name)
+	if err != nil {
+		woc.log.WithError(err).Errorf("Failed to check if secret %s exists", name)
+		return nil
+	}
+	if exists {
 		return []apiv1.Volume{{
 			Name: name,
 			VolumeSource: apiv1.VolumeSource{
