@@ -4,6 +4,30 @@
 Breaking changes  typically (sometimes we don't realise they are breaking) have "!" in the commit message, as per
 the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary).
 
+### Upgrading to v3.4
+
+### [06d4bf76f](https://github.com/argoproj/argo-workflows/commit/06d4bf76f) fix: Reduce agent permissions. Fixes #7986 (#7987)
+
+The PR changes the permissions used by the agent to report back the outcome of HTTP template requests. The permission `patch workflowtasksets/status` replaces `patch workflowtasksets`, for example:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: agent
+rules:
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - workflowtasksets/status
+    verbs:
+      - patch
+```
+
+Workflows running during any upgrade should be give both permissions.
+
+See [#8013](https://github.com/argoproj/argo-workflows/issues/8013).
+
 ## Upgrading to v3.3
 
 ### [fce82d572](https://github.com/argoproj/argo-workflows/commit/fce82d5727b89cfe49e8e3568fff40725bd43734) feat: Remove pod workers (#7837)
