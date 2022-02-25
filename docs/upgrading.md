@@ -6,6 +6,15 @@ the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summar
 
 ## Upgrading to v3.3
 
+### feat!: Remove deprecated config flags
+
+This PR removes the following options -
+
+- executorImage (use --executor-image flag to workflow-controller instead)
+- executorImagePullPolicy (use executor.imagePullPolicy in configmap instead)
+- executorResources (use executor.resources in configmap instead)
+- namespace
+
 ### [fce82d572](https://github.com/argoproj/argo-workflows/commit/fce82d5727b89cfe49e8e3568fff40725bd43734) feat: Remove pod workers (#7837)
 
 This PR removes pod workers from the code, the pod informer directly writes into the workflow queue. As a result the `--pod-workers` flag has been removed. 
