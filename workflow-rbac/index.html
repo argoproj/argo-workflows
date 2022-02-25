@@ -2720,36 +2720,26 @@
 
 
 <h1 id="workflow-rbac">Workflow RBAC<a class="headerlink" href="#workflow-rbac" title="Permanent link">&para;</a></h1>
-<p>All pods in a workflow run with the service account specified in <code>workflow.spec.serviceAccountName</code>,
-or if omitted, the <code>default</code> service account of the workflow's namespace. The amount of access which
-a workflow needs is dependent on what the workflow needs to do. For example, if your workflow needs
-to deploy a resource, then the workflow's service account will require 'create' privileges on that
-resource.</p>
-<p>The bare minimum for a workflow to function is outlined below:</p>
+<p>All pods in a workflow run with the service account specified in <code>workflow.spec.serviceAccountName</code>, or if omitted,
+the <code>default</code> service account of the workflow's namespace. The amount of access which a workflow needs is dependent on
+what the workflow needs to do. For example, if your workflow needs to deploy a resource, then the workflow's service
+account will require 'create' privileges on that resource.</p>
+<p>The bare minimum for a workflow running using the Emissary executor to function is outlined below:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rbac.authorization.k8s.io/v1</span><span class="w"></span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Role</span><span class="w"></span>
 <span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflow-role</span><span class="w"></span>
 <span class="nt">rules</span><span class="p">:</span><span class="w"></span>
-<span class="c1"># pod get/watch is used to identify the container IDs of the current pod</span><span class="w"></span>
-<span class="c1"># pod patch is used to annotate the step&#39;s outputs back to controller (e.g. artifact location)</span><span class="w"></span>
-<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">apiGroups</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;&quot;</span><span class="w"></span>
-<span class="w">  </span><span class="nt">resources</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pods</span><span class="w"></span>
-<span class="w">  </span><span class="nt">verbs</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">get</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">watch</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">patch</span><span class="w"></span>
-<span class="c1"># logs get/watch are used to get the pods logs for script outputs, and for log archival</span><span class="w"></span>
-<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">apiGroups</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;&quot;</span><span class="w"></span>
-<span class="w">  </span><span class="nt">resources</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pods/log</span><span class="w"></span>
-<span class="w">  </span><span class="nt">verbs</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">get</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">watch</span><span class="w"></span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">apiGroups</span><span class="p">:</span><span class="w"></span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="nt">resources</span><span class="p">:</span><span class="w"></span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pods</span><span class="w"></span>
+<span class="w">    </span><span class="nt">verbs</span><span class="p">:</span><span class="w"></span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">patch</span><span class="w"></span>
 </code></pre></div>
+<p>If you are using another executor, or using resource template, you'll need additional permissions,
+see <a href="https://github.com/argoproj/argo-workflows/blob/master/manifests/quick-start/base/workflow-role.yaml">workflow-role</a>
+.</p>
 
               
             </article>
