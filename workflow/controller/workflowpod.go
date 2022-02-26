@@ -690,7 +690,7 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 		Image:           woc.controller.executorImage(),
 		ImagePullPolicy: woc.controller.executorImagePullPolicy(),
 		Env:             woc.createEnvVars(),
-		Resources: woc.controller.Config.GetExecutor().Resources,
+		Resources:       woc.controller.Config.GetExecutor().Resources,
 		SecurityContext: woc.controller.Config.GetExecutor().SecurityContext,
 	}
 	if woc.controller.Config.KubeConfig != nil {
