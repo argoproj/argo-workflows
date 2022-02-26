@@ -37,7 +37,6 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
@@ -754,14 +753,10 @@ func RetryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrato
 }
 
 // RetryArchiveWorkflow recreates and updates a workflow
-func RetryArchiveWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrator hydrator.Interface, wfClient v1alpha1.WorkflowInterface, wfArchive sqldb.WorkflowArchive, uid string, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
+func RetryArchiveWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrator hydrator.Interface, wfClient v1alpha1.WorkflowInterface, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
 	var updated *wfv1.Workflow
 	err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
 		var err error
-		wf, err := wfArchive.GetWorkflow(uid)
-		if err != nil {
-			return false, err
-		}
 		updated, err = retryWorkflow(ctx, kubeClient, hydrator, wfClient, wf, restartSuccessful, nodeFieldSelector, true)
 		return !errorsutil.IsTransientErr(err), err
 	})
@@ -893,12 +888,15 @@ func retryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrato
 		newWF.Status.StoredTemplates[id] = tmpl
 	}
 
-	// workflow must be recreated on server if archived
 	if retryArchive {
 		newWF, err = wfClient.Create(ctx, newWF, metav1.CreateOptions{})
 		if err != nil {
+			if apierr.IsAlreadyExists(err) {
+				return nil, fmt.Errorf("workflow already exists : %s", err)
+			}
 			return nil, fmt.Errorf("unable to create workflow: %s", err)
 		}
+		return newWF, nil
 	}
 
 	return wfClient.Update(ctx, newWF, metav1.UpdateOptions{})

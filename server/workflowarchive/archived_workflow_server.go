@@ -24,14 +24,13 @@ import (
 )
 
 type archivedWorkflowServer struct {
-	wfArchive             sqldb.WorkflowArchive
-	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
-	hydrator              hydrator.Interface
+	wfArchive sqldb.WorkflowArchive
+	hydrator  hydrator.Interface
 }
 
 // NewWorkflowArchiveServer returns a new archivedWorkflowServer
 func NewWorkflowArchiveServer(wfArchive sqldb.WorkflowArchive, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo) workflowarchivepkg.ArchivedWorkflowServiceServer {
-	return &archivedWorkflowServer{wfArchive: wfArchive, offloadNodeStatusRepo: offloadNodeStatusRepo, hydrator: hydrator.New(offloadNodeStatusRepo)}
+	return &archivedWorkflowServer{wfArchive: wfArchive, hydrator: hydrator.New(offloadNodeStatusRepo)}
 }
 
 func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req *workflowarchivepkg.ListArchivedWorkflowsRequest) (*wfv1.WorkflowList, error) {
@@ -207,8 +206,7 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 		return nil, err
 	}
 
-	// could send archive and name instead
-	wf, err = util.RetryArchiveWorkflow(ctx, kubeClient, w.hydrator, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), w.wfArchive, req.Uid, req.RestartSuccessful, req.NodeFieldSelector)
+	wf, err = util.RetryArchiveWorkflow(ctx, kubeClient, w.hydrator, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wf, req.RestartSuccessful, req.NodeFieldSelector)
 	if err != nil {
 		return nil, err
 	}
