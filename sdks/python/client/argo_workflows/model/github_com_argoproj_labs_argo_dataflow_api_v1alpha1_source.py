@@ -34,6 +34,7 @@ def lazy_import():
     from argo_workflows.model.github_com_argoproj_labs_argo_dataflow_api_v1alpha1_cron import GithubComArgoprojLabsArgoDataflowApiV1alpha1Cron
     from argo_workflows.model.github_com_argoproj_labs_argo_dataflow_api_v1alpha1_db_source import GithubComArgoprojLabsArgoDataflowApiV1alpha1DBSource
     from argo_workflows.model.github_com_argoproj_labs_argo_dataflow_api_v1alpha1_http_source import GithubComArgoprojLabsArgoDataflowApiV1alpha1HTTPSource
+    from argo_workflows.model.github_com_argoproj_labs_argo_dataflow_api_v1alpha1_jet_stream_source import GithubComArgoprojLabsArgoDataflowApiV1alpha1JetStreamSource
     from argo_workflows.model.github_com_argoproj_labs_argo_dataflow_api_v1alpha1_kafka_source import GithubComArgoprojLabsArgoDataflowApiV1alpha1KafkaSource
     from argo_workflows.model.github_com_argoproj_labs_argo_dataflow_api_v1alpha1_s3_source import GithubComArgoprojLabsArgoDataflowApiV1alpha1S3Source
     from argo_workflows.model.github_com_argoproj_labs_argo_dataflow_api_v1alpha1_stan import GithubComArgoprojLabsArgoDataflowApiV1alpha1STAN
@@ -42,6 +43,7 @@ def lazy_import():
     globals()['GithubComArgoprojLabsArgoDataflowApiV1alpha1Cron'] = GithubComArgoprojLabsArgoDataflowApiV1alpha1Cron
     globals()['GithubComArgoprojLabsArgoDataflowApiV1alpha1DBSource'] = GithubComArgoprojLabsArgoDataflowApiV1alpha1DBSource
     globals()['GithubComArgoprojLabsArgoDataflowApiV1alpha1HTTPSource'] = GithubComArgoprojLabsArgoDataflowApiV1alpha1HTTPSource
+    globals()['GithubComArgoprojLabsArgoDataflowApiV1alpha1JetStreamSource'] = GithubComArgoprojLabsArgoDataflowApiV1alpha1JetStreamSource
     globals()['GithubComArgoprojLabsArgoDataflowApiV1alpha1KafkaSource'] = GithubComArgoprojLabsArgoDataflowApiV1alpha1KafkaSource
     globals()['GithubComArgoprojLabsArgoDataflowApiV1alpha1S3Source'] = GithubComArgoprojLabsArgoDataflowApiV1alpha1S3Source
     globals()['GithubComArgoprojLabsArgoDataflowApiV1alpha1STAN'] = GithubComArgoprojLabsArgoDataflowApiV1alpha1STAN
@@ -104,6 +106,7 @@ class GithubComArgoprojLabsArgoDataflowApiV1alpha1Source(ModelNormal):
             'cron': (GithubComArgoprojLabsArgoDataflowApiV1alpha1Cron,),  # noqa: E501
             'db': (GithubComArgoprojLabsArgoDataflowApiV1alpha1DBSource,),  # noqa: E501
             'http': (GithubComArgoprojLabsArgoDataflowApiV1alpha1HTTPSource,),  # noqa: E501
+            'jetstream': (GithubComArgoprojLabsArgoDataflowApiV1alpha1JetStreamSource,),  # noqa: E501
             'kafka': (GithubComArgoprojLabsArgoDataflowApiV1alpha1KafkaSource,),  # noqa: E501
             'name': (str,),  # noqa: E501
             'retry': (GithubComArgoprojLabsArgoDataflowApiV1alpha1Backoff,),  # noqa: E501
@@ -121,6 +124,7 @@ class GithubComArgoprojLabsArgoDataflowApiV1alpha1Source(ModelNormal):
         'cron': 'cron',  # noqa: E501
         'db': 'db',  # noqa: E501
         'http': 'http',  # noqa: E501
+        'jetstream': 'jetstream',  # noqa: E501
         'kafka': 'kafka',  # noqa: E501
         'name': 'name',  # noqa: E501
         'retry': 'retry',  # noqa: E501
@@ -173,6 +177,7 @@ class GithubComArgoprojLabsArgoDataflowApiV1alpha1Source(ModelNormal):
             cron (GithubComArgoprojLabsArgoDataflowApiV1alpha1Cron): [optional]  # noqa: E501
             db (GithubComArgoprojLabsArgoDataflowApiV1alpha1DBSource): [optional]  # noqa: E501
             http (GithubComArgoprojLabsArgoDataflowApiV1alpha1HTTPSource): [optional]  # noqa: E501
+            jetstream (GithubComArgoprojLabsArgoDataflowApiV1alpha1JetStreamSource): [optional]  # noqa: E501
             kafka (GithubComArgoprojLabsArgoDataflowApiV1alpha1KafkaSource): [optional]  # noqa: E501
             name (str): [optional]  # noqa: E501
             retry (GithubComArgoprojLabsArgoDataflowApiV1alpha1Backoff): [optional]  # noqa: E501
@@ -263,6 +268,7 @@ class GithubComArgoprojLabsArgoDataflowApiV1alpha1Source(ModelNormal):
             cron (GithubComArgoprojLabsArgoDataflowApiV1alpha1Cron): [optional]  # noqa: E501
             db (GithubComArgoprojLabsArgoDataflowApiV1alpha1DBSource): [optional]  # noqa: E501
             http (GithubComArgoprojLabsArgoDataflowApiV1alpha1HTTPSource): [optional]  # noqa: E501
+            jetstream (GithubComArgoprojLabsArgoDataflowApiV1alpha1JetStreamSource): [optional]  # noqa: E501
             kafka (GithubComArgoprojLabsArgoDataflowApiV1alpha1KafkaSource): [optional]  # noqa: E501
             name (str): [optional]  # noqa: E501
             retry (GithubComArgoprojLabsArgoDataflowApiV1alpha1Backoff): [optional]  # noqa: E501

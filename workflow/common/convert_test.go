@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -151,17 +150,15 @@ func TestConvertWorkflowTemplateToWorkflow(t *testing.T) {
 	var wfTmpl v1alpha1.WorkflowTemplate
 	v1alpha1.MustUnmarshal([]byte(workflowTmpl), &wfTmpl)
 	t.Run("ConvertWorkflowFromWFT", func(t *testing.T) {
-		wf := NewWorkflowFromWorkflowTemplate(wfTmpl.Name, wfTmpl.Spec.WorkflowMetadata, false)
+		wf := NewWorkflowFromWorkflowTemplate(wfTmpl.Name, false)
 		assert.NotNil(t, wf)
 		assert.Equal(t, "workflow-template-whalesay-template", wf.Labels["workflows.argoproj.io/workflow-template"])
 		assert.NotNil(t, wf.Spec.WorkflowTemplateRef)
 		assert.Equal(t, wfTmpl.Name, wf.Spec.WorkflowTemplateRef.Name)
 		assert.False(t, wf.Spec.WorkflowTemplateRef.ClusterScope)
-		assert.Contains(t, wf.Labels, "label1")
-		assert.Contains(t, wf.Annotations, "annotation1")
 	})
 	t.Run("ConvertWorkflowFromWFTWithNilWorkflowMetadata", func(t *testing.T) {
-		wf := NewWorkflowFromWorkflowTemplate(wfTmpl.Name, nil, false)
+		wf := NewWorkflowFromWorkflowTemplate(wfTmpl.Name, false)
 		assert.NotNil(t, wf)
 		assert.Equal(t, "workflow-template-whalesay-template", wf.Labels["workflows.argoproj.io/workflow-template"])
 		assert.NotNil(t, wf.Spec.WorkflowTemplateRef)
@@ -169,11 +166,7 @@ func TestConvertWorkflowTemplateToWorkflow(t *testing.T) {
 		assert.False(t, wf.Spec.WorkflowTemplateRef.ClusterScope)
 	})
 	t.Run("ConvertWorkflowFromWFTWithNilWorkflowMetadataLabels", func(t *testing.T) {
-		wfMetadata := &metav1.ObjectMeta{
-			Labels:      nil,
-			Annotations: nil,
-		}
-		wf := NewWorkflowFromWorkflowTemplate(wfTmpl.Name, wfMetadata, false)
+		wf := NewWorkflowFromWorkflowTemplate(wfTmpl.Name, false)
 		assert.NotNil(t, wf)
 		assert.Equal(t, "workflow-template-whalesay-template", wf.Labels["workflows.argoproj.io/workflow-template"])
 		assert.NotNil(t, wf.Spec.WorkflowTemplateRef)
@@ -185,12 +178,10 @@ func TestConvertWorkflowTemplateToWorkflow(t *testing.T) {
 func TestConvertClusterWorkflowTemplateToWorkflow(t *testing.T) {
 	var wfTmpl v1alpha1.WorkflowTemplate
 	v1alpha1.MustUnmarshal([]byte(workflowTmpl), &wfTmpl)
-	wf := NewWorkflowFromWorkflowTemplate(wfTmpl.Name, wfTmpl.Spec.WorkflowMetadata, true)
+	wf := NewWorkflowFromWorkflowTemplate(wfTmpl.Name, true)
 	assert.NotNil(t, wf)
 	assert.Equal(t, "workflow-template-whalesay-template", wf.Labels["workflows.argoproj.io/cluster-workflow-template"])
 	assert.NotNil(t, wf.Spec.WorkflowTemplateRef)
 	assert.Equal(t, wfTmpl.Name, wf.Spec.WorkflowTemplateRef.Name)
 	assert.True(t, wf.Spec.WorkflowTemplateRef.ClusterScope)
-	assert.Contains(t, wf.Labels, "label1")
-	assert.Contains(t, wf.Annotations, "annotation1")
 }

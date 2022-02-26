@@ -30,9 +30,9 @@ from argo_workflows.exceptions import ApiAttributeError
 
 
 def lazy_import():
-    from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_template_spec import IoArgoprojWorkflowV1alpha1WorkflowTemplateSpec
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_spec import IoArgoprojWorkflowV1alpha1WorkflowSpec
     from argo_workflows.model.object_meta import ObjectMeta
-    globals()['IoArgoprojWorkflowV1alpha1WorkflowTemplateSpec'] = IoArgoprojWorkflowV1alpha1WorkflowTemplateSpec
+    globals()['IoArgoprojWorkflowV1alpha1WorkflowSpec'] = IoArgoprojWorkflowV1alpha1WorkflowSpec
     globals()['ObjectMeta'] = ObjectMeta
 
 
@@ -90,7 +90,7 @@ class IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate(ModelNormal):
         lazy_import()
         return {
             'metadata': (ObjectMeta,),  # noqa: E501
-            'spec': (IoArgoprojWorkflowV1alpha1WorkflowTemplateSpec,),  # noqa: E501
+            'spec': (IoArgoprojWorkflowV1alpha1WorkflowSpec,),  # noqa: E501
             'api_version': (str,),  # noqa: E501
             'kind': (str,),  # noqa: E501
         }
@@ -119,7 +119,7 @@ class IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate(ModelNormal):
 
         Args:
             metadata (ObjectMeta):
-            spec (IoArgoprojWorkflowV1alpha1WorkflowTemplateSpec):
+            spec (IoArgoprojWorkflowV1alpha1WorkflowSpec):
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -208,7 +208,7 @@ class IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate(ModelNormal):
 
         Args:
             metadata (ObjectMeta):
-            spec (IoArgoprojWorkflowV1alpha1WorkflowTemplateSpec):
+            spec (IoArgoprojWorkflowV1alpha1WorkflowSpec):
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types

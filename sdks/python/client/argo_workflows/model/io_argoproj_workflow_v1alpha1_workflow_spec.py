@@ -44,6 +44,7 @@ def lazy_import():
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_template import IoArgoprojWorkflowV1alpha1Template
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_ttl_strategy import IoArgoprojWorkflowV1alpha1TTLStrategy
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_volume_claim_gc import IoArgoprojWorkflowV1alpha1VolumeClaimGC
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_metadata import IoArgoprojWorkflowV1alpha1WorkflowMetadata
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_template_ref import IoArgoprojWorkflowV1alpha1WorkflowTemplateRef
     from argo_workflows.model.io_k8s_api_policy_v1beta1_pod_disruption_budget_spec import IoK8sApiPolicyV1beta1PodDisruptionBudgetSpec
     from argo_workflows.model.local_object_reference import LocalObjectReference
@@ -66,6 +67,7 @@ def lazy_import():
     globals()['IoArgoprojWorkflowV1alpha1TTLStrategy'] = IoArgoprojWorkflowV1alpha1TTLStrategy
     globals()['IoArgoprojWorkflowV1alpha1Template'] = IoArgoprojWorkflowV1alpha1Template
     globals()['IoArgoprojWorkflowV1alpha1VolumeClaimGC'] = IoArgoprojWorkflowV1alpha1VolumeClaimGC
+    globals()['IoArgoprojWorkflowV1alpha1WorkflowMetadata'] = IoArgoprojWorkflowV1alpha1WorkflowMetadata
     globals()['IoArgoprojWorkflowV1alpha1WorkflowTemplateRef'] = IoArgoprojWorkflowV1alpha1WorkflowTemplateRef
     globals()['IoK8sApiPolicyV1beta1PodDisruptionBudgetSpec'] = IoK8sApiPolicyV1beta1PodDisruptionBudgetSpec
     globals()['LocalObjectReference'] = LocalObjectReference
@@ -168,6 +170,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowSpec(ModelNormal):
             'volume_claim_gc': (IoArgoprojWorkflowV1alpha1VolumeClaimGC,),  # noqa: E501
             'volume_claim_templates': ([PersistentVolumeClaim],),  # noqa: E501
             'volumes': ([Volume],),  # noqa: E501
+            'workflow_metadata': (IoArgoprojWorkflowV1alpha1WorkflowMetadata,),  # noqa: E501
             'workflow_template_ref': (IoArgoprojWorkflowV1alpha1WorkflowTemplateRef,),  # noqa: E501
         }
 
@@ -216,6 +219,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowSpec(ModelNormal):
         'volume_claim_gc': 'volumeClaimGC',  # noqa: E501
         'volume_claim_templates': 'volumeClaimTemplates',  # noqa: E501
         'volumes': 'volumes',  # noqa: E501
+        'workflow_metadata': 'workflowMetadata',  # noqa: E501
         'workflow_template_ref': 'workflowTemplateRef',  # noqa: E501
     }
 
@@ -299,6 +303,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowSpec(ModelNormal):
             volume_claim_gc (IoArgoprojWorkflowV1alpha1VolumeClaimGC): [optional]  # noqa: E501
             volume_claim_templates ([PersistentVolumeClaim]): VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow. [optional]  # noqa: E501
             volumes ([Volume]): Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1.. [optional]  # noqa: E501
+            workflow_metadata (IoArgoprojWorkflowV1alpha1WorkflowMetadata): [optional]  # noqa: E501
             workflow_template_ref (IoArgoprojWorkflowV1alpha1WorkflowTemplateRef): [optional]  # noqa: E501
         """
 
@@ -420,6 +425,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowSpec(ModelNormal):
             volume_claim_gc (IoArgoprojWorkflowV1alpha1VolumeClaimGC): [optional]  # noqa: E501
             volume_claim_templates ([PersistentVolumeClaim]): VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow. [optional]  # noqa: E501
             volumes ([Volume]): Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1.. [optional]  # noqa: E501
+            workflow_metadata (IoArgoprojWorkflowV1alpha1WorkflowMetadata): [optional]  # noqa: E501
             workflow_template_ref (IoArgoprojWorkflowV1alpha1WorkflowTemplateRef): [optional]  # noqa: E501
         """
 

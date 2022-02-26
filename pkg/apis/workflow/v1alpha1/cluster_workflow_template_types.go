@@ -15,7 +15,7 @@ import (
 type ClusterWorkflowTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
-	Spec              WorkflowTemplateSpec `json:"spec" protobuf:"bytes,2,opt,name=spec"`
+	Spec              WorkflowSpec `json:"spec" protobuf:"bytes,2,opt,name=spec"`
 }
 
 type ClusterWorkflowTemplates []ClusterWorkflowTemplate
@@ -57,11 +57,7 @@ func (cwftmpl *ClusterWorkflowTemplate) GetResourceScope() ResourceScope {
 	return ResourceScopeCluster
 }
 
-func (cwftmpl *ClusterWorkflowTemplate) GetWorkflowMetadata() *metav1.ObjectMeta {
-	return cwftmpl.Spec.WorkflowMetadata
-}
-
 // GetWorkflowSpec returns the WorkflowSpec of cluster workflow template.
 func (cwftmpl *ClusterWorkflowTemplate) GetWorkflowSpec() *WorkflowSpec {
-	return &cwftmpl.Spec.WorkflowSpec
+	return &cwftmpl.Spec
 }

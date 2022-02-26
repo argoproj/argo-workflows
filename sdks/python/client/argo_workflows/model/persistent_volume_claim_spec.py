@@ -93,6 +93,7 @@ class PersistentVolumeClaimSpec(ModelNormal):
         return {
             'access_modes': ([str],),  # noqa: E501
             'data_source': (TypedLocalObjectReference,),  # noqa: E501
+            'data_source_ref': (TypedLocalObjectReference,),  # noqa: E501
             'resources': (ResourceRequirements,),  # noqa: E501
             'selector': (LabelSelector,),  # noqa: E501
             'storage_class_name': (str,),  # noqa: E501
@@ -108,6 +109,7 @@ class PersistentVolumeClaimSpec(ModelNormal):
     attribute_map = {
         'access_modes': 'accessModes',  # noqa: E501
         'data_source': 'dataSource',  # noqa: E501
+        'data_source_ref': 'dataSourceRef',  # noqa: E501
         'resources': 'resources',  # noqa: E501
         'selector': 'selector',  # noqa: E501
         'storage_class_name': 'storageClassName',  # noqa: E501
@@ -158,10 +160,11 @@ class PersistentVolumeClaimSpec(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             access_modes ([str]): AccessModes contains the desired access modes the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1. [optional]  # noqa: E501
             data_source (TypedLocalObjectReference): [optional]  # noqa: E501
+            data_source_ref (TypedLocalObjectReference): [optional]  # noqa: E501
             resources (ResourceRequirements): [optional]  # noqa: E501
             selector (LabelSelector): [optional]  # noqa: E501
             storage_class_name (str): Name of the StorageClass required by the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1. [optional]  # noqa: E501
-            volume_mode (str): volumeMode defines what type of volume is required by the claim. Value of Filesystem is implied when not included in claim spec. This is a beta feature.. [optional]  # noqa: E501
+            volume_mode (str): volumeMode defines what type of volume is required by the claim. Value of Filesystem is implied when not included in claim spec.. [optional]  # noqa: E501
             volume_name (str): VolumeName is the binding reference to the PersistentVolume backing this claim.. [optional]  # noqa: E501
         """
 
@@ -246,10 +249,11 @@ class PersistentVolumeClaimSpec(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             access_modes ([str]): AccessModes contains the desired access modes the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1. [optional]  # noqa: E501
             data_source (TypedLocalObjectReference): [optional]  # noqa: E501
+            data_source_ref (TypedLocalObjectReference): [optional]  # noqa: E501
             resources (ResourceRequirements): [optional]  # noqa: E501
             selector (LabelSelector): [optional]  # noqa: E501
             storage_class_name (str): Name of the StorageClass required by the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1. [optional]  # noqa: E501
-            volume_mode (str): volumeMode defines what type of volume is required by the claim. Value of Filesystem is implied when not included in claim spec. This is a beta feature.. [optional]  # noqa: E501
+            volume_mode (str): volumeMode defines what type of volume is required by the claim. Value of Filesystem is implied when not included in claim spec.. [optional]  # noqa: E501
             volume_name (str): VolumeName is the binding reference to the PersistentVolume backing this claim.. [optional]  # noqa: E501
         """
 

@@ -88,6 +88,7 @@ nav:
           - resuming-workflow-via-automation.md
           - async-pattern.md
           - running-at-massive-scale.md
+          - debug-pause.md
       - Plugins:
           - plugins.md
           - executor_plugins.md

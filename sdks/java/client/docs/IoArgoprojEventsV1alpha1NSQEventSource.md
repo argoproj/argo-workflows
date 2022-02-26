@@ -9,6 +9,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **channel** | **String** |  |  [optional]
 **connectionBackoff** | [**IoArgoprojEventsV1alpha1Backoff**](IoArgoprojEventsV1alpha1Backoff.md) |  |  [optional]
+**filter** | [**IoArgoprojEventsV1alpha1EventSourceFilter**](IoArgoprojEventsV1alpha1EventSourceFilter.md) |  |  [optional]
 **hostAddress** | **String** |  |  [optional]
 **jsonBody** | **Boolean** |  |  [optional]
 **metadata** | **Map&lt;String, String&gt;** |  |  [optional]

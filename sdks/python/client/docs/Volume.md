@@ -15,6 +15,7 @@ Name | Type | Description | Notes
 **csi** | [**CSIVolumeSource**](CSIVolumeSource.md) |  | [optional] 
 **downward_api** | [**DownwardAPIVolumeSource**](DownwardAPIVolumeSource.md) |  | [optional] 
 **empty_dir** | [**EmptyDirVolumeSource**](EmptyDirVolumeSource.md) |  | [optional] 
+**ephemeral** | [**EphemeralVolumeSource**](EphemeralVolumeSource.md) |  | [optional] 
 **fc** | [**FCVolumeSource**](FCVolumeSource.md) |  | [optional] 
 **flex_volume** | [**FlexVolumeSource**](FlexVolumeSource.md) |  | [optional] 
 **flocker** | [**FlockerVolumeSource**](FlockerVolumeSource.md) |  | [optional] 

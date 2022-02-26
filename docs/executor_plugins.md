@@ -49,7 +49,7 @@ We need the following:
 A template executor plugin services HTTP POST requests on `/api/v1/template.execute`:
 
 ```shell
-curl http://localhost:4355//api/v1/template.execute -d \
+curl http://localhost:4355/api/v1/template.execute -d \
 '{
   "workflow": {
     "metadata": {
@@ -289,7 +289,7 @@ kubectl get cm -l workflows.argoproj.io/configmap-type=ExecutorPlugin
 
 ## Examples and Community Contributed Plugins
 
-[Show examples and community contributed plugins](https://github.com/argoproj/argo-workflows/tree/master/plugins)
+[Show examples and community contributed plugins](https://github.com/argoproj-labs?q=argo+workflows+plugin&type=all&language=&sort=)
 .
 
 ## Publishing Your Plugin

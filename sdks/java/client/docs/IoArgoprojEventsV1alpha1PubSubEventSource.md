@@ -10,6 +10,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **credentialSecret** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
 **deleteSubscriptionOnFinish** | **Boolean** |  |  [optional]
+**filter** | [**IoArgoprojEventsV1alpha1EventSourceFilter**](IoArgoprojEventsV1alpha1EventSourceFilter.md) |  |  [optional]
 **jsonBody** | **Boolean** |  |  [optional]
 **metadata** | **Map&lt;String, String&gt;** |  |  [optional]
 **projectID** | **String** |  |  [optional]

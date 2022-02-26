@@ -129,6 +129,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Riskified](https://www.riskified.com)
 1. [Robinhood](https://robinhood.com/)
 1. [Sage (Sage AI Labs)](https://sage.com/)
+1. [SAP Concur](https://www.concur.com/)
 1. [SAP Fieldglass](https://www.fieldglass.com/)
 1. [SAP Hybris](https://cx.sap.com/)
 1. [SAS](https://www.sas.com/)

@@ -141,7 +141,7 @@
         },
         "ephemeral": {
           "$ref": "#/definitions/io.k8s.api.core.v1.EphemeralVolumeSource",
-          "description": "Ephemeral represents a volume that is handled by a cluster storage driver (Alpha feature).\nThe volume's lifecycle is tied to the pod that defines it - it will be created before the pod starts,\nand deleted when the pod is removed.\n\nUse this if:\na) the volume is only needed while the pod runs,\nb) features of normal volumes like restoring from snapshot or capacity\n   tracking are needed,\nc) the storage driver is specified through a storage class, and\nd) the storage driver supports dynamic volume provisioning through\n   a PersistentVolumeClaim (see EphemeralVolumeSource for more\n   information on the connection between this volume type\n   and PersistentVolumeClaim).\n\nUse PersistentVolumeClaim or one of the vendor-specific\nAPIs for volumes that persist for longer than the lifecycle\nof an individual pod.\n\nUse CSI for light-weight local ephemeral volumes if the CSI driver is meant to\nbe used that way - see the documentation of the driver for\nmore information.\n\nA pod can use both types of ephemeral volumes and\npersistent volumes at the same time.\n\n+optional"
+          "description": "Ephemeral represents a volume that is handled by a cluster storage driver.\nThe volume's lifecycle is tied to the pod that defines it - it will be created before the pod starts,\nand deleted when the pod is removed.\n\nUse this if:\na) the volume is only needed while the pod runs,\nb) features of normal volumes like restoring from snapshot or capacity\n   tracking are needed,\nc) the storage driver is specified through a storage class, and\nd) the storage driver supports dynamic volume provisioning through\n   a PersistentVolumeClaim (see EphemeralVolumeSource for more\n   information on the connection between this volume type\n   and PersistentVolumeClaim).\n\nUse PersistentVolumeClaim or one of the vendor-specific\nAPIs for volumes that persist for longer than the lifecycle\nof an individual pod.\n\nUse CSI for light-weight local ephemeral volumes if the CSI driver is meant to\nbe used that way - see the documentation of the driver for\nmore information.\n\nA pod can use both types of ephemeral volumes and\npersistent volumes at the same time.\n\n+optional"
         },
         "fc": {
           "$ref": "#/definitions/io.k8s.api.core.v1.FCVolumeSource",
@@ -258,6 +258,10 @@
     },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Code": {
       "properties": {
+        "image": {
+          "description": "Image is used in preference to Runtime.",
+          "type": "string"
+        },
         "runtime": {
           "type": "string"
         },
@@ -452,6 +456,10 @@
         "image": {
           "type": "string"
         },
+        "insecureIgnoreHostKey": {
+          "title": "InsecureIgnoreHostKey is the bool value for ignoring check for host key",
+          "type": "boolean"
+        },
         "passwordSecret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "title": "PasswordSecret is the secret selector to the repository password"
@@ -552,6 +560,40 @@
       },
       "type": "object"
     },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.JetStream": {
+      "properties": {
+        "auth": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.NATSAuth"
+        },
+        "name": {
+          "title": "+kubebuilder:default=default",
+          "type": "string"
+        },
+        "natsUrl": {
+          "type": "string"
+        },
+        "subject": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.JetStreamSink": {
+      "properties": {
+        "jetstream": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.JetStream"
+        }
+      },
+      "type": "object"
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.JetStreamSource": {
+      "properties": {
+        "jetstream": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.JetStream"
+        }
+      },
+      "type": "object"
+    },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Kafka": {
       "properties": {
         "kafkaConfig": {
@@ -580,9 +622,6 @@
         },
         "net": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.KafkaNET"
-        },
-        "version": {
-          "type": "string"
         }
       },
       "type": "object"
@@ -600,17 +639,56 @@
     },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.KafkaSink": {
       "properties": {
+        "acks": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString",
+          "title": "+kubebuilder:default=\"all\""
+        },
         "async": {
+          "type": "boolean"
+        },
+        "batchSize": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.api.resource.Quantity",
+          "title": "+kubebuilder:default=\"100Ki\""
+        },
+        "compressionType": {
+          "title": "+kubebuilder:default=\"lz4\"",
+          "type": "string"
+        },
+        "enableIdempotence": {
+          "title": "+kubebuilder:default=true",
           "type": "boolean"
         },
         "kafka": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Kafka"
+        },
+        "linger": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Duration"
+        },
+        "maxInflight": {
+          "title": "The maximum number of messages to be in-flight when async.\n+kubebuilder:default=20",
+          "type": "integer"
+        },
+        "messageTimeout": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Duration",
+          "title": "+kubebuilder:default=\"30s\""
         }
       },
       "type": "object"
     },
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.KafkaSource": {
       "properties": {
+        "fetchMin": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.api.resource.Quantity",
+          "title": "+kubebuilder:default=\"100Ki\""
+        },
+        "fetchWaitMax": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Duration",
+          "title": "+kubebuilder:default=\"500ms\""
+        },
+        "groupId": {
+          "description": "GroupID is the consumer group ID. If not specified, a unique deterministic group ID is generated.",
+          "type": "string"
+        },
         "kafka": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.Kafka"
         },
@@ -654,6 +732,14 @@
             "type": "string"
           },
           "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.NATSAuth": {
+      "properties": {
+        "token": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         }
       },
       "type": "object"
@@ -816,7 +902,7 @@
     "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.STAN": {
       "properties": {
         "auth": {
-          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.STANAuth"
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.NATSAuth"
         },
         "clusterId": {
           "type": "string"
@@ -840,14 +926,6 @@
         },
         "subjectPrefix": {
           "type": "string"
-        }
-      },
-      "type": "object"
-    },
-    "github.com.argoproj_labs.argo_dataflow.api.v1alpha1.STANAuth": {
-      "properties": {
-        "token": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         }
       },
       "type": "object"
@@ -883,8 +961,14 @@
         "db": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.DBSink"
         },
+        "deadLetterQueue": {
+          "type": "boolean"
+        },
         "http": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.HTTPSink"
+        },
+        "jetstream": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.JetStreamSink"
         },
         "kafka": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.KafkaSink"
@@ -918,6 +1002,9 @@
         },
         "http": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.HTTPSource"
+        },
+        "jetstream": {
+          "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.JetStreamSource"
         },
         "kafka": {
           "$ref": "#/definitions/github.com.argoproj_labs.argo_dataflow.api.v1alpha1.KafkaSource"
@@ -1251,6 +1338,10 @@
           "title": "ExchangeType is rabbitmq exchange type",
           "type": "string"
         },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
+        },
         "jsonBody": {
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
           "type": "boolean"
@@ -1324,6 +1415,10 @@
     },
     "io.argoproj.events.v1alpha1.AMQPQueueDeclareConfig": {
       "properties": {
+        "arguments": {
+          "title": "Arguments of a queue (also known as \"x-arguments\") used for optional features and plugins\n+optional",
+          "type": "string"
+        },
         "autoDelete": {
           "title": "AutoDelete removes the queue when no consumers are active\n+optional",
           "type": "boolean"
@@ -1352,7 +1447,7 @@
       "properties": {
         "accessKey": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
-          "title": "AccessKey refers K8s secret containing aws access key"
+          "title": "AccessKey refers K8s secret containing aws access key\n+optional"
         },
         "functionName": {
           "description": "FunctionName refers to the name of the function to invoke.",
@@ -1380,9 +1475,13 @@
           "title": "Region is AWS region",
           "type": "string"
         },
+        "roleARN": {
+          "title": "RoleARN is the Amazon Resource Name (ARN) of the role to assume.\n+optional",
+          "type": "string"
+        },
         "secretKey": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
-          "title": "SecretKey refers K8s secret containing aws secret key"
+          "title": "SecretKey refers K8s secret containing aws secret key\n+optional"
         }
       },
       "title": "AWSLambdaTrigger refers to specification of the trigger to invoke an AWS Lambda function",
@@ -1491,6 +1590,10 @@
     },
     "io.argoproj.events.v1alpha1.AzureEventsHubEventSource": {
       "properties": {
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
+        },
         "fqdn": {
           "title": "FQDN of the EventHubs namespace you created\nMore info at https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-get-connection-string",
           "type": "string"
@@ -1554,6 +1657,82 @@
       "title": "BasicAuth contains the reference to K8s secrets that holds the username and password",
       "type": "object"
     },
+    "io.argoproj.events.v1alpha1.BitbucketAuth": {
+      "properties": {
+        "basic": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.BitbucketBasicAuth",
+          "title": "Basic is BasicAuth auth strategy.\n+optional"
+        },
+        "token": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "title": "OAuthToken refers to the K8s secret that holds the OAuth Bearer token.\n+optional"
+        }
+      },
+      "title": "BitbucketAuth holds the different auth strategies for connecting to Bitbucket",
+      "type": "object"
+    },
+    "io.argoproj.events.v1alpha1.BitbucketBasicAuth": {
+      "properties": {
+        "password": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "Password refers to the K8s secret that holds the password."
+        },
+        "username": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "Username refers to the K8s secret that holds the username."
+        }
+      },
+      "title": "BasicAuth holds the information required to authenticate user via basic auth mechanism",
+      "type": "object"
+    },
+    "io.argoproj.events.v1alpha1.BitbucketEventSource": {
+      "properties": {
+        "auth": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.BitbucketAuth",
+          "description": "Auth information required to connect to Bitbucket."
+        },
+        "deleteHookOnFinish": {
+          "title": "DeleteHookOnFinish determines whether to delete the defined Bitbucket hook once the event source is stopped.\n+optional",
+          "type": "boolean"
+        },
+        "events": {
+          "description": "Events this webhook is subscribed to.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
+        },
+        "metadata": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Metadata holds the user defined metadata which will be passed along the event payload.\n+optional",
+          "type": "object"
+        },
+        "owner": {
+          "description": "Owner of the repository.",
+          "type": "string"
+        },
+        "projectKey": {
+          "title": "ProjectKey is the key of the project for which integration needs to setup",
+          "type": "string"
+        },
+        "repositorySlug": {
+          "description": "RepositorySlug is a URL-friendly version of a repository name, automatically generated by Bitbucket for use in the URL.",
+          "type": "string"
+        },
+        "webhook": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.WebhookContext",
+          "title": "Webhook refers to the configuration required to run an http server"
+        }
+      },
+      "title": "BitbucketEventSource describes the event source for Bitbucket",
+      "type": "object"
+    },
     "io.argoproj.events.v1alpha1.BitbucketServerEventSource": {
       "properties": {
         "accessToken": {
@@ -1575,6 +1754,10 @@
           "title": "Events are bitbucket event to listen to.\nRefer https://confluence.atlassian.com/bitbucketserver/event-payload-938025882.html",
           "type": "array"
         },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
+        },
         "metadata": {
           "additionalProperties": {
             "type": "string"
@@ -1583,11 +1766,18 @@
           "type": "object"
         },
         "projectKey": {
-          "title": "ProjectKey is the key of project for which integration needs to setup",
+          "title": "DeprecatedProjectKey is the key of project for which integration needs to setup\nDeprecated: use Repositories instead. Will be unsupported in v1.8\n+optional",
           "type": "string"
         },
+        "repositories": {
+          "items": {
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.BitbucketServerRepository"
+          },
+          "title": "Repositories holds a list of repositories for which integration needs to setup\n+optional",
+          "type": "array"
+        },
         "repositorySlug": {
-          "title": "RepositorySlug is the slug of the repository for which integration needs to setup",
+          "title": "DeprecatedRepositorySlug is the slug of the repository for which integration needs to setup\nDeprecated: use Repositories instead. Will be unsupported in v1.8\n+optional",
           "type": "string"
         },
         "webhook": {
@@ -1602,16 +1792,34 @@
       "title": "BitbucketServerEventSource refers to event-source related to Bitbucket Server events",
       "type": "object"
     },
+    "io.argoproj.events.v1alpha1.BitbucketServerRepository": {
+      "properties": {
+        "projectKey": {
+          "title": "ProjectKey is the key of project for which integration needs to setup",
+          "type": "string"
+        },
+        "repositorySlug": {
+          "title": "RepositorySlug is the slug of the repository for which integration needs to setup",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "io.argoproj.events.v1alpha1.CalendarEventSource": {
       "properties": {
         "exclusionDates": {
+          "description": "ExclusionDates defines the list of DATE-TIME exceptions for recurring events.",
           "items": {
             "type": "string"
           },
           "type": "array"
         },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
+        },
         "interval": {
-          "description": "Interval is a string that describes an interval duration, e.g. 1s, 30m, 2h...",
+          "title": "Interval is a string that describes an interval duration, e.g. 1s, 30m, 2h...\n+optional",
           "type": "string"
         },
         "metadata": {
@@ -1626,7 +1834,7 @@
           "title": "Persistence hold the configuration for event persistence"
         },
         "schedule": {
-          "title": "Schedule is a cron-like expression. For reference, see: https://en.wikipedia.org/wiki/Cron",
+          "title": "Schedule is a cron-like expression. For reference, see: https://en.wikipedia.org/wiki/Cron\n+optional",
           "type": "string"
         },
         "timezone": {
@@ -1674,6 +1882,28 @@
         }
       },
       "title": "Condition contains details about resource state",
+      "type": "object"
+    },
+    "io.argoproj.events.v1alpha1.ConditionsResetByTime": {
+      "properties": {
+        "cron": {
+          "title": "Cron is a cron-like expression. For reference, see: https://en.wikipedia.org/wiki/Cron",
+          "type": "string"
+        },
+        "timezone": {
+          "title": "+optional",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.events.v1alpha1.ConditionsResetCriteria": {
+      "properties": {
+        "byTime": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.ConditionsResetByTime",
+          "title": "Schedule is a cron-like expression. For reference, see: https://en.wikipedia.org/wiki/Cron"
+        }
+      },
       "type": "object"
     },
     "io.argoproj.events.v1alpha1.ConfigMapPersistence": {
@@ -1779,6 +2009,10 @@
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.Backoff",
           "title": "Backoff holds parameters applied to connection.\n+optional"
         },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
+        },
         "jsonBody": {
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
           "type": "boolean"
@@ -1854,9 +2088,17 @@
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventDependencyFilter",
           "title": "Filters and rules governing toleration of success and constraints on the context and data of an event"
         },
+        "filtersLogicalOperator": {
+          "description": "FiltersLogicalOperator defines how different filters are evaluated together.\nAvailable values: and (\u0026\u0026), or (||)\nIs optional and if left blank treated as and (\u0026\u0026).",
+          "type": "string"
+        },
         "name": {
           "title": "Name is a unique name of this dependency",
           "type": "string"
+        },
+        "transform": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventDependencyTransformer",
+          "title": "Transform transforms the event data"
         }
       },
       "title": "EventDependency describes a dependency",
@@ -1876,6 +2118,14 @@
           "title": "Data filter constraints with escalation",
           "type": "array"
         },
+        "dataLogicalOperator": {
+          "description": "DataLogicalOperator defines how multiple Data filters (if defined) are evaluated together.\nAvailable values: and (\u0026\u0026), or (||)\nIs optional and if left blank treated as and (\u0026\u0026).",
+          "type": "string"
+        },
+        "exprLogicalOperator": {
+          "description": "ExprLogicalOperator defines how multiple Exprs filters (if defined) are evaluated together.\nAvailable values: and (\u0026\u0026), or (||)\nIs optional and if left blank treated as and (\u0026\u0026).",
+          "type": "string"
+        },
         "exprs": {
           "description": "Exprs contains the list of expressions evaluated against the event payload.",
           "items": {
@@ -1888,6 +2138,20 @@
           "title": "Time filter on the event with escalation"
         }
       },
+      "type": "object"
+    },
+    "io.argoproj.events.v1alpha1.EventDependencyTransformer": {
+      "properties": {
+        "jq": {
+          "title": "JQ holds the jq command applied for transformation\n+optional",
+          "type": "string"
+        },
+        "script": {
+          "title": "Script refers to a Lua script used to transform the event\n+optional",
+          "type": "string"
+        }
+      },
+      "title": "EventDependencyTransformer transforms the event",
       "type": "object"
     },
     "io.argoproj.events.v1alpha1.EventPersistence": {
@@ -1919,6 +2183,14 @@
       "title": "EventSource is the definition of a eventsource resource\n+genclient\n+kubebuilder:resource:shortName=es\n+kubebuilder:subresource:status\n+k8s:deepcopy-gen:interfaces=io.k8s.apimachinery/pkg/runtime.Object\n+k8s:openapi-gen=true",
       "type": "object"
     },
+    "io.argoproj.events.v1alpha1.EventSourceFilter": {
+      "properties": {
+        "expression": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "io.argoproj.events.v1alpha1.EventSourceList": {
       "properties": {
         "items": {
@@ -1948,6 +2220,13 @@
             "$ref": "#/definitions/io.argoproj.events.v1alpha1.AzureEventsHubEventSource"
           },
           "title": "AzureEventsHub event sources",
+          "type": "object"
+        },
+        "bitbucket": {
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.BitbucketEventSource"
+          },
+          "title": "Bitbucket event sources",
           "type": "object"
         },
         "bitbucketserver": {
@@ -2172,6 +2451,10 @@
           "title": "Type of file operations to watch\nRefer https://github.com/fsnotify/fsnotify/blob/master/fsnotify.go for more information",
           "type": "string"
         },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
+        },
         "metadata": {
           "additionalProperties": {
             "type": "string"
@@ -2200,6 +2483,10 @@
         "config": {
           "title": "Config is the event source configuration",
           "type": "string"
+        },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
         },
         "insecure": {
           "description": "Insecure determines the type of connection.",
@@ -2294,6 +2581,23 @@
       "title": "GitRemoteConfig contains the configuration of a Git remote",
       "type": "object"
     },
+    "io.argoproj.events.v1alpha1.GithubAppCreds": {
+      "properties": {
+        "appID": {
+          "title": "AppID refers to the GitHub App ID for the application you created",
+          "type": "string"
+        },
+        "installationID": {
+          "title": "InstallationID refers to the Installation ID of the GitHub app you created and installed",
+          "type": "string"
+        },
+        "privateKey": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "title": "PrivateKey refers to a K8s secret containing the GitHub app private key"
+        }
+      },
+      "type": "object"
+    },
     "io.argoproj.events.v1alpha1.GithubEventSource": {
       "properties": {
         "active": {
@@ -2316,7 +2620,16 @@
           "items": {
             "type": "string"
           },
+          "title": "Events refer to Github events to which the event source will subscribe",
           "type": "array"
+        },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
+        },
+        "githubApp": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.GithubAppCreds",
+          "title": "GitHubApp holds the GitHub app credentials\n+optional"
         },
         "githubBaseURL": {
           "title": "GitHub base URL (for GitHub Enterprise)\n+optional",
@@ -2327,7 +2640,7 @@
           "type": "string"
         },
         "id": {
-          "title": "Id is the webhook's id\nDeprecated: This is not used at all, will be removed in v1.6",
+          "title": "Id is the webhook's id\nDeprecated: This is not used at all, will be removed in v1.6\n+optional",
           "type": "string"
         },
         "insecure": {
@@ -2341,19 +2654,26 @@
           "title": "Metadata holds the user defined metadata which will passed along the event payload.\n+optional",
           "type": "object"
         },
+        "organizations": {
+          "description": "Organizations holds the names of organizations (used for organization level webhooks). Not required if Repositories is set.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "owner": {
-          "title": "DeprecatedOwner refers to GitHub owner name i.e. argoproj\nDeprecated: use Repositories instead. Will be unsupported in v 1.6",
+          "title": "DeprecatedOwner refers to GitHub owner name i.e. argoproj\nDeprecated: use Repositories instead. Will be unsupported in v 1.6\n+optional",
           "type": "string"
         },
         "repositories": {
+          "description": "Repositories holds the information of repositories, which uses repo owner as the key,\nand list of repo names as the value. Not required if Organizations is set.",
           "items": {
             "$ref": "#/definitions/io.argoproj.events.v1alpha1.OwnedRepositories"
           },
-          "title": "Repositories holds the information of repositories, which uses repo owner as the key,\nand list of repo names as the value",
           "type": "array"
         },
         "repository": {
-          "title": "DeprecatedRepository refers to GitHub repo name i.e. argo-events\nDeprecated: use Repositories instead. Will be unsupported in v 1.6",
+          "title": "DeprecatedRepository refers to GitHub repo name i.e. argo-events\nDeprecated: use Repositories instead. Will be unsupported in v 1.6\n+optional",
           "type": "string"
         },
         "webhook": {
@@ -2389,6 +2709,10 @@
           },
           "type": "array"
         },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
+        },
         "gitlabBaseURL": {
           "title": "GitlabBaseURL is the base URL for API requests to a custom endpoint",
           "type": "string"
@@ -2401,7 +2725,7 @@
           "type": "object"
         },
         "projectID": {
-          "title": "DeprecatedProjectID is the id of project for which integration needs to setup\nDeprecated: use Projects instead. Will be unsupported in v 1.7",
+          "title": "DeprecatedProjectID is the id of project for which integration needs to setup\nDeprecated: use Projects instead. Will be unsupported in v 1.7\n+optional",
           "type": "string"
         },
         "projects": {
@@ -2434,6 +2758,10 @@
         "checkInterval": {
           "title": "CheckInterval is a string that describes an interval duration to check the directory state, e.g. 1s, 30m, 2h... (defaults to 1m)",
           "type": "string"
+        },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
         },
         "hdfsUser": {
           "description": "HDFSUser is the user to access HDFS file system.\nIt is ignored if either ccache or keytab is used.",
@@ -2596,6 +2924,10 @@
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.KafkaConsumerGroup",
           "title": "Consumer group for kafka client\n+optional"
         },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
+        },
         "jsonBody": {
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
           "type": "boolean"
@@ -2719,6 +3051,10 @@
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.Backoff",
           "description": "ConnectionBackoff holds backoff applied to connection."
         },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
+        },
         "jsonBody": {
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
           "type": "boolean"
@@ -2796,6 +3132,10 @@
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.Backoff",
           "description": "ConnectionBackoff holds backoff applied to connection."
         },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
+        },
         "jsonBody": {
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
           "type": "boolean"
@@ -2862,6 +3202,10 @@
         "connectionBackoff": {
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.Backoff",
           "title": "Backoff holds parameters applied to connection.\n+optional"
+        },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
         },
         "hostAddress": {
           "title": "HostAddress is the address of the host for NSQ lookup",
@@ -2940,7 +3284,7 @@
           "type": "array"
         },
         "owner": {
-          "title": "Orgnization or user name",
+          "title": "Organization or user name",
           "type": "string"
         }
       },
@@ -2970,6 +3314,10 @@
         "deleteSubscriptionOnFinish": {
           "title": "DeleteSubscriptionOnFinish determines whether to delete the GCP PubSub subscription once the event source is stopped.\n+optional",
           "type": "boolean"
+        },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
         },
         "jsonBody": {
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
@@ -3010,6 +3358,10 @@
         "connectionBackoff": {
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.Backoff",
           "title": "Backoff holds parameters applied to connection.\n+optional"
+        },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
         },
         "jsonBody": {
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
@@ -3132,6 +3484,10 @@
         "db": {
           "title": "DB to use. If not specified, default DB 0 will be used.\n+optional",
           "type": "integer"
+        },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
         },
         "hostAddress": {
           "title": "HostAddress refers to the address of the Redis host/server",
@@ -3321,6 +3677,10 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "title": "AccessKey refers K8s secret containing aws access key"
         },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
+        },
         "metadata": {
           "additionalProperties": {
             "type": "string"
@@ -3361,6 +3721,18 @@
         "accessKey": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "title": "AccessKey refers K8s secret containing aws access key"
+        },
+        "dlq": {
+          "title": "DLQ specifies if a dead-letter queue is configured for messages that can't be processed successfully.\nIf set to true, messages with invalid payload won't be acknowledged to allow to forward them farther to the dead-letter queue.\nThe default value is false.\n+optional",
+          "type": "boolean"
+        },
+        "endpoint": {
+          "title": "Endpoint configures connection to a specific SQS endpoint instead of Amazons servers\n+optional",
+          "type": "string"
+        },
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
         },
         "jsonBody": {
           "title": "JSONBody specifies that all event body payload coming from this\nsource will be JSON\n+optional",
@@ -3527,6 +3899,10 @@
     },
     "io.argoproj.events.v1alpha1.SlackEventSource": {
       "properties": {
+        "filter": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
+          "title": "Filter\n+optional"
+        },
         "metadata": {
           "additionalProperties": {
             "type": "string"
@@ -3735,6 +4111,10 @@
         "clientKeySecret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "title": "ClientKeySecret refers to the secret that contains the client key"
+        },
+        "insecureSkipVerify": {
+          "title": "If true, skips creation of TLSConfig with certs and creates an empty TLSConfig. (Defaults to false)\n+optional",
+          "type": "boolean"
         }
       },
       "type": "object"
@@ -3924,6 +4304,13 @@
         "conditions": {
           "title": "Conditions is the conditions to execute the trigger.\nFor example: \"(dep01 || dep02) \u0026\u0026 dep04\"\n+optional",
           "type": "string"
+        },
+        "conditionsReset": {
+          "items": {
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.ConditionsResetCriteria"
+          },
+          "title": "Criteria to reset the conditons\n+optional",
+          "type": "array"
         },
         "custom": {
           "$ref": "#/definitions/io.argoproj.events.v1alpha1.CustomTrigger",
@@ -4465,7 +4852,7 @@
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
         },
         "spec": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplateSpec"
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowSpec"
         }
       },
       "required": [
@@ -4565,14 +4952,14 @@
     "io.argoproj.workflow.v1alpha1.ContainerNode": {
       "properties": {
         "args": {
-          "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+          "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
           "items": {
             "type": "string"
           },
           "type": "array"
         },
         "command": {
-          "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+          "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
           "items": {
             "type": "string"
           },
@@ -4644,7 +5031,7 @@
         },
         "securityContext": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecurityContext",
-          "description": "Security options the pod should run with. More info: https://kubernetes.io/docs/concepts/policy/security-context/ More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/"
+          "description": "SecurityContext defines the security options the container should be run with. If set, the fields of SecurityContext override the equivalent fields of PodSecurityContext. More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/"
         },
         "startupProbe": {
           "$ref": "#/definitions/io.k8s.api.core.v1.Probe",
@@ -5524,6 +5911,17 @@
       },
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.LabelValueFrom": {
+      "properties": {
+        "expression": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "expression"
+      ],
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.LabelValues": {
       "description": "Labels is list of workflow labels",
       "properties": {
@@ -6364,14 +6762,14 @@
       "description": "ScriptTemplate is a template subtype to enable scripting through code steps",
       "properties": {
         "args": {
-          "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+          "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
           "items": {
             "type": "string"
           },
           "type": "array"
         },
         "command": {
-          "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+          "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
           "items": {
             "type": "string"
           },
@@ -6437,7 +6835,7 @@
         },
         "securityContext": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecurityContext",
-          "description": "Security options the pod should run with. More info: https://kubernetes.io/docs/concepts/policy/security-context/ More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/"
+          "description": "SecurityContext defines the security options the container should be run with. If set, the fields of SecurityContext override the equivalent fields of PodSecurityContext. More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/"
         },
         "source": {
           "description": "Source contains the source code of the script to execute",
@@ -6957,14 +7355,14 @@
       "description": "UserContainer is a container specified by a user.",
       "properties": {
         "args": {
-          "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+          "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
           "items": {
             "type": "string"
           },
           "type": "array"
         },
         "command": {
-          "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+          "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
           "items": {
             "type": "string"
           },
@@ -7034,7 +7432,7 @@
         },
         "securityContext": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecurityContext",
-          "description": "Security options the pod should run with. More info: https://kubernetes.io/docs/concepts/policy/security-context/ More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/"
+          "description": "SecurityContext defines the security options the container should be run with. If set, the fields of SecurityContext override the equivalent fields of PodSecurityContext. More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/"
         },
         "startupProbe": {
           "$ref": "#/definitions/io.k8s.api.core.v1.Probe",
@@ -7353,6 +7751,29 @@
       ],
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.WorkflowMetadata": {
+      "properties": {
+        "annotations": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "labelsFrom": {
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LabelValueFrom"
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.WorkflowResubmitRequest": {
       "properties": {
         "memoized": {
@@ -7615,6 +8036,10 @@
           "x-kubernetes-patch-merge-key": "name",
           "x-kubernetes-patch-strategy": "merge"
         },
+        "workflowMetadata": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowMetadata",
+          "description": "WorkflowMetadata contains some metadata of the workflow to be refer"
+        },
         "workflowTemplateRef": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplateRef",
           "description": "WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution"
@@ -7856,7 +8281,7 @@
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
         },
         "spec": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplateSpec"
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowSpec"
         }
       },
       "required": [
@@ -7940,211 +8365,6 @@
         "name": {
           "description": "Name is the resource name of the workflow template.",
           "type": "string"
-        }
-      },
-      "type": "object"
-    },
-    "io.argoproj.workflow.v1alpha1.WorkflowTemplateSpec": {
-      "description": "WorkflowTemplateSpec is a spec of WorkflowTemplate.",
-      "properties": {
-        "activeDeadlineSeconds": {
-          "description": "Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the io.argoproj.workflow.v1alpha1. A value of zero is used to terminate a Running workflow",
-          "type": "integer"
-        },
-        "affinity": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.Affinity",
-          "description": "Affinity sets the scheduling constraints for all pods in the io.argoproj.workflow.v1alpha1. Can be overridden by an affinity specified in the template"
-        },
-        "archiveLogs": {
-          "description": "ArchiveLogs indicates if the container logs should be archived",
-          "type": "boolean"
-        },
-        "arguments": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments",
-          "description": "Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{io.argoproj.workflow.v1alpha1.parameters.myparam}}"
-        },
-        "artifactRepositoryRef": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactRepositoryRef",
-          "description": "ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config."
-        },
-        "automountServiceAccountToken": {
-          "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.",
-          "type": "boolean"
-        },
-        "dnsConfig": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.PodDNSConfig",
-          "description": "PodDNSConfig defines the DNS parameters of a pod in addition to those generated from DNSPolicy."
-        },
-        "dnsPolicy": {
-          "description": "Set DNS policy for the pod. Defaults to \"ClusterFirst\". Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'. DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy. To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'.",
-          "type": "string"
-        },
-        "entrypoint": {
-          "description": "Entrypoint is a template reference to the starting point of the io.argoproj.workflow.v1alpha1.",
-          "type": "string"
-        },
-        "executor": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorConfig",
-          "description": "Executor holds configurations of executor containers of the io.argoproj.workflow.v1alpha1."
-        },
-        "hooks": {
-          "additionalProperties": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LifecycleHook"
-          },
-          "description": "Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step",
-          "type": "object"
-        },
-        "hostAliases": {
-          "items": {
-            "$ref": "#/definitions/io.k8s.api.core.v1.HostAlias"
-          },
-          "type": "array",
-          "x-kubernetes-patch-merge-key": "ip",
-          "x-kubernetes-patch-strategy": "merge"
-        },
-        "hostNetwork": {
-          "description": "Host networking requested for this workflow pod. Default to false.",
-          "type": "boolean"
-        },
-        "imagePullSecrets": {
-          "description": "ImagePullSecrets is a list of references to secrets in the same namespace to use for pulling any images in pods that reference this ServiceAccount. ImagePullSecrets are distinct from Secrets because Secrets can be mounted in the pod, but ImagePullSecrets are only accessed by the kubelet. More info: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod",
-          "items": {
-            "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
-          },
-          "type": "array",
-          "x-kubernetes-patch-merge-key": "name",
-          "x-kubernetes-patch-strategy": "merge"
-        },
-        "metrics": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metrics",
-          "description": "Metrics are a list of metrics emitted from this Workflow"
-        },
-        "nodeSelector": {
-          "additionalProperties": {
-            "type": "string"
-          },
-          "description": "NodeSelector is a selector which will result in all pods of the workflow to be scheduled on the selected node(s). This is able to be overridden by a nodeSelector specified in the template.",
-          "type": "object"
-        },
-        "onExit": {
-          "description": "OnExit is a template reference which is invoked at the end of the workflow, irrespective of the success, failure, or error of the primary io.argoproj.workflow.v1alpha1.",
-          "type": "string"
-        },
-        "parallelism": {
-          "description": "Parallelism limits the max total parallel pods that can execute at the same time in a workflow",
-          "type": "integer"
-        },
-        "podDisruptionBudget": {
-          "$ref": "#/definitions/io.k8s.api.policy.v1beta1.PodDisruptionBudgetSpec",
-          "description": "PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods. Controller will automatically add the selector with workflow name, if selector is empty. Optional: Defaults to empty."
-        },
-        "podGC": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.PodGC",
-          "description": "PodGC describes the strategy to use when to deleting completed pods"
-        },
-        "podMetadata": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metadata",
-          "description": "PodMetadata defines additional metadata that should be applied to workflow pods"
-        },
-        "podPriority": {
-          "description": "Priority to apply to workflow pods.",
-          "type": "integer"
-        },
-        "podPriorityClassName": {
-          "description": "PriorityClassName to apply to workflow pods.",
-          "type": "string"
-        },
-        "podSpecPatch": {
-          "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).",
-          "type": "string"
-        },
-        "priority": {
-          "description": "Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.",
-          "type": "integer"
-        },
-        "retryStrategy": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.RetryStrategy",
-          "description": "RetryStrategy for all templates in the io.argoproj.workflow.v1alpha1."
-        },
-        "schedulerName": {
-          "description": "Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither specified.",
-          "type": "string"
-        },
-        "securityContext": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.PodSecurityContext",
-          "description": "SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field."
-        },
-        "serviceAccountName": {
-          "description": "ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.",
-          "type": "string"
-        },
-        "shutdown": {
-          "description": "Shutdown will shutdown the workflow according to its ShutdownStrategy",
-          "type": "string"
-        },
-        "suspend": {
-          "description": "Suspend will suspend the workflow and prevent execution of any future steps in the workflow",
-          "type": "boolean"
-        },
-        "synchronization": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Synchronization",
-          "description": "Synchronization holds synchronization lock configuration for this Workflow"
-        },
-        "templateDefaults": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template",
-          "description": "TemplateDefaults holds default template values that will apply to all templates in the Workflow, unless overridden on the template-level"
-        },
-        "templates": {
-          "description": "Templates is a list of workflow templates used in a workflow",
-          "items": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
-          },
-          "type": "array",
-          "x-kubernetes-patch-merge-key": "name",
-          "x-kubernetes-patch-strategy": "merge"
-        },
-        "tolerations": {
-          "description": "Tolerations to apply to workflow pods.",
-          "items": {
-            "$ref": "#/definitions/io.k8s.api.core.v1.Toleration"
-          },
-          "type": "array",
-          "x-kubernetes-patch-merge-key": "key",
-          "x-kubernetes-patch-strategy": "merge"
-        },
-        "ttlStrategy": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TTLStrategy",
-          "description": "TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values."
-        },
-        "volumeClaimGC": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.VolumeClaimGC",
-          "description": "VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows"
-        },
-        "volumeClaimTemplates": {
-          "description": "VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow",
-          "items": {
-            "$ref": "#/definitions/io.k8s.api.core.v1.PersistentVolumeClaim"
-          },
-          "type": "array",
-          "x-kubernetes-patch-merge-key": "name",
-          "x-kubernetes-patch-strategy": "merge"
-        },
-        "volumes": {
-          "description": "Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1.",
-          "items": {
-            "$ref": "#/definitions/io.k8s.api.core.v1.Volume"
-          },
-          "type": "array",
-          "x-kubernetes-patch-merge-key": "name",
-          "x-kubernetes-patch-strategy": "merge"
-        },
-        "workflowMetadata": {
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta",
-          "description": "WorkflowMetadata contains some metadata of the workflow to be refer"
-        },
-        "workflowTemplateRef": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplateRef",
-          "description": "WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution"
         }
       },
       "type": "object"
@@ -8437,7 +8657,8 @@
       "required": [
         "key"
       ],
-      "type": "object"
+      "type": "object",
+      "x-kubernetes-map-type": "atomic"
     },
     "io.k8s.api.core.v1.ConfigMapProjection": {
       "description": "Adapts a ConfigMap into a projected volume.\n\nThe contents of the target ConfigMap's Data field will be presented in a projected volume as files using the keys in the Data field as the file names, unless the items element is populated with specific mappings of keys to paths. Note that this is identical to a configmap volume source without the default mode.",
@@ -8464,7 +8685,7 @@
       "description": "Adapts a ConfigMap into a volume.\n\nThe contents of the target ConfigMap's Data field will be presented in a volume as files using the keys in the Data field as the file names, unless the items element is populated with specific mappings of keys to paths. ConfigMap volumes support ownership management and SELinux relabeling.",
       "properties": {
         "defaultMode": {
-          "description": "Optional: mode bits to use on created files by default. Must be a value between 0 and 0777. Defaults to 0644. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
+          "description": "Optional: mode bits used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. Defaults to 0644. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
           "type": "integer"
         },
         "items": {
@@ -8489,14 +8710,14 @@
       "description": "A single application container that you want to run within a pod.",
       "properties": {
         "args": {
-          "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+          "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
           "items": {
             "type": "string"
           },
           "type": "array"
         },
         "command": {
-          "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+          "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
           "items": {
             "type": "string"
           },
@@ -8523,7 +8744,12 @@
           "type": "string"
         },
         "imagePullPolicy": {
-          "description": "Image pull policy. One of Always, Never, IfNotPresent. Defaults to Always if :latest tag is specified, or IfNotPresent otherwise. Cannot be updated. More info: https://kubernetes.io/docs/concepts/containers/images#updating-images",
+          "description": "Image pull policy. One of Always, Never, IfNotPresent. Defaults to Always if :latest tag is specified, or IfNotPresent otherwise. Cannot be updated. More info: https://kubernetes.io/docs/concepts/containers/images#updating-images\n\nPossible enum values:\n - `\"Always\"` means that kubelet always attempts to pull the latest image. Container will fail If the pull fails.\n - `\"IfNotPresent\"` means that kubelet pulls if the image isn't present on disk. Container will fail if the image isn't present and the pull fails.\n - `\"Never\"` means that kubelet never pulls an image, but only uses a local image. Container will fail if the image isn't present",
+          "enum": [
+            "Always",
+            "IfNotPresent",
+            "Never"
+          ],
           "type": "string"
         },
         "lifecycle": {
@@ -8558,15 +8784,15 @@
         },
         "resources": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements",
-          "description": "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/"
+          "description": "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/"
         },
         "securityContext": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecurityContext",
-          "description": "Security options the pod should run with. More info: https://kubernetes.io/docs/concepts/policy/security-context/ More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/"
+          "description": "SecurityContext defines the security options the container should be run with. If set, the fields of SecurityContext override the equivalent fields of PodSecurityContext. More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/"
         },
         "startupProbe": {
           "$ref": "#/definitions/io.k8s.api.core.v1.Probe",
-          "description": "StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. This is an alpha feature enabled by the StartupProbe feature flag. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes"
+          "description": "StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes"
         },
         "stdin": {
           "description": "Whether this container should allocate a buffer for stdin in the container runtime. If this is not set, reads from stdin in the container will always result in EOF. Default is false.",
@@ -8581,7 +8807,11 @@
           "type": "string"
         },
         "terminationMessagePolicy": {
-          "description": "Indicate how the termination message should be populated. File will use the contents of terminationMessagePath to populate the container status message on both success and failure. FallbackToLogsOnError will use the last chunk of container log output if the termination message file is empty and the container exited with an error. The log output is limited to 2048 bytes or 80 lines, whichever is smaller. Defaults to File. Cannot be updated.",
+          "description": "Indicate how the termination message should be populated. File will use the contents of terminationMessagePath to populate the container status message on both success and failure. FallbackToLogsOnError will use the last chunk of container log output if the termination message file is empty and the container exited with an error. The log output is limited to 2048 bytes or 80 lines, whichever is smaller. Defaults to File. Cannot be updated.\n\nPossible enum values:\n - `\"FallbackToLogsOnError\"` will read the most recent contents of the container logs for the container status message when the container exits with an error and the terminationMessagePath has no contents.\n - `\"File\"` is the default behavior and will set the container status message to the contents of the container's terminationMessagePath when the container exits.",
+          "enum": [
+            "FallbackToLogsOnError",
+            "File"
+          ],
           "type": "string"
         },
         "tty": {
@@ -8589,7 +8819,7 @@
           "type": "boolean"
         },
         "volumeDevices": {
-          "description": "volumeDevices is the list of block devices to be used by the container. This is a beta feature.",
+          "description": "volumeDevices is the list of block devices to be used by the container.",
           "items": {
             "$ref": "#/definitions/io.k8s.api.core.v1.VolumeDevice"
           },
@@ -8636,7 +8866,12 @@
           "type": "string"
         },
         "protocol": {
-          "description": "Protocol for port. Must be UDP, TCP, or SCTP. Defaults to \"TCP\".",
+          "description": "Protocol for port. Must be UDP, TCP, or SCTP. Defaults to \"TCP\".\n\nPossible enum values:\n - `\"SCTP\"` is the SCTP protocol.\n - `\"TCP\"` is the TCP protocol.\n - `\"UDP\"` is the UDP protocol.",
+          "enum": [
+            "SCTP",
+            "TCP",
+            "UDP"
+          ],
           "type": "string"
         }
       },
@@ -8666,7 +8901,7 @@
           "description": "Required: Selects a field of the pod: only annotations, labels, name and namespace are supported."
         },
         "mode": {
-          "description": "Optional: mode bits to use on this file, must be a value between 0 and 0777. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
+          "description": "Optional: mode bits used to set permissions on this file, must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
           "type": "integer"
         },
         "path": {
@@ -8687,7 +8922,7 @@
       "description": "DownwardAPIVolumeSource represents a volume containing downward API info. Downward API volumes support ownership management and SELinux relabeling.",
       "properties": {
         "defaultMode": {
-          "description": "Optional: mode bits to use on created files by default. Must be a value between 0 and 0777. Defaults to 0644. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
+          "description": "Optional: mode bits to use on created files by default. Must be a Optional: mode bits used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. Defaults to 0644. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
           "type": "integer"
         },
         "items": {
@@ -8740,7 +8975,7 @@
           "type": "string"
         },
         "value": {
-          "description": "Variable references $(VAR_NAME) are expanded using the previous defined environment variables in the container and any service environment variables. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Defaults to \"\".",
+          "description": "Variable references $(VAR_NAME) are expanded using the previously defined environment variables in the container and any service environment variables. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Defaults to \"\".",
           "type": "string"
         },
         "valueFrom": {
@@ -8762,7 +8997,7 @@
         },
         "fieldRef": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ObjectFieldSelector",
-          "description": "Selects a field of the pod: supports metadata.name, metadata.namespace, metadata.labels, metadata.annotations, spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs."
+          "description": "Selects a field of the pod: supports metadata.name, metadata.namespace, `metadata.labels['\u003cKEY\u003e']`, `metadata.annotations['\u003cKEY\u003e']`, spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs."
         },
         "resourceFieldRef": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ResourceFieldSelector",
@@ -8780,13 +9015,13 @@
       "properties": {
         "volumeClaimTemplate": {
           "$ref": "#/definitions/io.k8s.api.core.v1.PersistentVolumeClaimTemplate",
-          "description": "Will be used to create a stand-alone PVC to provision the volume.\nThe pod in which this EphemeralVolumeSource is embedded will be the\nowner of the PVC, i.e. the PVC will be deleted together with the\npod.  The name of the PVC will be `\u003cpod name\u003e-\u003cvolume name\u003e` where\n`\u003cvolume name\u003e` is the name from the `PodSpec.Volumes` array\nentry. Pod validation will reject the pod if the concatenated name\nis not valid for a PVC (for example, too long).\n\nAn existing PVC with that name that is not owned by the pod\nwill *not* be used for the pod to avoid using an unrelated\nvolume by mistake. Starting the pod is then blocked until\nthe unrelated PVC is removed. If such a pre-created PVC is\nmeant to be used by the pod, the PVC has to updated with an\nowner reference to the pod once the pod exists. Normally\nthis should not be necessary, but it may be useful when\nmanually reconstructing a broken cluster.\n\nThis field is read-only and no changes will be made by Kubernetes\nto the PVC after it has been created.\n\nRequired, must not be nil."
+          "description": "Will be used to create a stand-alone PVC to provision the volume. The pod in which this EphemeralVolumeSource is embedded will be the owner of the PVC, i.e. the PVC will be deleted together with the pod.  The name of the PVC will be `\u003cpod name\u003e-\u003cvolume name\u003e` where `\u003cvolume name\u003e` is the name from the `PodSpec.Volumes` array entry. Pod validation will reject the pod if the concatenated name is not valid for a PVC (for example, too long).\n\nAn existing PVC with that name that is not owned by the pod will *not* be used for the pod to avoid using an unrelated volume by mistake. Starting the pod is then blocked until the unrelated PVC is removed. If such a pre-created PVC is meant to be used by the pod, the PVC has to updated with an owner reference to the pod once the pod exists. Normally this should not be necessary, but it may be useful when manually reconstructing a broken cluster.\n\nThis field is read-only and no changes will be made by Kubernetes to the PVC after it has been created.\n\nRequired, must not be nil."
         }
       },
       "type": "object"
     },
     "io.k8s.api.core.v1.Event": {
-      "description": "Event is a report of an event somewhere in the cluster.",
+      "description": "Event is a report of an event somewhere in the cluster.  Events have a limited retention time and triggers and messages may evolve with time.  Event consumers should not rely on the timing of an event with a given Reason reflecting a consistent underlying trigger, or the continued existence of events with that Reason.  Events should be treated as informative, best-effort, supplemental data.",
       "properties": {
         "action": {
           "description": "What action was taken/failed regarding to the Regarding object.",
@@ -8880,10 +9115,6 @@
         "lastObservedTime": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.MicroTime",
           "description": "Time of the last occurrence observed"
-        },
-        "state": {
-          "description": "State of this Series: Ongoing or Finished Deprecated. Planned removal for 1.18",
-          "type": "string"
         }
       },
       "type": "object"
@@ -9018,6 +9249,22 @@
       ],
       "type": "object"
     },
+    "io.k8s.api.core.v1.GRPCAction": {
+      "properties": {
+        "port": {
+          "description": "Port number of the gRPC service. Number must be in the range 1 to 65535.",
+          "type": "integer"
+        },
+        "service": {
+          "description": "Service is the name of the service to place in the gRPC HealthCheckRequest (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).\n\nIf this is not specified, the default behavior is defined by gRPC.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "port"
+      ],
+      "type": "object"
+    },
     "io.k8s.api.core.v1.GitRepoVolumeSource": {
       "description": "Represents a volume that is populated with the contents of a git repository. Git repo volumes do not support ownership management. Git repo volumes support SELinux relabeling.\n\nDEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount an EmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir into the Pod's container.",
       "properties": {
@@ -9084,7 +9331,11 @@
           "description": "Name or number of the port to access on the container. Number must be in the range 1 to 65535. Name must be an IANA_SVC_NAME."
         },
         "scheme": {
-          "description": "Scheme to use for connecting to the host. Defaults to HTTP.",
+          "description": "Scheme to use for connecting to the host. Defaults to HTTP.\n\nPossible enum values:\n - `\"HTTP\"` means that the scheme used will be http://\n - `\"HTTPS\"` means that the scheme used will be https://",
+          "enum": [
+            "HTTP",
+            "HTTPS"
+          ],
           "type": "string"
         }
       },
@@ -9109,24 +9360,6 @@
         "name",
         "value"
       ],
-      "type": "object"
-    },
-    "io.k8s.api.core.v1.Handler": {
-      "description": "Handler defines a specific action that should be taken",
-      "properties": {
-        "exec": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.ExecAction",
-          "description": "One and only one of the following should be specified. Exec specifies the action to take."
-        },
-        "httpGet": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.HTTPGetAction",
-          "description": "HTTPGet specifies the http request to perform."
-        },
-        "tcpSocket": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.TCPSocketAction",
-          "description": "TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported"
-        }
-      },
       "type": "object"
     },
     "io.k8s.api.core.v1.HostAlias": {
@@ -9229,7 +9462,7 @@
           "type": "string"
         },
         "mode": {
-          "description": "Optional: mode bits to use on this file, must be a value between 0 and 0777. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
+          "description": "Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
           "type": "integer"
         },
         "path": {
@@ -9247,12 +9480,30 @@
       "description": "Lifecycle describes actions that the management system should take in response to container lifecycle events. For the PostStart and PreStop lifecycle handlers, management of the container blocks until the action is complete, unless the container process fails, in which case the handler is aborted.",
       "properties": {
         "postStart": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.Handler",
+          "$ref": "#/definitions/io.k8s.api.core.v1.LifecycleHandler",
           "description": "PostStart is called immediately after a container is created. If the handler fails, the container is terminated and restarted according to its restart policy. Other management of the container blocks until the hook completes. More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks"
         },
         "preStop": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.Handler",
-          "description": "PreStop is called immediately before a container is terminated due to an API request or management event such as liveness/startup probe failure, preemption, resource contention, etc. The handler is not called if the container crashes or exits. The reason for termination is passed to the handler. The Pod's termination grace period countdown begins before the PreStop hooked is executed. Regardless of the outcome of the handler, the container will eventually terminate within the Pod's termination grace period. Other management of the container blocks until the hook completes or until the termination grace period is reached. More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks"
+          "$ref": "#/definitions/io.k8s.api.core.v1.LifecycleHandler",
+          "description": "PreStop is called immediately before a container is terminated due to an API request or management event such as liveness/startup probe failure, preemption, resource contention, etc. The handler is not called if the container crashes or exits. The Pod's termination grace period countdown begins before the PreStop hook is executed. Regardless of the outcome of the handler, the container will eventually terminate within the Pod's termination grace period (unless delayed by finalizers). Other management of the container blocks until the hook completes or until the termination grace period is reached. More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks"
+        }
+      },
+      "type": "object"
+    },
+    "io.k8s.api.core.v1.LifecycleHandler": {
+      "description": "LifecycleHandler defines a specific action that should be taken in a lifecycle hook. One and only one of the fields, except TCPSocket must be specified.",
+      "properties": {
+        "exec": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.ExecAction",
+          "description": "Exec specifies the action to take."
+        },
+        "httpGet": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.HTTPGetAction",
+          "description": "HTTPGet specifies the http request to perform."
+        },
+        "tcpSocket": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.TCPSocketAction",
+          "description": "Deprecated. TCPSocket is NOT supported as a LifecycleHandler and kept for the backward compatibility. There are no validation of this field and lifecycle hooks will fail in runtime when tcp handler is specified."
         }
       },
       "type": "object"
@@ -9265,7 +9516,8 @@
           "type": "string"
         }
       },
-      "type": "object"
+      "type": "object",
+      "x-kubernetes-map-type": "atomic"
     },
     "io.k8s.api.core.v1.NFSVolumeSource": {
       "description": "Represents an NFS mount that lasts the lifetime of a pod. NFS volumes do not support ownership management or SELinux relabeling.",
@@ -9320,7 +9572,8 @@
       "required": [
         "nodeSelectorTerms"
       ],
-      "type": "object"
+      "type": "object",
+      "x-kubernetes-map-type": "atomic"
     },
     "io.k8s.api.core.v1.NodeSelectorRequirement": {
       "description": "A node selector requirement is a selector that contains values, a key, and an operator that relates the key and values.",
@@ -9330,7 +9583,15 @@
           "type": "string"
         },
         "operator": {
-          "description": "Represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.",
+          "description": "Represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.\n\nPossible enum values:\n - `\"DoesNotExist\"`\n - `\"Exists\"`\n - `\"Gt\"`\n - `\"In\"`\n - `\"Lt\"`\n - `\"NotIn\"`",
+          "enum": [
+            "DoesNotExist",
+            "Exists",
+            "Gt",
+            "In",
+            "Lt",
+            "NotIn"
+          ],
           "type": "string"
         },
         "values": {
@@ -9365,7 +9626,8 @@
           "type": "array"
         }
       },
-      "type": "object"
+      "type": "object",
+      "x-kubernetes-map-type": "atomic"
     },
     "io.k8s.api.core.v1.ObjectFieldSelector": {
       "description": "ObjectFieldSelector selects an APIVersioned field of an object.",
@@ -9382,7 +9644,8 @@
       "required": [
         "fieldPath"
       ],
-      "type": "object"
+      "type": "object",
+      "x-kubernetes-map-type": "atomic"
     },
     "io.k8s.api.core.v1.ObjectReference": {
       "description": "ObjectReference contains enough information to let you inspect or modify the referred object.",
@@ -9416,7 +9679,8 @@
           "type": "string"
         }
       },
-      "type": "object"
+      "type": "object",
+      "x-kubernetes-map-type": "atomic"
     },
     "io.k8s.api.core.v1.PersistentVolumeClaim": {
       "description": "PersistentVolumeClaim is a user's request for and claim to a persistent volume",
@@ -9474,6 +9738,11 @@
           "type": "string"
         },
         "type": {
+          "description": "\n\n\nPossible enum values:\n - `\"FileSystemResizePending\"` - controller resize is finished and a file system resize is pending on node\n - `\"Resizing\"` - a user trigger resize of pvc has been started",
+          "enum": [
+            "FileSystemResizePending",
+            "Resizing"
+          ],
           "type": "string"
         }
       },
@@ -9495,11 +9764,15 @@
         },
         "dataSource": {
           "$ref": "#/definitions/io.k8s.api.core.v1.TypedLocalObjectReference",
-          "description": "This field requires the VolumeSnapshotDataSource alpha feature gate to be enabled and currently VolumeSnapshot is the only supported data source. If the provisioner can support VolumeSnapshot data source, it will create a new volume and data will be restored to the volume at the same time. If the provisioner does not support VolumeSnapshot data source, volume will not be created and the failure will be reported as an event. In the future, we plan to support more data source types and the behavior of the provisioner may change."
+          "description": "This field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source. If the AnyVolumeDataSource feature gate is enabled, this field will always have the same contents as the DataSourceRef field."
+        },
+        "dataSourceRef": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.TypedLocalObjectReference",
+          "description": "Specifies the object from which to populate the volume with data, if a non-empty volume is desired. This may be any local object from a non-empty API group (non core object) or a PersistentVolumeClaim object. When this field is specified, volume binding will only succeed if the type of the specified object matches some installed volume populator or dynamic provisioner. This field will replace the functionality of the DataSource field and as such if both fields are non-empty, they must have the same value. For backwards compatibility, both fields (DataSource and DataSourceRef) will be set to the same value automatically if one of them is empty and the other is non-empty. There are two important differences between DataSource and DataSourceRef: * While DataSource only allows two specific types of objects, DataSourceRef\n  allows any non-core object, as well as PersistentVolumeClaim objects.\n* While DataSource ignores disallowed values (dropping them), DataSourceRef\n  preserves all values, and generates an error if a disallowed value is\n  specified.\n(Alpha) Using this field requires the AnyVolumeDataSource feature gate to be enabled."
         },
         "resources": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements",
-          "description": "Resources represents the minimum resources the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources"
+          "description": "Resources represents the minimum resources the volume should have. If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements that are lower than previous value but must still be higher than capacity recorded in the status field of the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources"
         },
         "selector": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelector",
@@ -9510,7 +9783,7 @@
           "type": "string"
         },
         "volumeMode": {
-          "description": "volumeMode defines what type of volume is required by the claim. Value of Filesystem is implied when not included in claim spec. This is a beta feature.",
+          "description": "volumeMode defines what type of volume is required by the claim. Value of Filesystem is implied when not included in claim spec.",
           "type": "string"
         },
         "volumeName": {
@@ -9530,6 +9803,13 @@
           },
           "type": "array"
         },
+        "allocatedResources": {
+          "additionalProperties": {
+            "$ref": "#/definitions/io.k8s.apimachinery.pkg.api.resource.Quantity"
+          },
+          "description": "The storage resource within AllocatedResources tracks the capacity allocated to a PVC. It may be larger than the actual capacity when a volume expansion operation is requested. For storage quota, the larger value from allocatedResources and PVC.spec.resources is used. If allocatedResources is not set, PVC.spec.resources alone is used for quota calculation. If a volume expansion capacity request is lowered, allocatedResources is only lowered if there are no expansion operations in progress and if the actual volume capacity is equal or lower than the requested capacity. This is an alpha field and requires enabling RecoverVolumeExpansionFailure feature.",
+          "type": "object"
+        },
         "capacity": {
           "additionalProperties": {
             "$ref": "#/definitions/io.k8s.apimachinery.pkg.api.resource.Quantity"
@@ -9547,24 +9827,36 @@
           "x-kubernetes-patch-strategy": "merge"
         },
         "phase": {
-          "description": "Phase represents the current phase of PersistentVolumeClaim.",
+          "description": "Phase represents the current phase of PersistentVolumeClaim.\n\nPossible enum values:\n - `\"Bound\"` used for PersistentVolumeClaims that are bound\n - `\"Lost\"` used for PersistentVolumeClaims that lost their underlying PersistentVolume. The claim was bound to a PersistentVolume and this volume does not exist any longer and all data on it was lost.\n - `\"Pending\"` used for PersistentVolumeClaims that are not yet bound",
+          "enum": [
+            "Bound",
+            "Lost",
+            "Pending"
+          ],
+          "type": "string"
+        },
+        "resizeStatus": {
+          "description": "ResizeStatus stores status of resize operation. ResizeStatus is not set by default but when expansion is complete resizeStatus is set to empty string by resize controller or kubelet. This is an alpha field and requires enabling RecoverVolumeExpansionFailure feature.",
           "type": "string"
         }
       },
       "type": "object"
     },
     "io.k8s.api.core.v1.PersistentVolumeClaimTemplate": {
-      "description": "PersistentVolumeClaimTemplate is used to produce\nPersistentVolumeClaim objects as part of an EphemeralVolumeSource.",
+      "description": "PersistentVolumeClaimTemplate is used to produce PersistentVolumeClaim objects as part of an EphemeralVolumeSource.",
       "properties": {
         "metadata": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta",
-          "description": "May contain labels and annotations that will be copied into the PVC\nwhen creating it. No other fields are allowed and will be rejected during\nvalidation.\n\n+optional"
+          "description": "May contain labels and annotations that will be copied into the PVC when creating it. No other fields are allowed and will be rejected during validation."
         },
         "spec": {
           "$ref": "#/definitions/io.k8s.api.core.v1.PersistentVolumeClaimSpec",
-          "description": "The specification for the PersistentVolumeClaim. The entire content is\ncopied unchanged into the PVC that gets created from this\ntemplate. The same fields as in a PersistentVolumeClaim\nare also valid here."
+          "description": "The specification for the PersistentVolumeClaim. The entire content is copied unchanged into the PVC that gets created from this template. The same fields as in a PersistentVolumeClaim are also valid here."
         }
       },
+      "required": [
+        "spec"
+      ],
       "type": "object"
     },
     "io.k8s.api.core.v1.PersistentVolumeClaimVolumeSource": {
@@ -9628,8 +9920,12 @@
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelector",
           "description": "A label query over a set of resources, in this case pods."
         },
+        "namespaceSelector": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelector",
+          "description": "A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means \"this pod's namespace\". An empty selector ({}) matches all namespaces. This field is beta-level and is only honored when PodAffinityNamespaceSelector feature is enabled."
+        },
         "namespaces": {
-          "description": "namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means \"this pod's namespace\"",
+          "description": "namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means \"this pod's namespace\"",
           "items": {
             "type": "string"
           },
@@ -9709,11 +10005,15 @@
       "description": "PodSecurityContext holds pod-level security attributes and common container settings. Some fields are also present in container.securityContext.  Field values of container.securityContext take precedence over field values of PodSecurityContext.",
       "properties": {
         "fsGroup": {
-          "description": "A special supplemental group that applies to all containers in a pod. Some volume types allow the Kubelet to change the ownership of that volume to be owned by the pod:\n\n1. The owning GID will be the FSGroup 2. The setgid bit is set (new files created in the volume will be owned by FSGroup) 3. The permission bits are OR'd with rw-rw----\n\nIf unset, the Kubelet will not modify the ownership and permissions of any volume.",
+          "description": "A special supplemental group that applies to all containers in a pod. Some volume types allow the Kubelet to change the ownership of that volume to be owned by the pod:\n\n1. The owning GID will be the FSGroup 2. The setgid bit is set (new files created in the volume will be owned by FSGroup) 3. The permission bits are OR'd with rw-rw----\n\nIf unset, the Kubelet will not modify the ownership and permissions of any volume. Note that this field cannot be set when spec.os.name is windows.",
           "type": "integer"
         },
+        "fsGroupChangePolicy": {
+          "description": "fsGroupChangePolicy defines behavior of changing ownership and permission of the volume before being exposed inside Pod. This field will only apply to volume types which support fsGroup based ownership(and permissions). It will have no effect on ephemeral volume types such as: secret, configmaps and emptydir. Valid values are \"OnRootMismatch\" and \"Always\". If not specified, \"Always\" is used. Note that this field cannot be set when spec.os.name is windows.",
+          "type": "string"
+        },
         "runAsGroup": {
-          "description": "The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container.",
+          "description": "The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container. Note that this field cannot be set when spec.os.name is windows.",
           "type": "integer"
         },
         "runAsNonRoot": {
@@ -9721,15 +10021,19 @@
           "type": "boolean"
         },
         "runAsUser": {
-          "description": "The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container.",
+          "description": "The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container. Note that this field cannot be set when spec.os.name is windows.",
           "type": "integer"
         },
         "seLinuxOptions": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SELinuxOptions",
-          "description": "The SELinux context to be applied to all containers. If unspecified, the container runtime will allocate a random SELinux context for each container.  May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container."
+          "description": "The SELinux context to be applied to all containers. If unspecified, the container runtime will allocate a random SELinux context for each container.  May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container. Note that this field cannot be set when spec.os.name is windows."
+        },
+        "seccompProfile": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SeccompProfile",
+          "description": "The seccomp options to use by the containers in this pod. Note that this field cannot be set when spec.os.name is windows."
         },
         "supplementalGroups": {
-          "description": "A list of groups applied to the first process run in each container, in addition to the container's primary GID.  If unspecified, no groups will be added to any container.",
+          "description": "A list of groups applied to the first process run in each container, in addition to the container's primary GID.  If unspecified, no groups will be added to any container. Note that this field cannot be set when spec.os.name is windows.",
           "items": {
             "format": "int64",
             "type": "integer"
@@ -9737,7 +10041,7 @@
           "type": "array"
         },
         "sysctls": {
-          "description": "Sysctls hold a list of namespaced sysctls used for the pod. Pods with unsupported sysctls (by the container runtime) might fail to launch.",
+          "description": "Sysctls hold a list of namespaced sysctls used for the pod. Pods with unsupported sysctls (by the container runtime) might fail to launch. Note that this field cannot be set when spec.os.name is windows.",
           "items": {
             "$ref": "#/definitions/io.k8s.api.core.v1.Sysctl"
           },
@@ -9745,7 +10049,7 @@
         },
         "windowsOptions": {
           "$ref": "#/definitions/io.k8s.api.core.v1.WindowsSecurityContextOptions",
-          "description": "The Windows specific settings applied to all containers. If unspecified, the options within a container's SecurityContext will be used. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence."
+          "description": "The Windows specific settings applied to all containers. If unspecified, the options within a container's SecurityContext will be used. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is linux."
         }
       },
       "type": "object"
@@ -9794,11 +10098,15 @@
       "properties": {
         "exec": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ExecAction",
-          "description": "One and only one of the following should be specified. Exec specifies the action to take."
+          "description": "Exec specifies the action to take."
         },
         "failureThreshold": {
           "description": "Minimum consecutive failures for the probe to be considered failed after having succeeded. Defaults to 3. Minimum value is 1.",
           "type": "integer"
+        },
+        "grpc": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.GRPCAction",
+          "description": "GRPC specifies an action involving a GRPC port. This is an alpha field and requires enabling GRPCContainerProbe feature gate."
         },
         "httpGet": {
           "$ref": "#/definitions/io.k8s.api.core.v1.HTTPGetAction",
@@ -9818,7 +10126,11 @@
         },
         "tcpSocket": {
           "$ref": "#/definitions/io.k8s.api.core.v1.TCPSocketAction",
-          "description": "TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported"
+          "description": "TCPSocket specifies an action involving a TCP port."
+        },
+        "terminationGracePeriodSeconds": {
+          "description": "Optional duration in seconds the pod needs to terminate gracefully upon probe failure. The grace period is the duration in seconds after the processes running in the pod are sent a termination signal and the time when the processes are forcibly halted with a kill signal. Set this value longer than the expected cleanup time for your process. If this value is nil, the pod's terminationGracePeriodSeconds will be used. Otherwise, this value overrides the value provided by the pod spec. Value must be non-negative integer. The value zero indicates stop immediately via the kill signal (no opportunity to shut down). This is a beta field and requires enabling ProbeTerminationGracePeriod feature gate. Minimum value is 1. spec.terminationGracePeriodSeconds is used if unset.",
+          "type": "integer"
         },
         "timeoutSeconds": {
           "description": "Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
@@ -9831,7 +10143,7 @@
       "description": "Represents a projected volume source",
       "properties": {
         "defaultMode": {
-          "description": "Mode bits to use on created files by default. Must be a value between 0 and 0777. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
+          "description": "Mode bits used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
           "type": "integer"
         },
         "sources": {
@@ -9842,9 +10154,6 @@
           "type": "array"
         }
       },
-      "required": [
-        "sources"
-      ],
       "type": "object"
     },
     "io.k8s.api.core.v1.QuobyteVolumeSource": {
@@ -9945,7 +10254,8 @@
       "required": [
         "resource"
       ],
-      "type": "object"
+      "type": "object",
+      "x-kubernetes-map-type": "atomic"
     },
     "io.k8s.api.core.v1.ResourceRequirements": {
       "description": "ResourceRequirements describes the compute resource requirements.",
@@ -9954,14 +10264,14 @@
           "additionalProperties": {
             "$ref": "#/definitions/io.k8s.apimachinery.pkg.api.resource.Quantity"
           },
-          "description": "Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/",
+          "description": "Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
           "type": "object"
         },
         "requests": {
           "additionalProperties": {
             "$ref": "#/definitions/io.k8s.apimachinery.pkg.api.resource.Quantity"
           },
-          "description": "Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/",
+          "description": "Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
           "type": "object"
         }
       },
@@ -10040,6 +10350,36 @@
       ],
       "type": "object"
     },
+    "io.k8s.api.core.v1.SeccompProfile": {
+      "description": "SeccompProfile defines a pod/container's seccomp profile settings. Only one profile source may be set.",
+      "properties": {
+        "localhostProfile": {
+          "description": "localhostProfile indicates a profile defined in a file on the node should be used. The profile must be preconfigured on the node to work. Must be a descending path, relative to the kubelet's configured seccomp profile location. Must only be set if type is \"Localhost\".",
+          "type": "string"
+        },
+        "type": {
+          "description": "type indicates which kind of seccomp profile will be applied. Valid options are:\n\nLocalhost - a profile defined in a file on the node should be used. RuntimeDefault - the container runtime default profile should be used. Unconfined - no profile should be applied.\n\nPossible enum values:\n - `\"Localhost\"` indicates a profile defined in a file on the node should be used. The file's location relative to \u003ckubelet-root-dir\u003e/seccomp.\n - `\"RuntimeDefault\"` represents the default container runtime seccomp profile.\n - `\"Unconfined\"` indicates no seccomp profile is applied (A.K.A. unconfined).",
+          "enum": [
+            "Localhost",
+            "RuntimeDefault",
+            "Unconfined"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "type": "object",
+      "x-kubernetes-unions": [
+        {
+          "discriminator": "type",
+          "fields-to-discriminateBy": {
+            "localhostProfile": "LocalhostProfile"
+          }
+        }
+      ]
+    },
     "io.k8s.api.core.v1.SecretEnvSource": {
       "description": "SecretEnvSource selects a Secret to populate the environment variables with.\n\nThe contents of the target Secret's Data field will represent the key-value pairs as environment variables.",
       "properties": {
@@ -10073,7 +10413,8 @@
       "required": [
         "key"
       ],
-      "type": "object"
+      "type": "object",
+      "x-kubernetes-map-type": "atomic"
     },
     "io.k8s.api.core.v1.SecretProjection": {
       "description": "Adapts a secret into a projected volume.\n\nThe contents of the target Secret's Data field will be presented in a projected volume as files using the keys in the Data field as the file names. Note that this is identical to a secret volume source without the default mode.",
@@ -10100,7 +10441,7 @@
       "description": "Adapts a Secret into a volume.\n\nThe contents of the target Secret's Data field will be presented in a volume as files using the keys in the Data field as the file names. Secret volumes support ownership management and SELinux relabeling.",
       "properties": {
         "defaultMode": {
-          "description": "Optional: mode bits to use on created files by default. Must be a value between 0 and 0777. Defaults to 0644. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
+          "description": "Optional: mode bits used to set permissions on created files by default. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. Defaults to 0644. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
           "type": "integer"
         },
         "items": {
@@ -10125,27 +10466,27 @@
       "description": "SecurityContext holds security configuration that will be applied to a container. Some fields are present in both SecurityContext and PodSecurityContext.  When both are set, the values in SecurityContext take precedence.",
       "properties": {
         "allowPrivilegeEscalation": {
-          "description": "AllowPrivilegeEscalation controls whether a process can gain more privileges than its parent process. This bool directly controls if the no_new_privs flag will be set on the container process. AllowPrivilegeEscalation is true always when the container is: 1) run as Privileged 2) has CAP_SYS_ADMIN",
+          "description": "AllowPrivilegeEscalation controls whether a process can gain more privileges than its parent process. This bool directly controls if the no_new_privs flag will be set on the container process. AllowPrivilegeEscalation is true always when the container is: 1) run as Privileged 2) has CAP_SYS_ADMIN Note that this field cannot be set when spec.os.name is windows.",
           "type": "boolean"
         },
         "capabilities": {
           "$ref": "#/definitions/io.k8s.api.core.v1.Capabilities",
-          "description": "The capabilities to add/drop when running containers. Defaults to the default set of capabilities granted by the container runtime."
+          "description": "The capabilities to add/drop when running containers. Defaults to the default set of capabilities granted by the container runtime. Note that this field cannot be set when spec.os.name is windows."
         },
         "privileged": {
-          "description": "Run container in privileged mode. Processes in privileged containers are essentially equivalent to root on the host. Defaults to false.",
+          "description": "Run container in privileged mode. Processes in privileged containers are essentially equivalent to root on the host. Defaults to false. Note that this field cannot be set when spec.os.name is windows.",
           "type": "boolean"
         },
         "procMount": {
-          "description": "procMount denotes the type of proc mount to use for the containers. The default is DefaultProcMount which uses the container runtime defaults for readonly paths and masked paths. This requires the ProcMountType feature flag to be enabled.",
+          "description": "procMount denotes the type of proc mount to use for the containers. The default is DefaultProcMount which uses the container runtime defaults for readonly paths and masked paths. This requires the ProcMountType feature flag to be enabled. Note that this field cannot be set when spec.os.name is windows.",
           "type": "string"
         },
         "readOnlyRootFilesystem": {
-          "description": "Whether this container has a read-only root filesystem. Default is false.",
+          "description": "Whether this container has a read-only root filesystem. Default is false. Note that this field cannot be set when spec.os.name is windows.",
           "type": "boolean"
         },
         "runAsGroup": {
-          "description": "The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.",
+          "description": "The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is windows.",
           "type": "integer"
         },
         "runAsNonRoot": {
@@ -10153,16 +10494,20 @@
           "type": "boolean"
         },
         "runAsUser": {
-          "description": "The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.",
+          "description": "The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is windows.",
           "type": "integer"
         },
         "seLinuxOptions": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SELinuxOptions",
-          "description": "The SELinux context to be applied to the container. If unspecified, the container runtime will allocate a random SELinux context for each container.  May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence."
+          "description": "The SELinux context to be applied to the container. If unspecified, the container runtime will allocate a random SELinux context for each container.  May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is windows."
+        },
+        "seccompProfile": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SeccompProfile",
+          "description": "The seccomp options to use by this container. If seccomp options are provided at both the pod \u0026 container level, the container options override the pod options. Note that this field cannot be set when spec.os.name is windows."
         },
         "windowsOptions": {
           "$ref": "#/definitions/io.k8s.api.core.v1.WindowsSecurityContextOptions",
-          "description": "The Windows specific settings applied to all containers. If unspecified, the options from the PodSecurityContext will be used. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence."
+          "description": "The Windows specific settings applied to all containers. If unspecified, the options from the PodSecurityContext will be used. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is linux."
         }
       },
       "type": "object"
@@ -10191,12 +10536,16 @@
     "io.k8s.api.core.v1.ServicePort": {
       "description": "ServicePort contains information on service's port.",
       "properties": {
+        "appProtocol": {
+          "description": "The application protocol for this port. This field follows standard Kubernetes label syntax. Un-prefixed names are reserved for IANA standard service names (as per RFC-6335 and http://www.iana.org/assignments/service-names). Non-standard protocols should use prefixed names such as mycompany.com/my-custom-protocol.",
+          "type": "string"
+        },
         "name": {
           "description": "The name of this port within the service. This must be a DNS_LABEL. All ports within a ServiceSpec must have unique names. When considering the endpoints for a Service, this must match the 'name' field in the EndpointPort. Optional if only one ServicePort is defined on this service.",
           "type": "string"
         },
         "nodePort": {
-          "description": "The port on each node on which this service is exposed when type=NodePort or LoadBalancer. Usually assigned by the system. If specified, it will be allocated to the service if unused or else creation of the service will fail. Default is to auto-allocate a port if the ServiceType of this Service requires one. More info: https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport",
+          "description": "The port on each node on which this service is exposed when type is NodePort or LoadBalancer.  Usually assigned by the system. If a value is specified, in-range, and not in use it will be used, otherwise the operation will fail.  If not specified, a port will be allocated if this Service requires one.  If this field is specified when creating a Service which does not need it, creation will fail. This field will be wiped when updating a Service to no longer need it (e.g. changing type from NodePort to ClusterIP). More info: https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport",
           "type": "integer"
         },
         "port": {
@@ -10204,7 +10553,12 @@
           "type": "integer"
         },
         "protocol": {
-          "description": "The IP protocol for this port. Supports \"TCP\", \"UDP\", and \"SCTP\". Default is TCP.",
+          "description": "The IP protocol for this port. Supports \"TCP\", \"UDP\", and \"SCTP\". Default is TCP.\n\nPossible enum values:\n - `\"SCTP\"` is the SCTP protocol.\n - `\"TCP\"` is the TCP protocol.\n - `\"UDP\"` is the UDP protocol.",
+          "enum": [
+            "SCTP",
+            "TCP",
+            "UDP"
+          ],
           "type": "string"
         },
         "targetPort": {
@@ -10282,7 +10636,12 @@
       "description": "The pod this Toleration is attached to tolerates any taint that matches the triple \u003ckey,value,effect\u003e using the matching operator \u003coperator\u003e.",
       "properties": {
         "effect": {
-          "description": "Effect indicates the taint effect to match. Empty means match all taint effects. When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.",
+          "description": "Effect indicates the taint effect to match. Empty means match all taint effects. When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.\n\nPossible enum values:\n - `\"NoExecute\"` Evict any already-running pods that do not tolerate the taint. Currently enforced by NodeController.\n - `\"NoSchedule\"` Do not allow new pods to schedule onto the node unless they tolerate the taint, but allow all pods submitted to Kubelet without going through the scheduler to start, and allow all already-running pods to continue running. Enforced by the scheduler.\n - `\"PreferNoSchedule\"` Like TaintEffectNoSchedule, but the scheduler tries not to schedule new pods onto the node, rather than prohibiting new pods from scheduling onto the node entirely. Enforced by the scheduler.",
+          "enum": [
+            "NoExecute",
+            "NoSchedule",
+            "PreferNoSchedule"
+          ],
           "type": "string"
         },
         "key": {
@@ -10290,7 +10649,11 @@
           "type": "string"
         },
         "operator": {
-          "description": "Operator represents a key's relationship to the value. Valid operators are Exists and Equal. Defaults to Equal. Exists is equivalent to wildcard for value, so that a pod can tolerate all taints of a particular category.",
+          "description": "Operator represents a key's relationship to the value. Valid operators are Exists and Equal. Defaults to Equal. Exists is equivalent to wildcard for value, so that a pod can tolerate all taints of a particular category.\n\nPossible enum values:\n - `\"Equal\"`\n - `\"Exists\"`",
+          "enum": [
+            "Equal",
+            "Exists"
+          ],
           "type": "string"
         },
         "tolerationSeconds": {
@@ -10324,7 +10687,8 @@
         "kind",
         "name"
       ],
-      "type": "object"
+      "type": "object",
+      "x-kubernetes-map-type": "atomic"
     },
     "io.k8s.api.core.v1.Volume": {
       "description": "Volume represents a named volume in a pod that may be accessed by any container in the pod.",
@@ -10355,7 +10719,7 @@
         },
         "csi": {
           "$ref": "#/definitions/io.k8s.api.core.v1.CSIVolumeSource",
-          "description": "CSI (Container Storage Interface) represents storage that is handled by an external CSI driver (Alpha feature)."
+          "description": "CSI (Container Storage Interface) represents ephemeral storage that is handled by certain external CSI drivers (Beta feature)."
         },
         "downwardAPI": {
           "$ref": "#/definitions/io.k8s.api.core.v1.DownwardAPIVolumeSource",
@@ -10364,6 +10728,10 @@
         "emptyDir": {
           "$ref": "#/definitions/io.k8s.api.core.v1.EmptyDirVolumeSource",
           "description": "EmptyDir represents a temporary directory that shares a pod's lifetime. More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir"
+        },
+        "ephemeral": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.EphemeralVolumeSource",
+          "description": "Ephemeral represents a volume that is handled by a cluster storage driver. The volume's lifecycle is tied to the pod that defines it - it will be created before the pod starts, and deleted when the pod is removed.\n\nUse this if: a) the volume is only needed while the pod runs, b) features of normal volumes like restoring from snapshot or capacity\n   tracking are needed,\nc) the storage driver is specified through a storage class, and d) the storage driver supports dynamic volume provisioning through\n   a PersistentVolumeClaim (see EphemeralVolumeSource for more\n   information on the connection between this volume type\n   and PersistentVolumeClaim).\n\nUse PersistentVolumeClaim or one of the vendor-specific APIs for volumes that persist for longer than the lifecycle of an individual pod.\n\nUse CSI for light-weight local ephemeral volumes if the CSI driver is meant to be used that way - see the documentation of the driver for more information.\n\nA pod can use both types of ephemeral volumes and persistent volumes at the same time."
         },
         "fc": {
           "$ref": "#/definitions/io.k8s.api.core.v1.FCVolumeSource",
@@ -10572,15 +10940,19 @@
       "description": "WindowsSecurityContextOptions contain Windows-specific options and credentials.",
       "properties": {
         "gmsaCredentialSpec": {
-          "description": "GMSACredentialSpec is where the GMSA admission webhook (https://github.com/kubernetes-sigs/windows-gmsa) inlines the contents of the GMSA credential spec named by the GMSACredentialSpecName field. This field is alpha-level and is only honored by servers that enable the WindowsGMSA feature flag.",
+          "description": "GMSACredentialSpec is where the GMSA admission webhook (https://github.com/kubernetes-sigs/windows-gmsa) inlines the contents of the GMSA credential spec named by the GMSACredentialSpecName field.",
           "type": "string"
         },
         "gmsaCredentialSpecName": {
-          "description": "GMSACredentialSpecName is the name of the GMSA credential spec to use. This field is alpha-level and is only honored by servers that enable the WindowsGMSA feature flag.",
+          "description": "GMSACredentialSpecName is the name of the GMSA credential spec to use.",
           "type": "string"
         },
+        "hostProcess": {
+          "description": "HostProcess determines if a container should be run as a 'Host Process' container. This field is alpha-level and will only be honored by components that enable the WindowsHostProcessContainers feature flag. Setting this field without the feature flag will result in errors when validating the Pod. All of a Pod's containers must have the same effective HostProcess value (it is not allowed to have a mix of HostProcess containers and non-HostProcess containers).  In addition, if HostProcess is true then HostNetwork must also be set to true.",
+          "type": "boolean"
+        },
         "runAsUserName": {
-          "description": "The UserName in Windows to run the entrypoint of the container process. Defaults to the user specified in image metadata if unspecified. May also be set in PodSecurityContext. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. This field is beta-level and may be disabled with the WindowsRunAsUserName feature flag.",
+          "description": "The UserName in Windows to run the entrypoint of the container process. Defaults to the user specified in image metadata if unspecified. May also be set in PodSecurityContext. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.",
           "type": "string"
         }
       },
@@ -10599,7 +10971,8 @@
         },
         "selector": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelector",
-          "description": "Label query over pods whose evictions are managed by the disruption budget."
+          "description": "Label query over pods whose evictions are managed by the disruption budget. A null selector selects no pods. An empty selector ({}) also selects no pods, which differs from standard behavior of selecting all pods. In policy/v1, an empty selector will select all pods in the namespace.",
+          "x-kubernetes-patch-strategy": "replace"
         }
       },
       "type": "object"
@@ -10609,34 +10982,40 @@
       "type": "string"
     },
     "io.k8s.apimachinery.pkg.apis.meta.v1.Condition": {
-      "description": "// other fields\n}",
+      "description": "Condition contains details for one aspect of the current state of this API Resource.",
       "properties": {
         "lastTransitionTime": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time",
-          "title": "lastTransitionTime is the last time the condition transitioned from one status to another.\nThis should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.\n+required\n+kubebuilder:validation:Required\n+kubebuilder:validation:Type=string\n+kubebuilder:validation:Format=date-time"
+          "description": "lastTransitionTime is the last time the condition transitioned from one status to another. This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable."
         },
         "message": {
-          "title": "message is a human readable message indicating details about the transition.\nThis may be an empty string.\n+required\n+kubebuilder:validation:Required\n+kubebuilder:validation:MaxLength=32768",
+          "description": "message is a human readable message indicating details about the transition. This may be an empty string.",
           "type": "string"
         },
         "observedGeneration": {
-          "title": "observedGeneration represents the .metadata.generation that the condition was set based upon.\nFor instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date\nwith respect to the current state of the instance.\n+optional\n+kubebuilder:validation:Minimum=0",
-          "type": "string"
+          "description": "observedGeneration represents the .metadata.generation that the condition was set based upon. For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date with respect to the current state of the instance.",
+          "type": "integer"
         },
         "reason": {
-          "title": "reason contains a programmatic identifier indicating the reason for the condition's last transition.\nProducers of specific condition types may define expected values and meanings for this field,\nand whether the values are considered a guaranteed API.\nThe value should be a CamelCase string.\nThis field may not be empty.\n+required\n+kubebuilder:validation:Required\n+kubebuilder:validation:MaxLength=1024\n+kubebuilder:validation:MinLength=1\n+kubebuilder:validation:Pattern=`^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$`",
+          "description": "reason contains a programmatic identifier indicating the reason for the condition's last transition. Producers of specific condition types may define expected values and meanings for this field, and whether the values are considered a guaranteed API. The value should be a CamelCase string. This field may not be empty.",
           "type": "string"
         },
         "status": {
-          "title": "status of the condition, one of True, False, Unknown.\n+required\n+kubebuilder:validation:Required\n+kubebuilder:validation:Enum=True;False;Unknown",
+          "description": "status of the condition, one of True, False, Unknown.",
           "type": "string"
         },
         "type": {
-          "title": "type of condition in CamelCase or in foo.example.com/CamelCase.\n---\nMany .condition.type values are consistent across resources like Available, but because arbitrary conditions can be\nuseful (see .node.status.conditions), the ability to deconflict is important.\nThe regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)\n+required\n+kubebuilder:validation:Required\n+kubebuilder:validation:Pattern=`^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$`\n+kubebuilder:validation:MaxLength=316",
+          "description": "type of condition in CamelCase or in foo.example.com/CamelCase.",
           "type": "string"
         }
       },
-      "title": "Condition contains details for one aspect of the current state of this API Resource.\n---\nThis struct is intended for direct use as an array at the field path .status.conditions.  For example,\ntype FooStatus struct{\n    // Represents the observations of a foo's current state.\n    // Known .status.conditions.type are: \"Available\", \"Progressing\", and \"Degraded\"\n    // +patchMergeKey=type\n    // +patchStrategy=merge\n    // +listType=map\n    // +listMapKey=type\n    Conditions []metav1.Condition `json:\"conditions,omitempty\" patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"`",
+      "required": [
+        "type",
+        "status",
+        "lastTransitionTime",
+        "reason",
+        "message"
+      ],
       "type": "object"
     },
     "io.k8s.apimachinery.pkg.apis.meta.v1.CreateOptions": {
@@ -10651,6 +11030,10 @@
         },
         "fieldManager": {
           "title": "fieldManager is a name associated with the actor or entity\nthat is making these changes. The value must be less than or\n128 characters long, and only contain printable characters,\nas defined by https://golang.org/pkg/unicode/#IsPrint.\n+optional",
+          "type": "string"
+        },
+        "fieldValidation": {
+          "title": "fieldValidation determines how the server should respond to\nunknown/duplicate fields in the object in the request.\nIntroduced as alpha in 1.23, older servers or servers with the\n`ServerSideFieldValidation` feature disabled will discard valid values\nspecified in  this param and not perform any server side field validation.\nValid values are:\n- Ignore: ignores unknown/duplicate fields.\n- Warn: responds with a warning for each\nunknown/duplicate field, but successfully serves the request.\n- Strict: fails the request on unknown/duplicate fields.\n+optional",
           "type": "string"
         }
       },
@@ -10682,7 +11065,7 @@
           "type": "string"
         }
       },
-      "title": "GroupVersionResource unambiguously identifies a resource.  It doesn't anonymously include GroupVersion\nto avoid automatic coersion.  It doesn't use a GroupVersion to avoid custom marshalling",
+      "title": "GroupVersionResource unambiguously identifies a resource.  It doesn't anonymously include GroupVersion\nto avoid automatic coercion.  It doesn't use a GroupVersion to avoid custom marshalling",
       "type": "object"
     },
     "io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelector": {
@@ -10703,7 +11086,8 @@
           "type": "object"
         }
       },
-      "type": "object"
+      "type": "object",
+      "x-kubernetes-map-type": "atomic"
     },
     "io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelectorRequirement": {
       "description": "A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.",
@@ -10775,6 +11159,10 @@
         },
         "operation": {
           "description": "Operation is the type of operation which lead to this ManagedFieldsEntry being created. The only valid values for this field are 'Apply' and 'Update'.",
+          "type": "string"
+        },
+        "subresource": {
+          "description": "Subresource is the name of the subresource used to update that object, or empty string if the object was updated through the main resource. The value of this field is used to distinguish between managers, even if they share the same name. For example, a status update will be distinct from a regular update using the same manager name. Note that the APIVersion field is not related to the Subresource field and it always corresponds to the version of the main resource.",
           "type": "string"
         },
         "time": {
@@ -10850,7 +11238,7 @@
           "type": "string"
         },
         "namespace": {
-          "description": "Namespace defines the space within each name must be unique. An empty namespace is equivalent to the \"default\" namespace, but \"default\" is the canonical representation. Not all objects are required to be scoped to a namespace - the value of this field for those objects will be empty.\n\nMust be a DNS_LABEL. Cannot be updated. More info: http://kubernetes.io/docs/user-guide/namespaces",
+          "description": "Namespace defines the space within which each name must be unique. An empty namespace is equivalent to the \"default\" namespace, but \"default\" is the canonical representation. Not all objects are required to be scoped to a namespace - the value of this field for those objects will be empty.\n\nMust be a DNS_LABEL. Cannot be updated. More info: http://kubernetes.io/docs/user-guide/namespaces",
           "type": "string"
         },
         "ownerReferences": {
@@ -10911,7 +11299,8 @@
         "name",
         "uid"
       ],
-      "type": "object"
+      "type": "object",
+      "x-kubernetes-map-type": "atomic"
     },
     "io.k8s.apimachinery.pkg.apis.meta.v1.StatusCause": {
       "description": "StatusCause provides more information about an api.Status failure, including cases when multiple errors are encountered.",

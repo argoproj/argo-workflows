@@ -90,6 +90,7 @@ class IoArgoprojEventsV1alpha1TLSConfig(ModelNormal):
             'ca_cert_secret': (SecretKeySelector,),  # noqa: E501
             'client_cert_secret': (SecretKeySelector,),  # noqa: E501
             'client_key_secret': (SecretKeySelector,),  # noqa: E501
+            'insecure_skip_verify': (bool,),  # noqa: E501
         }
 
     @cached_property
@@ -101,6 +102,7 @@ class IoArgoprojEventsV1alpha1TLSConfig(ModelNormal):
         'ca_cert_secret': 'caCertSecret',  # noqa: E501
         'client_cert_secret': 'clientCertSecret',  # noqa: E501
         'client_key_secret': 'clientKeySecret',  # noqa: E501
+        'insecure_skip_verify': 'insecureSkipVerify',  # noqa: E501
     }
 
     read_only_vars = {
@@ -147,6 +149,7 @@ class IoArgoprojEventsV1alpha1TLSConfig(ModelNormal):
             ca_cert_secret (SecretKeySelector): [optional]  # noqa: E501
             client_cert_secret (SecretKeySelector): [optional]  # noqa: E501
             client_key_secret (SecretKeySelector): [optional]  # noqa: E501
+            insecure_skip_verify (bool): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -231,6 +234,7 @@ class IoArgoprojEventsV1alpha1TLSConfig(ModelNormal):
             ca_cert_secret (SecretKeySelector): [optional]  # noqa: E501
             client_cert_secret (SecretKeySelector): [optional]  # noqa: E501
             client_key_secret (SecretKeySelector): [optional]  # noqa: E501
+            insecure_skip_verify (bool): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

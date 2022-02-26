@@ -29,14 +29,14 @@ FROM mcr.microsoft.com/windows/nanoserver:${IMAGE_OS_VERSION} as argoexec-base
 COPY --from=builder /windows/system32/netapi32.dll /windows/system32/netapi32.dll
 
 # NOTE: kubectl version should be one minor version less than https://storage.googleapis.com/kubernetes-release/release/stable.txt
-ENV KUBECTL_VERSION=1.19.6
+ENV KUBECTL_VERSION=1.22.3
 ENV JQ_VERSION=1.6
 
 RUN mkdir C:\app && \
     curl -L -o C:\app\kubectl.exe "https://storage.googleapis.com/kubernetes-release/release/v%KUBECTL_VERSION%/bin/windows/amd64/kubectl.exe" && \
     curl -L -o C:\app\jq.exe "https://github.com/stedolan/jq/releases/download/jq-%JQ_VERSION%/jq-win64.exe"
 
-COPY --from=builder C:/ProgramData/chocolatey/lib/docker-cli/tools/docker.exe C:/app/docker.exe
+COPY --from=builder C:/ProgramData/chocolatey/lib/docker-cli/tools/docker/docker.exe C:/app/docker.exe
 COPY --from=builder C:/tools/git C:/app/git
 COPY --from=builder C:/ProgramData/chocolatey/lib/7zip.portable/tools/7z-extra/x64/7za.exe C:/app/7za.exe
 

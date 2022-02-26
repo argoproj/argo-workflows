@@ -708,7 +708,7 @@ func expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
 	expandedTasks := make([]wfv1.DAGTask, 0)
 	for i, item := range items {
 		var newTask wfv1.DAGTask
-		newTaskName, err := processItem(tmpl, task.Name, i, item, &newTask)
+		newTaskName, err := processItem(tmpl, task.Name, i, item, &newTask, task.When)
 		if err != nil {
 			return nil, err
 		}
