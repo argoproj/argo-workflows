@@ -97,6 +97,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Localytics](https://www.localytics.com/)
 1. [Lumin Digital](https://lumindigital.com/)
 1. [Maersk](https://www.maersk.com/solutions/digital-solutions)
+1. [MariaDB](https://mariadb.com/)
 1. [Marmalade](https://www.marmalade.co/)
 1. [Max Kelsen](https://maxkelsen.com/)
 1. [Microba](https://www.microba.com/)
