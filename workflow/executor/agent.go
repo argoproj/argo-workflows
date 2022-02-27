@@ -186,10 +186,6 @@ func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alp
 				Cap:      30 * time.Second,
 			}, errors.IsTransientErr, func() error {
 				_, err := taskSetInterface.Patch(ctx, ae.WorkflowName, types.MergePatchType, patch, metav1.PatchOptions{}, "status")
-				if apierr.IsForbidden(err) {
-					ae.log.WithError(err).Warn("falling back to less secure patching workflowtaskset, please updated your agent's RBAC")
-					_, err = taskSetInterface.Patch(ctx, ae.WorkflowName, types.MergePatchType, patch, metav1.PatchOptions{})
-				}
 				return err
 			})
 
