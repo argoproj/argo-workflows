@@ -77,6 +77,7 @@ func (s *SemaphoreSuite) TestSynchronizationTmplLevelMutexAndSemaphore() {
 	s.Given().
 		Workflow("@functional/synchronization-tmpl-level-mutex-semaphore.yaml").
 		When().
+		CreateConfigMap("my-config", map[string]string{"workflow": "1"}, map[string]string{}).
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded, time.Minute)
 }
