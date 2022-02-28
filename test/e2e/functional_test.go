@@ -39,7 +39,6 @@ func (s *FunctionalSuite) TestArchiveStrategies() {
 }
 
 func (s *FunctionalSuite) TestWorkflowDefaults() {
-	s.Need(fixtures.BaseLayerArtifacts)
 	s.Given().
 		Workflow(`@smoke/basic.yaml`).
 		When().

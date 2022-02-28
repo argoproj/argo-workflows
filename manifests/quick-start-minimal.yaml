@@ -255,17 +255,12 @@ metadata:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: executor
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
   name: github.com
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: zero-permissions
+  name: workflow
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -577,14 +572,14 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: agent-default
+  name: agent
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: agent
 subjects:
 - kind: ServiceAccount
-  name: executor
+  name: workflow
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -613,14 +608,14 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: executor-default
+  name: executor
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: executor
 subjects:
 - kind: ServiceAccount
-  name: executor
+  name: workflow
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -638,26 +633,26 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: pod-manager-default
+  name: pod-manager
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: pod-manager
 subjects:
 - kind: ServiceAccount
-  name: executor
+  name: workflow
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: workflow-manager-default
+  name: workflow-manager
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: workflow-manager
 subjects:
 - kind: ServiceAccount
-  name: executor
+  name: workflow
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -741,7 +736,6 @@ data:
         matchLabels:
           workflows.argoproj.io/container-runtime-executor: pns
   executor: |
-    serviceAccountName: executor
     securityContext:
       runAsNonRoot: true
       runAsUser: 8737
@@ -782,6 +776,14 @@ data:
     - name: Sensor Logs Link
       scope: sensor-logs
       url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
+  mainContainer: |
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        cpu: 500m
+        memory: 128Mi
   metricsConfig: |
     enabled: true
     path: /metrics
@@ -796,32 +798,14 @@ data:
       activeDeadlineSeconds: 300
       ttlStrategy:
         secondsAfterCompletion: 600
-      podSpecPatch: |
-        containers:
-        - name: main
-          serviceAccountName: zero-permissions
-          securityContext:
-            runAsNonRoot: true
-            runAsUser: 8737
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-          resources:
-            requests:
-              cpu: 10m
-              memory: 64Mi
-            limits:
-              cpu: 500m
-              memory: 128Mi
         terminationGracePeriodSeconds: 3
       securityContext:
         runAsNonRoot: true
         runAsUser: 8737
       automountServiceAccountToken: false
-      serviceAccountName: zero-permissions
+      serviceAccountName: workflow
       executor:
-        serviceAccountName: executor
+        serviceAccountName: workflow
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
