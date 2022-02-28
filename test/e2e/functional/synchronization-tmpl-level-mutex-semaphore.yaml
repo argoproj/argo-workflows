@@ -24,8 +24,8 @@ spec:
       synchronization:
         semaphore:
           configMapKeyRef:
-            name: test-config-map
-            key: test-sem
+            name: my-config
+            key: workflow
       container:
         image: argoproj/argosay:v2
         args: ["sleep", "2s"]
