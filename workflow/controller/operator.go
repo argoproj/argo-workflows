@@ -3588,6 +3588,20 @@ func (woc *wfOperationCtx) getPodName(nodeName, templateName string) string {
 	return wfutil.PodName(woc.wf.Name, nodeName, templateName, woc.wf.NodeID(nodeName), wfutil.GetPodNameVersion())
 }
 
+func (woc *wfOperationCtx) getServiceAccountTokenName(ctx context.Context, name string) (string, error) {
+	if name == "" {
+		name = "default"
+	}
+	account, err := woc.controller.kubeclientset.CoreV1().ServiceAccounts(woc.wf.Namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	if len(account.Secrets) == 0 {
+		return "", fmt.Errorf("service account %s/%s does not have any secrets", account.Namespace, account.Name)
+	}
+	return account.Secrets[0].Name, nil
+}
+
 // setWfPodNamesAnnotation sets an annotation on a workflow with the pod naming
 // convention version
 func setWfPodNamesAnnotation(wf *wfv1.Workflow) {

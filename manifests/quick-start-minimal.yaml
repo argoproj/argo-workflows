@@ -1011,3 +1011,14 @@ spec:
       securityContext:
         runAsNonRoot: true
       serviceAccountName: argo
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: workflow
+spec:
+  podSelector:
+    matchLabels:
+      workflows.argoproj.io/component: agent
+  policyTypes:
+  - Ingress

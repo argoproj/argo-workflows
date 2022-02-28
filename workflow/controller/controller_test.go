@@ -144,23 +144,30 @@ func (t testEventRecorderManager) Get(string) record.EventRecorder {
 
 var _ events.EventRecorderManager = &testEventRecorderManager{}
 
+var defaultServiceAccount = &apiv1.ServiceAccount{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "default",
+		Namespace: "default",
+	},
+	Secrets: []apiv1.ObjectReference{{}},
+}
+
 func newController(options ...interface{}) (context.CancelFunc, *WorkflowController) {
 	// get all the objects and add to the fake
-	var objects []runtime.Object
+	var objects, coreObjects []runtime.Object
 	for _, opt := range options {
 		switch v := opt.(type) {
-		case *wfv1.Workflow:
-			objects = append(objects, v)
+		case *apiv1.ServiceAccount:
+			coreObjects = append(coreObjects, v)
 		case runtime.Object:
 			objects = append(objects, v)
 		}
 	}
-
 	wfclientset := fakewfclientset.NewSimpleClientset(objects...)
 	dynamicClient := dynamicfake.NewSimpleDynamicClient(scheme.Scheme, objects...)
 	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 0)
 	ctx, cancel := context.WithCancel(context.Background())
-	kube := fake.NewSimpleClientset()
+	kube := fake.NewSimpleClientset(coreObjects...)
 	wfc := &WorkflowController{
 		Config: config.Config{
 			ExecutorImage: "executor:latest",
