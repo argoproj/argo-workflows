@@ -22,17 +22,17 @@ spec:
     - name: generate-message
       container:
         image: argoproj/argosay:v2
-        args: [ "echo", "hello world", "/mnt/out/message" ]
+        args: [ "echo", "hello world", "/tmp/out/message" ]
       outputs:
         artifacts:
           - name: out
-            path: /mnt/out
+            path: /tmp/out
 
     - name: print-message
       inputs:
         artifacts:
           - name: in
-            path: /mnt/in
+            path: /tmp/in
       container:
         image: argoproj/argosay:v2
-        args: [ "cat", "/mnt/in/message" ]
+        args: [ "cat", "/tmp/in/message" ]

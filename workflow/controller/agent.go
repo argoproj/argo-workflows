@@ -119,6 +119,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			SecurityContext: &apiv1.PodSecurityContext{
 				RunAsNonRoot: pointer.BoolPtr(true),
 			},
+			ServiceAccountName: woc.execWf.Spec.Executor.ServiceAccountName,
 			Containers: append(
 				pluginSidecars,
 				apiv1.Container{
