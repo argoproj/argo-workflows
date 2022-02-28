@@ -16,7 +16,6 @@ resources:
   - agent-default-rolebinding.yaml
   - cluster-workflow-template-rbac.yaml
   - artifact-repositories-configmap.yaml
-  - workflow-networkpolicy.yaml
 
 patchesStrategicMerge:
   - overlays/workflow-controller-configmap.yaml
