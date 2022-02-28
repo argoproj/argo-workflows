@@ -73,6 +73,14 @@ func (s *SemaphoreSuite) TestTemplateLevelSemaphore() {
 		WaitForWorkflow(time.Minute)
 }
 
+func (s *SemaphoreSuite) TestSynchronizationTmplLevelMutexAndSemaphore() {
+	s.Given().
+		Workflow("@functional/synchronization-tmpl-level-mutex-semaphore.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded, time.Minute)
+}
+
 func TestSemaphoreSuite(t *testing.T) {
 	suite.Run(t, new(SemaphoreSuite))
 }
