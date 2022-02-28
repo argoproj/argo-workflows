@@ -9,8 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

@@ -9,8 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/utils/pointer"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	apiv1 "k8s.io/api/core/v1"
