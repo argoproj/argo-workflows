@@ -38,6 +38,8 @@ spec:
           kind: Workflow
           metadata:
             generateName: k8s-wf-resource-
+            labels: 
+              workflows.argoproj.io/test: "true"
           spec:
             entrypoint: main
             templates:

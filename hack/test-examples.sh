@@ -16,9 +16,9 @@ grep -lR 'workflows.argoproj.io/test' examples/* | while read f ; do
   kubectl delete workflow -l workflows.argoproj.io/test
   echo "Running $f..."
   kubectl create -f $f
-  name=$(kubectl get workflow -o name)
+  name=$(kubectl get workflow -o name -l workflows.argoproj.io/test)
   kubectl wait --for=condition=Completed $name
   phase="$(kubectl get $name -o 'jsonpath={.status.phase}')"
   echo " -> $phase"
-  test Succeeded == $phase
+  test Succeeded == "$phase"
 done

@@ -8,34 +8,23 @@ data:
       activeDeadlineSeconds: 300
       ttlStrategy:
         secondsAfterCompletion: 600
-      podSpecPatch: |
-        containers:
-        - name: main
-          serviceAccountName: zero-permissions
-          securityContext:
-            runAsNonRoot: true
-            runAsUser: 8737
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-          resources:
-            requests:
-              cpu: 10m
-              memory: 64Mi
-            limits:
-              cpu: 500m
-              memory: 128Mi
         terminationGracePeriodSeconds: 3
       securityContext:
         runAsNonRoot: true
         runAsUser: 8737
       automountServiceAccountToken: false
-      serviceAccountName: zero-permissions
+      serviceAccountName: workflow
       executor:
-        serviceAccountName: executor
+        serviceAccountName: workflow
+  mainContainer: |
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        cpu: 500m
+        memory: 128Mi
   executor: |
-    serviceAccountName: executor
     securityContext:
       runAsNonRoot: true
       runAsUser: 8737

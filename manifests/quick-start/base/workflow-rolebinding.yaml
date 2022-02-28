@@ -1,11 +1,11 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: pod-manager-default
+  name: workflow
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: pod-manager
+  name: workflow
 subjects:
   - kind: ServiceAccount
-    name: executor
+    name: workflow
