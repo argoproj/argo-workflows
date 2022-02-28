@@ -1852,46 +1852,6 @@ spec:
 	assert.EqualError(t, err, "podGC.labelSelector invalid: \"InvalidOperator\" is not a valid pod selector operator")
 }
 
-//nolint:gosec
-var validAutomountServiceAccountTokenUseWfLevel = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: valid-automount-service-account-token-use-wf-level-
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    container:
-      image: alpine:latest
-  - name: per-tmpl-automount
-    container:
-      image: alpine:latest
-    automountServiceAccountToken: true
-    executor:
-      ServiceAccountName: ""
-  automountServiceAccountToken: false
-  executor:
-    ServiceAccountName: foo
-`
-
-//nolint:gosec
-var validAutomountServiceAccountTokenUseTmplLevel = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: valid-automount-service-account-token-use-tmpl-level-
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    container:
-      image: alpine:latest
-    executor:
-      ServiceAccountName: foo
-  automountServiceAccountToken: false
-`
-
 var allowPlaceholderInVariableTakenFromInputs = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
