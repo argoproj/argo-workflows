@@ -81,27 +81,25 @@ func (woc *wfOperationCtx) secretExists(ctx context.Context, name string) (bool,
 	return true, nil
 }
 
-func (woc *wfOperationCtx) getCertVolumeMount(ctx context.Context, name string) []apiv1.VolumeMount {
+func (woc *wfOperationCtx) getCertVolumeMount(ctx context.Context, name string) ([]apiv1.VolumeMount, error) {
 	exists, err := woc.secretExists(ctx, name)
 	if err != nil {
-		woc.log.WithError(err).Errorf("Failed to check if secret %s exists", name)
-		return nil
+		return nil, fmt.Errorf("failed to check if secret %s exists: %v", name, err)
 	}
 	if exists {
 		return []apiv1.VolumeMount{{
 			Name:      name,
 			MountPath: "/etc/ssl/certs/ca-certificates",
 			ReadOnly:  true,
-		}}
+		}}, nil
 	}
-	return nil
+	return nil, nil
 }
 
-func (woc *wfOperationCtx) getCertVolume(ctx context.Context, name string) []apiv1.Volume {
+func (woc *wfOperationCtx) getCertVolume(ctx context.Context, name string) ([]apiv1.Volume, error) {
 	exists, err := woc.secretExists(ctx, name)
 	if err != nil {
-		woc.log.WithError(err).Errorf("Failed to check if secret %s exists", name)
-		return nil
+		return nil, fmt.Errorf("failed to check if secret %s exists: %v", name, err)
 	}
 	if exists {
 		return []apiv1.Volume{{
@@ -111,9 +109,9 @@ func (woc *wfOperationCtx) getCertVolume(ctx context.Context, name string) []api
 					SecretName: name,
 				},
 			},
-		}}
+		}}, nil
 	}
-	return nil
+	return nil, nil
 }
 
 func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, error) {
@@ -130,6 +128,16 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			log.WithField("podPhase", existing.Status.Phase).Debug("Skipped pod creation: already exists")
 			return existing, nil
 		}
+	}
+
+	certVolume, err := woc.getCertVolume(ctx, common.CACertificatesVolumeMountName)
+	if err != nil {
+		return nil, err
+	}
+
+	certVolumeMount, err := woc.getCertVolumeMount(ctx, common.CACertificatesVolumeMountName)
+	if err != nil {
+		return nil, err
 	}
 
 	pluginSidecars := woc.getExecutorPlugins()
@@ -175,7 +183,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 					ImagePullPolicy: woc.controller.executorImagePullPolicy(),
 					Env:             envVars,
 
-					VolumeMounts: woc.getCertVolumeMount(ctx, common.CACertificatesVolumeMountName),
+					VolumeMounts: certVolumeMount,
 
 					SecurityContext: &apiv1.SecurityContext{
 						Capabilities: &apiv1.Capabilities{
@@ -188,7 +196,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 					},
 				},
 			),
-			Volumes: woc.getCertVolume(ctx, common.CACertificatesVolumeMountName),
+			Volumes: certVolume,
 		},
 	}
 
