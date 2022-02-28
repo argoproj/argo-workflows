@@ -201,11 +201,6 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 		return nil, err
 	}
 
-	err = w.wfArchive.ValidateWorkflow(wf)
-	if err != nil {
-		return nil, err
-	}
-
 	wf, err = util.RetryArchiveWorkflow(ctx, kubeClient, w.hydrator, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wf, req.RestartSuccessful, req.NodeFieldSelector)
 	if err != nil {
 		return nil, err

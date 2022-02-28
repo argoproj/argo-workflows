@@ -58,7 +58,6 @@ type WorkflowArchive interface {
 	IsEnabled() bool
 	ListWorkflowsLabelKeys() (*wfv1.LabelKeys, error)
 	ListWorkflowsLabelValues(key string) (*wfv1.LabelValues, error)
-	ValidateWorkflow(wf *wfv1.Workflow) error
 }
 
 type workflowArchive struct {
@@ -71,10 +70,6 @@ type workflowArchive struct {
 
 func (r *workflowArchive) IsEnabled() bool {
 	return true
-}
-
-func (r *workflowArchive) ValidateWorkflow(wf *wfv1.Workflow) error {
-	return r.instanceIDService.Validate(wf)
 }
 
 // NewWorkflowArchive returns a new workflowArchive
