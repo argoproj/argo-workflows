@@ -9,11 +9,14 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/utils/pointer"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/pointer"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -34,6 +37,40 @@ func (s *FunctionalSuite) TestArchiveStrategies() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+		})
+}
+
+func (s *FunctionalSuite) TestWorkflowDefaults() {
+	s.Need(fixtures.BaseLayerArtifacts)
+	s.Given().
+		Workflow(`@smoke/basic.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectPods(func(t *testing.T, pods []apiv1.Pod) {
+			if assert.Len(t, pods, 1) {
+				pod := pods[0]
+				spec := pod.Spec
+				assert.Equal(t, pointer.Int64(300), spec.ActiveDeadlineSeconds)
+				assert.Equal(t, pointer.Int64(3), spec.TerminationGracePeriodSeconds)
+				assert.Equal(t, &apiv1.PodSecurityContext{
+					RunAsUser:    pointer.Int64(8737),
+					RunAsNonRoot: pointer.BoolPtr(true),
+				}, spec.SecurityContext)
+				assert.Equal(t, pointer.BoolPtr(false), spec.AutomountServiceAccountToken)
+				assert.Equal(t, "zero-permissions", spec.ServiceAccountName)
+				for _, ctr := range spec.Containers {
+					assert.Equal(t, &apiv1.SecurityContext{
+						RunAsUser:                pointer.Int64(8737),
+						RunAsNonRoot:             pointer.BoolPtr(true),
+						AllowPrivilegeEscalation: pointer.BoolPtr(false),
+						Capabilities:             &apiv1.Capabilities{Drop: []apiv1.Capability{"ALL"}},
+					}, ctr.SecurityContext)
+					assert.Len(t, ctr.Resources.Requests, 2)
+					assert.Len(t, ctr.Resources.Limits, 2)
+				}
+			}
 		})
 }
 

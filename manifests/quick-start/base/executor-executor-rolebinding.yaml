@@ -8,4 +8,4 @@ roleRef:
   name: executor
 subjects:
   - kind: ServiceAccount
-    name: default
+    name: executor

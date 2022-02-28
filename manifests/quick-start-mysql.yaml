@@ -255,7 +255,17 @@ metadata:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
+  name: executor
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
   name: github.com
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: zero-permissions
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -574,7 +584,7 @@ roleRef:
   name: agent
 subjects:
 - kind: ServiceAccount
-  name: default
+  name: executor
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -610,7 +620,7 @@ roleRef:
   name: executor
 subjects:
 - kind: ServiceAccount
-  name: default
+  name: executor
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -635,7 +645,7 @@ roleRef:
   name: pod-manager
 subjects:
 - kind: ServiceAccount
-  name: default
+  name: executor
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -647,7 +657,7 @@ roleRef:
   name: workflow-manager
 subjects:
 - kind: ServiceAccount
-  name: default
+  name: executor
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -731,10 +741,22 @@ data:
         matchLabels:
           workflows.argoproj.io/container-runtime-executor: pns
   executor: |
+    serviceAccountName: executor
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 8737
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+    imagePullPolicy: IfNotPresent
     resources:
       requests:
         cpu: 10m
         memory: 64Mi
+      limits:
+        cpu: 500m
+        memory: 128Mi
   images: |
     argoproj/argosay:v1:
       command: [cowsay]
@@ -788,6 +810,37 @@ data:
     completed: 10
     failed: 3
     errored: 3
+  workflowDefaults: |
+    spec:
+      activeDeadlineSeconds: 300
+      ttlStrategy:
+        secondsAfterCompletion: 600
+      podSpecPatch: |
+        containers:
+        - name: main
+          serviceAccountName: zero-permissions
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 8737
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 128Mi
+        terminationGracePeriodSeconds: 3
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 8737
+      automountServiceAccountToken: false
+      serviceAccountName: zero-permissions
+      executor:
+        serviceAccountName: executor
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap

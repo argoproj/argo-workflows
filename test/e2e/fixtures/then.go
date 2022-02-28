@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,6 +19,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
@@ -206,6 +209,19 @@ func (t *Then) ExpectArtifact(nodeName, artifactName string, f func(t *testing.T
 		t.t.Fatal(fmt.Errorf("HTTP request not OK: %s: %q", resp.Status, data))
 	}
 	f(t.t, data)
+}
+
+func (t *Then) ExpectPods(f func(t *testing.T, pods []apiv1.Pod)) *Then {
+	t.t.Helper()
+
+	list, err := t.kubeClient.CoreV1().Pods(t.wf.Namespace).List(context.Background(), metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + t.wf.Name})
+	if err != nil {
+		t.t.Fatal(err)
+	}
+
+	f(t.t, list.Items)
+
+	return t
 }
 
 func nodeIdForName(nodeName string, wf *wfv1.Workflow) string {

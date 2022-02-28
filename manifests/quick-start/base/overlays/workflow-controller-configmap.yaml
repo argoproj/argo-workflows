@@ -1,10 +1,56 @@
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workflow-controller-configmap
 data:
+  workflowDefaults: |
+    spec:
+      activeDeadlineSeconds: 300
+      ttlStrategy:
+        secondsAfterCompletion: 600
+      podSpecPatch: |
+        containers:
+        - name: main
+          serviceAccountName: zero-permissions
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 8737
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 128Mi
+        terminationGracePeriodSeconds: 3
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 8737
+      automountServiceAccountToken: false
+      serviceAccountName: zero-permissions
+      executor:
+        serviceAccountName: executor
   executor: |
+    serviceAccountName: executor
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 8737
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+    imagePullPolicy: IfNotPresent
     resources:
       requests:
         cpu: 10m
         memory: 64Mi
+      limits:
+        cpu: 500m
+        memory: 128Mi
   containerRuntimeExecutors: |
     - name: emissary
       selector:
@@ -55,6 +101,8 @@ data:
     - name: Sensor Logs Link
       scope: sensor-logs
       url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
-kind: ConfigMap
-metadata:
-  name: workflow-controller-configmap
+
+  retentionPolicy: |
+    completed: 10
+    failed: 3
+    errored: 3

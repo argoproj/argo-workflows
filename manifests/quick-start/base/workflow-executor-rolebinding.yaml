@@ -1,11 +1,11 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: agent-default
+  name: workflow-default-binding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: agent
+  name: workflow
 subjects:
   - kind: ServiceAccount
-    name: default
+    name: executor
