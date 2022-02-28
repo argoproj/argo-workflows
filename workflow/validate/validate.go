@@ -663,6 +663,14 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.action must be one of: get, create, apply, delete, replace, patch", tmpl.Name)
 			}
 		}
+		if !placeholderGenerator.IsPlaceholder(tmpl.Resource.Manifest) && tmpl.Resource.ManifestFrom != nil {
+			return errors.Errorf(errors.CodeBadRequest, "shouldn't have both `manifest` and `manifestFrom` specified in `Manifest` for resource template")
+		}
+		if tmpl.Resource.ManifestFrom != nil {
+			if tmpl.Resource.ManifestFrom.Path == "" {
+				return errors.Errorf(errors.CodeBadRequest, "invalid path detected in `manifestFrom` for resource template")
+			}
+		}
 		if !placeholderGenerator.IsPlaceholder(tmpl.Resource.Manifest) {
 			// Try to unmarshal the given manifest, just ensuring it's a valid YAML.
 			var obj interface{}

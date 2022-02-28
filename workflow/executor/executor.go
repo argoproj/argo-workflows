@@ -250,6 +250,11 @@ func (we *WorkflowExecutor) StageFiles() error {
 		body = []byte(we.Template.Script.Source)
 	case wfv1.TemplateTypeResource:
 		if we.Template.Resource.ManifestFrom != nil {
+			if we.Template.Resource.ManifestFrom.Path != "" {
+				log.Infof("manifest file %s already staged", we.Template.Resource.ManifestFrom.Path)
+			} else {
+				return argoerrs.Errorf(argoerrs.CodeBadRequest, "invalid path detected in `manifestFrom`")
+			}
 			return nil
 		}
 		log.Infof("Loading manifest to %s", common.ExecutorResourceManifestPath)
