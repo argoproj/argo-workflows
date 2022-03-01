@@ -101,23 +101,6 @@ func Test_archivedWorkflowServer(t *testing.T) {
 	repo.On("ListWorkflowsLabelValues", "my-key").Return(&wfv1.LabelValues{
 		Items: []string{"my-key=foo", "my-key=bar"},
 	}, nil)
-	// repo.On("ValidateWorkflow", &wfv1.Workflow{
-	// 	ObjectMeta: metav1.ObjectMeta{
-	// 		Name: "failed-wf",
-	// 		Labels: map[string]string{
-	// 			common.LabelKeyCompleted:               "true",
-	// 			common.LabelKeyWorkflowArchivingStatus: "Pending",
-	// 		},
-	// 	},
-	// 	Status: wfv1.WorkflowStatus{
-	// 		Phase:      wfv1.WorkflowFailed,
-	// 		StartedAt:  createdTime,
-	// 		FinishedAt: finishedTime,
-	// 		Nodes: map[string]wfv1.NodeStatus{
-	// 			"failed-node":    {Name: "failed-node", StartedAt: createdTime, FinishedAt: finishedTime, Phase: wfv1.NodeFailed, Message: "failed"},
-	// 			"succeeded-node": {Name: "succeeded-node", StartedAt: createdTime, FinishedAt: finishedTime, Phase: wfv1.NodeSucceeded, Message: "succeeded"}},
-	// 	},
-	// }).Return(nil)
 	repo.On("RetryWorkflow", "failed-uid").Return(&wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Name: "failed-wf"},
 		Spec: wfv1.WorkflowSpec{

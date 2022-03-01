@@ -31,7 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers/internalinterfaces"
-	"k8s.io/client-go/kubernetes"
+	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
@@ -735,52 +735,60 @@ func convertNodeID(newWf *wfv1.Workflow, regex *regexp.Regexp, oldNodeID string,
 }
 
 // RetryWorkflow updates a workflow, deleting all failed steps as well as the onExit node (and children)
-func RetryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrator hydrator.Interface, wfClient v1alpha1.WorkflowInterface, name string, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
-	var updated *wfv1.Workflow
+func RetryWorkflow(ctx context.Context, podIf v1.PodInterface, wfClient v1alpha1.WorkflowInterface, name string, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
+	var updatedWf *wfv1.Workflow
 	err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
 		var err error
 		wf, err := wfClient.Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
-		updated, err = retryWorkflow(ctx, kubeClient, hydrator, wfClient, wf, restartSuccessful, nodeFieldSelector, false)
+		updatedWf, err = prepareWorkflowForRetry(ctx, wf, podIf, restartSuccessful, nodeFieldSelector)
+		if err != nil {
+			return false, err
+		}
+		updatedWf, err = wfClient.Update(ctx, updatedWf, metav1.UpdateOptions{})
+		if err != nil {
+			return false, err
+		}
 		return !errorsutil.IsTransientErr(err), err
 	})
-	if err != nil {
-		return nil, err
-	}
-	return updated, err
+
+	return updatedWf, err
 }
 
 // RetryArchiveWorkflow recreates and updates a workflow
-func RetryArchiveWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrator hydrator.Interface, wfClient v1alpha1.WorkflowInterface, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
+func RetryArchiveWorkflow(ctx context.Context, podIf v1.PodInterface, wfClient v1alpha1.WorkflowInterface, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
 	var updated *wfv1.Workflow
 	err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
 		var err error
-		updated, err = retryWorkflow(ctx, kubeClient, hydrator, wfClient, wf, restartSuccessful, nodeFieldSelector, true)
+		updated, err = prepareWorkflowForRetry(ctx, wf, podIf, restartSuccessful, nodeFieldSelector)
+		if err != nil {
+			return false, err
+		}
+		updated, err = wfClient.Create(ctx, updated, metav1.CreateOptions{})
+		if err != nil {
+			if apierr.IsAlreadyExists(err) {
+				return false, fmt.Errorf("workflow already exists : %s", err)
+			}
+			return false, fmt.Errorf("unable to create workflow: %s", err)
+		}
 		return !errorsutil.IsTransientErr(err), err
 	})
-	if err != nil {
-		return nil, err
-	}
+
 	return updated, err
 }
 
-// retryWorkflow takes a wf in method signature instead and has boolean to determine if this is from archive or not - archive means we must create the workflow before update
-func retryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrator hydrator.Interface, wfClient v1alpha1.WorkflowInterface, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string, retryArchive bool) (*wfv1.Workflow, error) {
+// should not take any client
+func prepareWorkflowForRetry(ctx context.Context, wf *wfv1.Workflow, podIf v1.PodInterface, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
 
 	switch wf.Status.Phase {
 	case wfv1.WorkflowFailed, wfv1.WorkflowError:
 	default:
 		return nil, errors.Errorf(errors.CodeBadRequest, "workflow must be Failed/Error to retry")
 	}
-	err := hydrator.Hydrate(wf)
-	if err != nil {
-		return nil, err
-	}
 
 	newWF := wf.DeepCopy()
-	podIf := kubeClient.CoreV1().Pods(wf.ObjectMeta.Namespace)
 
 	// Delete/reset fields which indicate workflow completed
 	delete(newWF.Labels, common.LabelKeyCompleted)
@@ -878,28 +886,12 @@ func retryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrato
 		}
 	}
 
-	err = hydrator.Dehydrate(newWF)
-	if err != nil {
-		return nil, fmt.Errorf("unable to compress or offload workflow nodes: %s", err)
-	}
-
 	newWF.Status.StoredTemplates = make(map[string]wfv1.Template)
 	for id, tmpl := range wf.Status.StoredTemplates {
 		newWF.Status.StoredTemplates[id] = tmpl
 	}
 
-	if retryArchive {
-		newWF, err = wfClient.Create(ctx, newWF, metav1.CreateOptions{})
-		if err != nil {
-			if apierr.IsAlreadyExists(err) {
-				return nil, fmt.Errorf("workflow already exists : %s", err)
-			}
-			return nil, fmt.Errorf("unable to create workflow: %s", err)
-		}
-		return newWF, nil
-	}
-
-	return wfClient.Update(ctx, newWF, metav1.UpdateOptions{})
+	return newWF, nil
 }
 
 func getTemplateFromNode(node wfv1.NodeStatus) string {

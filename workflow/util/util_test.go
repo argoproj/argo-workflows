@@ -811,7 +811,7 @@ func TestDeepDeleteNodes(t *testing.T) {
 	ctx := context.Background()
 	wf, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
 	if assert.NoError(t, err) {
-		newWf, err := RetryWorkflow(ctx, kubeClient, hydratorfake.Noop, wfIf, wf.Name, false, "")
+		newWf, err := RetryWorkflow(ctx, kubeClient.CoreV1().Pods(wf.ObjectMeta.Namespace), wfIf, wf.Name, false, "")
 		assert.NoError(t, err)
 		newWfBytes, err := yaml.Marshal(newWf)
 		assert.NoError(t, err)
@@ -845,7 +845,7 @@ func TestRetryWorkflow(t *testing.T) {
 		}
 		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(t, err)
-		wf, err = RetryWorkflow(ctx, kubeClient, hydratorfake.Noop, wfClient, wf.Name, false, "")
+		wf, err = RetryWorkflow(ctx, kubeClient.CoreV1().Pods(wf.ObjectMeta.Namespace), wfClient, wf.Name, false, "")
 		if assert.NoError(t, err) {
 			assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
 			assert.Equal(t, metav1.Time{}, wf.Status.FinishedAt)
@@ -882,7 +882,7 @@ func TestRetryWorkflow(t *testing.T) {
 		}
 		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(t, err)
-		wf, err = RetryWorkflow(ctx, kubeClient, hydratorfake.Noop, wfClient, wf.Name, false, "")
+		wf, err = RetryWorkflow(ctx, kubeClient.CoreV1().Pods(wf.ObjectMeta.Namespace), wfClient, wf.Name, false, "")
 		if assert.NoError(t, err) {
 			if assert.Len(t, wf.Status.Nodes, 1) {
 				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes[""].Phase)
@@ -918,7 +918,7 @@ func TestRetryArchiveWorkflow(t *testing.T) {
 		}
 
 		// simulate retrying workflow from workflowArchive
-		wf, err := RetryArchiveWorkflow(ctx, kubeClient, hydratorfake.Noop, wfClient, wf, false, "")
+		wf, err := RetryArchiveWorkflow(ctx, kubeClient.CoreV1().Pods(wf.ObjectMeta.Namespace), wfClient, wf, false, "")
 		if assert.NoError(t, err) {
 			assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
 			assert.Equal(t, metav1.Time{}, wf.Status.FinishedAt)
@@ -941,7 +941,7 @@ func TestRetryArchiveWorkflow(t *testing.T) {
 			}
 		}
 		// retry on workflow that already exists
-		_, err = RetryArchiveWorkflow(ctx, kubeClient, hydratorfake.Noop, wfClient, wf, false, "")
+		_, err = RetryArchiveWorkflow(ctx, kubeClient.CoreV1().Pods(wf.ObjectMeta.Namespace), wfClient, wf, false, "")
 		assert.Error(t, err)
 	})
 }
