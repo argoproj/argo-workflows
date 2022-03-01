@@ -168,8 +168,8 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 							"memory": resource.MustParse("64M"),
 						},
 						Limits: map[apiv1.ResourceName]resource.Quantity{
-							"cpu":    resource.MustParse("100m"),
-							"memory": resource.MustParse("256M"),
+							"cpu":    resource.MustParse(env.LookupEnvStringOr("ARGO_AGENT_CPU_LIMIT", "100m")),
+							"memory": resource.MustParse(env.LookupEnvStringOr("ARGO_AGENT_MEMORY_LIMIT", "256M")),
 						},
 					},
 					VolumeMounts: []apiv1.VolumeMount{
