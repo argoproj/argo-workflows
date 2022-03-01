@@ -121,7 +121,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 				common.LabelKeyComponent: "agent",     // Allows you to identify agent pods and use a different NetworkPolicy on them
 			},
 			Annotations: map[string]string{
-				common.AnnotationKeyDefaultContainer: "main",
+				common.AnnotationKeyDefaultContainer: common.MainContainerName,
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
@@ -147,7 +147,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			Containers: append(
 				pluginSidecars,
 				apiv1.Container{
-					Name:            "main",
+					Name:            common.MainContainerName,
 					Command:         []string{"argoexec"},
 					Args:            []string{"agent"},
 					Image:           woc.controller.executorImage(),
