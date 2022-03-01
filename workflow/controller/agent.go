@@ -187,9 +187,6 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	if woc.controller.Config.InstanceID != "" {
 		pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
 	}
-	if woc.wf.Spec.ServiceAccountName != "" {
-		pod.Spec.ServiceAccountName = woc.wf.Spec.ServiceAccountName
-	}
 
 	log.Debug("Creating Agent pod")
 
