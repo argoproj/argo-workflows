@@ -24,10 +24,11 @@ type Facade struct {
 	baseUrl            string
 	authorization      string
 	insecureSkipVerify bool
+	headers            []string
 }
 
-func NewFacade(baseUrl, authorization string, insecureSkipVerify bool) Facade {
-	return Facade{baseUrl, authorization, insecureSkipVerify}
+func NewFacade(baseUrl, authorization string, insecureSkipVerify bool, headers []string) Facade {
+	return Facade{baseUrl, authorization, insecureSkipVerify, headers}
 }
 
 func (h Facade) Get(in, out interface{}, path string) error {
@@ -56,6 +57,11 @@ func (h Facade) EventStreamReader(in interface{}, path string) (*bufio.Reader, e
 	if err != nil {
 		return nil, err
 	}
+	headers, err := parseHeaders(h.headers)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = headers
 	req.Header.Set("Accept", "text/event-stream")
 	req.Header.Set("Authorization", h.authorization)
 	log.Debugf("curl -H 'Accept: text/event-stream' -H 'Authorization: ******' '%v'", u)
@@ -94,6 +100,11 @@ func (h Facade) do(in interface{}, out interface{}, method string, path string) 
 	if err != nil {
 		return err
 	}
+	headers, err := parseHeaders(h.headers)
+	if err != nil {
+		return err
+	}
+	req.Header = headers
 	req.Header.Set("Authorization", h.authorization)
 	log.Debugf("curl -X %s -H 'Authorization: ******' -d '%s' '%v'", method, string(data), u)
 	client := &http.Client{
@@ -145,4 +156,16 @@ func errFromResponse(r *http.Response) error {
 		return status.Errorf(x.Code, x.Message)
 	}
 	return status.Error(codes.Internal, fmt.Sprintf(": %v", r))
+}
+
+func parseHeaders(headerStrings []string) (http.Header, error) {
+	headers := http.Header{}
+	for _, kv := range headerStrings {
+		items := strings.Split(kv, ":")
+		if len(items)%2 == 1 {
+			return nil, fmt.Errorf("additional headers must be colon(:)-separated: %s", kv)
+		}
+		headers.Add(items[0], items[1])
+	}
+	return headers, nil
 }
