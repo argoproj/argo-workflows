@@ -93,16 +93,6 @@ This PR removes the following configmap items -
     ...
   ```
 
-- namespace
-  E.g. Workflow controller configmap similar to the one given below won't be valid anymore:
-
-  ```yaml
-  data:
-    ...
-    namespace: your-namespace
-    ...
-  ```
-
 ### [fce82d572](https://github.com/argoproj/argo-workflows/commit/fce82d5727b89cfe49e8e3568fff40725bd43734) feat: Remove pod workers (#7837)
 
 This PR removes pod workers from the code, the pod informer directly writes into the workflow queue. As a result the `--pod-workers` flag has been removed. 
