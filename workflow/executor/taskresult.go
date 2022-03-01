@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 
+
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
@@ -38,8 +40,8 @@ func (we *WorkflowExecutor) createTaskResult(ctx context.Context, result wfv1.No
 	_, err := we.taskResultClient.Create(ctx,
 		&wfv1.WorkflowTaskResult{
 			TypeMeta: metav1.TypeMeta{
-				APIVersion: "argoproj.io/v1alpha1",
-				Kind:       "WorkflowTaskResult",
+				APIVersion: workflow.APIVersion,
+				Kind:       workflow.WorkflowTaskResultKind,
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:   we.nodeId,
@@ -47,8 +49,8 @@ func (we *WorkflowExecutor) createTaskResult(ctx context.Context, result wfv1.No
 				// make sure deleting the workflow, delete this result
 				OwnerReferences: []metav1.OwnerReference{
 					{
-						APIVersion: "argoproj.io/v1alpha1",
-						Kind:       "Workflow",
+						APIVersion: workflow.APIVersion,
+						Kind:       workflow.WorkflowKind,
 						Name:       we.workflow,
 						UID:        we.workflowUID,
 					},

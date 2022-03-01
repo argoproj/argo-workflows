@@ -1256,29 +1256,3 @@ func (wfc *WorkflowController) newWorkflowTaskSetInformer() wfextvv1alpha1.Workf
 		})
 	return informer
 }
-
-func (wfc *WorkflowController) newWorkflowTaskResultInformer() wfextvv1alpha1.WorkflowTaskResultInformer {
-	informer := externalversions.NewSharedInformerFactoryWithOptions(
-		wfc.wfclientset,
-		workflowTaskSetResyncPeriod,
-		externalversions.WithNamespace(wfc.GetManagedNamespace()),
-		externalversions.WithTweakListOptions(func(x *metav1.ListOptions) {
-			r := util.InstanceIDRequirement(wfc.Config.InstanceID)
-			x.LabelSelector = r.String()
-		})).Argoproj().V1alpha1().WorkflowTaskResults()
-	informer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(new interface{}) {
-				println("ALEX", new)
-				result := new.(*wfv1.WorkflowTaskResult)
-				workflow := result.Labels[common.LabelKeyWorkflow]
-				wfc.wfQueue.AddRateLimited(result.Namespace + "/" + workflow)
-			},
-			UpdateFunc: func(_, new interface{}) {
-				result := new.(*wfv1.WorkflowTaskResult)
-				workflow := result.Labels[common.LabelKeyWorkflow]
-				wfc.wfQueue.AddRateLimited(result.Namespace + "/" + workflow)
-			},
-		})
-	return informer
-}
