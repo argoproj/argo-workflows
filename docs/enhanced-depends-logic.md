@@ -22,7 +22,7 @@ available task results is as follows:
 |:------------:|----------------|---------|
 | `.Succeeded` | Task Succeeded | Task finished with no error |
 | `.Failed` | Task Failed | Task exited with a non-0 exit code |
-| `.Errored` | Task Errored | Task had an error other than a non-0 exit code
+| `.Errored` | Task Errored | Task had an error other than a non-0 exit code |
 | `.Skipped` | Task Skipped | Task was skipped |
 | `.Daemoned` | Task is Daemoned and is not Pending | |
 
@@ -41,11 +41,11 @@ depends: (task.Succeeded || task.Skipped || task.Daemoned) || task-2.Failed
 ```
 
 Full boolean logic is also available. Operators include:
- 
+
  * `&&`
  * `||`
  * `!`
- 
+
  Example:
 
 ```
@@ -58,7 +58,7 @@ whether any of the item tasks are successful or all have failed using .AnySuccee
 ```
 depends: "task-1.AnySucceeded || task-2.AllFailed"
 ```
-   
+
 ## Compatibility with `dependencies` and `dag.task.continueOn`
 
 This feature is fully compatible with `dependencies` and conversion is easy.
