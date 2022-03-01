@@ -10,6 +10,8 @@ type WorkflowExpansion interface{}
 
 type WorkflowEventBindingExpansion interface{}
 
+type WorkflowTaskResultExpansion interface{}
+
 type WorkflowTaskSetExpansion interface{}
 
 type WorkflowTemplateExpansion interface{}

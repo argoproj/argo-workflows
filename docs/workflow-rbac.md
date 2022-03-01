@@ -10,6 +10,25 @@ permissions added to it you do not want. Instead, create a service account only 
 
 The minimum for the executor to function:
 
+For >= v3.4:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: executor
+rules:
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - workflowtaskresult
+    verbs:
+      - create
+      - patch
+```
+
+For <= v3.3
+
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role

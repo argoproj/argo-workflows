@@ -214,6 +214,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 	{
 		wfc.wfInformer = util.NewWorkflowInformer(dynamicClient, "", 0, wfc.tweakListOptions, indexers)
 		wfc.wfTaskSetInformer = informerFactory.Argoproj().V1alpha1().WorkflowTaskSets()
+		wfc.taskResultInformer = informerFactory.Argoproj().V1alpha1().WorkflowTaskResults()
 		wfc.wftmplInformer = informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
 		wfc.addWorkflowInformerHandlers(ctx)
 		wfc.podInformer = wfc.newPodInformer(ctx)
@@ -225,6 +226,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		go wfc.wftmplInformer.Informer().Run(ctx.Done())
 		go wfc.podInformer.Run(ctx.Done())
 		go wfc.wfTaskSetInformer.Informer().Run(ctx.Done())
+		go wfc.taskResultInformer.Informer().Run(ctx.Done())
 		wfc.cwftmplInformer = informerFactory.Argoproj().V1alpha1().ClusterWorkflowTemplates()
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
 		// wfc.waitForCacheSync() takes minimum 100ms, we can be faster
@@ -233,6 +235,8 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 			wfc.wftmplInformer.Informer(),
 			wfc.podInformer,
 			wfc.cwftmplInformer.Informer(),
+			wfc.wfTaskSetInformer.Informer(),
+			wfc.taskResultInformer.Informer(),
 		} {
 			for !c.HasSynced() {
 				time.Sleep(5 * time.Millisecond)
@@ -302,7 +306,14 @@ func listPods(woc *wfOperationCtx) (*apiv1.PodList, error) {
 
 type with func(pod *apiv1.Pod)
 
-func withOutputs(v string) with  { return withAnnotation(common.AnnotationKeyOutputs, v) }
+func withOutputs(v interface{}) with {
+	switch x := v.(type) {
+	case string:
+		return withAnnotation(common.AnnotationKeyOutputs, x)
+	default:
+		return withOutputs(wfv1.MustMarshallJSON(x))
+	}
+}
 func withProgress(v string) with { return withAnnotation(common.AnnotationKeyProgress, v) }
 
 func withExitCode(v int32) with {

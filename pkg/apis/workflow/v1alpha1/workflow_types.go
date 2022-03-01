@@ -2516,6 +2516,10 @@ func (t *Template) GetRetryStrategy() (wait.Backoff, error) {
 	return t.ContainerSet.GetRetryStrategy()
 }
 
+func (t *Template) HasOutputs() bool {
+	return t != nil && t.Outputs.HasOutputs()
+}
+
 // DAGTemplate is a template subtype for directed acyclic graph templates
 type DAGTemplate struct {
 	// Target are one or more names of targets to execute in a DAG
@@ -2655,6 +2659,9 @@ func (in *Inputs) HasInputs() bool {
 
 // HasOutputs returns whether or not there are any outputs
 func (out *Outputs) HasOutputs() bool {
+	if out == nil {
+		return false
+	}
 	if out.Result != nil {
 		return true
 	}
@@ -2675,6 +2682,32 @@ func (out *Outputs) GetArtifactByName(name string) *Artifact {
 		return nil
 	}
 	return out.Artifacts.GetArtifactByName(name)
+}
+
+func (out *Outputs) HasResult() bool {
+	return out != nil && out.Result != nil
+}
+
+func (out *Outputs) HasArtifacts() bool {
+	return out != nil && len(out.Artifacts) > 0
+}
+
+func (out *Outputs) HasParameters() bool {
+	return out != nil && len(out.Parameters) > 0
+}
+
+const MainLogsArtifactName = "main-logs"
+
+func (out *Outputs) HasLogs() bool {
+	if out == nil {
+		return false
+	}
+	for _, a := range out.Artifacts {
+		if a.Name == MainLogsArtifactName {
+			return true
+		}
+	}
+	return false
 }
 
 // GetArtifactByName retrieves an artifact by its name

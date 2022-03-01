@@ -105,6 +105,10 @@ const (
 	EnvVarPodName = "ARGO_POD_NAME"
 	// EnvVarWorkflowName is the name of the workflow for which the an agent is responsible for
 	EnvVarWorkflowName = "ARGO_WORKFLOW_NAME"
+	// EnvVarWorkflowUID is the workflow's UID
+	EnvVarWorkflowUID = "ARGO_WORKFLOW_UID"
+	// EnvVarNodeID is the node ID of the node.
+	EnvVarNodeID = "ARGO_NODE_ID"
 	// EnvVarPluginAddresses is a list of plugin addresses
 	EnvVarPluginAddresses = "ARGO_PLUGIN_ADDRESSES"
 	// EnvVarContainerName container the container's name for the current pod
