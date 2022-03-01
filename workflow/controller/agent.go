@@ -81,37 +81,30 @@ func (woc *wfOperationCtx) secretExists(ctx context.Context, name string) (bool,
 	return true, nil
 }
 
-func (woc *wfOperationCtx) getCertVolumeMount(ctx context.Context, name string) ([]apiv1.VolumeMount, error) {
+func (woc *wfOperationCtx) getCertVolumeMount(ctx context.Context, name string) ([]apiv1.Volume, []apiv1.VolumeMount, error) {
 	exists, err := woc.secretExists(ctx, name)
 	if err != nil {
-		return nil, fmt.Errorf("failed to check if secret %s exists: %v", name, err)
+		return nil, nil, fmt.Errorf("failed to check if secret %s exists: %v", name, err)
 	}
 	if exists {
-		return []apiv1.VolumeMount{{
-			Name:      name,
-			MountPath: "/etc/ssl/certs/ca-certificates",
-			ReadOnly:  true,
-		}}, nil
-	}
-	return nil, nil
-}
-
-func (woc *wfOperationCtx) getCertVolume(ctx context.Context, name string) ([]apiv1.Volume, error) {
-	exists, err := woc.secretExists(ctx, name)
-	if err != nil {
-		return nil, fmt.Errorf("failed to check if secret %s exists: %v", name, err)
-	}
-	if exists {
-		return []apiv1.Volume{{
+		certVolume := []apiv1.Volume{{
 			Name: name,
 			VolumeSource: apiv1.VolumeSource{
 				Secret: &apiv1.SecretVolumeSource{
 					SecretName: name,
 				},
 			},
-		}}, nil
+		}}
+
+		certVolumeMount := []apiv1.VolumeMount{{
+			Name:      name,
+			MountPath: "/etc/ssl/certs/ca-certificates",
+			ReadOnly:  true,
+		}}
+
+		return certVolume, certVolumeMount, nil
 	}
-	return nil, nil
+	return nil, nil, nil
 }
 
 func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, error) {
@@ -130,12 +123,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		}
 	}
 
-	certVolume, err := woc.getCertVolume(ctx, common.CACertificatesVolumeMountName)
-	if err != nil {
-		return nil, err
-	}
-
-	certVolumeMount, err := woc.getCertVolumeMount(ctx, common.CACertificatesVolumeMountName)
+	certVolume, certVolumeMount, err := woc.getCertVolumeMount(ctx, common.CACertificatesVolumeMountName)
 	if err != nil {
 		return nil, err
 	}
