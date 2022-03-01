@@ -49,7 +49,6 @@ type Config struct {
 	ArtifactRepository wfv1.ArtifactRepository `json:"artifactRepository,omitempty"`
 
 	// Namespace is a label selector filter to limit the controller's watch to a specific namespace
-	// DEPRECATED: support will be remove in a future release
 	Namespace string `json:"namespace,omitempty"`
 
 	// InstanceID is a label selector to limit the controller's watch to a specific instance. It
