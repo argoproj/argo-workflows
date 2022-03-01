@@ -48,6 +48,10 @@ type Config struct {
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
 	ArtifactRepository wfv1.ArtifactRepository `json:"artifactRepository,omitempty"`
 
+	// Namespace is a label selector filter to limit the controller's watch to a specific namespace
+	// DEPRECATED: support will be remove in a future release
+	Namespace string `json:"namespace,omitempty"`
+
 	// InstanceID is a label selector to limit the controller's watch to a specific instance. It
 	// contains an arbitrary value that is carried forward into its pod labels, under the key
 	// workflows.argoproj.io/controller-instanceid, for the purposes of workflow segregation. This
