@@ -10,7 +10,7 @@ Please report vulnerabilities by e-mail to the following address:
 
 * cncf-argo-security@lists.cncf.io
 
-All vulnerabilites and associated information will be treated with full confidentiality. 
+All vulnerabilities and associated information will be treated with full confidentiality. 
 
 ## Public Disclosure
 

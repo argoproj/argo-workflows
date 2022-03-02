@@ -1,6 +1,6 @@
 # This example demonstrates a workflow with a step using node selectors.
 # In this case, it requires that the 'print-arch' template, run on a
-# node with architecture 'amd64'. This can be overriden via argo CLI, 
+# node with architecture 'amd64'. This can be overridden via argo CLI,
 # e.g. argo submit node-selector.yaml -p arch=somethingelse
 # Node selectors can also be set at the workflow level, meaning all pods
 # of the workflow will be scheduled using the selector.
