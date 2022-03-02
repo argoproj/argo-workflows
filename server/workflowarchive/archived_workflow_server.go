@@ -25,7 +25,6 @@ import (
 
 type archivedWorkflowServer struct {
 	wfArchive sqldb.WorkflowArchive
-	// hydrator  hydrator.Interface
 }
 
 // NewWorkflowArchiveServer returns a new archivedWorkflowServer
