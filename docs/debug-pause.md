@@ -61,7 +61,7 @@ argo submit -n argo --watch pause-after.yaml
 kubectl debug -n argo -it POD_NAME --image=busybox --target=main --share-processes
 ```
 
-In order to have access to the persistance volume used by the workflow step,  [`--share-processes`](https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/) will have to be used. 
+In order to have access to the persistence volume used by the workflow step,  [`--share-processes`](https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/) will have to be used. 
 
 The ephemeral container can be used to perform debugging operations. When debugging has been completed, create the marker file to allow the workflow step to continue. When using process name space sharing container filesystems are visible to other containers in the pod through the /proc/$pid/root link.
 

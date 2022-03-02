@@ -31,7 +31,7 @@ spec:
         headers:
           - name: "x-header-name"
             value: "test-value"
-        # Template will suceed if evaluated to true, otherwise will fail
+        # Template will succeed if evaluated to true, otherwise will fail
         # Available variables:
         #  request.body: string, the response body
         #  request.headers: map[string][]string, the response headers
