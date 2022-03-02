@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
@@ -352,9 +353,11 @@ func TestStepsTmplOnExit(t *testing.T) {
 	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
-	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withOutputs(wfv1.Outputs{Result: pointer.StringPtr("ok"), Parameters: []wfv1.Parameter{{}}}))
 	woc1 := newWorkflowOperationCtx(woc.wf, controller)
 	woc1.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc1.wf.Status.Phase)
 	onExitNodeIsPresent := false
 	for _, node := range woc1.wf.Status.Nodes {
 		if node.Phase == wfv1.NodePending && strings.Contains(node.Name, "onExit") {
@@ -367,6 +370,7 @@ func TestStepsTmplOnExit(t *testing.T) {
 	makePodsPhase(ctx, woc1, apiv1.PodSucceeded)
 	woc2 := newWorkflowOperationCtx(woc1.wf, controller)
 	woc2.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc2.wf.Status.Phase)
 	makePodsPhase(ctx, woc2, apiv1.PodSucceeded)
 	for idx, node := range woc2.wf.Status.Nodes {
 		if strings.Contains(node.Name, ".leafB") {
@@ -384,6 +388,7 @@ func TestStepsTmplOnExit(t *testing.T) {
 
 	woc3 := newWorkflowOperationCtx(woc2.wf, controller)
 	woc3.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc3.wf.Status.Phase)
 	onExitNodeIsPresent = false
 	for _, node := range woc3.wf.Status.Nodes {
 		if node.Phase == wfv1.NodePending && strings.Contains(node.Name, "onExit") {
@@ -452,9 +457,11 @@ func TestDAGOnExit(t *testing.T) {
 	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
-	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withOutputs(wfv1.Outputs{Parameters: []wfv1.Parameter{{}}}))
 	woc1 := newWorkflowOperationCtx(woc.wf, controller)
 	woc1.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc1.wf.Status.Phase)
 	onExitNodeIsPresent := false
 	for _, node := range woc1.wf.Status.Nodes {
 		if strings.Contains(node.Name, "onExit") {
@@ -467,6 +474,7 @@ func TestDAGOnExit(t *testing.T) {
 	makePodsPhase(ctx, woc1, apiv1.PodSucceeded)
 	woc2 := newWorkflowOperationCtx(woc1.wf, controller)
 	woc2.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc2.wf.Status.Phase)
 	makePodsPhase(ctx, woc2, apiv1.PodSucceeded)
 	for idx, node := range woc2.wf.Status.Nodes {
 		if strings.Contains(node.Name, ".leafB") {
@@ -483,6 +491,7 @@ func TestDAGOnExit(t *testing.T) {
 	}
 	woc3 := newWorkflowOperationCtx(woc2.wf, controller)
 	woc3.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc3.wf.Status.Phase)
 	onExitNodeIsPresent = false
 	for _, node := range woc3.wf.Status.Nodes {
 		if node.Phase == wfv1.NodePending && strings.Contains(node.Name, "onExit") {

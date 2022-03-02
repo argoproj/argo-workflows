@@ -30,6 +30,93 @@ See [#8013](https://github.com/argoproj/argo-workflows/issues/8013).
 
 ## Upgrading to v3.3
 
+### feat!: Remove deprecated config flags
+
+This PR removes the following configmap items -
+
+- executorImage (use executor.image in configmap instead)
+  e.g.
+  Workflow controller configmap similar to the following one given below won't be valid anymore:
+
+  ```yaml
+  apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: workflow-controller-configmap
+  data:
+    ...
+    executorImage: argoproj/argocli:latest
+    ...
+  ```
+
+  From now and onwards, only provide the executor image in workflow controller as a command argument as shown below:
+
+  ```yaml
+  apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: workflow-controller-configmap
+  data:
+    ...
+    executor: |
+      image: argoproj/argocli:latest
+    ...
+  ```
+
+- executorImagePullPolicy (use executor.imagePullPolicy in configmap instead)
+  e.g.
+  Workflow controller configmap similar to the following one given below won't be valid anymore:
+
+  ```yaml
+  data:
+    ...
+    executorImagePullPolicy: IfNotPresent
+    ...
+  ```
+
+  Change it as shown below:
+
+  ```yaml
+  data:
+    ...
+    executor: |
+      imagePullPolicy: IfNotPresent
+    ...
+  ```
+
+- executorResources (use executor.resources in configmap instead)
+  e.g.
+  Workflow controller configmap similar to the following one given below won't be valid anymore:
+
+  ```yaml
+  data:
+    ...
+    executorResources:
+      requests:
+        cpu: 0.1
+        memory: 64Mi
+      limits:
+        cpu: 0.5
+        memory: 512Mi
+    ...
+  ```
+
+  Change it as shown below:
+
+  ```yaml
+  data:
+    ...
+    executor: |
+      resources:
+        requests:
+          cpu: 0.1
+          memory: 64Mi
+        limits:
+          cpu: 0.5
+          memory: 512Mi
+    ...
+  ```
+
 ### [fce82d572](https://github.com/argoproj/argo-workflows/commit/fce82d5727b89cfe49e8e3568fff40725bd43734) feat: Remove pod workers (#7837)
 
 This PR removes pod workers from the code, the pod informer directly writes into the workflow queue. As a result the `--pod-workers` flag has been removed. 

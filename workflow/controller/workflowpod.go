@@ -319,6 +319,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	// Add standard environment variables, making pod spec larger
 	envVars := []apiv1.EnvVar{
 		{Name: common.EnvVarTemplate, Value: wfv1.MustMarshallJSON(tmpl)},
+		{Name: common.EnvVarNodeID, Value: nodeID},
 		{Name: common.EnvVarIncludeScriptOutput, Value: strconv.FormatBool(opts.includeScriptOutput)},
 		{Name: common.EnvVarDeadline, Value: woc.getDeadline(opts).Format(time.RFC3339)},
 		{Name: common.EnvVarProgressFile, Value: common.ArgoProgressPath},
@@ -629,6 +630,10 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 			Name:  common.EnvVarWorkflowName,
 			Value: woc.wf.Name,
 		},
+		{
+			Name:  common.EnvVarWorkflowUID,
+			Value: string(woc.wf.UID),
+		},
 	}
 	if woc.controller.Config.Executor != nil {
 		execEnvVars = append(execEnvVars, woc.controller.Config.Executor.Env...)
@@ -690,17 +695,8 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 		Image:           woc.controller.executorImage(),
 		ImagePullPolicy: woc.controller.executorImagePullPolicy(),
 		Env:             woc.createEnvVars(),
-	}
-	if woc.controller.Config.Executor != nil {
-		exec.Args = woc.controller.Config.Executor.Args
-		if woc.controller.Config.Executor.SecurityContext != nil {
-			exec.SecurityContext = woc.controller.Config.Executor.SecurityContext.DeepCopy()
-		}
-	}
-	if isResourcesSpecified(woc.controller.Config.Executor) {
-		exec.Resources = *woc.controller.Config.Executor.Resources.DeepCopy()
-	} else if woc.controller.Config.ExecutorResources != nil {
-		exec.Resources = *woc.controller.Config.ExecutorResources.DeepCopy()
+		Resources:       woc.controller.Config.GetExecutor().Resources,
+		SecurityContext: woc.controller.Config.GetExecutor().SecurityContext,
 	}
 	if woc.controller.Config.KubeConfig != nil {
 		path := woc.controller.Config.KubeConfig.MountPath
@@ -969,8 +965,9 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 			continue
 		}
 		for _, art := range tmpl.Inputs.Artifacts {
-			if art.Path == "" {
-				return errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s did not specify a path", art.Name)
+			err := art.CleanPath()
+			if err != nil {
+				return errors.Errorf(errors.CodeBadRequest, "error in inputs.artifacts.%s: %s", art.Name, err.Error())
 			}
 			if !art.HasLocationOrKey() && art.Optional {
 				woc.log.Infof("skip volume mount of %s (%s): optional artifact was not provided",
@@ -1096,7 +1093,7 @@ func (woc *wfOperationCtx) setupServiceAccount(ctx context.Context, pod *apiv1.P
 		executorServiceAccountName = woc.execWf.Spec.Executor.ServiceAccountName
 	}
 	if executorServiceAccountName != "" {
-		tokenName, err := common.GetServiceAccountTokenName(ctx, woc.controller.kubeclientset, pod.Namespace, executorServiceAccountName)
+		tokenName, err := woc.getServiceAccountTokenName(ctx, executorServiceAccountName)
 		if err != nil {
 			return err
 		}

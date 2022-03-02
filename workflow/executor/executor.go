@@ -24,12 +24,17 @@ import (
 	argofile "github.com/argoproj/pkg/file"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	retryutil "k8s.io/client-go/util/retry"
 
 	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	argoprojv1 "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/util/archive"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
@@ -49,10 +54,14 @@ const (
 // WorkflowExecutor is program which runs as the init/wait container
 type WorkflowExecutor struct {
 	PodName             string
+	workflow            string
+	workflowUID         types.UID
+	nodeId              string
 	Template            wfv1.Template
 	IncludeScriptOutput bool
 	Deadline            time.Time
 	ClientSet           kubernetes.Interface
+	taskResultClient    argoprojv1.WorkflowTaskResultInterface
 	RESTClient          rest.Interface
 	Namespace           string
 	RuntimeExecutor     ContainerRuntimeExecutor
@@ -109,11 +118,26 @@ func isErrUnknownGetPods(err error) bool {
 }
 
 // NewExecutor instantiates a new workflow executor
-func NewExecutor(clientset kubernetes.Interface, restClient rest.Interface, podName, namespace string, cre ContainerRuntimeExecutor, template wfv1.Template, includeScriptOutput bool, deadline time.Time, annotationPatchTickDuration, readProgressFileTickDuration time.Duration) WorkflowExecutor {
+func NewExecutor(
+	clientset kubernetes.Interface,
+	taskSetClient argoprojv1.WorkflowTaskResultInterface,
+	restClient rest.Interface,
+	podName, workflow, nodeId, namespace string,
+	workflowUID types.UID,
+	cre ContainerRuntimeExecutor,
+	template wfv1.Template,
+	includeScriptOutput bool,
+	deadline time.Time,
+	annotationPatchTickDuration, readProgressFileTickDuration time.Duration,
+) WorkflowExecutor {
 	log.WithFields(log.Fields{"Steps": executorretry.Steps, "Duration": executorretry.Duration, "Factor": executorretry.Factor, "Jitter": executorretry.Jitter}).Info("Using executor retry strategy")
 	return WorkflowExecutor{
 		PodName:                      podName,
+		workflow:                     workflow,
+		workflowUID:                  workflowUID,
+		nodeId:                       nodeId,
 		ClientSet:                    clientset,
+		taskResultClient:             taskSetClient,
 		RESTClient:                   restClient,
 		Namespace:                    namespace,
 		RuntimeExecutor:              cre,
@@ -155,6 +179,10 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 				return argoerrs.Errorf(argoerrs.CodeNotFound, "required artifact '%s' not supplied", art.Name)
 			}
 		}
+		err := art.CleanPath()
+		if err != nil {
+			return err
+		}
 		driverArt, err := we.newDriverArt(&art)
 		if err != nil {
 			return fmt.Errorf("failed to load artifact '%s': %w", art.Name, err)
@@ -164,15 +192,12 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 			return err
 		}
 		// Determine the file path of where to load the artifact
-		if art.Path == "" {
-			return argoerrs.InternalErrorf("Artifact %s did not specify a path", art.Name)
-		}
 		var artPath string
 		mnt := common.FindOverlappingVolume(&we.Template, art.Path)
 		if mnt == nil {
 			artPath = path.Join(common.ExecutorArtifactBaseDir, art.Name)
 		} else {
-			// If we get here, it means the input artifact path overlaps with an user specified
+			// If we get here, it means the input artifact path overlaps with a user-specified
 			// volumeMount in the container. Because we also implement input artifacts as volume
 			// mounts, we need to load the artifact into the user specified volume mount,
 			// as opposed to the `input-artifacts` volume that is an implementation detail
@@ -286,8 +311,9 @@ func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) error {
 
 func (we *WorkflowExecutor) saveArtifact(ctx context.Context, containerName string, art *wfv1.Artifact) error {
 	// Determine the file path of where to find the artifact
-	if art.Path == "" {
-		return argoerrs.InternalErrorf("Artifact %s did not specify a path", art.Name)
+	err := art.CleanPath()
+	if err != nil {
+		return err
 	}
 	fileName, localArtPath, err := we.stageArchiveFile(containerName, art)
 	if err != nil {
@@ -547,7 +573,7 @@ func (we *WorkflowExecutor) SaveLogs(ctx context.Context) (*wfv1.Artifact, error
 	if err != nil {
 		return nil, err
 	}
-	art := &wfv1.Artifact{Name: "main-logs"}
+	art := &wfv1.Artifact{Name: wfv1.MainLogsArtifactName}
 	err = we.saveArtifactFromFile(ctx, art, fileName, mainLog)
 	if err != nil {
 		return nil, err
@@ -721,22 +747,42 @@ func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
 	return nil
 }
 
-// AnnotateOutputs annotation to the pod indicating all the outputs.
-func (we *WorkflowExecutor) AnnotateOutputs(ctx context.Context, logArt *wfv1.Artifact) error {
+// ReportOutputs annotation to the pod indicating all the outputs.
+func (we *WorkflowExecutor) ReportOutputs(ctx context.Context, logArt *wfv1.Artifact) error {
 	outputs := we.Template.Outputs.DeepCopy()
 	if logArt != nil {
 		outputs.Artifacts = append(outputs.Artifacts, *logArt)
 	}
+	return we.reportResult(ctx, wfv1.NodeResult{Outputs: outputs})
+}
 
-	if !outputs.HasOutputs() {
+func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeResult) error {
+	if !result.Outputs.HasOutputs() && !result.Progress.IsValid() {
 		return nil
 	}
-	log.Infof("Annotating pod with output")
-	outputBytes, err := json.Marshal(outputs)
-	if err != nil {
-		return argoerrs.InternalWrapError(err)
-	}
-	return we.AddAnnotation(ctx, common.AnnotationKeyOutputs, string(outputBytes))
+	return retryutil.OnError(wait.Backoff{
+		Duration: time.Second,
+		Factor:   2,
+		Jitter:   0.1,
+		Steps:    5,
+		Cap:      30 * time.Second,
+	}, errorsutil.IsTransientErr, func() error {
+		err := we.upsertTaskResult(ctx, result)
+		if apierr.IsForbidden(err) {
+			log.WithError(err).Warn("failed to patch task set, falling back to legacy/insecure pod patch, see https://argoproj.github.io/argo-workflows/workflow-rbac/")
+			if result.Outputs.HasOutputs() {
+				value, err := json.Marshal(result.Outputs)
+				if err != nil {
+					return err
+				}
+				return we.AddAnnotation(ctx, common.AnnotationKeyOutputs, string(value))
+			}
+			if result.Progress.IsValid() { // this may result in occasionally two patches
+				return we.AddAnnotation(ctx, common.AnnotationKeyProgress, string(result.Progress))
+			}
+		}
+		return err
+	})
 }
 
 // AddError adds an error to the list of encountered errors during execution
@@ -755,7 +801,17 @@ func (we *WorkflowExecutor) HasError() error {
 
 // AddAnnotation adds an annotation to the workflow pod
 func (we *WorkflowExecutor) AddAnnotation(ctx context.Context, key, value string) error {
-	return common.AddPodAnnotation(ctx, we.ClientSet, we.PodName, we.Namespace, key, value, executorretry.ExecutorRetry)
+	data, err := json.Marshal(map[string]interface{}{"metadata": metav1.ObjectMeta{
+		Annotations: map[string]string{
+			key: value,
+		},
+	}})
+	if err != nil {
+		return err
+	}
+	_, err = we.ClientSet.CoreV1().Pods(we.Namespace).Patch(ctx, we.PodName, types.MergePatchType, data, metav1.PatchOptions{})
+	return err
+
 }
 
 // isTarball returns whether or not the file is a tarball
@@ -970,11 +1026,10 @@ func (we *WorkflowExecutor) monitorProgress(ctx context.Context, progressFile st
 			log.WithError(ctx.Err()).Info("stopping progress monitor (context done)")
 			return
 		case <-annotationPatchTicker.C:
-			if we.progress != "" {
-				log.WithField("progress", we.progress).Infof("patching pod progress annotation")
-				if err := we.AddAnnotation(ctx, common.AnnotationKeyProgress, string(we.progress)); err != nil {
-					log.WithField("progress", we.progress).WithError(err).Warn("failed to patch progress annotation")
-				}
+			if err := we.reportResult(ctx, wfv1.NodeResult{Progress: we.progress}); err != nil {
+				log.WithError(err).Info("failed to report progress")
+			} else {
+				we.progress = ""
 			}
 		case <-fileTicker.C:
 			data, err := ioutil.ReadFile(progressFile)
