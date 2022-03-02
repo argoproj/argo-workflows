@@ -329,6 +329,11 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 		return nil, err
 	}
 
+	err = s.hydrator.Dehydrate(wf)
+	if err != nil {
+		return nil, err
+	}
+
 	wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Update(ctx, wf, metav1.UpdateOptions{})
 	if err != nil {
 		return nil, err
