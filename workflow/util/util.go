@@ -735,51 +735,15 @@ func convertNodeID(newWf *wfv1.Workflow, regex *regexp.Regexp, oldNodeID string,
 }
 
 // RetryWorkflow updates a workflow, deleting all failed steps as well as the onExit node (and children)
-func RetryWorkflow(ctx context.Context, podIf v1.PodInterface, wfClient v1alpha1.WorkflowInterface, name string, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
-	var updatedWf *wfv1.Workflow
-	err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
-		var err error
-		wf, err := wfClient.Get(ctx, name, metav1.GetOptions{})
-		if err != nil {
-			return false, err
-		}
-		updatedWf, err = prepareWorkflowForRetry(ctx, wf, podIf, restartSuccessful, nodeFieldSelector)
-		if err != nil {
-			return false, err
-		}
-		updatedWf, err = wfClient.Update(ctx, updatedWf, metav1.UpdateOptions{})
-		if err != nil {
-			return false, err
-		}
-		return !errorsutil.IsTransientErr(err), err
-	})
+func RetryWorkflow(ctx context.Context, podIf v1.PodInterface, wfClient v1alpha1.WorkflowInterface, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
+	updatedWf, err := prepareWorkflowForRetry(ctx, wf, podIf, restartSuccessful, nodeFieldSelector)
+	if err != nil {
+		return nil, err
+	}
 
 	return updatedWf, err
 }
 
-// RetryArchiveWorkflow recreates and updates a workflow
-func RetryArchiveWorkflow(ctx context.Context, podIf v1.PodInterface, wfClient v1alpha1.WorkflowInterface, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
-	var updated *wfv1.Workflow
-	err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
-		var err error
-		updated, err = prepareWorkflowForRetry(ctx, wf, podIf, restartSuccessful, nodeFieldSelector)
-		if err != nil {
-			return false, err
-		}
-		updated, err = wfClient.Create(ctx, updated, metav1.CreateOptions{})
-		if err != nil {
-			if apierr.IsAlreadyExists(err) {
-				return false, fmt.Errorf("workflow already exists : %s", err)
-			}
-			return false, fmt.Errorf("unable to create workflow: %s", err)
-		}
-		return !errorsutil.IsTransientErr(err), err
-	})
-
-	return updated, err
-}
-
-// should not take any client
 func prepareWorkflowForRetry(ctx context.Context, wf *wfv1.Workflow, podIf v1.PodInterface, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
 
 	switch wf.Status.Phase {

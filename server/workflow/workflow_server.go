@@ -324,10 +324,16 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 		return nil, err
 	}
 
-	wf, err = util.RetryWorkflow(ctx, kubeClient.CoreV1().Pods(wf.ObjectMeta.Namespace), wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wf.Name, req.RestartSuccessful, req.NodeFieldSelector)
+	wf, err = util.RetryWorkflow(ctx, kubeClient.CoreV1().Pods(wf.Namespace), wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wf, req.RestartSuccessful, req.NodeFieldSelector)
 	if err != nil {
 		return nil, err
 	}
+
+	wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Update(ctx, wf, metav1.UpdateOptions{})
+	if err != nil {
+		return nil, err
+	}
+
 	return wf, nil
 }
 
