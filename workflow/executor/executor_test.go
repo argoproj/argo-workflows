@@ -34,6 +34,7 @@ func TestWorkflowExecutor_LoadArtifacts(t *testing.T) {
 		{"ErrNotSupplied", wfv1.Artifact{Name: "foo"}, "required artifact 'foo' not supplied"},
 		{"ErrFailedToLoad", wfv1.Artifact{
 			Name: "foo",
+			Path: "/tmp/foo.txt",
 			ArtifactLocation: wfv1.ArtifactLocation{
 				S3: &wfv1.S3Artifact{
 					Key: "my-key",
@@ -48,7 +49,17 @@ func TestWorkflowExecutor_LoadArtifacts(t *testing.T) {
 					Key:      "my-key",
 				},
 			},
-		}, "Artifact foo did not specify a path"},
+		}, "Artifact 'foo' did not specify a path"},
+		{"ErrDirTraversal", wfv1.Artifact{
+			Name: "foo",
+			Path: "/tmp/../etc/passwd",
+			ArtifactLocation: wfv1.ArtifactLocation{
+				S3: &wfv1.S3Artifact{
+					S3Bucket: wfv1.S3Bucket{Endpoint: "my-endpoint", Bucket: "my-bucket"},
+					Key:      "my-key",
+				},
+			},
+		}, "Artifact 'foo' attempted to use a path containing '..'. Directory traversal is not permitted"},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
