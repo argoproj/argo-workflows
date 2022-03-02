@@ -339,7 +339,7 @@ data:
     # RBAC Config. >= v2.12
     rbac:
       enabled: false
-    # Skip TLS verify, not recomended in production environments. Useful for testing purposes. >= v3.2.4
+    # Skip TLS verify, not recommended in production environments. Useful for testing purposes. >= v3.2.4
     insecureSkipVerify: false
 
   # workflowRestrictions restricts the Workflows that the controller will process.

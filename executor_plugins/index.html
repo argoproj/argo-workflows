@@ -3044,7 +3044,7 @@ the script in the container.</p>
 <li>If the response is <code>{}</code>, then the plugin is saying it cannot execute the plugin template, e.g. it is a Slack plugin,
   but the template is a Tekton job.</li>
 <li>If the status code is 404, then the plugin will not be called again.</li>
-<li>If you save the file as <code>plugin.*</code>, it will be copied to the sidecar container's <code>args</code> field. This is useful for building self-contained plugins in scripting languages like Python or Node.JS.</li>
+<li>If you save the file as <code>server.*</code>, it will be copied to the sidecar container's <code>args</code> field. This is useful for building self-contained plugins in scripting languages like Python or Node.JS.</li>
 </ul>
 <p>Next, create a manifest named <code>plugin.yaml</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span><span class="w"></span>

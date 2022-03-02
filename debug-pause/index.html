@@ -2826,7 +2826,7 @@
 <p>2) Create a shell in the container of interest of create a ephemeral container in the pod, in this example ephemeral containers are used. </p>
 <div class="highlight"><pre><span></span><code>kubectl debug -n argo -it POD_NAME --image=busybox --target=main --share-processes
 </code></pre></div>
-<p>In order to have access to the persistance volume used by the workflow step,  <a href="https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/"><code>--share-processes</code></a> will have to be used. </p>
+<p>In order to have access to the persistence volume used by the workflow step,  <a href="https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/"><code>--share-processes</code></a> will have to be used. </p>
 <p>The ephemeral container can be used to perform debugging operations. When debugging has been completed, create the marker file to allow the workflow step to continue. When using process name space sharing container filesystems are visible to other containers in the pod through the /proc/$pid/root link.</p>
 <div class="highlight"><pre><span></span><code>touch /proc/1/root/run/argo/ctr/main/after
 </code></pre></div>

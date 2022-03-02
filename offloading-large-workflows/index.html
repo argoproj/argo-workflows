@@ -2828,7 +2828,7 @@
 <p>To enable this feature, configure a Postgres or MySQL database under <code>persistence</code> in <a href="../workflow-controller-configmap.yaml">your configuration</a> and set <code>nodeStatusOffLoad: true</code>.</p>
 <h2 id="faq">FAQ<a class="headerlink" href="#faq" title="Permanent link">&para;</a></h2>
 <h4 id="why-arent-my-workflows-appearing-in-the-database">Why aren't my workflows appearing in the database?<a class="headerlink" href="#why-arent-my-workflows-appearing-in-the-database" title="Permanent link">&para;</a></h4>
-<p>Offloading is expensive and often unneccessary, so we only offload when we need to. Your workflows aren't probably large enough.</p>
+<p>Offloading is expensive and often unnecessary, so we only offload when we need to. Your workflows aren't probably large enough.</p>
 <h4 id="error-failed-to-submit-workflow-etcdserver-request-is-too-large">Error "Failed to submit workflow: etcdserver: request is too large."<a class="headerlink" href="#error-failed-to-submit-workflow-etcdserver-request-is-too-large" title="Permanent link">&para;</a></h4>
 <p>You must use the Argo CLI having exported <code>export ARGO_SERVER=...</code>.</p>
 <h4 id="error-offload-node-status-is-not-supported">Error "offload node status is not supported"<a class="headerlink" href="#error-offload-node-status-is-not-supported" title="Permanent link">&para;</a></h4>

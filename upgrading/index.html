@@ -2076,6 +2076,13 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#feat-remove-deprecated-config-flags" class="md-nav__link">
+    feat!: Remove deprecated config flags
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#fce82d572-feat-remove-pod-workers-7837" class="md-nav__link">
     fce82d572 feat: Remove pod workers (#7837)
   </a>
@@ -2926,6 +2933,13 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#feat-remove-deprecated-config-flags" class="md-nav__link">
+    feat!: Remove deprecated config flags
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#fce82d572-feat-remove-pod-workers-7837" class="md-nav__link">
     fce82d572 feat: Remove pod workers (#7837)
   </a>
@@ -3112,6 +3126,79 @@ the <a href="https://www.conventionalcommits.org/en/v1.0.0/#summary">conventiona
 <p>Workflows running during any upgrade should be give both permissions.</p>
 <p>See <a href="https://github.com/argoproj/argo-workflows/issues/8013">#8013</a>.</p>
 <h2 id="upgrading-to-v33">Upgrading to v3.3<a class="headerlink" href="#upgrading-to-v33" title="Permanent link">&para;</a></h2>
+<h3 id="feat-remove-deprecated-config-flags">feat!: Remove deprecated config flags<a class="headerlink" href="#feat-remove-deprecated-config-flags" title="Permanent link">&para;</a></h3>
+<p>This PR removes the following configmap items -</p>
+<ul>
+<li>executorImage (use executor.image in configmap instead)
+  e.g.
+  Workflow controller configmap similar to the following one given below won't be valid anymore:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span><span class="w"></span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span><span class="w"></span>
+<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflow-controller-configmap</span><span class="w"></span>
+<span class="nt">data</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">executorImage</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj/argocli:latest</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
+</code></pre></div>
+<p>From now and onwards, only provide the executor image in workflow controller as a command argument as shown below:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span><span class="w"></span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span><span class="w"></span>
+<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflow-controller-configmap</span><span class="w"></span>
+<span class="nt">data</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">executor</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w"></span>
+<span class="w">    </span><span class="no">image: argoproj/argocli:latest</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
+</code></pre></div>
+<ul>
+<li>executorImagePullPolicy (use executor.imagePullPolicy in configmap instead)
+  e.g.
+  Workflow controller configmap similar to the following one given below won't be valid anymore:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="nt">data</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">executorImagePullPolicy</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">IfNotPresent</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
+</code></pre></div>
+<p>Change it as shown below:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">data</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">executor</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w"></span>
+<span class="w">    </span><span class="no">imagePullPolicy: IfNotPresent</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
+</code></pre></div>
+<ul>
+<li>executorResources (use executor.resources in configmap instead)
+  e.g.
+  Workflow controller configmap similar to the following one given below won't be valid anymore:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="nt">data</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">executorResources</span><span class="p p-Indicator">:</span><span class="w"></span>
+<span class="w">    </span><span class="nt">requests</span><span class="p">:</span><span class="w"></span>
+<span class="w">      </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.1</span><span class="w"></span>
+<span class="w">      </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">64Mi</span><span class="w"></span>
+<span class="w">    </span><span class="nt">limits</span><span class="p">:</span><span class="w"></span>
+<span class="w">      </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.5</span><span class="w"></span>
+<span class="w">      </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">512Mi</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
+</code></pre></div>
+<p>Change it as shown below:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">data</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">executor</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w"></span>
+<span class="w">    </span><span class="no">resources:</span><span class="w"></span>
+<span class="w">      </span><span class="no">requests:</span><span class="w"></span>
+<span class="w">        </span><span class="no">cpu: 0.1</span><span class="w"></span>
+<span class="w">        </span><span class="no">memory: 64Mi</span><span class="w"></span>
+<span class="w">      </span><span class="no">limits:</span><span class="w"></span>
+<span class="w">        </span><span class="no">cpu: 0.5</span><span class="w"></span>
+<span class="w">        </span><span class="no">memory: 512Mi</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
+</code></pre></div>
 <h3 id="fce82d572-feat-remove-pod-workers-7837"><a href="https://github.com/argoproj/argo-workflows/commit/fce82d5727b89cfe49e8e3568fff40725bd43734">fce82d572</a> feat: Remove pod workers (#7837)<a class="headerlink" href="#fce82d572-feat-remove-pod-workers-7837" title="Permanent link">&para;</a></h3>
 <p>This PR removes pod workers from the code, the pod informer directly writes into the workflow queue. As a result the <code>--pod-workers</code> flag has been removed. </p>
 <h3 id="93c11a24ff-feat-add-tls-to-metrics-and-telemetry-servers-7041"><a href="https://github.com/argoproj/argo-workflows/commit/93c11a24ff06049c2197149acd787f702e5c1f9b">93c11a24ff</a> feat: Add TLS to Metrics and Telemetry servers (#7041)<a class="headerlink" href="#93c11a24ff-feat-add-tls-to-metrics-and-telemetry-servers-7041" title="Permanent link">&para;</a></h3>

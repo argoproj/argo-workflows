@@ -3017,7 +3017,7 @@ Make sure that the precedence of the namespace service account is higher than th
 <blockquote>
 <p>v3.1.4 and after</p>
 </blockquote>
-<p>If your OIDC provider provides groups information with a claim name other than <code>groups</code>, you could configure config-map to specify custom claim name for groups. Argo now arbitary custom claims and any claim can be used for <code>expr eval</code>. However, since group information is displayed in UI, it still needs to be an array of strings with group names as elements.</p>
+<p>If your OIDC provider provides groups information with a claim name other than <code>groups</code>, you could configure config-map to specify custom claim name for groups. Argo now arbitrary custom claims and any claim can be used for <code>expr eval</code>. However, since group information is displayed in UI, it still needs to be an array of strings with group names as elements.</p>
 <p>customClaim in this case will be mapped to <code>groups</code> key and we can use the same key <code>groups</code> for evaluating our expressions</p>
 <div class="highlight"><pre><span></span><code><span class="nt">sso</span><span class="p">:</span><span class="w"></span>
 <span class="w">  </span><span class="c1"># Specify custom claim name for OIDC groups.</span><span class="w"></span>
