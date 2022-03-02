@@ -18,6 +18,7 @@ var (
 	Emissary = Executor("emissary")
 	K8SAPI   = Executor("k8sapi")
 	Kubelet  = Executor("kubelet")
+	PNS      = Executor("pns")
 )
 
 func Executor(e string) Need {
