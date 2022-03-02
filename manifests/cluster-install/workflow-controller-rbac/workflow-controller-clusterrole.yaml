@@ -61,6 +61,14 @@ rules:
   - list
   - watch
 - apiGroups:
+    - argoproj.io
+  resources:
+    - workflowtaskresults
+  verbs:
+    - list
+    - watch
+    - deletecollection
+- apiGroups:
   - ""
   resources:
   - serviceaccounts

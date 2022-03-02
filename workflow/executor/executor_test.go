@@ -9,18 +9,21 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	argofake "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor/mocks"
 )
 
 const (
 	fakePodName       = "fake-test-pod-1234567890"
+	fakeWorkflow      = "my-wf"
+	fakeWorkflowUID   = "my-wf-uid"
+	fakeNodeID        = "my-node-id"
 	fakeNamespace     = "default"
 	fakeContainerName = "main"
 )
@@ -378,88 +381,47 @@ func TestSaveArtifacts(t *testing.T) {
 }
 
 func TestMonitorProgress(t *testing.T) {
-	deadline, ok := t.Deadline()
-	if !ok {
-		deadline = time.Now().Add(time.Second)
-	}
-	ctx, cancel := context.WithDeadline(context.Background(), deadline)
-	defer cancel()
+	ctx := context.Background()
 
-	fakeClientset := fake.NewSimpleClientset(&corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fakePodName,
-			Namespace: fakeNamespace,
-		},
-		Spec: corev1.PodSpec{},
-		Status: corev1.PodStatus{
-			ContainerStatuses: []corev1.ContainerStatus{
-				{
-					Name: "main",
-					State: corev1.ContainerState{
-						Running: &corev1.ContainerStateRunning{
-							StartedAt: metav1.Now(),
-						},
-					},
-				},
-			},
-		},
-	})
-
-	f, err := os.CreateTemp("", "")
-	require.NoError(t, err)
-	defer func() {
-		name := f.Name()
-		err := f.Close()
-		assert.NoError(t, err)
-		err = os.Remove(name)
-		assert.NoError(t, err)
-	}()
 	annotationPackTickDuration := 5 * time.Millisecond
 	readProgressFileTickDuration := time.Millisecond
-	progressFile := f.Name()
+	progressFile := "/tmp/progress"
 
-	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
-	we := NewExecutor(fakeClientset, nil, fakePodName, fakeNamespace, &mockRuntimeExecutor, wfv1.Template{}, false, deadline, annotationPackTickDuration, readProgressFileTickDuration)
+	wfFake := argofake.NewSimpleClientset(&wfv1.WorkflowTaskSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: fakeNamespace,
+			Name:      fakeWorkflow,
+		},
+	})
+	taskResults := wfFake.ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace)
+	we := NewExecutor(
+		nil,
+		taskResults,
+		nil,
+		fakePodName,
+		fakeWorkflow,
+		fakeNodeID,
+		fakeNamespace,
+		fakeWorkflowUID,
+		&mocks.ContainerRuntimeExecutor{},
+		wfv1.Template{},
+		false,
+		time.Now(),
+		annotationPackTickDuration,
+		readProgressFileTickDuration,
+	)
 
 	go we.monitorProgress(ctx, progressFile)
 
-	go func(ctx context.Context) {
-		progress := 0
-		maxProgress := 10
-		tickDuration := time.Millisecond
-		ticker := time.After(tickDuration)
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker:
-				t.Logf("tick progress=%d", progress)
-				_, err := fmt.Fprintf(f, "%d/100\n", progress*10)
-				assert.NoError(t, err)
-				if progress >= maxProgress {
-					return
-				}
-				progress += 1
-				ticker = time.After(tickDuration)
-			}
-		}
-	}(ctx)
+	err := os.WriteFile(progressFile, []byte("100/100\n"), os.ModePerm)
+	assert.NoError(t, err)
 
-	ticker := time.After(annotationPackTickDuration)
-	for {
-		select {
-		case <-ctx.Done():
-			t.Error(ctx.Err())
-			return
-		case <-ticker:
-			pod, err := we.getPod(ctx)
-			assert.NoError(t, err)
-			progress, ok := pod.Annotations[common.AnnotationKeyProgress]
-			if ok && progress == "100/100" {
-				t.Log("success reaching 100/100 progress")
-				return
-			}
-			ticker = time.After(annotationPackTickDuration)
-		}
+	time.Sleep(time.Second)
+
+	result, err := taskResults.Get(ctx, fakeNodeID, metav1.GetOptions{})
+	if assert.NoError(t, err) {
+		assert.Equal(t, fakeWorkflow, result.Labels[common.LabelKeyWorkflow])
+		assert.Len(t, result.OwnerReferences, 1)
+		assert.Equal(t, wfv1.Progress("100/100"), result.Progress)
 	}
 }

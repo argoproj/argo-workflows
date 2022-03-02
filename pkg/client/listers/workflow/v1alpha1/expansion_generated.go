@@ -30,6 +30,14 @@ type WorkflowEventBindingListerExpansion interface{}
 // WorkflowEventBindingNamespaceLister.
 type WorkflowEventBindingNamespaceListerExpansion interface{}
 
+// WorkflowTaskResultListerExpansion allows custom methods to be added to
+// WorkflowTaskResultLister.
+type WorkflowTaskResultListerExpansion interface{}
+
+// WorkflowTaskResultNamespaceListerExpansion allows custom methods to be added to
+// WorkflowTaskResultNamespaceLister.
+type WorkflowTaskResultNamespaceListerExpansion interface{}
+
 // WorkflowTaskSetListerExpansion allows custom methods to be added to
 // WorkflowTaskSetLister.
 type WorkflowTaskSetListerExpansion interface{}
