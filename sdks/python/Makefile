@@ -1,19 +1,19 @@
-GIT_TAG               := $(shell git describe --exact-match --tags --abbrev=0 2> /dev/null || echo untagged)
-ifeq ($(GIT_TAG),untagged)
-VERSION               := 0.0.0-latest
-else
-# remove the "v" prefix, not allowed
-VERSION               := $(GIT_TAG:v=)
+VERSION := $(shell ./sdk_version.py)
+ifndef VERSION
+  $(error "Failed to obtain a valid version for the SDK")
 endif
 
 # work dir
-WD                    := $(shell echo "`pwd`/client")
+WD := $(shell echo "`pwd`/client")
 
 DOCKER = docker run --rm -v $(WD):/wd --workdir /wd
 CHOWN = chown -R $(shell id -u):$(shell id -g)
 
 publish: generate
-	echo "TODO: Publish the package to PyPI"
+	pip install setuptools twine build
+	python -m build --sdist --wheel --outdir client/dist/ client
+	twine check client/dist/*
+	twine upload client/dist/* -u __token__ -p ${PYPI_API_TOKEN}
 
 generate:
 	rm -Rf $(WD)
@@ -22,17 +22,22 @@ generate:
 		sed 's/io.k8s.api.core.v1.//' | \
 		sed 's/io.k8s.apimachinery.pkg.apis.meta.v1.//' \
 		> $(WD)/swagger.json
+	cp ../../LICENSE $(WD)/LICENSE
 	$(DOCKER) openapitools/openapi-generator-cli:v5.2.1 \
 		generate \
-		-i /wd/swagger.json \
-		-g python \
-		-o /wd \
-		-p hideGenerationTimestamp=true \
-		--skip-validate-spec \
-		--artifact-id argo-client-python \
+		--input-spec /wd/swagger.json \
+		--generator-name python \
+		--output /wd \
+		--additional-properties packageVersion=${VERSION} \
+		--additional-properties packageName="argo_workflows" \
+		--additional-properties projectName="argo-workflows" \
+		--additional-properties hideGenerationTimestamp=true \
+		--remove-operation-id-prefix \
+		--model-name-prefix '' \
+		--model-name-suffix '' \
+		--artifact-id argo-python-client \
 		--global-property modelTests=false \
- 		--global-property packageName=workflows.client \
- 		--global-property packageVersion=${CLIENT_VERSION}
+ 		--global-property packageName=argo_workflows \
 		--generate-alias-as-model
 	# https://vsupalov.com/docker-shared-permissions/#set-the-docker-user-when-running-your-container
 	$(CHOWN) $(WD) || sudo $(CHOWN) $(WD)

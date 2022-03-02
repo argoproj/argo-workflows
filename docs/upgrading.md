@@ -4,7 +4,122 @@
 Breaking changes  typically (sometimes we don't realise they are breaking) have "!" in the commit message, as per
 the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary).
 
+### Upgrading to v3.4
+
+### [06d4bf76f](https://github.com/argoproj/argo-workflows/commit/06d4bf76f) fix: Reduce agent permissions. Fixes #7986 (#7987)
+
+The PR changes the permissions used by the agent to report back the outcome of HTTP template requests. The permission `patch workflowtasksets/status` replaces `patch workflowtasksets`, for example:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: agent
+rules:
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - workflowtasksets/status
+    verbs:
+      - patch
+```
+
+Workflows running during any upgrade should be give both permissions.
+
+See [#8013](https://github.com/argoproj/argo-workflows/issues/8013).
+
 ## Upgrading to v3.3
+
+### feat!: Remove deprecated config flags
+
+This PR removes the following configmap items -
+
+- executorImage (use executor.image in configmap instead)
+  e.g.
+  Workflow controller configmap similar to the following one given below won't be valid anymore:
+
+  ```yaml
+  apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: workflow-controller-configmap
+  data:
+    ...
+    executorImage: argoproj/argocli:latest
+    ...
+  ```
+
+  From now and onwards, only provide the executor image in workflow controller as a command argument as shown below:
+
+  ```yaml
+  apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: workflow-controller-configmap
+  data:
+    ...
+    executor: |
+      image: argoproj/argocli:latest
+    ...
+  ```
+
+- executorImagePullPolicy (use executor.imagePullPolicy in configmap instead)
+  e.g.
+  Workflow controller configmap similar to the following one given below won't be valid anymore:
+
+  ```yaml
+  data:
+    ...
+    executorImagePullPolicy: IfNotPresent
+    ...
+  ```
+
+  Change it as shown below:
+
+  ```yaml
+  data:
+    ...
+    executor: |
+      imagePullPolicy: IfNotPresent
+    ...
+  ```
+
+- executorResources (use executor.resources in configmap instead)
+  e.g.
+  Workflow controller configmap similar to the following one given below won't be valid anymore:
+
+  ```yaml
+  data:
+    ...
+    executorResources:
+      requests:
+        cpu: 0.1
+        memory: 64Mi
+      limits:
+        cpu: 0.5
+        memory: 512Mi
+    ...
+  ```
+
+  Change it as shown below:
+
+  ```yaml
+  data:
+    ...
+    executor: |
+      resources:
+        requests:
+          cpu: 0.1
+          memory: 64Mi
+        limits:
+          cpu: 0.5
+          memory: 512Mi
+    ...
+  ```
+
+### [fce82d572](https://github.com/argoproj/argo-workflows/commit/fce82d5727b89cfe49e8e3568fff40725bd43734) feat: Remove pod workers (#7837)
+
+This PR removes pod workers from the code, the pod informer directly writes into the workflow queue. As a result the `--pod-workers` flag has been removed. 
 
 ### [93c11a24ff](https://github.com/argoproj/argo-workflows/commit/93c11a24ff06049c2197149acd787f702e5c1f9b) feat: Add TLS to Metrics and Telemetry servers (#7041)
 

@@ -118,13 +118,17 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) string {
 	out := ""
 	out += fmt.Sprintf(fmtStr, "Name:", wf.ObjectMeta.Name)
 	out += fmt.Sprintf(fmtStr, "Namespace:", wf.ObjectMeta.Namespace)
-	serviceAccount := wf.Spec.ServiceAccountName
+	serviceAccount := wf.GetExecSpec().ServiceAccountName
 	if serviceAccount == "" {
 		// if serviceAccountName was not specified in a submitted Workflow, we will
 		// use the serviceAccountName provided in Workflow Defaults (if any). If that
 		// also isn't set, we will use the 'default' ServiceAccount in the namespace
 		// the workflow will run in.
-		serviceAccount = "unset (will run with the default ServiceAccount)"
+		if wf.Spec.WorkflowTemplateRef != nil {
+			serviceAccount = "unset"
+		} else {
+			serviceAccount = "unset (will run with the default ServiceAccount)"
+		}
 	}
 	out += fmt.Sprintf(fmtStr, "ServiceAccount:", serviceAccount)
 	out += fmt.Sprintf(fmtStr, "Status:", printer.WorkflowStatus(wf))
@@ -153,9 +157,9 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) string {
 	if !wf.Status.ResourcesDuration.IsZero() {
 		out += fmt.Sprintf(fmtStr, "ResourcesDuration:", wf.Status.ResourcesDuration)
 	}
-	if len(wf.Spec.Arguments.Parameters) > 0 {
+	if len(wf.GetExecSpec().Arguments.Parameters) > 0 {
 		out += fmt.Sprintf(fmtStr, "Parameters:", "")
-		for _, param := range wf.Spec.Arguments.Parameters {
+		for _, param := range wf.GetExecSpec().Arguments.Parameters {
 			if param.Value == nil {
 				continue
 			}
@@ -284,7 +288,7 @@ func isNonBoundaryParentNode(node wfv1.NodeType) bool {
 }
 
 func isExecutionNode(node wfv1.NodeType) bool {
-	return (node == wfv1.NodeTypePod) || (node == wfv1.NodeTypeSkipped) || (node == wfv1.NodeTypeSuspend) || (node == wfv1.NodeTypeHTTP)
+	return (node == wfv1.NodeTypePod) || (node == wfv1.NodeTypeSkipped) || (node == wfv1.NodeTypeSuspend) || (node == wfv1.NodeTypeHTTP) || (node == wfv1.NodeTypePlugin)
 }
 
 func insertSorted(wf *wfv1.Workflow, sortedArray []renderNode, item renderNode) []renderNode {
@@ -524,7 +528,7 @@ func renderChild(w *tabwriter.Writer, wf *wfv1.Workflow, nInfo renderNode, depth
 }
 
 // Main method to print information of node in get
-func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, nodePrefix string, getArgs getFlags) {
+func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, wfName, nodePrefix string, getArgs getFlags, podNameVersion util.PodNameVersion) {
 	nodeName := fmt.Sprintf("%s %s", jobStatusIconMap[node.Phase], node.DisplayName)
 	if node.IsActiveSuspendNode() {
 		nodeName = fmt.Sprintf("%s %s", nodeTypeIconMap[node.Type], node.DisplayName)
@@ -538,7 +542,8 @@ func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, nodePrefix string, get
 	var args []interface{}
 	duration := humanize.RelativeDurationShort(node.StartedAt.Time, node.FinishedAt.Time)
 	if node.Type == wfv1.NodeTypePod {
-		args = []interface{}{nodePrefix, nodeName, templateName, node.ID, duration, node.Message, ""}
+		podName := util.PodName(wfName, nodeName, templateName, node.ID, podNameVersion)
+		args = []interface{}{nodePrefix, nodeName, templateName, podName, duration, node.Message, ""}
 	} else {
 		args = []interface{}{nodePrefix, nodeName, templateName, "", "", node.Message, ""}
 	}
@@ -566,7 +571,8 @@ func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, nodePrefix string, get
 func (nodeInfo *boundaryNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int, nodePrefix string, childPrefix string, getArgs getFlags) {
 	filtered, childIndent := filterNode(nodeInfo.getNodeStatus(wf), getArgs)
 	if !filtered {
-		printNode(w, nodeInfo.getNodeStatus(wf), nodePrefix, getArgs)
+		version := util.GetWorkflowPodNameVersion(wf)
+		printNode(w, nodeInfo.getNodeStatus(wf), wf.ObjectMeta.Name, nodePrefix, getArgs, version)
 	}
 
 	for i, nInfo := range nodeInfo.boundaryContained {
@@ -579,7 +585,8 @@ func (nodeInfo *boundaryNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow
 func (nodeInfo *nonBoundaryParentNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int, nodePrefix string, childPrefix string, getArgs getFlags) {
 	filtered, childIndent := filterNode(nodeInfo.getNodeStatus(wf), getArgs)
 	if !filtered {
-		printNode(w, nodeInfo.getNodeStatus(wf), nodePrefix, getArgs)
+		version := util.GetWorkflowPodNameVersion(wf)
+		printNode(w, nodeInfo.getNodeStatus(wf), wf.ObjectMeta.Name, nodePrefix, getArgs, version)
 	}
 
 	for i, nInfo := range nodeInfo.children {
@@ -592,7 +599,8 @@ func (nodeInfo *nonBoundaryParentNode) renderNodes(w *tabwriter.Writer, wf *wfv1
 func (nodeInfo *executionNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, _ int, nodePrefix string, _ string, getArgs getFlags) {
 	filtered, _ := filterNode(nodeInfo.getNodeStatus(wf), getArgs)
 	if !filtered {
-		printNode(w, nodeInfo.getNodeStatus(wf), nodePrefix, getArgs)
+		version := util.GetWorkflowPodNameVersion(wf)
+		printNode(w, nodeInfo.getNodeStatus(wf), wf.ObjectMeta.Name, nodePrefix, getArgs, version)
 	}
 }
 

@@ -62,6 +62,35 @@ func (s *FunctionalSuite) TestWorkflowLevelErrorRetryPolicy() {
 		})
 }
 
+func (s *FunctionalSuite) TestWorkflowMetadataLabelsFrom() {
+	s.Given().
+		Workflow(`
+metadata:
+  generateName: metadata-
+spec:
+  arguments:
+    parameters:
+      - name: foo
+        value: bar
+  workflowMetadata:
+    labelsFrom:
+      my-label: 
+        expression: workflow.parameters.foo
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, "bar", metadata.Labels["my-label"])
+		})
+}
+
 func (s *FunctionalSuite) TestWorkflowTTL() {
 	s.Given().
 		Workflow(`
@@ -82,6 +111,28 @@ spec:
 		Wait(3 * time.Second). // enough time for TTL controller to delete the workflow
 		Then().
 		ExpectWorkflowDeleted()
+}
+
+func (s *FunctionalSuite) TestWorkflowRetention() {
+	listOptions := metav1.ListOptions{LabelSelector: "workflows.argoproj.io/phase=Failed"}
+	s.Given().
+		Workflow("@testdata/exit-1.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Given().
+		Workflow("@testdata/exit-1.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Given().
+		Workflow("@testdata/exit-1.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeFailed).
+		WaitForWorkflowList(listOptions, func(list []wfv1.Workflow) bool {
+			return len(list) == 2
+		})
 }
 
 // in this test we create a poi quota, and then  we create a workflow that needs one more pod than the quota allows
@@ -189,6 +240,36 @@ spec:
 		})
 }
 
+func (s *FunctionalSuite) TestVolumeClaimTemplate() {
+	s.Given().
+		Workflow(`@testdata/volume-claim-template-workflow.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		// test that the PVC was deleted (because the `kubernetes.io/pvc-protection` finalizer was deleted)
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			defer cancel()
+			ticker := time.NewTicker(time.Second)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					t.Error("timeout waiting for PVC to be deleted")
+					t.FailNow()
+				case <-ticker.C:
+					list, err := s.KubeClient.CoreV1().PersistentVolumeClaims(fixtures.Namespace).List(context.Background(), metav1.ListOptions{})
+					if assert.NoError(t, err) {
+						if len(list.Items) == 0 {
+							return
+						}
+					}
+				}
+			}
+		})
+}
+
 func (s *FunctionalSuite) TestEventOnNodeFailSentAsPod() {
 	// Test whether an WorkflowFailed event (with appropriate message) is emitted in case of node failure
 	var uid types.UID
@@ -214,7 +295,8 @@ func (s *FunctionalSuite) TestEventOnNodeFailSentAsPod() {
 		When().
 		UpdateConfigMap(
 			"workflow-controller-configmap",
-			configMap.Data).
+			configMap.Data,
+			map[string]string{}).
 		// Give controller enough time to update from config map change
 		Wait(5*time.Second).
 		SubmitWorkflow().
@@ -261,7 +343,7 @@ func (s *FunctionalSuite) TestEventOnNodeFailSentAsPod() {
 		).
 		When().
 		// Reset config map to original settings
-		UpdateConfigMap("workflow-controller-configmap", originalData).
+		UpdateConfigMap("workflow-controller-configmap", originalData, map[string]string{}).
 		// Give controller enough time to update from config map change
 		Wait(5 * time.Second)
 }
@@ -428,7 +510,7 @@ func (s *FunctionalSuite) TestPendingRetryWorkflow() {
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: pending-retry-workflow-    
+  generateName: pending-retry-workflow-
 spec:
   entrypoint: dag
   templates:
@@ -600,6 +682,53 @@ spec:
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Contains(t, status.Message, "error in exit template execution")
+		})
+}
+
+func (s *FunctionalSuite) TestWorkflowLifecycleHookWithWorkflowTemplate() {
+	s.Given().
+		WorkflowTemplate(`
+metadata:
+  name: test-exit-handler
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      inputs:
+        parameters:
+        - name: message
+      container:
+        image: argoproj/argosay:v2 
+        command: [cowsay]
+        args: ["{{inputs.parameters.message}}"]
+`).
+		Workflow(`
+metadata:
+  generateName: test-lifecycle-hook-
+spec:
+  entrypoint: hooks-exit-test
+  templates:
+  - name: hooks-exit-test
+    container:
+      image: argoproj/argosay:v2
+    hooks:
+      exit:
+        templateRef:
+          name: test-exit-handler
+          template: main
+        arguments:
+          parameters:
+            - name: message
+              value: "hello world"
+`).
+		When().
+		CreateWorkflowTemplates().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			assert.Empty(t, status.Message)
 		})
 }
 
@@ -813,6 +942,21 @@ func (s *FunctionalSuite) TestDataTransformation() {
 		})
 }
 
+func (s *FunctionalSuite) TestHTTPOutputs() {
+	s.Given().
+		Workflow("@testdata/http-outputs.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			httpNode := status.Nodes.FindByDisplayName("http")
+			assert.NotNil(t, httpNode.Outputs.Result)
+			echoNode := status.Nodes.FindByDisplayName("echo")
+			assert.Equal(t, *httpNode.Outputs.Result, echoNode.Inputs.Parameters[0].Value.String())
+		})
+}
+
 func (s *FunctionalSuite) TestScriptAsNonRoot() {
 	s.Given().
 		Workflow(`
@@ -1005,4 +1149,53 @@ spec:
 
 		})
 
+}
+
+func (s *FunctionalSuite) TestContainerSetRetryFail() {
+	s.Given().
+		Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: containerset-retry-success-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      containerSet:
+        containers:
+          - name: a
+            image: argoproj/argosay:v2
+            command: [sh, -c]
+            args: ['FILE=test.yml; EXITCODE=1; if test -f "$FILE"; then EXITCODE=0; else touch $FILE; fi; exit $EXITCODE']
+        retryStrategy:
+          retries: 2
+          duration: "5s"
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
+func (s *FunctionalSuite) TestContainerSetRetrySuccess() {
+	s.Given().
+		Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: containerset-no-retry-fail-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      containerSet:
+        containers:
+          - name: a
+            image: argoproj/argosay:v2
+            command: [sh, -c]
+            args: ['FILE=test.yml; EXITCODE=1; if test -f "$FILE"; then EXITCODE=0; else touch $FILE; fi; exit $EXITCODE']
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeFailed)
 }

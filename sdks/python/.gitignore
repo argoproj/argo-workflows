@@ -1,3 +1,5 @@
+Pipfile
+Pipfile.lock
 /client/.openapi-generator/
 /client/.gitignore
 /client/.openapi-generator-ignore
@@ -6,3 +8,4 @@
 /client/test
 /client/test-requirements.txt
 /client/.gitignore
+/client/LICENSE

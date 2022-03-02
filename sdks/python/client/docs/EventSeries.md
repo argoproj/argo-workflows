@@ -7,7 +7,6 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **count** | **int** | Number of occurrences in this series up to the last heartbeat time | [optional] 
 **last_observed_time** | **datetime** | MicroTime is version of Time with microsecond level precision. | [optional] 
-**state** | **str** | State of this Series: Ongoing or Finished Deprecated. Planned removal for 1.18 | [optional] 
 **any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

@@ -168,6 +168,11 @@ metadata:
   generateName: hello-world-
 spec: 
   activeDeadlineSeconds: 7200
+  workflowMetadata:
+    annotations:
+      testAnnotation: wft
+    labels: 
+      testLabel: wft 
   arguments: 
     artifacts: 
       - 
@@ -239,7 +244,7 @@ func TestJoinWorkflowMetaData(t *testing.T) {
 	t.Run("WfDefaultMetaData", func(t *testing.T) {
 		wfDefault := wfv1.MustUnmarshalWorkflow(wfDefault)
 		wf1 := wfv1.MustUnmarshalWorkflow(wf)
-		JoinWorkflowMetaData(&wf1.ObjectMeta, nil, &wfDefault.ObjectMeta)
+		JoinWorkflowMetaData(&wf1.ObjectMeta, &wfDefault.ObjectMeta)
 		assert.Contains(wf1.Labels, "testLabel")
 		assert.Equal("default", wf1.Labels["testLabel"])
 		assert.Contains(wf1.Annotations, "testAnnotation")
@@ -248,20 +253,18 @@ func TestJoinWorkflowMetaData(t *testing.T) {
 	t.Run("WFTMetadata", func(t *testing.T) {
 		wfDefault := wfv1.MustUnmarshalWorkflow(wfDefault)
 		wf2 := wfv1.MustUnmarshalWorkflow(wf)
-		wft1 := wfv1.MustUnmarshalWorkflowTemplate(wft)
-		JoinWorkflowMetaData(&wf2.ObjectMeta, wft1.Spec.WorkflowMetadata, &wfDefault.ObjectMeta)
+		JoinWorkflowMetaData(&wf2.ObjectMeta, &wfDefault.ObjectMeta)
 		assert.Contains(wf2.Labels, "testLabel")
-		assert.Equal("wft", wf2.Labels["testLabel"])
+		assert.Equal("default", wf2.Labels["testLabel"])
 		assert.Contains(wf2.Annotations, "testAnnotation")
-		assert.Equal("wft", wf2.Annotations["testAnnotation"])
+		assert.Equal("default", wf2.Annotations["testAnnotation"])
 	})
 	t.Run("WfMetadata", func(t *testing.T) {
 		wfDefault := wfv1.MustUnmarshalWorkflow(wfDefault)
 		wf2 := wfv1.MustUnmarshalWorkflow(wf)
 		wf2.Labels = map[string]string{"testLabel": "wf"}
 		wf2.Annotations = map[string]string{"testAnnotation": "wf"}
-		wft1 := wfv1.MustUnmarshalWorkflowTemplate(wft)
-		JoinWorkflowMetaData(&wf2.ObjectMeta, wft1.Spec.WorkflowMetadata, &wfDefault.ObjectMeta)
+		JoinWorkflowMetaData(&wf2.ObjectMeta, &wfDefault.ObjectMeta)
 		assert.Contains(wf2.Labels, "testLabel")
 		assert.Equal("wf", wf2.Labels["testLabel"])
 		assert.Contains(wf2.Annotations, "testAnnotation")

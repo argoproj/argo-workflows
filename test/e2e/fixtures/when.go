@@ -59,6 +59,9 @@ func (w *When) SubmitWorkflow() *When {
 
 func label(obj metav1.Object) {
 	labels := obj.GetLabels()
+	if labels == nil {
+		labels = map[string]string{}
+	}
 	if labels[Label] == "" {
 		labels[Label] = "true"
 		obj.SetLabels(labels)
@@ -70,8 +73,7 @@ func (w *When) SubmitWorkflowsFromWorkflowTemplates() *When {
 	ctx := context.Background()
 	for _, tmpl := range w.wfTemplates {
 		_, _ = fmt.Println("Submitting workflow from workflow template", tmpl.Name)
-		label(tmpl.Spec.WorkflowMetadata)
-		wf, err := w.client.Create(ctx, common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, false), metav1.CreateOptions{})
+		wf, err := w.client.Create(ctx, common.NewWorkflowFromWorkflowTemplate(tmpl.Name, false), metav1.CreateOptions{})
 		if err != nil {
 			w.t.Fatal(err)
 		} else {
@@ -86,8 +88,7 @@ func (w *When) SubmitWorkflowsFromClusterWorkflowTemplates() *When {
 	ctx := context.Background()
 	for _, tmpl := range w.cwfTemplates {
 		_, _ = fmt.Println("Submitting workflow from cluster workflow template", tmpl.Name)
-		label(tmpl.Spec.WorkflowMetadata)
-		wf, err := w.client.Create(ctx, common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, true), metav1.CreateOptions{})
+		wf, err := w.client.Create(ctx, common.NewWorkflowFromWorkflowTemplate(tmpl.Name, true), metav1.CreateOptions{})
 		if err != nil {
 			w.t.Fatal(err)
 		} else {
@@ -137,6 +138,10 @@ func (w *When) CreateWorkflowTemplates() *When {
 	for _, wfTmpl := range w.wfTemplates {
 		_, _ = fmt.Println("Creating workflow template", wfTmpl.Name)
 		label(wfTmpl)
+		if wfTmpl.Spec.WorkflowMetadata == nil {
+			wfTmpl.Spec.WorkflowMetadata = &wfv1.WorkflowMetadata{Labels: map[string]string{}}
+		}
+		wfTmpl.Spec.WorkflowMetadata.Labels[Label] = "true"
 		_, err := w.wfTemplateClient.Create(ctx, wfTmpl, metav1.CreateOptions{})
 		if err != nil {
 			w.t.Fatal(err)
@@ -156,6 +161,10 @@ func (w *When) CreateClusterWorkflowTemplates() *When {
 	for _, cwfTmpl := range w.cwfTemplates {
 		_, _ = fmt.Println("Creating cluster workflow template", cwfTmpl.Name)
 		label(cwfTmpl)
+		if cwfTmpl.Spec.WorkflowMetadata == nil {
+			cwfTmpl.Spec.WorkflowMetadata = &wfv1.WorkflowMetadata{Labels: map[string]string{}}
+		}
+		cwfTmpl.Spec.WorkflowMetadata.Labels[Label] = "true"
 		_, err := w.cwfTemplateClient.Create(ctx, cwfTmpl, metav1.CreateOptions{})
 		if err != nil {
 			w.t.Fatal(err)
@@ -302,6 +311,32 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 	}
 }
 
+func (w *When) WaitForWorkflowList(listOptions metav1.ListOptions, condition func(list []wfv1.Workflow) bool) *When {
+	w.t.Helper()
+	timeout := defaultTimeout
+	start := time.Now()
+	_, _ = fmt.Println("Waiting", timeout.String(), "for workflows", listOptions)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	for {
+		select {
+		case <-ctx.Done():
+			w.t.Errorf("timeout after %v waiting for condition", timeout)
+			return w
+		default:
+			wfList, err := w.client.List(ctx, listOptions)
+			if err != nil {
+				w.t.Error(err)
+				return w
+			}
+			if ok := condition(wfList.Items); ok {
+				_, _ = fmt.Printf("Condition met after %s\n", time.Since(start).Truncate(time.Second))
+				return w
+			}
+		}
+	}
+}
+
 func (w *When) hydrateWorkflow(wf *wfv1.Workflow) {
 	w.t.Helper()
 	err := w.hydrator.Hydrate(wf)
@@ -394,12 +429,18 @@ func (w *When) RunCli(args []string, block func(t *testing.T, output string, err
 	return w.Exec("../../dist/argo", append([]string{"-n", Namespace}, args...), block)
 }
 
-func (w *When) CreateConfigMap(name string, data map[string]string) *When {
+func (w *When) CreateConfigMap(name string, data map[string]string, customLabels map[string]string) *When {
 	w.t.Helper()
+
+	labels := map[string]string{Label: "true"}
+
+	for k, v := range customLabels {
+		labels[k] = v
+	}
 
 	ctx := context.Background()
 	_, err := w.kubeClient.CoreV1().ConfigMaps(Namespace).Create(ctx, &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{Name: name, Labels: map[string]string{Label: "true"}},
+		ObjectMeta: metav1.ObjectMeta{Name: name, Labels: labels},
 		Data:       data,
 	}, metav1.CreateOptions{})
 	if err != nil {
@@ -408,12 +449,18 @@ func (w *When) CreateConfigMap(name string, data map[string]string) *When {
 	return w
 }
 
-func (w *When) UpdateConfigMap(name string, data map[string]string) *When {
+func (w *When) UpdateConfigMap(name string, data map[string]string, customLabels map[string]string) *When {
 	w.t.Helper()
+
+	labels := map[string]string{Label: "true"}
+
+	for k, v := range customLabels {
+		labels[k] = v
+	}
 
 	ctx := context.Background()
 	_, err := w.kubeClient.CoreV1().ConfigMaps(Namespace).Update(ctx, &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{Name: name, Labels: map[string]string{Label: "true"}},
+		ObjectMeta: metav1.ObjectMeta{Name: name, Labels: labels},
 		Data:       data,
 	}, metav1.UpdateOptions{})
 	if err != nil {

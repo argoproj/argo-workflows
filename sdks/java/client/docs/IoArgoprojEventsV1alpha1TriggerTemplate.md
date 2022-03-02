@@ -12,6 +12,7 @@ Name | Type | Description | Notes
 **awsLambda** | [**IoArgoprojEventsV1alpha1AWSLambdaTrigger**](IoArgoprojEventsV1alpha1AWSLambdaTrigger.md) |  |  [optional]
 **azureEventHubs** | [**IoArgoprojEventsV1alpha1AzureEventHubsTrigger**](IoArgoprojEventsV1alpha1AzureEventHubsTrigger.md) |  |  [optional]
 **conditions** | **String** |  |  [optional]
+**conditionsReset** | [**List&lt;IoArgoprojEventsV1alpha1ConditionsResetCriteria&gt;**](IoArgoprojEventsV1alpha1ConditionsResetCriteria.md) |  |  [optional]
 **custom** | [**IoArgoprojEventsV1alpha1CustomTrigger**](IoArgoprojEventsV1alpha1CustomTrigger.md) |  |  [optional]
 **http** | [**IoArgoprojEventsV1alpha1HTTPTrigger**](IoArgoprojEventsV1alpha1HTTPTrigger.md) |  |  [optional]
 **k8s** | [**IoArgoprojEventsV1alpha1StandardK8STrigger**](IoArgoprojEventsV1alpha1StandardK8STrigger.md) |  |  [optional]

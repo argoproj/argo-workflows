@@ -20,7 +20,7 @@ func TestWorkflowTemplateRef(t *testing.T) {
 	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wfv1.MustUnmarshalWorkflow(wfWithTmplRef), controller)
 	woc.operate(ctx)
-	assert.Equal(t, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl).Spec.WorkflowSpec.Templates, woc.execWf.Spec.Templates)
+	assert.Equal(t, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl).Spec.Templates, woc.execWf.Spec.Templates)
 	assert.Equal(t, woc.wf.Spec.Entrypoint, woc.execWf.Spec.Entrypoint)
 	// verify we copy these values
 	assert.Len(t, woc.volumes, 1, "volumes from workflow template")
@@ -532,4 +532,31 @@ func TestWFTWithVol(t *testing.T) {
 	pvc, err = controller.kubeclientset.CoreV1().PersistentVolumeClaims("default").List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Len(t, pvc.Items, 0)
+}
+
+const wfTmp = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: cluster-workflow-template-hello-world-
+spec:
+  entrypoint: whalesay-template
+  arguments:
+    parameters:
+      - name: message
+        value: "hello world"
+  workflowTemplateRef:
+    name: cluster-workflow-template-whalesay-template
+    clusterScope: true
+`
+
+func TestSubmitWorkflowTemplateRefWithoutRBAC(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(wfTmp)
+	cancel, controller := newController(wf, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl))
+	defer cancel()
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.controller.cwftmplInformer = nil
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 }

@@ -9,23 +9,23 @@ What happened/what you expected to happen?
 
 What version is it broken in?
 
-What version was it working in?
+What executor are you using? PNS/Emissary
 
 ## Diagnostics
 
-Either a workflow that reproduces the bug, or paste you whole workflow YAML, including status, something like:
+Paste the smallest workflow that reproduces the bug. We must be able to run the workflow.
 
 ```yaml
-kubectl get wf -o yaml ${workflow}
+
 ```
 
-What Kubernetes provider are you using?
-
-What executor are you running? Docker/K8SAPI/Kubelet/PNS/Emissary
+What executor are you running? PNS/Emissary
 
 ```bash
 # Logs from the workflow controller:
 kubectl logs -n argo deploy/workflow-controller | grep ${workflow}
+
+# If the workflow's pods have not been created, you can skip the rest of the diagnostics.
 
 # The workflow's pods that are problematic:
 kubectl get pod -o yaml -l workflows.argoproj.io/workflow=${workflow},workflow.argoproj.io/phase!=Succeeded

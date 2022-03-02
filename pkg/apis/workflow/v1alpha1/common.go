@@ -25,7 +25,6 @@ type TemplateHolder interface {
 // WorkflowSpecHolder is an object that holds a WorkflowSpec; e.g., WorkflowTemplate, and ClusterWorkflowTemplate
 type WorkflowSpecHolder interface {
 	metav1.Object
-	GetWorkflowMetadata() *metav1.ObjectMeta
 	GetWorkflowSpec() *WorkflowSpec
 }
 
@@ -63,4 +62,9 @@ type SubmitOpts struct {
 	OwnerReference *metav1.OwnerReference `json:"ownerReference,omitempty" protobuf:"bytes,11,opt,name=ownerReference"`
 	// Annotations adds to metadata.labels
 	Annotations string `json:"annotations,omitempty" protobuf:"bytes,12,opt,name=annotations"`
+	// Set the podPriorityClassName of the workflow
+	PodPriorityClassName string `json:"podPriorityClassName,omitempty" protobuf:"bytes,13,opt,name=podPriorityClassName"`
+	// Priority is used if controller is configured to process limited number of workflows in parallel, higher priority workflows
+	// are processed first.
+	Priority *int32 `json:"priority,omitempty" protobuf:"bytes,14,opt,name=priority"`
 }

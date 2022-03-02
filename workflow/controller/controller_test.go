@@ -61,6 +61,29 @@ spec:
       args: ["hello world"]
 `
 
+var helloDaemonWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    daemon: true
+    metadata:
+      annotations:
+        annotationKey1: "annotationValue1"
+        annotationKey2: "annotationValue2"
+      labels:
+        labelKey1: "labelValue1"
+        labelKey2: "labelValue2"
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
+
 var testDefaultWf = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -140,12 +163,14 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 	kube := fake.NewSimpleClientset()
 	wfc := &WorkflowController{
 		Config: config.Config{
-			ExecutorImage: "executor:latest",
 			Images: map[string]config.Image{
 				"my-image": {
 					Command: []string{"my-cmd"},
 					Args:    []string{"my-args"},
 				},
+				"argoproj/argosay:v2":    {Command: []string{""}},
+				"docker/whalesay:latest": {Command: []string{""}},
+				"busybox":                {Command: []string{""}},
 			},
 		},
 		artifactRepositories: armocks.DummyArtifactRepositories(&wfv1.ArtifactRepository{
@@ -180,7 +205,6 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		wfc.metrics = metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{})
 		wfc.wfQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 		wfc.throttler = wfc.newThrottler()
-		wfc.podQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 		wfc.podCleanupQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 		wfc.rateLimiter = wfc.newRateLimiter()
 	}
@@ -192,6 +216,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		wfc.wftmplInformer = informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
 		wfc.addWorkflowInformerHandlers(ctx)
 		wfc.podInformer = wfc.newPodInformer(ctx)
+		wfc.configMapInformer = wfc.newConfigMapInformer()
 		wfc.createSynchronizationManager(ctx)
 		_ = wfc.initManagers(ctx)
 
@@ -580,7 +605,7 @@ func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	err := woc.setExecWorkflow(context.Background())
 	assert.NoError(t, err)
-	assert.Equal(t, wftmpl.Spec.WorkflowSpec.Templates, woc.execWf.Spec.Templates)
+	assert.Equal(t, wftmpl.Spec.Templates, woc.execWf.Spec.Templates)
 }
 
 func TestIsArchivable(t *testing.T) {

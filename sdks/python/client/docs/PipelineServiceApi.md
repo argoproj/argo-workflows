@@ -1,20 +1,20 @@
-# openapi_client.PipelineServiceApi
+# argo_workflows.PipelineServiceApi
 
 All URIs are relative to *http://localhost:2746*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**pipeline_service_delete_pipeline**](PipelineServiceApi.md#pipeline_service_delete_pipeline) | **DELETE** /api/v1/pipelines/{namespace}/{name} | 
-[**pipeline_service_get_pipeline**](PipelineServiceApi.md#pipeline_service_get_pipeline) | **GET** /api/v1/pipelines/{namespace}/{name} | 
-[**pipeline_service_list_pipelines**](PipelineServiceApi.md#pipeline_service_list_pipelines) | **GET** /api/v1/pipelines/{namespace} | 
-[**pipeline_service_pipeline_logs**](PipelineServiceApi.md#pipeline_service_pipeline_logs) | **GET** /api/v1/stream/pipelines/{namespace}/logs | 
-[**pipeline_service_restart_pipeline**](PipelineServiceApi.md#pipeline_service_restart_pipeline) | **POST** /api/v1/pipelines/{namespace}/{name}/restart | 
-[**pipeline_service_watch_pipelines**](PipelineServiceApi.md#pipeline_service_watch_pipelines) | **GET** /api/v1/stream/pipelines/{namespace} | 
-[**pipeline_service_watch_steps**](PipelineServiceApi.md#pipeline_service_watch_steps) | **GET** /api/v1/stream/steps/{namespace} | 
+[**delete_pipeline**](PipelineServiceApi.md#delete_pipeline) | **DELETE** /api/v1/pipelines/{namespace}/{name} | 
+[**get_pipeline**](PipelineServiceApi.md#get_pipeline) | **GET** /api/v1/pipelines/{namespace}/{name} | 
+[**list_pipelines**](PipelineServiceApi.md#list_pipelines) | **GET** /api/v1/pipelines/{namespace} | 
+[**pipeline_logs**](PipelineServiceApi.md#pipeline_logs) | **GET** /api/v1/stream/pipelines/{namespace}/logs | 
+[**restart_pipeline**](PipelineServiceApi.md#restart_pipeline) | **POST** /api/v1/pipelines/{namespace}/{name}/restart | 
+[**watch_pipelines**](PipelineServiceApi.md#watch_pipelines) | **GET** /api/v1/stream/pipelines/{namespace} | 
+[**watch_steps**](PipelineServiceApi.md#watch_steps) | **GET** /api/v1/stream/steps/{namespace} | 
 
 
-# **pipeline_service_delete_pipeline**
-> bool, date, datetime, dict, float, int, list, str, none_type pipeline_service_delete_pipeline(namespace, name)
+# **delete_pipeline**
+> bool, date, datetime, dict, float, int, list, str, none_type delete_pipeline(namespace, name)
 
 
 
@@ -22,19 +22,19 @@ Method | HTTP request | Description
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import pipeline_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+import argo_workflows
+from argo_workflows.api import pipeline_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = pipeline_service_api.PipelineServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -50,18 +50,18 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.pipeline_service_delete_pipeline(namespace, name)
+        api_response = api_instance.delete_pipeline(namespace, name)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling PipelineServiceApi->pipeline_service_delete_pipeline: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling PipelineServiceApi->delete_pipeline: %s\n" % e)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.pipeline_service_delete_pipeline(namespace, name, delete_options_grace_period_seconds=delete_options_grace_period_seconds, delete_options_preconditions_uid=delete_options_preconditions_uid, delete_options_preconditions_resource_version=delete_options_preconditions_resource_version, delete_options_orphan_dependents=delete_options_orphan_dependents, delete_options_propagation_policy=delete_options_propagation_policy, delete_options_dry_run=delete_options_dry_run)
+        api_response = api_instance.delete_pipeline(namespace, name, delete_options_grace_period_seconds=delete_options_grace_period_seconds, delete_options_preconditions_uid=delete_options_preconditions_uid, delete_options_preconditions_resource_version=delete_options_preconditions_resource_version, delete_options_orphan_dependents=delete_options_orphan_dependents, delete_options_propagation_policy=delete_options_propagation_policy, delete_options_dry_run=delete_options_dry_run)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling PipelineServiceApi->pipeline_service_delete_pipeline: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling PipelineServiceApi->delete_pipeline: %s\n" % e)
 ```
 
 
@@ -100,8 +100,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **pipeline_service_get_pipeline**
-> GithubComArgoprojLabsArgoDataflowApiV1alpha1Pipeline pipeline_service_get_pipeline(namespace, name)
+# **get_pipeline**
+> GithubComArgoprojLabsArgoDataflowApiV1alpha1Pipeline get_pipeline(namespace, name)
 
 
 
@@ -109,20 +109,20 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import pipeline_service_api
-from openapi_client.model.github_com_argoproj_labs_argo_dataflow_api_v1alpha1_pipeline import GithubComArgoprojLabsArgoDataflowApiV1alpha1Pipeline
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+import argo_workflows
+from argo_workflows.api import pipeline_service_api
+from argo_workflows.model.github_com_argoproj_labs_argo_dataflow_api_v1alpha1_pipeline import GithubComArgoprojLabsArgoDataflowApiV1alpha1Pipeline
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = pipeline_service_api.PipelineServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -131,18 +131,18 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.pipeline_service_get_pipeline(namespace, name)
+        api_response = api_instance.get_pipeline(namespace, name)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling PipelineServiceApi->pipeline_service_get_pipeline: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling PipelineServiceApi->get_pipeline: %s\n" % e)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.pipeline_service_get_pipeline(namespace, name, get_options_resource_version=get_options_resource_version)
+        api_response = api_instance.get_pipeline(namespace, name, get_options_resource_version=get_options_resource_version)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling PipelineServiceApi->pipeline_service_get_pipeline: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling PipelineServiceApi->get_pipeline: %s\n" % e)
 ```
 
 
@@ -176,8 +176,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **pipeline_service_list_pipelines**
-> GithubComArgoprojLabsArgoDataflowApiV1alpha1PipelineList pipeline_service_list_pipelines(namespace)
+# **list_pipelines**
+> GithubComArgoprojLabsArgoDataflowApiV1alpha1PipelineList list_pipelines(namespace)
 
 
 
@@ -185,27 +185,27 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import pipeline_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.github_com_argoproj_labs_argo_dataflow_api_v1alpha1_pipeline_list import GithubComArgoprojLabsArgoDataflowApiV1alpha1PipelineList
+import argo_workflows
+from argo_workflows.api import pipeline_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.github_com_argoproj_labs_argo_dataflow_api_v1alpha1_pipeline_list import GithubComArgoprojLabsArgoDataflowApiV1alpha1PipelineList
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = pipeline_service_api.PipelineServiceApi(api_client)
     namespace = "namespace_example" # str | 
     list_options_label_selector = "listOptions.labelSelector_example" # str | A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional. (optional)
     list_options_field_selector = "listOptions.fieldSelector_example" # str | A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional. (optional)
     list_options_watch = True # bool | Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional. (optional)
-    list_options_allow_watch_bookmarks = True # bool | allowWatchBookmarks requests watch events with type \"BOOKMARK\". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. If the feature gate WatchBookmarks is not enabled in apiserver, this field is ignored. +optional. (optional)
+    list_options_allow_watch_bookmarks = True # bool | allowWatchBookmarks requests watch events with type \"BOOKMARK\". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. +optional. (optional)
     list_options_resource_version = "listOptions.resourceVersion_example" # str | resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional (optional)
     list_options_resource_version_match = "listOptions.resourceVersionMatch_example" # str | resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional (optional)
     list_options_timeout_seconds = "listOptions.timeoutSeconds_example" # str | Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional. (optional)
@@ -214,18 +214,18 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.pipeline_service_list_pipelines(namespace)
+        api_response = api_instance.list_pipelines(namespace)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling PipelineServiceApi->pipeline_service_list_pipelines: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling PipelineServiceApi->list_pipelines: %s\n" % e)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.pipeline_service_list_pipelines(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue)
+        api_response = api_instance.list_pipelines(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling PipelineServiceApi->pipeline_service_list_pipelines: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling PipelineServiceApi->list_pipelines: %s\n" % e)
 ```
 
 
@@ -237,7 +237,7 @@ Name | Type | Description  | Notes
  **list_options_label_selector** | **str**| A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional. | [optional]
  **list_options_field_selector** | **str**| A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional. | [optional]
  **list_options_watch** | **bool**| Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional. | [optional]
- **list_options_allow_watch_bookmarks** | **bool**| allowWatchBookmarks requests watch events with type \&quot;BOOKMARK\&quot;. Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server&#39;s discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. If the feature gate WatchBookmarks is not enabled in apiserver, this field is ignored. +optional. | [optional]
+ **list_options_allow_watch_bookmarks** | **bool**| allowWatchBookmarks requests watch events with type \&quot;BOOKMARK\&quot;. Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server&#39;s discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. +optional. | [optional]
  **list_options_resource_version** | **str**| resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional | [optional]
  **list_options_resource_version_match** | **str**| resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional | [optional]
  **list_options_timeout_seconds** | **str**| Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional. | [optional]
@@ -266,8 +266,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **pipeline_service_pipeline_logs**
-> StreamResultOfPipelineLogEntry pipeline_service_pipeline_logs(namespace)
+# **pipeline_logs**
+> StreamResultOfPipelineLogEntry pipeline_logs(namespace)
 
 
 
@@ -275,20 +275,20 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import pipeline_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.stream_result_of_pipeline_log_entry import StreamResultOfPipelineLogEntry
+import argo_workflows
+from argo_workflows.api import pipeline_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.stream_result_of_pipeline_log_entry import StreamResultOfPipelineLogEntry
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = pipeline_service_api.PipelineServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -308,18 +308,18 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.pipeline_service_pipeline_logs(namespace)
+        api_response = api_instance.pipeline_logs(namespace)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling PipelineServiceApi->pipeline_service_pipeline_logs: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling PipelineServiceApi->pipeline_logs: %s\n" % e)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.pipeline_service_pipeline_logs(namespace, name=name, step_name=step_name, grep=grep, pod_log_options_container=pod_log_options_container, pod_log_options_follow=pod_log_options_follow, pod_log_options_previous=pod_log_options_previous, pod_log_options_since_seconds=pod_log_options_since_seconds, pod_log_options_since_time_seconds=pod_log_options_since_time_seconds, pod_log_options_since_time_nanos=pod_log_options_since_time_nanos, pod_log_options_timestamps=pod_log_options_timestamps, pod_log_options_tail_lines=pod_log_options_tail_lines, pod_log_options_limit_bytes=pod_log_options_limit_bytes, pod_log_options_insecure_skip_tls_verify_backend=pod_log_options_insecure_skip_tls_verify_backend)
+        api_response = api_instance.pipeline_logs(namespace, name=name, step_name=step_name, grep=grep, pod_log_options_container=pod_log_options_container, pod_log_options_follow=pod_log_options_follow, pod_log_options_previous=pod_log_options_previous, pod_log_options_since_seconds=pod_log_options_since_seconds, pod_log_options_since_time_seconds=pod_log_options_since_time_seconds, pod_log_options_since_time_nanos=pod_log_options_since_time_nanos, pod_log_options_timestamps=pod_log_options_timestamps, pod_log_options_tail_lines=pod_log_options_tail_lines, pod_log_options_limit_bytes=pod_log_options_limit_bytes, pod_log_options_insecure_skip_tls_verify_backend=pod_log_options_insecure_skip_tls_verify_backend)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling PipelineServiceApi->pipeline_service_pipeline_logs: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling PipelineServiceApi->pipeline_logs: %s\n" % e)
 ```
 
 
@@ -364,8 +364,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **pipeline_service_restart_pipeline**
-> bool, date, datetime, dict, float, int, list, str, none_type pipeline_service_restart_pipeline(namespace, name)
+# **restart_pipeline**
+> bool, date, datetime, dict, float, int, list, str, none_type restart_pipeline(namespace, name)
 
 
 
@@ -373,19 +373,19 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import pipeline_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+import argo_workflows
+from argo_workflows.api import pipeline_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = pipeline_service_api.PipelineServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -393,10 +393,10 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.pipeline_service_restart_pipeline(namespace, name)
+        api_response = api_instance.restart_pipeline(namespace, name)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling PipelineServiceApi->pipeline_service_restart_pipeline: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling PipelineServiceApi->restart_pipeline: %s\n" % e)
 ```
 
 
@@ -429,8 +429,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **pipeline_service_watch_pipelines**
-> StreamResultOfPipelinePipelineWatchEvent pipeline_service_watch_pipelines(namespace)
+# **watch_pipelines**
+> StreamResultOfPipelinePipelineWatchEvent watch_pipelines(namespace)
 
 
 
@@ -438,27 +438,27 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import pipeline_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.stream_result_of_pipeline_pipeline_watch_event import StreamResultOfPipelinePipelineWatchEvent
+import argo_workflows
+from argo_workflows.api import pipeline_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.stream_result_of_pipeline_pipeline_watch_event import StreamResultOfPipelinePipelineWatchEvent
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = pipeline_service_api.PipelineServiceApi(api_client)
     namespace = "namespace_example" # str | 
     list_options_label_selector = "listOptions.labelSelector_example" # str | A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional. (optional)
     list_options_field_selector = "listOptions.fieldSelector_example" # str | A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional. (optional)
     list_options_watch = True # bool | Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional. (optional)
-    list_options_allow_watch_bookmarks = True # bool | allowWatchBookmarks requests watch events with type \"BOOKMARK\". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. If the feature gate WatchBookmarks is not enabled in apiserver, this field is ignored. +optional. (optional)
+    list_options_allow_watch_bookmarks = True # bool | allowWatchBookmarks requests watch events with type \"BOOKMARK\". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. +optional. (optional)
     list_options_resource_version = "listOptions.resourceVersion_example" # str | resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional (optional)
     list_options_resource_version_match = "listOptions.resourceVersionMatch_example" # str | resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional (optional)
     list_options_timeout_seconds = "listOptions.timeoutSeconds_example" # str | Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional. (optional)
@@ -467,18 +467,18 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.pipeline_service_watch_pipelines(namespace)
+        api_response = api_instance.watch_pipelines(namespace)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling PipelineServiceApi->pipeline_service_watch_pipelines: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling PipelineServiceApi->watch_pipelines: %s\n" % e)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.pipeline_service_watch_pipelines(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue)
+        api_response = api_instance.watch_pipelines(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling PipelineServiceApi->pipeline_service_watch_pipelines: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling PipelineServiceApi->watch_pipelines: %s\n" % e)
 ```
 
 
@@ -490,7 +490,7 @@ Name | Type | Description  | Notes
  **list_options_label_selector** | **str**| A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional. | [optional]
  **list_options_field_selector** | **str**| A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional. | [optional]
  **list_options_watch** | **bool**| Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional. | [optional]
- **list_options_allow_watch_bookmarks** | **bool**| allowWatchBookmarks requests watch events with type \&quot;BOOKMARK\&quot;. Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server&#39;s discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. If the feature gate WatchBookmarks is not enabled in apiserver, this field is ignored. +optional. | [optional]
+ **list_options_allow_watch_bookmarks** | **bool**| allowWatchBookmarks requests watch events with type \&quot;BOOKMARK\&quot;. Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server&#39;s discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. +optional. | [optional]
  **list_options_resource_version** | **str**| resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional | [optional]
  **list_options_resource_version_match** | **str**| resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional | [optional]
  **list_options_timeout_seconds** | **str**| Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional. | [optional]
@@ -519,8 +519,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **pipeline_service_watch_steps**
-> StreamResultOfPipelineStepWatchEvent pipeline_service_watch_steps(namespace)
+# **watch_steps**
+> StreamResultOfPipelineStepWatchEvent watch_steps(namespace)
 
 
 
@@ -528,27 +528,27 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import pipeline_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.stream_result_of_pipeline_step_watch_event import StreamResultOfPipelineStepWatchEvent
+import argo_workflows
+from argo_workflows.api import pipeline_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.stream_result_of_pipeline_step_watch_event import StreamResultOfPipelineStepWatchEvent
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = pipeline_service_api.PipelineServiceApi(api_client)
     namespace = "namespace_example" # str | 
     list_options_label_selector = "listOptions.labelSelector_example" # str | A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional. (optional)
     list_options_field_selector = "listOptions.fieldSelector_example" # str | A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional. (optional)
     list_options_watch = True # bool | Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional. (optional)
-    list_options_allow_watch_bookmarks = True # bool | allowWatchBookmarks requests watch events with type \"BOOKMARK\". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. If the feature gate WatchBookmarks is not enabled in apiserver, this field is ignored. +optional. (optional)
+    list_options_allow_watch_bookmarks = True # bool | allowWatchBookmarks requests watch events with type \"BOOKMARK\". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. +optional. (optional)
     list_options_resource_version = "listOptions.resourceVersion_example" # str | resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional (optional)
     list_options_resource_version_match = "listOptions.resourceVersionMatch_example" # str | resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional (optional)
     list_options_timeout_seconds = "listOptions.timeoutSeconds_example" # str | Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional. (optional)
@@ -557,18 +557,18 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.pipeline_service_watch_steps(namespace)
+        api_response = api_instance.watch_steps(namespace)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling PipelineServiceApi->pipeline_service_watch_steps: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling PipelineServiceApi->watch_steps: %s\n" % e)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.pipeline_service_watch_steps(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue)
+        api_response = api_instance.watch_steps(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling PipelineServiceApi->pipeline_service_watch_steps: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling PipelineServiceApi->watch_steps: %s\n" % e)
 ```
 
 
@@ -580,7 +580,7 @@ Name | Type | Description  | Notes
  **list_options_label_selector** | **str**| A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional. | [optional]
  **list_options_field_selector** | **str**| A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional. | [optional]
  **list_options_watch** | **bool**| Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional. | [optional]
- **list_options_allow_watch_bookmarks** | **bool**| allowWatchBookmarks requests watch events with type \&quot;BOOKMARK\&quot;. Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server&#39;s discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. If the feature gate WatchBookmarks is not enabled in apiserver, this field is ignored. +optional. | [optional]
+ **list_options_allow_watch_bookmarks** | **bool**| allowWatchBookmarks requests watch events with type \&quot;BOOKMARK\&quot;. Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server&#39;s discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. +optional. | [optional]
  **list_options_resource_version** | **str**| resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional | [optional]
  **list_options_resource_version_match** | **str**| resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional | [optional]
  **list_options_timeout_seconds** | **str**| Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional. | [optional]

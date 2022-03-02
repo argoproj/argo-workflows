@@ -6,11 +6,10 @@ import (
 	"k8s.io/client-go/util/workqueue"
 
 	"github.com/argoproj/argo-workflows/v3/util/env"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
-type fixedItemIntervalRateLimiter struct{}
-
-func (r *fixedItemIntervalRateLimiter) When(interface{}) time.Duration {
+func GetRequeueTime() time.Duration {
 	// We need to rate limit a minimum 1s, otherwise informers are unlikely to be upto date
 	// and we'll operate on an out of date version of a workflow.
 	// Under high load, the informer can get many seconds behind. Increasing this to 30s
@@ -18,7 +17,13 @@ func (r *fixedItemIntervalRateLimiter) When(interface{}) time.Duration {
 	// Higher values mean that workflows with many short running (<20s) nodes do not progress as quickly.
 	// So some users may wish to have this as low as 2s.
 	// The default of 10s provides a balance more most users.
-	return env.LookupEnvDurationOr("DEFAULT_REQUEUE_TIME", 10*time.Second)
+	return env.LookupEnvDurationOr(common.EnvVarDefaultRequeueTime, 10*time.Second)
+}
+
+type fixedItemIntervalRateLimiter struct{}
+
+func (r *fixedItemIntervalRateLimiter) When(interface{}) time.Duration {
+	return GetRequeueTime()
 }
 
 func (r *fixedItemIntervalRateLimiter) Forget(interface{}) {}

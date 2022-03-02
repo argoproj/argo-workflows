@@ -4,8 +4,9 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**exclusion_dates** | **[str]** |  | [optional] 
-**interval** | **str** | Interval is a string that describes an interval duration, e.g. 1s, 30m, 2h... | [optional] 
+**exclusion_dates** | **[str]** | ExclusionDates defines the list of DATE-TIME exceptions for recurring events. | [optional] 
+**filter** | [**IoArgoprojEventsV1alpha1EventSourceFilter**](IoArgoprojEventsV1alpha1EventSourceFilter.md) |  | [optional] 
+**interval** | **str** |  | [optional] 
 **metadata** | **{str: (str,)}** |  | [optional] 
 **persistence** | [**IoArgoprojEventsV1alpha1EventPersistence**](IoArgoprojEventsV1alpha1EventPersistence.md) |  | [optional] 
 **schedule** | **str** |  | [optional] 

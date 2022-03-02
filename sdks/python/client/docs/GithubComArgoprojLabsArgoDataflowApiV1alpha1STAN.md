@@ -4,7 +4,7 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**auth** | [**GithubComArgoprojLabsArgoDataflowApiV1alpha1STANAuth**](GithubComArgoprojLabsArgoDataflowApiV1alpha1STANAuth.md) |  | [optional] 
+**auth** | [**GithubComArgoprojLabsArgoDataflowApiV1alpha1NATSAuth**](GithubComArgoprojLabsArgoDataflowApiV1alpha1NATSAuth.md) |  | [optional] 
 **cluster_id** | **str** |  | [optional] 
 **max_inflight** | **int** |  | [optional] 
 **name** | **str** |  | [optional] 

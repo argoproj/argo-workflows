@@ -366,6 +366,8 @@ func TestGlobalParams(t *testing.T) {
 	assert.Contains(t, woc.globalParams, "workflow.name")
 	assert.Contains(t, woc.globalParams, "workflow.namespace")
 	assert.Contains(t, woc.globalParams, "workflow.parameters")
+	assert.Contains(t, woc.globalParams, "workflow.annotations")
+	assert.Contains(t, woc.globalParams, "workflow.labels")
 	assert.Contains(t, woc.globalParams, "workflow.serviceAccountName")
 	assert.Contains(t, woc.globalParams, "workflow.uid")
 
@@ -1265,12 +1267,13 @@ func TestStepsRetriesVariable(t *testing.T) {
 }
 
 func TestAssessNodeStatus(t *testing.T) {
-	daemoned := true
+	const templateName = "whalesay"
 	tests := []struct {
-		name string
-		pod  *apiv1.Pod
-		node *wfv1.NodeStatus
-		want wfv1.NodePhase
+		name   string
+		pod    *apiv1.Pod
+		daemon bool
+		node   *wfv1.NodeStatus
+		want   wfv1.NodePhase
 	}{{
 		name: "pod pending",
 		pod: &apiv1.Pod{
@@ -1278,7 +1281,7 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase: apiv1.PodPending,
 			},
 		},
-		node: &wfv1.NodeStatus{},
+		node: &wfv1.NodeStatus{TemplateName: templateName},
 		want: wfv1.NodePending,
 	}, {
 		name: "pod succeeded",
@@ -1287,7 +1290,7 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase: apiv1.PodSucceeded,
 			},
 		},
-		node: &wfv1.NodeStatus{},
+		node: &wfv1.NodeStatus{TemplateName: templateName},
 		want: wfv1.NodeSucceeded,
 	}, {
 		name: "pod failed - daemoned",
@@ -1296,8 +1299,29 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase: apiv1.PodFailed,
 			},
 		},
-		node: &wfv1.NodeStatus{Daemoned: &daemoned},
-		want: wfv1.NodeSucceeded,
+		daemon: true,
+		node:   &wfv1.NodeStatus{TemplateName: templateName},
+		want:   wfv1.NodeSucceeded,
+	}, {
+		name: "daemon, pod running, node failed",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Phase: apiv1.PodRunning,
+			},
+		},
+		daemon: true,
+		node:   &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeFailed},
+		want:   wfv1.NodeFailed,
+	}, {
+		name: "daemon, pod running, node succeeded",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Phase: apiv1.PodRunning,
+			},
+		},
+		daemon: true,
+		node:   &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeSucceeded},
+		want:   wfv1.NodeSucceeded,
 	}, {
 		name: "pod failed - not daemoned",
 		pod: &apiv1.Pod{
@@ -1306,7 +1330,7 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase:   apiv1.PodFailed,
 			},
 		},
-		node: &wfv1.NodeStatus{},
+		node: &wfv1.NodeStatus{TemplateName: templateName},
 		want: wfv1.NodeFailed,
 	}, {
 		name: "pod running",
@@ -1315,22 +1339,25 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase: apiv1.PodRunning,
 			},
 		},
-		node: &wfv1.NodeStatus{},
+		node: &wfv1.NodeStatus{TemplateName: templateName},
 		want: wfv1.NodeRunning,
 	}, {
 		name: "default",
-		pod: &apiv1.Pod{
-			Status: apiv1.PodStatus{
-				Phase: apiv1.PodUnknown,
-			},
-		},
-		node: &wfv1.NodeStatus{},
+		pod:  &apiv1.Pod{},
+		node: &wfv1.NodeStatus{TemplateName: templateName},
 		want: wfv1.NodeError,
 	}}
 
-	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	nonDaemonWf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	daemonWf := wfv1.MustUnmarshalWorkflow(helloDaemonWf)
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			wf := nonDaemonWf
+			if tt.daemon {
+				wf = daemonWf
+			}
+			assert.Equal(t, tt.daemon, wf.GetTemplateByName(tt.node.TemplateName).IsDaemon(), "check the test case is valid")
 			cancel, controller := newController()
 			defer cancel()
 			woc := newWorkflowOperationCtx(wf, controller)
@@ -1338,35 +1365,6 @@ func TestAssessNodeStatus(t *testing.T) {
 			assert.Equal(t, tt.want, got.Phase)
 		})
 	}
-
-	t.Run("Daemon Step finished - Pod running", func(t *testing.T) {
-		cancel, controller := newController()
-		defer cancel()
-		pod := &apiv1.Pod{
-			Status: apiv1.PodStatus{
-				Phase: apiv1.PodRunning,
-			},
-		}
-		node := &wfv1.NodeStatus{Daemoned: &daemoned, Phase: wfv1.NodeFailed}
-		woc := newWorkflowOperationCtx(wf, controller)
-		got := woc.assessNodeStatus(pod, node)
-		assert.True(t, got.Phase == wfv1.NodeFailed)
-	})
-
-	t.Run("Daemon Step finished - Pod running", func(t *testing.T) {
-		cancel, controller := newController()
-		defer cancel()
-		pod := &apiv1.Pod{
-			Status: apiv1.PodStatus{
-				Phase: apiv1.PodRunning,
-			},
-		}
-		node := &wfv1.NodeStatus{Daemoned: &daemoned, Phase: wfv1.NodeSucceeded}
-		woc := newWorkflowOperationCtx(wf, controller)
-		got := woc.assessNodeStatus(pod, node)
-		assert.True(t, got.Phase == wfv1.NodeSucceeded)
-	})
-
 }
 
 func getPodTemplate(pod *apiv1.Pod) (*wfv1.Template, error) {
@@ -2764,7 +2762,7 @@ spec:
       - name: text
         path: /outputs/text/data
     container:
-      image: busybox
+      image: argoproj/argosay:v2
       command: [sh, -c, 'head -n {{inputs.parameters.lines-count}} <"{{inputs.artifacts.text.path}}" | tee "{{outputs.artifacts.text.path}}" | wc -l > "{{outputs.parameters.actual-lines-count.path}}"']
 `
 
@@ -2778,7 +2776,7 @@ func TestResolveIOPathPlaceholders(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
 
-	assert.Equal(t, []string{"sh", "-c", "head -n 3 <\"/inputs/text/data\" | tee \"/outputs/text/data\" | wc -l > \"/outputs/actual-lines-count/data\""}, pods.Items[0].Spec.Containers[1].Command)
+	assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary", "--", "sh", "-c", "head -n 3 <\"/inputs/text/data\" | tee \"/outputs/text/data\" | wc -l > \"/outputs/actual-lines-count/data\""}, pods.Items[0].Spec.Containers[1].Command)
 }
 
 var outputValuePlaceholders = `
@@ -2795,7 +2793,7 @@ spec:
       - name: pod-name
         value: "{{pod.name}}"
     container:
-      image: busybox
+      image: argoproj/argosay:v2
 `
 
 func TestResolvePlaceholdersInOutputValues(t *testing.T) {
@@ -2831,7 +2829,7 @@ spec:
       - name: pod-name
         value: "{{pod.name}}"
     container:
-      image: busybox
+      image: argoproj/argosay:v2
 `
 
 func TestResolvePodNameInRetries(t *testing.T) {
@@ -3608,8 +3606,8 @@ spec:
 	// Pod node should return a pod
 	podNode := woc.wf.GetNodeByName("dag-events.a")
 	pod, err = woc.getPodByNode(podNode)
+	assert.NoError(t, err)
 	assert.NotNil(t, pod)
-	assert.Nil(t, err)
 	// Invalid node should not return a pod
 	invalidNode := wfv1.NodeStatus{Type: wfv1.NodeTypePod, Name: "doesnt-exist"}
 	pod, err = woc.getPodByNode(&invalidNode)
@@ -3752,7 +3750,7 @@ func TestPodSpecLogForFailedPods(t *testing.T) {
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
 	for _, node := range woc.wf.Status.Nodes {
-		assert.True(t, woc.shouldPrintPodSpec(node))
+		assert.True(t, woc.shouldPrintPodSpec(&node))
 	}
 }
 
@@ -3774,7 +3772,7 @@ func TestPodSpecLogForAllPods(t *testing.T) {
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
 	for _, node := range woc.wf.Status.Nodes {
-		assert.True(t, woc.shouldPrintPodSpec(node))
+		assert.True(t, woc.shouldPrintPodSpec(&node))
 	}
 }
 
@@ -4261,6 +4259,40 @@ func TestUnsuppliedArgValue(t *testing.T) {
 	woc.operate(ctx)
 	assert.Equal(t, woc.wf.Status.Conditions[0].Status, metav1.ConditionStatus("True"))
 	assert.Equal(t, woc.wf.Status.Message, "invalid spec: spec.arguments.missing.value is required")
+}
+
+var suppliedArgValue = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf-with-supplied-param-
+spec:
+  arguments:
+    parameters:
+    - name: message
+      value: argo
+      valueFrom:
+        supplied: {}
+  entrypoint: whalesay
+  templates:
+  - container:
+      args: ["{{workflow.parameters.message}}"]
+      command: ["cowsay"]
+      image: docker/whalesay:latest
+    name: whalesay
+`
+
+// TestSuppliedArgValue ensures that supplied workflow parameters are correctly set in the global parameters
+func TestSuppliedArgValue(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(suppliedArgValue)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	assert.Equal(t, "argo", woc.globalParams["workflow.parameters.message"])
 }
 
 var maxDurationOnErroredFirstNode = `
@@ -4834,7 +4866,7 @@ spec:
   entrypoint: main
   templates:
   - container:
-      image: whalesay
+      image: docker/whalesay:latest
     name: main
 `)
 	cancel, controller := newController(wf)
@@ -4875,6 +4907,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: memoized-workflow-test
+  namespace: default
 spec:
   entrypoint: whalesay
   arguments:
@@ -5090,17 +5123,17 @@ func TestConfigMapCacheSaveOperate(t *testing.T) {
 	woc.operate(ctx)
 
 	cm, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Get(ctx, "whalesay-cache", metav1.GetOptions{})
-	assert.NoError(t, err)
-	assert.NotNil(t, cm)
-	assert.NotNil(t, cm.Data)
+	if assert.NoError(t, err) {
+		assert.NotNil(t, cm)
+		assert.NotNil(t, cm.Data)
+		rawEntry, ok := cm.Data["hi-there-world"]
+		assert.True(t, ok)
+		var entry cache.Entry
+		wfv1.MustUnmarshal(rawEntry, &entry)
 
-	rawEntry, ok := cm.Data["hi-there-world"]
-	assert.True(t, ok)
-	var entry cache.Entry
-	wfv1.MustUnmarshal(rawEntry, &entry)
-
-	if assert.NotNil(t, entry.Outputs) {
-		assert.Equal(t, sampleOutputs, *entry.Outputs)
+		if assert.NotNil(t, entry.Outputs) {
+			assert.Equal(t, sampleOutputs, *entry.Outputs)
+		}
 	}
 }
 
@@ -5587,7 +5620,7 @@ func Test_processItem(t *testing.T) {
 
 	var newTask wfv1.DAGTask
 	tmpl, _ := template.NewTemplate(string(taskBytes))
-	newTaskName, err := processItem(tmpl, "task-name", 0, items[0], &newTask)
+	newTaskName, err := processItem(tmpl, "task-name", 0, items[0], &newTask, "")
 	if assert.NoError(t, err) {
 		assert.Equal(t, `task-name(0:json:{"list":[0,"1"],"number":2,"string":"foo"},list:[0,"1"],number:2,string:foo)`, newTaskName)
 	}
@@ -5808,7 +5841,7 @@ func TestPodFailureWithContainerWaitingState(t *testing.T) {
 	var pod apiv1.Pod
 	wfv1.MustUnmarshal(podWithFailed, &pod)
 	assert.NotNil(t, pod)
-	nodeStatus, msg := newWoc().inferFailedReason(&pod)
+	nodeStatus, msg := newWoc().inferFailedReason(&pod, nil)
 	assert.Equal(t, wfv1.NodeError, nodeStatus)
 	assert.Contains(t, msg, "Pod failed before")
 }
@@ -5922,7 +5955,7 @@ func TestPodFailureWithContainerOOM(t *testing.T) {
 	for _, tt := range tests {
 		wfv1.MustUnmarshal(tt.podDetail, &pod)
 		assert.NotNil(t, pod)
-		nodeStatus, msg := newWoc().inferFailedReason(&pod)
+		nodeStatus, msg := newWoc().inferFailedReason(&pod, nil)
 		assert.Equal(t, tt.phase, nodeStatus)
 		assert.Contains(t, msg, "OOMKilled")
 	}
@@ -7475,6 +7508,15 @@ func TestBuildRetryStrategyLocalScope(t *testing.T) {
 func TestGetContainerRuntimeExecutor(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
+	t.Run("Default", func(t *testing.T) {
+		executor := controller.GetContainerRuntimeExecutor(labels.Set{})
+		assert.Equal(t, common.ContainerRuntimeExecutorEmissary, executor)
+	})
+	t.Run("CLIParameter", func(t *testing.T) {
+		controller.containerRuntimeExecutor = common.ContainerRuntimeExecutorKubelet
+		executor := controller.GetContainerRuntimeExecutor(labels.Set{})
+		assert.Equal(t, common.ContainerRuntimeExecutorKubelet, executor)
+	})
 	controller.Config.ContainerRuntimeExecutor = "pns"
 	controller.Config.ContainerRuntimeExecutors = config.ContainerRuntimeExecutors{
 		{
@@ -7486,10 +7528,14 @@ func TestGetContainerRuntimeExecutor(t *testing.T) {
 			},
 		},
 	}
-	executor := controller.GetContainerRuntimeExecutor(labels.Set{})
-	assert.Equal(t, common.ContainerRuntimeExecutorPNS, executor)
-	executor = controller.GetContainerRuntimeExecutor(labels.Set{"workflows.argoproj.io/container-runtime-executor": "emissary"})
-	assert.Equal(t, common.ContainerRuntimeExecutorEmissary, executor)
+	t.Run("Configuration", func(t *testing.T) {
+		executor := controller.GetContainerRuntimeExecutor(labels.Set{})
+		assert.Equal(t, common.ContainerRuntimeExecutorPNS, executor)
+	})
+	t.Run("Labels", func(t *testing.T) {
+		executor := controller.GetContainerRuntimeExecutor(labels.Set{"workflows.argoproj.io/container-runtime-executor": "emissary"})
+		assert.Equal(t, common.ContainerRuntimeExecutorEmissary, executor)
+	})
 }
 
 var exitHandlerWithRetryNodeParam = `
@@ -7666,6 +7712,33 @@ func TestExitHandlerWithRetryNodeParam(t *testing.T) {
 	assert.Equal(t, "hello world", onExitNode.Inputs.Parameters[0].Value.String())
 }
 
+func TestReOperateCompletedWf(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+metadata:
+  name: my-wf
+  namespace: my-ns
+spec:
+  entrypoint: main
+  templates:
+   - name: main
+     dag:
+       tasks:
+       - name: pod
+         template: pod
+   - name: pod
+     container: 
+       image: my-image
+`)
+	wf.Status.Phase = wfv1.WorkflowError
+	wf.Status.FinishedAt = metav1.Now()
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	assert.NotPanics(t, func() { woc.operate(ctx) })
+}
+
 func TestSetWFPodNamesAnnotation(t *testing.T) {
 	defer func() {
 		_ = os.Unsetenv("POD_NAMES")
@@ -7692,4 +7765,621 @@ func TestSetWFPodNamesAnnotation(t *testing.T) {
 		annotations := woc.wf.ObjectMeta.GetAnnotations()
 		assert.Equal(t, annotations[common.AnnotationKeyPodNameVersion], tt.podNameVersion)
 	}
+}
+
+var RetryLoopWithOutputParam = `
+metadata:
+  name: hr-retry-replication
+  namespace: argo
+  uid: a0edb47a-3e6d-4568-b828-bf0cfcd8e5d5
+  resourceVersion: '258409'
+  generation: 21
+  creationTimestamp: '2022-01-06T00:09:56Z'
+  labels:
+    app.kubernetes.io/managed-by: Helm
+    workflows.argoproj.io/completed: 'true'
+    workflows.argoproj.io/phase: Succeeded
+  annotations:
+    meta.helm.sh/release-name: hr-retry-replication
+    meta.helm.sh/release-namespace: argo
+    workflows.argoproj.io/pod-name-format: v1
+  managedFields:
+    - manager: Go-http-client
+      operation: Update
+      apiVersion: argoproj.io/v1alpha1
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:spec':
+          'f:entrypoint': {}
+          'f:templates': {}
+    - manager: argo
+      operation: Update
+      apiVersion: argoproj.io/v1alpha1
+      time: '2022-01-06T00:09:56Z'
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:metadata':
+          'f:annotations':
+            .: {}
+            'f:meta.helm.sh/release-name': {}
+            'f:meta.helm.sh/release-namespace': {}
+          'f:labels':
+            .: {}
+            'f:app.kubernetes.io/managed-by': {}
+    - manager: workflow-controller
+      operation: Update
+      apiVersion: argoproj.io/v1alpha1
+      time: '2022-01-06T00:10:17Z'
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:metadata':
+          'f:annotations':
+            'f:workflows.argoproj.io/pod-name-format': {}
+          'f:labels':
+            'f:workflows.argoproj.io/completed': {}
+            'f:workflows.argoproj.io/phase': {}
+        'f:spec': {}
+        'f:status': {}
+spec:
+  templates:
+    - name: hr-retry-replication
+      inputs: {}
+      outputs: {}
+      metadata: {}
+      dag:
+        tasks:
+          - name: Create-Json-List
+            template: createJsonList
+            arguments: {}
+          - name: Retry-And-Loop
+            template: retryAndLoop
+            arguments:
+              parameters:
+                - name: itemId
+                  value: '{{item.Id}}'
+            withParam: '{{tasks.Create-Json-List.outputs.parameters.jsonList}}'
+            depends: Create-Json-List
+          - name: Check-Output
+            template: checkOutput
+            arguments:
+              parameters:
+                - name: someInput
+                  value: '{{tasks.Retry-And-Loop.outputs.parameters.outputParam}}'
+            depends: Retry-And-Loop
+    - name: checkOutput
+      inputs:
+        parameters:
+          - name: someInput
+      outputs: {}
+      metadata: {}
+      script:
+        name: ''
+        image: 'alpine:3.7'
+        command:
+          - /bin/sh
+        resources: {}
+        source: |
+          echo "The Output is: {{inputs.parameters.someInput}}"
+    - name: retryAndLoop
+      inputs:
+        parameters:
+          - name: itemId
+      outputs:
+        parameters:
+          - name: outputParam
+            valueFrom:
+              path: /outputParam.txt
+      metadata: {}
+      script:
+        name: ''
+        image: 'alpine:3.7'
+        command:
+          - /bin/sh
+        resources: {}
+        source: |
+          echo ItemId: {{inputs.parameters.itemId}}
+          if [[ {{ retries }} == 0 ]]; then
+            exit 1 # Exit as failed on zeroth retry
+          fi
+          echo "Successful" > /outputParam.txt
+          exit 0 # Else exit successfully
+      retryStrategy:
+        limit: '2'
+    - name: createJsonList
+      inputs: {}
+      outputs:
+        parameters:
+          - name: jsonList
+            valueFrom:
+              path: /jsonList.json
+      metadata: {}
+      script:
+        name: ''
+        image: 'alpine:3.7'
+        command:
+          - /bin/sh
+        resources: {}
+        source: |
+          echo [{\"Id\": \"1\"}, {\"Id\": \"2\"}] > /jsonList.json
+  entrypoint: hr-retry-replication
+  arguments: {}
+  ttlStrategy:
+    secondsAfterCompletion: 600
+  activeDeadlineSeconds: 300
+  podSpecPatch: |
+    terminationGracePeriodSeconds: 3
+status:
+  phase: Succeeded
+  startedAt: '2022-01-06T00:09:56Z'
+  finishedAt: '2022-01-06T00:10:17Z'
+  progress: 6/6
+  nodes:
+    hr-retry-replication:
+      id: hr-retry-replication
+      name: hr-retry-replication
+      displayName: hr-retry-replication
+      type: DAG
+      templateName: hr-retry-replication
+      templateScope: local/hr-retry-replication
+      phase: Succeeded
+      startedAt: '2022-01-06T00:09:56Z'
+      finishedAt: '2022-01-06T00:10:17Z'
+      progress: 6/6
+      resourcesDuration:
+        cpu: 18
+        memory: 8
+      children:
+        - hr-retry-replication-2229970335
+      outboundNodes:
+        - hr-retry-replication-2709022465
+    hr-retry-replication-1172938528:
+      id: hr-retry-replication-1172938528
+      name: 'hr-retry-replication.Retry-And-Loop(0:Id:1)(0)'
+      displayName: 'Retry-And-Loop(0:Id:1)(0)'
+      type: Pod
+      templateName: retryAndLoop
+      templateScope: local/hr-retry-replication
+      phase: Failed
+      boundaryID: hr-retry-replication
+      message: Error (exit code 1)
+      startedAt: '2022-01-06T00:10:00Z'
+      finishedAt: '2022-01-06T00:10:05Z'
+      progress: 1/1
+      resourcesDuration:
+        cpu: 2
+        memory: 1
+      inputs:
+        parameters:
+          - name: itemId
+            value: '1'
+      outputs:
+        parameters:
+          - name: outputParam
+            valueFrom:
+              path: /outputParam.txt
+        artifacts:
+          - name: main-logs
+            s3:
+              key: hr-retry-replication/hr-retry-replication-1172938528/main.log
+        exitCode: '1'
+      hostNodeName: k3d-k3s-default-server-0
+    hr-retry-replication-1480423937:
+      id: hr-retry-replication-1480423937
+      name: 'hr-retry-replication.Retry-And-Loop(1:Id:2)(1)'
+      displayName: 'Retry-And-Loop(1:Id:2)(1)'
+      type: Pod
+      templateName: retryAndLoop
+      templateScope: local/hr-retry-replication
+      phase: Succeeded
+      boundaryID: hr-retry-replication
+      startedAt: '2022-01-06T00:10:05Z'
+      finishedAt: '2022-01-06T00:10:12Z'
+      progress: 1/1
+      resourcesDuration:
+        cpu: 4
+        memory: 2
+      inputs:
+        parameters:
+          - name: itemId
+            value: '2'
+      outputs:
+        parameters:
+          - name: outputParam
+            value: Successful
+            valueFrom:
+              path: /outputParam.txt
+        artifacts:
+          - name: main-logs
+            s3:
+              key: hr-retry-replication/hr-retry-replication-1480423937/main.log
+        exitCode: '0'
+      children:
+        - hr-retry-replication-2709022465
+      hostNodeName: k3d-k3s-default-server-0
+    hr-retry-replication-1488413861:
+      id: hr-retry-replication-1488413861
+      name: 'hr-retry-replication.Retry-And-Loop(1:Id:2)'
+      displayName: 'Retry-And-Loop(1:Id:2)'
+      type: Retry
+      templateName: retryAndLoop
+      templateScope: local/hr-retry-replication
+      phase: Succeeded
+      boundaryID: hr-retry-replication
+      startedAt: '2022-01-06T00:10:00Z'
+      finishedAt: '2022-01-06T00:10:12Z'
+      progress: 3/3
+      resourcesDuration:
+        cpu: 9
+        memory: 4
+      inputs:
+        parameters:
+          - name: itemId
+            value: '2'
+      outputs:
+        parameters:
+          - name: outputParam
+            value: Successful
+            valueFrom:
+              path: /outputParam.txt
+        artifacts:
+          - name: main-logs
+            s3:
+              key: hr-retry-replication/hr-retry-replication-1480423937/main.log
+        exitCode: '0'
+      children:
+        - hr-retry-replication-3158332932
+        - hr-retry-replication-1480423937
+    hr-retry-replication-2229970335:
+      id: hr-retry-replication-2229970335
+      name: hr-retry-replication.Create-Json-List
+      displayName: Create-Json-List
+      type: Pod
+      templateName: createJsonList
+      templateScope: local/hr-retry-replication
+      phase: Succeeded
+      boundaryID: hr-retry-replication
+      startedAt: '2022-01-06T00:09:56Z'
+      finishedAt: '2022-01-06T00:10:00Z'
+      progress: 1/1
+      resourcesDuration:
+        cpu: 3
+        memory: 1
+      outputs:
+        parameters:
+          - name: jsonList
+            value: '[{"Id": "1"}, {"Id": "2"}]'
+            valueFrom:
+              path: /jsonList.json
+        artifacts:
+          - name: main-logs
+            s3:
+              key: hr-retry-replication/hr-retry-replication-2229970335/main.log
+        exitCode: '0'
+      children:
+        - hr-retry-replication-3704116740
+      hostNodeName: k3d-k3s-default-server-0
+    hr-retry-replication-2709022465:
+      id: hr-retry-replication-2709022465
+      name: hr-retry-replication.Check-Output
+      displayName: Check-Output
+      type: Pod
+      templateName: checkOutput
+      templateScope: local/hr-retry-replication
+      phase: Succeeded
+      boundaryID: hr-retry-replication
+      startedAt: '2022-01-06T00:10:12Z'
+      finishedAt: '2022-01-06T00:10:17Z'
+      progress: 1/1
+      resourcesDuration:
+        cpu: 3
+        memory: 1
+      inputs:
+        parameters:
+          - name: someInput
+            value: '["Successful","Successful"]'
+      outputs:
+        artifacts:
+          - name: main-logs
+            s3:
+              key: hr-retry-replication/hr-retry-replication-2709022465/main.log
+        exitCode: '0'
+      hostNodeName: k3d-k3s-default-server-0
+    hr-retry-replication-302978553:
+      id: hr-retry-replication-302978553
+      name: 'hr-retry-replication.Retry-And-Loop(0:Id:1)'
+      displayName: 'Retry-And-Loop(0:Id:1)'
+      type: Retry
+      templateName: retryAndLoop
+      templateScope: local/hr-retry-replication
+      phase: Succeeded
+      boundaryID: hr-retry-replication
+      startedAt: '2022-01-06T00:10:00Z'
+      finishedAt: '2022-01-06T00:10:12Z'
+      progress: 3/3
+      resourcesDuration:
+        cpu: 9
+        memory: 4
+      inputs:
+        parameters:
+          - name: itemId
+            value: '1'
+      outputs:
+        parameters:
+          - name: outputParam
+            value: Successful
+            valueFrom:
+              path: /outputParam.txt
+        artifacts:
+          - name: main-logs
+            s3:
+              key: hr-retry-replication/hr-retry-replication-4058438733/main.log
+        exitCode: '0'
+      children:
+        - hr-retry-replication-1172938528
+        - hr-retry-replication-4058438733
+    hr-retry-replication-3158332932:
+      id: hr-retry-replication-3158332932
+      name: 'hr-retry-replication.Retry-And-Loop(1:Id:2)(0)'
+      displayName: 'Retry-And-Loop(1:Id:2)(0)'
+      type: Pod
+      templateName: retryAndLoop
+      templateScope: local/hr-retry-replication
+      phase: Failed
+      boundaryID: hr-retry-replication
+      message: Error (exit code 1)
+      startedAt: '2022-01-06T00:10:00Z'
+      finishedAt: '2022-01-06T00:10:05Z'
+      progress: 1/1
+      resourcesDuration:
+        cpu: 2
+        memory: 1
+      inputs:
+        parameters:
+          - name: itemId
+            value: '2'
+      outputs:
+        parameters:
+          - name: outputParam
+            valueFrom:
+              path: /outputParam.txt
+        artifacts:
+          - name: main-logs
+            s3:
+              key: hr-retry-replication/hr-retry-replication-3158332932/main.log
+        exitCode: '1'
+      hostNodeName: k3d-k3s-default-server-0
+    hr-retry-replication-3704116740:
+      id: hr-retry-replication-3704116740
+      name: hr-retry-replication.Retry-And-Loop
+      displayName: Retry-And-Loop
+      type: TaskGroup
+      templateName: retryAndLoop
+      templateScope: local/hr-retry-replication
+      phase: Succeeded
+      boundaryID: hr-retry-replication
+      startedAt: '2022-01-06T00:10:00Z'
+      finishedAt: '2022-01-06T00:10:12Z'
+      progress: 5/5
+      resourcesDuration:
+        cpu: 15
+        memory: 7
+      children:
+        - hr-retry-replication-302978553
+        - hr-retry-replication-1488413861
+    hr-retry-replication-4058438733:
+      id: hr-retry-replication-4058438733
+      name: 'hr-retry-replication.Retry-And-Loop(0:Id:1)(1)'
+      displayName: 'Retry-And-Loop(0:Id:1)(1)'
+      type: Pod
+      templateName: retryAndLoop
+      templateScope: local/hr-retry-replication
+      phase: Succeeded
+      boundaryID: hr-retry-replication
+      startedAt: '2022-01-06T00:10:05Z'
+      finishedAt: '2022-01-06T00:10:12Z'
+      progress: 1/1
+      resourcesDuration:
+        cpu: 4
+        memory: 2
+      inputs:
+        parameters:
+          - name: itemId
+            value: '1'
+      outputs:
+        parameters:
+          - name: outputParam
+            value: Successful
+            valueFrom:
+              path: /outputParam.txt
+        artifacts:
+          - name: main-logs
+            s3:
+              key: hr-retry-replication/hr-retry-replication-4058438733/main.log
+        exitCode: '0'
+      children:
+        - hr-retry-replication-2709022465
+      hostNodeName: k3d-k3s-default-server-0`
+
+func TestRetryLoopWithOutputParam(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(RetryLoopWithOutputParam)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+var workflowShuttingDownWithNodesInPendingAfterReconsiliation = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v1
+  generateName: container-set-termination-demo
+  generation: 10
+  labels:
+    workflows.argoproj.io/phase: Running
+    workflows.argoproj.io/resubmitted-from-workflow: container-set-termination-demob7c6c
+  name: container-set-termination-demopw5vv
+  namespace: argo
+  resourceVersion: "88102"
+  uid: 2a5a4c10-3a5c-4fb4-8931-20ac78cabfee
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+        - name: using-container-set-template
+          template: problematic-container-set
+  - name: problematic-container-set
+    containerSet:
+      containers:
+      - command:
+        - sh
+        - -c
+        - sleep 10
+        image: alpine
+        name: step-1
+      - command:
+        - sh
+        - -c
+        - sleep 10
+        image: alpine
+        name: step-2
+status:
+  phase: Running
+  conditions:
+  - status: "True"
+    type: PodRunning
+  finishedAt: null
+  nodes:
+    container-set-termination-demopw5vv:
+      children:
+      - container-set-termination-demopw5vv-2652912851
+      displayName: container-set-termination-demopw5vv
+      finishedAt: null
+      id: container-set-termination-demopw5vv
+      name: container-set-termination-demopw5vv
+      phase: Running
+      progress: 2/2
+      startedAt: "2022-01-27T17:45:59Z"
+      templateName: main
+      templateScope: local/container-set-termination-demopw5vv
+      type: DAG
+    container-set-termination-demopw5vv-842041608:
+      boundaryID: container-set-termination-demopw5vv
+      children:
+      - container-set-termination-demopw5vv-893664226
+      - container-set-termination-demopw5vv-876886607
+      displayName: using-container-set-template
+      finishedAt: "2022-01-27T17:46:16Z"
+      hostNodeName: k3d-argo-workflow-server-0
+      id: container-set-termination-demopw5vv-842041608
+      name: container-set-termination-demopw5vv.using-container-set-template
+      phase: Failed
+      progress: 1/1
+      startedAt: "2022-01-27T17:46:14Z"
+      templateName: problematic-container-set
+      templateScope: local/container-set-termination-demopw5vv
+      type: Pod
+    container-set-termination-demopw5vv-876886607:
+      boundaryID: container-set-termination-demopw5vv-842041608
+      displayName: step-2
+      finishedAt: null
+      id: container-set-termination-demopw5vv-876886607
+      name: container-set-termination-demopw5vv.using-container-set-template.step-2
+      phase: Pending
+      startedAt: "2022-01-27T17:46:14Z"
+      templateName: problematic-container-set
+      templateScope: local/container-set-termination-demopw5vv
+      type: Container
+    container-set-termination-demopw5vv-893664226:
+      boundaryID: container-set-termination-demopw5vv-842041608
+      displayName: step-1
+      finishedAt: null
+      id: container-set-termination-demopw5vv-893664226
+      name: container-set-termination-demopw5vv.using-container-set-template.step-1
+      phase: Pending
+      startedAt: "2022-01-27T17:46:14Z"
+      templateName: problematic-container-set
+      templateScope: local/container-set-termination-demopw5vv
+      type: Container
+`
+
+func TestFailSuspendedAndPendingNodesAfterDeadlineOrShutdown(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+
+	t.Run("Shutdown", func(t *testing.T) {
+		workflow := wfv1.MustUnmarshalWorkflow(workflowShuttingDownWithNodesInPendingAfterReconsiliation)
+		woc := newWorkflowOperationCtx(workflow, controller)
+
+		woc.execWf.Spec.Shutdown = "Terminate"
+		woc.execWf.Spec.ActiveDeadlineSeconds = nil
+
+		step1NodeName := "container-set-termination-demopw5vv-893664226"
+		step2NodeName := "container-set-termination-demopw5vv-876886607"
+
+		// update step1 type to NodeTypePod
+		//              phase to NodeRunning
+		if entry, ok := woc.wf.Status.Nodes[step1NodeName]; ok {
+			entry.Type = wfv1.NodeTypePod
+			entry.Phase = wfv1.NodeRunning
+			woc.wf.Status.Nodes[step1NodeName] = entry
+		}
+
+		// update step2 type to NodeTypeSuspend
+		//              phase to NodeRunning
+		if entry, ok := woc.wf.Status.Nodes[step2NodeName]; ok {
+			entry.Type = wfv1.NodeTypeSuspend
+			entry.Phase = wfv1.NodeRunning
+			woc.wf.Status.Nodes[step2NodeName] = entry
+		}
+
+		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Nodes[step1NodeName].Phase)
+		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Nodes[step2NodeName].Phase)
+
+		woc.failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
+
+		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Nodes[step1NodeName].Phase)
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes[step2NodeName].Phase)
+	})
+
+	t.Run("Deadline", func(t *testing.T) {
+		workflow := wfv1.MustUnmarshalWorkflow(workflowShuttingDownWithNodesInPendingAfterReconsiliation)
+		woc := newWorkflowOperationCtx(workflow, controller)
+
+		woc.execWf.Spec.Shutdown = ""
+
+		deadlineInSeconds := int64(10)
+		woc.wf.Status.StartedAt = metav1.NewTime(time.Now().AddDate(0, 0, -1)) // yesterday
+		woc.execWf.Spec.ActiveDeadlineSeconds = &deadlineInSeconds
+		woc.workflowDeadline = woc.getWorkflowDeadline()
+
+		step1NodeName := "container-set-termination-demopw5vv-893664226"
+		step2NodeName := "container-set-termination-demopw5vv-876886607"
+
+		// update step1 phase to NodeRunning
+		if entry, ok := woc.wf.Status.Nodes[step1NodeName]; ok {
+			entry.Phase = wfv1.NodeRunning
+			woc.wf.Status.Nodes[step1NodeName] = entry
+		}
+
+		// update step2 phase to NodePending
+		if entry, ok := woc.wf.Status.Nodes[step2NodeName]; ok {
+			entry.Phase = wfv1.NodePending
+			woc.wf.Status.Nodes[step2NodeName] = entry
+		}
+
+		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Nodes[step1NodeName].Phase)
+		assert.Equal(t, wfv1.NodePending, woc.wf.Status.Nodes[step2NodeName].Phase)
+
+		woc.failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
+
+		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Nodes[step1NodeName].Phase)
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes[step2NodeName].Phase)
+	})
 }

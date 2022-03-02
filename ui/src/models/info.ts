@@ -5,8 +5,10 @@ export interface Link {
 }
 
 export interface Info {
+    modals: {string: boolean};
     managedNamespace?: string;
     links?: Link[];
+    navColor?: string;
 }
 
 export interface Version {

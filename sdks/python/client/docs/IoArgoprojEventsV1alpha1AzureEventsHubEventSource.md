@@ -4,6 +4,7 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**filter** | [**IoArgoprojEventsV1alpha1EventSourceFilter**](IoArgoprojEventsV1alpha1EventSourceFilter.md) |  | [optional] 
 **fqdn** | **str** |  | [optional] 
 **hub_name** | **str** |  | [optional] 
 **metadata** | **{str: (str,)}** |  | [optional] 

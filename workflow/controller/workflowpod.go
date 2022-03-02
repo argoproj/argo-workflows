@@ -204,7 +204,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      util.PodName(woc.wf.Name, nodeName, tmpl.Name, nodeID),
+			Name:      util.PodName(woc.wf.Name, nodeName, tmpl.Name, nodeID, util.GetPodNameVersion()),
 			Namespace: woc.wf.ObjectMeta.Namespace,
 			Labels: map[string]string{
 				common.LabelKeyWorkflow:  woc.wf.ObjectMeta.Name, // Allows filtering by pods related to specific workflow
@@ -315,24 +315,6 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		c.VolumeMounts = append(c.VolumeMounts, volumeMountVarArgo)
 		pod.Spec.InitContainers[i] = c
 	}
-	for i, c := range pod.Spec.Containers {
-		if woc.getContainerRuntimeExecutor() == common.ContainerRuntimeExecutorEmissary && c.Name != common.WaitContainerName {
-			// https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#notes
-			if len(c.Command) == 0 {
-				x := woc.getImage(c.Image)
-				c.Command = x.Command
-				if c.Args == nil { // check nil rather than length, as zero-length is valid args
-					c.Args = x.Args
-				}
-			}
-			if len(c.Command) == 0 {
-				return nil, fmt.Errorf("when using the emissary executor you must either explicitly specify the command, or list the image's command in the index: https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary")
-			}
-			c.Command = append([]string{"/var/run/argo/argoexec", "emissary", "--"}, c.Command...)
-		}
-		c.VolumeMounts = append(c.VolumeMounts, volumeMountVarArgo)
-		pod.Spec.Containers[i] = c
-	}
 
 	// Add standard environment variables, making pod spec larger
 	envVars := []apiv1.EnvVar{
@@ -433,6 +415,25 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Error in Unmarshalling after merge the patch")
 		}
+	}
+
+	for i, c := range pod.Spec.Containers {
+		if woc.getContainerRuntimeExecutor() == common.ContainerRuntimeExecutorEmissary && c.Name != common.WaitContainerName {
+			// https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#notes
+			if len(c.Command) == 0 {
+				x := woc.getImage(c.Image)
+				c.Command = x.Command
+				if c.Args == nil { // check nil rather than length, as zero-length is valid args
+					c.Args = x.Args
+				}
+			}
+			if len(c.Command) == 0 {
+				return nil, fmt.Errorf("container %q in template %q, does not have the command specified: when using the emissary executor you must either explicitly specify the command, or list the image's command in the index: https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary", c.Name, tmpl.Name)
+			}
+			c.Command = append([]string{"/var/run/argo/argoexec", "emissary", "--"}, c.Command...)
+		}
+		c.VolumeMounts = append(c.VolumeMounts, volumeMountVarArgo)
+		pod.Spec.Containers[i] = c
 	}
 
 	// Check if the template has exceeded its timeout duration. If it hasn't set the applicable activeDeadlineSeconds
@@ -689,17 +690,8 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 		Image:           woc.controller.executorImage(),
 		ImagePullPolicy: woc.controller.executorImagePullPolicy(),
 		Env:             woc.createEnvVars(),
-	}
-	if woc.controller.Config.Executor != nil {
-		exec.Args = woc.controller.Config.Executor.Args
-		if woc.controller.Config.Executor.SecurityContext != nil {
-			exec.SecurityContext = woc.controller.Config.Executor.SecurityContext.DeepCopy()
-		}
-	}
-	if isResourcesSpecified(woc.controller.Config.Executor) {
-		exec.Resources = *woc.controller.Config.Executor.Resources.DeepCopy()
-	} else if woc.controller.Config.ExecutorResources != nil {
-		exec.Resources = *woc.controller.Config.ExecutorResources.DeepCopy()
+		Resources:       woc.controller.Config.GetExecutor().Resources,
+		SecurityContext: woc.controller.Config.GetExecutor().SecurityContext,
 	}
 	if woc.controller.Config.KubeConfig != nil {
 		path := woc.controller.Config.KubeConfig.MountPath

@@ -203,6 +203,8 @@ spec:
         type: object
     served: true
     storage: true
+    subresources:
+      status: {}
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -258,6 +260,30 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
+  annotations:
+    workflows.argoproj.io/description: |
+      This is the minimum recommended permissions needed if you want to use the agent, e.g. for HTTP or plugin templates.
+
+      If <= v3.2 you must replace `workflowtasksets/status` with `patch workflowtasksets`.
+  name: agent
+rules:
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflowtasksets
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflowtasksets/status
+  verbs:
+  - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
   name: argo-role
 rules:
 - apiGroups:
@@ -293,8 +319,10 @@ rules:
   - ""
   resources:
   - persistentvolumeclaims
+  - persistentvolumeclaims/finalizers
   verbs:
   - create
+  - update
   - delete
   - get
 - apiGroups:
@@ -433,6 +461,38 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
+  annotations:
+    workflows.argoproj.io/description: |
+      Recomended minimum permissions for the `emissary` executor.
+  name: executor
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  annotations:
+    workflows.argoproj.io/description: |
+      This is an example of the permissions you would need if you wanted to use a resource template to create and manage
+      other pods. The same pattern would be suitable for other resurces, e.g. a service
+  name: pod-manager
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - create
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
   name: submit-workflow-template
 rules:
 - apiGroups:
@@ -457,37 +517,12 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: workflow-role
+  annotations:
+    workflows.argoproj.io/description: |
+      This is an example of the permissions you would need if you wanted to use a resource template to create and manage
+      other workflows. The same pattern would be suitable for other resurces, e.g. a service
+  name: workflow-manager
 rules:
-- apiGroups:
-  - ""
-  resources:
-  - pods
-  verbs:
-  - get
-  - watch
-  - patch
-- apiGroups:
-  - ""
-  resources:
-  - pods/log
-  verbs:
-  - get
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - pods/exec
-  verbs:
-  - create
-- apiGroups:
-  - ""
-  resources:
-  - configmaps
-  verbs:
-  - create
-  - get
-  - update
 - apiGroups:
   - argoproj.io
   resources:
@@ -495,17 +530,6 @@ rules:
   verbs:
   - create
   - get
-- apiGroups:
-  - argoproj.io
-  resources:
-  - workflowtasksets
-  - workflowtasksets/finalizers
-  verbs:
-  - list
-  - watch
-  - get
-  - update
-  - patch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -541,16 +565,16 @@ rules:
   - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
+kind: RoleBinding
 metadata:
-  name: kubelet-executor
-rules:
-- apiGroups:
-  - ""
-  resources:
-  - nodes/proxy
-  verbs:
-  - get
+  name: agent-default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: agent
+subjects:
+- kind: ServiceAccount
+  name: default
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -579,6 +603,18 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
+  name: executor-default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: executor
+subjects:
+- kind: ServiceAccount
+  name: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
   name: github.com
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -592,11 +628,23 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: workflow-default-binding
+  name: pod-manager-default
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: workflow-role
+  name: pod-manager
+subjects:
+- kind: ServiceAccount
+  name: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: workflow-manager-default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: workflow-manager
 subjects:
 - kind: ServiceAccount
   name: default
@@ -625,19 +673,6 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: argo-server
-  namespace: argo
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: kubelet-executor-default
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: kubelet-executor
-subjects:
-- kind: ServiceAccount
-  name: default
   namespace: argo
 ---
 apiVersion: v1
@@ -686,7 +721,6 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
-  containerRuntimeExecutor: emissary
   containerRuntimeExecutors: |
     - name: emissary
       selector:
@@ -750,6 +784,10 @@ data:
       passwordSecret:
         name: argo-postgres-config
         key: password
+  retentionPolicy: |
+    completed: 10
+    failed: 3
+    errored: 3
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
@@ -857,6 +895,12 @@ spec:
   selector:
     app: workflow-controller
 ---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: workflow-controller
+value: 1000000
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -878,6 +922,7 @@ spec:
         - server
         - --auth-mode
         - client
+        env: []
         image: quay.io/argoproj/argocli:latest
         name: argo-server
         ports:
@@ -1043,6 +1088,7 @@ spec:
           runAsNonRoot: true
       nodeSelector:
         kubernetes.io/os: linux
+      priorityClassName: workflow-controller
       securityContext:
         runAsNonRoot: true
       serviceAccountName: argo

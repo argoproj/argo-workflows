@@ -11,11 +11,7 @@ import (
 // GetNextRuntime returns the next time the workflow should run in local time. It assumes the workflow-controller is in
 // UTC, but nevertheless returns the time in the local timezone.
 func GetNextRuntime(cwf *v1alpha1.CronWorkflow) (time.Time, error) {
-	cronScheduleString := cwf.Spec.Schedule
-	if cwf.Spec.Timezone != "" {
-		cronScheduleString = "CRON_TZ=" + cwf.Spec.Timezone + " " + cronScheduleString
-	}
-	cronSchedule, err := cron.ParseStandard(cronScheduleString)
+	cronSchedule, err := cron.ParseStandard(cwf.Spec.GetScheduleString())
 	if err != nil {
 		return time.Time{}, err
 	}

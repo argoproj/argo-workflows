@@ -13,3 +13,4 @@ spec:
     sidecars:
     - name: nginx
       image: nginx:1.13
+      command: [nginx, -g, daemon off;]

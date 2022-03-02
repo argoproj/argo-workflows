@@ -216,7 +216,7 @@ message Cache {
 message ClusterWorkflowTemplate {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
-  optional WorkflowTemplateSpec spec = 2;
+  optional WorkflowSpec spec = 2;
 }
 
 // ClusterWorkflowTemplateList is list of ClusterWorkflowTemplate resources
@@ -244,10 +244,23 @@ message ContainerNode {
   repeated string dependencies = 2;
 }
 
+message ContainerSetRetryStrategy {
+  // Duration is the time between each retry, examples values are "300ms", "1s" or "5m".
+  // Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
+  optional string duration = 1;
+
+  // Nbr of retries
+  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString retries = 2;
+}
+
 message ContainerSetTemplate {
   repeated ContainerNode containers = 4;
 
   repeated k8s.io.api.core.v1.VolumeMount volumeMounts = 3;
+
+  // RetryStrategy describes how to retry a container nodes in the container set if it fails.
+  // Nbr of retries(default 0) and sleep duration between retries(default 0s, instant retry) can be set.
+  optional ContainerSetRetryStrategy retryStrategy = 5;
 }
 
 // ContinueOn defines if a workflow should continue even if a task or step fails/errors.
@@ -504,7 +517,7 @@ message HDFSArtifact {
   // Path is a file path in HDFS
   optional string path = 2;
 
-  // Force copies a file forcibly even if it exists (default: false)
+  // Force copies a file forcibly even if it exists
   optional bool force = 3;
 }
 
@@ -515,7 +528,7 @@ message HDFSArtifactRepository {
   // PathFormat is defines the format of path to store a file. Can reference workflow variables
   optional string pathFormat = 2;
 
-  // Force copies a file forcibly even if it exists (default: false)
+  // Force copies a file forcibly even if it exists
   optional bool force = 3;
 }
 
@@ -571,8 +584,14 @@ message HTTP {
   // TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds
   optional int64 timeoutSeconds = 4;
 
+  // SuccessCondition is an expression if evaluated to true is considered successful
+  optional string successCondition = 6;
+
   // Body is content of the HTTP Request
   optional string body = 5;
+
+  // insecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client
+  optional bool insecureSkipVerify = 7;
 }
 
 // HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container
@@ -641,15 +660,28 @@ message LabelKeys {
   repeated string items = 1;
 }
 
+message LabelValueFrom {
+  optional string expression = 1;
+}
+
 // Labels is list of workflow labels
 message LabelValues {
   repeated string items = 1;
 }
 
 message LifecycleHook {
+  // Template is the name of the template to execute by the hook
   optional string template = 1;
 
+  // Arguments hold arguments to the template
   optional Arguments arguments = 2;
+
+  // TemplateRef is the reference to the template resource to execute by the hook
+  optional TemplateRef templateRef = 3;
+
+  // Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not
+  // be retried and the retry strategy will be ignored
+  optional string expression = 4;
 }
 
 // A link to another app.
@@ -903,6 +935,10 @@ message OSSLifecycleRule {
   optional int32 markDeletionAfterDays = 2;
 }
 
+// +kubebuilder:validation:Type=object
+message Object {
+}
+
 // Outputs hold parameters, artifacts, and results from a step
 message Outputs {
   // Parameters holds the list of output parameters produced by a step
@@ -948,6 +984,14 @@ message Parameter {
 
   // Enum holds a list of string values to choose from, for the actual value of the parameter
   repeated string enum = 6;
+
+  // Description is the parameter description
+  optional string description = 7;
+}
+
+// Plugin is an Object with exactly one key
+message Plugin {
+  optional Object object = 1;
 }
 
 // PodGC describes how to delete completed pods as they complete
@@ -1046,7 +1090,7 @@ message RetryStrategy {
   optional RetryAffinity affinity = 4;
 
   // Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not
-  // be retried and the retry strategy will be ignored/
+  // be retried and the retry strategy will be ignored
   optional string expression = 5;
 }
 
@@ -1208,6 +1252,13 @@ message SubmitOpts {
 
   // Annotations adds to metadata.labels
   optional string annotations = 12;
+
+  // Set the podPriorityClassName of the workflow
+  optional string podPriorityClassName = 13;
+
+  // Priority is used if controller is configured to process limited number of workflows in parallel, higher priority workflows
+  // are processed first.
+  optional int32 priority = 14;
 }
 
 // SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
@@ -1308,6 +1359,9 @@ message Template {
 
   // HTTP makes a HTTP request
   optional HTTP http = 42;
+
+  // Plugin is a plugin template
+  optional Plugin plugin = 43;
 
   // Volumes is a list of volumes that can be mounted by containers in a template.
   // +patchStrategy=merge
@@ -1537,6 +1591,14 @@ message WorkflowList {
   repeated Workflow items = 2;
 }
 
+message WorkflowMetadata {
+  map<string, string> labels = 1;
+
+  map<string, string> annotations = 2;
+
+  map<string, LabelValueFrom> labelsFrom = 3;
+}
+
 // WorkflowSpec is the specification of a Workflow.
 message WorkflowSpec {
   // Templates is a list of workflow templates used in a workflow
@@ -1699,6 +1761,13 @@ message WorkflowSpec {
 
   // ArchiveLogs indicates if the container logs should be archived
   optional bool archiveLogs = 40;
+
+  // Hooks holds the lifecycle hook which is invoked at lifecycle of
+  // step, irrespective of the success, failure, or error status of the primary step
+  map<string, LifecycleHook> hooks = 41;
+
+  // WorkflowMetadata contains some metadata of the workflow to be refer
+  optional WorkflowMetadata workflowMetadata = 42;
 }
 
 // WorkflowStatus contains overall status information about a workflow
@@ -1805,6 +1874,7 @@ message WorkflowStep {
 // +genclient
 // +kubebuilder:resource:shortName=wfts
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:subresource:status
 message WorkflowTaskSet {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
@@ -1836,7 +1906,7 @@ message WorkflowTaskSetStatus {
 message WorkflowTemplate {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
-  optional WorkflowTemplateSpec spec = 2;
+  optional WorkflowSpec spec = 2;
 }
 
 // WorkflowTemplateList is list of WorkflowTemplate resources
@@ -1856,14 +1926,7 @@ message WorkflowTemplateRef {
   optional bool clusterScope = 2;
 }
 
-// WorkflowTemplateSpec is a spec of WorkflowTemplate.
-message WorkflowTemplateSpec {
-  optional WorkflowSpec workflowSpec = 1;
-
-  // WorkflowMetadata contains some metadata of the workflow to be refer
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta workflowMeta = 2;
-}
-
 // ZipStrategy will unzip zipped input artifacts
 message ZipStrategy {
 }
+

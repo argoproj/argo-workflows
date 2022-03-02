@@ -1,20 +1,20 @@
-# openapi_client.SensorServiceApi
+# argo_workflows.SensorServiceApi
 
 All URIs are relative to *http://localhost:2746*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**sensor_service_create_sensor**](SensorServiceApi.md#sensor_service_create_sensor) | **POST** /api/v1/sensors/{namespace} | 
-[**sensor_service_delete_sensor**](SensorServiceApi.md#sensor_service_delete_sensor) | **DELETE** /api/v1/sensors/{namespace}/{name} | 
-[**sensor_service_get_sensor**](SensorServiceApi.md#sensor_service_get_sensor) | **GET** /api/v1/sensors/{namespace}/{name} | 
-[**sensor_service_list_sensors**](SensorServiceApi.md#sensor_service_list_sensors) | **GET** /api/v1/sensors/{namespace} | 
-[**sensor_service_sensors_logs**](SensorServiceApi.md#sensor_service_sensors_logs) | **GET** /api/v1/stream/sensors/{namespace}/logs | 
-[**sensor_service_update_sensor**](SensorServiceApi.md#sensor_service_update_sensor) | **PUT** /api/v1/sensors/{namespace}/{name} | 
-[**sensor_service_watch_sensors**](SensorServiceApi.md#sensor_service_watch_sensors) | **GET** /api/v1/stream/sensors/{namespace} | 
+[**create_sensor**](SensorServiceApi.md#create_sensor) | **POST** /api/v1/sensors/{namespace} | 
+[**delete_sensor**](SensorServiceApi.md#delete_sensor) | **DELETE** /api/v1/sensors/{namespace}/{name} | 
+[**get_sensor**](SensorServiceApi.md#get_sensor) | **GET** /api/v1/sensors/{namespace}/{name} | 
+[**list_sensors**](SensorServiceApi.md#list_sensors) | **GET** /api/v1/sensors/{namespace} | 
+[**sensors_logs**](SensorServiceApi.md#sensors_logs) | **GET** /api/v1/stream/sensors/{namespace}/logs | 
+[**update_sensor**](SensorServiceApi.md#update_sensor) | **PUT** /api/v1/sensors/{namespace}/{name} | 
+[**watch_sensors**](SensorServiceApi.md#watch_sensors) | **GET** /api/v1/stream/sensors/{namespace} | 
 
 
-# **sensor_service_create_sensor**
-> IoArgoprojEventsV1alpha1Sensor sensor_service_create_sensor(namespace, body)
+# **create_sensor**
+> IoArgoprojEventsV1alpha1Sensor create_sensor(namespace, body)
 
 
 
@@ -22,21 +22,21 @@ Method | HTTP request | Description
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import sensor_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.sensor_create_sensor_request import SensorCreateSensorRequest
-from openapi_client.model.io_argoproj_events_v1alpha1_sensor import IoArgoprojEventsV1alpha1Sensor
+import argo_workflows
+from argo_workflows.api import sensor_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_events_v1alpha1_sensor import IoArgoprojEventsV1alpha1Sensor
+from argo_workflows.model.sensor_create_sensor_request import SensorCreateSensorRequest
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = sensor_service_api.SensorServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -46,6 +46,7 @@ with openapi_client.ApiClient() as api_client:
                 "dry_run_example",
             ],
             field_manager="field_manager_example",
+            field_validation="field_validation_example",
         ),
         namespace="namespace_example",
         sensor=IoArgoprojEventsV1alpha1Sensor(
@@ -72,6 +73,7 @@ with openapi_client.ApiClient() as api_client:
                         fields_v1={},
                         manager="manager_example",
                         operation="operation_example",
+                        subresource="subresource_example",
                         time=dateutil_parser('1970-01-01T00:00:00.00Z'),
                     ),
                 ],
@@ -117,6 +119,8 @@ with openapi_client.ApiClient() as api_client:
                                     ],
                                 ),
                             ],
+                            data_logical_operator="data_logical_operator_example",
+                            expr_logical_operator="expr_logical_operator_example",
                             exprs=[
                                 IoArgoprojEventsV1alpha1ExprFilter(
                                     expr="expr_example",
@@ -133,7 +137,12 @@ with openapi_client.ApiClient() as api_client:
                                 stop="stop_example",
                             ),
                         ),
+                        filters_logical_operator="filters_logical_operator_example",
                         name="name_example",
+                        transform=IoArgoprojEventsV1alpha1EventDependencyTransformer(
+                            jq="jq_example",
+                            script="script_example",
+                        ),
                     ),
                 ],
                 error_on_failed_round=True,
@@ -148,7 +157,7 @@ with openapi_client.ApiClient() as api_client:
                                         match_expressions=[
                                             NodeSelectorRequirement(
                                                 key="key_example",
-                                                operator="operator_example",
+                                                operator="DoesNotExist",
                                                 values=[
                                                     "values_example",
                                                 ],
@@ -157,7 +166,7 @@ with openapi_client.ApiClient() as api_client:
                                         match_fields=[
                                             NodeSelectorRequirement(
                                                 key="key_example",
-                                                operator="operator_example",
+                                                operator="DoesNotExist",
                                                 values=[
                                                     "values_example",
                                                 ],
@@ -173,7 +182,7 @@ with openapi_client.ApiClient() as api_client:
                                         match_expressions=[
                                             NodeSelectorRequirement(
                                                 key="key_example",
-                                                operator="operator_example",
+                                                operator="DoesNotExist",
                                                 values=[
                                                     "values_example",
                                                 ],
@@ -182,7 +191,7 @@ with openapi_client.ApiClient() as api_client:
                                         match_fields=[
                                             NodeSelectorRequirement(
                                                 key="key_example",
-                                                operator="operator_example",
+                                                operator="DoesNotExist",
                                                 values=[
                                                     "values_example",
                                                 ],
@@ -210,6 +219,20 @@ with openapi_client.ApiClient() as api_client:
                                                 "key": "key_example",
                                             },
                                         ),
+                                        namespace_selector=LabelSelector(
+                                            match_expressions=[
+                                                LabelSelectorRequirement(
+                                                    key="key_example",
+                                                    operator="operator_example",
+                                                    values=[
+                                                        "values_example",
+                                                    ],
+                                                ),
+                                            ],
+                                            match_labels={
+                                                "key": "key_example",
+                                            },
+                                        ),
                                         namespaces=[
                                             "namespaces_example",
                                         ],
@@ -221,6 +244,20 @@ with openapi_client.ApiClient() as api_client:
                             required_during_scheduling_ignored_during_execution=[
                                 PodAffinityTerm(
                                     label_selector=LabelSelector(
+                                        match_expressions=[
+                                            LabelSelectorRequirement(
+                                                key="key_example",
+                                                operator="operator_example",
+                                                values=[
+                                                    "values_example",
+                                                ],
+                                            ),
+                                        ],
+                                        match_labels={
+                                            "key": "key_example",
+                                        },
+                                    ),
+                                    namespace_selector=LabelSelector(
                                         match_expressions=[
                                             LabelSelectorRequirement(
                                                 key="key_example",
@@ -259,6 +296,20 @@ with openapi_client.ApiClient() as api_client:
                                                 "key": "key_example",
                                             },
                                         ),
+                                        namespace_selector=LabelSelector(
+                                            match_expressions=[
+                                                LabelSelectorRequirement(
+                                                    key="key_example",
+                                                    operator="operator_example",
+                                                    values=[
+                                                        "values_example",
+                                                    ],
+                                                ),
+                                            ],
+                                            match_labels={
+                                                "key": "key_example",
+                                            },
+                                        ),
                                         namespaces=[
                                             "namespaces_example",
                                         ],
@@ -270,6 +321,20 @@ with openapi_client.ApiClient() as api_client:
                             required_during_scheduling_ignored_during_execution=[
                                 PodAffinityTerm(
                                     label_selector=LabelSelector(
+                                        match_expressions=[
+                                            LabelSelectorRequirement(
+                                                key="key_example",
+                                                operator="operator_example",
+                                                values=[
+                                                    "values_example",
+                                                ],
+                                            ),
+                                        ],
+                                        match_labels={
+                                            "key": "key_example",
+                                        },
+                                    ),
+                                    namespace_selector=LabelSelector(
                                         match_expressions=[
                                             LabelSelectorRequirement(
                                                 key="key_example",
@@ -339,9 +404,9 @@ with openapi_client.ApiClient() as api_client:
                             ),
                         ],
                         image="image_example",
-                        image_pull_policy="image_pull_policy_example",
+                        image_pull_policy="Always",
                         lifecycle=Lifecycle(
-                            post_start=Handler(
+                            post_start=LifecycleHandler(
                                 _exec=ExecAction(
                                     command=[
                                         "command_example",
@@ -357,14 +422,14 @@ with openapi_client.ApiClient() as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="scheme_example",
+                                    scheme="HTTP",
                                 ),
                                 tcp_socket=TCPSocketAction(
                                     host="host_example",
                                     port="port_example",
                                 ),
                             ),
-                            pre_stop=Handler(
+                            pre_stop=LifecycleHandler(
                                 _exec=ExecAction(
                                     command=[
                                         "command_example",
@@ -380,7 +445,7 @@ with openapi_client.ApiClient() as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="scheme_example",
+                                    scheme="HTTP",
                                 ),
                                 tcp_socket=TCPSocketAction(
                                     host="host_example",
@@ -395,6 +460,10 @@ with openapi_client.ApiClient() as api_client:
                                 ],
                             ),
                             failure_threshold=1,
+                            grpc=GRPCAction(
+                                port=1,
+                                service="service_example",
+                            ),
                             http_get=HTTPGetAction(
                                 host="host_example",
                                 http_headers=[
@@ -405,7 +474,7 @@ with openapi_client.ApiClient() as api_client:
                                 ],
                                 path="path_example",
                                 port="port_example",
-                                scheme="scheme_example",
+                                scheme="HTTP",
                             ),
                             initial_delay_seconds=1,
                             period_seconds=1,
@@ -414,6 +483,7 @@ with openapi_client.ApiClient() as api_client:
                                 host="host_example",
                                 port="port_example",
                             ),
+                            termination_grace_period_seconds=1,
                             timeout_seconds=1,
                         ),
                         name="name_example",
@@ -423,7 +493,7 @@ with openapi_client.ApiClient() as api_client:
                                 host_ip="host_ip_example",
                                 host_port=1,
                                 name="name_example",
-                                protocol="protocol_example",
+                                protocol="SCTP",
                             ),
                         ],
                         readiness_probe=Probe(
@@ -433,6 +503,10 @@ with openapi_client.ApiClient() as api_client:
                                 ],
                             ),
                             failure_threshold=1,
+                            grpc=GRPCAction(
+                                port=1,
+                                service="service_example",
+                            ),
                             http_get=HTTPGetAction(
                                 host="host_example",
                                 http_headers=[
@@ -443,7 +517,7 @@ with openapi_client.ApiClient() as api_client:
                                 ],
                                 path="path_example",
                                 port="port_example",
-                                scheme="scheme_example",
+                                scheme="HTTP",
                             ),
                             initial_delay_seconds=1,
                             period_seconds=1,
@@ -452,6 +526,7 @@ with openapi_client.ApiClient() as api_client:
                                 host="host_example",
                                 port="port_example",
                             ),
+                            termination_grace_period_seconds=1,
                             timeout_seconds=1,
                         ),
                         resources=ResourceRequirements(
@@ -484,9 +559,14 @@ with openapi_client.ApiClient() as api_client:
                                 type="type_example",
                                 user="user_example",
                             ),
+                            seccomp_profile=SeccompProfile(
+                                localhost_profile="localhost_profile_example",
+                                type="Localhost",
+                            ),
                             windows_options=WindowsSecurityContextOptions(
                                 gmsa_credential_spec="gmsa_credential_spec_example",
                                 gmsa_credential_spec_name="gmsa_credential_spec_name_example",
+                                host_process=True,
                                 run_as_user_name="run_as_user_name_example",
                             ),
                         ),
@@ -497,6 +577,10 @@ with openapi_client.ApiClient() as api_client:
                                 ],
                             ),
                             failure_threshold=1,
+                            grpc=GRPCAction(
+                                port=1,
+                                service="service_example",
+                            ),
                             http_get=HTTPGetAction(
                                 host="host_example",
                                 http_headers=[
@@ -507,7 +591,7 @@ with openapi_client.ApiClient() as api_client:
                                 ],
                                 path="path_example",
                                 port="port_example",
-                                scheme="scheme_example",
+                                scheme="HTTP",
                             ),
                             initial_delay_seconds=1,
                             period_seconds=1,
@@ -516,12 +600,13 @@ with openapi_client.ApiClient() as api_client:
                                 host="host_example",
                                 port="port_example",
                             ),
+                            termination_grace_period_seconds=1,
                             timeout_seconds=1,
                         ),
                         stdin=True,
                         stdin_once=True,
                         termination_message_path="termination_message_path_example",
-                        termination_message_policy="termination_message_policy_example",
+                        termination_message_policy="FallbackToLogsOnError",
                         tty=True,
                         volume_devices=[
                             VolumeDevice(
@@ -561,6 +646,7 @@ with openapi_client.ApiClient() as api_client:
                     priority_class_name="priority_class_name_example",
                     security_context=PodSecurityContext(
                         fs_group=1,
+                        fs_group_change_policy="fs_group_change_policy_example",
                         run_as_group=1,
                         run_as_non_root=True,
                         run_as_user=1,
@@ -569,6 +655,10 @@ with openapi_client.ApiClient() as api_client:
                             role="role_example",
                             type="type_example",
                             user="user_example",
+                        ),
+                        seccomp_profile=SeccompProfile(
+                            localhost_profile="localhost_profile_example",
+                            type="Localhost",
                         ),
                         supplemental_groups=[
                             1,
@@ -582,15 +672,16 @@ with openapi_client.ApiClient() as api_client:
                         windows_options=WindowsSecurityContextOptions(
                             gmsa_credential_spec="gmsa_credential_spec_example",
                             gmsa_credential_spec_name="gmsa_credential_spec_name_example",
+                            host_process=True,
                             run_as_user_name="run_as_user_name_example",
                         ),
                     ),
                     service_account_name="service_account_name_example",
                     tolerations=[
                         Toleration(
-                            effect="effect_example",
+                            effect="NoExecute",
                             key="key_example",
-                            operator="operator_example",
+                            operator="Equal",
                             toleration_seconds=1,
                             value="value_example",
                         ),
@@ -680,6 +771,93 @@ with openapi_client.ApiClient() as api_client:
                             empty_dir=EmptyDirVolumeSource(
                                 medium="medium_example",
                                 size_limit="size_limit_example",
+                            ),
+                            ephemeral=EphemeralVolumeSource(
+                                volume_claim_template=PersistentVolumeClaimTemplate(
+                                    metadata=ObjectMeta(
+                                        annotations={
+                                            "key": "key_example",
+                                        },
+                                        cluster_name="cluster_name_example",
+                                        creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                        deletion_grace_period_seconds=1,
+                                        deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                        finalizers=[
+                                            "finalizers_example",
+                                        ],
+                                        generate_name="generate_name_example",
+                                        generation=1,
+                                        labels={
+                                            "key": "key_example",
+                                        },
+                                        managed_fields=[
+                                            ManagedFieldsEntry(
+                                                api_version="api_version_example",
+                                                fields_type="fields_type_example",
+                                                fields_v1={},
+                                                manager="manager_example",
+                                                operation="operation_example",
+                                                subresource="subresource_example",
+                                                time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                            ),
+                                        ],
+                                        name="name_example",
+                                        namespace="namespace_example",
+                                        owner_references=[
+                                            OwnerReference(
+                                                api_version="api_version_example",
+                                                block_owner_deletion=True,
+                                                controller=True,
+                                                kind="kind_example",
+                                                name="name_example",
+                                                uid="uid_example",
+                                            ),
+                                        ],
+                                        resource_version="resource_version_example",
+                                        self_link="self_link_example",
+                                        uid="uid_example",
+                                    ),
+                                    spec=PersistentVolumeClaimSpec(
+                                        access_modes=[
+                                            "access_modes_example",
+                                        ],
+                                        data_source=TypedLocalObjectReference(
+                                            api_group="api_group_example",
+                                            kind="kind_example",
+                                            name="name_example",
+                                        ),
+                                        data_source_ref=TypedLocalObjectReference(
+                                            api_group="api_group_example",
+                                            kind="kind_example",
+                                            name="name_example",
+                                        ),
+                                        resources=ResourceRequirements(
+                                            limits={
+                                                "key": "key_example",
+                                            },
+                                            requests={
+                                                "key": "key_example",
+                                            },
+                                        ),
+                                        selector=LabelSelector(
+                                            match_expressions=[
+                                                LabelSelectorRequirement(
+                                                    key="key_example",
+                                                    operator="operator_example",
+                                                    values=[
+                                                        "values_example",
+                                                    ],
+                                                ),
+                                            ],
+                                            match_labels={
+                                                "key": "key_example",
+                                            },
+                                        ),
+                                        storage_class_name="storage_class_name_example",
+                                        volume_mode="volume_mode_example",
+                                        volume_name="volume_name_example",
+                                    ),
+                                ),
                             ),
                             fc=FCVolumeSource(
                                 fs_type="fs_type_example",
@@ -1074,6 +1252,7 @@ with openapi_client.ApiClient() as api_client:
                                     ),
                                 ],
                                 region="region_example",
+                                role_arn="role_arn_example",
                                 secret_key=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -1123,6 +1302,14 @@ with openapi_client.ApiClient() as api_client:
                                 ),
                             ),
                             conditions="conditions_example",
+                            conditions_reset=[
+                                IoArgoprojEventsV1alpha1ConditionsResetCriteria(
+                                    by_time=IoArgoprojEventsV1alpha1ConditionsResetByTime(
+                                        cron="cron_example",
+                                        timezone="timezone_example",
+                                    ),
+                                ),
+                            ],
                             custom=IoArgoprojEventsV1alpha1CustomTrigger(
                                 cert_secret=SecretKeySelector(
                                     key="key_example",
@@ -1243,6 +1430,7 @@ with openapi_client.ApiClient() as api_client:
                                         name="name_example",
                                         optional=True,
                                     ),
+                                    insecure_skip_verify=True,
                                 ),
                                 url="url_example",
                             ),
@@ -1406,6 +1594,7 @@ with openapi_client.ApiClient() as api_client:
                                         name="name_example",
                                         optional=True,
                                     ),
+                                    insecure_skip_verify=True,
                                 ),
                                 topic="topic_example",
                                 url="url_example",
@@ -1461,6 +1650,7 @@ with openapi_client.ApiClient() as api_client:
                                         name="name_example",
                                         optional=True,
                                     ),
+                                    insecure_skip_verify=True,
                                 ),
                                 url="url_example",
                             ),
@@ -1567,6 +1757,7 @@ with openapi_client.ApiClient() as api_client:
                                         name="name_example",
                                         optional=True,
                                     ),
+                                    insecure_skip_verify=True,
                                 ),
                                 tls_allow_insecure_connection=True,
                                 tls_trust_certs_secret=SecretKeySelector(
@@ -1623,10 +1814,10 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.sensor_service_create_sensor(namespace, body)
+        api_response = api_instance.create_sensor(namespace, body)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling SensorServiceApi->sensor_service_create_sensor: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling SensorServiceApi->create_sensor: %s\n" % e)
 ```
 
 
@@ -1659,8 +1850,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **sensor_service_delete_sensor**
-> bool, date, datetime, dict, float, int, list, str, none_type sensor_service_delete_sensor(namespace, name)
+# **delete_sensor**
+> bool, date, datetime, dict, float, int, list, str, none_type delete_sensor(namespace, name)
 
 
 
@@ -1668,19 +1859,19 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import sensor_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+import argo_workflows
+from argo_workflows.api import sensor_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = sensor_service_api.SensorServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -1696,18 +1887,18 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.sensor_service_delete_sensor(namespace, name)
+        api_response = api_instance.delete_sensor(namespace, name)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling SensorServiceApi->sensor_service_delete_sensor: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling SensorServiceApi->delete_sensor: %s\n" % e)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.sensor_service_delete_sensor(namespace, name, delete_options_grace_period_seconds=delete_options_grace_period_seconds, delete_options_preconditions_uid=delete_options_preconditions_uid, delete_options_preconditions_resource_version=delete_options_preconditions_resource_version, delete_options_orphan_dependents=delete_options_orphan_dependents, delete_options_propagation_policy=delete_options_propagation_policy, delete_options_dry_run=delete_options_dry_run)
+        api_response = api_instance.delete_sensor(namespace, name, delete_options_grace_period_seconds=delete_options_grace_period_seconds, delete_options_preconditions_uid=delete_options_preconditions_uid, delete_options_preconditions_resource_version=delete_options_preconditions_resource_version, delete_options_orphan_dependents=delete_options_orphan_dependents, delete_options_propagation_policy=delete_options_propagation_policy, delete_options_dry_run=delete_options_dry_run)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling SensorServiceApi->sensor_service_delete_sensor: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling SensorServiceApi->delete_sensor: %s\n" % e)
 ```
 
 
@@ -1746,8 +1937,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **sensor_service_get_sensor**
-> IoArgoprojEventsV1alpha1Sensor sensor_service_get_sensor(namespace, name)
+# **get_sensor**
+> IoArgoprojEventsV1alpha1Sensor get_sensor(namespace, name)
 
 
 
@@ -1755,20 +1946,20 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import sensor_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_events_v1alpha1_sensor import IoArgoprojEventsV1alpha1Sensor
+import argo_workflows
+from argo_workflows.api import sensor_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_events_v1alpha1_sensor import IoArgoprojEventsV1alpha1Sensor
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = sensor_service_api.SensorServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -1777,18 +1968,18 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.sensor_service_get_sensor(namespace, name)
+        api_response = api_instance.get_sensor(namespace, name)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling SensorServiceApi->sensor_service_get_sensor: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling SensorServiceApi->get_sensor: %s\n" % e)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.sensor_service_get_sensor(namespace, name, get_options_resource_version=get_options_resource_version)
+        api_response = api_instance.get_sensor(namespace, name, get_options_resource_version=get_options_resource_version)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling SensorServiceApi->sensor_service_get_sensor: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling SensorServiceApi->get_sensor: %s\n" % e)
 ```
 
 
@@ -1822,8 +2013,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **sensor_service_list_sensors**
-> IoArgoprojEventsV1alpha1SensorList sensor_service_list_sensors(namespace)
+# **list_sensors**
+> IoArgoprojEventsV1alpha1SensorList list_sensors(namespace)
 
 
 
@@ -1831,27 +2022,27 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import sensor_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_events_v1alpha1_sensor_list import IoArgoprojEventsV1alpha1SensorList
+import argo_workflows
+from argo_workflows.api import sensor_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_events_v1alpha1_sensor_list import IoArgoprojEventsV1alpha1SensorList
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = sensor_service_api.SensorServiceApi(api_client)
     namespace = "namespace_example" # str | 
     list_options_label_selector = "listOptions.labelSelector_example" # str | A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional. (optional)
     list_options_field_selector = "listOptions.fieldSelector_example" # str | A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional. (optional)
     list_options_watch = True # bool | Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional. (optional)
-    list_options_allow_watch_bookmarks = True # bool | allowWatchBookmarks requests watch events with type \"BOOKMARK\". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. If the feature gate WatchBookmarks is not enabled in apiserver, this field is ignored. +optional. (optional)
+    list_options_allow_watch_bookmarks = True # bool | allowWatchBookmarks requests watch events with type \"BOOKMARK\". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. +optional. (optional)
     list_options_resource_version = "listOptions.resourceVersion_example" # str | resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional (optional)
     list_options_resource_version_match = "listOptions.resourceVersionMatch_example" # str | resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional (optional)
     list_options_timeout_seconds = "listOptions.timeoutSeconds_example" # str | Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional. (optional)
@@ -1860,18 +2051,18 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.sensor_service_list_sensors(namespace)
+        api_response = api_instance.list_sensors(namespace)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling SensorServiceApi->sensor_service_list_sensors: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling SensorServiceApi->list_sensors: %s\n" % e)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.sensor_service_list_sensors(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue)
+        api_response = api_instance.list_sensors(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling SensorServiceApi->sensor_service_list_sensors: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling SensorServiceApi->list_sensors: %s\n" % e)
 ```
 
 
@@ -1883,7 +2074,7 @@ Name | Type | Description  | Notes
  **list_options_label_selector** | **str**| A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional. | [optional]
  **list_options_field_selector** | **str**| A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional. | [optional]
  **list_options_watch** | **bool**| Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional. | [optional]
- **list_options_allow_watch_bookmarks** | **bool**| allowWatchBookmarks requests watch events with type \&quot;BOOKMARK\&quot;. Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server&#39;s discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. If the feature gate WatchBookmarks is not enabled in apiserver, this field is ignored. +optional. | [optional]
+ **list_options_allow_watch_bookmarks** | **bool**| allowWatchBookmarks requests watch events with type \&quot;BOOKMARK\&quot;. Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server&#39;s discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. +optional. | [optional]
  **list_options_resource_version** | **str**| resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional | [optional]
  **list_options_resource_version_match** | **str**| resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional | [optional]
  **list_options_timeout_seconds** | **str**| Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional. | [optional]
@@ -1912,8 +2103,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **sensor_service_sensors_logs**
-> StreamResultOfSensorLogEntry sensor_service_sensors_logs(namespace)
+# **sensors_logs**
+> StreamResultOfSensorLogEntry sensors_logs(namespace)
 
 
 
@@ -1921,20 +2112,20 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import sensor_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.stream_result_of_sensor_log_entry import StreamResultOfSensorLogEntry
+import argo_workflows
+from argo_workflows.api import sensor_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.stream_result_of_sensor_log_entry import StreamResultOfSensorLogEntry
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = sensor_service_api.SensorServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -1954,18 +2145,18 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.sensor_service_sensors_logs(namespace)
+        api_response = api_instance.sensors_logs(namespace)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling SensorServiceApi->sensor_service_sensors_logs: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling SensorServiceApi->sensors_logs: %s\n" % e)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.sensor_service_sensors_logs(namespace, name=name, trigger_name=trigger_name, grep=grep, pod_log_options_container=pod_log_options_container, pod_log_options_follow=pod_log_options_follow, pod_log_options_previous=pod_log_options_previous, pod_log_options_since_seconds=pod_log_options_since_seconds, pod_log_options_since_time_seconds=pod_log_options_since_time_seconds, pod_log_options_since_time_nanos=pod_log_options_since_time_nanos, pod_log_options_timestamps=pod_log_options_timestamps, pod_log_options_tail_lines=pod_log_options_tail_lines, pod_log_options_limit_bytes=pod_log_options_limit_bytes, pod_log_options_insecure_skip_tls_verify_backend=pod_log_options_insecure_skip_tls_verify_backend)
+        api_response = api_instance.sensors_logs(namespace, name=name, trigger_name=trigger_name, grep=grep, pod_log_options_container=pod_log_options_container, pod_log_options_follow=pod_log_options_follow, pod_log_options_previous=pod_log_options_previous, pod_log_options_since_seconds=pod_log_options_since_seconds, pod_log_options_since_time_seconds=pod_log_options_since_time_seconds, pod_log_options_since_time_nanos=pod_log_options_since_time_nanos, pod_log_options_timestamps=pod_log_options_timestamps, pod_log_options_tail_lines=pod_log_options_tail_lines, pod_log_options_limit_bytes=pod_log_options_limit_bytes, pod_log_options_insecure_skip_tls_verify_backend=pod_log_options_insecure_skip_tls_verify_backend)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling SensorServiceApi->sensor_service_sensors_logs: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling SensorServiceApi->sensors_logs: %s\n" % e)
 ```
 
 
@@ -2010,8 +2201,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **sensor_service_update_sensor**
-> IoArgoprojEventsV1alpha1Sensor sensor_service_update_sensor(namespace, name, body)
+# **update_sensor**
+> IoArgoprojEventsV1alpha1Sensor update_sensor(namespace, name, body)
 
 
 
@@ -2019,21 +2210,21 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import sensor_service_api
-from openapi_client.model.sensor_update_sensor_request import SensorUpdateSensorRequest
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.io_argoproj_events_v1alpha1_sensor import IoArgoprojEventsV1alpha1Sensor
+import argo_workflows
+from argo_workflows.api import sensor_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.io_argoproj_events_v1alpha1_sensor import IoArgoprojEventsV1alpha1Sensor
+from argo_workflows.model.sensor_update_sensor_request import SensorUpdateSensorRequest
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = sensor_service_api.SensorServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -2065,6 +2256,7 @@ with openapi_client.ApiClient() as api_client:
                         fields_v1={},
                         manager="manager_example",
                         operation="operation_example",
+                        subresource="subresource_example",
                         time=dateutil_parser('1970-01-01T00:00:00.00Z'),
                     ),
                 ],
@@ -2110,6 +2302,8 @@ with openapi_client.ApiClient() as api_client:
                                     ],
                                 ),
                             ],
+                            data_logical_operator="data_logical_operator_example",
+                            expr_logical_operator="expr_logical_operator_example",
                             exprs=[
                                 IoArgoprojEventsV1alpha1ExprFilter(
                                     expr="expr_example",
@@ -2126,7 +2320,12 @@ with openapi_client.ApiClient() as api_client:
                                 stop="stop_example",
                             ),
                         ),
+                        filters_logical_operator="filters_logical_operator_example",
                         name="name_example",
+                        transform=IoArgoprojEventsV1alpha1EventDependencyTransformer(
+                            jq="jq_example",
+                            script="script_example",
+                        ),
                     ),
                 ],
                 error_on_failed_round=True,
@@ -2141,7 +2340,7 @@ with openapi_client.ApiClient() as api_client:
                                         match_expressions=[
                                             NodeSelectorRequirement(
                                                 key="key_example",
-                                                operator="operator_example",
+                                                operator="DoesNotExist",
                                                 values=[
                                                     "values_example",
                                                 ],
@@ -2150,7 +2349,7 @@ with openapi_client.ApiClient() as api_client:
                                         match_fields=[
                                             NodeSelectorRequirement(
                                                 key="key_example",
-                                                operator="operator_example",
+                                                operator="DoesNotExist",
                                                 values=[
                                                     "values_example",
                                                 ],
@@ -2166,7 +2365,7 @@ with openapi_client.ApiClient() as api_client:
                                         match_expressions=[
                                             NodeSelectorRequirement(
                                                 key="key_example",
-                                                operator="operator_example",
+                                                operator="DoesNotExist",
                                                 values=[
                                                     "values_example",
                                                 ],
@@ -2175,7 +2374,7 @@ with openapi_client.ApiClient() as api_client:
                                         match_fields=[
                                             NodeSelectorRequirement(
                                                 key="key_example",
-                                                operator="operator_example",
+                                                operator="DoesNotExist",
                                                 values=[
                                                     "values_example",
                                                 ],
@@ -2203,6 +2402,20 @@ with openapi_client.ApiClient() as api_client:
                                                 "key": "key_example",
                                             },
                                         ),
+                                        namespace_selector=LabelSelector(
+                                            match_expressions=[
+                                                LabelSelectorRequirement(
+                                                    key="key_example",
+                                                    operator="operator_example",
+                                                    values=[
+                                                        "values_example",
+                                                    ],
+                                                ),
+                                            ],
+                                            match_labels={
+                                                "key": "key_example",
+                                            },
+                                        ),
                                         namespaces=[
                                             "namespaces_example",
                                         ],
@@ -2214,6 +2427,20 @@ with openapi_client.ApiClient() as api_client:
                             required_during_scheduling_ignored_during_execution=[
                                 PodAffinityTerm(
                                     label_selector=LabelSelector(
+                                        match_expressions=[
+                                            LabelSelectorRequirement(
+                                                key="key_example",
+                                                operator="operator_example",
+                                                values=[
+                                                    "values_example",
+                                                ],
+                                            ),
+                                        ],
+                                        match_labels={
+                                            "key": "key_example",
+                                        },
+                                    ),
+                                    namespace_selector=LabelSelector(
                                         match_expressions=[
                                             LabelSelectorRequirement(
                                                 key="key_example",
@@ -2252,6 +2479,20 @@ with openapi_client.ApiClient() as api_client:
                                                 "key": "key_example",
                                             },
                                         ),
+                                        namespace_selector=LabelSelector(
+                                            match_expressions=[
+                                                LabelSelectorRequirement(
+                                                    key="key_example",
+                                                    operator="operator_example",
+                                                    values=[
+                                                        "values_example",
+                                                    ],
+                                                ),
+                                            ],
+                                            match_labels={
+                                                "key": "key_example",
+                                            },
+                                        ),
                                         namespaces=[
                                             "namespaces_example",
                                         ],
@@ -2263,6 +2504,20 @@ with openapi_client.ApiClient() as api_client:
                             required_during_scheduling_ignored_during_execution=[
                                 PodAffinityTerm(
                                     label_selector=LabelSelector(
+                                        match_expressions=[
+                                            LabelSelectorRequirement(
+                                                key="key_example",
+                                                operator="operator_example",
+                                                values=[
+                                                    "values_example",
+                                                ],
+                                            ),
+                                        ],
+                                        match_labels={
+                                            "key": "key_example",
+                                        },
+                                    ),
+                                    namespace_selector=LabelSelector(
                                         match_expressions=[
                                             LabelSelectorRequirement(
                                                 key="key_example",
@@ -2332,9 +2587,9 @@ with openapi_client.ApiClient() as api_client:
                             ),
                         ],
                         image="image_example",
-                        image_pull_policy="image_pull_policy_example",
+                        image_pull_policy="Always",
                         lifecycle=Lifecycle(
-                            post_start=Handler(
+                            post_start=LifecycleHandler(
                                 _exec=ExecAction(
                                     command=[
                                         "command_example",
@@ -2350,14 +2605,14 @@ with openapi_client.ApiClient() as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="scheme_example",
+                                    scheme="HTTP",
                                 ),
                                 tcp_socket=TCPSocketAction(
                                     host="host_example",
                                     port="port_example",
                                 ),
                             ),
-                            pre_stop=Handler(
+                            pre_stop=LifecycleHandler(
                                 _exec=ExecAction(
                                     command=[
                                         "command_example",
@@ -2373,7 +2628,7 @@ with openapi_client.ApiClient() as api_client:
                                     ],
                                     path="path_example",
                                     port="port_example",
-                                    scheme="scheme_example",
+                                    scheme="HTTP",
                                 ),
                                 tcp_socket=TCPSocketAction(
                                     host="host_example",
@@ -2388,6 +2643,10 @@ with openapi_client.ApiClient() as api_client:
                                 ],
                             ),
                             failure_threshold=1,
+                            grpc=GRPCAction(
+                                port=1,
+                                service="service_example",
+                            ),
                             http_get=HTTPGetAction(
                                 host="host_example",
                                 http_headers=[
@@ -2398,7 +2657,7 @@ with openapi_client.ApiClient() as api_client:
                                 ],
                                 path="path_example",
                                 port="port_example",
-                                scheme="scheme_example",
+                                scheme="HTTP",
                             ),
                             initial_delay_seconds=1,
                             period_seconds=1,
@@ -2407,6 +2666,7 @@ with openapi_client.ApiClient() as api_client:
                                 host="host_example",
                                 port="port_example",
                             ),
+                            termination_grace_period_seconds=1,
                             timeout_seconds=1,
                         ),
                         name="name_example",
@@ -2416,7 +2676,7 @@ with openapi_client.ApiClient() as api_client:
                                 host_ip="host_ip_example",
                                 host_port=1,
                                 name="name_example",
-                                protocol="protocol_example",
+                                protocol="SCTP",
                             ),
                         ],
                         readiness_probe=Probe(
@@ -2426,6 +2686,10 @@ with openapi_client.ApiClient() as api_client:
                                 ],
                             ),
                             failure_threshold=1,
+                            grpc=GRPCAction(
+                                port=1,
+                                service="service_example",
+                            ),
                             http_get=HTTPGetAction(
                                 host="host_example",
                                 http_headers=[
@@ -2436,7 +2700,7 @@ with openapi_client.ApiClient() as api_client:
                                 ],
                                 path="path_example",
                                 port="port_example",
-                                scheme="scheme_example",
+                                scheme="HTTP",
                             ),
                             initial_delay_seconds=1,
                             period_seconds=1,
@@ -2445,6 +2709,7 @@ with openapi_client.ApiClient() as api_client:
                                 host="host_example",
                                 port="port_example",
                             ),
+                            termination_grace_period_seconds=1,
                             timeout_seconds=1,
                         ),
                         resources=ResourceRequirements(
@@ -2477,9 +2742,14 @@ with openapi_client.ApiClient() as api_client:
                                 type="type_example",
                                 user="user_example",
                             ),
+                            seccomp_profile=SeccompProfile(
+                                localhost_profile="localhost_profile_example",
+                                type="Localhost",
+                            ),
                             windows_options=WindowsSecurityContextOptions(
                                 gmsa_credential_spec="gmsa_credential_spec_example",
                                 gmsa_credential_spec_name="gmsa_credential_spec_name_example",
+                                host_process=True,
                                 run_as_user_name="run_as_user_name_example",
                             ),
                         ),
@@ -2490,6 +2760,10 @@ with openapi_client.ApiClient() as api_client:
                                 ],
                             ),
                             failure_threshold=1,
+                            grpc=GRPCAction(
+                                port=1,
+                                service="service_example",
+                            ),
                             http_get=HTTPGetAction(
                                 host="host_example",
                                 http_headers=[
@@ -2500,7 +2774,7 @@ with openapi_client.ApiClient() as api_client:
                                 ],
                                 path="path_example",
                                 port="port_example",
-                                scheme="scheme_example",
+                                scheme="HTTP",
                             ),
                             initial_delay_seconds=1,
                             period_seconds=1,
@@ -2509,12 +2783,13 @@ with openapi_client.ApiClient() as api_client:
                                 host="host_example",
                                 port="port_example",
                             ),
+                            termination_grace_period_seconds=1,
                             timeout_seconds=1,
                         ),
                         stdin=True,
                         stdin_once=True,
                         termination_message_path="termination_message_path_example",
-                        termination_message_policy="termination_message_policy_example",
+                        termination_message_policy="FallbackToLogsOnError",
                         tty=True,
                         volume_devices=[
                             VolumeDevice(
@@ -2554,6 +2829,7 @@ with openapi_client.ApiClient() as api_client:
                     priority_class_name="priority_class_name_example",
                     security_context=PodSecurityContext(
                         fs_group=1,
+                        fs_group_change_policy="fs_group_change_policy_example",
                         run_as_group=1,
                         run_as_non_root=True,
                         run_as_user=1,
@@ -2562,6 +2838,10 @@ with openapi_client.ApiClient() as api_client:
                             role="role_example",
                             type="type_example",
                             user="user_example",
+                        ),
+                        seccomp_profile=SeccompProfile(
+                            localhost_profile="localhost_profile_example",
+                            type="Localhost",
                         ),
                         supplemental_groups=[
                             1,
@@ -2575,15 +2855,16 @@ with openapi_client.ApiClient() as api_client:
                         windows_options=WindowsSecurityContextOptions(
                             gmsa_credential_spec="gmsa_credential_spec_example",
                             gmsa_credential_spec_name="gmsa_credential_spec_name_example",
+                            host_process=True,
                             run_as_user_name="run_as_user_name_example",
                         ),
                     ),
                     service_account_name="service_account_name_example",
                     tolerations=[
                         Toleration(
-                            effect="effect_example",
+                            effect="NoExecute",
                             key="key_example",
-                            operator="operator_example",
+                            operator="Equal",
                             toleration_seconds=1,
                             value="value_example",
                         ),
@@ -2673,6 +2954,93 @@ with openapi_client.ApiClient() as api_client:
                             empty_dir=EmptyDirVolumeSource(
                                 medium="medium_example",
                                 size_limit="size_limit_example",
+                            ),
+                            ephemeral=EphemeralVolumeSource(
+                                volume_claim_template=PersistentVolumeClaimTemplate(
+                                    metadata=ObjectMeta(
+                                        annotations={
+                                            "key": "key_example",
+                                        },
+                                        cluster_name="cluster_name_example",
+                                        creation_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                        deletion_grace_period_seconds=1,
+                                        deletion_timestamp=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                        finalizers=[
+                                            "finalizers_example",
+                                        ],
+                                        generate_name="generate_name_example",
+                                        generation=1,
+                                        labels={
+                                            "key": "key_example",
+                                        },
+                                        managed_fields=[
+                                            ManagedFieldsEntry(
+                                                api_version="api_version_example",
+                                                fields_type="fields_type_example",
+                                                fields_v1={},
+                                                manager="manager_example",
+                                                operation="operation_example",
+                                                subresource="subresource_example",
+                                                time=dateutil_parser('1970-01-01T00:00:00.00Z'),
+                                            ),
+                                        ],
+                                        name="name_example",
+                                        namespace="namespace_example",
+                                        owner_references=[
+                                            OwnerReference(
+                                                api_version="api_version_example",
+                                                block_owner_deletion=True,
+                                                controller=True,
+                                                kind="kind_example",
+                                                name="name_example",
+                                                uid="uid_example",
+                                            ),
+                                        ],
+                                        resource_version="resource_version_example",
+                                        self_link="self_link_example",
+                                        uid="uid_example",
+                                    ),
+                                    spec=PersistentVolumeClaimSpec(
+                                        access_modes=[
+                                            "access_modes_example",
+                                        ],
+                                        data_source=TypedLocalObjectReference(
+                                            api_group="api_group_example",
+                                            kind="kind_example",
+                                            name="name_example",
+                                        ),
+                                        data_source_ref=TypedLocalObjectReference(
+                                            api_group="api_group_example",
+                                            kind="kind_example",
+                                            name="name_example",
+                                        ),
+                                        resources=ResourceRequirements(
+                                            limits={
+                                                "key": "key_example",
+                                            },
+                                            requests={
+                                                "key": "key_example",
+                                            },
+                                        ),
+                                        selector=LabelSelector(
+                                            match_expressions=[
+                                                LabelSelectorRequirement(
+                                                    key="key_example",
+                                                    operator="operator_example",
+                                                    values=[
+                                                        "values_example",
+                                                    ],
+                                                ),
+                                            ],
+                                            match_labels={
+                                                "key": "key_example",
+                                            },
+                                        ),
+                                        storage_class_name="storage_class_name_example",
+                                        volume_mode="volume_mode_example",
+                                        volume_name="volume_name_example",
+                                    ),
+                                ),
                             ),
                             fc=FCVolumeSource(
                                 fs_type="fs_type_example",
@@ -3067,6 +3435,7 @@ with openapi_client.ApiClient() as api_client:
                                     ),
                                 ],
                                 region="region_example",
+                                role_arn="role_arn_example",
                                 secret_key=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -3116,6 +3485,14 @@ with openapi_client.ApiClient() as api_client:
                                 ),
                             ),
                             conditions="conditions_example",
+                            conditions_reset=[
+                                IoArgoprojEventsV1alpha1ConditionsResetCriteria(
+                                    by_time=IoArgoprojEventsV1alpha1ConditionsResetByTime(
+                                        cron="cron_example",
+                                        timezone="timezone_example",
+                                    ),
+                                ),
+                            ],
                             custom=IoArgoprojEventsV1alpha1CustomTrigger(
                                 cert_secret=SecretKeySelector(
                                     key="key_example",
@@ -3236,6 +3613,7 @@ with openapi_client.ApiClient() as api_client:
                                         name="name_example",
                                         optional=True,
                                     ),
+                                    insecure_skip_verify=True,
                                 ),
                                 url="url_example",
                             ),
@@ -3399,6 +3777,7 @@ with openapi_client.ApiClient() as api_client:
                                         name="name_example",
                                         optional=True,
                                     ),
+                                    insecure_skip_verify=True,
                                 ),
                                 topic="topic_example",
                                 url="url_example",
@@ -3454,6 +3833,7 @@ with openapi_client.ApiClient() as api_client:
                                         name="name_example",
                                         optional=True,
                                     ),
+                                    insecure_skip_verify=True,
                                 ),
                                 url="url_example",
                             ),
@@ -3560,6 +3940,7 @@ with openapi_client.ApiClient() as api_client:
                                         name="name_example",
                                         optional=True,
                                     ),
+                                    insecure_skip_verify=True,
                                 ),
                                 tls_allow_insecure_connection=True,
                                 tls_trust_certs_secret=SecretKeySelector(
@@ -3616,10 +3997,10 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.sensor_service_update_sensor(namespace, name, body)
+        api_response = api_instance.update_sensor(namespace, name, body)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling SensorServiceApi->sensor_service_update_sensor: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling SensorServiceApi->update_sensor: %s\n" % e)
 ```
 
 
@@ -3653,8 +4034,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **sensor_service_watch_sensors**
-> StreamResultOfSensorSensorWatchEvent sensor_service_watch_sensors(namespace)
+# **watch_sensors**
+> StreamResultOfSensorSensorWatchEvent watch_sensors(namespace)
 
 
 
@@ -3662,27 +4043,27 @@ No authorization required
 
 ```python
 import time
-import openapi_client
-from openapi_client.api import sensor_service_api
-from openapi_client.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
-from openapi_client.model.stream_result_of_sensor_sensor_watch_event import StreamResultOfSensorSensorWatchEvent
+import argo_workflows
+from argo_workflows.api import sensor_service_api
+from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
+from argo_workflows.model.stream_result_of_sensor_sensor_watch_event import StreamResultOfSensorSensorWatchEvent
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:2746
 # See configuration.py for a list of all supported configuration parameters.
-configuration = openapi_client.Configuration(
+configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
 
 # Enter a context with an instance of the API client
-with openapi_client.ApiClient() as api_client:
+with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = sensor_service_api.SensorServiceApi(api_client)
     namespace = "namespace_example" # str | 
     list_options_label_selector = "listOptions.labelSelector_example" # str | A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional. (optional)
     list_options_field_selector = "listOptions.fieldSelector_example" # str | A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional. (optional)
     list_options_watch = True # bool | Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional. (optional)
-    list_options_allow_watch_bookmarks = True # bool | allowWatchBookmarks requests watch events with type \"BOOKMARK\". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. If the feature gate WatchBookmarks is not enabled in apiserver, this field is ignored. +optional. (optional)
+    list_options_allow_watch_bookmarks = True # bool | allowWatchBookmarks requests watch events with type \"BOOKMARK\". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. +optional. (optional)
     list_options_resource_version = "listOptions.resourceVersion_example" # str | resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional (optional)
     list_options_resource_version_match = "listOptions.resourceVersionMatch_example" # str | resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional (optional)
     list_options_timeout_seconds = "listOptions.timeoutSeconds_example" # str | Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional. (optional)
@@ -3691,18 +4072,18 @@ with openapi_client.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.sensor_service_watch_sensors(namespace)
+        api_response = api_instance.watch_sensors(namespace)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling SensorServiceApi->sensor_service_watch_sensors: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling SensorServiceApi->watch_sensors: %s\n" % e)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.sensor_service_watch_sensors(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue)
+        api_response = api_instance.watch_sensors(namespace, list_options_label_selector=list_options_label_selector, list_options_field_selector=list_options_field_selector, list_options_watch=list_options_watch, list_options_allow_watch_bookmarks=list_options_allow_watch_bookmarks, list_options_resource_version=list_options_resource_version, list_options_resource_version_match=list_options_resource_version_match, list_options_timeout_seconds=list_options_timeout_seconds, list_options_limit=list_options_limit, list_options_continue=list_options_continue)
         pprint(api_response)
-    except openapi_client.ApiException as e:
-        print("Exception when calling SensorServiceApi->sensor_service_watch_sensors: %s\n" % e)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling SensorServiceApi->watch_sensors: %s\n" % e)
 ```
 
 
@@ -3714,7 +4095,7 @@ Name | Type | Description  | Notes
  **list_options_label_selector** | **str**| A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional. | [optional]
  **list_options_field_selector** | **str**| A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional. | [optional]
  **list_options_watch** | **bool**| Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional. | [optional]
- **list_options_allow_watch_bookmarks** | **bool**| allowWatchBookmarks requests watch events with type \&quot;BOOKMARK\&quot;. Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server&#39;s discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. If the feature gate WatchBookmarks is not enabled in apiserver, this field is ignored. +optional. | [optional]
+ **list_options_allow_watch_bookmarks** | **bool**| allowWatchBookmarks requests watch events with type \&quot;BOOKMARK\&quot;. Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server&#39;s discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. +optional. | [optional]
  **list_options_resource_version** | **str**| resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional | [optional]
  **list_options_resource_version_match** | **str**| resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional | [optional]
  **list_options_timeout_seconds** | **str**| Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional. | [optional]

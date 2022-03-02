@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/square/go-jose.v2/jwt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
@@ -87,7 +87,8 @@ const wftStr2 = `{
 	  "parameters": [
 		{
 			"name": "message",
-			"value": "Hello Argo"
+			"value": "Hello Argo",
+			"description": "message description"
 		}
 	  ]
 	},
@@ -213,6 +214,8 @@ func TestWorkflowTemplateServer_GetWorkflowTemplate(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.NotNil(t, wftRsp)
 			assert.Equal(t, "workflow-template-whalesay-template2", wftRsp.Name)
+			assert.Equal(t, "message", wftRsp.Spec.Arguments.Parameters[0].Name)
+			assert.Equal(t, "message description", wftRsp.Spec.Arguments.Parameters[0].Description.String())
 		}
 	})
 	t.Run("Unlabelled", func(t *testing.T) {

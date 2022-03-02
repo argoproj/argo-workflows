@@ -228,6 +228,7 @@ func (c *DocGeneratorContext) loadFiles() {
 	if err != nil {
 		panic(err)
 	}
+FILES:
 	for _, fileName := range files {
 		bytes, err := ioutil.ReadFile(filepath.Clean(fileName))
 		if err != nil {
@@ -235,13 +236,19 @@ func (c *DocGeneratorContext) loadFiles() {
 		}
 
 		r := regexp.MustCompile(`kind: ([a-zA-Z]+)`)
-		kinds := r.FindAllStringSubmatch(string(bytes), -1)
-		for _, kind := range kinds {
-			if set, ok := c.index[kind[1]]; ok {
+		matches := r.FindAllStringSubmatch(string(bytes), -1)
+		for _, m := range matches {
+			kind := m[1]
+			switch kind {
+			case "ClusterWorkflowTemplate", "CronWorkflow", "Workflow", "WorkflowTemplate":
+			default:
+				continue FILES
+			}
+			if set, ok := c.index[kind]; ok {
 				set[fileName] = true
 			} else {
-				c.index[kind[1]] = make(Set)
-				c.index[kind[1]][fileName] = true
+				c.index[kind] = make(Set)
+				c.index[kind][fileName] = true
 			}
 		}
 
@@ -274,7 +281,10 @@ func (c *DocGeneratorContext) addToQueue(ref, jsonFieldName string) {
 }
 
 func (c *DocGeneratorContext) getDesc(key string) string {
-	obj := c.defs[key].(map[string]interface{})
+	obj, ok := c.defs[key].(map[string]interface{})
+	if !ok {
+		return "_No description available_"
+	}
 	if val, ok := obj["description"]; ok {
 		return cleanDesc(val.(string))
 	} else if val, ok := obj["title"]; ok {
@@ -297,7 +307,11 @@ func (c *DocGeneratorContext) getTemplate(key string) string {
 	}
 
 	var properties map[string]interface{}
-	if props, ok := c.defs[key].(map[string]interface{})["properties"]; ok {
+	def,ok  := c.defs[key]
+	if !ok {
+		return out
+	}
+	if props, ok := def.(map[string]interface{})["properties"]; ok {
 		properties = props.(map[string]interface{})
 	} else {
 		return out

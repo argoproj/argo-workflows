@@ -3,7 +3,6 @@ kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
 data:
-  containerRuntimeExecutor: pns
   namespaceParallelism: "99999"
   executor: |
     imagePullPolicy: IfNotPresent
@@ -14,4 +13,3 @@ data:
       limits:
         cpu: 0.5
         memory: 128Mi
-  kubeletInsecure: "true"

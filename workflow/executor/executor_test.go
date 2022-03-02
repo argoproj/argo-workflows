@@ -317,14 +317,10 @@ func TestChmod(t *testing.T) {
 
 	for _, test := range tests {
 		// Setup directory and file for testing
-		tempDir, err := ioutil.TempDir("testdata", "chmod-dir-test")
-		assert.NoError(t, err)
+		tempDir := t.TempDir()
 
 		tempFile, err := ioutil.TempFile(tempDir, "chmod-file-test")
 		assert.NoError(t, err)
-
-		// TearDown test by removing directory and file
-		defer os.RemoveAll(tempDir)
 
 		// Run chmod function
 		err = chmod(tempDir, test.mode, test.recurse)

@@ -1,4 +1,5 @@
-import {createFNVHash, ensurePodNamePrefixLength, getPodName, k8sNamingHashLength, maxK8sResourceNameLength, POD_NAME_V1, POD_NAME_V2} from './pod-name';
+import {Inputs, MemoizationStatus, NodePhase, NodeStatus, NodeType, Outputs, RetryStrategy} from '../../models';
+import {createFNVHash, ensurePodNamePrefixLength, getPodName, getTemplateNameFromNode, k8sNamingHashLength, maxK8sResourceNameLength, POD_NAME_V1, POD_NAME_V2} from './pod-name';
 
 describe('pod names', () => {
     test('createFNVHash', () => {
@@ -33,5 +34,58 @@ describe('pod names', () => {
 
         const name = getPodName(longWfName, nodeName, longTemplateName, nodeID, POD_NAME_V2);
         expect(name.length).toEqual(maxK8sResourceNameLength);
+    });
+
+    test('getTemplateNameFromNode', () => {
+        // case: no template ref or template name
+        // expect fallback to empty string
+        const nodeType: NodeType = 'Pod';
+        const nodePhase: NodePhase = 'Succeeded';
+        const retryStrategy: RetryStrategy = {};
+        const outputs: Outputs = {};
+        const inputs: Inputs = {};
+        const memoizationStatus: MemoizationStatus = {
+            hit: false,
+            key: 'key',
+            cacheName: 'cache'
+        };
+
+        const node: NodeStatus = {
+            id: 'patch-processing-pipeline-ksp78-1623891970',
+            name: 'patch-processing-pipeline-ksp78.retriable-map-authoring-initializer',
+            displayName: 'retriable-map-authoring-initializer',
+            type: nodeType,
+            templateScope: 'local/',
+            phase: nodePhase,
+            boundaryID: '',
+            message: '',
+            startedAt: '',
+            finishedAt: '',
+            podIP: '',
+            daemoned: false,
+            retryStrategy,
+            outputs,
+            children: [],
+            outboundNodes: [],
+            templateName: '',
+            inputs,
+            hostNodeName: '',
+            memoizationStatus
+        };
+
+        expect(getTemplateNameFromNode(node)).toEqual('');
+
+        // case: template ref defined but no template name defined
+        // expect to return templateRef.template
+        node.templateRef = {
+            name: 'test-template-name',
+            template: 'test-template-template'
+        };
+        expect(getTemplateNameFromNode(node)).toEqual(node.templateRef.template);
+
+        // case: template name defined
+        // expect to return templateName
+        node.templateName = 'test-template';
+        expect(getTemplateNameFromNode(node)).toEqual(node.templateName);
     });
 });

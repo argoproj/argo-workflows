@@ -8,7 +8,7 @@ It is possible to use [Dex](https://github.com/dexidp/dex) for authentication. [
 
 ## To start Argo Server with SSO.
 
-Firstly, configure the settings [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml) with the correct OAuth 2 values. If working towards an oidc configuration the ArgoCD project has [guides](https://argoproj.github.io/argo-cd/operator-manual/user-management/#existing-oidc-provider) on its similar (though different) process for setting up oidc providers. It also includes examples for specific providers.
+Firstly, configure the settings [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml) with the correct OAuth 2 values. If working towards an oidc configuration the ArgoCD project has [guides](https://argoproj.github.io/argo-cd/operator-manual/user-management/#existing-oidc-provider) on its similar (though different) process for setting up oidc providers. It also includes examples for specific providers. The main difference is that the ArgoCD docs mention that their callback address endpoint is `/auth/callback`.  For ArgoWorkflows, the default format is `/oauth2/callback` as shown in [this comment](https://github.com/argoproj/argo-workflows/blob/93c11a24ff06049c2197149acd787f702e5c1f9b/docs/workflow-controller-configmap.yaml#L329) in the default values.yaml file in the helm chart.
 
 Next, create the k8s secrets for holding the OAuth2 `client-id` and `client-secret`. You may refer to the kubernetes documentation on [Managing secrets](https://kubernetes.io/docs/tasks/configmap-secret/). For example by using kubectl with literals:
 ```
@@ -177,7 +177,7 @@ sso:
   customGroupClaimName: argo_groups
 ```
 
-If your OIDC provider provides groups information only using the userInfo endpoint (e.g. OKta), you could configure `userInfoPath` to specify the user info endpoint that contains the groups claim. 
+If your OIDC provider provides groups information only using the userInfo endpoint (e.g. OKta), you could configure `userInfoPath` to specify the user info endpoint that contains the groups claim.
 ```yaml
 sso:
   userInfoPath: /oauth2/v1/userinfo

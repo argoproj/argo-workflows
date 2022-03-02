@@ -58,7 +58,7 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 	return w.Write(resultMarshaled[1 : marshaledLength-1])
 }
 
-func envMap(replaceMap map[string]string) map[string]interface{} {
+func EnvMap(replaceMap map[string]string) map[string]interface{} {
 	envMap := make(map[string]interface{})
 	for k, v := range replaceMap {
 		envMap[k] = v

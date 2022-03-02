@@ -38,7 +38,8 @@ type listFlags struct {
 }
 
 var (
-	nameFields    = "metadata,items.metadata.name"
+	// finishedAt and creationTimestamp must be included to have a consistent display order of workflows
+	nameFields    = "metadata,items.metadata.name,items.metadata.creationTimestamp,items.status.finishedAt"
 	defaultFields = "metadata,items.metadata,items.spec,items.status.phase,items.status.message,items.status.finishedAt,items.status.startedAt,items.status.estimatedDuration,items.status.progress"
 )
 

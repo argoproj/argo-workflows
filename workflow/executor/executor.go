@@ -25,7 +25,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
@@ -33,28 +32,14 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/util/archive"
-	envutil "github.com/argoproj/argo-workflows/v3/util/env"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/util/retry"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	artifact "github.com/argoproj/argo-workflows/v3/workflow/artifacts"
 	artifactcommon "github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	executorretry "github.com/argoproj/argo-workflows/v3/workflow/executor/retry"
 )
-
-// ExecutorRetry is a retry backoff settings for WorkflowExecutor
-// Run	Seconds
-// 0	0.000
-// 1	1.000
-// 2	2.600
-// 3	5.160
-// 4	9.256
-var ExecutorRetry = wait.Backoff{
-	Steps:    envutil.LookupEnvIntOr("EXECUTOR_RETRY_BACKOFF_STEPS", 5),
-	Duration: envutil.LookupEnvDurationOr("EXECUTOR_RETRY_BACKOFF_DURATION", 1*time.Second),
-	Factor:   envutil.LookupEnvFloatOr("EXECUTOR_RETRY_BACKOFF_FACTOR", 1.6),
-	Jitter:   envutil.LookupEnvFloatOr("EXECUTOR_RETRY_BACKOFF_JITTER", 0.5),
-}
 
 const (
 	// This directory temporarily stores the tarballs of the artifacts before uploading
@@ -125,6 +110,7 @@ func isErrUnknownGetPods(err error) bool {
 
 // NewExecutor instantiates a new workflow executor
 func NewExecutor(clientset kubernetes.Interface, restClient rest.Interface, podName, namespace string, cre ContainerRuntimeExecutor, template wfv1.Template, includeScriptOutput bool, deadline time.Time, annotationPatchTickDuration, readProgressFileTickDuration time.Duration) WorkflowExecutor {
+	log.WithFields(log.Fields{"Steps": executorretry.Steps, "Duration": executorretry.Duration, "Factor": executorretry.Factor, "Jitter": executorretry.Jitter}).Info("Using executor retry strategy")
 	return WorkflowExecutor{
 		PodName:                      podName,
 		ClientSet:                    clientset,
@@ -323,7 +309,11 @@ func (we *WorkflowExecutor) saveArtifactFromFile(ctx context.Context, art *wfv1.
 		if err != nil {
 			return err
 		}
-		if err = art.SetType(we.Template.ArchiveLocation.Get()); err != nil {
+		art_location, err := we.Template.ArchiveLocation.Get()
+		if err != nil {
+			return err
+		}
+		if err = art.SetType(art_location); err != nil {
 			return err
 		}
 		if err := art.SetKey(path.Join(key, fileName)); err != nil {
@@ -614,7 +604,7 @@ func (we *WorkflowExecutor) InitDriver(ctx context.Context, art *wfv1.Artifact) 
 func (we *WorkflowExecutor) getPod(ctx context.Context) (*apiv1.Pod, error) {
 	podsIf := we.ClientSet.CoreV1().Pods(we.Namespace)
 	var pod *apiv1.Pod
-	err := waitutil.Backoff(ExecutorRetry, func() (bool, error) {
+	err := waitutil.Backoff(executorretry.ExecutorRetry, func() (bool, error) {
 		var err error
 		pod, err = podsIf.Get(ctx, we.PodName, metav1.GetOptions{})
 		if err != nil && isErrUnknownGetPods(err) {
@@ -767,7 +757,7 @@ func (we *WorkflowExecutor) HasError() error {
 
 // AddAnnotation adds an annotation to the workflow pod
 func (we *WorkflowExecutor) AddAnnotation(ctx context.Context, key, value string) error {
-	return common.AddPodAnnotation(ctx, we.ClientSet, we.PodName, we.Namespace, key, value, ExecutorRetry)
+	return common.AddPodAnnotation(ctx, we.ClientSet, we.PodName, we.Namespace, key, value, executorretry.ExecutorRetry)
 }
 
 // isTarball returns whether or not the file is a tarball
@@ -950,7 +940,7 @@ func (we *WorkflowExecutor) Wait(ctx context.Context) error {
 	}
 
 	go we.monitorDeadline(ctx, containerNames)
-	err := waitutil.Backoff(ExecutorRetry, func() (bool, error) {
+	err := waitutil.Backoff(executorretry.ExecutorRetry, func() (bool, error) {
 		err := we.RuntimeExecutor.Wait(ctx, containerNames)
 		return err == nil, err
 	})

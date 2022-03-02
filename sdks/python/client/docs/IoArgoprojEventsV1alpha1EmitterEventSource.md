@@ -8,6 +8,7 @@ Name | Type | Description | Notes
 **channel_key** | **str** |  | [optional] 
 **channel_name** | **str** |  | [optional] 
 **connection_backoff** | [**IoArgoprojEventsV1alpha1Backoff**](IoArgoprojEventsV1alpha1Backoff.md) |  | [optional] 
+**filter** | [**IoArgoprojEventsV1alpha1EventSourceFilter**](IoArgoprojEventsV1alpha1EventSourceFilter.md) |  | [optional] 
 **json_body** | **bool** |  | [optional] 
 **metadata** | **{str: (str,)}** |  | [optional] 
 **password** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 

@@ -123,7 +123,7 @@ export const ClusterWorkflowTemplateDetails = ({history, location, match}: Route
                 )}
             </>
             {template && (
-                <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)} isNarrow={true}>
+                <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)} isMiddle={true}>
                     <SubmitWorkflowPanel
                         kind='ClusterWorkflowTemplate'
                         namespace={namespace}
