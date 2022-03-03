@@ -9,7 +9,7 @@ Method | HTTP request | Description
 [**list_archived_workflow_label_keys**](ArchivedWorkflowServiceApi.md#list_archived_workflow_label_keys) | **GET** /api/v1/archived-workflows-label-keys | 
 [**list_archived_workflow_label_values**](ArchivedWorkflowServiceApi.md#list_archived_workflow_label_values) | **GET** /api/v1/archived-workflows-label-values | 
 [**list_archived_workflows**](ArchivedWorkflowServiceApi.md#list_archived_workflows) | **GET** /api/v1/archived-workflows | 
-[**retry_archived_workflow**](ArchivedWorkflowServiceApi.md#retry_archived_workflow) | **PUT** /api/v1/archived-workflows/{namespace}/{uid}/retry | 
+[**retry_archived_workflow**](ArchivedWorkflowServiceApi.md#retry_archived_workflow) | **PUT** /api/v1/archived-workflows/{uid}/retry | 
 
 
 # **delete_archived_workflow**
@@ -364,7 +364,7 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **retry_archived_workflow**
-> IoArgoprojWorkflowV1alpha1Workflow retry_archived_workflow(namespace, uid, body)
+> IoArgoprojWorkflowV1alpha1Workflow retry_archived_workflow(uid, body)
 
 
 
@@ -389,7 +389,6 @@ configuration = argo_workflows.Configuration(
 with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = archived_workflow_service_api.ArchivedWorkflowServiceApi(api_client)
-    namespace = "namespace_example" # str | 
     uid = "uid_example" # str | 
     body = IoArgoprojWorkflowV1alpha1RetryArchivedWorkflowRequest(
         name="name_example",
@@ -401,7 +400,7 @@ with argo_workflows.ApiClient() as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        api_response = api_instance.retry_archived_workflow(namespace, uid, body)
+        api_response = api_instance.retry_archived_workflow(uid, body)
         pprint(api_response)
     except argo_workflows.ApiException as e:
         print("Exception when calling ArchivedWorkflowServiceApi->retry_archived_workflow: %s\n" % e)
@@ -412,7 +411,6 @@ with argo_workflows.ApiClient() as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **namespace** | **str**|  |
  **uid** | **str**|  |
  **body** | [**IoArgoprojWorkflowV1alpha1RetryArchivedWorkflowRequest**](IoArgoprojWorkflowV1alpha1RetryArchivedWorkflowRequest.md)|  |
 

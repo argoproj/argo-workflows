@@ -9,7 +9,7 @@ Method | HTTP request | Description
 [**archivedWorkflowServiceListArchivedWorkflowLabelKeys**](ArchivedWorkflowServiceApi.md#archivedWorkflowServiceListArchivedWorkflowLabelKeys) | **GET** /api/v1/archived-workflows-label-keys | 
 [**archivedWorkflowServiceListArchivedWorkflowLabelValues**](ArchivedWorkflowServiceApi.md#archivedWorkflowServiceListArchivedWorkflowLabelValues) | **GET** /api/v1/archived-workflows-label-values | 
 [**archivedWorkflowServiceListArchivedWorkflows**](ArchivedWorkflowServiceApi.md#archivedWorkflowServiceListArchivedWorkflows) | **GET** /api/v1/archived-workflows | 
-[**archivedWorkflowServiceRetryArchivedWorkflow**](ArchivedWorkflowServiceApi.md#archivedWorkflowServiceRetryArchivedWorkflow) | **PUT** /api/v1/archived-workflows/{namespace}/{uid}/retry | 
+[**archivedWorkflowServiceRetryArchivedWorkflow**](ArchivedWorkflowServiceApi.md#archivedWorkflowServiceRetryArchivedWorkflow) | **PUT** /api/v1/archived-workflows/{uid}/retry | 
 
 
 <a name="archivedWorkflowServiceDeleteArchivedWorkflow"></a>
@@ -349,7 +349,7 @@ No authorization required
 
 <a name="archivedWorkflowServiceRetryArchivedWorkflow"></a>
 # **archivedWorkflowServiceRetryArchivedWorkflow**
-> IoArgoprojWorkflowV1alpha1Workflow archivedWorkflowServiceRetryArchivedWorkflow(namespace, uid, body)
+> IoArgoprojWorkflowV1alpha1Workflow archivedWorkflowServiceRetryArchivedWorkflow(uid, body)
 
 
 
@@ -368,11 +368,10 @@ public class Example {
     defaultClient.setBasePath("http://localhost:2746");
 
     ArchivedWorkflowServiceApi apiInstance = new ArchivedWorkflowServiceApi(defaultClient);
-    String namespace = "namespace_example"; // String | 
     String uid = "uid_example"; // String | 
     IoArgoprojWorkflowV1alpha1RetryArchivedWorkflowRequest body = new IoArgoprojWorkflowV1alpha1RetryArchivedWorkflowRequest(); // IoArgoprojWorkflowV1alpha1RetryArchivedWorkflowRequest | 
     try {
-      IoArgoprojWorkflowV1alpha1Workflow result = apiInstance.archivedWorkflowServiceRetryArchivedWorkflow(namespace, uid, body);
+      IoArgoprojWorkflowV1alpha1Workflow result = apiInstance.archivedWorkflowServiceRetryArchivedWorkflow(uid, body);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ArchivedWorkflowServiceApi#archivedWorkflowServiceRetryArchivedWorkflow");
@@ -389,7 +388,6 @@ public class Example {
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **namespace** | **String**|  |
  **uid** | **String**|  |
  **body** | [**IoArgoprojWorkflowV1alpha1RetryArchivedWorkflowRequest**](IoArgoprojWorkflowV1alpha1RetryArchivedWorkflowRequest.md)|  |
 

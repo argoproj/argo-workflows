@@ -701,7 +701,6 @@ class ArchivedWorkflowServiceApi(object):
 
         def __retry_archived_workflow(
             self,
-            namespace,
             uid,
             body,
             **kwargs
@@ -711,11 +710,10 @@ class ArchivedWorkflowServiceApi(object):
             This method makes a synchronous HTTP request by default. To make an
             asynchronous HTTP request, please pass async_req=True
 
-            >>> thread = api.retry_archived_workflow(namespace, uid, body, async_req=True)
+            >>> thread = api.retry_archived_workflow(uid, body, async_req=True)
             >>> result = thread.get()
 
             Args:
-                namespace (str):
                 uid (str):
                 body (IoArgoprojWorkflowV1alpha1RetryArchivedWorkflowRequest):
 
@@ -764,8 +762,6 @@ class ArchivedWorkflowServiceApi(object):
                 '_check_return_type', True
             )
             kwargs['_host_index'] = kwargs.get('_host_index')
-            kwargs['namespace'] = \
-                namespace
             kwargs['uid'] = \
                 uid
             kwargs['body'] = \
@@ -776,19 +772,17 @@ class ArchivedWorkflowServiceApi(object):
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1Workflow,),
                 'auth': [],
-                'endpoint_path': '/api/v1/archived-workflows/{namespace}/{uid}/retry',
+                'endpoint_path': '/api/v1/archived-workflows/{uid}/retry',
                 'operation_id': 'retry_archived_workflow',
                 'http_method': 'PUT',
                 'servers': None,
             },
             params_map={
                 'all': [
-                    'namespace',
                     'uid',
                     'body',
                 ],
                 'required': [
-                    'namespace',
                     'uid',
                     'body',
                 ],
@@ -805,19 +799,15 @@ class ArchivedWorkflowServiceApi(object):
                 'allowed_values': {
                 },
                 'openapi_types': {
-                    'namespace':
-                        (str,),
                     'uid':
                         (str,),
                     'body':
                         (IoArgoprojWorkflowV1alpha1RetryArchivedWorkflowRequest,),
                 },
                 'attribute_map': {
-                    'namespace': 'namespace',
                     'uid': 'uid',
                 },
                 'location_map': {
-                    'namespace': 'path',
                     'uid': 'path',
                     'body': 'body',
                 },

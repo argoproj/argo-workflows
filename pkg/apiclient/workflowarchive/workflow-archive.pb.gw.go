@@ -250,17 +250,6 @@ func request_ArchivedWorkflowService_RetryArchivedWorkflow_0(ctx context.Context
 		_   = err
 	)
 
-	val, ok = pathParams["namespace"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
-	}
-
-	protoReq.Namespace, err = runtime.String(val)
-
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace", err)
-	}
-
 	val, ok = pathParams["uid"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "uid")
@@ -295,17 +284,6 @@ func local_request_ArchivedWorkflowService_RetryArchivedWorkflow_0(ctx context.C
 		err error
 		_   = err
 	)
-
-	val, ok = pathParams["namespace"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
-	}
-
-	protoReq.Namespace, err = runtime.String(val)
-
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace", err)
-	}
 
 	val, ok = pathParams["uid"]
 	if !ok {
@@ -642,7 +620,7 @@ var (
 
 	pattern_ArchivedWorkflowService_ListArchivedWorkflowLabelValues_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "archived-workflows-label-values"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_ArchivedWorkflowService_RetryArchivedWorkflow_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"api", "v1", "archived-workflows", "namespace", "uid", "retry"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_ArchivedWorkflowService_RetryArchivedWorkflow_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "archived-workflows", "uid", "retry"}, "", runtime.AssumeColonVerbOpt(true)))
 )
 
 var (
