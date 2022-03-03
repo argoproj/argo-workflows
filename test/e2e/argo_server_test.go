@@ -1336,6 +1336,14 @@ spec:
 			Equal(1)
 	})
 
+	s.Run("RetryArchivedWorkflow", func() {
+		s.e().PUT("/api/v1/archived-workflows/{uid}/retry", uid).
+			Expect().
+			Status(200).
+			Path("$.metadata.name").
+			NotNull()
+	})
+
 }
 
 func (s *ArgoServerSuite) TestWorkflowTemplateService() {
