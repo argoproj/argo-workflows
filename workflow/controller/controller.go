@@ -490,7 +490,11 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 	if quit {
 		return false
 	}
-	defer wfc.podCleanupQueue.Done(key)
+
+	defer func() {
+		wfc.podCleanupQueue.Forget(key)
+		wfc.podCleanupQueue.Done(key)
+	}()
 
 	namespace, podName, action := parsePodCleanupKey(key.(podCleanupKey))
 	logCtx := log.WithFields(log.Fields{"key": key, "action": action})
