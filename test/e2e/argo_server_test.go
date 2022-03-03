@@ -1336,6 +1336,16 @@ spec:
 			Equal(1)
 	})
 
+	s.Run("Resubmit", func() {
+		s.Need(fixtures.BaseLayerArtifacts)
+		s.e().PUT("/api/v1/archived-workflows/{uid}/resubmit").
+			WithBytes([]byte(`{"memoized": true}`)).
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.metadata.name").
+			NotNull()
+	})
 }
 
 func (s *ArgoServerSuite) TestWorkflowTemplateService() {
