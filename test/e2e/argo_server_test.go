@@ -1340,6 +1340,7 @@ spec:
 		s.e().PUT("/api/v1/archived-workflows/{uid}/retry", uid).
 			Expect().
 			Status(200).
+			JSON().
 			Path("$.metadata.name").
 			NotNull()
 	})
