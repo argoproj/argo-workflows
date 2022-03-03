@@ -9,6 +9,7 @@ Method | HTTP request | Description
 [**archivedWorkflowServiceListArchivedWorkflowLabelKeys**](ArchivedWorkflowServiceApi.md#archivedWorkflowServiceListArchivedWorkflowLabelKeys) | **GET** /api/v1/archived-workflows-label-keys | 
 [**archivedWorkflowServiceListArchivedWorkflowLabelValues**](ArchivedWorkflowServiceApi.md#archivedWorkflowServiceListArchivedWorkflowLabelValues) | **GET** /api/v1/archived-workflows-label-values | 
 [**archivedWorkflowServiceListArchivedWorkflows**](ArchivedWorkflowServiceApi.md#archivedWorkflowServiceListArchivedWorkflows) | **GET** /api/v1/archived-workflows | 
+[**archivedWorkflowServiceResubmitArchivedWorkflow**](ArchivedWorkflowServiceApi.md#archivedWorkflowServiceResubmitArchivedWorkflow) | **PUT** /api/v1/archived-workflows/{uid}/resubmit | 
 
 
 <a name="archivedWorkflowServiceDeleteArchivedWorkflow"></a>
@@ -338,6 +339,69 @@ No authorization required
 ### HTTP request headers
 
  - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | A successful response. |  -  |
+**0** | An unexpected error response. |  -  |
+
+<a name="archivedWorkflowServiceResubmitArchivedWorkflow"></a>
+# **archivedWorkflowServiceResubmitArchivedWorkflow**
+> IoArgoprojWorkflowV1alpha1Workflow archivedWorkflowServiceResubmitArchivedWorkflow(uid, body)
+
+
+
+### Example
+```java
+// Import classes:
+import io.argoproj.workflow.ApiClient;
+import io.argoproj.workflow.ApiException;
+import io.argoproj.workflow.Configuration;
+import io.argoproj.workflow.models.*;
+import io.argoproj.workflow.apis.ArchivedWorkflowServiceApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("http://localhost:2746");
+
+    ArchivedWorkflowServiceApi apiInstance = new ArchivedWorkflowServiceApi(defaultClient);
+    String uid = "uid_example"; // String | 
+    IoArgoprojWorkflowV1alpha1ResubmitArchivedWorkflowRequest body = new IoArgoprojWorkflowV1alpha1ResubmitArchivedWorkflowRequest(); // IoArgoprojWorkflowV1alpha1ResubmitArchivedWorkflowRequest | 
+    try {
+      IoArgoprojWorkflowV1alpha1Workflow result = apiInstance.archivedWorkflowServiceResubmitArchivedWorkflow(uid, body);
+      System.out.println(result);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling ArchivedWorkflowServiceApi#archivedWorkflowServiceResubmitArchivedWorkflow");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **uid** | **String**|  |
+ **body** | [**IoArgoprojWorkflowV1alpha1ResubmitArchivedWorkflowRequest**](IoArgoprojWorkflowV1alpha1ResubmitArchivedWorkflowRequest.md)|  |
+
+### Return type
+
+[**IoArgoprojWorkflowV1alpha1Workflow**](IoArgoprojWorkflowV1alpha1Workflow.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
  - **Accept**: application/json
 
 ### HTTP response details

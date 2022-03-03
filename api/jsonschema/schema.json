@@ -6578,6 +6578,23 @@
       ],
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.ResubmitArchivedWorkflowRequest": {
+      "properties": {
+        "memoized": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "uid": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.RetryAffinity": {
       "description": "RetryAffinity prevents running steps on the same host.",
       "properties": {
