@@ -16,7 +16,7 @@ In other words, a `LifecycleHook` functions like an [exit handler](https://githu
 
 ## Supported conditions
 
-- [Exit handler variables](https://github.com/argoproj/argo-workflows/blob/ebd3677c7a9c973b22fa81ef3b409404a38ec331/docs/variables.md#exit-handler): workflow.status and workflow.failures
+- [Exit handler variables](https://github.com/argoproj/argo-workflows/blob/ebd3677c7a9c973b22fa81ef3b409404a38ec331/docs/variables.md#exit-handler): `workflow.status` and `workflow.failures`
 - [`template`](https://argoproj.github.io/argo-workflows/fields/#template)
 -  [`templateRef`](https://argoproj.github.io/argo-workflows/fields/#templateref)
 - [`arguments`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditionals.yaml)
@@ -27,7 +27,7 @@ In other words, a `LifecycleHook` functions like an [exit handler](https://githu
 
 ## Notification use case
 
-A `Lifecyclehook` can be used to configure a notification depending on a workflow status change or template status change, like the example below:
+A `LifecycleHook` can be used to configure a notification depending on a workflow status change or template status change, like the example below:
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
