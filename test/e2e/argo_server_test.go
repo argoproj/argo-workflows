@@ -1336,8 +1336,8 @@ spec:
 			Equal(1)
 	})
 
-	s.Run("RetryArchivedWorkflow", func() {
-		s.e().PUT("/api/v1/archived-workflows/{uid}/retry", uid).
+	s.Run("Retry", func() {
+		s.e().PUT("/api/v1/archived-workflows/argo/{uid}/retry", uid).
 			Expect().
 			Status(200).
 			JSON().
