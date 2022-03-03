@@ -14,7 +14,7 @@ import (
 )
 
 // applyExecutionControl will ensure a pod's execution control annotation is up-to-date
-// kills any pending pods when workflow has reached it's deadline
+// kills any pending and running pods when workflow has reached it's deadline
 func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1.Pod, wfNodesLock *sync.RWMutex) {
 	if pod == nil {
 		return
@@ -26,7 +26,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 	case apiv1.PodSucceeded, apiv1.PodFailed:
 		// Skip any pod which are already completed
 		return
-	case apiv1.PodPending:
+	case apiv1.PodPending, apiv1.PodRunning:
 		// Check if we are currently shutting down
 		if woc.GetShutdownStrategy().Enabled() {
 			// Only delete pods that are not part of an onExit handler if we are "Stopping" or all pods if we are "Terminating"
