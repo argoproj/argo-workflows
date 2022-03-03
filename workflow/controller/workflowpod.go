@@ -154,21 +154,22 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			c.Name = common.MainContainerName
 		}
 		// Allow customization of main container resources.
-		if isResourcesSpecified(woc.controller.Config.MainContainer) {
-			c.Resources = *woc.controller.Config.MainContainer.Resources.DeepCopy()
-		}
-		// Template resources inv workflow spec takes precedence over the main container's configuration in controller
-		switch tmpl.GetType() {
-		case wfv1.TemplateTypeContainer:
-			if isResourcesSpecified(tmpl.Container) && tmpl.Container.Name == common.MainContainerName {
-				c.Resources = *tmpl.Container.Resources.DeepCopy()
+		if ctrDefaults := woc.controller.Config.MainContainer; ctrDefaults != nil {
+			// essentially merge the defaults, then the template, into the container
+			a, err := json.Marshal(ctrDefaults)
+			if err != nil {
+				return nil, err
 			}
-		case wfv1.TemplateTypeScript:
-			if isResourcesSpecified(&tmpl.Script.Container) {
-				c.Resources = *tmpl.Script.Resources.DeepCopy()
+			b, err := json.Marshal(c)
+			if err != nil {
+				return nil, err
 			}
-		case wfv1.TemplateTypeContainerSet:
-
+			if err := json.Unmarshal(a, &c); err != nil {
+				return nil, err
+			}
+			if err = json.Unmarshal(b, &c); err != nil {
+				return nil, err
+			}
 		}
 
 		mainCtrs[i] = c
@@ -730,10 +731,6 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 		})
 	}
 	return &exec
-}
-
-func isResourcesSpecified(ctr *apiv1.Container) bool {
-	return ctr != nil && (len(ctr.Resources.Limits) != 0 || len(ctr.Resources.Requests) != 0)
 }
 
 // addMetadata applies metadata specified in the template
