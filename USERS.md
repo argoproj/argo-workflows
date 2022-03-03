@@ -117,6 +117,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [OVH](https://www.ovh.com/)
 1. [Peak AI](https://www.peak.ai/)
 1. [PDOK](https://www.pdok.nl/)
+1. [Pipekit](https://pipeit.io)
 1. [Polarpoint.io](https://polarpoint.io)
 1. [Pollination](https://pollination.cloud)
 1. [Preferred Networks](https://www.preferred-networks.jp/en/)
