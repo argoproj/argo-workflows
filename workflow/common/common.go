@@ -67,6 +67,9 @@ const (
 	LabelKeyWorkflowArchivingStatus = workflow.WorkflowFullName + "/workflow-archiving-status"
 	// LabelKeyWorkflow is the pod metadata label to indicate the associated workflow name
 	LabelKeyWorkflow = workflow.WorkflowFullName + "/workflow"
+	// LabelKeyComponent determines what component within a workflow, intentionally similar to app.kubernetes.io/component.
+	// See https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
+	LabelKeyComponent = workflow.WorkflowFullName + "/component"
 	// LabelKeyPhase is a label applied to workflows to indicate the current phase of the workflow (for filtering purposes)
 	LabelKeyPhase = workflow.WorkflowFullName + "/phase"
 	// LabelKeyPreviousWorkflowName is a label applied to resubmitted workflows
@@ -105,6 +108,10 @@ const (
 	EnvVarPodName = "ARGO_POD_NAME"
 	// EnvVarWorkflowName is the name of the workflow for which the an agent is responsible for
 	EnvVarWorkflowName = "ARGO_WORKFLOW_NAME"
+	// EnvVarWorkflowUID is the workflow's UID
+	EnvVarWorkflowUID = "ARGO_WORKFLOW_UID"
+	// EnvVarNodeID is the node ID of the node.
+	EnvVarNodeID = "ARGO_NODE_ID"
 	// EnvVarPluginAddresses is a list of plugin addresses
 	EnvVarPluginAddresses = "ARGO_PLUGIN_ADDRESSES"
 	// EnvVarContainerName container the container's name for the current pod
@@ -221,6 +228,9 @@ const (
 
 	// ArgoProgressPath defines the path to a file used for self reporting progress
 	ArgoProgressPath = "/var/run/argo/progress"
+
+	// ErrDeadlineExceeded is the pod status reason when exceed deadline
+	ErrDeadlineExceeded = "DeadlineExceeded"
 )
 
 // AnnotationKeyKillCmd specifies the command to use to kill to container, useful for injected sidecars

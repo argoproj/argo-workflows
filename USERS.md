@@ -17,6 +17,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Adevinta](https://www.adevinta.com/)
 1. [Admiralty](https://admiralty.io/)
 1. [Adobe](https://www.adobe.com/)
+1. [AKRA](https://www.akra.de/)
 1. [Akuity](https://akuity.io/)
 1. [Alibaba Cloud](https://www.alibabacloud.com/about)
 1. [Alibaba Group](https://www.alibabagroup.com/)
@@ -97,6 +98,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Localytics](https://www.localytics.com/)
 1. [Lumin Digital](https://lumindigital.com/)
 1. [Maersk](https://www.maersk.com/solutions/digital-solutions)
+1. [MariaDB](https://mariadb.com/)
 1. [Marmalade](https://www.marmalade.co/)
 1. [Max Kelsen](https://maxkelsen.com/)
 1. [Microba](https://www.microba.com/)
@@ -158,6 +160,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Woolworths Group](https://www.woolworthsgroup.com.au/)
 1. [Workiva](https://www.workiva.com/)
 1. [Voyager](https://investvoyager.com/)
+1. [Yubo](https://www.yubo.live/)
 1. [Zhihu](https://www.zhihu.com/)
 1. [Xueqiu](https://www.xueqiu.com/)
 

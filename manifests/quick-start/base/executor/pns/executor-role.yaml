@@ -7,11 +7,17 @@ metadata:
       Recomended minimum permissions for `pns` executor.
 rules:
   - apiGroups:
+      - argoproj.io
+    resources:
+      - workflowtaskresults
+    verbs:
+      - create
+      - patch
+  - apiGroups:
       - ""
     resources:
       - pods
     verbs:
-      - patch
       - watch
   - apiGroups:
       - ""

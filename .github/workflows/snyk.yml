@@ -11,7 +11,7 @@ jobs:
     env:
       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v3
       - name: Run Snyk to check for vulnerabilities
         uses: snyk/actions/golang@master
         with:
@@ -23,7 +23,7 @@ jobs:
     env:
       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v3
       - run: yarn --cwd ui install
       - name: Run Snyk to check for vulnerabilities
         uses: snyk/actions/node@master

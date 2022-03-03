@@ -706,3 +706,168 @@ func TestCheckWorkflowExistence(t *testing.T) {
 		assert.Len(semaphore.getCurrentPending(), 0)
 	})
 }
+
+func TestTriggerWFWithSemaphoreAndMutex(t *testing.T) {
+	assert := assert.New(t)
+	kube := fake.NewSimpleClientset()
+	var cm v1.ConfigMap
+	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	cm.Data["test-sem"] = "1"
+
+	ctx := context.Background()
+	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	assert.NoError(err)
+	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: synchronization-tmpl-level-sgg6t
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: dag-1-task-1
+        template: django-command
+      - name: dag-1-task-2
+        template: load-command
+  - container:
+      args:
+      - S=$(shuf -i 2-2 -n 1); echo begin to sleep $S; sleep $S; echo acquired lock
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources:
+        requests:
+          cpu: 100m
+          memory: 100Mi
+    name: load-command
+    synchronization:
+      mutex:
+        name: dag-2-task-1
+  - container:
+      args:
+      - echo 'django command!'
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources:
+        requests:
+          cpu: 100m
+          memory: 100Mi
+    name: django-command
+    synchronization:
+      semaphore:
+        configMapKeyRef:
+          key: test-sem
+          name: my-config
+  ttlStrategy:
+    secondsAfterCompletion: 600
+status:
+  conditions:
+  - status: "True"
+    type: PodRunning
+  finishedAt: null
+  nodes:
+    synchronization-tmpl-level-sgg6t:
+      children:
+      - synchronization-tmpl-level-sgg6t-1530845388
+      displayName: synchronization-tmpl-level-sgg6t
+      finishedAt: null
+      id: synchronization-tmpl-level-sgg6t
+      name: synchronization-tmpl-level-sgg6t
+      phase: Running
+      progress: 1/2
+      startedAt: "2022-02-28T18:13:00Z"
+      templateName: main
+      templateScope: local/synchronization-tmpl-level-sgg6t
+      type: Steps
+    synchronization-tmpl-level-sgg6t-1530845388:
+      boundaryID: synchronization-tmpl-level-sgg6t
+      children:
+      - synchronization-tmpl-level-sgg6t-1899337224
+      - synchronization-tmpl-level-sgg6t-1949670081
+      displayName: '[0]'
+      finishedAt: null
+      id: synchronization-tmpl-level-sgg6t-1530845388
+      name: synchronization-tmpl-level-sgg6t[0]
+      phase: Running
+      progress: 1/2
+      startedAt: "2022-02-28T18:13:00Z"
+      templateScope: local/synchronization-tmpl-level-sgg6t
+      type: StepGroup
+    synchronization-tmpl-level-sgg6t-1899337224:
+      boundaryID: synchronization-tmpl-level-sgg6t
+      displayName: dag-1-task-1
+      finishedAt: "2022-02-28T18:13:04Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: synchronization-tmpl-level-sgg6t-1899337224
+      name: synchronization-tmpl-level-sgg6t[0].dag-1-task-1
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: synchronization-tmpl-level-sgg6t/synchronization-tmpl-level-sgg6t-1899337224/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 2
+        memory: 1
+      startedAt: "2022-02-28T18:13:00Z"
+      templateName: django-command
+      templateScope: local/synchronization-tmpl-level-sgg6t
+      type: Pod
+    synchronization-tmpl-level-sgg6t-1949670081:
+      boundaryID: synchronization-tmpl-level-sgg6t
+      displayName: dag-1-task-2
+      finishedAt: null
+      hostNodeName: k3d-k3s-default-server-0
+      id: synchronization-tmpl-level-sgg6t-1949670081
+      name: synchronization-tmpl-level-sgg6t[0].dag-1-task-2
+      outputs:
+        exitCode: "0"
+      phase: Running
+      progress: 0/1
+      startedAt: "2022-02-28T18:13:00Z"
+      templateName: load-command
+      templateScope: local/synchronization-tmpl-level-sgg6t
+      type: Pod
+  phase: Running
+  progress: 1/2
+  resourcesDuration:
+    cpu: 2
+    memory: 1
+  startedAt: "2022-02-28T18:13:00Z"
+`)
+	syncLimitFunc := GetSyncLimitFunc(kube)
+
+	concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
+		// nextKey = key
+	}, WorkflowExistenceFunc)
+	t.Run("InitializeMutex", func(t *testing.T) {
+		tmpl := wf.Spec.Templates[1]
+		status, wfUpdate, msg, err := concurrenyMgr.TryAcquire(wf, "synchronization-tmpl-level-sgg6t-1949670081", tmpl.Synchronization)
+		assert.NoError(err)
+		assert.Empty(msg)
+		assert.True(status)
+		assert.True(wfUpdate)
+		assert.NotNil(wf.Status.Synchronization)
+		assert.NotNil(wf.Status.Synchronization.Mutex)
+	})
+	t.Run("InitializeSemaphore", func(t *testing.T) {
+		tmpl := wf.Spec.Templates[2]
+		status, wfUpdate, msg, err := concurrenyMgr.TryAcquire(wf, "synchronization-tmpl-level-sgg6t-1899337224", tmpl.Synchronization)
+		assert.NoError(err)
+		assert.Empty(msg)
+		assert.True(status)
+		assert.True(wfUpdate)
+		assert.NotNil(wf.Status.Synchronization)
+		assert.NotNil(wf.Status.Synchronization.Semaphore)
+	})
+
+}

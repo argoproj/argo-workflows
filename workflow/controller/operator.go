@@ -679,10 +679,26 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		woc.log.WithError(err).Warn("error updating taskset")
 	}
 
+	if woc.wf.Status.Phase.Completed() {
+		if err := woc.deleteTaskResults(ctx); err != nil {
+			woc.log.WithError(err).Warn("failed to delete task-results")
+		}
+	}
+
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
 	// Failing to do so means we can have inconsistent state.
 	// Pods may be be labeled multiple times.
 	woc.queuePodsForCleanup()
+}
+
+func (woc *wfOperationCtx) deleteTaskResults(ctx context.Context) error {
+	deletePropagationBackground := metav1.DeletePropagationBackground
+	return woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskResults(woc.wf.Namespace).
+		DeleteCollection(
+			ctx,
+			metav1.DeleteOptions{PropagationPolicy: &deletePropagationBackground},
+			metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + woc.wf.Name},
+		)
 }
 
 func (woc *wfOperationCtx) writeBackToInformer() error {
@@ -1227,16 +1243,8 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 		new.PodIP = pod.Status.PodIP
 	}
 
-	// both exit code and outputs maybe know before the pod terminates, we risk loosing them to pod being deleted
-	// if we do not capture them
-	if exitCode := getExitCode(pod); exitCode != nil {
-		if new.Outputs == nil {
-			new.Outputs = &wfv1.Outputs{}
-		}
-		new.Outputs.ExitCode = pointer.StringPtr(fmt.Sprint(*exitCode))
-	}
-
 	if x, ok := pod.Annotations[common.AnnotationKeyOutputs]; ok {
+		woc.log.Warn("workflow uses legacy/insecure pod patch, see https://argoproj.github.io/argo-workflows/workflow-rbac/")
 		if new.Outputs == nil {
 			new.Outputs = &wfv1.Outputs{}
 		}
@@ -1253,9 +1261,33 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 	}
 
 	if x, ok := pod.Annotations[common.AnnotationKeyProgress]; ok {
+		woc.log.Warn("workflow uses legacy/insecure pod patch, see https://argoproj.github.io/argo-workflows/workflow-rbac/")
 		if p, ok := wfv1.ParseProgress(x); ok {
 			new.Progress = p
 		}
+	}
+
+	obj, _, _ := woc.controller.taskResultInformer.Informer().GetStore().GetByKey(woc.wf.Namespace + "/" + old.ID)
+	if result, ok := obj.(*wfv1.WorkflowTaskResult); ok {
+		if result.Outputs.HasOutputs() {
+			if new.Outputs == nil {
+				new.Outputs = &wfv1.Outputs{}
+			}
+			result.Outputs.DeepCopyInto(new.Outputs) // preserve any existing values
+		}
+		if result.Progress.IsValid() {
+			new.Progress = result.Progress
+		}
+	}
+
+	// We capture the exit-code after we look for the task-result.
+	// All other outputs are set by the executor, only the exit-code is set by the controller.
+	// By waiting, we avoid breaking the race-condition check.
+	if exitCode := getExitCode(pod); exitCode != nil {
+		if new.Outputs == nil {
+			new.Outputs = &wfv1.Outputs{}
+		}
+		new.Outputs.ExitCode = pointer.StringPtr(fmt.Sprint(*exitCode))
 	}
 
 	// if we are transitioning from Pending to a different state, clear out unchanged message
@@ -3586,6 +3618,20 @@ func (woc *wfOperationCtx) substituteGlobalVariables() error {
 // POD_NAMES environment variable
 func (woc *wfOperationCtx) getPodName(nodeName, templateName string) string {
 	return wfutil.PodName(woc.wf.Name, nodeName, templateName, woc.wf.NodeID(nodeName), wfutil.GetPodNameVersion())
+}
+
+func (woc *wfOperationCtx) getServiceAccountTokenName(ctx context.Context, name string) (string, error) {
+	if name == "" {
+		name = "default"
+	}
+	account, err := woc.controller.kubeclientset.CoreV1().ServiceAccounts(woc.wf.Namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	if len(account.Secrets) == 0 {
+		return "", fmt.Errorf("service account %s/%s does not have any secrets", account.Namespace, account.Name)
+	}
+	return account.Secrets[0].Name, nil
 }
 
 // setWfPodNamesAnnotation sets an annotation on a workflow with the pod naming

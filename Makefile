@@ -51,7 +51,7 @@ GOTEST                ?= go test -v
 PROFILE               ?= minimal
 PLUGINS               ?= $(shell [ $PROFILE = plugins ] && echo false || echo true)
 # by keeping this short we speed up the tests
-DEFAULT_REQUEUE_TIME  ?= 100ms
+DEFAULT_REQUEUE_TIME  ?= 1s
 # whether or not to start the Argo Service in TLS mode
 SECURE                := false
 AUTH_MODE             := hybrid

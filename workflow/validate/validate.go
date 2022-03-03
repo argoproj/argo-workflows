@@ -526,8 +526,9 @@ func validateInputs(tmpl *wfv1.Template) (map[string]interface{}, error) {
 		artRef := fmt.Sprintf("inputs.artifacts.%s", art.Name)
 		scope[artRef] = true
 		if tmpl.IsLeaf() {
-			if art.Path == "" {
-				return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s.%s.path not specified", tmpl.Name, artRef)
+			err = art.CleanPath()
+			if err != nil {
+				return nil, errors.Errorf(errors.CodeBadRequest, "error in templates.%s.%s: %s", tmpl.Name, artRef, err.Error())
 			}
 			scope[fmt.Sprintf("inputs.artifacts.%s.path", art.Name)] = true
 		} else {
@@ -688,21 +689,6 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 	}
 	if tmpl.Parallelism != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.parallelism is only valid for steps and dag templates", tmpl.Name)
-	}
-	var automountServiceAccountToken *bool
-	if tmpl.AutomountServiceAccountToken != nil {
-		automountServiceAccountToken = tmpl.AutomountServiceAccountToken
-	} else if ctx.wf != nil && ctx.wf.Spec.AutomountServiceAccountToken != nil {
-		automountServiceAccountToken = ctx.wf.Spec.AutomountServiceAccountToken
-	}
-	executorServiceAccountName := ""
-	if tmpl.Executor != nil && tmpl.Executor.ServiceAccountName != "" {
-		executorServiceAccountName = tmpl.Executor.ServiceAccountName
-	} else if ctx.wf != nil && ctx.wf.Spec.Executor != nil && ctx.wf.Spec.Executor.ServiceAccountName != "" {
-		executorServiceAccountName = ctx.wf.Spec.Executor.ServiceAccountName
-	}
-	if automountServiceAccountToken != nil && !*automountServiceAccountToken && executorServiceAccountName == "" {
-		return errors.Errorf(errors.CodeBadRequest, "templates.%s.executor.serviceAccountName must not be empty if automountServiceAccountToken is false", tmpl.Name)
 	}
 	return nil
 }
@@ -954,8 +940,9 @@ func validateOutputs(scope map[string]interface{}, globalParams map[string]strin
 	for _, art := range tmpl.Outputs.Artifacts {
 		artRef := fmt.Sprintf("outputs.artifacts.%s", art.Name)
 		if tmpl.IsLeaf() {
-			if art.Path == "" {
-				return errors.Errorf(errors.CodeBadRequest, "templates.%s.%s.path not specified", tmpl.Name, artRef)
+			err = art.CleanPath()
+			if err != nil {
+				return errors.Errorf(errors.CodeBadRequest, "error in templates.%s.%s: %s", tmpl.Name, artRef, err.Error())
 			}
 		} else {
 			if art.Path != "" {

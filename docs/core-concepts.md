@@ -13,7 +13,7 @@
 * **Workflow Template**: a Kubernetes resource defining a reusable workflow for a namespace
 * **Cluster Workflow Template**: a Kubernetes resource defining a reusable workflow  for a cluster
 * **Inputs**: **parameters** and **artifacts** passed to the **step**,
-* **Outputs**: **parameters** and **artifacts** outputed by a **step**
+* **Outputs**: **parameters** and **artifacts** outputted by a **step**
 * **Parameters**: objects, strings, booleans, arrays
 * **Artifacts**: files saved by a container
 * **Artifact Repository**: a place where **artifacts** are stored
