@@ -1064,7 +1064,7 @@ spec:
     container:
       image: alpine:latest
       command: [sh, -c]
-      args: ["echo {{workflow.status}}"]
+      args: ["echo {{workflow.Failures}}"]
 `
 
 func TestExitHandler(t *testing.T) {
