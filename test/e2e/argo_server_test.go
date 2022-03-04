@@ -1302,6 +1302,15 @@ spec:
 			NotNull()
 	})
 
+	s.Run("Retry", func() {
+		s.e().PUT("/api/v1/archived-workflows/{uid}/retry", uid).
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.metadata.name").
+			NotNull()
+	})
+
 	s.Run("Delete", func() {
 		s.e().DELETE("/api/v1/archived-workflows/{uid}", uid).
 			Expect().
@@ -1334,15 +1343,6 @@ spec:
 			Array().
 			Length().
 			Equal(1)
-	})
-
-	s.Run("Retry", func() {
-		s.e().PUT("/api/v1/archived-workflows/{uid}/retry", uid).
-			Expect().
-			Status(200).
-			JSON().
-			Path("$.metadata.name").
-			NotNull()
 	})
 
 }
