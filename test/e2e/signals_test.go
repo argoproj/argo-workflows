@@ -15,7 +15,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
 
-const kill2xDuration = 75 * time.Second
+const kill2xDuration = 80 * time.Second
 
 // Tests the use of signals to kill containers.
 // argoproj/argosay:v2 does not contain sh, so you must use argoproj/argosay:v1.
