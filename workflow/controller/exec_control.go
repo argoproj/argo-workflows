@@ -75,13 +75,13 @@ func (woc *wfOperationCtx) handleExecutionControlError(nodeID string, wfNodesLoc
 	defer wfNodesLock.Unlock()
 
 	node := woc.wf.Status.Nodes[nodeID]
-	woc.markNodePhase(node.Name, wfv1.NodeFailed, errorMsg)
+	woc.markNodePhase(node.Name, wfv1.NodeFailed, errorMsg + "1")
 
 	// if node is a pod created from ContainerSet template
 	// then need to fail child nodes so they will not hang in Pending after pod deletion
 	for _, nodeID := range node.Children {
 		child := woc.wf.Status.Nodes[nodeID]
-		woc.markNodePhase(child.Name, wfv1.NodeFailed, errorMsg)
+		woc.markNodePhase(child.Name, wfv1.NodeFailed, errorMsg + "2")
 	}
 }
 

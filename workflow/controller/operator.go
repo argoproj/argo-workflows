@@ -1111,7 +1111,7 @@ func (woc *wfOperationCtx) failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
 		// fail suspended nodes when shuting down
 		if woc.GetShutdownStrategy().Enabled() && node.IsActiveSuspendNode() {
 			message := fmt.Sprintf("Stopped with strategy '%s'", woc.GetShutdownStrategy())
-			woc.markNodePhase(node.Name, wfv1.NodeFailed, message)
+			woc.markNodePhase(node.Name, wfv1.NodeFailed, message+"3")
 			continue
 		}
 
@@ -1119,7 +1119,7 @@ func (woc *wfOperationCtx) failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
 		deadlineExceeded := woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline)
 		if deadlineExceeded && (node.Phase == wfv1.NodePending || node.IsActiveSuspendNode()) {
 			message := "Step exceeded its deadline"
-			woc.markNodePhase(node.Name, wfv1.NodeFailed, message)
+			woc.markNodePhase(node.Name, wfv1.NodeFailed, message+"4")
 			continue
 		}
 	}
@@ -1231,9 +1231,9 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 			case 64:
 				// special emissary exit code indicating the emissary errors, rather than the sub-process failure,
 				// (unless the sub-process coincidentally exits with code 64 of course)
-				woc.markNodePhase(ctrNodeName, wfv1.NodeError, message)
+				woc.markNodePhase(ctrNodeName, wfv1.NodeError, message+"5")
 			default:
-				woc.markNodePhase(ctrNodeName, wfv1.NodeFailed, message)
+				woc.markNodePhase(ctrNodeName, wfv1.NodeFailed, message+"1")
 			}
 		}
 	}
