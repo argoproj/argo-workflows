@@ -1193,6 +1193,28 @@ spec:
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			uid = metadata.UID
 		})
+	var failedUid types.UID
+	s.Given().
+		Workflow(`
+metadata:
+  generateName: archie-
+  labels:
+    foo: 1
+spec:
+  entrypoint: run-archie
+  templates:
+    - name: run-archie
+      container:
+        image: argoproj/argosay:v2
+        command: [sh, -c]
+        args: ["echo intentional failure; exit 1"]`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeArchived).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			failedUid = metadata.UID
+		})
 	s.Given().
 		Workflow(`
 metadata:
@@ -1303,7 +1325,9 @@ spec:
 	})
 
 	s.Run("Retry", func() {
-		s.e().PUT("/api/v1/archived-workflows/{uid}/retry", uid).
+		s.Need(fixtures.BaseLayerArtifacts)
+		s.e().PUT("/api/v1/archived-workflows/{uid}/retry", failedUid).
+			WithBytes([]byte(`{"namespace": "argo", "restartSuccessful": false, "nodeFieldSelector": ""}`)).
 			Expect().
 			Status(200).
 			JSON().
