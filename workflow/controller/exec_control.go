@@ -26,12 +26,12 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 	case apiv1.PodSucceeded, apiv1.PodFailed:
 		// Skip any pod which are already completed
 		return
-	case apiv1.PodPending:
+	case apiv1.PodPending, apiv1.PodRunning:
 		// Check if we are currently shutting down
 		if woc.GetShutdownStrategy().Enabled() {
 			// Only delete pods that are not part of an onExit handler if we are "Stopping" or all pods if we are "Terminating"
 			_, onExitPod := pod.Labels[common.LabelKeyOnExit]
-
+			fmt.Println("******", onExitPod)
 			if !woc.GetShutdownStrategy().ShouldExecute(onExitPod) {
 				woc.log.Infof("Deleting Pending pod %s/%s as part of workflow shutdown with strategy: %s", pod.Namespace, pod.Name, woc.GetShutdownStrategy())
 				err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
