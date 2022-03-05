@@ -81,7 +81,9 @@ func (woc *wfOperationCtx) handleExecutionControlError(nodeID string, wfNodesLoc
 	// then need to fail child nodes so they will not hang in Pending after pod deletion
 	for _, nodeID := range node.Children {
 		child := woc.wf.Status.Nodes[nodeID]
-		woc.markNodePhase(child.Name, wfv1.NodeFailed, errorMsg + "2")
+		if  !child.Fulfilled() {
+			woc.markNodePhase(child.Name, wfv1.NodeFailed, errorMsg+"2")
+		}
 	}
 }
 
