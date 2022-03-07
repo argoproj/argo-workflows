@@ -1194,16 +1194,17 @@ spec:
 			uid = metadata.UID
 		})
 	var failedUid types.UID
+	var name string
 	s.Given().
 		Workflow(`
 metadata:
-  generateName: archie-
+  generateName: jughead-
   labels:
     foo: 1
 spec:
-  entrypoint: run-archie
+  entrypoint: run-jughead
   templates:
-    - name: run-archie
+    - name: run-jughead
       container:
         image: argoproj/argosay:v2
         command: [sh, -c]
@@ -1213,6 +1214,7 @@ spec:
 		WaitForWorkflow(fixtures.ToBeArchived).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			name = metadata.Name
 			failedUid = metadata.UID
 		})
 	s.Given().
@@ -1322,6 +1324,16 @@ spec:
 			JSON().
 			Path("$.metadata.name").
 			NotNull()
+	})
+
+	// we have to delete wf from namespace before retrying
+	s.Run("Delete", func() {
+		s.e().DELETE("/api/v1/workflows/argo/" + name).
+			Expect().
+			Status(200)
+		s.e().DELETE("/api/v1/workflows/argo/not-found").
+			Expect().
+			Status(404)
 	})
 
 	s.Run("Retry", func() {
