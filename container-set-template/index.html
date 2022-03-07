@@ -2837,6 +2837,7 @@ empty-dir volumes instead of persistent volume claims to share data between step
 <ol>
 <li>You must use the <a href="../workflow-executors/#emissary-emissary">Emissary Executor</a>.</li>
 <li>Or all containers must run in parallel - i.e. it is a graph with no dependencies.</li>
+<li>You cannot use <a href="../enhanced-depends-logic/">enhanced depends logic</a>.</li>
 <li>It will use the sum total of all resource requests, maybe costing more than the same DAG template. This will be a problem if your requests already cost a lot. See below.</li>
 </ol>
 <p>The containers can be arranged as a graph by specifying dependencies. This is suitable for running 10s rather than 100s
