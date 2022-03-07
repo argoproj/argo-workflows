@@ -792,3 +792,35 @@ status:
 		})
 	}
 }
+
+func TestPodCleanupRetryIsReset(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+metadata:
+  name: my-wf
+  namespace: test
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: my-image
+  `)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	assert.True(t, controller.processNextItem(ctx))
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+
+	woc.operate(ctx)
+	// Have to process twice because agent pod is also deleted
+	controller.processNextPodCleanupItem(ctx)
+	controller.processNextPodCleanupItem(ctx)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	podCleanupKey := "test/my-wf/labelPodCompleted"
+	assert.Equal(t, 0, controller.podCleanupQueue.NumRequeues(podCleanupKey))
+}
