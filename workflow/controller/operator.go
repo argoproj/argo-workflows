@@ -42,6 +42,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/diff"
 	envutil "github.com/argoproj/argo-workflows/v3/util/env"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/util/expr/argoexpr"
 	"github.com/argoproj/argo-workflows/v3/util/expr/env"
 	"github.com/argoproj/argo-workflows/v3/util/intstr"
 	"github.com/argoproj/argo-workflows/v3/util/resource"
@@ -827,16 +828,10 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 	if retryStrategy.Expression != "" && len(node.Children) > 0 {
 		localScope := buildRetryStrategyLocalScope(node, woc.wf.Status.Nodes)
 		scope := env.GetFuncMap(localScope)
-		res, err := expr.Eval(retryStrategy.Expression, scope)
+		shouldContinue, err := argoexpr.EvalBool(retryStrategy.Expression, scope)
 		if err != nil {
 			return nil, false, err
 		}
-
-		shouldContinue, ok := res.(bool)
-		if !ok {
-			return nil, false, fmt.Errorf("expression did not evaluate to a boolean")
-		}
-
 		if !shouldContinue {
 			return woc.markNodePhase(node.Name, lastChildNode.Phase, "retryStrategy.expression evaluated to false"), true, nil
 		}
