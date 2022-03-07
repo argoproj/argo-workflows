@@ -38,7 +38,7 @@ func matchTransientErrPattern(err error) bool {
 	if pattern == "" {
 		return false
 	}
-	match, _ := regexp.MatchString(pattern, err.Error())
+	match, _ := regexp.MatchString(pattern, generateErrorString(err))
 	return match
 }
 
@@ -63,10 +63,7 @@ func isTransientNetworkErr(err error) bool {
 		}
 	}
 
-	errorString := err.Error()
-	if exitErr, ok := err.(*exec.ExitError); ok {
-		errorString = fmt.Sprintf("%s %s", errorString, exitErr.Stderr)
-	}
+	errorString := generateErrorString(err)
 	if strings.Contains(errorString, "net/http: TLS handshake timeout") {
 		// If error is - tlsHandshakeTimeoutError, retry.
 		return true
@@ -79,4 +76,12 @@ func isTransientNetworkErr(err error) bool {
 	}
 
 	return false
+}
+
+func generateErrorString(err error) string {
+	errorString := err.Error()
+	if exitErr, ok := err.(*exec.ExitError); ok {
+		errorString = fmt.Sprintf("%s %s", errorString, exitErr.Stderr)
+	}
+	return errorString
 }
