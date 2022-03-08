@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"os/exec"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -23,6 +24,10 @@ var (
 	ioTimeoutErr           net.Error = netError("i/o timeout")
 	connectionTimedout     net.Error = netError("connection timed out")
 	transientErr           net.Error = netError("this error is transient")
+	transientExitErr                 = exec.ExitError{
+		ProcessState: &os.ProcessState{},
+		Stderr:       []byte("this error is transient"),
+	}
 )
 
 const transientEnvVarKey = "TRANSIENT_ERROR_PATTERN"
@@ -67,9 +72,11 @@ func TestIsTransientErr(t *testing.T) {
 	t.Run("TransientErrorPattern", func(t *testing.T) {
 		_ = os.Setenv(transientEnvVarKey, "this error is transient")
 		assert.True(t, IsTransientErr(transientErr))
+		assert.True(t, IsTransientErr(&transientExitErr))
 
 		_ = os.Setenv(transientEnvVarKey, "this error is not transient")
 		assert.False(t, IsTransientErr(transientErr))
+		assert.False(t, IsTransientErr(&transientExitErr))
 
 		_ = os.Setenv(transientEnvVarKey, "")
 		assert.False(t, IsTransientErr(transientErr))
