@@ -1200,7 +1200,7 @@ spec:
 metadata:
   generateName: jughead-
   labels:
-    foo: 1
+    foo: 3
 spec:
   entrypoint: run-jughead
   templates:
@@ -1242,11 +1242,11 @@ spec:
 		{"ListEquals", "foo=1", 1},
 		{"ListDoubleEquals", "foo==1", 1},
 		{"ListIn", "foo in (1)", 1},
-		{"ListNotEquals", "foo!=1", 1},
-		{"ListNotIn", "foo notin (1)", 1},
-		{"ListExists", "foo", 2},
-		{"ListGreaterThan0", "foo>0", 2},
-		{"ListGreaterThan1", "foo>1", 1},
+		{"ListNotEquals", "foo!=1", 2},
+		{"ListNotIn", "foo notin (1)", 2},
+		{"ListExists", "foo", 3},
+		{"ListGreaterThan0", "foo>0", 3},
+		{"ListGreaterThan1", "foo>1", 2},
 		{"ListLessThan1", "foo<1", 0},
 		{"ListLessThan2", "foo<2", 1},
 	} {
@@ -1339,7 +1339,7 @@ spec:
 	s.Run("Retry", func() {
 		s.Need(fixtures.BaseLayerArtifacts)
 		s.e().PUT("/api/v1/archived-workflows/{uid}/retry", failedUid).
-			WithBytes([]byte(`{"namespace": "argo", "restartSuccessful": false, "nodeFieldSelector": ""}`)).
+			WithBytes([]byte(`{"namespace": "argo"}`)).
 			Expect().
 			Status(200).
 			JSON().
