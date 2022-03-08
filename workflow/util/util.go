@@ -744,6 +744,17 @@ func RetryWorkflow(ctx context.Context, podIf v1.PodInterface, wfClient v1alpha1
 	return updatedWf, err
 }
 
+// RetryWorkflow creates a workflow from the workflow archive
+func RetryArchivedWorkflow(ctx context.Context, podIf v1.PodInterface, wfClient v1alpha1.WorkflowInterface, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
+	wf.ObjectMeta.ResourceVersion = ""
+	updatedWf, err := prepareWorkflowForRetry(ctx, wf, podIf, restartSuccessful, nodeFieldSelector)
+	if err != nil {
+		return nil, err
+	}
+
+	return updatedWf, err
+}
+
 func prepareWorkflowForRetry(ctx context.Context, wf *wfv1.Workflow, podIf v1.PodInterface, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
 
 	switch wf.Status.Phase {

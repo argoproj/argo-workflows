@@ -1327,13 +1327,10 @@ spec:
 	})
 
 	// we have to delete wf from namespace before retrying
-	s.Run("Delete", func() {
+	s.Run("DeleteForRetry", func() {
 		s.e().DELETE("/api/v1/workflows/argo/" + name).
 			Expect().
 			Status(200)
-		s.e().DELETE("/api/v1/workflows/argo/not-found").
-			Expect().
-			Status(404)
 	})
 
 	s.Run("Retry", func() {
