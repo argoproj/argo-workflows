@@ -1305,7 +1305,7 @@ spec:
 	s.Run("Resubmit", func() {
 		s.Need(fixtures.BaseLayerArtifacts)
 		s.e().PUT("/api/v1/archived-workflows/{uid}/resubmit", uid).
-			WithBytes([]byte(`{"memoized": false}`)).
+			WithBytes([]byte(`{"namespace": "argo", "memoized": false}`)).
 			Expect().
 			Status(200).
 			JSON().
