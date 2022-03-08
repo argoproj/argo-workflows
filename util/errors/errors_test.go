@@ -26,7 +26,7 @@ var (
 	transientErr           net.Error = netError("this error is transient")
 	transientExitErr                 = exec.ExitError{
 		ProcessState: &os.ProcessState{},
-		Stderr: []byte("this error is transient"),
+		Stderr:       []byte("this error is transient"),
 	}
 )
 
