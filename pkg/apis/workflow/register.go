@@ -32,4 +32,5 @@ const (
 	WorkflowTaskSetPlural            string = "workflowtasksets"
 	WorkflowTaskSetShortName         string = "wfts"
 	WorkflowTaskSetFullName          string = WorkflowTaskSetPlural + "." + Group
+	WorkflowTaskResultKind           string = "WorkflowTaskResult"
 )

@@ -10,15 +10,9 @@ Several sets of manifests are provided:
 | [quick-start-mysql.yaml](quick-start-mysql.yaml) | Quick start including MinIO and MySQL. Suitable for testing. |
 | [quick-start-postgres.yaml](quick-start-postgres.yaml) | Quick start including MinIO and Postgres. Suitable for testing. |
 
+Please install with [Helm](https://github.com/argoproj/argo-helm) or `kubectl apply -f https://...`.
+
 If installing with `kubectl apply -f https://...`, remember to use the link to the file's raw version.
 Otherwise you will get `mapping values are not allowed in this context`.
 
-## Kustomize 
-
-> v2.8 and after
-
-You can use `./cluster-install` and `./namespace-install` as Kustomize remote bases.
-
-## Helm
-
-See [argo-helm](https://github.com/argoproj/argo-helm).
+Installation with kustomize is not supported.

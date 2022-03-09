@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Generate changelog
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           ref: master
           fetch-depth: 0

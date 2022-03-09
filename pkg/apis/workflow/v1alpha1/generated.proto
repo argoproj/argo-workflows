@@ -782,6 +782,8 @@ message NodeResult {
   optional string message = 2;
 
   optional Outputs outputs = 3;
+
+  optional string progress = 4;
 }
 
 // NodeStatus contains status information about an individual node in the workflow
@@ -1869,6 +1871,24 @@ message WorkflowStep {
   // Hooks holds the lifecycle hook which is invoked at lifecycle of
   // step, irrespective of the success, failure, or error status of the primary step
   map<string, LifecycleHook> hooks = 12;
+}
+
+// WorkflowTaskResult is a used to communicate a result back to the controller. Unlike WorkflowTaskSet, it has
+// more capacity. This is an internal type. Users should never create this resource directly, much like you would
+// never create a ReplicaSet directly.
+// +genclient
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message WorkflowTaskResult {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+
+  optional NodeResult nodeResult = 2;
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message WorkflowTaskResultList {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+
+  repeated WorkflowTaskResult items = 2;
 }
 
 // +genclient

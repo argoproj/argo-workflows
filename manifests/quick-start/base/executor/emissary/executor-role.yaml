@@ -7,8 +7,9 @@ metadata:
       Recomended minimum permissions for the `emissary` executor.
 rules:
   - apiGroups:
-      - ""
+      - argoproj.io
     resources:
-      - pods
+      - workflowtaskresults
     verbs:
+      - create
       - patch

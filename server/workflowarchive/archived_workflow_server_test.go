@@ -84,6 +84,15 @@ func Test_archivedWorkflowServer(t *testing.T) {
 				"succeeded-node": {Name: "succeeded-node", StartedAt: createdTime, FinishedAt: finishedTime, Phase: wfv1.NodeSucceeded, Message: "succeeded"}},
 		},
 	}, nil)
+	repo.On("GetWorkflow", "resubmit-uid").Return(&wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "resubmit-wf"},
+		Spec: wfv1.WorkflowSpec{
+			Entrypoint: "my-entrypoint",
+			Templates: []wfv1.Template{
+				{Name: "my-entrypoint", Container: &apiv1.Container{Image: "docker/whalesay:latest"}},
+			},
+		},
+	}, nil)
 	wfClient.AddReactor("create", "workflows", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
 		return true, &wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-name-resubmitted"},
@@ -98,6 +107,9 @@ func Test_archivedWorkflowServer(t *testing.T) {
 	}, nil)
 	repo.On("RetryWorkflow", "failed-uid").Return(&wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Name: "failed-wf"},
+	}, nil)
+	repo.On("ResubmitWorkflow", "my-uid").Return(&wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "my-name"},
 		Spec: wfv1.WorkflowSpec{
 			Entrypoint: "my-entrypoint",
 			Templates: []wfv1.Template{
@@ -174,6 +186,11 @@ func Test_archivedWorkflowServer(t *testing.T) {
 	})
 	t.Run("RetryArchivedWorkflow", func(t *testing.T) {
 		wf, err := w.RetryArchivedWorkflow(ctx, &workflowarchivepkg.RetryArchivedWorkflowRequest{Uid: "failed-uid"})
+		assert.NoError(t, err)
+		assert.NotNil(t, wf)
+	})
+	t.Run("ResubmitArchivedWorkflow", func(t *testing.T) {
+		wf, err := w.ResubmitArchivedWorkflow(ctx, &workflowarchivepkg.ResubmitArchivedWorkflowRequest{Uid: "resubmit-uid", Memoized: false})
 		assert.NoError(t, err)
 		assert.NotNil(t, wf)
 	})

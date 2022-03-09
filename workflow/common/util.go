@@ -18,8 +18,6 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -28,9 +26,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util"
-	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/argoproj/argo-workflows/v3/util/template"
-	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 )
 
 // FindOverlappingVolume looks an artifact path, checks if it overlaps with any
@@ -299,51 +295,6 @@ func RunShellCommand(arg ...string) ([]byte, error) {
 	}
 	arg = append([]string{shellFlag}, arg...)
 	return RunCommand(name, arg...)
-}
-
-// Run	Seconds
-// 0	0.000
-// 1	1.000
-// 2	2.000
-// 3	3.000
-// 4	4.000
-var defaultPatchBackoff = wait.Backoff{
-	Steps:    5,
-	Duration: 1 * time.Second,
-	Factor:   1,
-}
-
-// AddPodAnnotation adds an annotation to pod
-func AddPodAnnotation(ctx context.Context, c kubernetes.Interface, podName, namespace, key, value string, options ...interface{}) error {
-	backoff := defaultPatchBackoff
-	for _, option := range options {
-		switch v := option.(type) {
-		case wait.Backoff:
-			backoff = v
-		default:
-			panic("unknown option type")
-		}
-	}
-	return addPodMetadata(ctx, c, "annotations", podName, namespace, key, value, backoff)
-}
-
-// addPodMetadata is helper to either add a pod label or annotation to the pod
-func addPodMetadata(ctx context.Context, c kubernetes.Interface, field, podName, namespace, key, value string, backoff wait.Backoff) error {
-	metadata := map[string]interface{}{
-		"metadata": map[string]interface{}{
-			field: map[string]string{
-				key: value,
-			},
-		},
-	}
-	patch, err := json.Marshal(metadata)
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
-	return waitutil.Backoff(backoff, func() (bool, error) {
-		_, err := c.CoreV1().Pods(namespace).Patch(ctx, podName, types.MergePatchType, patch, metav1.PatchOptions{})
-		return !errorsutil.IsTransientErr(err), err
-	})
 }
 
 const deleteRetries = 3

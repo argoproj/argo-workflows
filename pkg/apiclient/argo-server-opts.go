@@ -12,7 +12,8 @@ type ArgoServerOpts struct {
 	Secure             bool
 	InsecureSkipVerify bool
 	// whether or not to use HTTP1
-	HTTP1 bool
+	HTTP1   bool
+	Headers []string
 }
 
 func (o ArgoServerOpts) GetURL() string {

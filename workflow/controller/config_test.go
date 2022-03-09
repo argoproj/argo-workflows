@@ -11,7 +11,7 @@ import (
 func TestUpdateConfig(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
-	err := controller.updateConfig(&config.Config{ExecutorImage: "argoexec:latest"})
+	err := controller.updateConfig(&config.Config{})
 	assert.NoError(t, err)
 	assert.NotNil(t, controller.Config)
 	assert.NotNil(t, controller.archiveLabelSelector)

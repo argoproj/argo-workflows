@@ -1,4 +1,4 @@
-# script templates provide a way to run arbitary snippets of code
+# script templates provide a way to run arbitrary snippets of code
 # in any language, to produce a output "result" via the standard out
 # of the template. Results can then be referenced using the variable,
 # {{steps.<stepname>.outputs.result}}, and used as parameter to other

@@ -190,6 +190,27 @@ data:
     python:alpine3.6:
       command: [python3]
 
+  # Defaults for main containers. These can be overridden by the template.
+  # <= v3.3 only `resources` are supported.
+  # >= v3.4 all fields are supported, including security context.
+  mainContainer: |
+    imagePullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: 0.1
+        memory: 64Mi
+      limits:
+        cpu: 0.5
+        memory: 512Mi
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      runAsUser: 1000
+
   # executor controls how the init and wait container should be customized
   # (available since Argo v2.3)
   executor: |
@@ -339,7 +360,7 @@ data:
     # RBAC Config. >= v2.12
     rbac:
       enabled: false
-    # Skip TLS verify, not recomended in production environments. Useful for testing purposes. >= v3.2.4
+    # Skip TLS verify, not recommended in production environments. Useful for testing purposes. >= v3.2.4
     insecureSkipVerify: false
 
   # workflowRestrictions restricts the Workflows that the controller will process.

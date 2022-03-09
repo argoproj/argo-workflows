@@ -51,3 +51,8 @@ func (h ArchivedWorkflowsServiceClient) RetryArchivedWorkflow(_ context.Context,
 	out := &wfv1.Workflow{}
 	return out, h.Put(in, out, "/api/v1/archived-workflows/{uid}/retry")
 }
+
+func (h ArchivedWorkflowsServiceClient) ResubmitArchivedWorkflow(_ context.Context, in *workflowarchivepkg.ResubmitArchivedWorkflowRequest, _ ...grpc.CallOption) (*wfv1.Workflow, error) {
+	out := &wfv1.Workflow{}
+	return out, h.Put(in, out, "/api/v1/archived-workflows/{uid}/resubmit")
+}

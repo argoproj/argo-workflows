@@ -11,7 +11,8 @@ import (
 	restclient "k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/workflow/executor/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	execcommon "github.com/argoproj/argo-workflows/v3/workflow/executor/common"
 )
 
 type K8sAPIExecutor struct {
@@ -44,7 +45,7 @@ func (k *K8sAPIExecutor) GetOutputStream(ctx context.Context, containerName stri
 // Wait for the container to complete
 func (k *K8sAPIExecutor) Wait(ctx context.Context, containerNames []string) error {
 	return k.Until(ctx, func(pod *corev1.Pod) bool {
-		return common.AllTerminated(pod.Status.ContainerStatuses, containerNames)
+		return execcommon.AllTerminated(pod.Status.ContainerStatuses, containerNames) || pod.Status.Reason == common.ErrDeadlineExceeded
 	})
 }
 
