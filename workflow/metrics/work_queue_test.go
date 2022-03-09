@@ -19,7 +19,6 @@ func TestMetricsWorkQueue(t *testing.T) {
 
 	m.newWorker("test")
 	assert.Len(t, m.workersBusy, 1)
-	assert.Equal(t, float64(0), *write(m.workersBusy["test"]).Gauge.Value)
 
 	m.newWorker("test")
 	assert.Len(t, m.workersBusy, 1)
@@ -28,11 +27,8 @@ func TestMetricsWorkQueue(t *testing.T) {
 	defer queue.ShutDown()
 
 	queue.Add("A")
-	assert.Equal(t, float64(0), *write(m.workersBusy["test"]).Gauge.Value)
 
 	queue.Get()
-	assert.Equal(t, float64(1), *write(m.workersBusy["test"]).Gauge.Value)
 
 	queue.Done("A")
-	assert.Equal(t, float64(0), *write(m.workersBusy["test"]).Gauge.Value)
 }

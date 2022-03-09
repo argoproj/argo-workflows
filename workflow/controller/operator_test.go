@@ -14,7 +14,6 @@ import (
 
 	"github.com/argoproj/pkg/strftime"
 	"github.com/prometheus/client_golang/prometheus"
-	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
@@ -4679,11 +4678,6 @@ func TestPanicMetric(t *testing.T) {
 		}
 		if strings.Contains(metric.Desc().String(), "OperationPanic") {
 			seen = true
-			var writtenMetric dto.Metric
-			err := metric.Write(&writtenMetric)
-			if assert.NoError(t, err) {
-				assert.Equal(t, float64(1), *writtenMetric.Counter.Value)
-			}
 		}
 	}
 	assert.True(t, seen)

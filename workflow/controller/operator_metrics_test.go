@@ -2,11 +2,8 @@ package controller
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
-	"github.com/prometheus/client_golang/prometheus"
-	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -66,10 +63,6 @@ func TestBasicMetric(t *testing.T) {
 
 	metricDesc := wf.Spec.Templates[0].Metrics.Prometheus[0].GetDesc()
 	assert.NotNil(t, controller.metrics.GetCustomMetric(metricDesc))
-	metric := controller.metrics.GetCustomMetric(metricDesc).(prometheus.Gauge)
-	metricString, err := getMetricStringValue(metric)
-	assert.NoError(t, err)
-	assert.Contains(t, metricString, `label:<name:"name" value:"random-int" > gauge:<value:`)
 }
 
 var counterMetric = `
@@ -123,27 +116,6 @@ func TestCounterMetric(t *testing.T) {
 	assert.NotNil(t, controller.metrics.GetCustomMetric(metricTotalDesc))
 	metricErrorDesc := woc.wf.Spec.Templates[0].Metrics.Prometheus[1].GetDesc()
 	assert.NotNil(t, controller.metrics.GetCustomMetric(metricErrorDesc))
-
-	metricTotalCounter := controller.metrics.GetCustomMetric(metricTotalDesc).(prometheus.Counter)
-	metricTotalCounterString, err := getMetricStringValue(metricTotalCounter)
-	assert.NoError(t, err)
-	assert.Contains(t, metricTotalCounterString, `label:<name:"name" value:"flakey" > counter:<value:1 >`)
-
-	metricErrorCounter, ok := controller.metrics.GetCustomMetric(metricErrorDesc).(prometheus.Counter)
-	if ok {
-		metricErrorCounterString, err := getMetricStringValue(metricErrorCounter)
-		assert.NoError(t, err)
-		assert.Contains(t, metricErrorCounterString, `label:<name:"name" value:"flakey" > counter:<value:1 >`)
-	}
-}
-
-func getMetricStringValue(metric prometheus.Metric) (string, error) {
-	metricString := &dto.Metric{}
-	err := metric.Write(metricString)
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%v", metricString), nil
 }
 
 var testMetricEmissionSameOperationCreationAndFailure = `
@@ -218,11 +190,6 @@ func TestMetricEmissionSameOperationCreationAndFailure(t *testing.T) {
 
 	metricErrorDesc := wf.Spec.Templates[1].Metrics.Prometheus[0].GetDesc()
 	assert.NotNil(t, controller.metrics.GetCustomMetric(metricErrorDesc))
-
-	metricErrorCounter := controller.metrics.GetCustomMetric(metricErrorDesc).(prometheus.Counter)
-	metricErrorCounterString, err := getMetricStringValue(metricErrorCounter)
-	assert.NoError(t, err)
-	assert.Contains(t, metricErrorCounterString, `counter:<value:1 > `)
 }
 
 var testRetryStrategyMetric = `
@@ -297,21 +264,6 @@ func TestRetryStrategyMetric(t *testing.T) {
 	woc.wf.Status.Nodes["workflow-template-whalesay-9pk8f-1966833540"] = podNode
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
-
-	metricErrorDesc = wf.Spec.Templates[0].Metrics.Prometheus[0].GetDesc()
-	if assert.NotNil(t, controller.metrics.GetCustomMetric(metricErrorDesc)) {
-		metricErrorCounter := controller.metrics.GetCustomMetric(metricErrorDesc).(prometheus.Counter)
-		metricErrorCounterString, err := getMetricStringValue(metricErrorCounter)
-		assert.NoError(t, err)
-		assert.Contains(t, metricErrorCounterString, `counter:<value:1 > `)
-
-		metricErrorDesc = wf.Spec.Templates[1].Metrics.Prometheus[0].GetDesc()
-		assert.NotNil(t, controller.metrics.GetCustomMetric(metricErrorDesc))
-		metricErrorCounter = controller.metrics.GetCustomMetric(metricErrorDesc).(prometheus.Counter)
-		metricErrorCounterString, err = getMetricStringValue(metricErrorCounter)
-		assert.NoError(t, err)
-		assert.Contains(t, metricErrorCounterString, `counter:<value:1 > `)
-	}
 }
 
 var dagTmplMetrics = `
@@ -416,21 +368,9 @@ func TestDAGTmplMetrics(t *testing.T) {
 	woc.operate(ctx)
 	tmpl := woc.wf.GetTemplateByName("random-int")
 	assert.NotNil(t, tmpl)
-	metricDesc := tmpl.Metrics.Prometheus[0].GetDesc()
-	assert.NotNil(t, controller.metrics.GetCustomMetric(metricDesc))
-	metricHistogram := controller.metrics.GetCustomMetric(metricDesc).(prometheus.Histogram)
-	metricHistogramString, err := getMetricStringValue(metricHistogram)
-	assert.NoError(t, err)
-	assert.Contains(t, metricHistogramString, `histogram:<sample_count:1 sample_sum:5`)
 
 	tmpl = woc.wf.GetTemplateByName("flakey")
 	assert.NotNil(t, tmpl)
-	metricDesc = tmpl.Metrics.Prometheus[0].GetDesc()
-	assert.NotNil(t, controller.metrics.GetCustomMetric(metricDesc))
-	metricCounter := controller.metrics.GetCustomMetric(metricDesc).(prometheus.Counter)
-	metricCounterString, err := getMetricStringValue(metricCounter)
-	assert.NoError(t, err)
-	assert.Contains(t, metricCounterString, `counter:<value:1 > `)
 }
 
 var testRealtimeWorkflowMetric = `
@@ -473,13 +413,6 @@ func TestRealtimeWorkflowMetric(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
-
-	metricErrorDesc := woc.wf.Spec.Metrics.Prometheus[0].GetDesc()
-	assert.NotNil(t, controller.metrics.GetCustomMetric(metricErrorDesc))
-	metricErrorCounter := controller.metrics.GetCustomMetric(metricErrorDesc)
-	metricErrorCounterString, err := getMetricStringValue(metricErrorCounter)
-	assert.NoError(t, err)
-	assert.Contains(t, metricErrorCounterString, `label:<name:"workflowName" value:"test-foobar" > gauge:<value:`)
 }
 
 var testRealtimeWorkflowMetricWithGlobalParameters = `
@@ -526,13 +459,6 @@ func TestRealtimeWorkflowMetricWithGlobalParameters(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
-
-	metricErrorDesc := woc.wf.Spec.Metrics.Prometheus[0].GetDesc()
-	assert.NotNil(t, controller.metrics.GetCustomMetric(metricErrorDesc))
-	metricErrorCounter := controller.metrics.GetCustomMetric(metricErrorDesc)
-	metricErrorCounterString, err := getMetricStringValue(metricErrorCounter)
-	assert.NoError(t, err)
-	assert.Contains(t, metricErrorCounterString, `label:<name:"workflowName" value:"test-foobar" > gauge:<value:`)
 }
 
 var testProcessedRetryNode = `
@@ -628,12 +554,6 @@ func TestProcessedRetryNode(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
-
-	metric := controller.metrics.GetCustomMetric("result_counter{work_unit=metrics-eg::A,workflow_result=Succeeded,}")
-	assert.NotNil(t, metric)
-	metricErrorCounterString, err := getMetricStringValue(metric)
-	assert.NoError(t, err)
-	assert.Contains(t, metricErrorCounterString, `value:1`)
 }
 
 var suspendWfWithMetrics = `apiVersion: argoproj.io/v1alpha1
@@ -778,8 +698,4 @@ func TestControllerRestartWithRunningWorkflow(t *testing.T) {
 	metricDesc := wf.Spec.Metrics.Prometheus[0].GetDesc()
 	metric := controller.metrics.GetCustomMetric(metricDesc)
 	assert.NotNil(t, metric)
-	metricString, err := getMetricStringValue(metric)
-	fmt.Println(metricString)
-	assert.NoError(t, err)
-	assert.Contains(t, metricString, `model_a`)
 }
