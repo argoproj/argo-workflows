@@ -64,6 +64,15 @@ func Test_archivedWorkflowServer(t *testing.T) {
 			},
 		},
 	}, nil)
+	repo.On("GetWorkflow", "resubmit-uid").Return(&wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "resubmit-wf"},
+		Spec: wfv1.WorkflowSpec{
+			Entrypoint: "my-entrypoint",
+			Templates: []wfv1.Template{
+				{Name: "my-entrypoint", Container: &apiv1.Container{Image: "docker/whalesay:latest"}},
+			},
+		},
+	}, nil)
 	wfClient.AddReactor("create", "workflows", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
 		return true, &wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-name-resubmitted"},
@@ -75,6 +84,15 @@ func Test_archivedWorkflowServer(t *testing.T) {
 	}, nil)
 	repo.On("ListWorkflowsLabelValues", "my-key").Return(&wfv1.LabelValues{
 		Items: []string{"my-key=foo", "my-key=bar"},
+	}, nil)
+	repo.On("ResubmitWorkflow", "my-uid").Return(&wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "my-name"},
+		Spec: wfv1.WorkflowSpec{
+			Entrypoint: "my-entrypoint",
+			Templates: []wfv1.Template{
+				{Name: "my-entrypoint", Container: &apiv1.Container{}},
+			},
+		},
 	}, nil)
 
 	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClient), auth.KubeKey, kubeClient)
@@ -142,5 +160,10 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		resp, err := w.ListArchivedWorkflowLabelValues(ctx, &workflowarchivepkg.ListArchivedWorkflowLabelValuesRequest{ListOptions: &metav1.ListOptions{LabelSelector: "my-key"}})
 		assert.NoError(t, err)
 		assert.Len(t, resp.Items, 2)
+	})
+	t.Run("ResubmitArchivedWorkflow", func(t *testing.T) {
+		wf, err := w.ResubmitArchivedWorkflow(ctx, &workflowarchivepkg.ResubmitArchivedWorkflowRequest{Uid: "resubmit-uid", Memoized: false})
+		assert.NoError(t, err)
+		assert.NotNil(t, wf)
 	})
 }

@@ -19,6 +19,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 type archivedWorkflowServer struct {
@@ -187,4 +188,24 @@ func (w *archivedWorkflowServer) ListArchivedWorkflowLabelValues(ctx context.Con
 		return nil, status.Error(codes.NotFound, "not found")
 	}
 	return labels, err
+}
+
+func (w *archivedWorkflowServer) ResubmitArchivedWorkflow(ctx context.Context, req *workflowarchivepkg.ResubmitArchivedWorkflowRequest) (*wfv1.Workflow, error) {
+	wfClient := auth.GetWfClient(ctx)
+
+	wf, err := w.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: req.Uid})
+	if err != nil {
+		return nil, err
+	}
+
+	newWF, err := util.FormulateResubmitWorkflow(wf, req.Memoized)
+	if err != nil {
+		return nil, err
+	}
+
+	created, err := util.SubmitWorkflow(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wfClient, req.Namespace, newWF, &wfv1.SubmitOpts{})
+	if err != nil {
+		return nil, err
+	}
+	return created, nil
 }

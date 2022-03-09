@@ -1302,6 +1302,17 @@ spec:
 			NotNull()
 	})
 
+	s.Run("Resubmit", func() {
+		s.Need(fixtures.BaseLayerArtifacts)
+		s.e().PUT("/api/v1/archived-workflows/{uid}/resubmit", uid).
+			WithBytes([]byte(`{"namespace": "argo", "memoized": false}`)).
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.metadata.name").
+			NotNull()
+	})
+
 	s.Run("Delete", func() {
 		s.e().DELETE("/api/v1/archived-workflows/{uid}", uid).
 			Expect().

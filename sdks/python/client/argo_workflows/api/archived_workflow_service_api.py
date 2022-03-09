@@ -24,6 +24,7 @@ from argo_workflows.model_utils import (  # noqa: F401
 from argo_workflows.model.grpc_gateway_runtime_error import GrpcGatewayRuntimeError
 from argo_workflows.model.io_argoproj_workflow_v1alpha1_label_keys import IoArgoprojWorkflowV1alpha1LabelKeys
 from argo_workflows.model.io_argoproj_workflow_v1alpha1_label_values import IoArgoprojWorkflowV1alpha1LabelValues
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_resubmit_archived_workflow_request import IoArgoprojWorkflowV1alpha1ResubmitArchivedWorkflowRequest
 from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
 from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_list import IoArgoprojWorkflowV1alpha1WorkflowList
 
@@ -696,4 +697,131 @@ class ArchivedWorkflowServiceApi(object):
             },
             api_client=api_client,
             callable=__list_archived_workflows
+        )
+
+        def __resubmit_archived_workflow(
+            self,
+            uid,
+            body,
+            **kwargs
+        ):
+            """resubmit_archived_workflow  # noqa: E501
+
+            This method makes a synchronous HTTP request by default. To make an
+            asynchronous HTTP request, please pass async_req=True
+
+            >>> thread = api.resubmit_archived_workflow(uid, body, async_req=True)
+            >>> result = thread.get()
+
+            Args:
+                uid (str):
+                body (IoArgoprojWorkflowV1alpha1ResubmitArchivedWorkflowRequest):
+
+            Keyword Args:
+                _return_http_data_only (bool): response data without head status
+                    code and headers. Default is True.
+                _preload_content (bool): if False, the urllib3.HTTPResponse object
+                    will be returned without reading/decoding response data.
+                    Default is True.
+                _request_timeout (int/float/tuple): timeout setting for this request. If
+                    one number provided, it will be total request timeout. It can also
+                    be a pair (tuple) of (connection, read) timeouts.
+                    Default is None.
+                _check_input_type (bool): specifies if type checking
+                    should be done one the data sent to the server.
+                    Default is True.
+                _check_return_type (bool): specifies if type checking
+                    should be done one the data received from the server.
+                    Default is True.
+                _host_index (int/None): specifies the index of the server
+                    that we want to use.
+                    Default is read from the configuration.
+                async_req (bool): execute request asynchronously
+
+            Returns:
+                IoArgoprojWorkflowV1alpha1Workflow
+                    If the method is called asynchronously, returns the request
+                    thread.
+            """
+            kwargs['async_req'] = kwargs.get(
+                'async_req', False
+            )
+            kwargs['_return_http_data_only'] = kwargs.get(
+                '_return_http_data_only', True
+            )
+            kwargs['_preload_content'] = kwargs.get(
+                '_preload_content', True
+            )
+            kwargs['_request_timeout'] = kwargs.get(
+                '_request_timeout', None
+            )
+            kwargs['_check_input_type'] = kwargs.get(
+                '_check_input_type', True
+            )
+            kwargs['_check_return_type'] = kwargs.get(
+                '_check_return_type', True
+            )
+            kwargs['_host_index'] = kwargs.get('_host_index')
+            kwargs['uid'] = \
+                uid
+            kwargs['body'] = \
+                body
+            return self.call_with_http_info(**kwargs)
+
+        self.resubmit_archived_workflow = _Endpoint(
+            settings={
+                'response_type': (IoArgoprojWorkflowV1alpha1Workflow,),
+                'auth': [],
+                'endpoint_path': '/api/v1/archived-workflows/{uid}/resubmit',
+                'operation_id': 'resubmit_archived_workflow',
+                'http_method': 'PUT',
+                'servers': None,
+            },
+            params_map={
+                'all': [
+                    'uid',
+                    'body',
+                ],
+                'required': [
+                    'uid',
+                    'body',
+                ],
+                'nullable': [
+                ],
+                'enum': [
+                ],
+                'validation': [
+                ]
+            },
+            root_map={
+                'validations': {
+                },
+                'allowed_values': {
+                },
+                'openapi_types': {
+                    'uid':
+                        (str,),
+                    'body':
+                        (IoArgoprojWorkflowV1alpha1ResubmitArchivedWorkflowRequest,),
+                },
+                'attribute_map': {
+                    'uid': 'uid',
+                },
+                'location_map': {
+                    'uid': 'path',
+                    'body': 'body',
+                },
+                'collection_format_map': {
+                }
+            },
+            headers_map={
+                'accept': [
+                    'application/json'
+                ],
+                'content_type': [
+                    'application/json'
+                ]
+            },
+            api_client=api_client,
+            callable=__resubmit_archived_workflow
         )
