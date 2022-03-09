@@ -289,8 +289,7 @@ kubectl get cm -l workflows.argoproj.io/configmap-type=ExecutorPlugin
 
 ## Examples and Community Contributed Plugins
 
-[Show examples and community contributed plugins](https://github.com/argoproj-labs?q=argo+workflows+plugin&type=all&language=&sort=)
-.
+[Plugin directory](plugin-directory.md)
 
 ## Publishing Your Plugin
 
