@@ -104,6 +104,10 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	}
 
 	serviceAccountName := woc.execWf.Spec.ServiceAccountName
+	enableAutoMountSA := woc.execWf.Spec.AutomountServiceAccountToken
+	if enableAutoMountSA == nil {
+		enableAutoMountSA = pointer.BoolPtr(false)
+	}
 	secretName, err := woc.getServiceAccountTokenName(ctx, serviceAccountName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get token volumes: %w", err)
@@ -135,7 +139,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 				RunAsUser:    pointer.Int64Ptr(8737),
 			},
 			ServiceAccountName:           serviceAccountName,
-			AutomountServiceAccountToken: pointer.BoolPtr(false),
+			AutomountServiceAccountToken: enableAutoMountSA,
 			Volumes: []apiv1.Volume{
 				{
 					Name: tokenVolumeName,
