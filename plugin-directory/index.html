@@ -13,7 +13,7 @@
     
     
       
-        <title>Node Field Selectors - Argo Workflows - The workflow engine for Kubernetes</title>
+        <title>Plugin Directory - Argo Workflows - The workflow engine for Kubernetes</title>
       
     
     
@@ -72,7 +72,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#node-field-selectors" class="md-skip">
+        <a href="#plugin-directory" class="md-skip">
           Skip to content
         </a>
       
@@ -104,7 +104,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Node Field Selectors
+              Plugin Directory
             
           </span>
         </div>
@@ -396,14 +396,12 @@
               
   
   
-    
-  
   
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5_2" type="checkbox" id="__nav_5_2" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5_2" type="checkbox" id="__nav_5_2" >
       
       
       
@@ -452,66 +450,11 @@
               
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          Node Field Selectors
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../node-field-selector/" class="md-nav__link">
         Node Field Selectors
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#introduction" class="md-nav__link">
-    Introduction
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#possible-options" class="md-nav__link">
-    Possible options
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#examples" class="md-nav__link">
-    Examples
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1191,12 +1134,14 @@
               
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5_4" type="checkbox" id="__nav_5_4" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5_4" type="checkbox" id="__nav_5_4" checked>
       
       
       
@@ -1259,11 +1204,21 @@
               
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="../plugin-directory/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         Plugin Directory
       </a>
+      
     </li>
   
 
@@ -2777,35 +2732,6 @@
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#introduction" class="md-nav__link">
-    Introduction
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#possible-options" class="md-nav__link">
-    Possible options
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#examples" class="md-nav__link">
-    Examples
-  </a>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -2816,103 +2742,47 @@
             <article class="md-content__inner md-typeset">
               
                 
-<a href="https://github.com/argoproj/argo-workflows/edit/master/docs/node-field-selector.md" title="Edit this page" class="md-content__button md-icon">
+<a href="https://github.com/argoproj/argo-workflows/edit/master/docs/plugin-directory.md" title="Edit this page" class="md-content__button md-icon">
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
 </a>
 
 
-<h1 id="node-field-selectors">Node Field Selectors<a class="headerlink" href="#node-field-selectors" title="Permanent link">&para;</a></h1>
-<p><img alt="GA" src="../assets/ga.svg" /></p>
-<blockquote>
-<p>v2.8 and after</p>
-</blockquote>
-<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">&para;</a></h2>
-<p>The resume, stop and retry Argo CLI and API commands support a <code>--node-field-selector</code> parameter to allow the user to select a subset of nodes for the command to apply to. </p>
-<p>In the case of the resume and stop commands these are the nodes that should be resumed or stopped.</p>
-<p>In the case of the retry command it allows specifying nodes that should be restarted even if they were previously successful (and must be used in combination with <code>--restart-successful</code>)</p>
-<p>The format of this when used with the CLI is:</p>
-<p><code>--node-field-selector=FIELD=VALUE</code></p>
-<h2 id="possible-options">Possible options<a class="headerlink" href="#possible-options" title="Permanent link">&para;</a></h2>
-<p>The field can be any of:</p>
+<h1 id="plugin-directory">Plugin Directory<a class="headerlink" href="#plugin-directory" title="Permanent link">&para;</a></h1>
+<p>⚠️ Disclaimer: We take only minimal action to verify the authenticity of plugins. Install at your own risk.</p>
 <table>
 <thead>
 <tr>
-<th>Field</th>
+<th>Name</th>
 <th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>displayName</code></td>
-<td>Display name of the node. This is the name of the node as it is displayed on the CLI or UI, without considering its ancestors (see example below). This is a useful shortcut if there is only one node with the same <code>displayName</code></td>
+<td><a href="https://github.com/argoproj-labs/argo-workflows-hello-executor-plugin">Hello</a></td>
+<td>Hello world plugin you can use as a template</td>
 </tr>
 <tr>
-<td><code>name</code></td>
-<td>Full name of the node. This is the full name of the node, including its ancestors (see example below). Using <code>name</code> is necessary when two or more nodes share the same <code>displayName</code> and disambiguation is required.</td>
+<td><a href="https://github.com/argoproj-labs/argo-workflows-slack-executor-plugin">Slack</a></td>
+<td>Example Slack plugin</td>
 </tr>
 <tr>
-<td><code>templateName</code></td>
-<td>Template name of the node</td>
+<td><a href="https://github.com/UrielCohen456/argo-workflows-argocd-executor-plugin">Argo CD</a></td>
+<td>Sync Argo CD apps, e.g. to use Argo as CI</td>
 </tr>
 <tr>
-<td><code>phase</code></td>
-<td>Phase status of the node - eg Running</td>
+<td><a href="https://github.com/argoproj-labs/argo-workflows-python-executor-plugin">Python</a></td>
+<td>Plugin for executing Python</td>
 </tr>
 <tr>
-<td><code>templateRef.name</code></td>
-<td>The name of the WorkflowTemplate the node is referring to</td>
+<td><a href="https://github.com/kjagiello/hermes">Hermes</a></td>
+<td>Send notifications, e.g. Slack</td>
 </tr>
 <tr>
-<td><code>templateRef.template</code></td>
-<td>The template within the WorkflowTemplate the node is referring to</td>
-</tr>
-<tr>
-<td><code>inputs.parameters.&lt;NAME&gt;.value</code></td>
-<td>The value of input parameter NAME</td>
+<td><a href="https://github.com/Shark/wasm-workflows-plugin">WASM</a></td>
+<td>Run Web Assembly (WASM) tasks</td>
 </tr>
 </tbody>
 </table>
-<p>The operator can be '=' or '!='. Multiple selectors can be combined with a comma, in which case they are ANDed together.</p>
-<h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
-<p>To filter for nodes where the input parameter 'foo' is equal to 'bar':</p>
-<p><code>--node-field-selector=inputs.parameters.foo.value=bar</code></p>
-<p>To filter for nodes where the input parameter 'foo' is equal to 'bar' and phase is not running:</p>
-<p><code>--node-field-selector=foo1=bar1,phase!=Running</code></p>
-<p>Consider the following workflow:</p>
-<div class="highlight"><pre><span></span><code> ● appr-promotion-ffsv4    code-release
- ├─✔ start                 sample-template/email                 appr-promotion-ffsv4-3704914002  2s
- ├─● app1                  wftempl1/approval-and-promotion
- │ ├─✔ notification-email  sample-template/email                 appr-promotion-ffsv4-524476380   2s
- │ └─ǁ wait-approval       sample-template/waiting-for-approval
- ├─✔ app2                  wftempl2/promotion
- │ ├─✔ notification-email  sample-template/email                 appr-promotion-ffsv4-2580536603  2s
- │ ├─✔ pr-approval         sample-template/approval              appr-promotion-ffsv4-3445567645  2s
- │ └─✔ deployment          sample-template/promote               appr-promotion-ffsv4-970728982   1s
- └─● app3                  wftempl1/approval-and-promotion
-   ├─✔ notification-email  sample-template/email                 appr-promotion-ffsv4-388318034   2s
-   └─ǁ wait-approval       sample-template/waiting-for-approval
-</code></pre></div>
-<p>Here we have two steps with the same <code>displayName</code>: <code>wait-approval</code>. To select one to suspend, we need to use their
-<code>name</code>, either <code>appr-promotion-ffsv4.app1.wait-approval</code> or <code>appr-promotion-ffsv4.app3.wait-approval</code>. If it is not clear
-what the full name of a node is, it can be found using <code>kubectl</code>:</p>
-<div class="highlight"><pre><span></span><code>$ kubectl get wf appr-promotion-ffsv4 -o yaml
-
-...
-    appr-promotion-ffsv4-3235686597:
-      boundaryID: appr-promotion-ffsv4-3079407832
-      displayName: wait-approval                        # &lt;- Display Name
-      finishedAt: null
-      id: appr-promotion-ffsv4-3235686597
-      name: appr-promotion-ffsv4.app1.wait-approval     # &lt;- Full Name
-      phase: Running
-      startedAt: &quot;2021-01-20T17:00:25Z&quot;
-      templateRef:
-        name: sample-template
-        template: waiting-for-approval
-      templateScope: namespaced/wftempl1
-      type: Suspend
-...
-</code></pre></div>
 
               
             </article>
@@ -2926,7 +2796,7 @@ what the full name of a node is, it can be found using <code>kubectl</code>:</p>
     <nav class="md-footer__inner md-grid" aria-label="Footer">
       
         
-        <a href="../workflow-rbac/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Workflow RBAC" rel="prev">
+        <a href="../executor_swagger/" class="md-footer__link md-footer__link--prev" aria-label="Previous: The API for an executor plugin." rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
           </div>
@@ -2935,20 +2805,20 @@ what the full name of a node is, it can be found using <code>kubectl</code>:</p>
               <span class="md-footer__direction">
                 Previous
               </span>
-              Workflow RBAC
+              The API for an executor plugin.
             </div>
           </div>
         </a>
       
       
         
-        <a href="../empty-dir/" class="md-footer__link md-footer__link--next" aria-label="Next: Empty Dir" rel="next">
+        <a href="../ide-setup/" class="md-footer__link md-footer__link--next" aria-label="Next: IDE Set-Up" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              Empty Dir
+              IDE Set-Up
             </div>
           </div>
           <div class="md-footer__button md-icon">
