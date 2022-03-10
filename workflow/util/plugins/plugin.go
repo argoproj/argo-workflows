@@ -59,6 +59,7 @@ func (p *Client) Call(ctx context.Context, method string, args interface{}, repl
 		if err != nil {
 			return err
 		}
+		req.Header["Content-Type"] = []string{"application/json"}
 		resp, err := p.client.Do(req)
 		if err != nil {
 			return err
