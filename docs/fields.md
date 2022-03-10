@@ -396,8 +396,6 @@ WorkflowTemplate is the definition of a workflow template resource
 
 - [`dag-inline-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-inline-workflowtemplate.yaml)
 
-- [`issue-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/issue-template.yaml)
-
 - [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/templates.yaml)
@@ -600,8 +598,6 @@ WorkflowSpec is the specification of a Workflow.
 - [`input-artifact-raw.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-raw.yaml)
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
-
-- [`issue-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/issue-template.yaml)
 
 - [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-json-patch-workflow.yaml)
 
@@ -1021,8 +1017,6 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`input-artifact-raw.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-raw.yaml)
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
-
-- [`issue-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/issue-template.yaml)
 
 - [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-json-patch-workflow.yaml)
 
@@ -4420,8 +4414,6 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
 
-- [`issue-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/issue-template.yaml)
-
 - [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-json-patch-workflow.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
@@ -5011,8 +5003,6 @@ A single application container that you want to run within a pod.
 - [`input-artifact-raw.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-raw.yaml)
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
-
-- [`issue-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/issue-template.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
 
@@ -5712,8 +5702,6 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`input-artifact-raw.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-raw.yaml)
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
-
-- [`issue-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/issue-template.yaml)
 
 - [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-json-patch-workflow.yaml)
 
