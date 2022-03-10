@@ -31,6 +31,7 @@ func ToConfigMap(p *spec.Plugin) (*apiv1.ConfigMap, error) {
 			Labels: map[string]string{
 				common.LabelKeyConfigMapType: p.Kind,
 			},
+			Namespace: p.Namespace,
 		},
 		Data: map[string]string{
 			"sidecar.container": string(data),
