@@ -2068,8 +2068,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#recommendations" class="md-nav__link">
-    Recommendations
+  <a href="#argo-on-desktop" class="md-nav__link">
+    Argo On Desktop
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#argo-in-production" class="md-nav__link">
+    Argo In Production
   </a>
   
 </li>
@@ -2768,8 +2775,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#recommendations" class="md-nav__link">
-    Recommendations
+  <a href="#argo-on-desktop" class="md-nav__link">
+    Argo On Desktop
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#argo-in-production" class="md-nav__link">
+    Argo In Production
   </a>
   
 </li>
@@ -2792,20 +2806,26 @@
 
 
 <h1 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h1>
-<p>You can choose one of three common installations:</p>
+<h2 id="argo-on-desktop">Argo On Desktop<a class="headerlink" href="#argo-on-desktop" title="Permanent link">&para;</a></h2>
+<p>Use the <a href="../quick-start/">quick-start manifests</a>.</p>
+<h2 id="argo-in-production">Argo In Production<a class="headerlink" href="#argo-in-production" title="Permanent link">&para;</a></h2>
+<p>Determine your base installation option.</p>
 <ul>
-<li><strong>cluster install</strong> Execute workflows in any namespace?</li>
-<li><strong>namespace install</strong> Only execute workflows in the same namespace we install in (typically <code>argo</code>).</li>
-<li><strong>managed namespace install</strong>: Only execute workflows in a specific namespace (<a href="../managed-namespace/">learn more</a>).</li>
+<li>A <strong>cluster install</strong> will watch and execute workflows in all namespaces.</li>
+<li>A <strong>namespace install</strong> only execute workflows in the  namespace it is installed install in (typically <code>argo</code>).</li>
+<li>A <strong>managed namespace install</strong>: only executes workflows in a specific namespace (<a href="../managed-namespace/">learn more</a>).</li>
 </ul>
-<h2 id="recommendations">Recommendations<a class="headerlink" href="#recommendations" title="Permanent link">&para;</a></h2>
+<p>⚠️ <code>latest</code> is tip, not stable. Never run it. Make sure you're using the manifests attached to each Github release. See <a href="https://github.com/argoproj/argo-workflows/releases/latest">this link</a> for the most recent manifests. </p>
+<p>⚠️ Double-check you have the right version of your executor configured, it's easy to miss.</p>
+<p>⚠️ If you are using GitOps. Never use Kustomize remote base, this is dangerous. Instead, copy the manifests into your Git repo.</p>
+<p>Review the following:</p>
 <ul>
-<li>Make sure you're using the manifests attached to each Github release. See <a href="https://github.com/argoproj/argo-workflows/releases/latest">this link</a> for the most recent manifests.</li>
-<li>Read the <a href="../upgrading/">upgrading guide</a> before any major upgrade to be aware of breaking changes.</li>
-<li>If you are using GitOps, copy the manifests into your repository, rather use <code>base</code> to reference them. Fewer issues
-  regarding network loss, and you'll be able to check what has changed each time you upgrade.</li>
-<li>Double-check you have the right version of your executor configured, it's easy to miss.</li>
+<li><a href="../security/">Security</a>.</li>
+<li><a href="../scaling/">Scaling</a> and <a href="../running-at-massive-scale/">running at massive scale</a>.</li>
+<li><a href="../high-availability/">High-availability</a></li>
+<li><a href="../disaster-recovery/">Disaster recovery</a></li>
 </ul>
+<p>Read the <a href="../upgrading/">upgrading guide</a> before any major upgrade to be aware of breaking changes.</p>
 
               
             </article>

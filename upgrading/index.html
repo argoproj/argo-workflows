@@ -2082,26 +2082,26 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#upgrading-to-v34" class="md-nav__link">
-    Upgrading to v3.4
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#06d4bf76f-fix-reduce-agent-permissions-fixes-7986-7987" class="md-nav__link">
-    06d4bf76f fix: Reduce agent permissions. Fixes #7986 (#7987)
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#upgrading-to-v33" class="md-nav__link">
     Upgrading to v3.3
   </a>
   
     <nav class="md-nav" aria-label="Upgrading to v3.3">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#662a7295b-feat-replace-patch-pod-with-create-workflowtaskresult-fixes-3961-8000" class="md-nav__link">
+    662a7295b feat: Replace patch pod with create workflowtaskresult. Fixes #3961 (#8000)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#06d4bf76f-fix-reduce-agent-permissions-fixes-7986-7987" class="md-nav__link">
+    06d4bf76f fix: Reduce agent permissions. Fixes #7986 (#7987)
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#feat-remove-deprecated-config-flags" class="md-nav__link">
@@ -2939,26 +2939,26 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#upgrading-to-v34" class="md-nav__link">
-    Upgrading to v3.4
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#06d4bf76f-fix-reduce-agent-permissions-fixes-7986-7987" class="md-nav__link">
-    06d4bf76f fix: Reduce agent permissions. Fixes #7986 (#7987)
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#upgrading-to-v33" class="md-nav__link">
     Upgrading to v3.3
   </a>
   
     <nav class="md-nav" aria-label="Upgrading to v3.3">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#662a7295b-feat-replace-patch-pod-with-create-workflowtaskresult-fixes-3961-8000" class="md-nav__link">
+    662a7295b feat: Replace patch pod with create workflowtaskresult. Fixes #3961 (#8000)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#06d4bf76f-fix-reduce-agent-permissions-fixes-7986-7987" class="md-nav__link">
+    06d4bf76f fix: Reduce agent permissions. Fixes #7986 (#7987)
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#feat-remove-deprecated-config-flags" class="md-nav__link">
@@ -3136,7 +3136,10 @@
 <h1 id="upgrading">Upgrading<a class="headerlink" href="#upgrading" title="Permanent link">&para;</a></h1>
 <p>Breaking changes  typically (sometimes we don't realise they are breaking) have "!" in the commit message, as per
 the <a href="https://www.conventionalcommits.org/en/v1.0.0/#summary">conventional commits</a>.</p>
-<h3 id="upgrading-to-v34">Upgrading to v3.4<a class="headerlink" href="#upgrading-to-v34" title="Permanent link">&para;</a></h3>
+<h2 id="upgrading-to-v33">Upgrading to v3.3<a class="headerlink" href="#upgrading-to-v33" title="Permanent link">&para;</a></h2>
+<h3 id="662a7295b-feat-replace-patch-pod-with-create-workflowtaskresult-fixes-3961-8000"><a href="https://github.com/argoproj/argo-workflows/commit/662a7295b">662a7295b</a> feat: Replace <code>patch pod</code> with <code>create workflowtaskresult</code>. Fixes #3961 (#8000)<a class="headerlink" href="#662a7295b-feat-replace-patch-pod-with-create-workflowtaskresult-fixes-3961-8000" title="Permanent link">&para;</a></h3>
+<p>The PR changes the permissions that can be used by a workflow to remove the <code>pod patch</code> permission. </p>
+<p>See <a href="../workflow-rbac/">workflow RBAC</a> and <a href="https://github.com/argoproj/argo-workflows/issues/3961">#8013</a>.</p>
 <h3 id="06d4bf76f-fix-reduce-agent-permissions-fixes-7986-7987"><a href="https://github.com/argoproj/argo-workflows/commit/06d4bf76f">06d4bf76f</a> fix: Reduce agent permissions. Fixes #7986 (#7987)<a class="headerlink" href="#06d4bf76f-fix-reduce-agent-permissions-fixes-7986-7987" title="Permanent link">&para;</a></h3>
 <p>The PR changes the permissions used by the agent to report back the outcome of HTTP template requests. The permission <code>patch workflowtasksets/status</code> replaces <code>patch workflowtasksets</code>, for example:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rbac.authorization.k8s.io/v1</span><span class="w"></span>
@@ -3153,7 +3156,6 @@ the <a href="https://www.conventionalcommits.org/en/v1.0.0/#summary">conventiona
 </code></pre></div>
 <p>Workflows running during any upgrade should be give both permissions.</p>
 <p>See <a href="https://github.com/argoproj/argo-workflows/issues/8013">#8013</a>.</p>
-<h2 id="upgrading-to-v33">Upgrading to v3.3<a class="headerlink" href="#upgrading-to-v33" title="Permanent link">&para;</a></h2>
 <h3 id="feat-remove-deprecated-config-flags">feat!: Remove deprecated config flags<a class="headerlink" href="#feat-remove-deprecated-config-flags" title="Permanent link">&para;</a></h3>
 <p>This PR removes the following configmap items -</p>
 <ul>
@@ -3247,7 +3249,8 @@ is logged.</p>
 <h3 id="e5b131a33-feat-add-template-node-to-pod-name-fixes-1319-6712"><a href="https://github.com/argoproj/argo-workflows/commit/e5b131a33">e5b131a33</a> feat: Add template node to pod name. Fixes #1319 (#6712)<a class="headerlink" href="#e5b131a33-feat-add-template-node-to-pod-name-fixes-1319-6712" title="Permanent link">&para;</a></h3>
 <p>This add the template name to the pod name, to make it easier to understand which pod ran which step. This behaviour can be reverted by setting <code>POD_NAMES=v1</code> on the workflow controller. </p>
 <h3 id="be63efe89-featexecutor-change-argoexec-base-image-to-alpine-closes-5720-6006"><a href="https://github.com/argoproj/argo-workflows/commit/be63efe89">be63efe89</a> feat(executor)!: Change <code>argoexec</code> base image to alpine. Closes #5720 (#6006)<a class="headerlink" href="#be63efe89-featexecutor-change-argoexec-base-image-to-alpine-closes-5720-6006" title="Permanent link">&para;</a></h3>
-<p>Changing from Debian to Alpine reduces the size of the <code>argoexec</code> image, resulting is faster starting workflow pods, and it also reduce the risk of security issues. There is not such thing as a free lunch. There maybe other behaviour changes we don't know of yet. </p>
+<p>Changing from Debian to Alpine reduces the size of the <code>argoexec</code> image, resulting is faster starting workflow pods, and it also reduce the risk of security issues. There is not such thing as a free lunch. There maybe other behaviour changes we don't know of yet.</p>
+<p>Some users found this change prevented workflow with very large parameters from running. See <a href="https://github.com/argoproj/argo-workflows/issues/7586">#7586</a></p>
 <h3 id="48d7ad3-chore-remove-onexit-naming-transition-scaffolding-code-6297"><a href="https://github.com/argoproj/argo-workflows/commit/48d7ad36c14e4a50c50332d6decd543a1b732b69">48d7ad3</a> chore: Remove onExit naming transition scaffolding code (#6297)<a class="headerlink" href="#48d7ad3-chore-remove-onexit-naming-transition-scaffolding-code-6297" title="Permanent link">&para;</a></h3>
 <p>When upgrading from <code>&lt;v2.12</code> to <code>&gt;v3.2</code> workflows that are running at the time of the upgrade and have <code>onExit</code> steps <em>may</em> experience the <code>onExit</code> step running twice. This is only applicable for workflows that began running before a <code>workflow-controller</code> upgrade and are still running after the upgrade is complete. This is only applicable for upgrading from <code>v2.12</code> or earlier directly to <code>v3.2</code> or later. Even under these conditions, duplicate work may not be experienced.</p>
 <h2 id="upgrading-to-v31">Upgrading to v3.1<a class="headerlink" href="#upgrading-to-v31" title="Permanent link">&para;</a></h2>
