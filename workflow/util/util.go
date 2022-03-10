@@ -735,7 +735,7 @@ func convertNodeID(newWf *wfv1.Workflow, regex *regexp.Regexp, oldNodeID string,
 }
 
 // RetryWorkflow updates a workflow, deleting all failed steps as well as the onExit node (and children)
-func RetryWorkflow(ctx context.Context, podIf v1.PodInterface, wfClient v1alpha1.WorkflowInterface, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
+func RetryWorkflow(ctx context.Context, podIf v1.PodInterface, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
 	updatedWf, err := prepareWorkflowForRetry(ctx, wf, podIf, restartSuccessful, nodeFieldSelector)
 	if err != nil {
 		return nil, err
@@ -745,7 +745,7 @@ func RetryWorkflow(ctx context.Context, podIf v1.PodInterface, wfClient v1alpha1
 }
 
 // RetryWorkflow creates a workflow from the workflow archive
-func RetryArchivedWorkflow(ctx context.Context, podIf v1.PodInterface, wfClient v1alpha1.WorkflowInterface, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
+func RetryArchivedWorkflow(ctx context.Context, podIf v1.PodInterface, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
 	wf.ObjectMeta.ResourceVersion = ""
 	updatedWf, err := prepareWorkflowForRetry(ctx, wf, podIf, restartSuccessful, nodeFieldSelector)
 	if err != nil {

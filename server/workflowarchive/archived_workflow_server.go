@@ -219,7 +219,7 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 		return nil, err
 	}
 
-	wf, err = util.RetryArchivedWorkflow(ctx, kubeClient.CoreV1().Pods(wf.Namespace), wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wf, req.RestartSuccessful, req.NodeFieldSelector)
+	wf, err = util.RetryArchivedWorkflow(ctx, kubeClient.CoreV1().Pods(wf.Namespace), wf, req.RestartSuccessful, req.NodeFieldSelector)
 	if err != nil {
 		return nil, err
 	}
