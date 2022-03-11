@@ -678,8 +678,7 @@ func (we *WorkflowExecutor) GetSecrets(ctx context.Context, namespace, name, key
 func getTerminationGracePeriodDuration() time.Duration {
 	x, _ := strconv.ParseInt(os.Getenv(common.EnvVarTerminationGracePeriodSeconds), 10, 64)
 	if x > 0 {
-		return time.Duration(x)
-		time.Second
+		return time.Duration(x) * time.Second
 	}
 	return 30 * time.Second
 }
