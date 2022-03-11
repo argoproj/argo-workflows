@@ -192,7 +192,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		wfArchive:                 sqldb.NullWorkflowArchive,
 		hydrator:                  hydratorfake.Noop,
 		estimatorFactory:          estimation.DummyEstimatorFactory,
-		eventRecorderManager:      &testEventRecorderManager{eventRecorder: record.NewFakeRecorder(64)},
+		EventRecorderManager:      &testEventRecorderManager{eventRecorder: record.NewFakeRecorder(64)},
 		archiveLabelSelector:      labels.Everything(),
 		cacheFactory:              controllercache.NewCacheFactory(kube, "default"),
 		progressPatchTickDuration: envutil.LookupEnvDurationOr(common.EnvVarProgressPatchTickDuration, 1*time.Minute),
