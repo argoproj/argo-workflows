@@ -119,7 +119,7 @@ const (
 	// EnvVarDeadline is the deadline for the pod
 	EnvVarDeadline = "ARGO_DEADLINE"
 	// EnvVarTerminationGracePeriodSeconds is pod.spec.terminationGracePeriodSeconds
-	EnvVarTerminationGracePeriodSeconds = "ARGO_WORKFLOW_NAME"
+	EnvVarTerminationGracePeriodSeconds = "ARGO_TERMINATION_GRACE_PERIOD_SECONDS"
 	// EnvVarIncludeScriptOutput capture the stdout and stderr
 	EnvVarIncludeScriptOutput = "ARGO_INCLUDE_SCRIPT_OUTPUT"
 	// EnvVarTemplate is the template
