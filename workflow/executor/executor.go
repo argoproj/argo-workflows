@@ -677,7 +677,11 @@ func (we *WorkflowExecutor) GetSecrets(ctx context.Context, namespace, name, key
 // GetTerminationGracePeriodDuration returns the terminationGracePeriodSeconds of podSpec in Time.Duration format
 func getTerminationGracePeriodDuration() time.Duration {
 	x, _ := strconv.ParseInt(os.Getenv(common.EnvVarTerminationGracePeriodSeconds), 10, 64)
-	return time.Second * time.Duration(x)
+	if x > 0 {
+		return time.Duration(x)
+		time.Second
+	}
+	return 30 * time.Second
 }
 
 // CaptureScriptResult will add the stdout of a script template as output result

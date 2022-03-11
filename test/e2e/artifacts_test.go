@@ -146,7 +146,6 @@ func (s *ArtifactsSuite) TestMainLog() {
 				}
 			})
 	})
-	s.Need(fixtures.None(fixtures.Docker, fixtures.Kubelet))
 	s.Run("ActiveDeadlineSeconds", func() {
 		s.Given().
 			Workflow("@expectedfailures/timeouts-step.yaml").
@@ -156,7 +155,7 @@ func (s *ArtifactsSuite) TestMainLog() {
 			Then().
 			ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 				n := status.Nodes[m.Name]
-				if assert.NotNil(t, n) {
+				if assert.NotNil(t, n.Outputs) {
 					assert.Len(t, n.Outputs.Artifacts, 1)
 				}
 			})
