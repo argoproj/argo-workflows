@@ -3,6 +3,7 @@ package executor
 import (
 	"context"
 	"encoding/json"
+	"os"
 
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,27 +37,31 @@ func (we *WorkflowExecutor) patchTaskResult(ctx context.Context, result wfv1.Nod
 }
 
 func (we *WorkflowExecutor) createTaskResult(ctx context.Context, result wfv1.NodeResult) error {
-	_, err := we.taskResultClient.Create(ctx,
-		&wfv1.WorkflowTaskResult{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: workflow.APIVersion,
-				Kind:       workflow.WorkflowTaskResultKind,
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:   we.nodeId,
-				Labels: map[string]string{common.LabelKeyWorkflow: we.workflow},
-				// make sure deleting the workflow, delete this result
-				OwnerReferences: []metav1.OwnerReference{
-					{
-						APIVersion: workflow.APIVersion,
-						Kind:       workflow.WorkflowKind,
-						Name:       we.workflow,
-						UID:        we.workflowUID,
-					},
+	taskResult := &wfv1.WorkflowTaskResult{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: workflow.APIVersion,
+			Kind:       workflow.WorkflowTaskResultKind,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   we.nodeId,
+			Labels: map[string]string{common.LabelKeyWorkflow: we.workflow},
+			// make sure deleting the workflow, delete this result
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: workflow.APIVersion,
+					Kind:       workflow.WorkflowKind,
+					Name:       we.workflow,
+					UID:        we.workflowUID,
 				},
 			},
-			NodeResult: result,
 		},
+		NodeResult: result,
+	}
+	if v := os.Getenv(common.EnvVarInstanceID); v != "" {
+		taskResult.Labels[common.LabelKeyControllerInstanceID] = v
+	}
+	_, err := we.taskResultClient.Create(ctx,
+		taskResult,
 		metav1.CreateOptions{},
 	)
 	return err

@@ -106,6 +106,8 @@ const (
 
 	// EnvVarPodName contains the name of the pod (currently unused)
 	EnvVarPodName = "ARGO_POD_NAME"
+	// EnvVarInstanceID is the instance ID
+	EnvVarInstanceID = "ARGO_INSTANCE_ID"
 	// EnvVarWorkflowName is the name of the workflow for which the an agent is responsible for
 	EnvVarWorkflowName = "ARGO_WORKFLOW_NAME"
 	// EnvVarWorkflowUID is the workflow's UID
