@@ -435,6 +435,9 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			c.Command = append([]string{"/var/run/argo/argoexec", "emissary", "--"}, c.Command...)
 		}
 		c.VolumeMounts = append(c.VolumeMounts, volumeMountVarArgo)
+		if x := pod.Spec.TerminationGracePeriodSeconds; x != nil && c.Name == common.WaitContainerName {
+			c.Env = append(c.Env, apiv1.EnvVar{Name: common.EnvVarTerminationGracePeriodSeconds, Value: fmt.Sprint(*x)})
+		}
 		pod.Spec.Containers[i] = c
 	}
 
