@@ -86,8 +86,6 @@ type wfOperationCtx struct {
 	volumes []apiv1.Volume
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
 	artifactRepository *wfv1.ArtifactRepository
-	// map of completed pods with their corresponding phases
-	completedPods map[string]*apiv1.Pod
 	// deadline is the dealine time in which this operation should relinquish
 	// its hold on the workflow so that an operation does not run for too long
 	// and starve other workqueue items. It also enables workflow progress to
@@ -158,7 +156,6 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		controller:             wfc,
 		globalParams:           make(map[string]string),
 		volumes:                wf.Spec.DeepCopy().Volumes,
-		completedPods:          make(map[string]*apiv1.Pod),
 		deadline:               time.Now().UTC().Add(maxOperationTime),
 		eventRecorder:          wfc.eventRecorderManager.Get(wf.Namespace),
 		preExecutionNodePhases: make(map[string]wfv1.NodePhase),
@@ -1017,10 +1014,6 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 						printPodSpecLog(pod, woc.wf.Name)
 					}
 				}
-			}
-			switch pod.Status.Phase {
-			case apiv1.PodSucceeded, apiv1.PodFailed:
-				woc.completedPods[pod.Name] = pod
 			}
 		}
 	}
