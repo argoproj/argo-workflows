@@ -11,7 +11,6 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 )
 
@@ -36,21 +35,6 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformers() map[string]cache
 				options.LabelSelector = labelSelector
 			},
 		)
-		informer.AddEventHandler(
-			cache.ResourceEventHandlerFuncs{
-				AddFunc: func(new interface{}) {
-					result := new.(*wfv1.WorkflowTaskResult)
-					namespace := common.MetaWorkflowNamespace(result)
-					workflow := result.Labels[common.LabelKeyWorkflow]
-					wfc.wfQueue.AddRateLimited(namespace + "/" + workflow)
-				},
-				UpdateFunc: func(_, new interface{}) {
-					result := new.(*wfv1.WorkflowTaskResult)
-					namespace := common.MetaWorkflowNamespace(result)
-					workflow := result.Labels[common.LabelKeyWorkflow]
-					wfc.wfQueue.AddRateLimited(namespace + "/" + workflow)
-				},
-			})
 		informers[cluster] = informer
 	}
 	return informers
