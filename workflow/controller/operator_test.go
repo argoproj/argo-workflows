@@ -3565,7 +3565,7 @@ spec:
 }
 
 func getEvents(controller *WorkflowController, num int) []string {
-	c := controller.EventRecorderManager.(*testEventRecorderManager).eventRecorder.Events
+	c := controller.eventRecorderManager.(*testEventRecorderManager).eventRecorder.Events
 	events := make([]string, num)
 	for i := 0; i < num; i++ {
 		events[i] = <-c

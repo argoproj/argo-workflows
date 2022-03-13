@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/argoproj/argo-workflows/v3/workflow/events"
 	"net/http"
 	"os"
 	"strings"
@@ -130,7 +131,7 @@ func NewRootCommand() *cobra.Command {
 				go leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
 					Lock: &resourcelock.LeaseLock{
 						LeaseMeta: metav1.ObjectMeta{Name: leaderName, Namespace: namespace}, Client: kubeclientset.CoordinationV1(),
-						LockConfig: resourcelock.ResourceLockConfig{Identity: nodeID, EventRecorder: wfController.EventRecorderManager.Get(namespace)},
+						LockConfig: resourcelock.ResourceLockConfig{Identity: nodeID, EventRecorder: events.NewEventRecorderManager(kubeclientset).Get(namespace)},
 					},
 					ReleaseOnCancel: false,
 					LeaseDuration:   env.LookupEnvDurationOr("LEADER_ELECTION_LEASE_DURATION", 15*time.Second),
@@ -157,8 +158,8 @@ func NewRootCommand() *cobra.Command {
 				log.Println(http.ListenAndServe(":6060", nil))
 			}()
 
-			// Wait forever
-			select {}
+			<-ctx.Done()
+			return nil
 		},
 	}
 

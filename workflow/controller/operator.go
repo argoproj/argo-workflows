@@ -160,7 +160,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		volumes:                wf.Spec.DeepCopy().Volumes,
 		completedPods:          make(map[string]*apiv1.Pod),
 		deadline:               time.Now().UTC().Add(maxOperationTime),
-		eventRecorder:          wfc.EventRecorderManager.Get(wf.Namespace),
+		eventRecorder:          wfc.eventRecorderManager.Get(wf.Namespace),
 		preExecutionNodePhases: make(map[string]wfv1.NodePhase),
 		taskSet:                make(map[string]wfv1.Template),
 	}
