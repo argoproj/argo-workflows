@@ -74,7 +74,6 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 		}
 		if !reflect.DeepEqual(&old, new) {
 			woc.log.
-				WithField("exitCode", new.Outputs.ExitCode).
 				WithField("nodeID", nodeID).
 				Info("task-result changed")
 			woc.wf.Status.Nodes[nodeID] = *new
