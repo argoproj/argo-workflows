@@ -15,7 +15,7 @@ func (woc *wfOperationCtx) queuePodsForCleanup() {
 	selector, _ := podGC.GetLabelSelector()
 	workflowPhase := woc.wf.Status.Phase
 	for cluster, podInformer := range woc.controller.podInformers {
-		objs, _ := podInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, indexes.WorkflowIndexValue(woc.wf.Namespace, woc.wf.Name))
+		objs, _ := podInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.Namespace+"/"+woc.wf.Name)
 		for _, obj := range objs {
 			pod := obj.(*apiv1.Pod)
 			nodeID := woc.nodeID(pod)
