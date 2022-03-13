@@ -12,6 +12,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb/mocks"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 	"github.com/argoproj/argo-workflows/v3/workflow/packer"
 )
@@ -53,7 +54,7 @@ func TestPersistWithoutLargeWfSupport(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wfcset := controller.workflowInterfaces[common.LocalCluster].ArgoprojV1alpha1().Workflows("")
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWfPersist)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
@@ -74,7 +75,7 @@ func TestPersistErrorWithoutLargeWfSupport(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wfcset := controller.workflowInterfaces[common.LocalCluster].ArgoprojV1alpha1().Workflows("")
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWfPersist)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
@@ -94,7 +95,7 @@ func TestPersistWithLargeWfSupport(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wfcset := controller.workflowInterfaces[common.LocalCluster].ArgoprojV1alpha1().Workflows("")
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWfPersist)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
@@ -122,7 +123,7 @@ func TestPersistErrorWithLargeWfSupport(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wfcset := controller.workflowInterfaces[common.LocalCluster].ArgoprojV1alpha1().Workflows("")
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWfPersist)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)

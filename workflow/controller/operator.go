@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -263,6 +264,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	}
 
 	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
+
 		woc.markWorkflowRunning(ctx)
 		setWfPodNamesAnnotation(woc.wf)
 
@@ -609,7 +611,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	if woc.orig.ResourceVersion != woc.wf.ResourceVersion {
 		woc.log.Panic("cannot persist updates with mismatched resource versions")
 	}
-	wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.ObjectMeta.Namespace)
+	wfClient := woc.controller.workflowInterfaces[common.LocalCluster].ArgoprojV1alpha1().Workflows(woc.wf.ObjectMeta.Namespace)
 	// try and compress nodes if needed
 	nodes := woc.wf.Status.Nodes
 	err := woc.controller.hydrator.Dehydrate(woc.wf)
@@ -692,12 +694,28 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 
 func (woc *wfOperationCtx) deleteTaskResults(ctx context.Context) error {
 	deletePropagationBackground := metav1.DeletePropagationBackground
-	return woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskResults(woc.wf.Namespace).
-		DeleteCollection(
-			ctx,
-			metav1.DeleteOptions{PropagationPolicy: &deletePropagationBackground},
-			metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + woc.wf.Name},
-		)
+	for cluster, workflowInterface := range woc.controller.workflowInterfaces {
+		labelSelector := labels.NewSelector().
+			Add(woc.controller.clusterReq(cluster)).
+			Add(woc.workflowReq()).
+			String()
+		log.WithField("labelSelector", labelSelector).Info("deleting task results")
+		err := workflowInterface.ArgoprojV1alpha1().WorkflowTaskResults(woc.wf.Namespace).
+			DeleteCollection(
+				ctx,
+				metav1.DeleteOptions{PropagationPolicy: &deletePropagationBackground},
+				metav1.ListOptions{LabelSelector: labelSelector},
+			)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (woc *wfOperationCtx) workflowReq() labels.Requirement {
+	workflowReq, _ := labels.NewRequirement(common.LabelKeyWorkflow, selection.Equals, []string{woc.wf.Name})
+	return *workflowReq
 }
 
 func (woc *wfOperationCtx) writeBackToInformer() error {
@@ -1116,17 +1134,19 @@ func (woc *wfOperationCtx) failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
 
 // getAllWorkflowPods returns all pods related to the current workflow
 func (woc *wfOperationCtx) getAllWorkflowPods() ([]*apiv1.Pod, error) {
-	objs, err := woc.controller.podInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, indexes.WorkflowIndexValue(woc.wf.Namespace, woc.wf.Name))
-	if err != nil {
-		return nil, err
-	}
-	pods := make([]*apiv1.Pod, len(objs))
-	for i, obj := range objs {
-		pod, ok := obj.(*apiv1.Pod)
-		if !ok {
-			return nil, fmt.Errorf("expected \"*apiv1.Pod\", got \"%v\"", reflect.TypeOf(obj).String())
+	pods := make([]*apiv1.Pod, 0)
+	for _, podInformer := range woc.controller.podInformers {
+		objs, err := podInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, indexes.WorkflowIndexValue(woc.wf.Namespace, woc.wf.Name))
+		if err != nil {
+			return nil, err
 		}
-		pods[i] = pod
+		for _, obj := range objs {
+			pod, ok := obj.(*apiv1.Pod)
+			if !ok {
+				return nil, fmt.Errorf("expected \"*apiv1.Pod\", got \"%T\"", obj)
+			}
+			pods = append(pods, pod)
+		}
 	}
 	return pods, nil
 }
@@ -1315,7 +1335,7 @@ func podHasContainerNeedingTermination(pod *apiv1.Pod, tmpl wfv1.Template) bool 
 
 func (woc *wfOperationCtx) cleanUpPod(pod *apiv1.Pod, tmpl wfv1.Template) {
 	if podHasContainerNeedingTermination(pod, tmpl) {
-		woc.controller.queuePodForCleanup(woc.wf.Namespace, pod.Name, terminateContainers)
+		woc.controller.queuePodForCleanup(pod.Annotations[common.LabelKeyCluster], woc.wf.Namespace, pod.Name, terminateContainers)
 	}
 }
 
@@ -1446,7 +1466,7 @@ func (woc *wfOperationCtx) createPVCs(ctx context.Context) error {
 		// This will also handle the case where workflow has no volumeClaimTemplates.
 		return nil
 	}
-	pvcClient := woc.controller.kubeclientset.CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
+	pvcClient := woc.controller.kubernetesInterfaces[common.LocalCluster].CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
 	for i, pvcTmpl := range woc.execWf.Spec.VolumeClaimTemplates {
 		if pvcTmpl.ObjectMeta.Name == "" {
 			return errors.Errorf(errors.CodeBadRequest, "volumeClaimTemplates[%d].metadata.name is required", i)
@@ -1523,7 +1543,7 @@ func (woc *wfOperationCtx) deletePVCs(ctx context.Context) error {
 		// PVC list already empty. nothing to do
 		return nil
 	}
-	pvcClient := woc.controller.kubeclientset.CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
+	pvcClient := woc.controller.kubernetesInterfaces[common.LocalCluster].CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
 	newPVClist := make([]apiv1.Volume, 0)
 	// Attempt to delete all PVCs. Record first error encountered
 	var firstErr error
@@ -2048,7 +2068,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 			}
 			woc.updated = true
 		}
-		woc.controller.queuePodForCleanup(woc.wf.Namespace, woc.getAgentPodName(), deletePod)
+		woc.controller.queuePodForCleanup(common.LocalCluster, woc.wf.Namespace, woc.getAgentPodName(), deletePod)
 	}
 }
 
@@ -2246,9 +2266,17 @@ func (woc *wfOperationCtx) getPodByNode(node *wfv1.NodeStatus) (*apiv1.Pod, erro
 	if node.Type != wfv1.NodeTypePod {
 		return nil, fmt.Errorf("Expected node type %s, got %s", wfv1.NodeTypePod, node.Type)
 	}
-
+	tmpl := woc.execWf.GetTemplateByName(node.TemplateName)
+	if tmpl == nil {
+		return nil, nil
+	}
+	cluster := tmpl.Cluster
+	namespace := tmpl.Namespace
+	if namespace == common.WorkflowNamespace {
+		namespace = woc.wf.GetNamespace()
+	}
 	podName := woc.getPodName(node.Name, node.TemplateName)
-	return woc.controller.getPod(woc.wf.GetNamespace(), podName)
+	return woc.controller.getPod(cluster, namespace, podName)
 }
 
 func (woc *wfOperationCtx) recordNodePhaseEvent(node *wfv1.NodeStatus) {
@@ -3308,7 +3336,7 @@ func (woc *wfOperationCtx) createPDBResource(ctx context.Context) error {
 		return nil
 	}
 
-	pdb, err := woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Get(
+	pdb, err := woc.controller.kubernetesInterfaces[common.LocalCluster].PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Get(
 		ctx,
 		woc.wf.Name,
 		metav1.GetOptions{},
@@ -3337,7 +3365,7 @@ func (woc *wfOperationCtx) createPDBResource(ctx context.Context) error {
 		},
 		Spec: pdbSpec,
 	}
-	_, err = woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Create(ctx, &newPDB, metav1.CreateOptions{})
+	_, err = woc.controller.kubernetesInterfaces[common.LocalCluster].PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Create(ctx, &newPDB, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -3351,7 +3379,7 @@ func (woc *wfOperationCtx) deletePDBResource(ctx context.Context) error {
 		return nil
 	}
 	err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
-		err := woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(ctx, woc.wf.Name, metav1.DeleteOptions{})
+		err := woc.controller.kubernetesInterfaces[common.LocalCluster].PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(ctx, woc.wf.Name, metav1.DeleteOptions{})
 		if apierr.IsNotFound(err) {
 			return true, nil
 		}
@@ -3443,8 +3471,8 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 	// Perform one-time workflow validation
 	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
 		validateOpts := validate.ValidateOpts{ContainerRuntimeExecutor: woc.getContainerRuntimeExecutor()}
-		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(woc.wf.Namespace))
-		cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
+		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.controller.workflowInterfaces[common.LocalCluster].ArgoprojV1alpha1().WorkflowTemplates(woc.wf.Namespace))
+		cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.controller.workflowInterfaces[common.LocalCluster].ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
 		// Validate the execution wfSpec
 		var wfConditions *wfv1.Conditions
@@ -3596,11 +3624,11 @@ func (woc *wfOperationCtx) getPodName(nodeName, templateName string) string {
 	return wfutil.PodName(woc.wf.Name, nodeName, templateName, woc.wf.NodeID(nodeName), wfutil.GetPodNameVersion())
 }
 
-func (woc *wfOperationCtx) getServiceAccountTokenName(ctx context.Context, name string) (string, error) {
+func (woc *wfOperationCtx) getServiceAccountTokenName(ctx context.Context, cluster, name string) (string, error) {
 	if name == "" {
 		name = "default"
 	}
-	account, err := woc.controller.kubeclientset.CoreV1().ServiceAccounts(woc.wf.Namespace).Get(ctx, name, metav1.GetOptions{})
+	account, err := woc.controller.kubernetesInterfaces[cluster].CoreV1().ServiceAccounts(woc.wf.Namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}

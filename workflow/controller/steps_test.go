@@ -68,7 +68,7 @@ spec:
 func TestArtifactResolutionWhenSkipped(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wfcset := controller.workflowInterfaces[common.LocalCluster].ArgoprojV1alpha1().Workflows("")
 
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(artifactResolutionWhenSkipped)
@@ -114,7 +114,7 @@ spec:
 func TestStepsWithParamAndGlobalParam(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wfcset := controller.workflowInterfaces[common.LocalCluster].ArgoprojV1alpha1().Workflows("")
 
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(stepsWithParamAndGlobalParam)
@@ -303,7 +303,7 @@ status:
 func TestOptionalArgumentAndParameter(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wfcset := controller.workflowInterfaces[common.LocalCluster].ArgoprojV1alpha1().Workflows("")
 
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(optionalArgumentAndParameter)

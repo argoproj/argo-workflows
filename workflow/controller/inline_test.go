@@ -18,10 +18,14 @@ metadata:
 spec:
   entrypoint: main
   templates:
+    - name: tmpl
+      container: 
+        image: argoproj/argosay:v2
     - name: main
       dag:
         tasks:
           - name: a
+            template: tmpl
             inline:
               container:
                 image: argoproj/argosay:v2

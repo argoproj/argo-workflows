@@ -5176,6 +5176,20 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							},
 						},
 					},
+					"cluster": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Cluster is the cluster the task should run it (if supported).",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"namespace": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Namespace is the name the task should run it (if supported).",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"container": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Container is the main container image to run in the pod",

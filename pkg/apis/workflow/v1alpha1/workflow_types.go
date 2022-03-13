@@ -584,6 +584,12 @@ type Template struct {
 	// Steps define a series of sequential/parallel workflow steps
 	Steps []ParallelSteps `json:"steps,omitempty" protobuf:"bytes,11,opt,name=steps"`
 
+	// Cluster is the cluster the task should run it (if supported).
+	Cluster string `json:"cluster,omitempty" protobuf:"bytes,44,opt,name=cluster"`
+
+	// Namespace is the name the task should run it (if supported).
+	Namespace string `json:"namespace,omitempty" protobuf:"bytes,45,opt,name=namespace"`
+
 	// Container is the main container image to run in the pod
 	Container *apiv1.Container `json:"container,omitempty" protobuf:"bytes,12,opt,name=container"`
 
@@ -2774,6 +2780,9 @@ func (a *Artifact) GetArchive() *ArchiveStrategy {
 
 // GetTemplateByName retrieves a defined template by its name
 func (wf *Workflow) GetTemplateByName(name string) *Template {
+	if wf == nil {
+		return nil
+	}
 	for _, t := range wf.Spec.Templates {
 		if t.Name == name {
 			return &t

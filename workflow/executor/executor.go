@@ -151,6 +151,7 @@ func (we *WorkflowExecutor) HandleError(ctx context.Context) {
 		util.WriteTerminateMessage(fmt.Sprintf("%v", r))
 		log.Fatalf("executor panic: %+v\n%s", r, debug.Stack())
 	} else {
+		log.WithField("numErrors", len(we.errors)).Info("Errors")
 		if len(we.errors) > 0 {
 			util.WriteTerminateMessage(we.errors[0].Error())
 		}
@@ -727,6 +728,11 @@ func (we *WorkflowExecutor) ReportOutputs(ctx context.Context, logArt *wfv1.Arti
 	if logArt != nil {
 		outputs.Artifacts = append(outputs.Artifacts, *logArt)
 	}
+	log.
+		WithField("numParameters", len(outputs.Parameters)).
+		WithField("numArtifacts", len(outputs.Artifacts)).
+		WithField("hasResult", outputs.Result != nil).
+		Info("Reporting outputs")
 	return we.reportResult(ctx, wfv1.NodeResult{Outputs: outputs})
 }
 

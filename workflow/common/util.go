@@ -339,3 +339,10 @@ func IsDone(un *unstructured.Unstructured) bool {
 		un.GetLabels()[LabelKeyCompleted] == "true" &&
 		un.GetLabels()[LabelKeyWorkflowArchivingStatus] != "Pending"
 }
+
+func MetaWorkflowNamespace(m metav1.Object) string {
+	if x, ok := m.GetLabels()[LabelKeyWorkflowNamespace]; ok {
+		return x
+	}
+	return m.GetNamespace()
+}

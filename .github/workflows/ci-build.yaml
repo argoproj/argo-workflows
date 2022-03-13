@@ -79,7 +79,7 @@ jobs:
     name: E2E Tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: [ tests, argoexec-image ]
+    needs: [ argoexec-image ]
     env:
       KUBECONFIG: /home/runner/.kubeconfig
     strategy:
@@ -87,25 +87,25 @@ jobs:
       max-parallel: 4
       matrix:
         include:
-          - test: test-plugins
+          - test: test-executor
             containerRuntimeExecutor: emissary
-            profile: plugins
+            profile: minimal
           - test: test-functional
             containerRuntimeExecutor: emissary
             profile: minimal
-          - test: test-api
-            containerRuntimeExecutor: emissary
-            profile: mysql
           - test: test-cli
             containerRuntimeExecutor: emissary
             profile: mysql
-          - test: test-cron
-            containerRuntimeExecutor: emissary
-            profile: minimal
           - test: test-examples
             containerRuntimeExecutor: emissary
             profile: minimal
-          - test: test-executor
+          - test: test-multi-cluster
+            containerRuntimeExecutor: emissary
+            profile: multi-cluster
+          - test: test-plugins
+            containerRuntimeExecutor: emissary
+            profile: plugins
+          - test: test-cron
             containerRuntimeExecutor: emissary
             profile: minimal
           - test: test-executor
@@ -134,19 +134,32 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
       - name: Install and start K3S
+        if: ${{ matrix.containerRuntimeExecutor == 'docker' }}
         run: |
           curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.21.2+k3s1 INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh -
           until kubectl --kubeconfig=/etc/rancher/k3s/k3s.yaml cluster-info ; do sleep 10s ; done
           cp /etc/rancher/k3s/k3s.yaml /home/runner/.kubeconfig
+      - name: Install and start K3D
+        if: ${{ matrix.containerRuntimeExecutor != 'docker' }}
+        run: |
+          curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+          k3d cluster create --wait --no-lb
+      - name: Update kubeconfig
+        run: |
           echo "- name: fake_token_user" >> $KUBECONFIG
           echo "  user:" >> $KUBECONFIG
           echo "    token: xxxxxx" >> $KUBECONFIG
+      - name: Wait for cluster
+        run: |
           until kubectl cluster-info ; do sleep 10s ; done
       - uses: actions/download-artifact@v2
         with:
           name: argoexec
           path: /tmp
       - run: docker load < /tmp/argoexec_image.tar
+      - run: sleep 10s
+      - run: k3d image import quay.io/argoproj/argoexec
+        if: ${{ matrix.containerRuntimeExecutor != 'docker' }}
       - name: Set-up /etc/hosts
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
@@ -164,6 +177,12 @@ jobs:
       - if: ${{ failure() }}
         run: |
           [ -e /tmp/argo.log ] && cat /tmp/argo.log
+      - if: ${{ failure() }}
+        run: kubectl describe pod -l workflows.argoproj.io/workflow
+      - if: ${{ failure() }}
+        run: kubectl describe workflowtaskresults
+      - if: ${{ failure() }}
+        run: kubectl logs -c wait $(kubectl get pod -l workflows.argoproj.io/workflow -o name | tail -n1)
 
   codegen:
     name: Codegen
@@ -173,6 +192,7 @@ jobs:
     env:
       GOPATH: /home/runner/go
     steps:
+      - uses: actions/checkout@v3
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v2
         with:

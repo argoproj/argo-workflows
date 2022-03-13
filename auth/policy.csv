@@ -1,0 +1,2 @@
+# Workflows in the "argo" namespace may create resources in the "cluster-1" cluster's "default" namespace
+p, argo, cluster-1, default

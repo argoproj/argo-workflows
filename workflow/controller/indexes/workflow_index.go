@@ -29,7 +29,8 @@ func MetaWorkflowIndexFunc(obj interface{}) ([]string, error) {
 	if !ok {
 		return nil, nil
 	}
-	return []string{WorkflowIndexValue(m.GetNamespace(), name)}, nil
+	namespace := common.MetaWorkflowNamespace(m)
+	return []string{WorkflowIndexValue(namespace, name)}, nil
 }
 
 // MetaNodeIDIndexFunc takes a kubernetes object and returns either the
@@ -39,12 +40,11 @@ func MetaNodeIDIndexFunc(obj interface{}) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	namespace := common.MetaWorkflowNamespace(m)
 	if nodeID, ok := m.GetAnnotations()[common.AnnotationKeyNodeID]; ok {
-		return []string{m.GetNamespace() + "/" + nodeID}, nil
+		return []string{namespace + "/" + nodeID}, nil
 	}
-
-	return []string{m.GetNamespace() + "/" + m.GetName()}, nil
+	return []string{namespace + "/" + m.GetName()}, nil
 }
 
 func WorkflowIndexValue(namespace, name string) string {

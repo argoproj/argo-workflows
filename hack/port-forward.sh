@@ -39,17 +39,17 @@ if [[ "$mysql" != "" ]]; then
   pf mysql 3306
 fi
 
-if [[ "$(kubectl -n argo get pod -l app=argo-server -o name)" != "" ]]; then
-  wait-for argo-server
-  pf argo-server 2746
-fi
-
 if [[ "$(kubectl -n argo get pod -l app=workflow-controller -o name)" != "" ]]; then
   wait-for workflow-controller
   pf workflow-controller-metrics 9090
   if [[ "$(kubectl -n argo get svc workflow-controller-pprof -o name)" != "" ]]; then
     pf workflow-controller-pprof 6060
   fi
+fi
+
+if [[ "$(kubectl -n argo get pod -l app=argo-server -o name)" != "" ]]; then
+  wait-for argo-server
+  pf argo-server 2746
 fi
 
 if [[ "$(kubectl -n argo get pod -l app=prometheus -o name)" != "" ]]; then

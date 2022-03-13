@@ -32,8 +32,9 @@ type Then struct {
 	kubeClient  kubernetes.Interface
 	bearerToken string
 }
+type ExpectBlock = func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus)
 
-func (t *Then) ExpectWorkflow(block func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus)) *Then {
+func (t *Then) ExpectWorkflow(block ExpectBlock) *Then {
 	t.t.Helper()
 	if t.wf == nil {
 		t.t.Error("workflows is nil")
@@ -42,12 +43,12 @@ func (t *Then) ExpectWorkflow(block func(t *testing.T, metadata *metav1.ObjectMe
 	return t.expectWorkflow(t.wf.Name, block)
 }
 
-func (t *Then) ExpectWorkflowName(workflowName string, block func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus)) *Then {
+func (t *Then) ExpectWorkflowName(workflowName string, block ExpectBlock) *Then {
 	t.t.Helper()
 	return t.expectWorkflow(workflowName, block)
 }
 
-func (t *Then) expectWorkflow(workflowName string, block func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus)) *Then {
+func (t *Then) expectWorkflow(workflowName string, block ExpectBlock) *Then {
 	t.t.Helper()
 	if workflowName == "" {
 		t.t.Fatal("No workflow to test")

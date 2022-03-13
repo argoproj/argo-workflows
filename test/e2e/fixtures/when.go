@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -208,6 +209,11 @@ var (
 		return wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
 			return node.Type == wfv1.NodeTypePod && node.Phase == wfv1.NodeRunning
 		}), "to have running pod"
+	}
+	StatusMessageContains = func(substring string) ExpectBlock {
+		return func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Contains(t, status.Message, substring)
+		}
 	}
 )
 

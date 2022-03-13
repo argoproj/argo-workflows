@@ -67,6 +67,10 @@ const (
 	LabelKeyWorkflowArchivingStatus = workflow.WorkflowFullName + "/workflow-archiving-status"
 	// LabelKeyWorkflow is the pod metadata label to indicate the associated workflow name
 	LabelKeyWorkflow = workflow.WorkflowFullName + "/workflow"
+	// LabelKeyCluster is the cluster. This is omitted for this cluster.
+	LabelKeyCluster = workflow.WorkflowFullName + "/cluster"
+	// LabelKeyWorkflowNamespace is the namespace of the owner workflow, if different to the pod itself.
+	LabelKeyWorkflowNamespace = workflow.WorkflowFullName + "/workflow-namespace"
 	// LabelKeyComponent determines what component within a workflow, intentionally similar to app.kubernetes.io/component.
 	// See https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
 	LabelKeyComponent = workflow.WorkflowFullName + "/component"
@@ -102,10 +106,21 @@ const (
 	// ExecutorResourceManifestPath is the path which init will write the a manifest file to for resource templates
 	ExecutorResourceManifestPath = "/tmp/manifest.yaml"
 
+	// LocalCluster is the alias of the local cluster.
+	// This is to help show the intention of code, must always be the empty string.
+	LocalCluster = ""
+	// WorkflowNamespace is the alias of the workflow's namespace.
+	// This is to help show the intention of code, must always be the empty string.
+	WorkflowNamespace = ""
+
 	// Various environment variables containing pod information exposed to the executor container(s)
 
 	// EnvVarPodName contains the name of the pod (currently unused)
 	EnvVarPodName = "ARGO_POD_NAME"
+	// EnvVarWorkflowCluster is the workflow's cluster.
+	EnvVarWorkflowCluster = "ARGO_WORKFLOW_CLUSTER"
+	// EnvVarWorkflowNamespace is workflow's namespace.
+	EnvVarWorkflowNamespace = "ARGO_WORKFLOW_NAMESPACE"
 	// EnvVarInstanceID is the instance ID
 	EnvVarInstanceID = "ARGO_INSTANCE_ID"
 	// EnvVarWorkflowName is the name of the workflow for which the an agent is responsible for

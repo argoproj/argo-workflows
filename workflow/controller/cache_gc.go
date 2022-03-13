@@ -57,7 +57,7 @@ func (wfc *WorkflowController) cleanupUnusedCache(ctx context.Context, cm *apiv1
 		}
 	}
 	if len(cm.Data) == 0 {
-		err := wfc.kubeclientset.CoreV1().ConfigMaps(cm.Namespace).Delete(ctx, cm.Name, metav1.DeleteOptions{})
+		err := wfc.kubernetesInterfaces[common.LocalCluster].CoreV1().ConfigMaps(cm.Namespace).Delete(ctx, cm.Name, metav1.DeleteOptions{})
 		if err != nil {
 			if apierr.IsNotFound(err) {
 				return nil
@@ -66,7 +66,7 @@ func (wfc *WorkflowController) cleanupUnusedCache(ctx context.Context, cm *apiv1
 		}
 	} else {
 		if modified {
-			_, err := wfc.kubeclientset.CoreV1().ConfigMaps(cm.Namespace).Update(ctx, cm, metav1.UpdateOptions{})
+			_, err := wfc.kubernetesInterfaces[common.LocalCluster].CoreV1().ConfigMaps(cm.Namespace).Update(ctx, cm, metav1.UpdateOptions{})
 			if err != nil {
 				return fmt.Errorf("failed to update ConfigMap %s: %w", cm.Name, err)
 			}

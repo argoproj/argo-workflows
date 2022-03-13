@@ -4,6 +4,10 @@ kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
 data:
+  # A globally unique name for the cluster.
+  # It is acceptable for this to be a random UUID, but once set, it should not be changed.
+  cluster: my-cluster-x
+
   # instanceID is a label selector to limit the controller's watch to a specific instance. It
   # contains an arbitrary value that is carried forward into its pod labels, under the key
   # workflows.argoproj.io/controller-instanceid, for the purposes of workflow segregation. This

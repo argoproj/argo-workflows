@@ -1219,6 +1219,7 @@ with argo_workflows.ApiClient() as api_client:
                         ),
                     ),
                     automount_service_account_token=True,
+                    cluster="cluster_example",
                     container=Container(
                         args=[
                             "args_example",
@@ -2912,6 +2913,7 @@ with argo_workflows.ApiClient() as api_client:
                         ],
                     ),
                     name="name_example",
+                    namespace="namespace_example",
                     node_selector={
                         "key": "key_example",
                     },
@@ -4878,6 +4880,7 @@ with argo_workflows.ApiClient() as api_client:
                             ),
                         ),
                         automount_service_account_token=True,
+                        cluster="cluster_example",
                         container=Container(
                             args=[
                                 "args_example",
@@ -6571,6 +6574,7 @@ with argo_workflows.ApiClient() as api_client:
                             ],
                         ),
                         name="name_example",
+                        namespace="namespace_example",
                         node_selector={
                             "key": "key_example",
                         },
@@ -10110,6 +10114,7 @@ with argo_workflows.ApiClient() as api_client:
                         ),
                     ),
                     automount_service_account_token=True,
+                    cluster="cluster_example",
                     container=Container(
                         args=[
                             "args_example",
@@ -11803,6 +11808,7 @@ with argo_workflows.ApiClient() as api_client:
                         ],
                     ),
                     name="name_example",
+                    namespace="namespace_example",
                     node_selector={
                         "key": "key_example",
                     },
@@ -13769,6 +13775,7 @@ with argo_workflows.ApiClient() as api_client:
                             ),
                         ),
                         automount_service_account_token=True,
+                        cluster="cluster_example",
                         container=Container(
                             args=[
                                 "args_example",
@@ -15462,6 +15469,7 @@ with argo_workflows.ApiClient() as api_client:
                             ],
                         ),
                         name="name_example",
+                        namespace="namespace_example",
                         node_selector={
                             "key": "key_example",
                         },
@@ -18918,6 +18926,7 @@ with argo_workflows.ApiClient() as api_client:
                         ),
                     ),
                     automount_service_account_token=True,
+                    cluster="cluster_example",
                     container=Container(
                         args=[
                             "args_example",
@@ -20611,6 +20620,7 @@ with argo_workflows.ApiClient() as api_client:
                         ],
                     ),
                     name="name_example",
+                    namespace="namespace_example",
                     node_selector={
                         "key": "key_example",
                     },
@@ -22577,6 +22587,7 @@ with argo_workflows.ApiClient() as api_client:
                             ),
                         ),
                         automount_service_account_token=True,
+                        cluster="cluster_example",
                         container=Container(
                             args=[
                                 "args_example",
@@ -24270,6 +24281,7 @@ with argo_workflows.ApiClient() as api_client:
                             ],
                         ),
                         name="name_example",
+                        namespace="namespace_example",
                         node_selector={
                             "key": "key_example",
                         },

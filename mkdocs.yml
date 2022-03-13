@@ -90,6 +90,7 @@ nav:
           - async-pattern.md
           - running-at-massive-scale.md
           - debug-pause.md
+          - multi-cluster.md
       - Plugins:
           - plugins.md
           - executor_plugins.md

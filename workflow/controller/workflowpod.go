@@ -205,8 +205,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      util.PodName(woc.wf.Name, nodeName, tmpl.Name, nodeID, util.GetPodNameVersion()),
-			Namespace: woc.wf.ObjectMeta.Namespace,
+			Name: util.PodName(woc.wf.Name, nodeName, tmpl.Name, nodeID, util.GetPodNameVersion()),
 			Labels: map[string]string{
 				common.LabelKeyWorkflow:  woc.wf.ObjectMeta.Name, // Allows filtering by pods related to specific workflow
 				common.LabelKeyCompleted: "false",                // Allows filtering by incomplete workflow pods
@@ -214,9 +213,6 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			Annotations: map[string]string{
 				common.AnnotationKeyNodeName: nodeName,
 				common.AnnotationKeyNodeID:   nodeID,
-			},
-			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
 			},
 		},
 		Spec: apiv1.PodSpec{
@@ -227,6 +223,33 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		},
 	}
 
+	cluster := tmpl.Cluster
+	namespace := tmpl.Namespace
+	if namespace == common.WorkflowNamespace {
+		namespace = woc.wf.Namespace
+	}
+	local := cluster == common.LocalCluster && namespace == woc.wf.Namespace
+	if local {
+		pod.SetOwnerReferences([]metav1.OwnerReference{
+			*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
+		})
+	} else {
+		pod.Labels[common.LabelKeyCluster] = woc.controller.Config.Cluster
+		pod.Labels[common.LabelKeyWorkflowNamespace] = woc.wf.Namespace
+	}
+
+	log := woc.log.WithField("podName", pod.Name).
+		WithField("nodeName", nodeName).
+		WithField("namespace", namespace).
+		WithField("cluster", cluster)
+
+	ok, err := woc.controller.enforcer.Enforce(woc.wf.Namespace, cluster, namespace)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, fmt.Errorf("namespace %q is forbidden from creating resources in cluster %q namespace %q", woc.wf.Namespace, cluster, namespace)
+	}
 	if opts.onExitPod {
 		// This pod is part of an onExit handler, label it so
 		pod.ObjectMeta.Labels[common.LabelKeyOnExit] = "true"
@@ -399,7 +422,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		if tmpl.IsPodType() {
 			localParams[common.LocalVarPodName] = pod.Name
 		}
-		tmpl, err := common.ProcessArgs(tmpl, &wfv1.Arguments{}, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer)
+		tmpl, err := common.ProcessArgs(tmpl, &wfv1.Arguments{}, woc.globalParams, localParams, false, namespace, woc.controller.configMapInformer)
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Failed to substitute the PodSpecPatch variables")
 		}
@@ -465,29 +488,37 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		return nil, ErrResourceRateLimitReached
 	}
 
-	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, pod.Name)
+	log.Info("Creating Pod")
 
-	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
+	created, err := woc.controller.kubernetesInterfaces[cluster].CoreV1().Pods(namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
+		log.WithError(err).Info("Failed to create pod")
 		if apierr.IsAlreadyExists(err) {
 			// workflow pod names are deterministic. We can get here if the
 			// controller fails to persist the workflow after creating the pod.
-			woc.log.Infof("Failed pod %s (%s) creation: already exists", nodeName, pod.Name)
 			return created, nil
 		}
 		if errorsutil.IsTransientErr(err) {
 			return nil, err
 		}
-		woc.log.Infof("Failed to create pod %s (%s): %v", nodeName, pod.Name, err)
 		return nil, errors.InternalWrapError(err)
 	}
-	woc.log.Infof("Created pod: %s (%s)", nodeName, created.Name)
 	woc.activePods++
 	return created, nil
 }
 
 func (woc *wfOperationCtx) podExists(nodeID string) (existing *apiv1.Pod, exists bool, err error) {
-	objs, err := woc.controller.podInformer.GetIndexer().ByIndex(indexes.NodeIDIndex, woc.wf.Namespace+"/"+nodeID)
+	node := woc.wf.Status.Nodes[nodeID]
+	tmpl := woc.execWf.GetTemplateByName(node.TemplateName)
+	if tmpl == nil {
+		return nil, false, nil
+	}
+	cluster := tmpl.Cluster
+	podInformer, ok := woc.controller.podInformers[cluster]
+	if !ok {
+		return nil, false, fmt.Errorf("failed to get pod for node: unknown cluster %q", cluster)
+	}
+	objs, err := podInformer.GetIndexer().ByIndex(indexes.NodeIDIndex, woc.wf.Namespace+"/"+nodeID)
 	if err != nil {
 		return nil, false, fmt.Errorf("failed to get pod from informer store: %w", err)
 	}
@@ -607,7 +638,7 @@ func containerIsPrivileged(ctr *apiv1.Container) bool {
 	return false
 }
 
-func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
+func (woc *wfOperationCtx) createEnvVars(tmpl *wfv1.Template) []apiv1.EnvVar {
 	execEnvVars := []apiv1.EnvVar{
 		{
 			Name: common.EnvVarPodName,
@@ -630,14 +661,21 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 			Name:  "GODEBUG",
 			Value: "x509ignoreCN=0",
 		},
-		{
-			Name:  common.EnvVarWorkflowName,
-			Value: woc.wf.Name,
-		},
-		{
-			Name:  common.EnvVarWorkflowUID,
-			Value: string(woc.wf.UID),
-		},
+		{Name: common.EnvVarWorkflowName, Value: woc.wf.Name},
+		{Name: common.EnvVarWorkflowUID, Value: string(woc.wf.UID)},
+	}
+
+	cluster := tmpl.Cluster
+	namespace := tmpl.Namespace
+	if namespace == common.WorkflowNamespace {
+		namespace = woc.wf.Namespace
+	}
+	local := cluster == common.LocalCluster && namespace == woc.wf.Namespace
+	if !local {
+		execEnvVars = append(execEnvVars,
+			apiv1.EnvVar{Name: common.EnvVarWorkflowCluster, Value: woc.controller.Config.Cluster},
+			apiv1.EnvVar{Name: common.EnvVarWorkflowNamespace, Value: namespace},
+		)
 	}
 	if v := woc.controller.Config.InstanceID; v != "" {
 		execEnvVars = append(execEnvVars,
@@ -703,7 +741,7 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 		Name:            name,
 		Image:           woc.controller.executorImage(),
 		ImagePullPolicy: woc.controller.executorImagePullPolicy(),
-		Env:             woc.createEnvVars(),
+		Env:             woc.createEnvVars(tmpl),
 		Resources:       woc.controller.Config.GetExecutor().Resources,
 		SecurityContext: woc.controller.Config.GetExecutor().SecurityContext,
 	}
@@ -1098,7 +1136,7 @@ func (woc *wfOperationCtx) setupServiceAccount(ctx context.Context, pod *apiv1.P
 		executorServiceAccountName = woc.execWf.Spec.Executor.ServiceAccountName
 	}
 	if executorServiceAccountName != "" {
-		tokenName, err := woc.getServiceAccountTokenName(ctx, executorServiceAccountName)
+		tokenName, err := woc.getServiceAccountTokenName(ctx, pod.Labels[common.LocalCluster], executorServiceAccountName)
 		if err != nil {
 			return err
 		}

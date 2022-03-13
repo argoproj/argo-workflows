@@ -34,7 +34,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 
 			if !woc.GetShutdownStrategy().ShouldExecute(onExitPod) {
 				woc.log.Infof("Deleting Pending pod %s/%s as part of workflow shutdown with strategy: %s", pod.Namespace, pod.Name, woc.GetShutdownStrategy())
-				err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
+				err := woc.controller.kubernetesInterfaces[pod.Labels[common.EnvVarWorkflowCluster]].CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 				if err == nil {
 					msg := fmt.Sprintf("workflow shutdown with strategy:  %s", woc.GetShutdownStrategy())
 					woc.handleExecutionControlError(nodeID, wfNodesLock, msg)
@@ -51,7 +51,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 			_, onExitPod := pod.Labels[common.LabelKeyOnExit]
 			if !onExitPod {
 				woc.log.Infof("Deleting Pending pod %s/%s which has exceeded workflow deadline %s", pod.Namespace, pod.Name, woc.workflowDeadline)
-				err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
+				err := woc.controller.kubernetesInterfaces[pod.Labels[common.EnvVarWorkflowCluster]].CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 				if err == nil {
 					woc.handleExecutionControlError(nodeID, wfNodesLock, "Step exceeded its deadline")
 					return
@@ -64,7 +64,8 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 	if woc.GetShutdownStrategy().Enabled() {
 		if _, onExitPod := pod.Labels[common.LabelKeyOnExit]; !woc.GetShutdownStrategy().ShouldExecute(onExitPod) {
 			woc.log.Infof("Shutting down pod %s", pod.Name)
-			woc.controller.queuePodForCleanup(woc.wf.Namespace, pod.Name, shutdownPod)
+			namespace := common.MetaWorkflowNamespace(pod)
+			woc.controller.queuePodForCleanup(pod.Labels[common.LabelKeyCluster], namespace, pod.Name, shutdownPod)
 		}
 	}
 }
@@ -97,7 +98,13 @@ func (woc *wfOperationCtx) killDaemonedChildren(nodeID string) {
 		if !childNode.IsDaemoned() {
 			continue
 		}
-		woc.controller.queuePodForCleanup(woc.wf.Namespace, childNode.ID, shutdownPod)
+		tmpl := woc.execWf.GetTemplateByName(childNode.TemplateName)
+		cluster := tmpl.Cluster
+		namespace := tmpl.Namespace
+		if namespace == common.WorkflowNamespace {
+			namespace = woc.wf.Namespace
+		}
+		woc.controller.queuePodForCleanup(cluster, namespace, childNode.ID, shutdownPod)
 		childNode.Phase = wfv1.NodeSucceeded
 		childNode.Daemoned = nil
 		woc.wf.Status.Nodes[childNode.ID] = childNode

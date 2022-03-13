@@ -45,17 +45,25 @@ func (we *WorkflowExecutor) createTaskResult(ctx context.Context, result wfv1.No
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   we.nodeId,
 			Labels: map[string]string{common.LabelKeyWorkflow: we.workflow},
-			// make sure deleting the workflow, delete this result
-			OwnerReferences: []metav1.OwnerReference{
+		},
+		NodeResult: result,
+	}
+	cluster := os.Getenv(common.EnvVarWorkflowCluster)
+	workflowNamespace := os.Getenv(common.EnvVarWorkflowNamespace)
+	local := cluster == common.LocalCluster && workflowNamespace == common.WorkflowNamespace
+	if local {
+		taskResult.SetOwnerReferences(
+			[]metav1.OwnerReference{
 				{
 					APIVersion: workflow.APIVersion,
 					Kind:       workflow.WorkflowKind,
 					Name:       we.workflow,
 					UID:        we.workflowUID,
 				},
-			},
-		},
-		NodeResult: result,
+			})
+	} else {
+		taskResult.Labels[common.LabelKeyCluster] = cluster
+		taskResult.Labels[common.LabelKeyWorkflowNamespace] = workflowNamespace
 	}
 	if v := os.Getenv(common.EnvVarInstanceID); v != "" {
 		taskResult.Labels[common.LabelKeyControllerInstanceID] = v

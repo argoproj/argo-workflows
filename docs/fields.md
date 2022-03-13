@@ -1587,6 +1587,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`affinity`|[`Affinity`](#affinity)|Affinity sets the pod's scheduling constraints Overrides the affinity set at the workflow level (if any)|
 |`archiveLocation`|[`ArtifactLocation`](#artifactlocation)|Location in which all files related to the step will be stored (logs, artifacts, etc...). Can be overridden by individual items in Outputs. If omitted, will use the default artifact repository location configured in the controller, appended with the <workflowname>/<nodename> in the key.|
 |`automountServiceAccountToken`|`boolean`|AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.|
+|`cluster`|`string`|Cluster is the cluster the task should run it (if supported).|
 |`container`|[`Container`](#container)|Container is the main container image to run in the pod|
 |`containerSet`|[`ContainerSetTemplate`](#containersettemplate)|ContainerSet groups multiple containers within a single pod.|
 |`daemon`|`boolean`|Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness|
@@ -1602,6 +1603,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`metadata`|[`Metadata`](#metadata)|Metdata sets the pods's metadata, i.e. annotations and labels|
 |`metrics`|[`Metrics`](#metrics)|Metrics are a list of metrics emitted from this template|
 |`name`|`string`|Name is the name of the template|
+|`namespace`|`string`|Namespace is the name the task should run it (if supported).|
 |`nodeSelector`|`Map< string , string >`|NodeSelector is a selector to schedule this step of the workflow to be run on the selected node(s). Overrides the selector set at the workflow level.|
 |`outputs`|[`Outputs`](#outputs)|Outputs describe the parameters and artifacts that this template produces|
 |`parallelism`|`integer`|Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.|

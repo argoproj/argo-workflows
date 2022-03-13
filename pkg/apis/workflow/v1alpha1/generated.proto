@@ -1338,6 +1338,12 @@ message Template {
   // Steps define a series of sequential/parallel workflow steps
   repeated ParallelSteps steps = 11;
 
+  // Cluster is the cluster the task should run it (if supported).
+  optional string cluster = 44;
+
+  // Namespace is the name the task should run it (if supported).
+  optional string namespace = 45;
+
   // Container is the main container image to run in the pod
   optional k8s.io.api.core.v1.Container container = 12;
 

@@ -7132,6 +7132,10 @@
           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.",
           "type": "boolean"
         },
+        "cluster": {
+          "description": "Cluster is the cluster the task should run it (if supported).",
+          "type": "string"
+        },
         "container": {
           "$ref": "#/definitions/io.k8s.api.core.v1.Container",
           "description": "Container is the main container image to run in the pod"
@@ -7200,6 +7204,10 @@
         },
         "name": {
           "description": "Name is the name of the template",
+          "type": "string"
+        },
+        "namespace": {
+          "description": "Namespace is the name the task should run it (if supported).",
           "type": "string"
         },
         "nodeSelector": {

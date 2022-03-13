@@ -12,6 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 var basicMetric = `
@@ -47,7 +48,7 @@ spec:
 func TestBasicMetric(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wfcset := controller.workflowInterfaces[common.LocalCluster].ArgoprojV1alpha1().Workflows("")
 	wf := v1alpha1.MustUnmarshalWorkflow(basicMetric)
 	ctx := context.Background()
 	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
@@ -208,7 +209,7 @@ func TestMetricEmissionSameOperationCreationAndFailure(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wfcset := controller.workflowInterfaces[common.LocalCluster].ArgoprojV1alpha1().Workflows("")
 	wf := v1alpha1.MustUnmarshalWorkflow(testMetricEmissionSameOperationCreationAndFailure)
 	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
@@ -405,7 +406,7 @@ func TestDAGTmplMetrics(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wfcset := controller.workflowInterfaces[common.LocalCluster].ArgoprojV1alpha1().Workflows("")
 	wf := v1alpha1.MustUnmarshalWorkflow(dagTmplMetrics)
 	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
@@ -466,7 +467,7 @@ func TestRealtimeWorkflowMetric(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wfcset := controller.workflowInterfaces[common.LocalCluster].ArgoprojV1alpha1().Workflows("")
 	wf := v1alpha1.MustUnmarshalWorkflow(testRealtimeWorkflowMetric)
 	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
@@ -519,7 +520,7 @@ func TestRealtimeWorkflowMetricWithGlobalParameters(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wfcset := controller.workflowInterfaces[common.LocalCluster].ArgoprojV1alpha1().Workflows("")
 	wf := v1alpha1.MustUnmarshalWorkflow(testRealtimeWorkflowMetricWithGlobalParameters)
 	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
@@ -621,7 +622,7 @@ func TestProcessedRetryNode(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wfcset := controller.workflowInterfaces[common.LocalCluster].ArgoprojV1alpha1().Workflows("")
 	wf := v1alpha1.MustUnmarshalWorkflow(testProcessedRetryNode)
 	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
@@ -768,7 +769,7 @@ func TestControllerRestartWithRunningWorkflow(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wfcset := controller.workflowInterfaces[common.LocalCluster].ArgoprojV1alpha1().Workflows("")
 	wf := v1alpha1.MustUnmarshalWorkflow(suspendWfWithMetrics)
 	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)

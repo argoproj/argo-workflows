@@ -21,6 +21,7 @@ run:
     - executor
     - examples
     - functional
+    - multi-cluster
     - plugins
 linters:
   enable:
