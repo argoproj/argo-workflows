@@ -93,6 +93,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		{Name: common.EnvVarWorkflowName, Value: woc.wf.Name},
 		{Name: common.EnvAgentPatchRate, Value: env.LookupEnvStringOr(common.EnvAgentPatchRate, GetRequeueTime().String())},
 		{Name: common.EnvVarPluginAddresses, Value: wfv1.MustMarshallJSON(addresses(pluginSidecars))},
+		{Name: common.EnvVarPluginNames, Value: wfv1.MustMarshallJSON(names(pluginSidecars))},
 	}
 
 	// If the default number of task workers is overridden, then pass it to the agent pod.
@@ -110,6 +111,48 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	}
 	// Intentionally randomize the name so that plugins cannot determine it.
 	tokenVolumeName := fmt.Sprintf("kube-api-access-%s", rand.String(5))
+
+	agentContainerTemplate := apiv1.Container{
+		Name:            common.MainContainerName,
+		Command:         []string{"argoexec"},
+		Image:           woc.controller.executorImage(),
+		ImagePullPolicy: woc.controller.executorImagePullPolicy(),
+		Env:             envVars,
+		SecurityContext: &apiv1.SecurityContext{
+			Capabilities: &apiv1.Capabilities{
+				Drop: []apiv1.Capability{"ALL"},
+			},
+			RunAsNonRoot:             pointer.BoolPtr(true),
+			RunAsUser:                pointer.Int64Ptr(8737),
+			ReadOnlyRootFilesystem:   pointer.BoolPtr(true),
+			AllowPrivilegeEscalation: pointer.BoolPtr(false),
+		},
+		Resources: apiv1.ResourceRequirements{
+			Requests: map[apiv1.ResourceName]resource.Quantity{
+				"cpu":    resource.MustParse("10m"),
+				"memory": resource.MustParse("64M"),
+			},
+			Limits: map[apiv1.ResourceName]resource.Quantity{
+				"cpu":    resource.MustParse(env.LookupEnvStringOr("ARGO_AGENT_CPU_LIMIT", "100m")),
+				"memory": resource.MustParse(env.LookupEnvStringOr("ARGO_AGENT_MEMORY_LIMIT", "256M")),
+			},
+		},
+		VolumeMounts: []apiv1.VolumeMount{
+			{
+				Name:      tokenVolumeName,
+				MountPath: common.ServiceAccountTokenMountPath,
+				ReadOnly:  true,
+			},
+			{
+				Name:      "var-run-argo",
+				MountPath: "/var/run/argo",
+			},
+		},
+	}
+	agentInitContainer := agentContainerTemplate.DeepCopy()
+	agentInitContainer.Args = []string{"agent", "init"}
+	agentRunContainer := agentContainerTemplate.DeepCopy()
+	agentRunContainer.Args = []string{"agent", "run"}
 
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -143,43 +186,19 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 						Secret: &apiv1.SecretVolumeSource{SecretName: secretName},
 					},
 				},
+				{
+					Name: "var-run-argo",
+					VolumeSource: apiv1.VolumeSource{
+						EmptyDir: &apiv1.EmptyDirVolumeSource{},
+					},
+				},
+			},
+			InitContainers: []apiv1.Container{
+				*agentInitContainer,
 			},
 			Containers: append(
 				pluginSidecars,
-				apiv1.Container{
-					Name:            common.MainContainerName,
-					Command:         []string{"argoexec"},
-					Args:            []string{"agent"},
-					Image:           woc.controller.executorImage(),
-					ImagePullPolicy: woc.controller.executorImagePullPolicy(),
-					Env:             envVars,
-					SecurityContext: &apiv1.SecurityContext{
-						Capabilities: &apiv1.Capabilities{
-							Drop: []apiv1.Capability{"ALL"},
-						},
-						RunAsNonRoot:             pointer.BoolPtr(true),
-						RunAsUser:                pointer.Int64Ptr(8737),
-						ReadOnlyRootFilesystem:   pointer.BoolPtr(true),
-						AllowPrivilegeEscalation: pointer.BoolPtr(false),
-					},
-					Resources: apiv1.ResourceRequirements{
-						Requests: map[apiv1.ResourceName]resource.Quantity{
-							"cpu":    resource.MustParse("10m"),
-							"memory": resource.MustParse("64M"),
-						},
-						Limits: map[apiv1.ResourceName]resource.Quantity{
-							"cpu":    resource.MustParse(env.LookupEnvStringOr("ARGO_AGENT_CPU_LIMIT", "100m")),
-							"memory": resource.MustParse(env.LookupEnvStringOr("ARGO_AGENT_MEMORY_LIMIT", "256M")),
-						},
-					},
-					VolumeMounts: []apiv1.VolumeMount{
-						{
-							Name:      tokenVolumeName,
-							MountPath: common.ServiceAccountTokenMountPath,
-							ReadOnly:  true,
-						},
-					},
-				},
+				*agentRunContainer,
 			),
 		},
 	}
@@ -209,7 +228,14 @@ func (woc *wfOperationCtx) getExecutorPlugins() []apiv1.Container {
 	namespaces[woc.wf.Namespace] = true
 	for namespace := range namespaces {
 		for _, plug := range woc.controller.executorPlugins[namespace] {
-			sidecars = append(sidecars, plug.Spec.Sidecar.Container)
+			c := plug.Spec.Sidecar.Container.DeepCopy()
+			c.VolumeMounts = append(c.VolumeMounts, apiv1.VolumeMount{
+				Name:      "var-run-argo",
+				ReadOnly:  true,
+				MountPath: "/var/run/argo",
+				SubPath:   c.Name,
+			})
+			sidecars = append(sidecars, *c)
 		}
 	}
 	return sidecars
@@ -219,6 +245,14 @@ func addresses(containers []apiv1.Container) []string {
 	var addresses []string
 	for _, c := range containers {
 		addresses = append(addresses, fmt.Sprintf("http://localhost:%d", c.Ports[0].ContainerPort))
+	}
+	return addresses
+}
+
+func names(containers []apiv1.Container) []string {
+	var addresses []string
+	for _, c := range containers {
+		addresses = append(addresses, c.Name)
 	}
 	return addresses
 }

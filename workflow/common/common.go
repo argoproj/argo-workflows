@@ -114,6 +114,8 @@ const (
 	EnvVarNodeID = "ARGO_NODE_ID"
 	// EnvVarPluginAddresses is a list of plugin addresses
 	EnvVarPluginAddresses = "ARGO_PLUGIN_ADDRESSES"
+	// EnvVarPluginNames is a list of plugin names
+	EnvVarPluginNames = "ARGO_PLUGIN_NAMES"
 	// EnvVarContainerName container the container's name for the current pod
 	EnvVarContainerName = "ARGO_CONTAINER_NAME"
 	// EnvVarDeadline is the deadline for the pod

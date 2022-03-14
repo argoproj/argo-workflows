@@ -8,6 +8,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 
@@ -20,9 +21,54 @@ import (
 )
 
 func NewAgentCommand() *cobra.Command {
-	return &cobra.Command{
+	cmd := cobra.Command{
 		Use:          "agent",
 		SilenceUsage: true, // this prevents confusing usage message being printed on error
+	}
+	cmd.AddCommand(NewAgentInitCommand())
+	cmd.AddCommand(NewAgentRunCommand())
+	return &cmd
+}
+
+func NewAgentInitCommand() *cobra.Command {
+	return &cobra.Command{
+		Use: "init",
+		Run: func(cmd *cobra.Command, args []string) {
+			for _, name := range getPluginNames() {
+				log.WithField("plugin", name).Info("creating token file for plugin")
+				dir := "/var/run/argo/" + name
+				if err := os.Mkdir(dir, 0o770 /* chmod ug+rwx */); err != nil && !os.IsExist(err) {
+					log.Fatal(fmt.Errorf("failed to create %s: %w", dir, err))
+				}
+				file := dir + "/token"
+				token := rand.String(32) // this could have 26^32 ~= 2 x 10^45  possible values, not guessable in reasonable time
+				if err := os.WriteFile(file, []byte(token), 0o220 /* chmod ug+r */); err != nil {
+					log.Fatal(fmt.Errorf("failed to create %s: %w", file, err))
+				}
+			}
+		},
+	}
+}
+
+func getPluginNames() []string {
+	var names []string
+	if err := json.Unmarshal([]byte(os.Getenv(common.EnvVarPluginNames)), &names); err != nil {
+		log.Fatal(err)
+	}
+	return names
+}
+
+func getPluginAddresses() []string {
+	var addresses []string
+	if err := json.Unmarshal([]byte(os.Getenv(common.EnvVarPluginAddresses)), &addresses); err != nil {
+		log.Fatal(err)
+	}
+	return addresses
+}
+
+func NewAgentRunCommand() *cobra.Command {
+	return &cobra.Command{
+		Use: "run",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return initAgentExecutor().Agent(context.Background())
 		},
@@ -52,13 +98,17 @@ func initAgentExecutor() *executor.AgentExecutor {
 		log.Fatalf("Unable to determine workflow name from environment variable %s", common.EnvVarWorkflowName)
 	}
 
-	var addresses []string
-	if err := json.Unmarshal([]byte(os.Getenv(common.EnvVarPluginAddresses)), &addresses); err != nil {
-		log.Fatal(err)
-	}
+	addresses := getPluginAddresses()
+	names := getPluginNames()
 	var plugins []executorplugins.TemplateExecutor
-	for _, address := range addresses {
-		plugins = append(plugins, rpc.New(address))
+	for i, address := range addresses {
+		name := names[i]
+		log.WithField("plugin", name).Info("loading token file for plugin")
+		data, err := os.ReadFile("/var/run/argo/" + name + "/token")
+		if err != nil {
+			log.Fatal(err)
+		}
+		plugins = append(plugins, rpc.New(address, string(data)))
 	}
 
 	return executor.NewAgentExecutor(clientSet, restClient, config, namespace, workflowName, plugins)
