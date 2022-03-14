@@ -23,8 +23,8 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformers() map[string]cache
 			Add(wfc.instanceIDReq()).
 			String()
 		log.WithField("labelSelector", labelSelector).
-			WithField("cluster", cluster).Info("Watching task results")
-		informer := wfextvv1alpha1.NewFilteredWorkflowTaskResultInformer(
+			WithField("cluster", cluster).Info("Creating task-result informer")
+		informers[cluster] = wfextvv1alpha1.NewFilteredWorkflowTaskResultInformer(
 			clientset,
 			wfc.GetManagedNamespace(),
 			20*time.Minute,
@@ -35,7 +35,6 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformers() map[string]cache
 				options.LabelSelector = labelSelector
 			},
 		)
-		informers[cluster] = informer
 	}
 	return informers
 }
