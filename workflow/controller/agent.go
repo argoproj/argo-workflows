@@ -142,15 +142,14 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 				MountPath: common.ServiceAccountTokenMountPath,
 				ReadOnly:  true,
 			},
-			{
-				Name:      "var-run-argo",
-				MountPath: "/var/run/argo",
-			},
+			volumeMountVarArgo,
 		},
 	}
+	// the `init` container populates the shared empty-dir volume with tokens
 	agentInitCtr := agentCtrTemplate.DeepCopy()
 	agentInitCtr.Name = common.InitContainerName
 	agentInitCtr.Args = []string{"agent", "init"}
+	// the `main` container runs the actual work
 	agentMainCtr := agentCtrTemplate.DeepCopy()
 	agentMainCtr.Name = common.MainContainerName
 	agentMainCtr.Args = []string{"agent", "main"}
@@ -187,12 +186,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 						Secret: &apiv1.SecretVolumeSource{SecretName: secretName},
 					},
 				},
-				{
-					Name: "var-run-argo",
-					VolumeSource: apiv1.VolumeSource{
-						EmptyDir: &apiv1.EmptyDirVolumeSource{},
-					},
-				},
+				volumeVarArgo,
 			},
 			InitContainers: []apiv1.Container{
 				*agentInitCtr,
@@ -231,10 +225,11 @@ func (woc *wfOperationCtx) getExecutorPlugins() []apiv1.Container {
 		for _, plug := range woc.controller.executorPlugins[namespace] {
 			c := plug.Spec.Sidecar.Container.DeepCopy()
 			c.VolumeMounts = append(c.VolumeMounts, apiv1.VolumeMount{
-				Name:      "var-run-argo",
+				Name:      volumeMountVarArgo.Name,
+				MountPath: volumeMountVarArgo.MountPath,
 				ReadOnly:  true,
-				MountPath: "/var/run/argo",
-				SubPath:   c.Name,
+				// only mount the token for this plugin, not others
+				SubPath: c.Name,
 			})
 			sidecars = append(sidecars, *c)
 		}

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -35,19 +36,24 @@ func NewAgentInitCommand() *cobra.Command {
 		Use: "init",
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, name := range getPluginNames() {
-				log.WithField("plugin", name).Info("creating token file for plugin")
-				dir := "/var/run/argo/" + name
-				if err := os.Mkdir(dir, 0o770 /* chmod ug+rwx */); err != nil && !os.IsExist(err) {
+				filename := tokenFilename(name)
+				log.WithField("plugin", name).
+					WithField("filename", filename).
+					Info("creating token file for plugin")
+				if err := os.Mkdir(filepath.Dir(filename), 0o770); err != nil {
 					log.Fatal(err)
 				}
-				file := dir + "/token"
 				token := rand.String(32) // this could have 26^32 ~= 2 x 10^45  possible values, not guessable in reasonable time
-				if err := os.WriteFile(file, []byte(token), 0o220 /* chmod ug+r */); err != nil {
+				if err := os.WriteFile(filename, []byte(token), 0o440); err != nil {
 					log.Fatal(err)
 				}
 			}
 		},
 	}
+}
+
+func tokenFilename(name string) string {
+	return filepath.Join("/var/run/argo", name, "token")
 }
 
 func getPluginNames() []string {
@@ -103,8 +109,11 @@ func initAgentExecutor() *executor.AgentExecutor {
 	var plugins []executorplugins.TemplateExecutor
 	for i, address := range addresses {
 		name := names[i]
-		log.WithField("plugin", name).Info("loading token file for plugin")
-		data, err := os.ReadFile("/var/run/argo/" + name + "/token")
+		filename := tokenFilename(name)
+		log.WithField("plugin", name).
+			WithField("filename", filename).
+			Info("loading token file for plugin")
+		data, err := os.ReadFile(filename)
 		if err != nil {
 			log.Fatal(err)
 		}

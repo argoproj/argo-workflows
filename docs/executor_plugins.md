@@ -86,7 +86,7 @@ import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 with open("/var/run/argo/token") as f:
-    token = f.read()
+    token = f.read().strip()
 
 
 class Plugin(BaseHTTPRequestHandler):
@@ -108,7 +108,7 @@ class Plugin(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_POST(self):
-        if self.headers.get("Authorization") != f"Bearer ${token}":
+        if self.headers.get("Authorization") != "Bearer " + token:
             self.forbidden()
         elif self.path == '/api/v1/template.execute':
             args = self.args()
