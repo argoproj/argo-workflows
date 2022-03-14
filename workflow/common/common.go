@@ -107,11 +107,14 @@ const (
 	ExecutorResourceManifestPath = "/tmp/manifest.yaml"
 
 	// LocalCluster is the alias of the local cluster.
-	// This is to help show the intention of code, must always be the empty string.
+	// This is to help show the intention of code, must always be the empty string, same as ClusterUndefined.
 	LocalCluster = ""
-	// WorkflowNamespace is the alias of the workflow's namespace.
+	// ClusterUndefined indicates it was undefined.
 	// This is to help show the intention of code, must always be the empty string.
-	WorkflowNamespace = ""
+	ClusterUndefined = ""
+	// NamespaceUndefined is indicates it was undefined.
+	// This is to help show the intention of code, must always be the empty string.
+	NamespaceUndefined = ""
 
 	// Various environment variables containing pod information exposed to the executor container(s)
 

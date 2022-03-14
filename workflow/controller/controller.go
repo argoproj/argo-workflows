@@ -1068,29 +1068,33 @@ func (wfc *WorkflowController) newPodInformers() (map[string]cache.SharedIndexIn
 			wfc.metadataInterfaces[cluster],
 			schema.GroupVersionResource{Version: "v1", Resource: "pods"},
 			managedNamespace,
-			time.Hour,
+			10*time.Minute,
 			cache.Indexers{},
 			func(options *metav1.ListOptions) {
 				options.LabelSelector = labelSelector
 			},
 		).Informer()
+		processObj := func(obj interface{}) {
+			pod := obj.(metav1.Object)
+			namespace := common.MetaWorkflowNamespace(pod)
+			workflow := pod.GetLabels()[common.LabelKeyWorkflow]
+			_, exists, _ := wfc.wfInformer.GetIndexer().GetByKey(namespace + "/" + workflow)
+			if !exists {
+				log.
+					WithField("cluster", cluster).
+					WithField("workflowNamespace", namespace).
+					WithField("workflow", workflow).
+					WithField("podNamespace", pod.GetNamespace()).
+					WithField("podName", pod.GetName()).
+					Info("deleting orphan pod")
+				wfc.queuePodForCleanup(cluster, pod.GetNamespace(), pod.GetName(), deletePod)
+			}
+		}
 		podGCInformer.AddEventHandler(
 			cache.ResourceEventHandlerFuncs{
+				AddFunc: processObj,
 				UpdateFunc: func(_, obj interface{}) {
-					pod := obj.(metav1.Object)
-					namespace := common.MetaWorkflowNamespace(pod)
-					workflow := pod.GetLabels()[common.LabelKeyWorkflow]
-					_, exists, _ := wfc.wfInformer.GetIndexer().GetByKey(namespace + "/" + workflow)
-					if !exists {
-						log.
-							WithField("cluster", cluster).
-							WithField("workflowNamespace", namespace).
-							WithField("workflow", workflow).
-							WithField("podNamespace", pod.GetNamespace()).
-							WithField("podName", pod.GetName()).
-							Info("deleting orphan pod")
-						wfc.queuePodForCleanup(cluster, pod.GetNamespace(), pod.GetName(), deletePod)
-					}
+					processObj(obj)
 				},
 			},
 		)

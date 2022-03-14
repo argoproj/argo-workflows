@@ -101,7 +101,7 @@ func (woc *wfOperationCtx) killDaemonedChildren(nodeID string) {
 		tmpl := woc.execWf.GetTemplateByName(childNode.TemplateName)
 		cluster := tmpl.Cluster
 		namespace := tmpl.Namespace
-		if namespace == common.WorkflowNamespace {
+		if namespace == common.NamespaceUndefined {
 			namespace = woc.wf.Namespace
 		}
 		woc.controller.queuePodForCleanup(cluster, namespace, childNode.ID, shutdownPod)

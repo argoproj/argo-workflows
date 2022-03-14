@@ -2272,7 +2272,7 @@ func (woc *wfOperationCtx) getPodByNode(node *wfv1.NodeStatus) (*apiv1.Pod, erro
 	}
 	cluster := tmpl.Cluster
 	namespace := tmpl.Namespace
-	if namespace == common.WorkflowNamespace {
+	if namespace == common.NamespaceUndefined {
 		namespace = woc.wf.GetNamespace()
 	}
 	podName := woc.getPodName(node.Name, node.TemplateName)

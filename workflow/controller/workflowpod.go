@@ -225,16 +225,18 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	cluster := tmpl.Cluster
 	namespace := tmpl.Namespace
-	if namespace == common.WorkflowNamespace {
+	if namespace == common.NamespaceUndefined {
 		namespace = woc.wf.Namespace
 	}
-	local := cluster == common.LocalCluster && namespace == woc.wf.Namespace
-	if local {
+	if cluster == common.LocalCluster && namespace == woc.wf.Namespace {
 		pod.SetOwnerReferences([]metav1.OwnerReference{
 			*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
 		})
-	} else {
+	}
+	if cluster != common.LocalCluster {
 		pod.Labels[common.LabelKeyCluster] = woc.controller.Config.Cluster
+	}
+	if namespace != woc.wf.Namespace {
 		pod.Labels[common.LabelKeyWorkflowNamespace] = woc.wf.Namespace
 	}
 
@@ -667,13 +669,16 @@ func (woc *wfOperationCtx) createEnvVars(tmpl *wfv1.Template) []apiv1.EnvVar {
 
 	cluster := tmpl.Cluster
 	namespace := tmpl.Namespace
-	if namespace == common.WorkflowNamespace {
+	if namespace == common.NamespaceUndefined {
 		namespace = woc.wf.Namespace
 	}
-	local := cluster == common.LocalCluster && namespace == woc.wf.Namespace
-	if !local {
+	if cluster != common.ClusterUndefined {
 		execEnvVars = append(execEnvVars,
 			apiv1.EnvVar{Name: common.EnvVarWorkflowCluster, Value: woc.controller.Config.Cluster},
+		)
+	}
+	if namespace != woc.wf.Namespace {
+		execEnvVars = append(execEnvVars,
 			apiv1.EnvVar{Name: common.EnvVarWorkflowNamespace, Value: namespace},
 		)
 	}

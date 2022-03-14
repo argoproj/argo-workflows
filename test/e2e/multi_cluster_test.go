@@ -18,7 +18,7 @@ func (s *MultiClusterSuite) TestAllowedRemoteCluster() {
 	s.Given().
 		Workflow(`
 metadata:
-  generateName: multi-cluster-
+  generateName: allow-cluster-
 spec:
   entrypoint: main
   artifactRepositoryRef:
@@ -26,6 +26,26 @@ spec:
   templates:
     - name: main
       cluster: cluster-1
+      namespace: default
+      container:
+        image: argoproj/argosay:v2
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
+func (s *MultiClusterSuite) TestAllowedLocalNamespace() {
+	s.Given().
+		Workflow(`
+metadata:
+  generateName: allow-ns-
+spec:
+  entrypoint: main
+  artifactRepositoryRef:
+    key: empty
+  templates:
+    - name: main
       namespace: default
       container:
         image: argoproj/argosay:v2
@@ -88,7 +108,8 @@ spec:
     key: empty
   templates:
     - name: main
-      namespace: default
+      cluster: cluster-1
+      namespace: argo
       container:
         image: argoproj/argosay:v2
 `).
@@ -96,7 +117,7 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeErrored).
 		Then().
-		ExpectWorkflow(fixtures.StatusMessageContains(`namespace "argo" is forbidden from creating resources in cluster "" namespace "default"`))
+		ExpectWorkflow(fixtures.StatusMessageContains(`namespace "argo" is forbidden from creating resources in cluster "cluster-1" namespace "default"`))
 }
 
 func (s *MultiClusterSuite) TestDisallowedCluster() {
