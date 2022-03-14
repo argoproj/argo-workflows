@@ -422,6 +422,7 @@ ifeq ($(PROFILE),multi-cluster)
 
 	# install the taskresult crd
 	kubectl --context=cluster-1 apply -f manifests/base/crds/minimal/argoproj.io_workflowtaskresults.yaml
+	sleep 3s
 
 	# create default bindings for the executor
 	kubectl --context=cluster-1 create role executor --verb=create,patch --resource=workflowtaskresults.argoproj.io
