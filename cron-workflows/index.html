@@ -3066,7 +3066,7 @@
 <p>Currently only a single instance will be executed as a result of setting <code>startingDeadlineSeconds</code>.</p>
 <p>This setting can also be configured in tandem with <code>concurrencyPolicy</code> to achieve more fine-tuned control.</p>
 <h3 id="daylight-saving">Daylight Saving<a class="headerlink" href="#daylight-saving" title="Permanent link">&para;</a></h3>
-<p>Daylight Saving (DST) is taking into account when using timezone. This guarantees argo only schedule workflow once when the clock moves forward or back.</p>
+<p>Daylight Saving (DST) is taken into account when using timezone. This means that, depending on the local time of the scheduled job, argo will schedule the workflow once, twice, or not at all when the clock moves forward or back.</p>
 <p>For example, with timezone set at <code>America/Los_Angeles</code>, we have daylight saving </p>
 <ul>
 <li>
