@@ -112,8 +112,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	// Intentionally randomize the name so that plugins cannot determine it.
 	tokenVolumeName := fmt.Sprintf("kube-api-access-%s", rand.String(5))
 
-	agentContainerTemplate := apiv1.Container{
-		Name:            common.MainContainerName,
+	agentCtrTemplate := apiv1.Container{
 		Command:         []string{"argoexec"},
 		Image:           woc.controller.executorImage(),
 		ImagePullPolicy: woc.controller.executorImagePullPolicy(),
@@ -149,10 +148,12 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			},
 		},
 	}
-	agentInitContainer := agentContainerTemplate.DeepCopy()
-	agentInitContainer.Args = []string{"agent", "init"}
-	agentRunContainer := agentContainerTemplate.DeepCopy()
-	agentRunContainer.Args = []string{"agent", "run"}
+	agentInitCtr := agentCtrTemplate.DeepCopy()
+	agentInitCtr.Name = common.InitContainerName
+	agentInitCtr.Args = []string{"agent", "init"}
+	agentMainCtr := agentCtrTemplate.DeepCopy()
+	agentMainCtr.Name = common.MainContainerName
+	agentMainCtr.Args = []string{"agent", "main"}
 
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -194,11 +195,11 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 				},
 			},
 			InitContainers: []apiv1.Container{
-				*agentInitContainer,
+				*agentInitCtr,
 			},
 			Containers: append(
 				pluginSidecars,
-				*agentRunContainer,
+				*agentMainCtr,
 			),
 		},
 	}

@@ -26,7 +26,7 @@ func NewAgentCommand() *cobra.Command {
 		SilenceUsage: true, // this prevents confusing usage message being printed on error
 	}
 	cmd.AddCommand(NewAgentInitCommand())
-	cmd.AddCommand(NewAgentRunCommand())
+	cmd.AddCommand(NewAgentMainCommand())
 	return &cmd
 }
 
@@ -38,12 +38,12 @@ func NewAgentInitCommand() *cobra.Command {
 				log.WithField("plugin", name).Info("creating token file for plugin")
 				dir := "/var/run/argo/" + name
 				if err := os.Mkdir(dir, 0o770 /* chmod ug+rwx */); err != nil && !os.IsExist(err) {
-					log.Fatal(fmt.Errorf("failed to create %s: %w", dir, err))
+					log.Fatal(err)
 				}
 				file := dir + "/token"
 				token := rand.String(32) // this could have 26^32 ~= 2 x 10^45  possible values, not guessable in reasonable time
 				if err := os.WriteFile(file, []byte(token), 0o220 /* chmod ug+r */); err != nil {
-					log.Fatal(fmt.Errorf("failed to create %s: %w", file, err))
+					log.Fatal(err)
 				}
 			}
 		},
@@ -66,9 +66,9 @@ func getPluginAddresses() []string {
 	return addresses
 }
 
-func NewAgentRunCommand() *cobra.Command {
+func NewAgentMainCommand() *cobra.Command {
 	return &cobra.Command{
-		Use: "run",
+		Use: "main",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return initAgentExecutor().Agent(context.Background())
 		},
