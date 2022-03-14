@@ -29,7 +29,6 @@ import (
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 
 	"github.com/argoproj/argo-workflows/v3"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
 	"github.com/argoproj/argo-workflows/v3/util/env"
@@ -97,7 +96,7 @@ func NewRootCommand() *cobra.Command {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			configs, kubernetesInterfaces, workflowInterfaces, metadataInterfaces, err := loadClusters(ctx, config, namespace)
+			configs, kubernetesInterfaces, workflowInterfaces, metadataInterfaces := loadClusters(ctx, config, namespace)
 			errors.CheckError(err)
 
 			if !namespaced && managedNamespace != "" {
@@ -139,6 +138,8 @@ func NewRootCommand() *cobra.Command {
 				if wfController.Config.InstanceID != "" {
 					leaderName = fmt.Sprintf("%s-%s", leaderName, wfController.Config.InstanceID)
 				}
+
+				kubeclientset := kubernetesInterfaces[common.LocalCluster]
 
 				go leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
 					Lock: &resourcelock.LeaseLock{
@@ -216,27 +217,22 @@ func loadClusters(ctx context.Context, config *restclient.Config, namespace stri
 	map[string]kubernetes.Interface,
 	map[string]wfclientset.Interface,
 	map[string]metadata.Interface,
-	error,
 ) {
 	configs := map[string]*restclient.Config{common.LocalCluster: config}
-	client, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, nil, nil, nil, err
-	}
+	client := kubernetes.NewForConfigOrDie(config)
 	secrets := client.CoreV1().Secrets(namespace)
 	list, err := secrets.List(ctx, metav1.ListOptions{LabelSelector: common.LabelKeyCluster})
 	if err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("failed to list kubeconfig secrets: %w", err)
+		log.Fatal(err)
 	}
 	for _, secret := range list.Items {
 		kc, err := clientcmd.Load(secret.Data["kubeconfig"])
 		if err != nil {
-			return nil, nil, nil, nil, fmt.Errorf("failed to load kubeconfig from secret %q: %w", secret.Name, err)
+			log.Fatal(fmt.Errorf("failed to load config for secret %q: %w", secret.Name, err))
 		}
-		println(v1alpha1.MustMarshallJSON(kc))
 		config, err := clientcmd.NewNonInteractiveClientConfig(*kc, kc.CurrentContext, &clientcmd.ConfigOverrides{}, clientcmd.NewDefaultClientConfigLoadingRules()).ClientConfig()
 		if err != nil {
-			return nil, nil, nil, nil, fmt.Errorf("failed to create client config for secret %q: %w", secret.Name, err)
+			log.Fatal(fmt.Errorf("failed to create client config for secret %q: %w", secret.Name, err))
 		}
 		configs[secret.Labels[common.LabelKeyCluster]] = config
 	}
@@ -244,23 +240,14 @@ func loadClusters(ctx context.Context, config *restclient.Config, namespace stri
 	workflowInterfaces := map[string]wfclientset.Interface{}
 	metadataInterfaces := map[string]metadata.Interface{}
 	for cluster, config := range configs {
+		log.WithField("cluster", cluster).Info("creating interfaces")
 		logs.AddK8SLogTransportWrapper(config)
 		metrics.AddMetricsTransportWrapper(config)
-		kubernetesInterfaces[cluster], err = kubernetes.NewForConfig(config)
-		if err != nil {
-			return nil, nil, nil, nil, err
-		}
-		workflowInterfaces[cluster], err = wfclientset.NewForConfig(config)
-		if err != nil {
-			return nil, nil, nil, nil, err
-		}
-		metadataInterfaces[cluster], err = metadata.NewForConfig(config)
-		if err != nil {
-			return nil, nil, nil, nil, err
-		}
+		kubernetesInterfaces[cluster] = kubernetes.NewForConfigOrDie(config)
+		workflowInterfaces[cluster] = wfclientset.NewForConfigOrDie(config)
+		metadataInterfaces[cluster] = metadata.NewForConfigOrDie(config)
 	}
-
-	return configs, kubernetesInterfaces, workflowInterfaces, metadataInterfaces, nil
+	return configs, kubernetesInterfaces, workflowInterfaces, metadataInterfaces
 }
 
 func init() {
