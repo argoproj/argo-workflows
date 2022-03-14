@@ -3067,8 +3067,11 @@
 <p>This setting can also be configured in tandem with <code>concurrencyPolicy</code> to achieve more fine-tuned control.</p>
 <h3 id="daylight-saving">Daylight Saving<a class="headerlink" href="#daylight-saving" title="Permanent link">&para;</a></h3>
 <p>Daylight Saving (DST) is taking into account when using timezone. This guarantees argo only schedule workflow once when the clock moves forward or back.</p>
-<p>For example, with timezone set at <code>America/Los_Angeles</code>, we have daylight saving 
-- +1 hour (DST start) 2020-03-08 02:00:00</p>
+<p>For example, with timezone set at <code>America/Los_Angeles</code>, we have daylight saving </p>
+<ul>
+<li>
+<p>+1 hour (DST start) at 2020-03-08 02:00:00:</p>
+<p><strong>Note:</strong> The schedules between 02:00 a.m. to 02:59 a.m. were skipped on Mar 8th due to the clock being moved forward:</p>
 <table>
 <thead>
 <tr>
@@ -3125,9 +3128,10 @@
 </tr>
 </tbody>
 </table>
-<ul>
-<li>-1 hour (DST end) 2020-11-01 02:00:00</li>
-</ul>
+</li>
+<li>
+<p>-1 hour (DST end) at 2020-11-01 02:00:00:</p>
+<p><strong>Note:</strong> the schedules between 01:00 a.m. to 01:59 a.m. were triggered twice on Nov 1st due to the clock being set back:</p>
 <table>
 <thead>
 <tr>
@@ -3184,6 +3188,8 @@
 </tr>
 </tbody>
 </table>
+</li>
+</ul>
 <h2 id="managing-cronworkflow">Managing <code>CronWorkflow</code><a class="headerlink" href="#managing-cronworkflow" title="Permanent link">&para;</a></h2>
 <h3 id="cli">CLI<a class="headerlink" href="#cli" title="Permanent link">&para;</a></h3>
 <p><code>CronWorkflow</code> can be created from the CLI by using basic commands:</p>
