@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"strconv"
 	"syscall"
 	"time"
@@ -29,8 +28,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/tools/leaderelection"
-	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	apiwatch "k8s.io/client-go/tools/watch"
 	"k8s.io/client-go/util/workqueue"
 	"upper.io/db.v3/lib/sqlbuilder"
@@ -281,54 +278,6 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	// Start the metrics server
 	go wfc.metrics.RunServer(ctx)
 
-	leaderElectionOff := os.Getenv("LEADER_ELECTION_DISABLE")
-	if leaderElectionOff == "true" {
-		log.Info("Leader election is turned off. Running in single-instance mode")
-		logCtx := log.WithField("id", "single-instance")
-		go wfc.startLeading(ctx, logCtx, podCleanupWorkers, workflowTTLWorkers, wfWorkers)
-	} else {
-		nodeID, ok := os.LookupEnv("LEADER_ELECTION_IDENTITY")
-		if !ok {
-			log.Fatal("LEADER_ELECTION_IDENTITY must be set so that the workflow controllers can elect a leader")
-		}
-		logCtx := log.WithField("id", nodeID)
-
-		leaderName := "workflow-controller"
-		if wfc.Config.InstanceID != "" {
-			leaderName = fmt.Sprintf("%s-%s", leaderName, wfc.Config.InstanceID)
-		}
-
-		go leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
-			Lock: &resourcelock.LeaseLock{
-				LeaseMeta: metav1.ObjectMeta{Name: leaderName, Namespace: wfc.namespace}, Client: wfc.kubeclientset.CoordinationV1(),
-				LockConfig: resourcelock.ResourceLockConfig{Identity: nodeID, EventRecorder: wfc.eventRecorderManager.Get(wfc.namespace)},
-			},
-			ReleaseOnCancel: false,
-			LeaseDuration:   env.LookupEnvDurationOr("LEADER_ELECTION_LEASE_DURATION", 15*time.Second),
-			RenewDeadline:   env.LookupEnvDurationOr("LEADER_ELECTION_RENEW_DEADLINE", 10*time.Second),
-			RetryPeriod:     env.LookupEnvDurationOr("LEADER_ELECTION_RETRY_PERIOD", 5*time.Second),
-			Callbacks: leaderelection.LeaderCallbacks{
-				OnStartedLeading: func(ctx context.Context) {
-					wfc.startLeading(ctx, logCtx, podCleanupWorkers, workflowTTLWorkers, wfWorkers)
-				},
-				OnStoppedLeading: func() {
-					logCtx.Info("stopped leading")
-					cancel()
-				},
-				OnNewLeader: func(identity string) {
-					logCtx.WithField("leader", identity).Info("new leader")
-				},
-			},
-		})
-	}
-	<-ctx.Done()
-}
-
-func (wfc *WorkflowController) startLeading(ctx context.Context, logCtx *log.Entry, podCleanupWorkers int, workflowTTLWorkers int, wfWorkers int) {
-	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
-
-	logCtx.Info("started leading")
-
 	for i := 0; i < podCleanupWorkers; i++ {
 		go wait.UntilWithContext(ctx, wfc.runPodCleanup, time.Second)
 	}
@@ -348,6 +297,7 @@ func (wfc *WorkflowController) startLeading(ctx context.Context, logCtx *log.Ent
 	if cacheGCPeriod != 0 {
 		go wait.JitterUntilWithContext(ctx, wfc.syncAllCacheForGC, cacheGCPeriod, 0.0, true)
 	}
+	<-ctx.Done()
 }
 
 // Create and the Synchronization Manager
