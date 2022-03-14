@@ -11,7 +11,7 @@ secretName=$(kubectl --context $context -n $namespace get sa $serviceAccount -o 
 ca=$(kubectl --context $context -n $namespace get secret $secretName -o jsonpath='{.data.ca\.crt}')
 token=$(kubectl --context $context -n $namespace get secret $secretName -o jsonpath='{.data.token}' | base64 --decode)
 
-# keep on oneline to make it work with kubectl create secret ... --from-literal
+# keep on one line to make it work with kubectl create secret ... --from-literal
 cat <<EOF
 {"apiVersion":"v1","kind":"Config","clusters":[{"name":"default","cluster":{"certificate-authority-data":"${ca}","server":"${server}"}}],"contexts":[{"name":"default","context":{"cluster":"default","namespace":"${namespace}","user":"${serviceAccount}"}}],"users":[{"name":"${serviceAccount}","user":{"token":"${token}"}}],"current-context":"default"}
 EOF

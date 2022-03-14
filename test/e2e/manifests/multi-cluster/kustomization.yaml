@@ -3,10 +3,6 @@ kind: Kustomization
 
 resources:
   - ../minimal
-  - auth-configmap.yaml
-
-patchesStrategicMerge:
-  - workflow-controller-deployment.yaml
 
 commonLabels:
   app.kubernetes.io/part-of: argo
