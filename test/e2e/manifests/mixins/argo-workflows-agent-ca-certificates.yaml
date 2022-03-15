@@ -1,3 +1,6 @@
+#  You can use the following command to generate a self-signed certificate:
+#  openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -sha256 -days 365
+#  also see: https://stackoverflow.com/a/10176685
 apiVersion: v1
 kind: Secret
 metadata:
