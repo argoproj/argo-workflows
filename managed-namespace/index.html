@@ -2755,8 +2755,9 @@
 <p>You can install Argo in either cluster scoped or namespace scope configurations.
 This dictates if you must set-up cluster roles or normal roles.</p>
 <p>In namespace scope configuration, you must run both the Workflow Controller and
-Argo Server using <code>--namespaced</code>. If you would like to have the workflows
-running in a separate namespace, add <code>--managed-namespace</code> as well.</p>
+Argo Server using <code>--namespaced</code>. If you would like to have the workflows running in a separate 
+namespace, add <code>--managed-namespace</code> as well. (In cluster scope installation, don't include <code>--namespaced</code> 
+or <code>--managed-namespace</code>.)</p>
 <p>For example:</p>
 <div class="highlight"><pre><span></span><code>      - args:
         - --configmap
