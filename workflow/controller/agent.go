@@ -105,7 +105,7 @@ func (woc *wfOperationCtx) getCertVolumeMount(ctx context.Context, name string) 
 
 		return certVolume, certVolumeMount, nil
 	}
-	return nil, nil, nil
+	return &apiv1.Volume{}, &apiv1.VolumeMount{}, nil
 }
 
 func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, error) {
