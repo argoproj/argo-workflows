@@ -105,7 +105,7 @@ func (woc *wfOperationCtx) getCertVolumeMount(ctx context.Context, name string) 
 
 		return certVolume, certVolumeMount, nil
 	}
-	return &apiv1.Volume{}, &apiv1.VolumeMount{}, nil
+	return nil, nil, nil
 }
 
 func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, error) {
@@ -152,6 +152,46 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	// Intentionally randomize the name so that plugins cannot determine it.
 	tokenVolumeName := fmt.Sprintf("kube-api-access-%s", rand.String(5))
 
+	var podVolumes []apiv1.Volume
+	var podVolumeMounts []apiv1.VolumeMount
+	if certVolume != nil && certVolumeMount != nil {
+		podVolumes = []apiv1.Volume{
+			{
+				Name: tokenVolumeName,
+				VolumeSource: apiv1.VolumeSource{
+					Secret: &apiv1.SecretVolumeSource{SecretName: secretName},
+				},
+			},
+			*certVolume,
+		}
+
+		podVolumeMounts = []apiv1.VolumeMount{
+			{
+				Name:      tokenVolumeName,
+				MountPath: common.ServiceAccountTokenMountPath,
+				ReadOnly:  true,
+			},
+			*certVolumeMount,
+		}
+	} else {
+		podVolumes = []apiv1.Volume{
+			{
+				Name: tokenVolumeName,
+				VolumeSource: apiv1.VolumeSource{
+					Secret: &apiv1.SecretVolumeSource{SecretName: secretName},
+				},
+			},
+		}
+
+		podVolumeMounts = []apiv1.VolumeMount{
+			{
+				Name:      tokenVolumeName,
+				MountPath: common.ServiceAccountTokenMountPath,
+				ReadOnly:  true,
+			},
+		}
+	}
+
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      podName,
@@ -177,15 +217,8 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			},
 			ServiceAccountName:           serviceAccountName,
 			AutomountServiceAccountToken: pointer.BoolPtr(false),
-			Volumes: []apiv1.Volume{
-				{
-					Name: tokenVolumeName,
-					VolumeSource: apiv1.VolumeSource{
-						Secret: &apiv1.SecretVolumeSource{SecretName: secretName},
-					},
-				},
-				*certVolume,
-			},
+			Volumes:                      podVolumes,
+
 			Containers: append(
 				pluginSidecars,
 				apiv1.Container{
@@ -215,14 +248,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 							"memory": resource.MustParse(env.LookupEnvStringOr("ARGO_AGENT_MEMORY_LIMIT", "256M")),
 						},
 					},
-					VolumeMounts: []apiv1.VolumeMount{
-						{
-							Name:      tokenVolumeName,
-							MountPath: common.ServiceAccountTokenMountPath,
-							ReadOnly:  true,
-						},
-						*certVolumeMount,
-					},
+					VolumeMounts: podVolumeMounts,
 				},
 			),
 		},
