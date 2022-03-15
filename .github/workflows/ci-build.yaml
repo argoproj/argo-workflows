@@ -134,13 +134,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
       - name: Install and start K3S
-        if: ${{ matrix..profile != 'multi-cluster' }}
+        if: ${{ matrixprofile != 'multi-cluster' }}
         run: |
           curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.21.2+k3s1 INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh -
           until kubectl --kubeconfig=/etc/rancher/k3s/k3s.yaml cluster-info ; do sleep 10s ; done
           cp /etc/rancher/k3s/k3s.yaml /home/runner/.kubeconfig
       - name: Install and start K3D
-        if: ${{ matrix..profile == 'multi-cluster' }}
+        if: ${{ matrix.profile == 'multi-cluster' }}
         run: |
           curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
           k3d cluster create --wait --no-lb
@@ -158,7 +158,7 @@ jobs:
           path: /tmp
       - run: docker load < /tmp/argoexec_image.tar
       - run: until k3d image import quay.io/argoproj/argoexec ; do sleep 10s ; done
-        if: ${{ matrix..profile == 'multi-cluster' }}
+        if: ${{ matrix.profile == 'multi-cluster' }}
       - name: Set-up /etc/hosts
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
