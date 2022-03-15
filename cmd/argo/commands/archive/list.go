@@ -31,6 +31,7 @@ func NewListCommand() *cobra.Command {
 			errors.CheckError(err)
 			namespace := client.Namespace()
 			workflows, err := listArchivedWorkflows(ctx, serviceClient, "metadata.namespace="+namespace, selector, chunkSize)
+			errors.CheckError(err)
 			err = printer.PrintWorkflows(workflows, os.Stdout, printer.PrintOpts{Output: output, Namespace: true, UID: true})
 			errors.CheckError(err)
 		},
@@ -51,7 +52,9 @@ func listArchivedWorkflows(ctx context.Context, serviceClient workflowarchivepkg
 	for {
 		log.WithField("listOpts", listOpts).Debug()
 		resp, err := serviceClient.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: listOpts})
-		errors.CheckError(err)
+		if err != nil {
+			return nil, err
+		}
 		workflows = append(workflows, resp.Items...)
 		if resp.Continue == "" {
 			break

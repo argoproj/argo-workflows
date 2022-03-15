@@ -3,12 +3,13 @@ package archive
 import (
 	"context"
 
-	client "github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
 	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
+	client "github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
@@ -47,10 +48,11 @@ func NewResubmitCommand() *cobra.Command {
 			}
 
 			ctx, apiClient := client.NewAPIClient(cmd.Context())
-			serviceClient, err := apiClient.NewArchivedWorkflowServiceClient()
+			serviceClient := apiClient.NewWorkflowServiceClient() // needed for wait watch or log flags
+			archiveServiceClient, err := apiClient.NewArchivedWorkflowServiceClient()
 			errors.CheckError(err)
 			resubmitOpts.namespace = client.Namespace()
-			err = resubmitArchivedWorkflows(ctx, serviceClient, resubmitOpts, cliSubmitOpts, args)
+			err = resubmitArchivedWorkflows(ctx, archiveServiceClient, serviceClient, resubmitOpts, cliSubmitOpts, args)
 			errors.CheckError(err)
 		},
 	}
@@ -67,14 +69,14 @@ func NewResubmitCommand() *cobra.Command {
 }
 
 // resubmitWorkflows resubmits workflows by given resubmitOpts or workflow names
-func resubmitArchivedWorkflows(ctx context.Context, serviceClient workflowarchivepkg.ArchivedWorkflowServiceClient, resubmitOpts resubmitOps, cliSubmitOpts cliSubmitOpts, args []string) error {
+func resubmitArchivedWorkflows(ctx context.Context, archiveServiceClient workflowarchivepkg.ArchivedWorkflowServiceClient, serviceClient workflowpkg.WorkflowServiceClient, resubmitOpts resubmitOps, cliSubmitOpts cliSubmitOpts, args []string) error {
 	var (
 		wfs wfv1.Workflows
 		err error
 	)
 
 	if resubmitOpts.hasSelector() {
-		wfs, err = listArchivedWorkflows(ctx, serviceClient, resubmitOpts.fieldSelector, resubmitOpts.labelSelector, 0)
+		wfs, err = listArchivedWorkflows(ctx, archiveServiceClient, resubmitOpts.fieldSelector, resubmitOpts.labelSelector, 0)
 		if err != nil {
 			return err
 		}
@@ -99,7 +101,7 @@ func resubmitArchivedWorkflows(ctx context.Context, serviceClient workflowarchiv
 		}
 		resubmittedNames[wf.Name] = true
 
-		lastResubmitted, err = serviceClient.ResubmitArchivedWorkflow(ctx, &workflowarchivepkg.ResubmitArchivedWorkflowRequest{
+		lastResubmitted, err = archiveServiceClient.ResubmitArchivedWorkflow(ctx, &workflowarchivepkg.ResubmitArchivedWorkflowRequest{
 			Uid:       string(wf.UID),
 			Namespace: wf.Namespace,
 			Name:      wf.Name,
