@@ -83,26 +83,25 @@ func (woc *wfOperationCtx) secretExists(ctx context.Context, name string) (bool,
 	return true, nil
 }
 
-func (woc *wfOperationCtx) getCertVolumeMount(ctx context.Context, name string) ([]apiv1.Volume, []apiv1.VolumeMount, error) {
+func (woc *wfOperationCtx) getCertVolumeMount(ctx context.Context, name string) (*apiv1.Volume, *apiv1.VolumeMount, error) {
 	exists, err := woc.secretExists(ctx, name)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to check if secret %s exists: %v", name, err)
 	}
 	if exists {
-		certVolume := []apiv1.Volume{{
+		certVolume := &apiv1.Volume{
 			Name: name,
 			VolumeSource: apiv1.VolumeSource{
 				Secret: &apiv1.SecretVolumeSource{
 					SecretName: name,
 				},
-			},
-		}}
+			}}
 
-		certVolumeMount := []apiv1.VolumeMount{{
+		certVolumeMount := &apiv1.VolumeMount{
 			Name:      name,
 			MountPath: "/etc/ssl/certs/ca-certificates",
 			ReadOnly:  true,
-		}}
+		}
 
 		return certVolume, certVolumeMount, nil
 	}
@@ -185,6 +184,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 						Secret: &apiv1.SecretVolumeSource{SecretName: secretName},
 					},
 				},
+				*certVolume,
 			},
 			Containers: append(
 				pluginSidecars,
@@ -195,8 +195,6 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 					Image:           woc.controller.executorImage(),
 					ImagePullPolicy: woc.controller.executorImagePullPolicy(),
 					Env:             envVars,
-
-					VolumeMounts: certVolumeMount,
 
 					SecurityContext: &apiv1.SecurityContext{
 						Capabilities: &apiv1.Capabilities{
@@ -223,10 +221,10 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 							MountPath: common.ServiceAccountTokenMountPath,
 							ReadOnly:  true,
 						},
+						*certVolumeMount,
 					},
 				},
 			),
-			Volumes: certVolume,
 		},
 	}
 
