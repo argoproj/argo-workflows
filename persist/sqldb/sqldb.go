@@ -98,6 +98,7 @@ func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, 
 		Password: string(passwordByte),
 		Host:     cfg.GetHostname(),
 		Database: cfg.Database,
+		Options:  cfg.Options,
 	})
 	if err != nil {
 		return nil, "", err
