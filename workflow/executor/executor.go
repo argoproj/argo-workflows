@@ -151,7 +151,6 @@ func (we *WorkflowExecutor) HandleError(ctx context.Context) {
 		util.WriteTerminateMessage(fmt.Sprintf("%v", r))
 		log.Fatalf("executor panic: %+v\n%s", r, debug.Stack())
 	} else {
-		log.WithField("numErrors", len(we.errors)).Info("Errors")
 		if len(we.errors) > 0 {
 			util.WriteTerminateMessage(we.errors[0].Error())
 		}

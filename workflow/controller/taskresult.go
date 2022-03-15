@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"reflect"
 	"time"
 
@@ -24,7 +25,7 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformers() map[string]cache
 			String()
 		log.WithField("labelSelector", labelSelector).
 			WithField("cluster", cluster).Info("Creating task-result informer")
-		informers[cluster] = wfextvv1alpha1.NewFilteredWorkflowTaskResultInformer(
+		informer := wfextvv1alpha1.NewFilteredWorkflowTaskResultInformer(
 			clientset,
 			wfc.GetManagedNamespace(),
 			20*time.Minute,
@@ -35,6 +36,22 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformers() map[string]cache
 				options.LabelSelector = labelSelector
 			},
 		)
+		informer.AddEventHandler(
+			cache.ResourceEventHandlerFuncs{
+				AddFunc: func(new interface{}) {
+					result := new.(*wfv1.WorkflowTaskResult)
+					namespace := common.MetaWorkflowNamespace(result)
+					workflow := result.Labels[common.LabelKeyWorkflow]
+					wfc.wfQueue.AddRateLimited(namespace + "/" + workflow)
+				},
+				UpdateFunc: func(_, new interface{}) {
+					result := new.(*wfv1.WorkflowTaskResult)
+					namespace := common.MetaWorkflowNamespace(result)
+					workflow := result.Labels[common.LabelKeyWorkflow]
+					wfc.wfQueue.AddRateLimited(namespace + "/" + workflow)
+				},
+			})
+		informers[cluster] = informer
 	}
 	return informers
 }

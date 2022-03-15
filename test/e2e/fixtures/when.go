@@ -295,7 +295,8 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 			if ok {
 				w.hydrateWorkflow(wf)
 				printWorkflow(wf)
-				if ok, message := condition(wf); ok {
+				ok, message := condition(wf)
+				if ok {
 					_, _ = fmt.Printf("Condition %q met after %s\n", message, time.Since(start).Truncate(time.Second))
 					w.wf = wf
 					return w
@@ -303,7 +304,7 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 				// once done the workflow is done, the condition can never be met
 				// rather than wait maybe 30s for something that can never happen
 				if ok, _ = ToBeDone(wf); ok {
-					w.t.Errorf("condition never and cannot be met because the workflow is done")
+					w.t.Errorf("condition %q cannot be met because the workflow is done", message)
 					return w
 				}
 			} else {
