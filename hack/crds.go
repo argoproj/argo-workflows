@@ -35,12 +35,6 @@ func cleanCRD(filename string) {
 		properties := schema["properties"].(obj)["spec"].(obj)["properties"].(obj)["templates"].(obj)["items"].(obj)["properties"]
 		properties.(obj)["container"].(obj)["required"] = []string{"image"}
 		properties.(obj)["script"].(obj)["required"] = []string{"image", "source"}
-	case "workfloweventbindings.argoproj.io":
-		// noop
-	case "workflowtasksets.argoproj.io":
-		// noop
-	default:
-		panic(name)
 	}
 	data, err = yaml.Marshal(crd)
 	if err != nil {

@@ -130,7 +130,7 @@ Some things to note here:
 * If the response is `{}`, then the plugin is saying it cannot execute the plugin template, e.g. it is a Slack plugin,
   but the template is a Tekton job.
 * If the status code is 404, then the plugin will not be called again.
-* If you save the file as `plugin.*`, it will be copied to the sidecar container's `args` field. This is useful for building self-contained plugins in scripting languages like Python or Node.JS.
+* If you save the file as `server.*`, it will be copied to the sidecar container's `args` field. This is useful for building self-contained plugins in scripting languages like Python or Node.JS.
 
 Next, create a manifest named `plugin.yaml`:
 
@@ -289,8 +289,7 @@ kubectl get cm -l workflows.argoproj.io/configmap-type=ExecutorPlugin
 
 ## Examples and Community Contributed Plugins
 
-[Show examples and community contributed plugins](https://github.com/argoproj-labs?q=argo+workflows+plugin&type=all&language=&sort=)
-.
+[Plugin directory](plugin-directory.md)
 
 ## Publishing Your Plugin
 

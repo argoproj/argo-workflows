@@ -10,6 +10,25 @@ permissions added to it you do not want. Instead, create a service account only 
 
 The minimum for the executor to function:
 
+For >= v3.4:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: executor
+rules:
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - workflowtaskresult
+    verbs:
+      - create
+      - patch
+```
+
+For <= v3.3 use.
+
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -24,6 +43,8 @@ rules:
       - get
       - patch
 ```
+
+Warning: For many organisations, it may not be acceptable to give a workflow the `pod patch` permission, see [#3961](https://github.com/argoproj/argo-workflows/issues/3961)
 
 If you are not using the emissary, you'll need additional permissions.
 See [executor](https://github.com/argoproj/argo-workflows/tree/master/manifests/quick-start/base/executor) for suitable

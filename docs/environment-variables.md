@@ -18,6 +18,8 @@ most users. Note that these environment variables may be removed at any time.
 | `ARGO_REMOVE_PVC_PROTECTION_FINALIZER` | `bool` | `false` | Remove the `kubernetes.io/pvc-protection` finalizer from persistent volume claims (PVC) after marking PVCs created for the workflow for deletion, so deleted is not blocked until the pods are deleted.  [#6629](https://github.com/argoproj/argo-workflows/issues/6629) |
 | `ARGO_TRACE` | `string` | `"1"` | Whether to enable tracing statements in Argo components. |
 | `ARGO_AGENT_PATCH_RATE` | `time.Duration` | `DEFAULT_REQUEUE_TIME` | Rate that the Argo Agent will patch the Workflow TaskSet. |
+| `ARGO_AGENT_CPU_LIMIT` | `resource.Quantity` | `100m` | CPU resource limit for the agent. |
+| `ARGO_AGENT_MEMORY_LIMIT` | `resource.Quantity` | `256m` | Memory resource limit for the agent. |
 | `BUBBLE_ENTRY_TEMPLATE_ERR` | `bool` | `true` | Whether to bubble up template errors to workflow. |
 | `CACHE_GC_PERIOD` | `time.Duration` | `0s` | How often to perform memoization cache GC, which is disabled by default and can be enabled by providing a non-zero duration. |
 | `CACHE_GC_AFTER_NOT_HIT_DURATION` | `time.Duration` | `30s` | When a memoization cache has not been hit after this duration, it will be deleted. |

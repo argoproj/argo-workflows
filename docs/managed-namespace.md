@@ -9,7 +9,7 @@ This dictates if you must set-up cluster roles or normal roles.
 
 In namespace scope configuration, you must run both the Workflow Controller and
 Argo Server using `--namespaced`. If you would like to have the workflows
-running in a separated namespace, add `--managed-namespace` as well.
+running in a separate namespace, add `--managed-namespace` as well.
 
 For example:
 

@@ -8,7 +8,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
 
@@ -143,6 +145,14 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		})
 	}
 
+	serviceAccountName := woc.execWf.Spec.ServiceAccountName
+	secretName, err := woc.getServiceAccountTokenName(ctx, serviceAccountName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get token volumes: %w", err)
+	}
+	// Intentionally randomize the name so that plugins cannot determine it.
+	tokenVolumeName := fmt.Sprintf("kube-api-access-%s", rand.String(5))
+
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      podName,
@@ -150,6 +160,10 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			Labels: map[string]string{
 				common.LabelKeyWorkflow:  woc.wf.Name, // Allows filtering by pods related to specific workflow
 				common.LabelKeyCompleted: "false",     // Allows filtering by incomplete workflow pods
+				common.LabelKeyComponent: "agent",     // Allows you to identify agent pods and use a different NetworkPolicy on them
+			},
+			Annotations: map[string]string{
+				common.AnnotationKeyDefaultContainer: common.MainContainerName,
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
@@ -160,11 +174,22 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			ImagePullSecrets: woc.execWf.Spec.ImagePullSecrets,
 			SecurityContext: &apiv1.PodSecurityContext{
 				RunAsNonRoot: pointer.BoolPtr(true),
+				RunAsUser:    pointer.Int64Ptr(8737),
+			},
+			ServiceAccountName:           serviceAccountName,
+			AutomountServiceAccountToken: pointer.BoolPtr(false),
+			Volumes: []apiv1.Volume{
+				{
+					Name: tokenVolumeName,
+					VolumeSource: apiv1.VolumeSource{
+						Secret: &apiv1.SecretVolumeSource{SecretName: secretName},
+					},
+				},
 			},
 			Containers: append(
 				pluginSidecars,
 				apiv1.Container{
-					Name:            "main",
+					Name:            common.MainContainerName,
 					Command:         []string{"argoexec"},
 					Args:            []string{"agent"},
 					Image:           woc.controller.executorImage(),
@@ -182,6 +207,23 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 						ReadOnlyRootFilesystem:   pointer.BoolPtr(true),
 						AllowPrivilegeEscalation: pointer.BoolPtr(false),
 					},
+					Resources: apiv1.ResourceRequirements{
+						Requests: map[apiv1.ResourceName]resource.Quantity{
+							"cpu":    resource.MustParse("10m"),
+							"memory": resource.MustParse("64M"),
+						},
+						Limits: map[apiv1.ResourceName]resource.Quantity{
+							"cpu":    resource.MustParse(env.LookupEnvStringOr("ARGO_AGENT_CPU_LIMIT", "100m")),
+							"memory": resource.MustParse(env.LookupEnvStringOr("ARGO_AGENT_MEMORY_LIMIT", "256M")),
+						},
+					},
+					VolumeMounts: []apiv1.VolumeMount{
+						{
+							Name:      tokenVolumeName,
+							MountPath: common.ServiceAccountTokenMountPath,
+							ReadOnly:  true,
+						},
+					},
 				},
 			),
 			Volumes: certVolume,
@@ -190,9 +232,6 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 
 	if woc.controller.Config.InstanceID != "" {
 		pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
-	}
-	if woc.wf.Spec.ServiceAccountName != "" {
-		pod.Spec.ServiceAccountName = woc.wf.Spec.ServiceAccountName
 	}
 
 	log.Debug("Creating Agent pod")

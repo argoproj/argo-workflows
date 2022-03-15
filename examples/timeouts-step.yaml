@@ -11,6 +11,7 @@ spec:
   templates:
   - name: sleep
     container:
-      image: debian:9.5-slim
-      command: [sleep, 1d]
+      image: argoproj/argosay:v2
+      command: [bash, -c]
+      args: ["echo 123; sleep 1d"]
     activeDeadlineSeconds: 10

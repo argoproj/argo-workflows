@@ -86,7 +86,7 @@ status:
     `, &ts)
 
 	t.Run("CreateTaskSet", func(t *testing.T) {
-		cancel, controller := newController(wf, ts)
+		cancel, controller := newController(wf, ts, defaultServiceAccount)
 		defer cancel()
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
@@ -110,7 +110,7 @@ status:
 		}
 	})
 	t.Run("CreateTaskSetWithInstanceID", func(t *testing.T) {
-		cancel, controller := newController(wf, ts)
+		cancel, controller := newController(wf, ts, defaultServiceAccount)
 		defer cancel()
 		controller.Config.InstanceID = "testID"
 		woc := newWorkflowOperationCtx(wf, controller)

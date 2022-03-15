@@ -8,6 +8,12 @@ Only one controller can run at once. If it crashes, Kubernetes will start anothe
 
 For many users, a short loss of workflow service maybe acceptable - the new controller will just continue running workflows if it restarts.  However, with high service guarantees, new pods may take too long to start running workflows. You should run two replicas, and one of which will be kept on hot-standby.
 
+A workflow pod can disrupt the controller, preventing cron workflows from running and workflows being scheduled. You
+should use:
+
+* [Pod Disruption Budget](https://kubernetes.io/docs/concepts/workloads/pods/disruptions/#pod-disruption-budgets)
+* [Pod Priority](https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/)
+
 ## Argo Server
 
 > v2.6
