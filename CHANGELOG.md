@@ -1,5 +1,11 @@
 # Changelog
 
+## v3.3.0 (2022-03-14)
+
+
+### Contributors
+
+
 ## v3.3.0-rc10 (2022-03-07)
 
  * [e6b3ab548](https://github.com/argoproj/argo-workflows/commit/e6b3ab548d1518630954205c6e2ef0f18e74dcf9) fix: Use EvalBool instead of explicit casting (#8094)
