@@ -284,7 +284,6 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	go wfc.wfTaskSetInformer.Informer().Run(ctx.Done())
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
-	println("ALEX", 0)
 	if !cache.WaitForCacheSync(
 		ctx.Done(),
 		wfc.profileInformer.HasSynced,
@@ -296,13 +295,11 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	) {
 		log.Fatal("Timed out waiting for caches to sync")
 	}
-	println("ALEX", 1)
 	for _, profile := range wfc.profiles {
 		if !cache.WaitForCacheSync(ctx.Done(), profile.HasSynced) {
 			log.Fatal("Timed out waiting for pod caches to sync")
 		}
 	}
-	println("ALEX", 2)
 
 	wfc.createClusterWorkflowTemplateInformer(ctx)
 

@@ -81,10 +81,6 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 	}
 }
 
-func (woc *wfOperationCtx) profile(cluster, namespace string) (*profile, error) {
-	return woc.controller.profile(woc.wf.Namespace, cluster, namespace)
-}
-
 // handleExecutionControlError marks a node as failed with an error message
 func (woc *wfOperationCtx) handleExecutionControlError(nodeID string, wfNodesLock *sync.RWMutex, errorMsg string) {
 	wfNodesLock.Lock()
@@ -114,11 +110,7 @@ func (woc *wfOperationCtx) killDaemonedChildren(nodeID string) {
 			continue
 		}
 		tmpl := woc.execWf.GetTemplateByName(childNode.TemplateName)
-		cluster := tmpl.Cluster
-		namespace := tmpl.Namespace
-		if namespace == common.NamespaceUndefined {
-			namespace = woc.wf.Namespace
-		}
+		cluster, namespace := woc.clusterNamespaceForTemplate(tmpl)
 		woc.controller.queuePodForCleanup(woc.wf.Namespace, cluster, namespace, childNode.ID, shutdownPod)
 		childNode.Phase = wfv1.NodeSucceeded
 		childNode.Daemoned = nil

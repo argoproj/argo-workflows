@@ -223,11 +223,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		},
 	}
 
-	cluster := tmpl.Cluster
-	namespace := tmpl.Namespace
-	if namespace == common.NamespaceUndefined {
-		namespace = woc.wf.Namespace
-	}
+	cluster, namespace := woc.clusterNamespaceForTemplate(tmpl)
 	if cluster == common.LocalCluster && namespace == woc.wf.Namespace {
 		pod.SetOwnerReferences([]metav1.OwnerReference{
 			*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
@@ -512,8 +508,7 @@ func (woc *wfOperationCtx) podExists(nodeID string) (existing *apiv1.Pod, exists
 	if tmpl == nil {
 		return nil, false, nil
 	}
-	cluster := tmpl.Cluster
-	namespace := tmpl.Namespace
+	cluster, namespace := woc.clusterNamespaceForTemplate(tmpl)
 	profile, err := woc.profile(cluster, namespace)
 	if err != nil {
 		return nil, false, err
@@ -538,6 +533,17 @@ func (woc *wfOperationCtx) podExists(nodeID string) (existing *apiv1.Pod, exists
 	}
 
 	return nil, false, nil
+}
+
+func (woc *wfOperationCtx) clusterNamespaceForTemplate(tmpl *wfv1.Template) (string, string) {
+	return tmpl.Cluster, woc.namespaceForTemplate(tmpl)
+}
+
+func (woc *wfOperationCtx) namespaceForTemplate(tmpl *wfv1.Template) string {
+	if tmpl.Namespace != common.NamespaceUndefined {
+		return tmpl.Namespace
+	}
+	return woc.wf.Namespace
 }
 
 func (woc *wfOperationCtx) getDeadline(opts *createWorkflowPodOpts) *time.Time {
@@ -665,12 +671,8 @@ func (woc *wfOperationCtx) createEnvVars(tmpl *wfv1.Template) []apiv1.EnvVar {
 		{Name: common.EnvVarWorkflowUID, Value: string(woc.wf.UID)},
 	}
 
-	cluster := tmpl.Cluster
-	namespace := tmpl.Namespace
-	if namespace == common.NamespaceUndefined {
-		namespace = woc.wf.Namespace
-	}
-	if cluster != common.ClusterUndefined {
+	cluster, namespace := woc.clusterNamespaceForTemplate(tmpl)
+	if cluster != common.LocalCluster {
 		execEnvVars = append(execEnvVars,
 			apiv1.EnvVar{Name: common.EnvVarWorkflowCluster, Value: woc.controller.Config.Cluster},
 		)

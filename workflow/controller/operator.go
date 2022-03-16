@@ -2270,11 +2270,7 @@ func (woc *wfOperationCtx) getPodByNode(node *wfv1.NodeStatus) (*apiv1.Pod, erro
 	if tmpl == nil {
 		return nil, nil
 	}
-	cluster := tmpl.Cluster
-	namespace := tmpl.Namespace
-	if namespace == common.NamespaceUndefined {
-		namespace = woc.wf.GetNamespace()
-	}
+	cluster, namespace := woc.clusterNamespaceForTemplate(tmpl)
 	podName := woc.getPodName(node.Name, node.TemplateName)
 	return woc.controller.getPod(woc.wf.Namespace, cluster, namespace, podName)
 }

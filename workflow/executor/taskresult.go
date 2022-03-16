@@ -50,7 +50,7 @@ func (we *WorkflowExecutor) createTaskResult(ctx context.Context, result wfv1.No
 	}
 	cluster := os.Getenv(common.EnvVarWorkflowCluster)
 	workflowNamespace := os.Getenv(common.EnvVarWorkflowNamespace)
-	if cluster == common.ClusterUndefined && workflowNamespace == common.NamespaceUndefined {
+	if cluster == common.LocalCluster && workflowNamespace == common.NamespaceUndefined {
 		taskResult.SetOwnerReferences(
 			[]metav1.OwnerReference{
 				{
@@ -61,7 +61,7 @@ func (we *WorkflowExecutor) createTaskResult(ctx context.Context, result wfv1.No
 				},
 			})
 	}
-	if cluster != common.ClusterUndefined {
+	if cluster != common.LocalCluster {
 		taskResult.Labels[common.LabelKeyCluster] = cluster
 	}
 	if workflowNamespace != common.NamespaceUndefined {

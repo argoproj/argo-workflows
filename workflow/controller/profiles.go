@@ -143,5 +143,9 @@ func (wfc *WorkflowController) profile(workflowNamespace, cluster, namespace str
 			return p, nil
 		}
 	}
-	return nil, fmt.Errorf("profile not found for %q,%q,%q", workflowNamespace, cluster, namespace)
+	return nil, fmt.Errorf("profile not found for %s,%s,%s", workflowNamespace, cluster, namespace)
+}
+
+func (woc *wfOperationCtx) profile(cluster, namespace string) (*profile, error) {
+	return woc.controller.profile(woc.wf.Namespace, cluster, namespace)
 }
