@@ -317,9 +317,16 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		pod.Spec.InitContainers[i] = c
 	}
 
+	envVarTemplateValue := wfv1.MustMarshallJSON(tmpl)
+	templateSize := len(envVarTemplateValue)
+	if templateSize > 128000 {
+		err = fmt.Errorf("the workflow template with %d bytes is larger than the ARG_MAX of 128KB", templateSize)
+		return nil, err
+	}
+
 	// Add standard environment variables, making pod spec larger
 	envVars := []apiv1.EnvVar{
-		{Name: common.EnvVarTemplate, Value: wfv1.MustMarshallJSON(tmpl)},
+		{Name: common.EnvVarTemplate, Value: envVarTemplateValue},
 		{Name: common.EnvVarNodeID, Value: nodeID},
 		{Name: common.EnvVarIncludeScriptOutput, Value: strconv.FormatBool(opts.includeScriptOutput)},
 		{Name: common.EnvVarDeadline, Value: woc.getDeadline(opts).Format(time.RFC3339)},
