@@ -6,6 +6,7 @@ resources:
 - https://raw.githubusercontent.com/argoproj/argo-events/stable/manifests/base/crds/argoproj.io_eventbus.yaml
 - https://raw.githubusercontent.com/argoproj/argo-events/stable/manifests/base/crds/argoproj.io_eventsources.yaml
 - https://raw.githubusercontent.com/argoproj/argo-events/stable/manifests/base/crds/argoproj.io_sensors.yaml
+- ../mixins/argo-workflows-agent-ca-certificates.yaml
 
 patchesStrategicMerge:
 - ../mixins/argo-server-deployment.yaml
