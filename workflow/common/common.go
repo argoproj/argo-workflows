@@ -230,6 +230,9 @@ const (
 	ServiceAccountTokenVolumeName = "exec-sa-token"                                 //nolint:gosec
 	SecretVolMountPath            = "/argo/secret"
 
+	// CACertificatesVolumeMountName is the name of the secret that contains the CA certificates.
+	CACertificatesVolumeMountName = "argo-workflows-agent-ca-certificates"
+
 	// ArgoProgressPath defines the path to a file used for self reporting progress
 	ArgoProgressPath = "/var/run/argo/progress"
 
