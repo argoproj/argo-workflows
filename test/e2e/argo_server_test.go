@@ -1325,7 +1325,6 @@ spec:
 	})
 
 	s.Run("Retry", func() {
-		s.Need(fixtures.BaseLayerArtifacts)
 		s.e().PUT("/api/v1/archived-workflows/{uid}/retry", failedUid).
 			WithBytes([]byte(`{"namespace": "argo"}`)).
 			Expect().

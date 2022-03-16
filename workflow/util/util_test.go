@@ -891,57 +891,6 @@ func TestRetryWorkflow(t *testing.T) {
 	})
 }
 
-// func TestRetryArchivedWorkflow(t *testing.T) {
-// 	ctx := context.Background()
-// 	kubeClient := kubefake.NewSimpleClientset()
-// 	wfClient := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("my-ns")
-// 	createdTime := metav1.Time{Time: time.Now().UTC()}
-// 	finishedTime := metav1.Time{Time: createdTime.Add(time.Second * 2)}
-// 	t.Run("Steps", func(t *testing.T) {
-// 		wf := &wfv1.Workflow{
-// 			ObjectMeta: metav1.ObjectMeta{
-// 				Name: "my-steps",
-// 				Labels: map[string]string{
-// 					common.LabelKeyCompleted:               "true",
-// 					common.LabelKeyWorkflowArchivingStatus: "Pending",
-// 				},
-// 			},
-// 			Status: wfv1.WorkflowStatus{
-// 				Phase:      wfv1.WorkflowFailed,
-// 				StartedAt:  createdTime,
-// 				FinishedAt: finishedTime,
-// 				Nodes: map[string]wfv1.NodeStatus{
-// 					"failed-node":    {Name: "failed-node", StartedAt: createdTime, FinishedAt: finishedTime, Phase: wfv1.NodeFailed, Message: "failed"},
-// 					"succeeded-node": {Name: "succeeded-node", StartedAt: createdTime, FinishedAt: finishedTime, Phase: wfv1.NodeSucceeded, Message: "succeeded"}},
-// 			},
-// 		}
-// 		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
-// 		assert.NoError(t, err)
-// 		wf, err = RetryArchivedWorkflow(ctx, kubeClient.CoreV1().Pods(wf.Namespace), wf, false, "")
-// 		if assert.NoError(t, err) {
-// 			assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
-// 			assert.Equal(t, metav1.Time{}, wf.Status.FinishedAt)
-// 			assert.True(t, wf.Status.StartedAt.After(createdTime.Time))
-// 			assert.NotContains(t, wf.Labels, common.LabelKeyCompleted)
-// 			assert.NotContains(t, wf.Labels, common.LabelKeyWorkflowArchivingStatus)
-// 			for _, node := range wf.Status.Nodes {
-// 				switch node.Phase {
-// 				case wfv1.NodeSucceeded:
-// 					assert.Equal(t, "succeeded", node.Message)
-// 					assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
-// 					assert.Equal(t, createdTime, node.StartedAt)
-// 					assert.Equal(t, finishedTime, node.FinishedAt)
-// 				case wfv1.NodeFailed:
-// 					assert.Equal(t, "", node.Message)
-// 					assert.Equal(t, wfv1.NodeRunning, node.Phase)
-// 					assert.Equal(t, metav1.Time{}, node.FinishedAt)
-// 					assert.True(t, node.StartedAt.After(createdTime.Time))
-// 				}
-// 			}
-// 		}
-// 	})
-// }
-
 func TestFromUnstructuredObj(t *testing.T) {
 	un := &unstructured.Unstructured{}
 	wfv1.MustUnmarshal([]byte(`apiVersion: argoproj.io/v1alpha1
