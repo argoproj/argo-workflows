@@ -13,6 +13,30 @@ argo archive resubmit [WORKFLOW...] [flags]
 
   argo archive resubmit uid
 
+# Resubmit multiple workflows:
+
+  argo resubmit uid another-uid
+
+# Resubmit multiple workflows by label selector:
+
+  argo resubmit -l workflows.argoproj.io/test=true
+
+# Resubmit multiple workflows by field selector:
+
+  argo resubmit --field-selector metadata.namespace=argo
+
+# Resubmit and wait for completion:
+
+  argo resubmit --wait uid
+
+# Resubmit and watch until completion:
+
+  argo resubmit --watch uid
+
+# Resubmit and tail logs until completion:
+
+  argo resubmit --log uid
+
 ```
 
 ### Options

@@ -41,6 +41,30 @@ func NewResubmitCommand() *cobra.Command {
 		Example: `# Resubmit a workflow:
 
   argo archive resubmit uid
+
+# Resubmit multiple workflows:
+
+  argo resubmit uid another-uid
+
+# Resubmit multiple workflows by label selector:
+
+  argo resubmit -l workflows.argoproj.io/test=true
+
+# Resubmit multiple workflows by field selector:
+
+  argo resubmit --field-selector metadata.namespace=argo
+
+# Resubmit and wait for completion:
+
+  argo resubmit --wait uid
+
+# Resubmit and watch until completion:
+
+  argo resubmit --watch uid
+
+# Resubmit and tail logs until completion:
+
+  argo resubmit --log uid
 `,
 		Run: func(cmd *cobra.Command, args []string) {
 			if cmd.Flag("priority").Changed {
@@ -92,14 +116,14 @@ func resubmitArchivedWorkflows(ctx context.Context, archiveServiceClient workflo
 	}
 
 	var lastResubmitted *wfv1.Workflow
-	resubmittedNames := make(map[string]bool)
+	resubmittedUids := make(map[string]bool)
 
 	for _, wf := range wfs {
-		if _, ok := resubmittedNames[wf.Name]; ok {
+		if _, ok := resubmittedUids[string(wf.UID)]; ok {
 			// de-duplication in case there is an overlap between the selector and given workflow names
 			continue
 		}
-		resubmittedNames[wf.Name] = true
+		resubmittedUids[string(wf.UID)] = true
 
 		lastResubmitted, err = archiveServiceClient.ResubmitArchivedWorkflow(ctx, &workflowarchivepkg.ResubmitArchivedWorkflowRequest{
 			Uid:       string(wf.UID),
@@ -112,7 +136,8 @@ func resubmitArchivedWorkflows(ctx context.Context, archiveServiceClient workflo
 		}
 		printWorkflow(lastResubmitted, cliSubmitOpts.output)
 	}
-	if len(resubmittedNames) == 1 {
+
+	if len(resubmittedUids) == 1 {
 		// watch or wait when there is only one workflow retried
 		waitWatchOrLog(ctx, serviceClient, lastResubmitted.Namespace, []string{lastResubmitted.Name}, cliSubmitOpts)
 	}
