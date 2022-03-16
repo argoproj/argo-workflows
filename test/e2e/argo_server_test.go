@@ -1194,7 +1194,6 @@ spec:
 			uid = metadata.UID
 		})
 	var failedUid types.UID
-	var name string
 	s.Given().
 		Workflow(`
 metadata:
@@ -1214,7 +1213,6 @@ spec:
 		WaitForWorkflow(fixtures.ToBeArchived).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			name = metadata.Name
 			failedUid = metadata.UID
 		})
 	s.Given().
@@ -1326,12 +1324,6 @@ spec:
 			NotNull()
 	})
 
-	s.Run("DeleteForRetry", func() {
-		s.e().DELETE("/api/v1/workflows/argo/" + name).
-			Expect().
-			Status(200)
-	})
-
 	s.Run("Retry", func() {
 		s.Need(fixtures.BaseLayerArtifacts)
 		s.e().PUT("/api/v1/archived-workflows/{uid}/retry", failedUid).
@@ -1339,7 +1331,6 @@ spec:
 			Expect().
 			Status(200).
 			JSON().
-			Path("$.metadata.name").
 			NotNull()
 	})
 

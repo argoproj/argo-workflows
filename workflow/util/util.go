@@ -31,7 +31,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers/internalinterfaces"
-	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
@@ -735,32 +734,21 @@ func convertNodeID(newWf *wfv1.Workflow, regex *regexp.Regexp, oldNodeID string,
 }
 
 // RetryWorkflow updates a workflow, deleting all failed steps as well as the onExit node (and children)
-func RetryWorkflow(ctx context.Context, podIf v1.PodInterface, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
-	updatedWf, err := prepareWorkflowForRetry(ctx, wf, podIf, restartSuccessful, nodeFieldSelector)
+func RetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, []string, error) {
+	updatedWf, podsToDelete, err := FormulateRetryWorkflow(ctx, wf, restartSuccessful, nodeFieldSelector)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return updatedWf, err
+	return updatedWf, podsToDelete, err
 }
 
-// RetryWorkflow creates a workflow from the workflow archive
-func RetryArchivedWorkflow(ctx context.Context, podIf v1.PodInterface, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
-	wf.ObjectMeta.ResourceVersion = ""
-	updatedWf, err := prepareWorkflowForRetry(ctx, wf, podIf, restartSuccessful, nodeFieldSelector)
-	if err != nil {
-		return nil, err
-	}
-
-	return updatedWf, err
-}
-
-func prepareWorkflowForRetry(ctx context.Context, wf *wfv1.Workflow, podIf v1.PodInterface, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
+func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, []string, error) {
 
 	switch wf.Status.Phase {
 	case wfv1.WorkflowFailed, wfv1.WorkflowError:
 	default:
-		return nil, errors.Errorf(errors.CodeBadRequest, "workflow must be Failed/Error to retry")
+		return nil, nil, errors.Errorf(errors.CodeBadRequest, "workflow must be Failed/Error to retry")
 	}
 
 	newWF := wf.DeepCopy()
@@ -785,11 +773,12 @@ func prepareWorkflowForRetry(ctx context.Context, wf *wfv1.Workflow, podIf v1.Po
 	// Get all children of nodes that match filter
 	nodeIDsToReset, err := getNodeIDsToReset(restartSuccessful, nodeFieldSelector, wf.Status.Nodes)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Iterate the previous nodes. If it was successful Pod carry it forward
 	deletedNodes := make(map[string]bool)
+	var podsToDelete []string
 	for _, node := range wf.Status.Nodes {
 		doForceResetNode := false
 		if _, present := nodeIDsToReset[node.ID]; present {
@@ -817,17 +806,14 @@ func prepareWorkflowForRetry(ctx context.Context, wf *wfv1.Workflow, podIf v1.Po
 			// do not add this status to the node. pretend as if this node never existed.
 		default:
 			// Do not allow retry of workflows with pods in Running/Pending phase
-			return nil, errors.InternalErrorf("Workflow cannot be retried with node %s in %s phase", node.Name, node.Phase)
+			return nil, nil, errors.InternalErrorf("Workflow cannot be retried with node %s in %s phase", node.Name, node.Phase)
 		}
+
 		if node.Type == wfv1.NodeTypePod {
 			templateName := getTemplateFromNode(node)
 			version := GetWorkflowPodNameVersion(wf)
 			podName := PodName(wf.Name, node.Name, templateName, node.ID, version)
-			log.Infof("Deleting pod: %s", podName)
-			err := podIf.Delete(ctx, podName, metav1.DeleteOptions{})
-			if err != nil && !apierr.IsNotFound(err) {
-				return nil, errors.InternalWrapError(err)
-			}
+			podsToDelete = append(podsToDelete, podName)
 		} else if node.Name == wf.ObjectMeta.Name {
 			newNode := node.DeepCopy()
 			newNode.Phase = wfv1.NodeRunning
@@ -866,7 +852,7 @@ func prepareWorkflowForRetry(ctx context.Context, wf *wfv1.Workflow, podIf v1.Po
 		newWF.Status.StoredTemplates[id] = tmpl
 	}
 
-	return newWF, nil
+	return newWF, podsToDelete, nil
 }
 
 func getTemplateFromNode(node wfv1.NodeStatus) string {
