@@ -3,8 +3,6 @@ package controller
 import (
 	"context"
 	"fmt"
-
-
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
 	apiv1 "k8s.io/api/core/v1"
