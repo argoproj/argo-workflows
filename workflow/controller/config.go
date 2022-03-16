@@ -13,7 +13,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 )
 
@@ -32,14 +31,14 @@ func (wfc *WorkflowController) updateConfig(v interface{}) error {
 		}
 	}
 	wfc.session = nil
-	wfc.artifactRepositories = artifactrepositories.New(wfc.kubernetesInterfaces[common.LocalCluster], wfc.namespace, &wfc.Config.ArtifactRepository)
+	wfc.artifactRepositories = artifactrepositories.New(wfc.localProfile().kubernetesClient, wfc.namespace, &wfc.Config.ArtifactRepository)
 	wfc.offloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo
 	wfc.wfArchive = sqldb.NullWorkflowArchive
 	wfc.archiveLabelSelector = labels.Everything()
 	persistence := wfc.Config.Persistence
 	if persistence != nil {
 		log.Info("Persistence configuration enabled")
-		session, tableName, err := sqldb.CreateDBSession(wfc.kubernetesInterfaces[common.LocalCluster], wfc.namespace, persistence)
+		session, tableName, err := sqldb.CreateDBSession(wfc.localProfile().kubernetesClient, wfc.namespace, persistence)
 		if err != nil {
 			return err
 		}

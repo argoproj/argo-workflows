@@ -19,7 +19,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/metadata"
 
 	// load authentication plugin for obtaining credentials from cloud providers.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -34,7 +33,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/env"
 	"github.com/argoproj/argo-workflows/v3/util/logs"
 	pprofutil "github.com/argoproj/argo-workflows/v3/util/pprof"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller"
 	"github.com/argoproj/argo-workflows/v3/workflow/events"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
@@ -88,16 +86,16 @@ func NewRootCommand() *cobra.Command {
 			config.Burst = burst
 			config.QPS = qps
 
+			logs.AddK8SLogTransportWrapper(config)
+			metrics.AddMetricsTransportWrapper(config)
+
 			namespace, _, err := clientConfig.Namespace()
 			if err != nil {
 				return err
 			}
 
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-
-			configs, kubernetesInterfaces, workflowInterfaces, metadataInterfaces := loadClusters(ctx, config, namespace)
-			errors.CheckError(err)
+			kubeclientset := kubernetes.NewForConfigOrDie(config)
+			wfclientset := wfclientset.NewForConfigOrDie(config)
 
 			if !namespaced && managedNamespace != "" {
 				log.Warn("ignoring --managed-namespace because --namespaced is false")
@@ -107,20 +105,11 @@ func NewRootCommand() *cobra.Command {
 				managedNamespace = namespace
 			}
 
-			wfController, err := controller.NewWorkflowController(
-				ctx,
-				configs,
-				kubernetesInterfaces,
-				metadataInterfaces,
-				workflowInterfaces,
-				namespace,
-				managedNamespace,
-				executorImage,
-				executorImagePullPolicy,
-				containerRuntimeExecutor,
-				configMap,
-				executorPlugins,
-			)
+			// start a controller on instances of our custom resource
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			wfController, err := controller.NewWorkflowController(ctx, config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap, executorPlugins)
 			errors.CheckError(err)
 
 			leaderElectionOff := os.Getenv("LEADER_ELECTION_DISABLE")
@@ -138,8 +127,6 @@ func NewRootCommand() *cobra.Command {
 				if wfController.Config.InstanceID != "" {
 					leaderName = fmt.Sprintf("%s-%s", leaderName, wfController.Config.InstanceID)
 				}
-
-				kubeclientset := kubernetesInterfaces[common.LocalCluster]
 
 				go leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
 					Lock: &resourcelock.LeaseLock{
@@ -210,44 +197,6 @@ func NewRootCommand() *cobra.Command {
 	})
 
 	return &command
-}
-
-func loadClusters(ctx context.Context, config *restclient.Config, namespace string) (
-	map[string]*restclient.Config,
-	map[string]kubernetes.Interface,
-	map[string]wfclientset.Interface,
-	map[string]metadata.Interface,
-) {
-	configs := map[string]*restclient.Config{common.LocalCluster: config}
-	client := kubernetes.NewForConfigOrDie(config)
-	secrets := client.CoreV1().Secrets(namespace)
-	list, err := secrets.List(ctx, metav1.ListOptions{LabelSelector: common.LabelKeyCluster})
-	if err != nil {
-		log.Fatal(err)
-	}
-	for _, secret := range list.Items {
-		kc, err := clientcmd.Load(secret.Data["kubeconfig"])
-		if err != nil {
-			log.Fatal(fmt.Errorf("failed to load config for secret %q: %w", secret.Name, err))
-		}
-		config, err := clientcmd.NewNonInteractiveClientConfig(*kc, kc.CurrentContext, &clientcmd.ConfigOverrides{}, clientcmd.NewDefaultClientConfigLoadingRules()).ClientConfig()
-		if err != nil {
-			log.Fatal(fmt.Errorf("failed to create client config for secret %q: %w", secret.Name, err))
-		}
-		configs[secret.Labels[common.LabelKeyCluster]] = config
-	}
-	kubernetesInterfaces := map[string]kubernetes.Interface{}
-	workflowInterfaces := map[string]wfclientset.Interface{}
-	metadataInterfaces := map[string]metadata.Interface{}
-	for cluster, config := range configs {
-		log.WithField("cluster", cluster).Info("creating interfaces")
-		logs.AddK8SLogTransportWrapper(config)
-		metrics.AddMetricsTransportWrapper(config)
-		kubernetesInterfaces[cluster] = kubernetes.NewForConfigOrDie(config)
-		workflowInterfaces[cluster] = wfclientset.NewForConfigOrDie(config)
-		metadataInterfaces[cluster] = metadata.NewForConfigOrDie(config)
-	}
-	return configs, kubernetesInterfaces, workflowInterfaces, metadataInterfaces
 }
 
 func init() {

@@ -11,7 +11,6 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 func TestWorkflowTemplateRef(t *testing.T) {
@@ -525,12 +524,12 @@ func TestWFTWithVol(t *testing.T) {
 	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
-	pvc, err := controller.kubernetesInterfaces[common.LocalCluster].CoreV1().PersistentVolumeClaims("default").List(ctx, metav1.ListOptions{})
+	pvc, err := controller.localProfile().kubernetesClient.CoreV1().PersistentVolumeClaims("default").List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Len(t, pvc.Items, 1)
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	woc.operate(ctx)
-	pvc, err = controller.kubernetesInterfaces[common.LocalCluster].CoreV1().PersistentVolumeClaims("default").List(ctx, metav1.ListOptions{})
+	pvc, err = controller.localProfile().kubernetesClient.CoreV1().PersistentVolumeClaims("default").List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Len(t, pvc.Items, 0)
 }

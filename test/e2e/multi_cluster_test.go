@@ -117,7 +117,7 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeErrored).
 		Then().
-		ExpectWorkflow(fixtures.StatusMessageContains(`namespace "argo" is forbidden from creating resources in cluster "cluster-1" namespace "default"`))
+		ExpectWorkflow(fixtures.StatusMessageContains(`profile not found for "argo","cluster-1","argo"`))
 }
 
 func (s *MultiClusterSuite) TestDisallowedCluster() {
@@ -139,7 +139,7 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeErrored).
 		Then().
-		ExpectWorkflow(fixtures.StatusMessageContains(`namespace "argo" is forbidden from creating resources in cluster "cluster-1" namespace "argo"`))
+		ExpectWorkflow(fixtures.StatusMessageContains(`profile not found for "argo","cluster-1",""`))
 }
 
 func TestMultiClusterSuite(t *testing.T) {

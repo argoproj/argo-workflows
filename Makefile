@@ -439,6 +439,7 @@ ifeq ($(PROFILE),multi-cluster)
 	kubectl delete secret -l workflows.argoproj.io/cluster
 	kubectl create secret generic cluster-1 --from-literal="kubeconfig=`./hack/print-kubeconfig.sh cluster-1 default argo-cluster-0`"
 	kubectl label secret cluster-1 workflows.argoproj.io/cluster=cluster-1
+	kubectl label secret cluster-1 workflows.argoproj.io/namespace=default
 endif
 ifeq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml

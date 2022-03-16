@@ -9,7 +9,6 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 var httpwf = `apiVersion: argoproj.io/v1alpha1
@@ -69,13 +68,13 @@ func TestHTTPTemplate(t *testing.T) {
 		ctx := context.Background()
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
-		pods, err := controller.kubernetesInterfaces[common.LocalCluster].CoreV1().Pods(woc.wf.Namespace).List(ctx, metav1.ListOptions{})
+		pods, err := controller.localProfile().kubernetesClient.CoreV1().Pods(woc.wf.Namespace).List(ctx, metav1.ListOptions{})
 		assert.NoError(t, err)
 		for _, pod := range pods.Items {
 			assert.Equal(t, pod.Name, "hello-world-1340600742-agent")
 		}
 		// tss, err :=controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(wf.Namespace).List(ctx, metav1.ListOptions{})
-		ts, err := controller.workflowInterfaces[common.LocalCluster].ArgoprojV1alpha1().WorkflowTaskSets(wf.Namespace).Get(ctx, "hello-world", metav1.GetOptions{})
+		ts, err := controller.localProfile().workflowClient.ArgoprojV1alpha1().WorkflowTaskSets(wf.Namespace).Get(ctx, "hello-world", metav1.GetOptions{})
 		assert.NoError(t, err)
 		assert.NotNil(t, ts)
 		assert.Len(t, ts.Spec.Tasks, 1)

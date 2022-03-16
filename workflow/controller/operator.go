@@ -611,7 +611,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	if woc.orig.ResourceVersion != woc.wf.ResourceVersion {
 		woc.log.Panic("cannot persist updates with mismatched resource versions")
 	}
-	wfClient := woc.controller.workflowInterfaces[common.LocalCluster].ArgoprojV1alpha1().Workflows(woc.wf.ObjectMeta.Namespace)
+	wfClient := woc.controller.localProfile().workflowClient.ArgoprojV1alpha1().Workflows(woc.wf.ObjectMeta.Namespace)
 	// try and compress nodes if needed
 	nodes := woc.wf.Status.Nodes
 	err := woc.controller.hydrator.Dehydrate(woc.wf)
@@ -694,20 +694,20 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 
 func (woc *wfOperationCtx) deleteTaskResults(ctx context.Context) error {
 	deletePropagationBackground := metav1.DeletePropagationBackground
-	for cluster, workflowInterface := range woc.controller.workflowInterfaces {
+	for _, profile := range woc.controller.profiles {
 		labelSelector := labels.NewSelector().
-			Add(woc.controller.clusterReq(cluster)).
+			Add(woc.controller.clusterReq(profile.cluster)).
 			Add(woc.workflowReq()).
 			String()
 		log.WithField("labelSelector", labelSelector).Info("deleting task results")
-		err := workflowInterface.ArgoprojV1alpha1().WorkflowTaskResults(woc.wf.Namespace).
+		err := profile.workflowClient.ArgoprojV1alpha1().WorkflowTaskResults(profile.namespace).
 			DeleteCollection(
 				ctx,
 				metav1.DeleteOptions{PropagationPolicy: &deletePropagationBackground},
 				metav1.ListOptions{LabelSelector: labelSelector},
 			)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to delete task-results in cluster %q: %w", profile.cluster, err)
 		}
 	}
 	return nil
@@ -1135,8 +1135,8 @@ func (woc *wfOperationCtx) failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
 // getAllWorkflowPods returns all pods related to the current workflow
 func (woc *wfOperationCtx) getAllWorkflowPods() ([]*apiv1.Pod, error) {
 	pods := make([]*apiv1.Pod, 0)
-	for _, podInformer := range woc.controller.podInformers {
-		objs, err := podInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, indexes.WorkflowIndexValue(woc.wf.Namespace, woc.wf.Name))
+	for _, profile := range woc.controller.profiles {
+		objs, err := profile.podInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, indexes.WorkflowIndexValue(woc.wf.Namespace, woc.wf.Name))
 		if err != nil {
 			return nil, err
 		}
@@ -1335,7 +1335,7 @@ func podHasContainerNeedingTermination(pod *apiv1.Pod, tmpl wfv1.Template) bool 
 
 func (woc *wfOperationCtx) cleanUpPod(pod *apiv1.Pod, tmpl wfv1.Template) {
 	if podHasContainerNeedingTermination(pod, tmpl) {
-		woc.controller.queuePodForCleanup(pod.Annotations[common.LabelKeyCluster], woc.wf.Namespace, pod.Name, terminateContainers)
+		woc.controller.queuePodForCleanup(woc.wf.Namespace, pod.Annotations[common.LabelKeyCluster], pod.Namespace, pod.Name, terminateContainers)
 	}
 }
 
@@ -1466,7 +1466,7 @@ func (woc *wfOperationCtx) createPVCs(ctx context.Context) error {
 		// This will also handle the case where workflow has no volumeClaimTemplates.
 		return nil
 	}
-	pvcClient := woc.controller.kubernetesInterfaces[common.LocalCluster].CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
+	pvcClient := woc.controller.localProfile().kubernetesClient.CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
 	for i, pvcTmpl := range woc.execWf.Spec.VolumeClaimTemplates {
 		if pvcTmpl.ObjectMeta.Name == "" {
 			return errors.Errorf(errors.CodeBadRequest, "volumeClaimTemplates[%d].metadata.name is required", i)
@@ -1543,7 +1543,7 @@ func (woc *wfOperationCtx) deletePVCs(ctx context.Context) error {
 		// PVC list already empty. nothing to do
 		return nil
 	}
-	pvcClient := woc.controller.kubernetesInterfaces[common.LocalCluster].CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
+	pvcClient := woc.controller.localProfile().kubernetesClient.CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
 	newPVClist := make([]apiv1.Volume, 0)
 	// Attempt to delete all PVCs. Record first error encountered
 	var firstErr error
@@ -2068,7 +2068,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 			}
 			woc.updated = true
 		}
-		woc.controller.queuePodForCleanup(common.LocalCluster, woc.wf.Namespace, woc.getAgentPodName(), deletePod)
+		woc.controller.queuePodForCleanup(woc.wf.Namespace, common.LocalCluster, woc.wf.Namespace, woc.getAgentPodName(), deletePod)
 	}
 }
 
@@ -2276,7 +2276,7 @@ func (woc *wfOperationCtx) getPodByNode(node *wfv1.NodeStatus) (*apiv1.Pod, erro
 		namespace = woc.wf.GetNamespace()
 	}
 	podName := woc.getPodName(node.Name, node.TemplateName)
-	return woc.controller.getPod(cluster, namespace, podName)
+	return woc.controller.getPod(woc.wf.Namespace, cluster, namespace, podName)
 }
 
 func (woc *wfOperationCtx) recordNodePhaseEvent(node *wfv1.NodeStatus) {
@@ -3336,7 +3336,7 @@ func (woc *wfOperationCtx) createPDBResource(ctx context.Context) error {
 		return nil
 	}
 
-	pdb, err := woc.controller.kubernetesInterfaces[common.LocalCluster].PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Get(
+	pdb, err := woc.controller.localProfile().kubernetesClient.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Get(
 		ctx,
 		woc.wf.Name,
 		metav1.GetOptions{},
@@ -3365,7 +3365,7 @@ func (woc *wfOperationCtx) createPDBResource(ctx context.Context) error {
 		},
 		Spec: pdbSpec,
 	}
-	_, err = woc.controller.kubernetesInterfaces[common.LocalCluster].PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Create(ctx, &newPDB, metav1.CreateOptions{})
+	_, err = woc.controller.localProfile().kubernetesClient.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Create(ctx, &newPDB, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -3379,7 +3379,7 @@ func (woc *wfOperationCtx) deletePDBResource(ctx context.Context) error {
 		return nil
 	}
 	err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
-		err := woc.controller.kubernetesInterfaces[common.LocalCluster].PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(ctx, woc.wf.Name, metav1.DeleteOptions{})
+		err := woc.controller.localProfile().kubernetesClient.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(ctx, woc.wf.Name, metav1.DeleteOptions{})
 		if apierr.IsNotFound(err) {
 			return true, nil
 		}
@@ -3471,8 +3471,8 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 	// Perform one-time workflow validation
 	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
 		validateOpts := validate.ValidateOpts{ContainerRuntimeExecutor: woc.getContainerRuntimeExecutor()}
-		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.controller.workflowInterfaces[common.LocalCluster].ArgoprojV1alpha1().WorkflowTemplates(woc.wf.Namespace))
-		cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.controller.workflowInterfaces[common.LocalCluster].ArgoprojV1alpha1().ClusterWorkflowTemplates())
+		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.controller.localProfile().workflowClient.ArgoprojV1alpha1().WorkflowTemplates(woc.wf.Namespace))
+		cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.controller.localProfile().workflowClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
 		// Validate the execution wfSpec
 		var wfConditions *wfv1.Conditions
@@ -3628,7 +3628,12 @@ func (woc *wfOperationCtx) getServiceAccountTokenName(ctx context.Context, clust
 	if name == "" {
 		name = "default"
 	}
-	account, err := woc.controller.kubernetesInterfaces[cluster].CoreV1().ServiceAccounts(woc.wf.Namespace).Get(ctx, name, metav1.GetOptions{})
+	profile, err := woc.profile(cluster, woc.wf.Namespace)
+	if err != nil {
+		return "", err
+	}
+	account, err :=
+		profile.kubernetesClient.CoreV1().ServiceAccounts(woc.wf.Namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}

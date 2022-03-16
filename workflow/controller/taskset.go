@@ -20,7 +20,7 @@ func (woc *wfOperationCtx) patchTaskSet(ctx context.Context, patch interface{}, 
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
-	_, err = woc.controller.workflowInterfaces[common.LocalCluster].ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace).Patch(ctx, woc.wf.Name, pathTypeType, patchByte, metav1.PatchOptions{})
+	_, err = woc.controller.localProfile().workflowClient.ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace).Patch(ctx, woc.wf.Name, pathTypeType, patchByte, metav1.PatchOptions{})
 	if err != nil {
 		return fmt.Errorf("failed patching taskset: %v", err)
 	}
@@ -168,7 +168,7 @@ func (woc *wfOperationCtx) createTaskSet(ctx context.Context) error {
 	}
 	woc.log.Debug("creating new taskset")
 
-	_, err := woc.controller.workflowInterfaces[common.LocalCluster].ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace).Create(ctx, &taskSet, metav1.CreateOptions{})
+	_, err := woc.controller.localProfile().workflowClient.ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace).Create(ctx, &taskSet, metav1.CreateOptions{})
 
 	if apierr.IsConflict(err) || apierr.IsAlreadyExists(err) {
 		woc.log.Debug("patching the exiting taskset")

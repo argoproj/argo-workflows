@@ -76,7 +76,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	podName := woc.getAgentPodName()
 	log := woc.log.WithField("podName", podName)
 
-	obj, exists, err := woc.controller.podInformers[common.LocalCluster].GetStore().Get(cache.ExplicitKey(woc.wf.Namespace + "/" + podName))
+	obj, exists, err := woc.localProfile().podInformer.GetStore().Get(cache.ExplicitKey(woc.wf.Namespace + "/" + podName))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pod from informer store: %w", err)
 	}
@@ -190,7 +190,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 
 	log.Debug("Creating Agent pod")
 
-	created, err := woc.controller.kubernetesInterfaces[common.LocalCluster].CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
+	created, err := woc.controller.localProfile().kubernetesClient.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
 		log.WithError(err).Info("Failed to create Agent pod")
 		if apierr.IsAlreadyExists(err) {
@@ -200,6 +200,10 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	}
 	log.Info("Created Agent pod")
 	return created, nil
+}
+
+func (woc *wfOperationCtx) localProfile() *profile {
+	return woc.controller.localProfile()
 }
 
 func (woc *wfOperationCtx) getExecutorPlugins() []apiv1.Container {

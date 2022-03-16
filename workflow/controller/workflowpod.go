@@ -245,13 +245,6 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		WithField("namespace", namespace).
 		WithField("cluster", cluster)
 
-	ok, err := woc.controller.enforcer.Enforce(woc.wf.Namespace, cluster, namespace)
-	if err != nil {
-		return nil, err
-	}
-	if !ok {
-		return nil, fmt.Errorf("namespace %q is forbidden from creating resources in cluster %q namespace %q", woc.wf.Namespace, cluster, namespace)
-	}
 	if opts.onExitPod {
 		// This pod is part of an onExit handler, label it so
 		pod.ObjectMeta.Labels[common.LabelKeyOnExit] = "true"
@@ -492,7 +485,11 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	log.Info("Creating Pod")
 
-	created, err := woc.controller.kubernetesInterfaces[cluster].CoreV1().Pods(namespace).Create(ctx, pod, metav1.CreateOptions{})
+	profile, err := woc.profile(cluster, namespace)
+	if err != nil {
+		return nil, err
+	}
+	created, err := profile.kubernetesClient.CoreV1().Pods(namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
 		log.WithError(err).Info("Failed to create pod")
 		if apierr.IsAlreadyExists(err) {
@@ -516,11 +513,12 @@ func (woc *wfOperationCtx) podExists(nodeID string) (existing *apiv1.Pod, exists
 		return nil, false, nil
 	}
 	cluster := tmpl.Cluster
-	podInformer, ok := woc.controller.podInformers[cluster]
-	if !ok {
-		return nil, false, fmt.Errorf("failed to get pod for node: unknown cluster %q", cluster)
+	namespace := tmpl.Namespace
+	profile, err := woc.profile(cluster, namespace)
+	if err != nil {
+		return nil, false, err
 	}
-	objs, err := podInformer.GetIndexer().ByIndex(indexes.NodeIDIndex, woc.wf.Namespace+"/"+nodeID)
+	objs, err := profile.podInformer.GetIndexer().ByIndex(indexes.NodeIDIndex, woc.wf.Namespace+"/"+nodeID)
 	if err != nil {
 		return nil, false, fmt.Errorf("failed to get pod from informer store: %w", err)
 	}

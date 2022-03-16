@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"reflect"
 	"time"
 
@@ -11,57 +10,55 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 )
 
-func (wfc *WorkflowController) newWorkflowTaskResultInformers() map[string]cache.SharedIndexInformer {
-	informers := make(map[string]cache.SharedIndexInformer)
-	for cluster, clientset := range wfc.workflowInterfaces {
-		labelSelector := labels.NewSelector().
-			Add(*workflowReq).
-			Add(wfc.clusterReq(cluster)).
-			Add(wfc.instanceIDReq()).
-			String()
-		log.WithField("labelSelector", labelSelector).
-			WithField("cluster", cluster).Info("Creating task-result informer")
-		informer := wfextvv1alpha1.NewFilteredWorkflowTaskResultInformer(
-			clientset,
-			wfc.GetManagedNamespace(),
-			20*time.Minute,
-			cache.Indexers{
-				indexes.WorkflowIndex: indexes.MetaWorkflowIndexFunc,
+func (wfc *WorkflowController) newWorkflowTaskResultInformer(client workflow.Interface, cluster string) cache.SharedIndexInformer {
+	labelSelector := labels.NewSelector().
+		Add(*workflowReq).
+		Add(wfc.clusterReq(cluster)).
+		Add(wfc.instanceIDReq()).
+		String()
+	log.WithField("labelSelector", labelSelector).
+		WithField("cluster", cluster).Info("Creating task-result informer")
+	informer := wfextvv1alpha1.NewFilteredWorkflowTaskResultInformer(
+		client,
+		wfc.GetManagedNamespace(),
+		20*time.Minute,
+		cache.Indexers{
+			indexes.WorkflowIndex: indexes.MetaWorkflowIndexFunc,
+		},
+		func(options *metav1.ListOptions) {
+			options.LabelSelector = labelSelector
+		},
+	)
+	informer.AddEventHandler(
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: func(new interface{}) {
+				result := new.(*wfv1.WorkflowTaskResult)
+				namespace := common.MetaWorkflowNamespace(result)
+				workflow := result.Labels[common.LabelKeyWorkflow]
+				wfc.wfQueue.AddRateLimited(namespace + "/" + workflow)
 			},
-			func(options *metav1.ListOptions) {
-				options.LabelSelector = labelSelector
+			UpdateFunc: func(_, new interface{}) {
+				result := new.(*wfv1.WorkflowTaskResult)
+				namespace := common.MetaWorkflowNamespace(result)
+				workflow := result.Labels[common.LabelKeyWorkflow]
+				wfc.wfQueue.AddRateLimited(namespace + "/" + workflow)
 			},
-		)
-		informer.AddEventHandler(
-			cache.ResourceEventHandlerFuncs{
-				AddFunc: func(new interface{}) {
-					result := new.(*wfv1.WorkflowTaskResult)
-					namespace := common.MetaWorkflowNamespace(result)
-					workflow := result.Labels[common.LabelKeyWorkflow]
-					wfc.wfQueue.AddRateLimited(namespace + "/" + workflow)
-				},
-				UpdateFunc: func(_, new interface{}) {
-					result := new.(*wfv1.WorkflowTaskResult)
-					namespace := common.MetaWorkflowNamespace(result)
-					workflow := result.Labels[common.LabelKeyWorkflow]
-					wfc.wfQueue.AddRateLimited(namespace + "/" + workflow)
-				},
-			})
-		informers[cluster] = informer
-	}
-	return informers
+		})
+	return informer
 }
 
 func (woc *wfOperationCtx) taskResultReconciliation() {
 	woc.log.Info("task-result reconciliation")
-	for cluster, taskResultInformer := range woc.controller.taskResultInformers {
-		objs, _ := taskResultInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.Namespace+"/"+woc.wf.Name)
+	for profileName, profile := range woc.controller.profiles {
+		objs, _ := profile.taskResultInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.Namespace+"/"+woc.wf.Name)
 		woc.log.WithField("numObjs", len(objs)).
-			WithField("cluster", cluster).
+			WithField("profileName", profileName).
 			Info("Task-result reconciliation")
 		for _, obj := range objs {
 			result := obj.(*wfv1.WorkflowTaskResult)

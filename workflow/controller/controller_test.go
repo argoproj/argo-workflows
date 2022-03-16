@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/argoproj/pkg/sync"
-	"github.com/casbin/casbin/v2"
 	"github.com/stretchr/testify/assert"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	apiv1 "k8s.io/api/core/v1"
@@ -17,7 +16,6 @@ import (
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
-	"k8s.io/client-go/metadata"
 	fakemetadata "k8s.io/client-go/metadata/fake"
 	k8stesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
@@ -28,7 +26,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/config"
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	fakewfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/scheme"
 	wfextv "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions"
@@ -190,11 +187,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 				S3Bucket: wfv1.S3Bucket{Endpoint: "my-endpoint", Bucket: "my-bucket"},
 			},
 		}),
-		enforcer:                  &casbin.Enforcer{},
-		kubernetesInterfaces:      map[string]kubernetes.Interface{common.LocalCluster: kube},
-		metadataInterfaces:        map[string]metadata.Interface{common.LocalCluster: &fakeMetadataClient},
 		dynamicInterface:          dynamicClient,
-		workflowInterfaces:        map[string]workflow.Interface{common.LocalCluster: wfclientset},
 		workflowKeyLock:           sync.NewKeyLock(),
 		wfArchive:                 sqldb.NullWorkflowArchive,
 		hydrator:                  hydratorfake.Noop,
@@ -221,29 +214,35 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		wfc.throttler = wfc.newThrottler()
 		wfc.podCleanupQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 		wfc.rateLimiter = wfc.newRateLimiter()
+
+		wfc.profiles = map[string]*profile{
+			wfc.localProfileName(): {
+				kubernetesClient:   kube,
+				metadataClient:     &fakeMetadataClient,
+				workflowClient:     wfclientset,
+				podInformer:        wfc.newPodInformer(kube, common.LocalCluster, wfc.GetManagedNamespace()),
+				podGCInformer:      wfc.newPodGCInformer(&fakeMetadataClient, common.LocalCluster, wfc.GetManagedNamespace()),
+				taskResultInformer: wfc.newWorkflowTaskResultInformer(wfclientset, common.LocalCluster),
+			},
+		}
 	}
 
 	// always compare to WorkflowController.Run to see what this block of code should be doing
 	{
 		wfc.wfInformer = util.NewWorkflowInformer(dynamicClient, "", 0, wfc.tweakListOptions, indexers)
 		wfc.wfTaskSetInformer = informerFactory.Argoproj().V1alpha1().WorkflowTaskSets()
-		wfc.taskResultInformers = wfc.newWorkflowTaskResultInformers()
 		wfc.wftmplInformer = informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
 		wfc.addWorkflowInformerHandlers(ctx)
-		wfc.podInformers, _ = wfc.newPodInformers()
 		wfc.configMapInformer = wfc.newConfigMapInformer()
 		wfc.createSynchronizationManager(ctx)
 		_ = wfc.initManagers(ctx)
 
 		go wfc.wfInformer.Run(ctx.Done())
 		go wfc.wftmplInformer.Informer().Run(ctx.Done())
-		for _, podInformer := range wfc.podInformers {
-			go podInformer.Run(ctx.Done())
+		for _, profile := range wfc.profiles {
+			go profile.Run(ctx.Done())
 		}
 		go wfc.wfTaskSetInformer.Informer().Run(ctx.Done())
-		for _, taskResultInformers := range wfc.taskResultInformers {
-			go taskResultInformers.Run(ctx.Done())
-		}
 		wfc.cwftmplInformer = informerFactory.Argoproj().V1alpha1().ClusterWorkflowTemplates()
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
 		// wfc.waitForCacheSync() takes minimum 100ms, we can be faster
@@ -304,7 +303,7 @@ func unmarshalArtifact(yamlStr string) *wfv1.Artifact {
 }
 
 func expectWorkflow(ctx context.Context, controller *WorkflowController, name string, test func(wf *wfv1.Workflow)) {
-	wf, err := controller.workflowInterfaces[common.LocalCluster].ArgoprojV1alpha1().Workflows("").Get(ctx, name, metav1.GetOptions{})
+	wf, err := controller.localProfile().workflowClient.ArgoprojV1alpha1().Workflows("").Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		panic(err)
 	}
@@ -312,11 +311,11 @@ func expectWorkflow(ctx context.Context, controller *WorkflowController, name st
 }
 
 func getPod(woc *wfOperationCtx, name string) (*apiv1.Pod, error) {
-	return woc.controller.kubernetesInterfaces[common.LocalCluster].CoreV1().Pods(woc.wf.Namespace).Get(context.Background(), name, metav1.GetOptions{})
+	return woc.controller.localProfile().kubernetesClient.CoreV1().Pods(woc.wf.Namespace).Get(context.Background(), name, metav1.GetOptions{})
 }
 
 func listPods(woc *wfOperationCtx) (*apiv1.PodList, error) {
-	return woc.controller.kubernetesInterfaces[common.LocalCluster].CoreV1().Pods(woc.wf.Namespace).List(context.Background(), metav1.ListOptions{})
+	return woc.controller.localProfile().kubernetesClient.CoreV1().Pods(woc.wf.Namespace).List(context.Background(), metav1.ListOptions{})
 }
 
 type with func(pod *apiv1.Pod)
@@ -353,7 +352,7 @@ func withAnnotation(key, val string) with {
 // createRunningPods creates the pods that are marked as running in a given test so that they can be accessed by the
 // pod assessor
 func createRunningPods(ctx context.Context, woc *wfOperationCtx) {
-	podcs := woc.controller.kubernetesInterfaces[common.LocalCluster].CoreV1().Pods(woc.wf.GetNamespace())
+	podcs := woc.controller.localProfile().kubernetesClient.CoreV1().Pods(woc.wf.GetNamespace())
 	for _, node := range woc.wf.Status.Nodes {
 		if node.Type == wfv1.NodeTypePod && node.Phase == wfv1.NodeRunning {
 			pod, _ := podcs.Create(ctx, &apiv1.Pod{
@@ -370,20 +369,20 @@ func createRunningPods(ctx context.Context, woc *wfOperationCtx) {
 					Phase: apiv1.PodRunning,
 				},
 			}, metav1.CreateOptions{})
-			_ = woc.controller.podInformers[common.LocalCluster].GetStore().Add(pod)
+			_ = woc.controller.localProfile().podInformer.GetStore().Add(pod)
 		}
 	}
 }
 
 func syncPodsInformer(ctx context.Context, woc *wfOperationCtx, podObjs ...apiv1.Pod) {
-	podcs := woc.controller.kubernetesInterfaces[common.LocalCluster].CoreV1().Pods(woc.wf.GetNamespace())
+	podcs := woc.controller.localProfile().kubernetesClient.CoreV1().Pods(woc.wf.GetNamespace())
 	pods, err := podcs.List(ctx, metav1.ListOptions{})
 	if err != nil {
 		panic(err)
 	}
 	podObjs = append(podObjs, pods.Items...)
 	for _, pod := range podObjs {
-		err = woc.controller.podInformers[common.LocalCluster].GetIndexer().Add(&pod)
+		err = woc.controller.localProfile().podInformer.GetIndexer().Add(&pod)
 		if err != nil {
 			panic(err)
 		}
@@ -392,7 +391,7 @@ func syncPodsInformer(ctx context.Context, woc *wfOperationCtx, podObjs ...apiv1
 
 // makePodsPhase acts like a pod controller and simulates the transition of pods transitioning into a specified state
 func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhase, with ...with) {
-	podcs := woc.controller.kubernetesInterfaces[common.LocalCluster].CoreV1().Pods(woc.wf.GetNamespace())
+	podcs := woc.controller.localProfile().kubernetesClient.CoreV1().Pods(woc.wf.GetNamespace())
 	pods, err := podcs.List(ctx, metav1.ListOptions{})
 	if err != nil {
 		panic(err)
@@ -410,7 +409,7 @@ func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhas
 			if err != nil {
 				panic(err)
 			}
-			err = woc.controller.podInformers[common.LocalCluster].GetStore().Update(updatedPod)
+			err = woc.controller.localProfile().podInformer.GetStore().Update(updatedPod)
 			if err != nil {
 				panic(err)
 			}
@@ -419,14 +418,14 @@ func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhas
 }
 
 func deletePods(ctx context.Context, woc *wfOperationCtx) {
-	for _, podInformer := range woc.controller.podInformers {
-		for _, obj := range podInformer.GetStore().List() {
+	for _, profile := range woc.controller.profiles {
+		for _, obj := range profile.podInformer.GetStore().List() {
 			pod := obj.(*apiv1.Pod)
-			err := woc.controller.kubernetesInterfaces[common.LocalCluster].CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
+			err := woc.controller.localProfile().kubernetesClient.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 			if err != nil {
 				panic(err)
 			}
-			err = woc.controller.podInformers[common.LocalCluster].GetStore().Delete(obj)
+			err = woc.controller.localProfile().podInformer.GetStore().Delete(obj)
 			if err != nil {
 				panic(err)
 			}
@@ -504,7 +503,7 @@ func TestNamespacedController(t *testing.T) {
 
 	cancel, controller := newController()
 	defer cancel()
-	controller.kubernetesInterfaces[common.LocalCluster] = kubernetes.Interface(&kubeClient)
+	controller.localProfile().kubernetesClient = kubernetes.Interface(&kubeClient)
 	controller.cwftmplInformer = nil
 	controller.createClusterWorkflowTemplateInformer(context.TODO())
 	assert.Nil(t, controller.cwftmplInformer)
@@ -521,7 +520,7 @@ func TestClusterController(t *testing.T) {
 
 	cancel, controller := newController()
 	defer cancel()
-	controller.kubernetesInterfaces[common.LocalCluster] = kubernetes.Interface(&kubeClient)
+	controller.localProfile().kubernetesClient = kubernetes.Interface(&kubeClient)
 	controller.cwftmplInformer = nil
 	controller.createClusterWorkflowTemplateInformer(context.TODO())
 	assert.NotNil(t, controller.cwftmplInformer)
@@ -830,6 +829,6 @@ spec:
 	woc.operate(ctx)
 	controller.processNextPodCleanupItem(ctx)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
-	podCleanupKey := newPodCleanupKey(common.LocalCluster, "test", "my-wf", labelPodCompleted)
+	podCleanupKey := newPodCleanupKey("my-wf-ns", common.LocalCluster, "test", "my-wf", labelPodCompleted)
 	assert.Equal(t, 0, controller.podCleanupQueue.NumRequeues(podCleanupKey))
 }

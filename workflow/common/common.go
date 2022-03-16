@@ -71,6 +71,8 @@ const (
 	LabelKeyCluster = workflow.WorkflowFullName + "/cluster"
 	// LabelKeyWorkflowNamespace is the namespace of the owner workflow, if different to the pod itself.
 	LabelKeyWorkflowNamespace = workflow.WorkflowFullName + "/workflow-namespace"
+	// LabelKeyNamespace is used to determine which namespace a profile should be used for.
+	LabelKeyNamespace = workflow.WorkflowFullName + "/namespace"
 	// LabelKeyComponent determines what component within a workflow, intentionally similar to app.kubernetes.io/component.
 	// See https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
 	LabelKeyComponent = workflow.WorkflowFullName + "/component"
