@@ -99,7 +99,7 @@ func (woc *wfOperationCtx) getCertVolumeMount(ctx context.Context, name string) 
 
 		certVolumeMount := &apiv1.VolumeMount{
 			Name:      name,
-			MountPath: "/etc/ssl/certs/ca-certificates",
+			MountPath: "/etc/ssl/",
 			ReadOnly:  true,
 		}
 
