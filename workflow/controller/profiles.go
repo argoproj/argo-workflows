@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	authutil "github.com/argoproj/argo-workflows/v3/util/auth"
-
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
