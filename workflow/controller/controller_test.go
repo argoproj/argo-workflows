@@ -215,8 +215,9 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		wfc.podCleanupQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 		wfc.rateLimiter = wfc.newRateLimiter()
 
-		wfc.profiles = map[string]*profile{
-			wfc.localProfileName(): {
+		wfc.profiles = map[cache.ExplicitKey]*profile{
+			wfc.localPolicyKey(): {
+				policyDef:          wfc.localPolicyDef(),
 				kubernetesClient:   kube,
 				metadataClient:     &fakeMetadataClient,
 				workflowClient:     wfclientset,
@@ -239,9 +240,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 
 		go wfc.wfInformer.Run(ctx.Done())
 		go wfc.wftmplInformer.Informer().Run(ctx.Done())
-		for _, profile := range wfc.profiles {
-			go profile.Run(ctx.Done())
-		}
+		go wfc.localProfile().run(ctx.Done())
 		go wfc.wfTaskSetInformer.Informer().Run(ctx.Done())
 		wfc.cwftmplInformer = informerFactory.Argoproj().V1alpha1().ClusterWorkflowTemplates()
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
@@ -418,17 +417,16 @@ func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhas
 }
 
 func deletePods(ctx context.Context, woc *wfOperationCtx) {
-	for _, profile := range woc.controller.profiles {
-		for _, obj := range profile.podInformer.GetStore().List() {
-			pod := obj.(*apiv1.Pod)
-			err := woc.controller.localProfile().kubernetesClient.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
-			if err != nil {
-				panic(err)
-			}
-			err = woc.controller.localProfile().podInformer.GetStore().Delete(obj)
-			if err != nil {
-				panic(err)
-			}
+	p := woc.controller.localProfile()
+	for _, obj := range p.podInformer.GetStore().List() {
+		pod := obj.(*apiv1.Pod)
+		err := p.kubernetesClient.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
+		if err != nil {
+			panic(err)
+		}
+		err = p.podInformer.GetStore().Delete(obj)
+		if err != nil {
+			panic(err)
 		}
 	}
 }

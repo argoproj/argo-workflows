@@ -29,7 +29,7 @@ func MetaWorkflowIndexFunc(obj interface{}) ([]string, error) {
 	if !ok {
 		return nil, nil
 	}
-	namespace := common.MetaWorkflowNamespace(m)
+	namespace := common.WorkflowNamespace(m)
 	return []string{WorkflowIndexValue(namespace, name)}, nil
 }
 
@@ -40,7 +40,7 @@ func MetaNodeIDIndexFunc(obj interface{}) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	namespace := common.MetaWorkflowNamespace(m)
+	namespace := common.WorkflowNamespace(m)
 	if nodeID, ok := m.GetAnnotations()[common.AnnotationKeyNodeID]; ok {
 		return []string{namespace + "/" + nodeID}, nil
 	}

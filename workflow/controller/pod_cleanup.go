@@ -15,16 +15,18 @@ func (woc *wfOperationCtx) queuePodsForCleanup() {
 	strategy := podGC.GetStrategy()
 	selector, _ := podGC.GetLabelSelector()
 	workflowPhase := woc.wf.Status.Phase
-	for _, profile := range woc.controller.profiles {
-		objs, _ := profile.podInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.Namespace+"/"+woc.wf.Name)
+	for _, p := range woc.controller.profiles {
+		if p.podGCInformer == nil {
+			continue
+		}
+		objs, _ := p.podInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.Namespace+"/"+woc.wf.Name)
 		for _, obj := range objs {
 			pod := obj.(*apiv1.Pod)
 			nodeID := woc.nodeID(pod)
 			if !woc.execWf.Status.Nodes[nodeID].Fulfilled() {
 				continue
 			}
-			workflowNamespace := common.MetaWorkflowNamespace(pod)
-			cluster := pod.Labels[common.LabelKeyCluster]
+			workflowNamespace, cluster := common.ClusterWorkflowNamespace(pod)
 			switch determinePodCleanupAction(selector, pod.Labels, strategy, workflowPhase, pod.Status.Phase) {
 			case deletePod:
 				woc.controller.queuePodForCleanupAfter(workflowNamespace, cluster, pod.Namespace, pod.Name, deletePod, delay)

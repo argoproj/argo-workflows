@@ -14,6 +14,23 @@ type MultiClusterSuite struct {
 	fixtures.E2ESuite
 }
 
+func (s *MultiClusterSuite) TestLocalCluster() {
+	s.Given().
+		Workflow(`
+metadata:
+  generateName: local-cluster-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
 func (s *MultiClusterSuite) TestAllowedRemoteCluster() {
 	s.Given().
 		Workflow(`
@@ -26,26 +43,6 @@ spec:
   templates:
     - name: main
       cluster: cluster-1
-      namespace: default
-      container:
-        image: argoproj/argosay:v2
-`).
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded)
-}
-
-func (s *MultiClusterSuite) TestAllowedLocalNamespace() {
-	s.Given().
-		Workflow(`
-metadata:
-  generateName: allow-ns-
-spec:
-  entrypoint: main
-  artifactRepositoryRef:
-    key: empty
-  templates:
-    - name: main
       namespace: default
       container:
         image: argoproj/argosay:v2
@@ -117,7 +114,7 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeErrored).
 		Then().
-		ExpectWorkflow(fixtures.StatusMessageContains(`profile not found for "argo","cluster-1","argo"`))
+		ExpectWorkflow(fixtures.StatusMessageContains(`profile not found for argo,cluster-1,argo,`))
 }
 
 func (s *MultiClusterSuite) TestDisallowedCluster() {
@@ -139,7 +136,7 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeErrored).
 		Then().
-		ExpectWorkflow(fixtures.StatusMessageContains(`profile not found for "argo","cluster-1",""`))
+		ExpectWorkflow(fixtures.StatusMessageContains(`profile not found for argo,cluster-1,argo,1`))
 }
 
 func TestMultiClusterSuite(t *testing.T) {

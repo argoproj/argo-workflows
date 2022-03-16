@@ -1,8 +1,11 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 	"time"
+
+	authutil "github.com/argoproj/argo-workflows/v3/util/auth"
 
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
@@ -14,14 +17,15 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
+	authutil "github.com/argoproj/argo-workflows/v3/util/auth"
 	"github.com/argoproj/argo-workflows/v3/util/logs"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
 )
 
 func (wfc *WorkflowController) addProfile(secret *apiv1.Secret) error {
-	cluster, namespace, profileName := clusterProfile(secret)
-	if _, ok := wfc.profiles[profileName]; ok {
+	policyKey := policyKeyForSecret(secret)
+	if _, ok := wfc.profiles[policyKey]; ok {
 		return nil
 	}
 	kc, err := clientcmd.Load(secret.Data["kubeconfig"])
@@ -32,13 +36,41 @@ func (wfc *WorkflowController) addProfile(secret *apiv1.Secret) error {
 	if err != nil {
 		return err
 	}
-	log.WithField("cluster", cluster).Info("creating clients")
 	logs.AddK8SLogTransportWrapper(config)
 	metrics.AddMetricsTransportWrapper(config)
 	kubernetesClient, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return err
 	}
+
+	namespace := common.Namespace(secret)
+
+	write, err := authutil.CanI(context.Background(), kubernetesClient, "create", "pods", namespace, "")
+	if err != nil {
+		return err
+	}
+	read, err := authutil.CanI(context.Background(), kubernetesClient, "list", "pods", namespace, "")
+	if err != nil {
+		return err
+	}
+
+	system := secret.Namespace == wfc.namespace
+	write = write && system
+	misconfigured := !write && !read
+
+	workflowNamespace, cluster := common.ClusterWorkflowNamespace(secret)
+	log.WithField("workflowNamespace", workflowNamespace).
+		WithField("cluster", cluster).
+		WithField("namespace", namespace).
+		WithField("read", read).
+		WithField("write", write).
+		WithField("misconfigured", misconfigured).
+		Info("Profile configuration")
+
+	if misconfigured {
+		return fmt.Errorf("profile is misconfigured: it is not a pod watcher or a pod manager")
+	}
+
 	workflowClient, err := wfclientset.NewForConfig(config)
 	if err != nil {
 		return err
@@ -47,46 +79,67 @@ func (wfc *WorkflowController) addProfile(secret *apiv1.Secret) error {
 	if err != nil {
 		return err
 	}
-
-	done := make(chan struct{})
-
-	wfc.profiles[profileName] = &profile{
-		cluster:            cluster,
-		namespace:          namespace,
-		restConfig:         config,
-		kubernetesClient:   kubernetesClient,
-		workflowClient:     workflowClient,
-		metadataClient:     metadataClient,
-		podInformer:        wfc.newPodInformer(kubernetesClient, cluster, namespace),
-		podGCInformer:      wfc.newPodGCInformer(metadataClient, cluster, namespace),
-		taskResultInformer: wfc.newWorkflowTaskResultInformer(workflowClient, cluster),
-		done:               done,
+	var act act
+	if read {
+		act = actRead
+	}
+	if write {
+		act = act ^ actWrite
+	}
+	profile := &profile{
+		policyDef: policyDef{
+			workflowNamespace: workflowNamespace,
+			cluster:           cluster,
+			namespace:         namespace,
+			act:               act,
+		},
+		done: func() {
+		},
+	}
+	if write {
+		profile.restConfig = config
+		profile.kubernetesClient = kubernetesClient
+		profile.workflowClient = workflowClient
+		profile.metadataClient = metadataClient
+	}
+	if read {
+		done := make(chan struct{})
+		profile.podInformer = wfc.newPodInformer(kubernetesClient, cluster, namespace)
+		profile.podGCInformer = wfc.newPodGCInformer(metadataClient, cluster, namespace)
+		profile.taskResultInformer = wfc.newWorkflowTaskResultInformer(workflowClient, cluster)
+		profile.done = func() { done <- struct{}{} }
+		go profile.run(done)
 	}
 
-	wfc.profiles[profileName].podInformer.Run(done)
+	wfc.profiles[policyKey] = profile
 
 	return nil
 }
 
-func clusterProfile(secret *apiv1.Secret) (string, string, string) {
-	workflowNamespace := common.MetaWorkflowNamespace(secret)
-	cluster := secret.Labels[common.LabelKeyCluster]
-	namespace := secret.Labels[common.LabelKeyNamespace]
-	return cluster, namespace, profileName(workflowNamespace, cluster, namespace)
-}
-
 func (wfc *WorkflowController) removeProfile(secret *apiv1.Secret) {
-	_, _, profileName := clusterProfile(secret)
-	if _, ok := wfc.profiles[profileName]; ok {
+	policyKey := policyKeyForSecret(secret)
+	profile, ok := wfc.profiles[policyKey]
+	if !ok {
 		return
 	}
-	wfc.profiles[profileName].done <- struct{}{}
+	profile.done()
+	delete(wfc.profiles, policyKey)
+}
 
-	delete(wfc.profiles, profileName)
-
+func policyKeyForSecret(secret *apiv1.Secret) cache.ExplicitKey {
+	return cache.ExplicitKey(fmt.Sprintf("%s,%s", secret.Namespace, secret.Name))
 }
 
 func (wfc *WorkflowController) newProfileInformer() cache.SharedIndexInformer {
+
+	allowed, err := authutil.CanI(context.Background(), wfc.localProfile().kubernetesClient, "list", "secrets", wfc.GetManagedNamespace(), "")
+	if err != nil {
+		log.Fatal(err)
+	}
+	if !allowed {
+		return nil
+	}
+
 	informer := v1.NewFilteredSecretInformer(
 		wfc.localProfile().kubernetesClient,
 		wfc.GetManagedNamespace(),
@@ -103,7 +156,7 @@ func (wfc *WorkflowController) newProfileInformer() cache.SharedIndexInformer {
 			log.WithError(err).
 				WithField("namespace", secret.Namespace).
 				WithField("name", secret.Name).
-				Error("failed to load cluster secret")
+				Error("failed to add profile from secret")
 		}
 	}
 	removeFunc := func(obj interface{}) {
@@ -122,30 +175,33 @@ func (wfc *WorkflowController) newProfileInformer() cache.SharedIndexInformer {
 	return informer
 }
 
-func profileName(workflowNamespace, cluster, namespace string) string {
-	return workflowNamespace + "," + cluster + "," + namespace
-}
-
-func (wfc *WorkflowController) localProfileName() string {
+func (wfc *WorkflowController) localPolicyKey() cache.ExplicitKey {
 	return ""
 }
 
-func (wfc *WorkflowController) localProfile() *profile {
-	return wfc.profiles[wfc.localProfileName()]
+func (wfc *WorkflowController) localPolicyDef() policyDef {
+	return policyDef{
+		workflowNamespace: wfc.GetManagedNamespace(),
+		cluster:           common.LocalCluster,
+		namespace:         wfc.GetManagedNamespace(),
+		act:               actRead ^ actWrite,
+	}
 }
 
-func (wfc *WorkflowController) profile(workflowNamespace, cluster, namespace string) (*profile, error) {
+func (wfc *WorkflowController) localProfile() *profile {
+	return wfc.profiles[wfc.localPolicyKey()]
+}
+
+func (wfc *WorkflowController) profile(workflowNamespace, cluster, namespace string, act act) (*profile, error) {
 	for _, p := range wfc.profiles {
-		if cluster == p.cluster &&
-			(workflowNamespace == p.workflowNamespace || p.workflowNamespace == "") &&
-			(namespace == p.namespace || p.namespace == "") {
-			log.Infof("%s,%s,%s -> %s,%s,%s", workflowNamespace, cluster, namespace, p.workflowNamespace, p.cluster, p.namespace)
+		if p.matches(workflowNamespace, cluster, namespace, act) {
+			log.Infof("%s,%s,%s,%v -> %s,%s,%s,%v", workflowNamespace, cluster, namespace, act, p.workflowNamespace, p.cluster, p.namespace, p.act)
 			return p, nil
 		}
 	}
-	return nil, fmt.Errorf("profile not found for %s,%s,%s", workflowNamespace, cluster, namespace)
+	return nil, fmt.Errorf("profile not found for %s,%s,%s,%v", workflowNamespace, cluster, namespace, act)
 }
 
-func (woc *wfOperationCtx) profile(cluster, namespace string) (*profile, error) {
-	return woc.controller.profile(woc.wf.Namespace, cluster, namespace)
+func (woc *wfOperationCtx) profile(cluster, namespace string, act act) (*profile, error) {
+	return woc.controller.profile(woc.wf.Namespace, cluster, namespace, act)
 }

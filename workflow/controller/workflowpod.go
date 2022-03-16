@@ -481,7 +481,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	log.Info("Creating Pod")
 
-	profile, err := woc.profile(cluster, namespace)
+	profile, err := woc.profile(cluster, namespace, actWrite)
 	if err != nil {
 		return nil, err
 	}
@@ -509,7 +509,7 @@ func (woc *wfOperationCtx) podExists(nodeID string) (existing *apiv1.Pod, exists
 		return nil, false, nil
 	}
 	cluster, namespace := woc.clusterNamespaceForTemplate(tmpl)
-	profile, err := woc.profile(cluster, namespace)
+	profile, err := woc.profile(cluster, namespace, actRead)
 	if err != nil {
 		return nil, false, err
 	}

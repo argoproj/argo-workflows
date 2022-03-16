@@ -50,51 +50,42 @@ kubectl --context=cluster-1 create clusterrolebinding argo-cluster-0-workflowtas
 In this example, I've used `argo-cluster-0` to indicate that the service account belongs to Argo running in the local
 cluster, which I named `cluster-0`.
 
-Argo can only create pods in clusters in can connect to - ones it has a `kubeconfig` for. These are created as secrets
-in Argo's system namespace (typically `argo`) and labelled with `workflows.argoproj.io/cluster`.
+Argo can only manage pods in clusters in can connect to - ones it has a `kubeconfig` for. These are called **profiles**.
+A profile is a secret labelled with `workflows.argoproj.io/cluster`.
 
-Create a secret with a single `kubeconfig` field. You can use `./hack/print-kubeconfig.sh` to get the `kubeconfig`:
+Create a profile. You can use `./hack/print-kubeconfig.sh` to get the `kubeconfig`:
 
 ```bash
 kubectl create secret generic cluster-1 --from-literal="kubeconfig=`./hack/print-kubeconfig.sh cluster-1 default argo-cluster-0`"
 kubectl label secret cluster-1 workflows.argoproj.io/cluster=cluster-1
 ```
 
-Provide one secret for each remote cluster.
+By default, Argo will try and use the profile to read and write resources in all namespaces of the remote cluster, you
+probably don't want that. Annotate the secret like this:
 
-By default, workflows are only allowed to create resources in their own cluster and namespace. You need to create a auth
-policy and this must be mounted at /auth/policy.csv in the workflow-controller. The most straight forward way to do this
-is to mount a config map:
-
-```yaml
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: auth
-data:
-  policy.csv: |
-    # Workflows in the "argo" namespace may create resources in "cluster-1" "default" namespace
-    p, argo, cluster-1, default
+```bash
+kubectl annotate secret cluster-1 workflows.argoproj.io/namespace=default
 ```
 
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: workflow-controller
-spec:
-  template:
-    spec:
-      volumes:
-        - name: auth
-          configMap:
-            name: auth
-      containers:
-        - name: workflow-controller
-          volumeMounts:
-            - mountPath: /auth
-              name: auth
+This will only be used for workflows in the same namespace as the secret, if you want a specific namespace:
+
+```bash
+kubectl annotate secret cluster-1 workflows.argoproj.io/workflow-namespace=default
 ```
+
+Or for any namespace:
+
+```bash
+kubectl annotate secret cluster-1 workflows.argoproj.io/workflow-namespace=
+```
+
+You need need a `kubeconfig` secret for each action:
+
+* `read` - one that has `pod list,watch` permissions, used to determine the status of the pod. This must be created in
+  the system namespace, typically `argo`.
+* `write` - one that has `pod create,patch,delete` permissions, used to create the pod.
+
+You may also create a single secret for both read and write.
 
 The workflow controller must be configured with it's name:
 
@@ -136,7 +127,7 @@ spec:
 
 ## Scaling
 
-Workflow controllers running multi-cluster workflows will open an additional
+Workflow controllers running multi-cluster workflows will open additional connections for each cluster.
 
 ## Labels
 

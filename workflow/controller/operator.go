@@ -694,20 +694,23 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 
 func (woc *wfOperationCtx) deleteTaskResults(ctx context.Context) error {
 	deletePropagationBackground := metav1.DeletePropagationBackground
-	for _, profile := range woc.controller.profiles {
+	for _, p := range woc.controller.profiles {
+		if p.workflowClient == nil {
+			continue
+		}
 		labelSelector := labels.NewSelector().
-			Add(woc.controller.clusterReq(profile.cluster)).
+			Add(woc.controller.clusterReq(p.cluster)).
 			Add(woc.workflowReq()).
 			String()
 		log.WithField("labelSelector", labelSelector).Info("deleting task results")
-		err := profile.workflowClient.ArgoprojV1alpha1().WorkflowTaskResults(profile.namespace).
+		err := p.workflowClient.ArgoprojV1alpha1().WorkflowTaskResults(p.namespace).
 			DeleteCollection(
 				ctx,
 				metav1.DeleteOptions{PropagationPolicy: &deletePropagationBackground},
 				metav1.ListOptions{LabelSelector: labelSelector},
 			)
 		if err != nil {
-			return fmt.Errorf("failed to delete task-results in cluster %q: %w", profile.cluster, err)
+			return fmt.Errorf("failed to delete task-results in cluster %q: %w", p.cluster, err)
 		}
 	}
 	return nil
@@ -1135,8 +1138,11 @@ func (woc *wfOperationCtx) failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
 // getAllWorkflowPods returns all pods related to the current workflow
 func (woc *wfOperationCtx) getAllWorkflowPods() ([]*apiv1.Pod, error) {
 	pods := make([]*apiv1.Pod, 0)
-	for _, profile := range woc.controller.profiles {
-		objs, err := profile.podInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, indexes.WorkflowIndexValue(woc.wf.Namespace, woc.wf.Name))
+	for _, p := range woc.controller.profiles {
+		if p.podGCInformer == nil {
+			continue
+		}
+		objs, err := p.podInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, indexes.WorkflowIndexValue(woc.wf.Namespace, woc.wf.Name))
 		if err != nil {
 			return nil, err
 		}
@@ -1335,7 +1341,7 @@ func podHasContainerNeedingTermination(pod *apiv1.Pod, tmpl wfv1.Template) bool 
 
 func (woc *wfOperationCtx) cleanUpPod(pod *apiv1.Pod, tmpl wfv1.Template) {
 	if podHasContainerNeedingTermination(pod, tmpl) {
-		woc.controller.queuePodForCleanup(woc.wf.Namespace, pod.Annotations[common.LabelKeyCluster], pod.Namespace, pod.Name, terminateContainers)
+		woc.controller.queuePodForCleanup(woc.wf.Namespace, common.Cluster(pod), pod.Namespace, pod.Name, terminateContainers)
 	}
 }
 
@@ -3624,12 +3630,11 @@ func (woc *wfOperationCtx) getServiceAccountTokenName(ctx context.Context, clust
 	if name == "" {
 		name = "default"
 	}
-	profile, err := woc.profile(cluster, woc.wf.Namespace)
+	profile, err := woc.profile(cluster, woc.wf.Namespace, actRead)
 	if err != nil {
 		return "", err
 	}
-	account, err :=
-		profile.kubernetesClient.CoreV1().ServiceAccounts(woc.wf.Namespace).Get(ctx, name, metav1.GetOptions{})
+	account, err := profile.kubernetesClient.CoreV1().ServiceAccounts(woc.wf.Namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}

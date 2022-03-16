@@ -39,13 +39,13 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer(client workflow.Int
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(new interface{}) {
 				result := new.(*wfv1.WorkflowTaskResult)
-				namespace := common.MetaWorkflowNamespace(result)
+				namespace := common.WorkflowNamespace(result)
 				workflow := result.Labels[common.LabelKeyWorkflow]
 				wfc.wfQueue.AddRateLimited(namespace + "/" + workflow)
 			},
 			UpdateFunc: func(_, new interface{}) {
 				result := new.(*wfv1.WorkflowTaskResult)
-				namespace := common.MetaWorkflowNamespace(result)
+				namespace := common.WorkflowNamespace(result)
 				workflow := result.Labels[common.LabelKeyWorkflow]
 				wfc.wfQueue.AddRateLimited(namespace + "/" + workflow)
 			},
@@ -55,10 +55,13 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer(client workflow.Int
 
 func (woc *wfOperationCtx) taskResultReconciliation() {
 	woc.log.Info("task-result reconciliation")
-	for profileName, profile := range woc.controller.profiles {
-		objs, _ := profile.taskResultInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.Namespace+"/"+woc.wf.Name)
+	for profileKey, p := range woc.controller.profiles {
+		if p.taskResultInformer == nil {
+			continue
+		}
+		objs, _ := p.taskResultInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.Namespace+"/"+woc.wf.Name)
 		woc.log.WithField("numObjs", len(objs)).
-			WithField("profileName", profileName).
+			WithField("profileKey", profileKey).
 			Info("Task-result reconciliation")
 		for _, obj := range objs {
 			result := obj.(*wfv1.WorkflowTaskResult)

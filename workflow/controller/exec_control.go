@@ -35,7 +35,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 
 			if !woc.GetShutdownStrategy().ShouldExecute(onExitPod) {
 				woc.log.Infof("Deleting Pending pod %s/%s as part of workflow shutdown with strategy: %s", pod.Namespace, pod.Name, woc.GetShutdownStrategy())
-				profile, err := woc.profile(cluster, pod.Namespace)
+				profile, err := woc.profile(cluster, pod.Namespace, actWrite)
 				if err != nil {
 					woc.handleExecutionControlError(nodeID, wfNodesLock, err.Error())
 					return
@@ -57,8 +57,8 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 			_, onExitPod := pod.Labels[common.LabelKeyOnExit]
 			if !onExitPod {
 				woc.log.Infof("Deleting Pending pod %s/%s which has exceeded workflow deadline %s", pod.Namespace, pod.Name, woc.workflowDeadline)
-				profile, err := woc.profile(cluster, pod.Namespace)
-				if err == nil {
+				profile, err := woc.profile(cluster, pod.Namespace, actWrite)
+				if err != nil {
 					woc.handleExecutionControlError(nodeID, wfNodesLock, err.Error())
 					return
 				}
@@ -75,8 +75,8 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 	if woc.GetShutdownStrategy().Enabled() {
 		if _, onExitPod := pod.Labels[common.LabelKeyOnExit]; !woc.GetShutdownStrategy().ShouldExecute(onExitPod) {
 			woc.log.Infof("Shutting down pod %s", pod.Name)
-			workflowNamespace := common.MetaWorkflowNamespace(pod)
-			woc.controller.queuePodForCleanup(workflowNamespace, pod.Labels[common.LabelKeyCluster], pod.Namespace, pod.Name, shutdownPod)
+			workflowNamespace, cluster := common.ClusterWorkflowNamespace(pod)
+			woc.controller.queuePodForCleanup(workflowNamespace, cluster, pod.Namespace, pod.Name, shutdownPod)
 		}
 	}
 }

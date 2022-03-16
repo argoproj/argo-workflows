@@ -10,9 +10,7 @@ import (
 )
 
 type profile struct {
-	workflowNamespace string
-	cluster           string
-	namespace         string
+	policyDef
 	// restConfig is used by controller to send a SIGUSR1 to the wait sidecar using remotecommand.NewSPDYExecutor().
 	restConfig         *rest.Config
 	kubernetesClient   kubernetes.Interface
@@ -21,16 +19,16 @@ type profile struct {
 	podInformer        cache.SharedIndexInformer
 	podGCInformer      cache.SharedIndexInformer
 	taskResultInformer cache.SharedIndexInformer
-	done               chan struct{}
+	done               func()
 }
 
-func (p *profile) Run(done <-chan struct{}) {
+func (p *profile) run(done <-chan struct{}) {
 	go p.podInformer.Run(done)
 	go p.podGCInformer.Run(done)
 	go p.taskResultInformer.Run(done)
 	<-done
 }
 
-func (p *profile) HasSynced() bool {
-	return true // p.taskResultInformer.HasSynced() && p.podInformer.HasSynced() && p.podGCInformer.HasSynced()
+func (p *profile) hasSynced() bool {
+	return p.taskResultInformer.HasSynced() && p.podInformer.HasSynced() && p.podGCInformer.HasSynced()
 }

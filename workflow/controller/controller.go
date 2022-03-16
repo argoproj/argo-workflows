@@ -86,7 +86,7 @@ type WorkflowController struct {
 
 	rateLimiter      *rate.Limiter
 	dynamicInterface dynamic.Interface
-	profiles         map[string]*profile
+	profiles         map[cache.ExplicitKey]*profile
 
 	// datastructures to support the processing of workflows and workflow pods
 	wfInformer            cache.SharedIndexInformer
@@ -185,13 +185,11 @@ func NewWorkflowController(
 	return &wfc, nil
 }
 
-func (wfc *WorkflowController) newLocalProfile(restConfig *rest.Config, kubernetesClient kubernetes.Interface, workflowClient wfclientset.Interface, metadataClient metadata.Interface) map[string]*profile {
+func (wfc *WorkflowController) newLocalProfile(restConfig *rest.Config, kubernetesClient kubernetes.Interface, workflowClient wfclientset.Interface, metadataClient metadata.Interface) map[cache.ExplicitKey]*profile {
 	log.WithField("managedNamespace", wfc.GetManagedNamespace()).Info("Creating local profile")
-	return map[string]*profile{
-		wfc.localProfileName(): {
-			workflowNamespace:  wfc.GetManagedNamespace(),
-			cluster:            common.LocalCluster,
-			namespace:          wfc.GetManagedNamespace(),
+	return map[cache.ExplicitKey]*profile{
+		wfc.localPolicyKey(): {
+			policyDef:          wfc.localPolicyDef(),
 			restConfig:         restConfig,
 			kubernetesClient:   kubernetesClient,
 			workflowClient:     workflowClient,
@@ -262,6 +260,10 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.wfTaskSetInformer = wfc.newWorkflowTaskSetInformer()
 	wfc.profileInformer = wfc.newProfileInformer()
 
+	if wfc.profileInformer == nil {
+		log.Info("profile loading disabled (needs `secret list,watch`)")
+	}
+
 	wfc.addWorkflowInformerHandlers(ctx)
 	wfc.updateEstimatorFactory()
 
@@ -279,26 +281,23 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	go wfc.configController.Run(ctx.Done(), wfc.updateConfig)
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
-	go wfc.localProfile().Run(ctx.Done())
+	go wfc.localProfile().run(ctx.Done())
 	go wfc.configMapInformer.Run(ctx.Done())
 	go wfc.wfTaskSetInformer.Informer().Run(ctx.Done())
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
 	if !cache.WaitForCacheSync(
 		ctx.Done(),
-		wfc.profileInformer.HasSynced,
 		wfc.wfInformer.HasSynced,
 		wfc.wftmplInformer.Informer().HasSynced,
-		wfc.localProfile().HasSynced,
+		wfc.localProfile().hasSynced,
+		func() bool {
+			return wfc.profileInformer == nil || wfc.profileInformer.HasSynced()
+		},
 		wfc.configMapInformer.HasSynced,
 		wfc.wfTaskSetInformer.Informer().HasSynced,
 	) {
 		log.Fatal("Timed out waiting for caches to sync")
-	}
-	for _, profile := range wfc.profiles {
-		if !cache.WaitForCacheSync(ctx.Done(), profile.HasSynced) {
-			log.Fatal("Timed out waiting for pod caches to sync")
-		}
 	}
 
 	wfc.createClusterWorkflowTemplateInformer(ctx)
@@ -489,7 +488,7 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 	logCtx := log.WithFields(log.Fields{"key": key, "action": action})
 	logCtx.Info("cleaning up pod")
 	err := func() error {
-		profile, err := wfc.profile(workflowNamespace, cluster, namespace)
+		profile, err := wfc.profile(workflowNamespace, cluster, namespace, actWrite)
 		if err != nil {
 			return err
 		}
@@ -505,7 +504,7 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 			}
 			for _, c := range pod.Spec.Containers {
 				if c.Name == common.WaitContainerName {
-					profile, err := wfc.profile(workflowNamespace, cluster, pod.Namespace)
+					profile, err := wfc.profile(workflowNamespace, cluster, pod.Namespace, actWrite)
 					if err != nil {
 						return err
 					}
@@ -560,7 +559,7 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 }
 
 func (wfc *WorkflowController) getPod(workflowNamespace, cluster, namespace, podName string) (*apiv1.Pod, error) {
-	profile, err := wfc.profile(workflowNamespace, cluster, namespace)
+	profile, err := wfc.profile(workflowNamespace, cluster, namespace, actRead)
 	if err != nil {
 		return nil, err
 	}
@@ -588,7 +587,7 @@ func (wfc *WorkflowController) signalContainers(workflowNamespace, cluster, name
 		if c.Name == common.WaitContainerName || c.State.Terminated != nil {
 			continue
 		}
-		profile, err := wfc.profile(workflowNamespace, cluster, namespace)
+		profile, err := wfc.profile(workflowNamespace, cluster, namespace, actWrite)
 		if err != nil {
 			return 0, err
 		}
@@ -821,7 +820,7 @@ func (wfc *WorkflowController) enqueueWfFromPodLabel(obj interface{}) error {
 		// Ignore pods unrelated to workflow (this shouldn't happen unless the watch is setup incorrectly)
 		return fmt.Errorf("Watch returned pod unrelated to any workflow")
 	}
-	workflowNamespace := common.MetaWorkflowNamespace(pod)
+	workflowNamespace := common.WorkflowNamespace(pod)
 	wfc.wfQueue.AddRateLimited(workflowNamespace + "/" + workflowName)
 	return nil
 }
@@ -1080,7 +1079,7 @@ func (wfc *WorkflowController) newPodGCInformer(client metadata.Interface, clust
 	).Informer()
 	processObj := func(obj interface{}) {
 		pod := obj.(metav1.Object)
-		workflowNamespace := common.MetaWorkflowNamespace(pod)
+		workflowNamespace := common.WorkflowNamespace(pod)
 		workflow := pod.GetLabels()[common.LabelKeyWorkflow]
 		_, exists, _ := wfc.wfInformer.GetIndexer().GetByKey(workflowNamespace + "/" + workflow)
 		if !exists {
@@ -1287,10 +1286,13 @@ func (wfc *WorkflowController) syncPodPhaseMetrics() {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 	for _, phase := range []apiv1.PodPhase{apiv1.PodRunning, apiv1.PodPending} {
 		pods := map[string]bool{}
-		for profileName, profile := range wfc.profiles {
-			keys, _ := profile.podInformer.GetIndexer().IndexKeys(indexes.PodPhaseIndex, string(phase))
+		for profileKey, p := range wfc.profiles {
+			if p.podGCInformer == nil {
+				continue
+			}
+			keys, _ := p.podInformer.GetIndexer().IndexKeys(indexes.PodPhaseIndex, string(phase))
 			for _, key := range keys {
-				pods[(profileName + "," + key)] = true
+				pods[fmt.Sprintf("%v,%s", profileKey, key)] = true
 			}
 		}
 		wfc.metrics.SetPodPhaseGauge(phase, len(pods))
