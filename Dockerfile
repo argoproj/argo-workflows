@@ -97,7 +97,6 @@ FROM builder as workflow-controller-build
 # the git state is "clean" even though said .dockerignore files are not present
 RUN cat .dockerignore >> .gitignore
 RUN git status --porcelain | cut -c4- | xargs git update-index --skip-worktree
-RUN touch /empty
 
 RUN --mount=type=cache,target=/root/.cache/go-build make dist/workflow-controller
 
@@ -132,8 +131,6 @@ FROM scratch as workflow-controller
 USER 8737
 
 COPY --chown=8737 --from=workflow-controller-build /usr/share/zoneinfo /usr/share/zoneinfo
-COPY --chown=8737 auth/model.conf /auth/model.conf
-COPY --chown=8737 --from=workflow-controller-build /empty /auth/policy.csv
 COPY --chown=8737 --from=workflow-controller-build /go/src/github.com/argoproj/argo-workflows/dist/workflow-controller /bin/
 
 ENTRYPOINT [ "workflow-controller" ]
