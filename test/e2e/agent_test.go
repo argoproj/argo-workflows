@@ -37,19 +37,19 @@ spec:
         - - name: one
             template: http
             arguments:
-              parameters: [{name: url, value: "http://httpstat.us/200?sleep=5000"}]
+              parameters: [{name: url, value: "https://httpstat.us/200?sleep=5000"}]
           - name: two
             template: http
             arguments:
-              parameters: [{name: url, value: "http://httpstat.us/200?sleep=5000"}]
+              parameters: [{name: url, value: "https://httpstat.us/200?sleep=5000"}]
           - name: three
             template: http
             arguments:
-              parameters: [{name: url, value: "http://httpstat.us/200?sleep=5000"}]
+              parameters: [{name: url, value: "https://httpstat.us/200?sleep=5000"}]
           - name: four
             template: http
             arguments:
-              parameters: [{name: url, value: "http://httpstat.us/200?sleep=5000"}]
+              parameters: [{name: url, value: "https://httpstat.us/200?sleep=5000"}]
     - name: http
       inputs:
         parameters:
@@ -102,15 +102,15 @@ spec:
         - - name: http-status-is-201-fails
             template: http-status-is-201
             arguments:
-              parameters: [{name: url, value: "http://httpstat.us/200"}]
+              parameters: [{name: url, value: "https://httpstat.us/200"}]
           - name: http-status-is-201-succeeds
             template: http-status-is-201
             arguments:
-              parameters: [{name: url, value: "http://httpstat.us/201"}]
+              parameters: [{name: url, value: "https://httpstat.us/201"}]
           - name: http-body-contains-google-fails
             template: http-body-contains-google
             arguments:
-              parameters: [{name: url, value: "http://httpstat.us/200"}]
+              parameters: [{name: url, value: "https://httpstat.us/200"}]
           - name: http-body-contains-google-succeeds
             template: http-body-contains-google
             arguments:

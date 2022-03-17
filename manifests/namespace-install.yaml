@@ -993,10 +993,6 @@ spec:
     spec:
       containers:
       - args:
-        - --configmap
-        - workflow-controller-configmap
-        - --executor-image
-        - quay.io/argoproj/argoexec:latest
         - --namespaced
         command:
         - workflow-controller

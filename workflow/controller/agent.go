@@ -72,6 +72,42 @@ func assessAgentPodStatus(pod *apiv1.Pod) (wfv1.WorkflowPhase, string) {
 	return newPhase, message
 }
 
+func (woc *wfOperationCtx) secretExists(ctx context.Context, name string) (bool, error) {
+	_, err := woc.controller.kubeclientset.CoreV1().Secrets(woc.wf.Namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		if apierr.IsNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+func (woc *wfOperationCtx) getCertVolumeMount(ctx context.Context, name string) (*apiv1.Volume, *apiv1.VolumeMount, error) {
+	exists, err := woc.secretExists(ctx, name)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to check if secret %s exists: %v", name, err)
+	}
+	if exists {
+		certVolume := &apiv1.Volume{
+			Name: name,
+			VolumeSource: apiv1.VolumeSource{
+				Secret: &apiv1.SecretVolumeSource{
+					SecretName: name,
+				},
+			}}
+
+		certVolumeMount := &apiv1.VolumeMount{
+			Name:      name,
+			MountPath: "/etc/ssl/certs/ca-certificates/",
+			ReadOnly:  true,
+		}
+
+		return certVolume, certVolumeMount, nil
+	}
+	return nil, nil, nil
+}
+
 func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, error) {
 	podName := woc.getAgentPodName()
 	log := woc.log.WithField("podName", podName)
@@ -86,6 +122,11 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			log.WithField("podPhase", existing.Status.Phase).Debug("Skipped pod creation: already exists")
 			return existing, nil
 		}
+	}
+
+	certVolume, certVolumeMount, err := woc.getCertVolumeMount(ctx, common.CACertificatesVolumeMountName)
+	if err != nil {
+		return nil, err
 	}
 
 	pluginSidecars := woc.getExecutorPlugins()
@@ -112,6 +153,25 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	// Intentionally randomize the name so that plugins cannot determine it.
 	tokenVolumeName := fmt.Sprintf("kube-api-access-%s", rand.String(5))
 
+	podVolumes := []apiv1.Volume{
+		{
+			Name: tokenVolumeName,
+			VolumeSource: apiv1.VolumeSource{
+				Secret: &apiv1.SecretVolumeSource{SecretName: secretName},
+			},
+		},
+	}
+	podVolumeMounts := []apiv1.VolumeMount{
+		{
+			Name:      tokenVolumeName,
+			MountPath: common.ServiceAccountTokenMountPath,
+			ReadOnly:  true,
+		},
+	}
+	if certVolume != nil && certVolumeMount != nil {
+		podVolumes = append(podVolumes, *certVolume)
+		podVolumeMounts = append(podVolumeMounts, *certVolumeMount)
+	}
 	agentCtrTemplate := apiv1.Container{
 		Command:         []string{"argoexec"},
 		Image:           woc.controller.executorImage(),
@@ -136,14 +196,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 				"memory": resource.MustParse(env.LookupEnvStringOr("ARGO_AGENT_MEMORY_LIMIT", "256M")),
 			},
 		},
-		VolumeMounts: []apiv1.VolumeMount{
-			{
-				Name:      tokenVolumeName,
-				MountPath: common.ServiceAccountTokenMountPath,
-				ReadOnly:  true,
-			},
-			volumeMountVarArgo,
-		},
+		VolumeMounts: podVolumeMounts,
 	}
 	// the `init` container populates the shared empty-dir volume with tokens
 	agentInitCtr := agentCtrTemplate.DeepCopy()
@@ -179,15 +232,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			},
 			ServiceAccountName:           serviceAccountName,
 			AutomountServiceAccountToken: pointer.BoolPtr(false),
-			Volumes: []apiv1.Volume{
-				{
-					Name: tokenVolumeName,
-					VolumeSource: apiv1.VolumeSource{
-						Secret: &apiv1.SecretVolumeSource{SecretName: secretName},
-					},
-				},
-				volumeVarArgo,
-			},
+			Volumes:                      podVolumes,
 			InitContainers: []apiv1.Container{
 				*agentInitCtr,
 			},

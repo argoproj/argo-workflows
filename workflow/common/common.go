@@ -106,6 +106,8 @@ const (
 
 	// EnvVarPodName contains the name of the pod (currently unused)
 	EnvVarPodName = "ARGO_POD_NAME"
+	// EnvVarInstanceID is the instance ID
+	EnvVarInstanceID = "ARGO_INSTANCE_ID"
 	// EnvVarWorkflowName is the name of the workflow for which the an agent is responsible for
 	EnvVarWorkflowName = "ARGO_WORKFLOW_NAME"
 	// EnvVarWorkflowUID is the workflow's UID
@@ -229,6 +231,9 @@ const (
 	ServiceAccountTokenMountPath  = "/var/run/secrets/kubernetes.io/serviceaccount" //nolint:gosec
 	ServiceAccountTokenVolumeName = "exec-sa-token"                                 //nolint:gosec
 	SecretVolMountPath            = "/argo/secret"
+
+	// CACertificatesVolumeMountName is the name of the secret that contains the CA certificates.
+	CACertificatesVolumeMountName = "argo-workflows-agent-ca-certificates"
 
 	// ArgoProgressPath defines the path to a file used for self reporting progress
 	ArgoProgressPath = "/var/run/argo/progress"

@@ -31,7 +31,7 @@ The init container creates these files:
 In the main container, the emissary creates these files:
 
 * `/var/run/argo/ctr/${containerName}/exitcode` The container exit code.
-* `/var/run/argo/ctr/${containerName}/stderr` A copy of stderr (if needed).
+* `/var/run/argo/ctr/${containerName}/combined` A copy of stdout+stderr (if needed).
 * `/var/run/argo/ctr/${containerName}/stdout`  A copy of stdout (if needed).
 
 If the container is named `main` it also copies base-layer artifacts to the shared volume:
@@ -103,21 +103,11 @@ func (e emissary) CopyFile(_ string, sourcePath string, destPath string, _ int) 
 }
 
 func (e emissary) GetOutputStream(_ context.Context, containerName string, combinedOutput bool) (io.ReadCloser, error) {
-	names := []string{"stdout"}
+	name := "stdout"
 	if combinedOutput {
-		names = append(names, "stderr")
+		name = "combined"
 	}
-	var files []io.ReadCloser
-	for _, name := range names {
-		f, err := os.Open(filepath.Clean("/var/run/argo/ctr/" + containerName + "/" + name))
-		if os.IsNotExist(err) {
-			continue
-		} else if err != nil {
-			return nil, err
-		}
-		files = append(files, f)
-	}
-	return newMultiReaderCloser(files...), nil
+	return os.Open(filepath.Clean("/var/run/argo/ctr/" + containerName + "/" + name))
 }
 
 func (e emissary) Wait(ctx context.Context, containerNames []string) error {

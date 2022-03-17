@@ -63,7 +63,7 @@ This setting can also be configured in tandem with `concurrencyPolicy` to achiev
 
 ### Daylight Saving
 
-Daylight Saving (DST) is taking into account when using timezone. This guarantees argo only schedule workflow once when the clock moves forward or back.
+Daylight Saving (DST) is taken into account when using timezone. This means that, depending on the local time of the scheduled job, argo will schedule the workflow once, twice, or not at all when the clock moves forward or back.
 
 For example, with timezone set at `America/Los_Angeles`, we have daylight saving 
 
