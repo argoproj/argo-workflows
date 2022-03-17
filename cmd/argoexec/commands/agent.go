@@ -53,7 +53,7 @@ func NewAgentInitCommand() *cobra.Command {
 }
 
 func tokenFilename(name string) string {
-	return filepath.Join("/var/run/argo", name, "token")
+	return filepath.Join(common.VarRunArgoPath, name, "token")
 }
 
 func getPluginNames() []string {

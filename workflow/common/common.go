@@ -235,8 +235,11 @@ const (
 	// CACertificatesVolumeMountName is the name of the secret that contains the CA certificates.
 	CACertificatesVolumeMountName = "argo-workflows-agent-ca-certificates"
 
+	// VarRunArgoPath is the standard path for the shared volume
+	VarRunArgoPath = "/var/run/argo"
+
 	// ArgoProgressPath defines the path to a file used for self reporting progress
-	ArgoProgressPath = "/var/run/argo/progress"
+	ArgoProgressPath = VarRunArgoPath + "/progress"
 
 	// ErrDeadlineExceeded is the pod status reason when exceed deadline
 	ErrDeadlineExceeded = "DeadlineExceeded"
