@@ -437,7 +437,7 @@ func (s *FunctionalSuite) TestLargeWorkflowFailure() {
 				assert.Equal(t, "WorkflowRunning", e[0].Reason)
 
 				assert.Equal(t, "WorkflowFailed", e[1].Reason)
-				assert.Contains(t, e[1].Message, "the workflow template with 128001 bytes is larger than the ARG_MAX of 128KB")
+				assert.Contains(t, e[1].Message, "workflow templates are limited to 128KB, this workflow is 128001 bytes")
 			},
 		)
 }

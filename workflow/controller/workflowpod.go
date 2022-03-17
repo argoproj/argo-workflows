@@ -320,7 +320,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	envVarTemplateValue := wfv1.MustMarshallJSON(tmpl)
 	templateSize := len(envVarTemplateValue)
 	if templateSize > 128000 {
-		err = fmt.Errorf("the workflow template with %d bytes is larger than the ARG_MAX of 128KB", templateSize)
+		err = fmt.Errorf("workflow templates are limited to 128KB, this workflow is %d bytes", templateSize)
 		return nil, err
 	}
 
