@@ -2571,12 +2571,18 @@
     Developing locally
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#committing" class="md-nav__link">
-    Committing
+    <nav class="md-nav" aria-label="Developing locally">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#running-e2e-tests-locally" class="md-nav__link">
+    Running E2E tests locally
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2793,12 +2799,18 @@
     Developing locally
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#committing" class="md-nav__link">
-    Committing
+    <nav class="md-nav" aria-label="Developing locally">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#running-e2e-tests-locally" class="md-nav__link">
+    Running E2E tests locally
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2870,9 +2882,32 @@ automatically.</p>
 <p>Before submitting/running workflows, build the executor images with this command:</p>
 <div class="highlight"><pre><span></span><code>make argoexec-image
 </code></pre></div>
-<h2 id="committing">Committing<a class="headerlink" href="#committing" title="Permanent link">&para;</a></h2>
-<p>Before you commit code and raise a PR, always run:</p>
-<div class="highlight"><pre><span></span><code>make pre-commit -B
+<h3 id="running-e2e-tests-locally">Running E2E tests locally<a class="headerlink" href="#running-e2e-tests-locally" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Configure your IDE to set the <code>KUBECONFIG</code> environment variable to your k3d kubeconfig file</li>
+<li>Find an e2e test that you want to run in <code>test/e2e</code></li>
+<li>Determine which profile the e2e test is using by inspecting the go build flag at the top of the file and referring to [ci-build.yaml]</li>
+</ol>
+<p>.github/workflows/ci-build.yaml</p>
+<p>For example <code>TestArchiveStrategies</code> in <code>test/e2e/functional_test.go</code> has the following build flags</p>
+<div class="highlight"><pre><span></span><code><span class="c1">//go:build functional</span><span class="w"></span>
+<span class="c1">// +build functional</span><span class="w"></span>
+</code></pre></div>
+<p>In ci-build.yaml the functional test suite is using the <code>minimal</code> profile</p>
+<ol>
+<li>Run the profile in a terminal window</li>
+</ol>
+<div class="highlight"><pre><span></span><code>   make start <span class="nv">PROFILE</span><span class="o">=</span>minimal <span class="nv">E2E_EXECUTOR</span><span class="o">=</span>emissary <span class="nv">AUTH_MODE</span><span class="o">=</span>client <span class="nv">STATIC_FILES</span><span class="o">=</span><span class="nb">false</span> <span class="nv">LOG_LEVEL</span><span class="o">=</span>info <span class="nv">API</span><span class="o">=</span><span class="nb">true</span> <span class="nv">UI</span><span class="o">=</span><span class="nb">false</span>
+<span class="sb">````</span>
+
+<span class="m">5</span>. Run the <span class="nb">test</span> <span class="k">in</span> your IDE
+
+<span class="c1">## Committing</span>
+
+Before you commit code and raise a PR, always run:
+
+<span class="sb">```</span>shell
+make pre-commit -B
 </code></pre></div>
 <p>Please adhere to the following when creating your commits:</p>
 <ul>
