@@ -8,8 +8,10 @@ import (
 	"strings"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
@@ -208,4 +210,38 @@ func (w *archivedWorkflowServer) ResubmitArchivedWorkflow(ctx context.Context, r
 		return nil, err
 	}
 	return created, nil
+}
+
+func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req *workflowarchivepkg.RetryArchivedWorkflowRequest) (*wfv1.Workflow, error) {
+	wfClient := auth.GetWfClient(ctx)
+	kubeClient := auth.GetKubeClient(ctx)
+
+	wf, err := w.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: req.Uid})
+	if err != nil {
+		return nil, err
+	}
+
+	wf, podsToDelete, err := util.FormulateRetryWorkflow(ctx, wf, req.RestartSuccessful, req.NodeFieldSelector)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, podName := range podsToDelete {
+		log.WithFields(log.Fields{"podDeleted": podName}).Info("Deleting pod")
+		err := kubeClient.CoreV1().Pods(wf.Namespace).Delete(ctx, podName, metav1.DeleteOptions{})
+		if err != nil && !apierr.IsNotFound(err) {
+			return nil, err
+		}
+	}
+
+	wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Update(ctx, wf, metav1.UpdateOptions{})
+	if apierr.IsNotFound(err) {
+		wf.ObjectMeta.ResourceVersion = ""
+		wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return wf, nil
 }
