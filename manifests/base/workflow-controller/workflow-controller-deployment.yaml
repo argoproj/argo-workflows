@@ -25,11 +25,7 @@ spec:
                 - ALL
           command:
             - workflow-controller
-          args:
-            - --configmap
-            - workflow-controller-configmap
-            - --executor-image
-            - quay.io/argoproj/argoexec:latest
+          args: [ ]
           env:
             - name: LEADER_ELECTION_IDENTITY
               valueFrom:
