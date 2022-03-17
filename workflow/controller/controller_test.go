@@ -215,7 +215,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		wfc.podCleanupQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 		wfc.rateLimiter = wfc.newRateLimiter()
 
-		wfc.profiles = map[cache.ExplicitKey]*profile{
+		wfc.profiles = profiles{
 			wfc.localPolicyKey(): {
 				policyDef:          wfc.localPolicyDef(),
 				kubernetesClient:   kube,

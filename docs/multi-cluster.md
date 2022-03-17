@@ -60,11 +60,16 @@ kubectl create secret generic cluster-1 --from-literal="kubeconfig=`./hack/print
 kubectl label secret cluster-1 workflows.argoproj.io/cluster=cluster-1
 ```
 
-By default, Argo will try and use the profile to read and write resources in all namespaces of the remote cluster, you
-probably don't want that. Annotate the secret like this:
+You may also annotate the secret to say which namespace it should be use (if different to the workflow namespace)
 
 ```bash
 kubectl annotate secret cluster-1 workflows.argoproj.io/namespace=default
+```
+
+Or any namespace:
+
+```bash
+kubectl annotate secret cluster-1 workflows.argoproj.io/namespace=
 ```
 
 This will only be used for workflows in the same namespace as the secret, if you want a specific namespace:
@@ -78,6 +83,8 @@ Or for any namespace:
 ```bash
 kubectl annotate secret cluster-1 workflows.argoproj.io/workflow-namespace=
 ```
+
+This setting is invalid for workflows not in the system namespace.
 
 You need need a `kubeconfig` secret for each action:
 

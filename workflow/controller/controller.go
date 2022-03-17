@@ -86,7 +86,7 @@ type WorkflowController struct {
 
 	rateLimiter      *rate.Limiter
 	dynamicInterface dynamic.Interface
-	profiles         map[cache.ExplicitKey]*profile
+	profiles         profiles
 
 	// datastructures to support the processing of workflows and workflow pods
 	wfInformer            cache.SharedIndexInformer
@@ -169,11 +169,11 @@ func NewWorkflowController(
 	}
 
 	metadataClient := metadata.NewForConfigOrDie(restConfig)
-	wfc.profiles = wfc.newLocalProfile(restConfig, kubernetesClient, workflowClient, metadataClient)
+	wfc.profiles = wfc.newDefaultProfiles(restConfig, kubernetesClient, workflowClient, metadataClient)
 
 	wfc.UpdateConfig(ctx)
 
-	wfc.profiles = wfc.newLocalProfile(restConfig, kubernetesClient, workflowClient, metadataClient)
+	wfc.profiles = wfc.newDefaultProfiles(restConfig, kubernetesClient, workflowClient, metadataClient)
 
 	wfc.metrics = metrics.New(wfc.getMetricsServerConfig())
 
@@ -183,22 +183,6 @@ func NewWorkflowController(
 	wfc.podCleanupQueue = wfc.metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "pod_cleanup_queue")
 
 	return &wfc, nil
-}
-
-func (wfc *WorkflowController) newLocalProfile(restConfig *rest.Config, kubernetesClient kubernetes.Interface, workflowClient wfclientset.Interface, metadataClient metadata.Interface) map[cache.ExplicitKey]*profile {
-	log.WithField("managedNamespace", wfc.GetManagedNamespace()).Info("Creating local profile")
-	return map[cache.ExplicitKey]*profile{
-		wfc.localPolicyKey(): {
-			policyDef:          wfc.localPolicyDef(),
-			restConfig:         restConfig,
-			kubernetesClient:   kubernetesClient,
-			workflowClient:     workflowClient,
-			metadataClient:     metadataClient,
-			podInformer:        wfc.newPodInformer(kubernetesClient, common.LocalCluster, wfc.GetManagedNamespace()),
-			podGCInformer:      wfc.newPodGCInformer(metadataClient, common.LocalCluster, wfc.GetManagedNamespace()),
-			taskResultInformer: wfc.newWorkflowTaskResultInformer(workflowClient, common.LocalCluster),
-		},
-	}
 }
 
 func (wfc *WorkflowController) newThrottler() sync.Throttler {
