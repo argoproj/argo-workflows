@@ -25,7 +25,7 @@ type PluginSpec struct {
 }
 
 type Sidecar struct {
-	// AutomountServiceAccount mounts the service account's token. The service account must have tho same name as the plugin.
+	// AutomountServiceAccount mounts the service account's token. The service account must have the same name as the plugin.
 	AutomountServiceAccountToken bool            `json:"automountServiceAccountToken,omitempty"`
 	Container                    apiv1.Container `json:"container"`
 }
