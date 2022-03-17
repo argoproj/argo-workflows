@@ -804,13 +804,12 @@ status:
 
 func TestDeepDeleteNodes(t *testing.T) {
 	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
-	// kubeClient := &kubefake.Clientset{}
 	origWf := wfv1.MustUnmarshalWorkflow(deepDeleteOfNodes)
 
 	ctx := context.Background()
 	wf, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
 	if assert.NoError(t, err) {
-		newWf, _, err := RetryWorkflow(ctx, wf, false, "")
+		newWf, _, err := FormulateRetryWorkflow(ctx, wf, false, "")
 		assert.NoError(t, err)
 		newWfBytes, err := yaml.Marshal(newWf)
 		assert.NoError(t, err)
@@ -818,9 +817,8 @@ func TestDeepDeleteNodes(t *testing.T) {
 	}
 }
 
-func TestRetryWorkflow(t *testing.T) {
+func TestFormulateRetryWorkflow(t *testing.T) {
 	ctx := context.Background()
-	// kubeClient := kubefake.NewSimpleClientset()
 	wfClient := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("my-ns")
 	createdTime := metav1.Time{Time: time.Now().UTC()}
 	finishedTime := metav1.Time{Time: createdTime.Add(time.Second * 2)}
@@ -844,7 +842,7 @@ func TestRetryWorkflow(t *testing.T) {
 		}
 		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(t, err)
-		wf, _, err = RetryWorkflow(ctx, wf, false, "")
+		wf, _, err = FormulateRetryWorkflow(ctx, wf, false, "")
 		if assert.NoError(t, err) {
 			assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
 			assert.Equal(t, metav1.Time{}, wf.Status.FinishedAt)
@@ -881,7 +879,7 @@ func TestRetryWorkflow(t *testing.T) {
 		}
 		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(t, err)
-		wf, _, err = RetryWorkflow(ctx, wf, false, "")
+		wf, _, err = FormulateRetryWorkflow(ctx, wf, false, "")
 		if assert.NoError(t, err) {
 			if assert.Len(t, wf.Status.Nodes, 1) {
 				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes[""].Phase)

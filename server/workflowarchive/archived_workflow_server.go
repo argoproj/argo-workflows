@@ -221,7 +221,7 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 		return nil, err
 	}
 
-	wf, podsToDelete, err := util.RetryWorkflow(ctx, wf, req.RestartSuccessful, req.NodeFieldSelector)
+	wf, podsToDelete, err := util.FormulateRetryWorkflow(ctx, wf, req.RestartSuccessful, req.NodeFieldSelector)
 	if err != nil {
 		return nil, err
 	}

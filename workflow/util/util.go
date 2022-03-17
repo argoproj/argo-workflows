@@ -733,16 +733,7 @@ func convertNodeID(newWf *wfv1.Workflow, regex *regexp.Regexp, oldNodeID string,
 	return newWf.NodeID(newNodeName)
 }
 
-// RetryWorkflow updates a workflow, deleting all failed steps as well as the onExit node (and children)
-func RetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, []string, error) {
-	updatedWf, podsToDelete, err := FormulateRetryWorkflow(ctx, wf, restartSuccessful, nodeFieldSelector)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return updatedWf, podsToDelete, err
-}
-
+// FormulateRetryWorkflow formulates a previous workflow to be retried, deleting all failed steps as well as the onExit node (and children)
 func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, []string, error) {
 
 	switch wf.Status.Phase {
