@@ -39,6 +39,7 @@ def lazy_import():
     from argo_workflows.model.csi_volume_source import CSIVolumeSource
     from argo_workflows.model.downward_api_volume_source import DownwardAPIVolumeSource
     from argo_workflows.model.empty_dir_volume_source import EmptyDirVolumeSource
+    from argo_workflows.model.ephemeral_volume_source import EphemeralVolumeSource
     from argo_workflows.model.fc_volume_source import FCVolumeSource
     from argo_workflows.model.flex_volume_source import FlexVolumeSource
     from argo_workflows.model.flocker_volume_source import FlockerVolumeSource
@@ -67,6 +68,7 @@ def lazy_import():
     globals()['ConfigMapVolumeSource'] = ConfigMapVolumeSource
     globals()['DownwardAPIVolumeSource'] = DownwardAPIVolumeSource
     globals()['EmptyDirVolumeSource'] = EmptyDirVolumeSource
+    globals()['EphemeralVolumeSource'] = EphemeralVolumeSource
     globals()['FCVolumeSource'] = FCVolumeSource
     globals()['FlexVolumeSource'] = FlexVolumeSource
     globals()['FlockerVolumeSource'] = FlockerVolumeSource
@@ -151,6 +153,7 @@ class Volume(ModelNormal):
             'csi': (CSIVolumeSource,),  # noqa: E501
             'downward_api': (DownwardAPIVolumeSource,),  # noqa: E501
             'empty_dir': (EmptyDirVolumeSource,),  # noqa: E501
+            'ephemeral': (EphemeralVolumeSource,),  # noqa: E501
             'fc': (FCVolumeSource,),  # noqa: E501
             'flex_volume': (FlexVolumeSource,),  # noqa: E501
             'flocker': (FlockerVolumeSource,),  # noqa: E501
@@ -188,6 +191,7 @@ class Volume(ModelNormal):
         'csi': 'csi',  # noqa: E501
         'downward_api': 'downwardAPI',  # noqa: E501
         'empty_dir': 'emptyDir',  # noqa: E501
+        'ephemeral': 'ephemeral',  # noqa: E501
         'fc': 'fc',  # noqa: E501
         'flex_volume': 'flexVolume',  # noqa: E501
         'flocker': 'flocker',  # noqa: E501
@@ -262,6 +266,7 @@ class Volume(ModelNormal):
             csi (CSIVolumeSource): [optional]  # noqa: E501
             downward_api (DownwardAPIVolumeSource): [optional]  # noqa: E501
             empty_dir (EmptyDirVolumeSource): [optional]  # noqa: E501
+            ephemeral (EphemeralVolumeSource): [optional]  # noqa: E501
             fc (FCVolumeSource): [optional]  # noqa: E501
             flex_volume (FlexVolumeSource): [optional]  # noqa: E501
             flocker (FlockerVolumeSource): [optional]  # noqa: E501
@@ -375,6 +380,7 @@ class Volume(ModelNormal):
             csi (CSIVolumeSource): [optional]  # noqa: E501
             downward_api (DownwardAPIVolumeSource): [optional]  # noqa: E501
             empty_dir (EmptyDirVolumeSource): [optional]  # noqa: E501
+            ephemeral (EphemeralVolumeSource): [optional]  # noqa: E501
             fc (FCVolumeSource): [optional]  # noqa: E501
             flex_volume (FlexVolumeSource): [optional]  # noqa: E501
             flocker (FlockerVolumeSource): [optional]  # noqa: E501

@@ -167,7 +167,7 @@ sso:
 
 > v3.1.4 and after
 
-If your OIDC provider provides groups information with a claim name other than `groups`, you could configure config-map to specify custom claim name for groups. Argo now arbitary custom claims and any claim can be used for `expr eval`. However, since group information is displayed in UI, it still needs to be an array of strings with group names as elements.
+If your OIDC provider provides groups information with a claim name other than `groups`, you could configure config-map to specify custom claim name for groups. Argo now arbitrary custom claims and any claim can be used for `expr eval`. However, since group information is displayed in UI, it still needs to be an array of strings with group names as elements.
 
 customClaim in this case will be mapped to `groups` key and we can use the same key `groups` for evaluating our expressions
 

@@ -30,8 +30,8 @@ from argo_workflows.exceptions import ApiAttributeError
 
 
 def lazy_import():
-    from argo_workflows.model.github_com_argoproj_labs_argo_dataflow_api_v1alpha1_stan_auth import GithubComArgoprojLabsArgoDataflowApiV1alpha1STANAuth
-    globals()['GithubComArgoprojLabsArgoDataflowApiV1alpha1STANAuth'] = GithubComArgoprojLabsArgoDataflowApiV1alpha1STANAuth
+    from argo_workflows.model.github_com_argoproj_labs_argo_dataflow_api_v1alpha1_nats_auth import GithubComArgoprojLabsArgoDataflowApiV1alpha1NATSAuth
+    globals()['GithubComArgoprojLabsArgoDataflowApiV1alpha1NATSAuth'] = GithubComArgoprojLabsArgoDataflowApiV1alpha1NATSAuth
 
 
 class GithubComArgoprojLabsArgoDataflowApiV1alpha1STAN(ModelNormal):
@@ -87,7 +87,7 @@ class GithubComArgoprojLabsArgoDataflowApiV1alpha1STAN(ModelNormal):
         """
         lazy_import()
         return {
-            'auth': (GithubComArgoprojLabsArgoDataflowApiV1alpha1STANAuth,),  # noqa: E501
+            'auth': (GithubComArgoprojLabsArgoDataflowApiV1alpha1NATSAuth,),  # noqa: E501
             'cluster_id': (str,),  # noqa: E501
             'max_inflight': (int,),  # noqa: E501
             'name': (str,),  # noqa: E501
@@ -154,7 +154,7 @@ class GithubComArgoprojLabsArgoDataflowApiV1alpha1STAN(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            auth (GithubComArgoprojLabsArgoDataflowApiV1alpha1STANAuth): [optional]  # noqa: E501
+            auth (GithubComArgoprojLabsArgoDataflowApiV1alpha1NATSAuth): [optional]  # noqa: E501
             cluster_id (str): [optional]  # noqa: E501
             max_inflight (int): [optional]  # noqa: E501
             name (str): [optional]  # noqa: E501
@@ -243,7 +243,7 @@ class GithubComArgoprojLabsArgoDataflowApiV1alpha1STAN(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            auth (GithubComArgoprojLabsArgoDataflowApiV1alpha1STANAuth): [optional]  # noqa: E501
+            auth (GithubComArgoprojLabsArgoDataflowApiV1alpha1NATSAuth): [optional]  # noqa: E501
             cluster_id (str): [optional]  # noqa: E501
             max_inflight (int): [optional]  # noqa: E501
             name (str): [optional]  # noqa: E501

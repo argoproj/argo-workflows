@@ -63,6 +63,7 @@ nav:
           - estimated-duration.md
           - workflow-pod-security-context.md
           - progress.md
+          - lifecyclehook.md
           - workflow-creator.md
           - synchronization.md
           - workflow-of-workflows.md
@@ -88,10 +89,12 @@ nav:
           - resuming-workflow-via-automation.md
           - async-pattern.md
           - running-at-massive-scale.md
+          - debug-pause.md
       - Plugins:
           - plugins.md
           - executor_plugins.md
           - executor_swagger.md
+          - plugin-directory.md
       - ide-setup.md
       - security.md
       - Examples: https://github.com/argoproj/argo-workflows/blob/master/examples/README.md

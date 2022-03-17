@@ -51,7 +51,7 @@ GOTEST                ?= go test -v
 PROFILE               ?= minimal
 PLUGINS               ?= $(shell [ $PROFILE = plugins ] && echo false || echo true)
 # by keeping this short we speed up the tests
-DEFAULT_REQUEUE_TIME  ?= 100ms
+DEFAULT_REQUEUE_TIME  ?= 1s
 # whether or not to start the Argo Service in TLS mode
 SECURE                := false
 AUTH_MODE             := hybrid
@@ -235,15 +235,8 @@ argoexec-image:
 	if [ $(K3D) = true ]; then k3d image import -c $(K3D_CLUSTER_NAME) $(IMAGE_NAMESPACE)/$*:$(VERSION); fi
 	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$*:$(VERSION) ; fi
 
-# generation
-plugins/%-plugin-configmap.yaml: ./dist/argo
-	./dist/argo executor-plugin build $(dir $@)
-
-.PHONY: plugins
-plugins: $(shell find plugins -name '*-configmap.yaml')
-
 .PHONY: codegen
-codegen: types swagger docs manifests plugins
+codegen: types swagger docs manifests
 	make --directory sdks/java generate
 	make --directory sdks/python generate
 
@@ -302,7 +295,7 @@ $(GOPATH)/bin/protoc-gen-grpc-gateway:
 $(GOPATH)/bin/protoc-gen-swagger:
 	go install github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v1.16.0
 $(GOPATH)/bin/openapi-gen:
-	go install k8s.io/kube-openapi/cmd/openapi-gen@v0.0.0-20210305001622-591a79e4bda7
+	go install k8s.io/kube-openapi/cmd/openapi-gen@v0.0.0-20220124234850-424119656bbf
 $(GOPATH)/bin/swagger:
 	go install github.com/go-swagger/go-swagger/cmd/swagger@v0.28.0
 $(GOPATH)/bin/goimports:
@@ -411,6 +404,7 @@ install: githooks
 ifneq ($(E2E_EXECUTOR),emissary)
 	# only change the executor from the default it we need to
 	kubectl patch cm/workflow-controller-configmap -p "{\"data\": {\"containerRuntimeExecutor\": \"$(E2E_EXECUTOR)\"}}"
+	kubectl apply -f manifests/quick-start/base/executor/$(E2E_EXECUTOR)
 endif
 ifeq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml
@@ -546,7 +540,7 @@ pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES)
 
 dist/kubernetes.swagger.json:
 	@mkdir -p dist
-	./hack/recurl.sh dist/kubernetes.swagger.json https://raw.githubusercontent.com/kubernetes/kubernetes/v1.17.5/api/openapi-spec/swagger.json
+	./hack/recurl.sh dist/kubernetes.swagger.json https://raw.githubusercontent.com/kubernetes/kubernetes/v1.23.3/api/openapi-spec/swagger.json
 
 pkg/apiclient/_.secondary.swagger.json: hack/swagger/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
 	rm -Rf v3 vendor

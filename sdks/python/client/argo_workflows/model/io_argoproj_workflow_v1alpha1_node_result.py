@@ -90,6 +90,7 @@ class IoArgoprojWorkflowV1alpha1NodeResult(ModelNormal):
             'message': (str,),  # noqa: E501
             'outputs': (IoArgoprojWorkflowV1alpha1Outputs,),  # noqa: E501
             'phase': (str,),  # noqa: E501
+            'progress': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -101,6 +102,7 @@ class IoArgoprojWorkflowV1alpha1NodeResult(ModelNormal):
         'message': 'message',  # noqa: E501
         'outputs': 'outputs',  # noqa: E501
         'phase': 'phase',  # noqa: E501
+        'progress': 'progress',  # noqa: E501
     }
 
     read_only_vars = {
@@ -147,6 +149,7 @@ class IoArgoprojWorkflowV1alpha1NodeResult(ModelNormal):
             message (str): [optional]  # noqa: E501
             outputs (IoArgoprojWorkflowV1alpha1Outputs): [optional]  # noqa: E501
             phase (str): [optional]  # noqa: E501
+            progress (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -231,6 +234,7 @@ class IoArgoprojWorkflowV1alpha1NodeResult(ModelNormal):
             message (str): [optional]  # noqa: E501
             outputs (IoArgoprojWorkflowV1alpha1Outputs): [optional]  # noqa: E501
             phase (str): [optional]  # noqa: E501
+            progress (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

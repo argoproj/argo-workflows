@@ -8,3 +8,4 @@ resources:
 - argoproj.io_workflowtemplates.yaml
 - argoproj.io_workfloweventbindings.yaml
 - argoproj.io_workflowtasksets.yaml
+- argoproj.io_workflowtaskresults.yaml

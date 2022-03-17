@@ -1267,12 +1267,13 @@ func TestStepsRetriesVariable(t *testing.T) {
 }
 
 func TestAssessNodeStatus(t *testing.T) {
-	daemoned := true
+	const templateName = "whalesay"
 	tests := []struct {
-		name string
-		pod  *apiv1.Pod
-		node *wfv1.NodeStatus
-		want wfv1.NodePhase
+		name   string
+		pod    *apiv1.Pod
+		daemon bool
+		node   *wfv1.NodeStatus
+		want   wfv1.NodePhase
 	}{{
 		name: "pod pending",
 		pod: &apiv1.Pod{
@@ -1280,7 +1281,7 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase: apiv1.PodPending,
 			},
 		},
-		node: &wfv1.NodeStatus{},
+		node: &wfv1.NodeStatus{TemplateName: templateName},
 		want: wfv1.NodePending,
 	}, {
 		name: "pod succeeded",
@@ -1289,7 +1290,7 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase: apiv1.PodSucceeded,
 			},
 		},
-		node: &wfv1.NodeStatus{},
+		node: &wfv1.NodeStatus{TemplateName: templateName},
 		want: wfv1.NodeSucceeded,
 	}, {
 		name: "pod failed - daemoned",
@@ -1298,8 +1299,29 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase: apiv1.PodFailed,
 			},
 		},
-		node: &wfv1.NodeStatus{Daemoned: &daemoned},
-		want: wfv1.NodeSucceeded,
+		daemon: true,
+		node:   &wfv1.NodeStatus{TemplateName: templateName},
+		want:   wfv1.NodeSucceeded,
+	}, {
+		name: "daemon, pod running, node failed",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Phase: apiv1.PodRunning,
+			},
+		},
+		daemon: true,
+		node:   &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeFailed},
+		want:   wfv1.NodeFailed,
+	}, {
+		name: "daemon, pod running, node succeeded",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Phase: apiv1.PodRunning,
+			},
+		},
+		daemon: true,
+		node:   &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeSucceeded},
+		want:   wfv1.NodeSucceeded,
 	}, {
 		name: "pod failed - not daemoned",
 		pod: &apiv1.Pod{
@@ -1308,7 +1330,7 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase:   apiv1.PodFailed,
 			},
 		},
-		node: &wfv1.NodeStatus{},
+		node: &wfv1.NodeStatus{TemplateName: templateName},
 		want: wfv1.NodeFailed,
 	}, {
 		name: "pod running",
@@ -1317,22 +1339,25 @@ func TestAssessNodeStatus(t *testing.T) {
 				Phase: apiv1.PodRunning,
 			},
 		},
-		node: &wfv1.NodeStatus{},
+		node: &wfv1.NodeStatus{TemplateName: templateName},
 		want: wfv1.NodeRunning,
 	}, {
 		name: "default",
-		pod: &apiv1.Pod{
-			Status: apiv1.PodStatus{
-				Phase: apiv1.PodUnknown,
-			},
-		},
-		node: &wfv1.NodeStatus{},
+		pod:  &apiv1.Pod{},
+		node: &wfv1.NodeStatus{TemplateName: templateName},
 		want: wfv1.NodeError,
 	}}
 
-	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	nonDaemonWf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	daemonWf := wfv1.MustUnmarshalWorkflow(helloDaemonWf)
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			wf := nonDaemonWf
+			if tt.daemon {
+				wf = daemonWf
+			}
+			assert.Equal(t, tt.daemon, wf.GetTemplateByName(tt.node.TemplateName).IsDaemon(), "check the test case is valid")
 			cancel, controller := newController()
 			defer cancel()
 			woc := newWorkflowOperationCtx(wf, controller)
@@ -1340,35 +1365,6 @@ func TestAssessNodeStatus(t *testing.T) {
 			assert.Equal(t, tt.want, got.Phase)
 		})
 	}
-
-	t.Run("Daemon Step finished - Pod running", func(t *testing.T) {
-		cancel, controller := newController()
-		defer cancel()
-		pod := &apiv1.Pod{
-			Status: apiv1.PodStatus{
-				Phase: apiv1.PodRunning,
-			},
-		}
-		node := &wfv1.NodeStatus{Daemoned: &daemoned, Phase: wfv1.NodeFailed}
-		woc := newWorkflowOperationCtx(wf, controller)
-		got := woc.assessNodeStatus(pod, node)
-		assert.True(t, got.Phase == wfv1.NodeFailed)
-	})
-
-	t.Run("Daemon Step finished - Pod running", func(t *testing.T) {
-		cancel, controller := newController()
-		defer cancel()
-		pod := &apiv1.Pod{
-			Status: apiv1.PodStatus{
-				Phase: apiv1.PodRunning,
-			},
-		}
-		node := &wfv1.NodeStatus{Daemoned: &daemoned, Phase: wfv1.NodeSucceeded}
-		woc := newWorkflowOperationCtx(wf, controller)
-		got := woc.assessNodeStatus(pod, node)
-		assert.True(t, got.Phase == wfv1.NodeSucceeded)
-	})
-
 }
 
 func getPodTemplate(pod *apiv1.Pod) (*wfv1.Template, error) {
@@ -3754,7 +3750,7 @@ func TestPodSpecLogForFailedPods(t *testing.T) {
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
 	for _, node := range woc.wf.Status.Nodes {
-		assert.True(t, woc.shouldPrintPodSpec(node))
+		assert.True(t, woc.shouldPrintPodSpec(&node))
 	}
 }
 
@@ -3776,7 +3772,7 @@ func TestPodSpecLogForAllPods(t *testing.T) {
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
 	for _, node := range woc.wf.Status.Nodes {
-		assert.True(t, woc.shouldPrintPodSpec(node))
+		assert.True(t, woc.shouldPrintPodSpec(&node))
 	}
 }
 
@@ -4911,6 +4907,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: memoized-workflow-test
+  namespace: default
 spec:
   entrypoint: whalesay
   arguments:
@@ -5126,17 +5123,17 @@ func TestConfigMapCacheSaveOperate(t *testing.T) {
 	woc.operate(ctx)
 
 	cm, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Get(ctx, "whalesay-cache", metav1.GetOptions{})
-	assert.NoError(t, err)
-	assert.NotNil(t, cm)
-	assert.NotNil(t, cm.Data)
+	if assert.NoError(t, err) {
+		assert.NotNil(t, cm)
+		assert.NotNil(t, cm.Data)
+		rawEntry, ok := cm.Data["hi-there-world"]
+		assert.True(t, ok)
+		var entry cache.Entry
+		wfv1.MustUnmarshal(rawEntry, &entry)
 
-	rawEntry, ok := cm.Data["hi-there-world"]
-	assert.True(t, ok)
-	var entry cache.Entry
-	wfv1.MustUnmarshal(rawEntry, &entry)
-
-	if assert.NotNil(t, entry.Outputs) {
-		assert.Equal(t, sampleOutputs, *entry.Outputs)
+		if assert.NotNil(t, entry.Outputs) {
+			assert.Equal(t, sampleOutputs, *entry.Outputs)
+		}
 	}
 }
 
@@ -5623,7 +5620,7 @@ func Test_processItem(t *testing.T) {
 
 	var newTask wfv1.DAGTask
 	tmpl, _ := template.NewTemplate(string(taskBytes))
-	newTaskName, err := processItem(tmpl, "task-name", 0, items[0], &newTask)
+	newTaskName, err := processItem(tmpl, "task-name", 0, items[0], &newTask, "")
 	if assert.NoError(t, err) {
 		assert.Equal(t, `task-name(0:json:{"list":[0,"1"],"number":2,"string":"foo"},list:[0,"1"],number:2,string:foo)`, newTaskName)
 	}
@@ -5844,7 +5841,7 @@ func TestPodFailureWithContainerWaitingState(t *testing.T) {
 	var pod apiv1.Pod
 	wfv1.MustUnmarshal(podWithFailed, &pod)
 	assert.NotNil(t, pod)
-	nodeStatus, msg := newWoc().inferFailedReason(&pod)
+	nodeStatus, msg := newWoc().inferFailedReason(&pod, nil)
 	assert.Equal(t, wfv1.NodeError, nodeStatus)
 	assert.Contains(t, msg, "Pod failed before")
 }
@@ -5958,7 +5955,7 @@ func TestPodFailureWithContainerOOM(t *testing.T) {
 	for _, tt := range tests {
 		wfv1.MustUnmarshal(tt.podDetail, &pod)
 		assert.NotNil(t, pod)
-		nodeStatus, msg := newWoc().inferFailedReason(&pod)
+		nodeStatus, msg := newWoc().inferFailedReason(&pod, nil)
 		assert.Equal(t, tt.phase, nodeStatus)
 		assert.Contains(t, msg, "OOMKilled")
 	}
@@ -6085,8 +6082,8 @@ func TestWFWithRetryAndWithParam(t *testing.T) {
 			ctrs := pods.Items[0].Spec.Containers
 			assert.Len(t, ctrs, 2)
 			envs := ctrs[1].Env
-			assert.Len(t, envs, 7)
-			assert.Equal(t, apiv1.EnvVar{Name: "ARGO_INCLUDE_SCRIPT_OUTPUT", Value: "true"}, envs[2])
+			assert.Len(t, envs, 8)
+			assert.Equal(t, apiv1.EnvVar{Name: "ARGO_INCLUDE_SCRIPT_OUTPUT", Value: "true"}, envs[3])
 		}
 	})
 }

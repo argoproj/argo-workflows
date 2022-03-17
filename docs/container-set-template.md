@@ -47,7 +47,8 @@ There are a couple of caveats:
 
 1. You must use the [Emissary Executor](workflow-executors.md#emissary-emissary).
 2. Or all containers must run in parallel - i.e. it is a graph with no dependencies.
-3. It will use the sum total of all resource requests, maybe costing more than the same DAG template. This will be a problem if your requests already cost a lot. See below.
+3. You cannot use [enhanced depends logic](enhanced-depends-logic.md).
+4. It will use the sum total of all resource requests, maybe costing more than the same DAG template. This will be a problem if your requests already cost a lot. See below.
 
 The containers can be arranged as a graph by specifying dependencies. This is suitable for running 10s rather than 100s
 of containers.

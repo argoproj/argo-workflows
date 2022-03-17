@@ -7,6 +7,7 @@ import (
 // +genclient
 // +kubebuilder:resource:shortName=wfts
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:subresource:status
 type WorkflowTaskSet struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
@@ -30,9 +31,10 @@ type WorkflowTaskSetList struct {
 }
 
 type NodeResult struct {
-	Phase   NodePhase `json:"phase,omitempty" protobuf:"bytes,1,opt,name=phase,casttype=NodePhase"`
-	Message string    `json:"message,omitempty" protobuf:"bytes,2,opt,name=message"`
-	Outputs *Outputs  `json:"outputs,omitempty" protobuf:"bytes,3,opt,name=outputs"`
+	Phase    NodePhase `json:"phase,omitempty" protobuf:"bytes,1,opt,name=phase,casttype=NodePhase"`
+	Message  string    `json:"message,omitempty" protobuf:"bytes,2,opt,name=message"`
+	Outputs  *Outputs  `json:"outputs,omitempty" protobuf:"bytes,3,opt,name=outputs"`
+	Progress Progress  `json:"progress,omitempty" protobuf:"bytes,4,opt,name=progress,casttype=Progress"`
 }
 
 func (in NodeResult) Fulfilled() bool {

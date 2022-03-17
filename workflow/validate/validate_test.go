@@ -1064,7 +1064,7 @@ spec:
     container:
       image: alpine:latest
       command: [sh, -c]
-      args: ["echo {{workflow.status}}"]
+      args: ["echo {{workflow.failures}}"]
 `
 
 func TestExitHandler(t *testing.T) {
@@ -1850,104 +1850,6 @@ spec:
 `)
 	_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 	assert.EqualError(t, err, "podGC.labelSelector invalid: \"InvalidOperator\" is not a valid pod selector operator")
-}
-
-//nolint:gosec
-var validAutomountServiceAccountTokenUseWfLevel = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: valid-automount-service-account-token-use-wf-level-
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    container:
-      image: alpine:latest
-  - name: per-tmpl-automount
-    container:
-      image: alpine:latest
-    automountServiceAccountToken: true
-    executor:
-      ServiceAccountName: ""
-  automountServiceAccountToken: false
-  executor:
-    ServiceAccountName: foo
-`
-
-//nolint:gosec
-var validAutomountServiceAccountTokenUseTmplLevel = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: valid-automount-service-account-token-use-tmpl-level-
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    container:
-      image: alpine:latest
-    executor:
-      ServiceAccountName: foo
-  automountServiceAccountToken: false
-`
-
-//nolint:gosec
-var invalidAutomountServiceAccountTokenUseWfLevel = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: invalid-automount-service-account-token-use-wf-level-
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    container:
-      image: alpine:latest
-  automountServiceAccountToken: false
-`
-
-//nolint:gosec
-var invalidAutomountServiceAccountTokenUseTmplLevel = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: invalid-automount-service-account-token-use-tmpl-level-
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    container:
-      image: alpine:latest
-    automountServiceAccountToken: false
-`
-
-// TestAutomountServiceAccountTokenUse verifies an error against a workflow of an invalid automountServiceAccountToken use.
-func TestAutomountServiceAccountTokenUse(t *testing.T) {
-	{
-		wf := unmarshalWf(validAutomountServiceAccountTokenUseWfLevel)
-		_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
-
-		assert.NoError(t, err)
-	}
-	{
-		wf := unmarshalWf(validAutomountServiceAccountTokenUseTmplLevel)
-		_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
-
-		assert.NoError(t, err)
-	}
-	{
-		wf := unmarshalWf(invalidAutomountServiceAccountTokenUseWfLevel)
-		_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
-
-		assert.EqualError(t, err, "templates.whalesay.executor.serviceAccountName must not be empty if automountServiceAccountToken is false")
-	}
-	{
-		wf := unmarshalWf(invalidAutomountServiceAccountTokenUseTmplLevel)
-		_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
-
-		assert.EqualError(t, err, "templates.whalesay.executor.serviceAccountName must not be empty if automountServiceAccountToken is false")
-	}
 }
 
 var allowPlaceholderInVariableTakenFromInputs = `

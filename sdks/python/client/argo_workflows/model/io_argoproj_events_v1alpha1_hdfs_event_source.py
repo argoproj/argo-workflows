@@ -31,9 +31,11 @@ from argo_workflows.exceptions import ApiAttributeError
 
 def lazy_import():
     from argo_workflows.model.config_map_key_selector import ConfigMapKeySelector
+    from argo_workflows.model.io_argoproj_events_v1alpha1_event_source_filter import IoArgoprojEventsV1alpha1EventSourceFilter
     from argo_workflows.model.io_argoproj_events_v1alpha1_watch_path_config import IoArgoprojEventsV1alpha1WatchPathConfig
     from argo_workflows.model.secret_key_selector import SecretKeySelector
     globals()['ConfigMapKeySelector'] = ConfigMapKeySelector
+    globals()['IoArgoprojEventsV1alpha1EventSourceFilter'] = IoArgoprojEventsV1alpha1EventSourceFilter
     globals()['IoArgoprojEventsV1alpha1WatchPathConfig'] = IoArgoprojEventsV1alpha1WatchPathConfig
     globals()['SecretKeySelector'] = SecretKeySelector
 
@@ -93,6 +95,7 @@ class IoArgoprojEventsV1alpha1HDFSEventSource(ModelNormal):
         return {
             'addresses': ([str],),  # noqa: E501
             'check_interval': (str,),  # noqa: E501
+            'filter': (IoArgoprojEventsV1alpha1EventSourceFilter,),  # noqa: E501
             'hdfs_user': (str,),  # noqa: E501
             'krb_c_cache_secret': (SecretKeySelector,),  # noqa: E501
             'krb_config_config_map': (ConfigMapKeySelector,),  # noqa: E501
@@ -113,6 +116,7 @@ class IoArgoprojEventsV1alpha1HDFSEventSource(ModelNormal):
     attribute_map = {
         'addresses': 'addresses',  # noqa: E501
         'check_interval': 'checkInterval',  # noqa: E501
+        'filter': 'filter',  # noqa: E501
         'hdfs_user': 'hdfsUser',  # noqa: E501
         'krb_c_cache_secret': 'krbCCacheSecret',  # noqa: E501
         'krb_config_config_map': 'krbConfigConfigMap',  # noqa: E501
@@ -168,6 +172,7 @@ class IoArgoprojEventsV1alpha1HDFSEventSource(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             addresses ([str]): [optional]  # noqa: E501
             check_interval (str): [optional]  # noqa: E501
+            filter (IoArgoprojEventsV1alpha1EventSourceFilter): [optional]  # noqa: E501
             hdfs_user (str): HDFSUser is the user to access HDFS file system. It is ignored if either ccache or keytab is used.. [optional]  # noqa: E501
             krb_c_cache_secret (SecretKeySelector): [optional]  # noqa: E501
             krb_config_config_map (ConfigMapKeySelector): [optional]  # noqa: E501
@@ -261,6 +266,7 @@ class IoArgoprojEventsV1alpha1HDFSEventSource(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             addresses ([str]): [optional]  # noqa: E501
             check_interval (str): [optional]  # noqa: E501
+            filter (IoArgoprojEventsV1alpha1EventSourceFilter): [optional]  # noqa: E501
             hdfs_user (str): HDFSUser is the user to access HDFS file system. It is ignored if either ccache or keytab is used.. [optional]  # noqa: E501
             krb_c_cache_secret (SecretKeySelector): [optional]  # noqa: E501
             krb_config_config_map (ConfigMapKeySelector): [optional]  # noqa: E501

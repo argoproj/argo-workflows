@@ -62,7 +62,7 @@ func waitContainer(ctx context.Context) error {
 		wfExecutor.AddError(err)
 	}
 	// Annotating pod with output
-	err = wfExecutor.AnnotateOutputs(ctx, logArt)
+	err = wfExecutor.ReportOutputs(ctx, logArt)
 	if err != nil {
 		wfExecutor.AddError(err)
 	}

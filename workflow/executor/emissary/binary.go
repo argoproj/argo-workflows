@@ -5,6 +5,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 func copyBinary() error {
@@ -19,7 +21,7 @@ func copyBinary() error {
 	defer func() { _ = in.Close() }()
 	// argoexec needs to be executable from non-root user in the main container.
 	// Therefore we set permission 0o555 == r-xr-xr-x.
-	out, err := os.OpenFile("/var/run/argo/argoexec", os.O_RDWR|os.O_CREATE, 0o555)
+	out, err := os.OpenFile(common.VarRunArgoPath+"/argoexec", os.O_RDWR|os.O_CREATE, 0o555)
 	if err != nil {
 		return err
 	}

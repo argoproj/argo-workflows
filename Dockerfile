@@ -3,7 +3,7 @@
 ARG DOCKER_CHANNEL=stable
 ARG DOCKER_VERSION=20.10.12
 # NOTE: kubectl version should be one minor version less than https://storage.googleapis.com/kubernetes-release/release/stable.txt
-ARG KUBECTL_VERSION=1.19.6
+ARG KUBECTL_VERSION=1.22.3
 ARG JQ_VERSION=1.6
 
 FROM golang:1.17 as builder
@@ -122,6 +122,8 @@ RUN --mount=type=cache,target=/root/.cache/go-build make dist/argo
 FROM argoexec-base as argoexec
 
 COPY --from=argoexec-build /go/src/github.com/argoproj/argo-workflows/dist/argoexec /usr/local/bin/
+COPY --from=argoexec-build /etc/mime.types /etc/mime.types
+
 ENTRYPOINT [ "argoexec" ]
 
 ####################################################################################################

@@ -24,6 +24,20 @@ message ListArchivedWorkflowLabelKeysRequest {
 message ListArchivedWorkflowLabelValuesRequest {
     k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 1;
 }
+message RetryArchivedWorkflowRequest {
+    string uid = 1;
+    string name = 2;
+    string namespace = 3;
+    bool restartSuccessful = 4;
+    string nodeFieldSelector = 5;
+}
+
+message ResubmitArchivedWorkflowRequest {
+    string uid = 1;
+    string name = 2;
+    string namespace = 3;
+    bool memoized = 4;
+}
 
 service ArchivedWorkflowService {
     rpc ListArchivedWorkflows (ListArchivedWorkflowsRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.WorkflowList) {
@@ -40,5 +54,17 @@ service ArchivedWorkflowService {
     }
     rpc ListArchivedWorkflowLabelValues (ListArchivedWorkflowLabelValuesRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.LabelValues) {
         option (google.api.http).get = "/api/v1/archived-workflows-label-values";
+    }
+    rpc RetryArchivedWorkflow (RetryArchivedWorkflowRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.Workflow) {
+        option (google.api.http) = {
+			put: "/api/v1/archived-workflows/{uid}/retry"
+            body: "*"
+        };
+    }
+    rpc ResubmitArchivedWorkflow (ResubmitArchivedWorkflowRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.Workflow) {
+        option (google.api.http) = {
+			put: "/api/v1/archived-workflows/{uid}/resubmit"
+			body: "*"
+		};
     }
 }

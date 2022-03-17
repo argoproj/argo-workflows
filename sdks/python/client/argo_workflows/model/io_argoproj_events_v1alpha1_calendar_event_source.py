@@ -31,7 +31,9 @@ from argo_workflows.exceptions import ApiAttributeError
 
 def lazy_import():
     from argo_workflows.model.io_argoproj_events_v1alpha1_event_persistence import IoArgoprojEventsV1alpha1EventPersistence
+    from argo_workflows.model.io_argoproj_events_v1alpha1_event_source_filter import IoArgoprojEventsV1alpha1EventSourceFilter
     globals()['IoArgoprojEventsV1alpha1EventPersistence'] = IoArgoprojEventsV1alpha1EventPersistence
+    globals()['IoArgoprojEventsV1alpha1EventSourceFilter'] = IoArgoprojEventsV1alpha1EventSourceFilter
 
 
 class IoArgoprojEventsV1alpha1CalendarEventSource(ModelNormal):
@@ -88,6 +90,7 @@ class IoArgoprojEventsV1alpha1CalendarEventSource(ModelNormal):
         lazy_import()
         return {
             'exclusion_dates': ([str],),  # noqa: E501
+            'filter': (IoArgoprojEventsV1alpha1EventSourceFilter,),  # noqa: E501
             'interval': (str,),  # noqa: E501
             'metadata': ({str: (str,)},),  # noqa: E501
             'persistence': (IoArgoprojEventsV1alpha1EventPersistence,),  # noqa: E501
@@ -102,6 +105,7 @@ class IoArgoprojEventsV1alpha1CalendarEventSource(ModelNormal):
 
     attribute_map = {
         'exclusion_dates': 'exclusionDates',  # noqa: E501
+        'filter': 'filter',  # noqa: E501
         'interval': 'interval',  # noqa: E501
         'metadata': 'metadata',  # noqa: E501
         'persistence': 'persistence',  # noqa: E501
@@ -150,8 +154,9 @@ class IoArgoprojEventsV1alpha1CalendarEventSource(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            exclusion_dates ([str]): [optional]  # noqa: E501
-            interval (str): Interval is a string that describes an interval duration, e.g. 1s, 30m, 2h.... [optional]  # noqa: E501
+            exclusion_dates ([str]): ExclusionDates defines the list of DATE-TIME exceptions for recurring events.. [optional]  # noqa: E501
+            filter (IoArgoprojEventsV1alpha1EventSourceFilter): [optional]  # noqa: E501
+            interval (str): [optional]  # noqa: E501
             metadata ({str: (str,)}): [optional]  # noqa: E501
             persistence (IoArgoprojEventsV1alpha1EventPersistence): [optional]  # noqa: E501
             schedule (str): [optional]  # noqa: E501
@@ -237,8 +242,9 @@ class IoArgoprojEventsV1alpha1CalendarEventSource(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            exclusion_dates ([str]): [optional]  # noqa: E501
-            interval (str): Interval is a string that describes an interval duration, e.g. 1s, 30m, 2h.... [optional]  # noqa: E501
+            exclusion_dates ([str]): ExclusionDates defines the list of DATE-TIME exceptions for recurring events.. [optional]  # noqa: E501
+            filter (IoArgoprojEventsV1alpha1EventSourceFilter): [optional]  # noqa: E501
+            interval (str): [optional]  # noqa: E501
             metadata ({str: (str,)}): [optional]  # noqa: E501
             persistence (IoArgoprojEventsV1alpha1EventPersistence): [optional]  # noqa: E501
             schedule (str): [optional]  # noqa: E501

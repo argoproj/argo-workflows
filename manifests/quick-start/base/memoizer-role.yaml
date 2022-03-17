@@ -1,0 +1,16 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: memoizer
+  annotations:
+    workflows.argoproj.io/description: |
+      Only needed if you are using ConfigMap-based cache for memoization.
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - create
+      - get
+      - update

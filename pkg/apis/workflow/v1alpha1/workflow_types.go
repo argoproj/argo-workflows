@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"hash/fnv"
 	"net/url"
+	"os"
 	"path"
+	"path/filepath"
 	"reflect"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -19,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/util/slice"
 )
 
@@ -385,6 +389,23 @@ type WorkflowSpec struct {
 	// Hooks holds the lifecycle hook which is invoked at lifecycle of
 	// step, irrespective of the success, failure, or error status of the primary step
 	Hooks LifecycleHooks `json:"hooks,omitempty" protobuf:"bytes,41,opt,name=hooks"`
+
+	// WorkflowMetadata contains some metadata of the workflow to be refer
+	WorkflowMetadata *WorkflowMetadata `json:"workflowMetadata,omitempty" protobuf:"bytes,42,opt,name=workflowMetadata"`
+}
+
+type LabelValueFrom struct {
+	Expression string `json:"expression" protobuf:"bytes,1,opt,name=expression"`
+}
+
+type WorkflowMetadata struct {
+	Labels      map[string]string         `json:"labels,omitempty" protobuf:"bytes,1,rep,name=labels"`
+	Annotations map[string]string         `json:"annotations,omitempty" protobuf:"bytes,2,rep,name=annotations"`
+	LabelsFrom  map[string]LabelValueFrom `json:"labelsFrom,omitempty" protobuf:"bytes,3,rep,name=labelsFrom"`
+}
+
+func (in *WorkflowMetadata) AsObjectMeta() *metav1.ObjectMeta {
+	return &metav1.ObjectMeta{Labels: in.Labels, Annotations: in.Annotations}
 }
 
 func (wfs *WorkflowSpec) GetExitHook(args Arguments) *LifecycleHook {
@@ -885,6 +906,37 @@ type Artifact struct {
 
 	// FromExpression, if defined, is evaluated to specify the value for the artifact
 	FromExpression string `json:"fromExpression,omitempty" protobuf:"bytes,11,opt,name=fromExpression"`
+}
+
+// CleanPath validates and cleans the artifact path.
+func (a *Artifact) CleanPath() error {
+	if a.Path == "" {
+		return argoerrs.InternalErrorf("Artifact '%s' did not specify a path", a.Name)
+	}
+
+	// Ensure that the artifact path does not use directory traversal to escape a
+	// "safe" sub-directory, assuming malicious user input is present. For example:
+	// inputs:
+	//    artifacts:
+	//      - name: a1
+	//        path: /tmp/safe/{{ inputs.parameters.user-input }}
+	//
+	// Any resolved path should always be within the /tmp/safe/ directory.
+	safeDir := ""
+	slashDotDotRe := regexp.MustCompile(fmt.Sprintf(`%c..$`, os.PathSeparator))
+	slashDotDotSlash := fmt.Sprintf(`%c..%c`, os.PathSeparator, os.PathSeparator)
+	if strings.Contains(a.Path, slashDotDotSlash) {
+		safeDir = a.Path[:strings.Index(a.Path, slashDotDotSlash)]
+	} else if slashDotDotRe.FindStringIndex(a.Path) != nil {
+		safeDir = a.Path[:len(a.Path)-3]
+	}
+	cleaned := filepath.Clean(a.Path)
+	safeDirWithSlash := fmt.Sprintf(`%s%c`, safeDir, os.PathSeparator)
+	if len(safeDir) > 0 && (!strings.HasPrefix(cleaned, safeDirWithSlash) || len(cleaned) <= len(safeDirWithSlash)) {
+		return argoerrs.InternalErrorf("Artifact '%s' attempted to use a path containing '..'. Directory traversal is not permitted", a.Name)
+	}
+	a.Path = cleaned
+	return nil
 }
 
 // PodGC describes how to delete completed pods as they complete
@@ -1882,6 +1934,11 @@ func (n NodeStatus) IsDaemoned() bool {
 	return true
 }
 
+// IsExitNode returns whether or not node run as exit handler.
+func (ws NodeStatus) IsExitNode() bool {
+	return strings.HasSuffix(ws.DisplayName, ".onExit")
+}
+
 func (n NodeStatus) Succeeded() bool {
 	return n.Phase == NodeSucceeded
 }
@@ -2486,6 +2543,10 @@ func (tmpl *Template) HasOutput() bool {
 	return tmpl.Container != nil || tmpl.ContainerSet.HasContainerNamed("main") || tmpl.Script != nil || tmpl.Data != nil || tmpl.HTTP != nil
 }
 
+func (t *Template) IsDaemon() bool {
+	return t != nil && t.Daemon != nil && *t.Daemon
+}
+
 // if logs should be saved as an artifact
 func (tmpl *Template) SaveLogsAsArtifact() bool {
 	return tmpl != nil && tmpl.ArchiveLocation.IsArchiveLogs() && (tmpl.ContainerSet == nil || tmpl.ContainerSet.HasContainerNamed("main"))
@@ -2493,6 +2554,10 @@ func (tmpl *Template) SaveLogsAsArtifact() bool {
 
 func (t *Template) GetRetryStrategy() (wait.Backoff, error) {
 	return t.ContainerSet.GetRetryStrategy()
+}
+
+func (t *Template) HasOutputs() bool {
+	return t != nil && t.Outputs.HasOutputs()
 }
 
 // DAGTemplate is a template subtype for directed acyclic graph templates
@@ -2634,6 +2699,9 @@ func (in *Inputs) HasInputs() bool {
 
 // HasOutputs returns whether or not there are any outputs
 func (out *Outputs) HasOutputs() bool {
+	if out == nil {
+		return false
+	}
 	if out.Result != nil {
 		return true
 	}
@@ -2654,6 +2722,32 @@ func (out *Outputs) GetArtifactByName(name string) *Artifact {
 		return nil
 	}
 	return out.Artifacts.GetArtifactByName(name)
+}
+
+func (out *Outputs) HasResult() bool {
+	return out != nil && out.Result != nil
+}
+
+func (out *Outputs) HasArtifacts() bool {
+	return out != nil && len(out.Artifacts) > 0
+}
+
+func (out *Outputs) HasParameters() bool {
+	return out != nil && len(out.Parameters) > 0
+}
+
+const MainLogsArtifactName = "main-logs"
+
+func (out *Outputs) HasLogs() bool {
+	if out == nil {
+		return false
+	}
+	for _, a := range out.Artifacts {
+		if a.Name == MainLogsArtifactName {
+			return true
+		}
+	}
+	return false
 }
 
 // GetArtifactByName retrieves an artifact by its name

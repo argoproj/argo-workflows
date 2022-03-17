@@ -28,6 +28,10 @@ func (c *FakeArgoprojV1alpha1) WorkflowEventBindings(namespace string) v1alpha1.
 	return &FakeWorkflowEventBindings{c, namespace}
 }
 
+func (c *FakeArgoprojV1alpha1) WorkflowTaskResults(namespace string) v1alpha1.WorkflowTaskResultInterface {
+	return &FakeWorkflowTaskResults{c, namespace}
+}
+
 func (c *FakeArgoprojV1alpha1) WorkflowTaskSets(namespace string) v1alpha1.WorkflowTaskSetInterface {
 	return &FakeWorkflowTaskSets{c, namespace}
 }

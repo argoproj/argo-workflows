@@ -132,18 +132,35 @@ func (s *ArtifactsSuite) TestOutputResult() {
 }
 
 func (s *ArtifactsSuite) TestMainLog() {
-	s.Given().
-		Workflow("@testdata/basic-workflow.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded).
-		Then().
-		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			n := status.Nodes[m.Name]
-			if assert.NotNil(t, n) {
-				assert.Len(t, n.Outputs.Artifacts, 1)
-			}
-		})
+	s.Run("Basic", func() {
+		s.Given().
+			Workflow("@testdata/basic-workflow.yaml").
+			When().
+			SubmitWorkflow().
+			WaitForWorkflow(fixtures.ToBeSucceeded).
+			Then().
+			ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+				n := status.Nodes[m.Name]
+				if assert.NotNil(t, n) {
+					assert.Len(t, n.Outputs.Artifacts, 1)
+				}
+			})
+	})
+	s.Need(fixtures.None(fixtures.Docker, fixtures.Kubelet))
+	s.Run("ActiveDeadlineSeconds", func() {
+		s.Given().
+			Workflow("@expectedfailures/timeouts-step.yaml").
+			When().
+			SubmitWorkflow().
+			WaitForWorkflow(fixtures.ToBeFailed).
+			Then().
+			ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+				n := status.Nodes[m.Name]
+				if assert.NotNil(t, n) {
+					assert.Len(t, n.Outputs.Artifacts, 1)
+				}
+			})
+	})
 }
 
 func TestArtifactsSuite(t *testing.T) {

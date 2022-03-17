@@ -8,8 +8,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/utils/pointer"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -69,6 +71,42 @@ func assessAgentPodStatus(pod *apiv1.Pod) (wfv1.WorkflowPhase, string) {
 	return newPhase, message
 }
 
+func (woc *wfOperationCtx) secretExists(ctx context.Context, name string) (bool, error) {
+	_, err := woc.controller.kubeclientset.CoreV1().Secrets(woc.wf.Namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		if apierr.IsNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+func (woc *wfOperationCtx) getCertVolumeMount(ctx context.Context, name string) (*apiv1.Volume, *apiv1.VolumeMount, error) {
+	exists, err := woc.secretExists(ctx, name)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to check if secret %s exists: %v", name, err)
+	}
+	if exists {
+		certVolume := &apiv1.Volume{
+			Name: name,
+			VolumeSource: apiv1.VolumeSource{
+				Secret: &apiv1.SecretVolumeSource{
+					SecretName: name,
+				},
+			}}
+
+		certVolumeMount := &apiv1.VolumeMount{
+			Name:      name,
+			MountPath: "/etc/ssl/certs/ca-certificates/",
+			ReadOnly:  true,
+		}
+
+		return certVolume, certVolumeMount, nil
+	}
+	return nil, nil, nil
+}
+
 func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, error) {
 	podName := woc.getAgentPodName()
 	log := woc.log.WithField("podName", podName)
@@ -85,11 +123,17 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		}
 	}
 
+	certVolume, certVolumeMount, err := woc.getCertVolumeMount(ctx, common.CACertificatesVolumeMountName)
+	if err != nil {
+		return nil, err
+	}
+
 	pluginSidecars := woc.getExecutorPlugins()
 	envVars := []apiv1.EnvVar{
 		{Name: common.EnvVarWorkflowName, Value: woc.wf.Name},
 		{Name: common.EnvAgentPatchRate, Value: env.LookupEnvStringOr(common.EnvAgentPatchRate, GetRequeueTime().String())},
 		{Name: common.EnvVarPluginAddresses, Value: wfv1.MustMarshallJSON(addresses(pluginSidecars))},
+		{Name: common.EnvVarPluginNames, Value: wfv1.MustMarshallJSON(names(pluginSidecars))},
 	}
 
 	// If the default number of task workers is overridden, then pass it to the agent pod.
@@ -100,6 +144,59 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		})
 	}
 
+	serviceAccountName := woc.execWf.Spec.ServiceAccountName
+	tokenVolume, tokenVolumeMount, err := woc.getServiceAccountTokenVolume(ctx, serviceAccountName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get token volumes: %w", err)
+	}
+
+	podVolumes := []apiv1.Volume{
+		volumeVarArgo,
+		*tokenVolume,
+	}
+	podVolumeMounts := []apiv1.VolumeMount{
+		volumeMountVarArgo,
+		*tokenVolumeMount,
+	}
+	if certVolume != nil && certVolumeMount != nil {
+		podVolumes = append(podVolumes, *certVolume)
+		podVolumeMounts = append(podVolumeMounts, *certVolumeMount)
+	}
+	agentCtrTemplate := apiv1.Container{
+		Command:         []string{"argoexec"},
+		Image:           woc.controller.executorImage(),
+		ImagePullPolicy: woc.controller.executorImagePullPolicy(),
+		Env:             envVars,
+		SecurityContext: &apiv1.SecurityContext{
+			Capabilities: &apiv1.Capabilities{
+				Drop: []apiv1.Capability{"ALL"},
+			},
+			RunAsNonRoot:             pointer.BoolPtr(true),
+			RunAsUser:                pointer.Int64Ptr(8737),
+			ReadOnlyRootFilesystem:   pointer.BoolPtr(true),
+			AllowPrivilegeEscalation: pointer.BoolPtr(false),
+		},
+		Resources: apiv1.ResourceRequirements{
+			Requests: map[apiv1.ResourceName]resource.Quantity{
+				"cpu":    resource.MustParse("10m"),
+				"memory": resource.MustParse("64M"),
+			},
+			Limits: map[apiv1.ResourceName]resource.Quantity{
+				"cpu":    resource.MustParse(env.LookupEnvStringOr("ARGO_AGENT_CPU_LIMIT", "100m")),
+				"memory": resource.MustParse(env.LookupEnvStringOr("ARGO_AGENT_MEMORY_LIMIT", "256M")),
+			},
+		},
+		VolumeMounts: podVolumeMounts,
+	}
+	// the `init` container populates the shared empty-dir volume with tokens
+	agentInitCtr := agentCtrTemplate.DeepCopy()
+	agentInitCtr.Name = common.InitContainerName
+	agentInitCtr.Args = []string{"agent", "init"}
+	// the `main` container runs the actual work
+	agentMainCtr := agentCtrTemplate.DeepCopy()
+	agentMainCtr.Name = common.MainContainerName
+	agentMainCtr.Args = []string{"agent", "main"}
+
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      podName,
@@ -107,6 +204,10 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			Labels: map[string]string{
 				common.LabelKeyWorkflow:  woc.wf.Name, // Allows filtering by pods related to specific workflow
 				common.LabelKeyCompleted: "false",     // Allows filtering by incomplete workflow pods
+				common.LabelKeyComponent: "agent",     // Allows you to identify agent pods and use a different NetworkPolicy on them
+			},
+			Annotations: map[string]string{
+				common.AnnotationKeyDefaultContainer: common.MainContainerName,
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
@@ -115,25 +216,25 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		Spec: apiv1.PodSpec{
 			RestartPolicy:    apiv1.RestartPolicyOnFailure,
 			ImagePullSecrets: woc.execWf.Spec.ImagePullSecrets,
+			SecurityContext: &apiv1.PodSecurityContext{
+				RunAsNonRoot: pointer.BoolPtr(true),
+				RunAsUser:    pointer.Int64Ptr(8737),
+			},
+			ServiceAccountName:           serviceAccountName,
+			AutomountServiceAccountToken: pointer.BoolPtr(false),
+			Volumes:                      podVolumes,
+			InitContainers: []apiv1.Container{
+				*agentInitCtr,
+			},
 			Containers: append(
 				pluginSidecars,
-				apiv1.Container{
-					Name:            "main",
-					Command:         []string{"argoexec"},
-					Args:            []string{"agent"},
-					Image:           woc.controller.executorImage(),
-					ImagePullPolicy: woc.controller.executorImagePullPolicy(),
-					Env:             envVars,
-				},
+				*agentMainCtr,
 			),
 		},
 	}
 
 	if woc.controller.Config.InstanceID != "" {
 		pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
-	}
-	if woc.wf.Spec.ServiceAccountName != "" {
-		pod.Spec.ServiceAccountName = woc.wf.Spec.ServiceAccountName
 	}
 
 	log.Debug("Creating Agent pod")
@@ -157,7 +258,15 @@ func (woc *wfOperationCtx) getExecutorPlugins() []apiv1.Container {
 	namespaces[woc.wf.Namespace] = true
 	for namespace := range namespaces {
 		for _, plug := range woc.controller.executorPlugins[namespace] {
-			sidecars = append(sidecars, plug.Spec.Sidecar.Container)
+			c := plug.Spec.Sidecar.Container.DeepCopy()
+			c.VolumeMounts = append(c.VolumeMounts, apiv1.VolumeMount{
+				Name:      volumeMountVarArgo.Name,
+				MountPath: volumeMountVarArgo.MountPath,
+				ReadOnly:  true,
+				// only mount the token for this plugin, not others
+				SubPath: c.Name,
+			})
+			sidecars = append(sidecars, *c)
 		}
 	}
 	return sidecars
@@ -167,6 +276,14 @@ func addresses(containers []apiv1.Container) []string {
 	var addresses []string
 	for _, c := range containers {
 		addresses = append(addresses, fmt.Sprintf("http://localhost:%d", c.Ports[0].ContainerPort))
+	}
+	return addresses
+}
+
+func names(containers []apiv1.Container) []string {
+	var addresses []string
+	for _, c := range containers {
+		addresses = append(addresses, c.Name)
 	}
 	return addresses
 }

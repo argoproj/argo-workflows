@@ -8,6 +8,10 @@ on:
       - master
       - dev-*
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 defaults:
   run:
     shell: bash
@@ -22,7 +26,7 @@ jobs:
         platform: [ linux/amd64 ]
         target: [ workflow-controller, argocli, argoexec ]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
@@ -88,7 +92,7 @@ jobs:
         platform: [ linux/arm64 ]
         target: [ workflow-controller, argocli, argoexec ]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
@@ -155,7 +159,7 @@ jobs:
     if: github.repository == 'argoproj/argo-workflows'
     runs-on: windows-2019
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Docker Login
         uses: Azure/docker-login@v1
         with:
@@ -196,7 +200,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [ build-linux-amd64, build-linux-arm64, build-windows ]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Docker Login
         uses: Azure/docker-login@v1
         with:
@@ -319,8 +323,8 @@ jobs:
     env:
       NODE_OPTIONS: --max-old-space-size=4096
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2.5.1
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
           node-version: "16"
       - uses: actions/setup-go@v2

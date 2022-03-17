@@ -46,6 +46,7 @@ func AddAPIClientFlagsToCmd(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringVarP(&argoServerOpts.URL, "argo-server", "s", os.Getenv("ARGO_SERVER"), "API server `host:port`. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.")
 	cmd.PersistentFlags().StringVar(&argoServerOpts.Path, "argo-base-href", os.Getenv("ARGO_BASE_HREF"), "An path to use with HTTP client (e.g. due to BASE_HREF). Defaults to the ARGO_BASE_HREF environment variable.")
 	cmd.PersistentFlags().BoolVar(&argoServerOpts.HTTP1, "argo-http1", os.Getenv("ARGO_HTTP1") == "true", "If true, use the HTTP client. Defaults to the ARGO_HTTP1 environment variable.")
+	cmd.PersistentFlags().StringSliceVarP(&argoServerOpts.Headers, "header", "H", []string{}, "Sets additional header to all requests made by Argo CLI. (Can be repeated multiple times to add multiple headers, also supports comma separated headers) Used only when either ARGO_HTTP1 or --argo-http1 is set to true.")
 	// "-e" for encrypted - like zip
 	cmd.PersistentFlags().BoolVarP(&argoServerOpts.Secure, "secure", "e", os.Getenv("ARGO_SECURE") != "false", "Whether or not the server is using TLS with the Argo Server. Defaults to the ARGO_SECURE environment variable.")
 	// "-k" like curl

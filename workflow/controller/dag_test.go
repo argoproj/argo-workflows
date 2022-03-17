@@ -155,6 +155,16 @@ spec:
           artifacts:
           - name: message
             from: "{{tasks.generate-artifact.outputs.artifacts.hello-art}}"
+      - name: sequence-param
+        template: print-message
+        dependencies: [generate-artifact]
+        when: "false"
+        arguments:
+          artifacts:
+          - name: message
+            from: "{{tasks.generate-artifact.outputs.artifacts.hello-art}}"
+        withSequence:
+          count: "5"
 
   - name: whalesay
     container:

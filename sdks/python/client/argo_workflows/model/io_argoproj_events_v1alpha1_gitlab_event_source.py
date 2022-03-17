@@ -30,8 +30,10 @@ from argo_workflows.exceptions import ApiAttributeError
 
 
 def lazy_import():
+    from argo_workflows.model.io_argoproj_events_v1alpha1_event_source_filter import IoArgoprojEventsV1alpha1EventSourceFilter
     from argo_workflows.model.io_argoproj_events_v1alpha1_webhook_context import IoArgoprojEventsV1alpha1WebhookContext
     from argo_workflows.model.secret_key_selector import SecretKeySelector
+    globals()['IoArgoprojEventsV1alpha1EventSourceFilter'] = IoArgoprojEventsV1alpha1EventSourceFilter
     globals()['IoArgoprojEventsV1alpha1WebhookContext'] = IoArgoprojEventsV1alpha1WebhookContext
     globals()['SecretKeySelector'] = SecretKeySelector
 
@@ -93,6 +95,7 @@ class IoArgoprojEventsV1alpha1GitlabEventSource(ModelNormal):
             'delete_hook_on_finish': (bool,),  # noqa: E501
             'enable_ssl_verification': (bool,),  # noqa: E501
             'events': ([str],),  # noqa: E501
+            'filter': (IoArgoprojEventsV1alpha1EventSourceFilter,),  # noqa: E501
             'gitlab_base_url': (str,),  # noqa: E501
             'metadata': ({str: (str,)},),  # noqa: E501
             'project_id': (str,),  # noqa: E501
@@ -111,6 +114,7 @@ class IoArgoprojEventsV1alpha1GitlabEventSource(ModelNormal):
         'delete_hook_on_finish': 'deleteHookOnFinish',  # noqa: E501
         'enable_ssl_verification': 'enableSSLVerification',  # noqa: E501
         'events': 'events',  # noqa: E501
+        'filter': 'filter',  # noqa: E501
         'gitlab_base_url': 'gitlabBaseURL',  # noqa: E501
         'metadata': 'metadata',  # noqa: E501
         'project_id': 'projectID',  # noqa: E501
@@ -164,6 +168,7 @@ class IoArgoprojEventsV1alpha1GitlabEventSource(ModelNormal):
             delete_hook_on_finish (bool): [optional]  # noqa: E501
             enable_ssl_verification (bool): [optional]  # noqa: E501
             events ([str]): Events are gitlab event to listen to. Refer https://github.com/xanzy/go-gitlab/blob/bf34eca5d13a9f4c3f501d8a97b8ac226d55e4d9/projects.go#L794.. [optional]  # noqa: E501
+            filter (IoArgoprojEventsV1alpha1EventSourceFilter): [optional]  # noqa: E501
             gitlab_base_url (str): [optional]  # noqa: E501
             metadata ({str: (str,)}): [optional]  # noqa: E501
             project_id (str): [optional]  # noqa: E501
@@ -255,6 +260,7 @@ class IoArgoprojEventsV1alpha1GitlabEventSource(ModelNormal):
             delete_hook_on_finish (bool): [optional]  # noqa: E501
             enable_ssl_verification (bool): [optional]  # noqa: E501
             events ([str]): Events are gitlab event to listen to. Refer https://github.com/xanzy/go-gitlab/blob/bf34eca5d13a9f4c3f501d8a97b8ac226d55e4d9/projects.go#L794.. [optional]  # noqa: E501
+            filter (IoArgoprojEventsV1alpha1EventSourceFilter): [optional]  # noqa: E501
             gitlab_base_url (str): [optional]  # noqa: E501
             metadata ({str: (str,)}): [optional]  # noqa: E501
             project_id (str): [optional]  # noqa: E501

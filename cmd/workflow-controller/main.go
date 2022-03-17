@@ -16,6 +16,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes"
 
@@ -23,13 +24,17 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/tools/leaderelection"
+	"k8s.io/client-go/tools/leaderelection/resourcelock"
 
 	"github.com/argoproj/argo-workflows/v3"
 	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
+	"github.com/argoproj/argo-workflows/v3/util/env"
 	"github.com/argoproj/argo-workflows/v3/util/logs"
 	pprofutil "github.com/argoproj/argo-workflows/v3/util/pprof"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller"
+	"github.com/argoproj/argo-workflows/v3/workflow/events"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
 )
 
@@ -107,7 +112,45 @@ func NewRootCommand() *cobra.Command {
 			wfController, err := controller.NewWorkflowController(ctx, config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap, executorPlugins)
 			errors.CheckError(err)
 
-			go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podCleanupWorkers)
+			leaderElectionOff := os.Getenv("LEADER_ELECTION_DISABLE")
+			if leaderElectionOff == "true" {
+				log.Info("Leader election is turned off. Running in single-instance mode")
+				log.WithField("id", "single-instance").Info("starting leading")
+				go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podCleanupWorkers)
+			} else {
+				nodeID, ok := os.LookupEnv("LEADER_ELECTION_IDENTITY")
+				if !ok {
+					log.Fatal("LEADER_ELECTION_IDENTITY must be set so that the workflow controllers can elect a leader")
+				}
+
+				leaderName := "workflow-controller"
+				if wfController.Config.InstanceID != "" {
+					leaderName = fmt.Sprintf("%s-%s", leaderName, wfController.Config.InstanceID)
+				}
+
+				go leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
+					Lock: &resourcelock.LeaseLock{
+						LeaseMeta: metav1.ObjectMeta{Name: leaderName, Namespace: namespace}, Client: kubeclientset.CoordinationV1(),
+						LockConfig: resourcelock.ResourceLockConfig{Identity: nodeID, EventRecorder: events.NewEventRecorderManager(kubeclientset).Get(namespace)},
+					},
+					ReleaseOnCancel: false,
+					LeaseDuration:   env.LookupEnvDurationOr("LEADER_ELECTION_LEASE_DURATION", 15*time.Second),
+					RenewDeadline:   env.LookupEnvDurationOr("LEADER_ELECTION_RENEW_DEADLINE", 10*time.Second),
+					RetryPeriod:     env.LookupEnvDurationOr("LEADER_ELECTION_RETRY_PERIOD", 5*time.Second),
+					Callbacks: leaderelection.LeaderCallbacks{
+						OnStartedLeading: func(ctx context.Context) {
+							go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podCleanupWorkers)
+						},
+						OnStoppedLeading: func() {
+							log.WithField("id", nodeID).Info("stopped leading")
+							cancel()
+						},
+						OnNewLeader: func(identity string) {
+							log.WithField("leader", identity).Info("new leader")
+						},
+					},
+				})
+			}
 
 			http.HandleFunc("/healthz", wfController.Healthz)
 
@@ -115,8 +158,8 @@ func NewRootCommand() *cobra.Command {
 				log.Println(http.ListenAndServe(":6060", nil))
 			}()
 
-			// Wait forever
-			select {}
+			<-ctx.Done()
+			return nil
 		},
 	}
 

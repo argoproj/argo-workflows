@@ -3,13 +3,20 @@ name: Regression report
 about: Create a regression report. Not for support requests.
 labels: ['bug', 'regression', 'triage']
 ---
+## Checklist
+
+<!-- Do NOT open an issue until you have: --> 
+
+* [ ] Double-checked my configuration.
+* [ ] Tested using the latest version.
+* [ ] Used the Emissary executor.
+
 ## Summary
 
 What happened/what you expected to happen?
 
-What version is it broken in?
+What version are you running?
 
-What executor are you using? PNS/Emissary
 
 ## Diagnostics
 
@@ -18,8 +25,6 @@ Paste the smallest workflow that reproduces the bug. We must be able to run the 
 ```yaml
 
 ```
-
-What executor are you running? PNS/Emissary
 
 ```bash
 # Logs from the workflow controller:
