@@ -71,7 +71,7 @@ func (e emissary) writeTemplate(t wfv1.Template) error {
 }
 
 func (e emissary) GetFileContents(_ string, sourcePath string) (string, error) {
-	data, err := ioutil.ReadFile(filepath.Clean(filepath.Join(common.VarRunArgoPath+"outputs", "parameters", sourcePath)))
+	data, err := ioutil.ReadFile(filepath.Clean(filepath.Join(common.VarRunArgoPath, "outputs", "parameters", sourcePath)))
 	return string(data), err
 }
 

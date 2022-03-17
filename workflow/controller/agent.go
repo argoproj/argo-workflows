@@ -10,7 +10,6 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
 
@@ -146,27 +145,18 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	}
 
 	serviceAccountName := woc.execWf.Spec.ServiceAccountName
-	secretName, err := woc.getServiceAccountTokenName(ctx, serviceAccountName)
+	tokenVolume, tokenVolumeMount, err := woc.getServiceAccountTokenVolume(ctx, serviceAccountName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get token volumes: %w", err)
 	}
-	// Intentionally randomize the name so that plugins cannot determine it.
-	tokenVolumeName := fmt.Sprintf("kube-api-access-%s", rand.String(5))
 
 	podVolumes := []apiv1.Volume{
-		{
-			Name: tokenVolumeName,
-			VolumeSource: apiv1.VolumeSource{
-				Secret: &apiv1.SecretVolumeSource{SecretName: secretName},
-			},
-		},
+		volumeVarArgo,
+		*tokenVolume,
 	}
 	podVolumeMounts := []apiv1.VolumeMount{
-		{
-			Name:      tokenVolumeName,
-			MountPath: common.ServiceAccountTokenMountPath,
-			ReadOnly:  true,
-		},
+		volumeMountVarArgo,
+		*tokenVolumeMount,
 	}
 	if certVolume != nil && certVolumeMount != nil {
 		podVolumes = append(podVolumes, *certVolume)
