@@ -63,36 +63,41 @@ This setting can also be configured in tandem with `concurrencyPolicy` to achiev
 
 ### Daylight Saving
 
-Daylight Saving (DST) is taking into account when using timezone. This guarantees argo only schedule workflow once when the clock moves forward or back.
+Daylight Saving (DST) is taken into account when using timezone. This means that, depending on the local time of the scheduled job, argo will schedule the workflow once, twice, or not at all when the clock moves forward or back.
 
 For example, with timezone set at `America/Los_Angeles`, we have daylight saving 
-- +1 hour (DST start) 2020-03-08 02:00:00
 
-| cron       | sequence | workflow execution time       |
-|------------|----------|-------------------------------|
-| 59 1 * * * | 1        | 2020-03-08 01:59:00 -0800 PST |
-|            | 2        | 2020-03-09 01:59:00 -0700 PDT |
-|            | 3        | 2020-03-10 01:59:00 -0700 PDT |
-| 0 2 * * *  | 1        | 2020-03-09 02:00:00 -0700 PDT |
-|            | 2        | 2020-03-10 02:00:00 -0700 PDT |
-|            | 3        | 2020-03-11 02:00:00 -0700 PDT |
-| 1 2 * * *  | 1        | 2020-03-09 02:01:00 -0700 PDT |
-|            | 2        | 2020-03-10 02:01:00 -0700 PDT |
-|            | 3        | 2020-03-11 02:01:00 -0700 PDT |
+- +1 hour (DST start) at 2020-03-08 02:00:00:
 
-- -1 hour (DST end) 2020-11-01 02:00:00
+    **Note:** The schedules between 02:00 a.m. to 02:59 a.m. were skipped on Mar 8th due to the clock being moved forward:
 
-| cron       | sequence | workflow execution time       |
-|------------|----------|-------------------------------|
-| 59 1 * * * | 1        | 2020-11-01 01:59:00 -0700 PDT |
-|            | 2        | 2020-11-01 01:59:00 -0800 PST |
-|            | 3        | 2020-11-02 01:59:00 -0800 PST |
-| 0 2 * * *  | 1        | 2020-11-01 02:00:00 -0800 PST |
-|            | 2        | 2020-11-02 02:00:00 -0800 PST |
-|            | 3        | 2020-11-03 02:00:00 -0800 PST |
-| 1 2 * * *  | 1        | 2020-11-01 02:01:00 -0800 PST |
-|            | 2        | 2020-11-02 02:01:00 -0800 PST |
-|            | 3        | 2020-11-03 02:01:00 -0800 PST |
+    | cron       | sequence | workflow execution time       |
+    |------------|----------|-------------------------------|
+    | 59 1 * * * | 1        | 2020-03-08 01:59:00 -0800 PST |
+    |            | 2        | 2020-03-09 01:59:00 -0700 PDT |
+    |            | 3        | 2020-03-10 01:59:00 -0700 PDT |
+    | 0 2 * * *  | 1        | 2020-03-09 02:00:00 -0700 PDT |
+    |            | 2        | 2020-03-10 02:00:00 -0700 PDT |
+    |            | 3        | 2020-03-11 02:00:00 -0700 PDT |
+    | 1 2 * * *  | 1        | 2020-03-09 02:01:00 -0700 PDT |
+    |            | 2        | 2020-03-10 02:01:00 -0700 PDT |
+    |            | 3        | 2020-03-11 02:01:00 -0700 PDT |
+
+- -1 hour (DST end) at 2020-11-01 02:00:00:
+
+    **Note:** the schedules between 01:00 a.m. to 01:59 a.m. were triggered twice on Nov 1st due to the clock being set back:
+
+    | cron       | sequence | workflow execution time       |
+    |------------|----------|-------------------------------|
+    | 59 1 * * * | 1        | 2020-11-01 01:59:00 -0700 PDT |
+    |            | 2        | 2020-11-01 01:59:00 -0800 PST |
+    |            | 3        | 2020-11-02 01:59:00 -0800 PST |
+    | 0 2 * * *  | 1        | 2020-11-01 02:00:00 -0800 PST |
+    |            | 2        | 2020-11-02 02:00:00 -0800 PST |
+    |            | 3        | 2020-11-03 02:00:00 -0800 PST |
+    | 1 2 * * *  | 1        | 2020-11-01 02:01:00 -0800 PST |
+    |            | 2        | 2020-11-02 02:01:00 -0800 PST |
+    |            | 3        | 2020-11-03 02:01:00 -0800 PST |
 
 ## Managing `CronWorkflow`
 

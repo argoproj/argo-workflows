@@ -817,8 +817,6 @@ spec:
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 
 	woc.operate(ctx)
-	// Have to process twice because agent pod is also deleted
-	controller.processNextPodCleanupItem(ctx)
 	controller.processNextPodCleanupItem(ctx)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 	podCleanupKey := "test/my-wf/labelPodCompleted"

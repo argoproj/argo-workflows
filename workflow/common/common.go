@@ -120,6 +120,8 @@ const (
 	EnvVarContainerName = "ARGO_CONTAINER_NAME"
 	// EnvVarDeadline is the deadline for the pod
 	EnvVarDeadline = "ARGO_DEADLINE"
+	// EnvVarTerminationGracePeriodSeconds is pod.spec.terminationGracePeriodSeconds
+	EnvVarTerminationGracePeriodSeconds = "ARGO_TERMINATION_GRACE_PERIOD_SECONDS"
 	// EnvVarIncludeScriptOutput capture the stdout and stderr
 	EnvVarIncludeScriptOutput = "ARGO_INCLUDE_SCRIPT_OUTPUT"
 	// EnvVarTemplate is the template
@@ -227,6 +229,9 @@ const (
 	ServiceAccountTokenMountPath  = "/var/run/secrets/kubernetes.io/serviceaccount" //nolint:gosec
 	ServiceAccountTokenVolumeName = "exec-sa-token"                                 //nolint:gosec
 	SecretVolMountPath            = "/argo/secret"
+
+	// CACertificatesVolumeMountName is the name of the secret that contains the CA certificates.
+	CACertificatesVolumeMountName = "argo-workflows-agent-ca-certificates"
 
 	// ArgoProgressPath defines the path to a file used for self reporting progress
 	ArgoProgressPath = "/var/run/argo/progress"
