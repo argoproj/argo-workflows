@@ -31,7 +31,7 @@ The init container creates these files:
 In the main container, the emissary creates these files:
 
 * `/var/run/argo/ctr/${containerName}/exitcode` The container exit code.
-* `/var/run/argo/ctr/${containerName}/stderr` A copy of stderr (if needed).
+* `/var/run/argo/ctr/${containerName}/combined` A copy of stdout+stderr (if needed).
 * `/var/run/argo/ctr/${containerName}/stdout`  A copy of stdout (if needed).
 
 If the container is named `main` it also copies base-layer artifacts to the shared volume:
