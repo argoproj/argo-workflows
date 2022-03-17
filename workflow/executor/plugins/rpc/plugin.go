@@ -12,8 +12,8 @@ import (
 
 type plugin struct{ rpc.Client }
 
-func New(address string) *plugin {
-	return &plugin{Client: rpc.New(address, 30*time.Second, wait.Backoff{
+func New(address, token string) *plugin {
+	return &plugin{Client: rpc.New(address, token, 30*time.Second, wait.Backoff{
 		Duration: time.Second,
 		Jitter:   0.2,
 		Factor:   2,

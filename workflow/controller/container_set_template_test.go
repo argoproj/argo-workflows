@@ -54,12 +54,12 @@ spec:
 		switch c.Name {
 		case common.WaitContainerName:
 			assert.ElementsMatch(t, []corev1.VolumeMount{
-				{Name: "var-run-argo", MountPath: "/var/run/argo"},
+				{Name: "var-run-argo", MountPath: common.VarRunArgoPath},
 			}, c.VolumeMounts)
 		case "ctr-0":
 			assert.ElementsMatch(t, []corev1.VolumeMount{
 				{Name: "workspace", MountPath: "/workspace"},
-				{Name: "var-run-argo", MountPath: "/var/run/argo"},
+				{Name: "var-run-argo", MountPath: common.VarRunArgoPath},
 			}, c.VolumeMounts)
 		default:
 			t.Fatalf(c.Name)
@@ -119,7 +119,7 @@ spec:
 		assert.ElementsMatch(t, []corev1.VolumeMount{
 			{Name: "input-artifacts", MountPath: "/argo/inputs/artifacts"},
 			{Name: "workspace", MountPath: "/mainctrfs/workspace"},
-			{Name: "var-run-argo", MountPath: "/var/run/argo"},
+			{Name: "var-run-argo", MountPath: common.VarRunArgoPath},
 		}, c.VolumeMounts)
 	}
 
@@ -130,13 +130,13 @@ spec:
 			assert.ElementsMatch(t, []corev1.VolumeMount{
 				{Name: "workspace", MountPath: "/mainctrfs/workspace"},
 				{Name: "input-artifacts", MountPath: "/mainctrfs/in/in-0", SubPath: "in-0"},
-				{Name: "var-run-argo", MountPath: "/var/run/argo"},
+				{Name: "var-run-argo", MountPath: common.VarRunArgoPath},
 			}, c.VolumeMounts)
 		case "main":
 			assert.ElementsMatch(t, []corev1.VolumeMount{
 				{Name: "workspace", MountPath: "/workspace"},
 				{Name: "input-artifacts", MountPath: "/in/in-0", SubPath: "in-0"},
-				{Name: "var-run-argo", MountPath: "/var/run/argo"},
+				{Name: "var-run-argo", MountPath: common.VarRunArgoPath},
 			}, c.VolumeMounts)
 		default:
 			t.Fatalf(c.Name)
@@ -199,12 +199,12 @@ spec:
 		case common.WaitContainerName:
 			assert.ElementsMatch(t, []corev1.VolumeMount{
 				{Name: "workspace", MountPath: "/mainctrfs/workspace"},
-				{Name: "var-run-argo", MountPath: "/var/run/argo"},
+				{Name: "var-run-argo", MountPath: common.VarRunArgoPath},
 			}, c.VolumeMounts)
 		case "main":
 			assert.ElementsMatch(t, []corev1.VolumeMount{
 				{Name: "workspace", MountPath: "/workspace"},
-				{Name: "var-run-argo", MountPath: "/var/run/argo"},
+				{Name: "var-run-argo", MountPath: common.VarRunArgoPath},
 			}, c.VolumeMounts)
 		default:
 			t.Fatalf(c.Name)

@@ -37,7 +37,7 @@ var (
 	}
 	volumeMountVarArgo = apiv1.VolumeMount{
 		Name:      volumeVarArgo.Name,
-		MountPath: "/var/run/argo",
+		MountPath: common.VarRunArgoPath,
 	}
 	hostPathSocket = apiv1.HostPathSocket
 )
@@ -439,7 +439,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			if len(c.Command) == 0 {
 				return nil, fmt.Errorf("container %q in template %q, does not have the command specified: when using the emissary executor you must either explicitly specify the command, or list the image's command in the index: https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary", c.Name, tmpl.Name)
 			}
-			c.Command = append([]string{"/var/run/argo/argoexec", "emissary", "--"}, c.Command...)
+			c.Command = append([]string{common.VarRunArgoPath + "/argoexec", "emissary", "--"}, c.Command...)
 		}
 		c.VolumeMounts = append(c.VolumeMounts, volumeMountVarArgo)
 		if x := pod.Spec.TerminationGracePeriodSeconds; x != nil && c.Name == common.WaitContainerName {
