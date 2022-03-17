@@ -234,11 +234,11 @@ func createCommand(name string, args []string, template *wfv1.Template) (*exec.C
 		if err != nil {
 			return nil, nil, nil, fmt.Errorf("failed to open stdout: %w", err)
 		}
-		command.Stdout = io.MultiWriter(os.Stdout, stdout, combined)
 		combined, err = os.OpenFile(varRunArgo+"/ctr/"+containerName+"/combined", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err != nil {
 			return nil, nil, nil, fmt.Errorf("failed to open combined: %w", err)
 		}
+		command.Stdout = io.MultiWriter(os.Stdout, stdout, combined)
 		command.Stderr = io.MultiWriter(os.Stderr, combined)
 	}
 	return command, stdout, combined, nil
