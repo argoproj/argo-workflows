@@ -16,7 +16,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -228,15 +227,15 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 	}
 
 	for _, podName := range podsToDelete {
-		log.Infof("Deleting pod: %s", podName)
+		log.WithFields(log.Fields{"podDeleted": podName}).Info("Deleting pod")
 		err := kubeClient.CoreV1().Pods(wf.Namespace).Delete(ctx, podName, metav1.DeleteOptions{})
 		if err != nil && !apierr.IsNotFound(err) {
-			return nil, errors.InternalWrapError(err)
+			return nil, err
 		}
 	}
 
 	wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Update(ctx, wf, metav1.UpdateOptions{})
-	if apierr.IsAlreadyExists(err) {
+	if apierr.IsNotFound(err) {
 		wf.ObjectMeta.ResourceVersion = ""
 		wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		if err != nil {

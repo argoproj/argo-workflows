@@ -330,10 +330,10 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 	}
 
 	for _, podName := range podsToDelete {
-		log.Infof("Deleting pod: %s", podName)
+		log.WithFields(log.Fields{"podDeleted": podName}).Info("Deleting pod")
 		err := kubeClient.CoreV1().Pods(wf.Namespace).Delete(ctx, podName, metav1.DeleteOptions{})
 		if err != nil && !apierr.IsNotFound(err) {
-			return nil, errors.InternalWrapError(err)
+			return nil, err
 		}
 	}
 
