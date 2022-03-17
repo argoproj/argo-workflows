@@ -694,6 +694,11 @@ func (woc *wfOperationCtx) createEnvVars(tmpl *wfv1.Template) []apiv1.EnvVar {
 			apiv1.EnvVar{Name: common.EnvVarInstanceID, Value: v},
 		)
 	}
+	if v := woc.controller.Config.InstanceID; v != "" {
+		execEnvVars = append(execEnvVars,
+			apiv1.EnvVar{Name: common.EnvVarInstanceID, Value: v},
+		)
+	}
 	if woc.controller.Config.Executor != nil {
 		execEnvVars = append(execEnvVars, woc.controller.Config.Executor.Env...)
 	}

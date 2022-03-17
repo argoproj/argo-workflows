@@ -3,11 +3,8 @@ package controller
 import (
 	"context"
 	"fmt"
-	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	authutil "github.com/argoproj/argo-workflows/v3/util/auth"
-	"github.com/argoproj/argo-workflows/v3/util/logs"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
+	"time"
+
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,7 +14,12 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
-	"time"
+
+	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
+	authutil "github.com/argoproj/argo-workflows/v3/util/auth"
+	"github.com/argoproj/argo-workflows/v3/util/logs"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
 )
 
 func (wfc *WorkflowController) newDefaultProfiles(restConfig *rest.Config, kubernetesClient kubernetes.Interface, workflowClient wfclientset.Interface, metadataClient metadata.Interface) profiles {

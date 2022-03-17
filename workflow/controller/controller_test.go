@@ -214,18 +214,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		wfc.throttler = wfc.newThrottler()
 		wfc.podCleanupQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 		wfc.rateLimiter = wfc.newRateLimiter()
-
-		wfc.profiles = profiles{
-			wfc.localPolicyKey(): {
-				policyDef:          wfc.localPolicyDef(),
-				kubernetesClient:   kube,
-				metadataClient:     &fakeMetadataClient,
-				workflowClient:     wfclientset,
-				podInformer:        wfc.newPodInformer(kube, common.LocalCluster, wfc.GetManagedNamespace()),
-				podGCInformer:      wfc.newPodGCInformer(&fakeMetadataClient, common.LocalCluster, wfc.GetManagedNamespace()),
-				taskResultInformer: wfc.newWorkflowTaskResultInformer(wfclientset, common.LocalCluster),
-			},
-		}
+		wfc.profiles = wfc.newDefaultProfiles(nil, kube, wfclientset, &fakeMetadataClient)
 	}
 
 	// always compare to WorkflowController.Run to see what this block of code should be doing
