@@ -15,7 +15,6 @@ concurrency:
 
 jobs:
   tests:
-    name: Unit Tests
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
@@ -79,7 +78,7 @@ jobs:
     name: E2E Tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: [ argoexec-image ]
+    needs: [ tests, argoexec-image ]
     env:
       KUBECONFIG: /home/runner/.kubeconfig
     strategy:
@@ -89,14 +88,17 @@ jobs:
         include:
           - test: test-executor
             containerRuntimeExecutor: emissary
-            profile: minimal
+            profile: plugins
           - test: test-functional
             containerRuntimeExecutor: emissary
             profile: minimal
+          - test: test-api
+            containerRuntimeExecutor: emissary
+            profile: mysql
           - test: test-cli
             containerRuntimeExecutor: emissary
             profile: mysql
-          - test: test-examples
+          - test: test-cron
             containerRuntimeExecutor: emissary
             profile: minimal
           - test: test-multi-cluster
@@ -104,8 +106,8 @@ jobs:
             profile: multi-cluster
           - test: test-plugins
             containerRuntimeExecutor: emissary
-            profile: plugins
-          - test: test-cron
+            profile: minimal
+          - test: test-plugins
             containerRuntimeExecutor: emissary
             profile: minimal
           - test: test-executor
