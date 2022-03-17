@@ -50,10 +50,10 @@ func TestEmissary(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Contains(t, string(data), "hello")
 	})
-	t.Run("Stderr", func(t *testing.T) {
+	t.Run("Comined", func(t *testing.T) {
 		err := run(x, []string{"echo", "hello", "/dev/stderr"})
 		assert.NoError(t, err)
-		data, err := ioutil.ReadFile(varRunArgo + "/ctr/main/stderr")
+		data, err := ioutil.ReadFile(varRunArgo + "/ctr/main/combined")
 		assert.NoError(t, err)
 		assert.Contains(t, string(data), "hello")
 	})
