@@ -78,7 +78,7 @@ make argoexec-image
 2. Find an e2e test that you want to run in `test/e2e`
 3. Determine which profile the e2e test is using by inspecting the go build flag at the top of the file and referring to [ci-build.yaml]
 
-[ci-build.yaml]: .github/workflows/ci-build.yaml
+[ci-build.yaml]: ../.github/workflows/ci-build.yaml
 
 For example `TestArchiveStrategies` in `test/e2e/functional_test.go` has the following build flags
 
