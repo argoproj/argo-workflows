@@ -1093,11 +1093,7 @@ spec:
         app: workflow-controller
     spec:
       containers:
-      - args:
-        - --configmap
-        - workflow-controller-configmap
-        - --executor-image
-        - quay.io/argoproj/argoexec:latest
+      - args: []
         command:
         - workflow-controller
         env:
