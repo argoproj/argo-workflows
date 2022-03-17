@@ -108,8 +108,7 @@ func (e emissary) GetOutputStream(_ context.Context, containerName string, combi
 	if combinedOutput {
 		name = "combined"
 	}
-
-	return os.Open(filepath.Clean(filepath.Join(common.VarRunArgoPath, "ctr", containerName, name)))
+	return os.Open(filepath.Clean("/var/run/argo/ctr/" + containerName + "/" + name))
 }
 
 func (e emissary) Wait(ctx context.Context, containerNames []string) error {
