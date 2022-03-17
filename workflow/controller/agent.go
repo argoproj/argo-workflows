@@ -73,7 +73,7 @@ func assessAgentPodStatus(pod *apiv1.Pod) (wfv1.WorkflowPhase, string) {
 }
 
 func (woc *wfOperationCtx) secretExists(ctx context.Context, name string) (bool, error) {
-	_, err := woc.controller.kubeclientset.CoreV1().Secrets(woc.wf.Namespace).Get(ctx, name, metav1.GetOptions{})
+	_, err := woc.controller.localProfile().kubernetesClient.CoreV1().Secrets(woc.wf.Namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		if apierr.IsNotFound(err) {
 			return false, nil
