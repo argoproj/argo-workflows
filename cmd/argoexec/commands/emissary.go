@@ -29,7 +29,7 @@ import (
 var (
 	varRunArgo          = "/var/run/argo"
 	containerName       = os.Getenv(common.EnvVarContainerName)
-	includeScriptOutput = os.Getenv(common.EnvVarIncludeScriptOutput) == "true" // capture stdout/stderr/combined
+	includeScriptOutput = os.Getenv(common.EnvVarIncludeScriptOutput) == "true" // capture stdout/combined
 	template            = &wfv1.Template{}
 	logger              = log.WithField("argo", true)
 )
