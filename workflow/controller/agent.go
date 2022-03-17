@@ -10,7 +10,6 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
 
@@ -129,7 +128,11 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		return nil, err
 	}
 
-	pluginSidecars := woc.getExecutorPlugins()
+	pluginSidecars, pluginVolumes, err := woc.getExecutorPlugins(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	envVars := []apiv1.EnvVar{
 		{Name: common.EnvVarWorkflowName, Value: woc.wf.Name},
 		{Name: common.EnvAgentPatchRate, Value: env.LookupEnvStringOr(common.EnvAgentPatchRate, GetRequeueTime().String())},
@@ -145,51 +148,18 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	}
 
 	serviceAccountName := woc.execWf.Spec.ServiceAccountName
-	secretName, err := woc.getServiceAccountTokenName(ctx, serviceAccountName)
+	tokenVolume, tokenVolumeMount, err := woc.getServiceAccountTokenVolume(ctx, serviceAccountName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get token volumes: %w", err)
+		return nil, err
 	}
-	// Intentionally randomize the name so that plugins cannot determine it.
-	tokenVolumeName := fmt.Sprintf("kube-api-access-%s", rand.String(5))
 
-	var podVolumes []apiv1.Volume
-	var podVolumeMounts []apiv1.VolumeMount
+	podVolumes := append(pluginVolumes, *tokenVolume)
+	podVolumeMounts := []apiv1.VolumeMount{
+		*tokenVolumeMount,
+	}
 	if certVolume != nil && certVolumeMount != nil {
-		podVolumes = []apiv1.Volume{
-			{
-				Name: tokenVolumeName,
-				VolumeSource: apiv1.VolumeSource{
-					Secret: &apiv1.SecretVolumeSource{SecretName: secretName},
-				},
-			},
-			*certVolume,
-		}
-
-		podVolumeMounts = []apiv1.VolumeMount{
-			{
-				Name:      tokenVolumeName,
-				MountPath: common.ServiceAccountTokenMountPath,
-				ReadOnly:  true,
-			},
-			*certVolumeMount,
-		}
-	} else {
-		podVolumes = []apiv1.Volume{
-			{
-				Name: tokenVolumeName,
-				VolumeSource: apiv1.VolumeSource{
-					Secret: &apiv1.SecretVolumeSource{SecretName: secretName},
-				},
-			},
-		}
-
-		podVolumeMounts = []apiv1.VolumeMount{
-			{
-				Name:      tokenVolumeName,
-				MountPath: common.ServiceAccountTokenMountPath,
-				ReadOnly:  true,
-			},
-		}
+		podVolumes = append(podVolumes, *certVolume)
+		podVolumeMounts = append(podVolumeMounts, *certVolumeMount)
 	}
 
 	pod := &apiv1.Pod{
@@ -272,17 +242,28 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	return created, nil
 }
 
-func (woc *wfOperationCtx) getExecutorPlugins() []apiv1.Container {
+func (woc *wfOperationCtx) getExecutorPlugins(ctx context.Context) ([]apiv1.Container, []apiv1.Volume, error) {
 	var sidecars []apiv1.Container
+	var volumes []apiv1.Volume
 	namespaces := map[string]bool{} // de-dupes executorPlugins when their namespaces are the same
 	namespaces[woc.controller.namespace] = true
 	namespaces[woc.wf.Namespace] = true
 	for namespace := range namespaces {
 		for _, plug := range woc.controller.executorPlugins[namespace] {
-			sidecars = append(sidecars, plug.Spec.Sidecar.Container)
+			s := plug.Spec.Sidecar
+			c := s.Container.DeepCopy()
+			if s.AutomountServiceAccountToken {
+				volume, volumeMount, err := woc.getServiceAccountTokenVolume(ctx, plug.Name+"-executor-plugin")
+				if err != nil {
+					return nil, nil, err
+				}
+				volumes = append(volumes, *volume)
+				c.VolumeMounts = append(c.VolumeMounts, *volumeMount)
+			}
+			sidecars = append(sidecars, *c)
 		}
 	}
-	return sidecars
+	return sidecars, volumes, nil
 }
 
 func addresses(containers []apiv1.Container) []string {

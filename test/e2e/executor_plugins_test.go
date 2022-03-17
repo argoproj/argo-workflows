@@ -41,16 +41,35 @@ func (s *ExecutorPluginsSuite) TestTemplateExecutor() {
 					RunAsUser:    pointer.Int64(8737),
 					RunAsNonRoot: pointer.BoolPtr(true),
 				}, spec.SecurityContext)
+				if assert.Len(t, spec.Volumes, 3) {
+					assert.Contains(t, spec.Volumes[0].Name, "kube-api-access-")
+					assert.Contains(t, spec.Volumes[1].Name, "kube-api-access-")
+					assert.Equal(t, spec.Volumes[2].Name, "argo-workflows-agent-ca-certificates")
+				}
 				if assert.Len(t, spec.Containers, 2) {
-					agent := spec.Containers[1]
-					if assert.Equal(t, "main", agent.Name) {
-						assert.Equal(t, &apiv1.SecurityContext{
-							RunAsUser:                pointer.Int64(8737),
-							RunAsNonRoot:             pointer.BoolPtr(true),
-							AllowPrivilegeEscalation: pointer.BoolPtr(false),
-							ReadOnlyRootFilesystem:   pointer.BoolPtr(true),
-							Capabilities:             &apiv1.Capabilities{Drop: []apiv1.Capability{"ALL"}},
-						}, agent.SecurityContext)
+					{
+						plug := spec.Containers[0]
+						if assert.Equal(t, "hello-executor-plugin", plug.Name) {
+							if assert.Len(t, plug.VolumeMounts, 1) {
+								assert.Contains(t, plug.VolumeMounts[0].Name, "kube-api-access-")
+							}
+						}
+					}
+					{
+						agent := spec.Containers[1]
+						if assert.Equal(t, "main", agent.Name) {
+							if assert.Len(t, agent.VolumeMounts, 2) {
+								assert.Contains(t, agent.VolumeMounts[0].Name, "kube-api-access-")
+								assert.Equal(t, agent.VolumeMounts[1].Name, "argo-workflows-agent-ca-certificates")
+							}
+							assert.Equal(t, &apiv1.SecurityContext{
+								RunAsUser:                pointer.Int64(8737),
+								RunAsNonRoot:             pointer.BoolPtr(true),
+								AllowPrivilegeEscalation: pointer.BoolPtr(false),
+								ReadOnlyRootFilesystem:   pointer.BoolPtr(true),
+								Capabilities:             &apiv1.Capabilities{Drop: []apiv1.Capability{"ALL"}},
+							}, agent.SecurityContext)
+						}
 					}
 				}
 			}

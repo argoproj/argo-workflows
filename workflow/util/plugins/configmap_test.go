@@ -33,6 +33,7 @@ func TestToConfigMap(t *testing.T) {
 			},
 			Spec: spec.PluginSpec{
 				Sidecar: spec.Sidecar{
+					AutomountServiceAccountToken: true,
 					Container: apiv1.Container{
 						Ports: []apiv1.ContainerPort{{ContainerPort: 1234}},
 						Resources: apiv1.ResourceRequirements{
@@ -52,7 +53,8 @@ func TestToConfigMap(t *testing.T) {
 				"workflows.argoproj.io/configmap-type": "ExecutorPlugin",
 			}, cm.Labels)
 			assert.Equal(t, map[string]string{
-				"sidecar.container": "name: \"\"\nports:\n- containerPort: 1234\nresources: {}\nsecurityContext: {}\n",
+				"sidecar.automountServiceAccountToken": "true",
+				"sidecar.container":                    "name: \"\"\nports:\n- containerPort: 1234\nresources: {}\nsecurityContext: {}\n",
 			}, cm.Data)
 		}
 	})
@@ -76,8 +78,8 @@ func TestFromConfigMap(t *testing.T) {
 				},
 			},
 			Data: map[string]string{
-				"sidecar.address":   "http://my-addr",
-				"sidecar.container": "{'name': 'my-name', 'ports': [{}], 'resources': {'requests': {}, 'limits': {}}, 'securityContext': {}}",
+				"sidecar.automountServiceAccountToken": "true",
+				"sidecar.container":                    "{'name': 'my-name', 'ports': [{}], 'resources': {'requests': {}, 'limits': {}}, 'securityContext': {}}",
 			},
 		})
 		if assert.NoError(t, err) {
@@ -85,6 +87,7 @@ func TestFromConfigMap(t *testing.T) {
 			assert.Equal(t, "my-plug", p.Name)
 			assert.Len(t, p.Annotations, 1)
 			assert.Len(t, p.Labels, 1)
+			assert.True(t, p.Spec.Sidecar.AutomountServiceAccountToken)
 			assert.Equal(t, apiv1.Container{
 				Name:  "my-name",
 				Ports: []apiv1.ContainerPort{{}},
