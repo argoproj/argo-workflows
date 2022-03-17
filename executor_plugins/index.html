@@ -3028,7 +3028,9 @@ add your plugin. If not, use a port number greater than 10,000.</p>
 <p>We'll need to create a script that starts a HTTP server. Save this as <code>server.py</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">from</span> <span class="nn">http.server</span> <span class="kn">import</span> <span class="n">BaseHTTPRequestHandler</span><span class="p">,</span> <span class="n">HTTPServer</span>
-<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span>
+
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;/var/run/argo/token&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">token</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
 
 
 <span class="k">class</span> <span class="nc">Plugin</span><span class="p">(</span><span class="n">BaseHTTPRequestHandler</span><span class="p">):</span>
@@ -3041,16 +3043,23 @@ add your plugin. If not, use a port number greater than 10,000.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">end_headers</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">wfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">reply</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;UTF-8&quot;</span><span class="p">))</span>
 
+    <span class="k">def</span> <span class="nf">forbidden</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">send_response</span><span class="p">(</span><span class="mi">403</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">end_headers</span><span class="p">()</span>
+
     <span class="k">def</span> <span class="nf">unsupported</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">send_response</span><span class="p">(</span><span class="mi">404</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">end_headers</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">do_POST</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">==</span> <span class="s1">&#39;/api/v1/template.execute&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;Authorization&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;Bearer &quot;</span> <span class="o">+</span> <span class="n">token</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">forbidden</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">==</span> <span class="s1">&#39;/api/v1/template.execute&#39;</span><span class="p">:</span>
             <span class="n">args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">()</span>
-            <span class="n">pprint</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
             <span class="k">if</span> <span class="s1">&#39;hello&#39;</span> <span class="ow">in</span> <span class="n">args</span><span class="p">[</span><span class="s1">&#39;template&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;plugin&#39;</span><span class="p">,</span> <span class="p">{}):</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">reply</span><span class="p">({</span><span class="s1">&#39;node&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;phase&#39;</span><span class="p">:</span> <span class="s1">&#39;Succeeded&#39;</span><span class="p">,</span> <span class="s1">&#39;message&#39;</span><span class="p">:</span> <span class="s1">&#39;Hello template!&#39;</span><span class="p">}})</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">reply</span><span class="p">(</span>
+                    <span class="p">{</span><span class="s1">&#39;node&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;phase&#39;</span><span class="p">:</span> <span class="s1">&#39;Succeeded&#39;</span><span class="p">,</span> <span class="s1">&#39;message&#39;</span><span class="p">:</span> <span class="s1">&#39;Hello template!&#39;</span><span class="p">,</span>
+                              <span class="s1">&#39;outputs&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;parameters&#39;</span><span class="p">:</span> <span class="p">[{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;foo&#39;</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="s1">&#39;bar&#39;</span><span class="p">}]}}})</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">reply</span><span class="p">({})</span>
         <span class="k">else</span><span class="p">:</span>
@@ -3067,6 +3076,7 @@ the script in the container.</p>
 <ul>
 <li>You only need to implement the calls you need. Return 404 and it won't be called again.</li>
 <li>The path is the RPC method name.</li>
+<li>You should check that the <code>Authorization</code> header contains the same value as <code>/var/run/argo/token</code>. Return 403 if not</li>
 <li>The request body contains the template's input parameters.</li>
 <li>The response body may contain the node's result, including the phase (e.g. "Succeeded" or "Failed") and a message.</li>
 <li>If the response is <code>{}</code>, then the plugin is saying it cannot execute the plugin template, e.g. it is a Slack plugin,
