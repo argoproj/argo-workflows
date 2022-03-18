@@ -425,10 +425,14 @@ ifeq ($(PROFILE),multi-cluster)
 
 	# create a service account for the controller to use in the remote cluster
 	kubectl --context=cluster-1 create serviceaccount argo-cluster-0
-	kubectl --context=cluster-1 create clusterrole pod-reconciller --verb=create,patch,delete,list,watch --resource=pods,pods/exec
-	kubectl --context=cluster-1 create clusterrole workflowtaskresult-reconciller --verb=list,watch,deletecollection --resource=workflowtaskresults.argoproj.io
-	kubectl --context=cluster-1 create clusterrolebinding argo-cluster-0-pod-reconciller --clusterrole=pod-reconciller --user=system:serviceaccount:default:argo-cluster-0
-	kubectl --context=cluster-1 create clusterrolebinding argo-cluster-0-workflowtaskresult-reconciller --clusterrole=workflowtaskresult-reconciller --user=system:serviceaccount:default:argo-cluster-0
+	kubectl --context=cluster-1 create clusterrole pod-read --verb=list,watch --resource=pods
+	kubectl --context=cluster-1 create clusterrole pod-write --verb=create,patch,delete --resource=pods,pods/exec
+	kubectl --context=cluster-1 create clusterrole workflowtaskresult-read --verb=list,watch --resource=workflowtaskresults.argoproj.io
+	kubectl --context=cluster-1 create clusterrole workflowtaskresult-write --verb=deletecollection --resource=workflowtaskresults.argoproj.io
+	kubectl --context=cluster-1 create clusterrolebinding argo-cluster-0-pod-read --clusterrole=pod-read --user=system:serviceaccount:default:argo-cluster-0
+	kubectl --context=cluster-1 create clusterrolebinding argo-cluster-0-pod-write --clusterrole=pod-write --user=system:serviceaccount:default:argo-cluster-0
+	kubectl --context=cluster-1 create clusterrolebinding argo-cluster-0-workflowtaskresult-read --clusterrole=workflowtaskresult-read --user=system:serviceaccount:default:argo-cluster-0
+	kubectl --context=cluster-1 create clusterrolebinding argo-cluster-0-workflowtaskresult-write --clusterrole=workflowtaskresult-write --user=system:serviceaccount:default:argo-cluster-0
 
 	# create a secret containing a kubeconfig for that user
 	kubectl delete secret -l workflows.argoproj.io/cluster
