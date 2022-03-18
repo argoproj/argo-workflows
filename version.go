@@ -20,7 +20,6 @@ var (
 // ImageTag return the image tag.
 // GetVersion().Version adulterates the version making it useless as the image tag.
 func ImageTag() string {
-
 	if version != "untagged" {
 		return version
 	}
