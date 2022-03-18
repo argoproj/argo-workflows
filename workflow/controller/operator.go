@@ -289,6 +289,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration()
 	} else {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
+		woc.taskResultReconciliation()
 		err := woc.podReconciliation(ctx)
 		if err == nil {
 			woc.failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
@@ -1252,19 +1253,6 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 		woc.log.Warn("workflow uses legacy/insecure pod patch, see https://argoproj.github.io/argo-workflows/workflow-rbac/")
 		if p, ok := wfv1.ParseProgress(x); ok {
 			new.Progress = p
-		}
-	}
-
-	obj, _, _ := woc.controller.taskResultInformer.Informer().GetStore().GetByKey(woc.wf.Namespace + "/" + old.ID)
-	if result, ok := obj.(*wfv1.WorkflowTaskResult); ok {
-		if result.Outputs.HasOutputs() {
-			if new.Outputs == nil {
-				new.Outputs = &wfv1.Outputs{}
-			}
-			result.Outputs.DeepCopyInto(new.Outputs) // preserve any existing values
-		}
-		if result.Progress.IsValid() {
-			new.Progress = result.Progress
 		}
 	}
 
