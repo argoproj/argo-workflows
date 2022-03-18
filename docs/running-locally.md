@@ -76,9 +76,7 @@ make argoexec-image
 
 1. Configure your IDE to set the `KUBECONFIG` environment variable to your k3d kubeconfig file
 2. Find an e2e test that you want to run in `test/e2e`
-3. Determine which profile the e2e test is using by inspecting the go build flag at the top of the file and referring to [ci-build.yaml]
-
-.github/workflows/ci-build.yaml
+3. Determine which profile the e2e test is using by inspecting the go build flag at the top of the file and referring to [ci-build.yaml](https://github.com/argoproj/argo-workflows/blob/master/.github/workflows/ci-build.yaml)
 
 For example `TestArchiveStrategies` in `test/e2e/functional_test.go` has the following build flags
 
@@ -87,13 +85,13 @@ For example `TestArchiveStrategies` in `test/e2e/functional_test.go` has the fol
 // +build functional
 ```
 
-In ci-build.yaml the functional test suite is using the `minimal` profile
+In [ci-build.yaml](https://github.com/argoproj/argo-workflows/blob/master/.github/workflows/ci-build.yaml) the functional test suite is using the `minimal` profile
 
-4.  Run the profile in a terminal window
+4. Run the profile in a terminal window
 
-```shell
-   make start PROFILE=minimal E2E_EXECUTOR=emissary AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=true UI=false
-````
+    ```shell
+    make start PROFILE=minimal E2E_EXECUTOR=emissary AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=true UI=false
+    ```
 
 5. Run the test in your IDE
 
