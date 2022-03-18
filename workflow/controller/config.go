@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
@@ -9,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/yaml"
 
+	"github.com/argoproj/argo-workflows/v3"
 	"github.com/argoproj/argo-workflows/v3/config"
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
@@ -92,7 +94,10 @@ func (wfc *WorkflowController) executorImage() string {
 	if wfc.cliExecutorImage != "" {
 		return wfc.cliExecutorImage
 	}
-	return wfc.Config.GetExecutor().Image
+	if v := wfc.Config.GetExecutor().Image; v != "" {
+		return v
+	}
+	return fmt.Sprintf("quay.io/argoproj/argoexec:" + argo.ImageTag())
 }
 
 // executorImagePullPolicy returns the imagePullPolicy to use for the workflow executor
