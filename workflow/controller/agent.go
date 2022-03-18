@@ -10,7 +10,6 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
 
@@ -134,6 +133,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		{Name: common.EnvVarWorkflowName, Value: woc.wf.Name},
 		{Name: common.EnvAgentPatchRate, Value: env.LookupEnvStringOr(common.EnvAgentPatchRate, GetRequeueTime().String())},
 		{Name: common.EnvVarPluginAddresses, Value: wfv1.MustMarshallJSON(addresses(pluginSidecars))},
+		{Name: common.EnvVarPluginNames, Value: wfv1.MustMarshallJSON(names(pluginSidecars))},
 	}
 
 	// If the default number of task workers is overridden, then pass it to the agent pod.
@@ -145,52 +145,57 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	}
 
 	serviceAccountName := woc.execWf.Spec.ServiceAccountName
-	secretName, err := woc.getServiceAccountTokenName(ctx, serviceAccountName)
+	tokenVolume, tokenVolumeMount, err := woc.getServiceAccountTokenVolume(ctx, serviceAccountName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get token volumes: %w", err)
 	}
-	// Intentionally randomize the name so that plugins cannot determine it.
-	tokenVolumeName := fmt.Sprintf("kube-api-access-%s", rand.String(5))
 
-	var podVolumes []apiv1.Volume
-	var podVolumeMounts []apiv1.VolumeMount
-	if certVolume != nil && certVolumeMount != nil {
-		podVolumes = []apiv1.Volume{
-			{
-				Name: tokenVolumeName,
-				VolumeSource: apiv1.VolumeSource{
-					Secret: &apiv1.SecretVolumeSource{SecretName: secretName},
-				},
-			},
-			*certVolume,
-		}
-
-		podVolumeMounts = []apiv1.VolumeMount{
-			{
-				Name:      tokenVolumeName,
-				MountPath: common.ServiceAccountTokenMountPath,
-				ReadOnly:  true,
-			},
-			*certVolumeMount,
-		}
-	} else {
-		podVolumes = []apiv1.Volume{
-			{
-				Name: tokenVolumeName,
-				VolumeSource: apiv1.VolumeSource{
-					Secret: &apiv1.SecretVolumeSource{SecretName: secretName},
-				},
-			},
-		}
-
-		podVolumeMounts = []apiv1.VolumeMount{
-			{
-				Name:      tokenVolumeName,
-				MountPath: common.ServiceAccountTokenMountPath,
-				ReadOnly:  true,
-			},
-		}
+	podVolumes := []apiv1.Volume{
+		volumeVarArgo,
+		*tokenVolume,
 	}
+	podVolumeMounts := []apiv1.VolumeMount{
+		volumeMountVarArgo,
+		*tokenVolumeMount,
+	}
+	if certVolume != nil && certVolumeMount != nil {
+		podVolumes = append(podVolumes, *certVolume)
+		podVolumeMounts = append(podVolumeMounts, *certVolumeMount)
+	}
+	agentCtrTemplate := apiv1.Container{
+		Command:         []string{"argoexec"},
+		Image:           woc.controller.executorImage(),
+		ImagePullPolicy: woc.controller.executorImagePullPolicy(),
+		Env:             envVars,
+		SecurityContext: &apiv1.SecurityContext{
+			Capabilities: &apiv1.Capabilities{
+				Drop: []apiv1.Capability{"ALL"},
+			},
+			RunAsNonRoot:             pointer.BoolPtr(true),
+			RunAsUser:                pointer.Int64Ptr(8737),
+			ReadOnlyRootFilesystem:   pointer.BoolPtr(true),
+			AllowPrivilegeEscalation: pointer.BoolPtr(false),
+		},
+		Resources: apiv1.ResourceRequirements{
+			Requests: map[apiv1.ResourceName]resource.Quantity{
+				"cpu":    resource.MustParse("10m"),
+				"memory": resource.MustParse("64M"),
+			},
+			Limits: map[apiv1.ResourceName]resource.Quantity{
+				"cpu":    resource.MustParse(env.LookupEnvStringOr("ARGO_AGENT_CPU_LIMIT", "100m")),
+				"memory": resource.MustParse(env.LookupEnvStringOr("ARGO_AGENT_MEMORY_LIMIT", "256M")),
+			},
+		},
+		VolumeMounts: podVolumeMounts,
+	}
+	// the `init` container populates the shared empty-dir volume with tokens
+	agentInitCtr := agentCtrTemplate.DeepCopy()
+	agentInitCtr.Name = common.InitContainerName
+	agentInitCtr.Args = []string{"agent", "init"}
+	// the `main` container runs the actual work
+	agentMainCtr := agentCtrTemplate.DeepCopy()
+	agentMainCtr.Name = common.MainContainerName
+	agentMainCtr.Args = []string{"agent", "main"}
 
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -218,38 +223,12 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			ServiceAccountName:           serviceAccountName,
 			AutomountServiceAccountToken: pointer.BoolPtr(false),
 			Volumes:                      podVolumes,
-
+			InitContainers: []apiv1.Container{
+				*agentInitCtr,
+			},
 			Containers: append(
 				pluginSidecars,
-				apiv1.Container{
-					Name:            common.MainContainerName,
-					Command:         []string{"argoexec"},
-					Args:            []string{"agent"},
-					Image:           woc.controller.executorImage(),
-					ImagePullPolicy: woc.controller.executorImagePullPolicy(),
-					Env:             envVars,
-
-					SecurityContext: &apiv1.SecurityContext{
-						Capabilities: &apiv1.Capabilities{
-							Drop: []apiv1.Capability{"ALL"},
-						},
-						RunAsNonRoot:             pointer.BoolPtr(true),
-						RunAsUser:                pointer.Int64Ptr(8737),
-						ReadOnlyRootFilesystem:   pointer.BoolPtr(true),
-						AllowPrivilegeEscalation: pointer.BoolPtr(false),
-					},
-					Resources: apiv1.ResourceRequirements{
-						Requests: map[apiv1.ResourceName]resource.Quantity{
-							"cpu":    resource.MustParse("10m"),
-							"memory": resource.MustParse("64M"),
-						},
-						Limits: map[apiv1.ResourceName]resource.Quantity{
-							"cpu":    resource.MustParse(env.LookupEnvStringOr("ARGO_AGENT_CPU_LIMIT", "100m")),
-							"memory": resource.MustParse(env.LookupEnvStringOr("ARGO_AGENT_MEMORY_LIMIT", "256M")),
-						},
-					},
-					VolumeMounts: podVolumeMounts,
-				},
+				*agentMainCtr,
 			),
 		},
 	}
@@ -279,7 +258,15 @@ func (woc *wfOperationCtx) getExecutorPlugins() []apiv1.Container {
 	namespaces[woc.wf.Namespace] = true
 	for namespace := range namespaces {
 		for _, plug := range woc.controller.executorPlugins[namespace] {
-			sidecars = append(sidecars, plug.Spec.Sidecar.Container)
+			c := plug.Spec.Sidecar.Container.DeepCopy()
+			c.VolumeMounts = append(c.VolumeMounts, apiv1.VolumeMount{
+				Name:      volumeMountVarArgo.Name,
+				MountPath: volumeMountVarArgo.MountPath,
+				ReadOnly:  true,
+				// only mount the token for this plugin, not others
+				SubPath: c.Name,
+			})
+			sidecars = append(sidecars, *c)
 		}
 	}
 	return sidecars
@@ -289,6 +276,14 @@ func addresses(containers []apiv1.Container) []string {
 	var addresses []string
 	for _, c := range containers {
 		addresses = append(addresses, fmt.Sprintf("http://localhost:%d", c.Ports[0].ContainerPort))
+	}
+	return addresses
+}
+
+func names(containers []apiv1.Container) []string {
+	var addresses []string
+	for _, c := range containers {
+		addresses = append(addresses, c.Name)
 	}
 	return addresses
 }
