@@ -117,7 +117,7 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 
 func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, responseQueue chan response) {
 	for {
-		task, ok := <- taskQueue
+		task, ok := <-taskQueue
 		if !ok {
 			break
 		}
