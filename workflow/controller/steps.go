@@ -521,9 +521,7 @@ func (woc *wfOperationCtx) prepareDefaultMetricScope() (map[string]string, map[s
 }
 
 func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string]string, map[string]func() float64) {
-	realTimeScope := make(map[string]func() float64)
-	localScope := woc.globalParams.DeepCopy()
-
+	localScope, realTimeScope := woc.prepareDefaultMetricScope()
 	if node.Fulfilled() {
 		localScope[common.LocalVarDuration] = fmt.Sprintf("%f", node.FinishedAt.Sub(node.StartedAt.Time).Seconds())
 		realTimeScope[common.LocalVarDuration] = func() float64 {
