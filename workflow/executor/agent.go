@@ -116,7 +116,11 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 }
 
 func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, responseQueue chan response) {
-	for task := range taskQueue {
+	for {
+		task, ok := <-taskQueue
+		if !ok {
+			break
+		}
 		nodeID, tmpl := task.NodeId, task.Template
 		log := log.WithField("nodeID", nodeID)
 
