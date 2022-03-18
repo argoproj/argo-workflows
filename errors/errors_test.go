@@ -4,16 +4,10 @@ import (
 	"fmt"
 	"testing"
 
-	pkgerr "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 )
-
-// stackTracer is interface for error types that have a stack trace
-type stackTracer interface {
-	StackTrace() pkgerr.StackTrace
-}
 
 // TestErrorf tests the initializer of error package
 func TestErrorf(t *testing.T) {
@@ -38,17 +32,9 @@ func TestInternalError(t *testing.T) {
 	// Test wrapping errors
 	err = fmt.Errorf("random error")
 	intWrap := errors.InternalWrapError(err)
-	_ = intWrap.(stackTracer)
 	assert.Equal(t, "random error", intWrap.Error())
 	intWrap = errors.InternalWrapError(err, "different message")
-	_ = intWrap.(stackTracer)
 	assert.Equal(t, "different message", intWrap.Error())
 	intWrap = errors.InternalWrapErrorf(err, "hello %s", "world")
-	_ = intWrap.(stackTracer)
 	assert.Equal(t, "hello world", intWrap.Error())
-}
-
-func TestStackTrace(t *testing.T) {
-	err := errors.New("MYCODE", "my message")
-	assert.Contains(t, fmt.Sprintf("%+v", err), "errors_test.go")
 }

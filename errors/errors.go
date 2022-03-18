@@ -2,10 +2,8 @@ package errors
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"io"
-
-	"github.com/pkg/errors"
 )
 
 // Externally visible error codes
@@ -24,30 +22,21 @@ const (
 type ArgoError interface {
 	Error() string
 	Code() string
-	Message() string
 	JSON() []byte
-	StackTrace() errors.StackTrace
-	Format(s fmt.State, verb rune)
 }
 
 // argoerr is the internal implementation of an Argo error which wraps the error from pkg/errors
 type argoerr struct {
 	code    string
 	message string
-	stracer stackTracer
-}
-
-// stackTracer is interface for error types that have a stack trace
-type stackTracer interface {
-	Error() string
-	StackTrace() errors.StackTrace
+	err     error
 }
 
 // New returns an error with the supplied message.
 // New also records the stack trace at the point it was called.
 func New(code string, message string) error {
 	err := errors.New(message)
-	return argoerr{code, message, err.(stackTracer)}
+	return argoerr{code, message, err}
 }
 
 // Errorf returns an error and formats according to a format specifier
@@ -85,8 +74,8 @@ func Wrap(err error, code string, message string) error {
 	if err == nil {
 		return nil
 	}
-	err = errors.Wrap(err, message)
-	return argoerr{code, message, err.(stackTracer)}
+	err = fmt.Errorf(message+": %w", err)
+	return argoerr{code, message, err}
 }
 
 // Cause returns the underlying cause of the error, if possible.
@@ -102,9 +91,33 @@ func Wrap(err error, code string, message string) error {
 // investigation.
 func Cause(err error) error {
 	if argoErr, ok := err.(argoerr); ok {
-		return errors.Cause(argoErr.stracer)
+		return unwrapCauseArgoErr(argoErr.err)
 	}
-	return errors.Cause(err)
+	return unwrapCause(err)
+}
+
+func unwrapCauseArgoErr(err error) error {
+	innerErr := errors.Unwrap(err)
+	for innerErr != nil {
+		err = innerErr
+		innerErr = errors.Unwrap(err)
+	}
+	return err
+}
+
+func unwrapCause(err error) error {
+	type causer interface {
+		Cause() error
+	}
+
+	for err != nil {
+		cause, ok := err.(causer)
+		if !ok {
+			break
+		}
+		err = cause.Cause()
+	}
+	return err
 }
 
 func (e argoerr) Error() string {
@@ -115,14 +128,6 @@ func (e argoerr) Code() string {
 	return e.code
 }
 
-func (e argoerr) Message() string {
-	return e.message
-}
-
-func (e argoerr) StackTrace() errors.StackTrace {
-	return e.stracer.StackTrace()
-}
-
 func (e argoerr) JSON() []byte {
 	type errBean struct {
 		Code    string `json:"code"`
@@ -131,24 +136,6 @@ func (e argoerr) JSON() []byte {
 	eb := errBean{e.code, e.message}
 	j, _ := json.Marshal(eb)
 	return j
-}
-
-func (e argoerr) Format(s fmt.State, verb rune) {
-	switch verb {
-	case 'v':
-		if s.Flag('+') {
-			_, _ = io.WriteString(s, e.Error())
-			for _, pc := range e.StackTrace() {
-				fmt.Fprintf(s, "\n%+v", pc)
-			}
-			return
-		}
-		fallthrough
-	case 's':
-		_, _ = io.WriteString(s, e.Error())
-	case 'q':
-		fmt.Fprintf(s, "%q", e.Error())
-	}
 }
 
 // IsCode is a helper to determine if the error is of a specific code
