@@ -7,7 +7,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
-// Version information set by link flags during build. We fall back to these sane
+// ImageTag information set by link flags during build. We fall back to these sane
 // default values when we build outside the Makefile context (e.g. go build or go test).
 var (
 	version      = "v0.0.0"               // value from VERSION file
@@ -16,6 +16,14 @@ var (
 	gitTag       = ""                     // output from `git describe --exact-match --tags HEAD` (if clean tree state)
 	gitTreeState = ""                     // determined from `git status --porcelain`. either 'clean' or 'dirty'
 )
+
+// ImageTag return the un-adulterated image tag.
+func ImageTag() string {
+	if version != "untagged" {
+		return version
+	}
+	return "latest"
+}
 
 // GetVersion returns the version information
 func GetVersion() wfv1.Version {
