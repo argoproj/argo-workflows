@@ -110,7 +110,7 @@ type WorkflowController struct {
 	archiveLabelSelector  labels.Selector
 	cacheFactory          controllercache.Factory
 	wfTaskSetInformer     wfextvv1alpha1.WorkflowTaskSetInformer
-	taskResultInformer    wfextvv1alpha1.WorkflowTaskResultInformer
+	taskResultInformer    cache.SharedIndexInformer
 
 	// progressPatchTickDuration defines how often the executor will patch pod annotations if an updated progress is found.
 	// Default is 1m and can be configured using the env var ARGO_PROGRESS_PATCH_TICK_DURATION.
@@ -258,7 +258,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	go wfc.podInformer.Run(ctx.Done())
 	go wfc.configMapInformer.Run(ctx.Done())
 	go wfc.wfTaskSetInformer.Informer().Run(ctx.Done())
-	go wfc.taskResultInformer.Informer().Run(ctx.Done())
+	go wfc.taskResultInformer.Run(ctx.Done())
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
 	if !cache.WaitForCacheSync(
@@ -268,7 +268,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		wfc.podInformer.HasSynced,
 		wfc.configMapInformer.HasSynced,
 		wfc.wfTaskSetInformer.Informer().HasSynced,
-		wfc.taskResultInformer.Informer().HasSynced,
+		wfc.taskResultInformer.HasSynced,
 	) {
 		log.Fatal("Timed out waiting for caches to sync")
 	}
@@ -931,13 +931,20 @@ func (wfc *WorkflowController) archiveWorkflowAux(ctx context.Context, obj inter
 	return nil
 }
 
+var incompleteReq, _ = labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"false"})
+var workflowReq, _ = labels.NewRequirement(common.LabelKeyWorkflow, selection.Exists, nil)
+
+func (wfc *WorkflowController) instanceIDReq() labels.Requirement {
+	return util.InstanceIDRequirement(wfc.Config.InstanceID)
+}
+
 func (wfc *WorkflowController) newWorkflowPodWatch(ctx context.Context) *cache.ListWatch {
 	c := wfc.kubeclientset.CoreV1().Pods(wfc.GetManagedNamespace())
 	// completed=false
-	incompleteReq, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"false"})
 	labelSelector := labels.NewSelector().
+		Add(*workflowReq).
 		Add(*incompleteReq).
-		Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
+		Add(wfc.instanceIDReq())
 
 	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
 		options.LabelSelector = labelSelector.String()
