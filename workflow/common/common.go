@@ -134,6 +134,8 @@ const (
 	EnvVarNodeID = "ARGO_NODE_ID"
 	// EnvVarPluginAddresses is a list of plugin addresses
 	EnvVarPluginAddresses = "ARGO_PLUGIN_ADDRESSES"
+	// EnvVarPluginNames is a list of plugin names
+	EnvVarPluginNames = "ARGO_PLUGIN_NAMES"
 	// EnvVarContainerName container the container's name for the current pod
 	EnvVarContainerName = "ARGO_CONTAINER_NAME"
 	// EnvVarDeadline is the deadline for the pod
@@ -251,8 +253,11 @@ const (
 	// CACertificatesVolumeMountName is the name of the secret that contains the CA certificates.
 	CACertificatesVolumeMountName = "argo-workflows-agent-ca-certificates"
 
+	// VarRunArgoPath is the standard path for the shared volume
+	VarRunArgoPath = "/var/run/argo"
+
 	// ArgoProgressPath defines the path to a file used for self reporting progress
-	ArgoProgressPath = "/var/run/argo/progress"
+	ArgoProgressPath = VarRunArgoPath + "/progress"
 
 	// ErrDeadlineExceeded is the pod status reason when exceed deadline
 	ErrDeadlineExceeded = "DeadlineExceeded"
