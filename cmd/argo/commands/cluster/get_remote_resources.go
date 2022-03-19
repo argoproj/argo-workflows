@@ -2,16 +2,14 @@ package cluster
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
-	"strings"
-
 	"github.com/spf13/cobra"
 	apiv1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/util/homedir"
+	"os"
+	"path/filepath"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -34,7 +32,7 @@ func newGetRemoteResourcesCommand() *cobra.Command {
 			}
 			localCluster, remoteCluster := args[0], args[1]
 
-			name := remoteServiceAccountName(localNamespace, localCluster, remoteNamespace)
+			name := remoteServiceAccountName(localNamespace, localCluster, remoteNamespace, read, write)
 
 			const (
 				rbacAPIGroup   = "rbac.authorization.k8s.io"
@@ -112,6 +110,14 @@ func newGetRemoteResourcesCommand() *cobra.Command {
 	return cmd
 }
 
-func remoteServiceAccountName(localNamespace string, localCluster string, remoteNamespace string) string {
-	return strings.Trim(fmt.Sprintf("argo.%s.%s.%s", localNamespace, localCluster, remoteNamespace), "-")
+func remoteServiceAccountName(localNamespace, localCluster, remoteNamespace string, read, write bool) string {
+	suffix := ""
+	if read && write {
+		suffix = "rw"
+	} else if read && write {
+		suffix = "ro"
+	} else if write {
+		suffix = "wo"
+	}
+	return fmt.Sprintf("argo.%s.%s.%s.%s", localNamespace, localCluster, remoteNamespace, suffix)
 }

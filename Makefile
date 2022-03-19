@@ -426,10 +426,10 @@ ifeq ($(PROFILE),multi-cluster)
 	kubectl --context=cluster-1 create rolebinding default-executor --role=executor --user=system:serviceaccount:default:default
 
 	# install remote resources
-	./dist/argo cluster get-remote-resources quick-start cluster-1 --local-namespace=argo --remote-namespace=default --read --write | kubectl --context=cluster-1 -n default apply -f  -
+	./dist/argo cluster get-remote-resources cluster-0 cluster-1 --local-namespace=argo --remote-namespace=default --read --write | kubectl --context=cluster-1 -n default apply -f  -
 
 	# install profile
-	./dist/argo cluster get-profile quick-start cluster-1 --local-namespace=argo --remote-namespace=default | kubectl -n argo apply -f  -
+	./dist/argo cluster get-profile cluster-0 cluster-1 --local-namespace=argo --remote-namespace=default --read --write | kubectl -n argo apply -f  -
 endif
 ifeq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml

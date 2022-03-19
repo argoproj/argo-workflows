@@ -26,6 +26,8 @@ func newGetProfileCommand() *cobra.Command {
 		localNamespace         string
 		remoteNamespace        string
 		remoteInstallNamespace string
+		read                   bool
+		write                  bool
 	)
 	cmd := &cobra.Command{
 		Use: "get-profile local_cluster remote_cluster",
@@ -50,7 +52,7 @@ func newGetProfileCommand() *cobra.Command {
 				&clientcmd.ConfigOverrides{CurrentContext: remoteContext},
 			)
 
-			remoteServiceAccountName := remoteServiceAccountName(localNamespace, localCluster, remoteNamespace)
+			remoteServiceAccountName := remoteServiceAccountName(localNamespace, localCluster, remoteNamespace, read, write)
 
 			config, err := clientConfig.ClientConfig()
 			if err != nil {
@@ -131,5 +133,7 @@ func newGetProfileCommand() *cobra.Command {
 	cmd.Flags().StringVar(&localNamespace, "local-namespace", "", "restrict to this local namespace (empty for all namespaces)")
 	cmd.Flags().StringVar(&remoteNamespace, "remote-namespace", "", "restrict the this remote namespace (empty for all namespaces)")
 	cmd.Flags().StringVar(&remoteInstallNamespace, "remote-install-namespace", "", "the remote namespace that the service account is created in")
+	cmd.Flags().BoolVar(&read, "read", false, "create roles with read permissions")
+	cmd.Flags().BoolVar(&write, "write", false, "create roles with write permission")
 	return cmd
 }

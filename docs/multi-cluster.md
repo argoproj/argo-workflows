@@ -33,21 +33,24 @@ When running workflows that creates resources (i.e. run tasks/steps) in other cl
 I'm going to make some assumptions:
 
 * Your default Kubernetes context is the local cluster.
-* There is a Kubernetes context for the remote cluster name `cluster-1`.
-
-You must install the `workflowtastresults` CRD in the remote cluster:
-
-```bash
-kubectl --context=cluster-1 apply -f manifests/base/crds/minimal/argoproj.io_workflowtaskresults.yaml
-```
+* There is a Kubernetes context for the remote cluster (named `cluster-1`).
 
 <!-- this block of code is replicated in Makefile, if you change it here, copy it there -->
 
 ```bash
 # install the taskresult crd
 kubectl --context=cluster-1 apply -f manifests/base/crds/minimal/argoproj.io_workflowtaskresults.yaml
-```
 
+# create default bindings for the executor
+kubectl --context=cluster-1 create role executor --verb=create,patch --resource=workflowtaskresults.argoproj.io
+kubectl --context=cluster-1 create rolebinding default-executor --role=executor --user=system:serviceaccount:default:default
+
+# install remote resources
+./dist/argo cluster get-remote-resources cluster-0 cluster-1 --local-namespace=argo --remote-namespace=default --read --write | kubectl --context=cluster-1 -n default apply -f  -
+
+# install profile
+./dist/argo cluster get-profile cluster-0 cluster-1 --local-namespace=argo --remote-namespace=default --read --write | kubectl -n argo apply -f  -
+```
 
 The workflow controller must be configured with it's name:
 
@@ -62,7 +65,20 @@ data:
   cluster: cluster-0
 ```
 
-Finally, you can run a test workflow.
+Finally, run a test workflow.
+
+## Cluster Install
+
+The above configuration is for single namespace install. If you use a cluster scoped install, you'll want to install
+differently. Let's assume the local user namespace is named `user-ns`. We need to create separate profiles for read and
+write:
+
+```bash
+./dist/argo cluster get-remote-resources cluster-0 cluster-1 --local-namespace=user-ns --remote-namespace=default --read | kubectl --context=cluster-1 apply -f  -
+./dist/argo cluster get-remote-resources cluster-0 cluster-1 --local-namespace=user-ns --remote-namespace=default --write | kubectl --context=cluster-1 apply -f  -
+./dist/argo cluster get-profile cluster-0 cluster-1 --local-namespace=user-ns --remote-namespace=default --read | kubectl -n argo apply -f 
+./dist/argo cluster get-profile cluster-0 cluster-1 --local-namespace=user-ns --remote-namespace=default --write | kubectl -n user-ns apply -f 
+```
 
 ## Limitations
 
