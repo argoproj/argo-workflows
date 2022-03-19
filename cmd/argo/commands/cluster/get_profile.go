@@ -2,9 +2,6 @@ package cluster
 
 import (
 	"context"
-	"os"
-	"path/filepath"
-
 	"github.com/spf13/cobra"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -12,7 +9,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
-	"k8s.io/client-go/util/homedir"
+	"os"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -20,7 +17,6 @@ import (
 
 func newGetProfileCommand() *cobra.Command {
 	var (
-		kubeconfig             string
 		remoteServer           string
 		remoteContext          string
 		localNamespace         string
@@ -47,12 +43,8 @@ func newGetProfileCommand() *cobra.Command {
 				remoteInstallNamespace = remoteNamespace
 			}
 
-			rules := &clientcmd.ClientConfigLoadingRules{}
-			if _, err := os.Stat(kubeconfig); !os.IsNotExist(err) {
-				rules.ExplicitPath = kubeconfig
-			}
 			clientConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
-				rules,
+				clientcmd.NewDefaultClientConfigLoadingRules(),
 				&clientcmd.ConfigOverrides{CurrentContext: remoteContext},
 			)
 
@@ -131,7 +123,6 @@ func newGetProfileCommand() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&kubeconfig, "kubeconfig", filepath.Join(homedir.HomeDir(), ".kube", "config"), "kubeconfig")
 	cmd.Flags().StringVar(&remoteServer, "remote-server", "", "URL for remote server")
 	cmd.Flags().StringVar(&remoteContext, "remote-context", "", "remote context")
 	cmd.Flags().StringVar(&localNamespace, "local-namespace", "", "restrict to this local namespace (empty for all namespaces)")
