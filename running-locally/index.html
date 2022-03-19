@@ -2900,14 +2900,14 @@ automatically.</p>
 <ol>
 <li>Configure your IDE to set the <code>KUBECONFIG</code> environment variable to your k3d kubeconfig file</li>
 <li>Find an e2e test that you want to run in <code>test/e2e</code></li>
-<li>Determine which profile the e2e test is using by inspecting the go build flag at the top of the file and referring to <a href="https://github.com/argoproj/argo-workflows/blob/master/.github/workflows/ci-build.yaml">ci-build.yaml</a></li>
-</ol>
+<li>
+<p>Determine which profile the e2e test is using by inspecting the go build flag at the top of the file and referring to <a href="https://github.com/argoproj/argo-workflows/blob/master/.github/workflows/ci-build.yaml">ci-build.yaml</a></p>
 <p>For example <code>TestArchiveStrategies</code> in <code>test/e2e/functional_test.go</code> has the following build flags</p>
 <div class="highlight"><pre><span></span><code><span class="c1">//go:build functional</span><span class="w"></span>
 <span class="c1">// +build functional</span><span class="w"></span>
 </code></pre></div>
 <p>In <a href="https://github.com/argoproj/argo-workflows/blob/master/.github/workflows/ci-build.yaml">ci-build.yaml</a> the functional test suite is using the <code>minimal</code> profile</p>
-<ol>
+</li>
 <li>
 <p>Run the profile in a terminal window</p>
 <div class="highlight"><pre><span></span><code>make start <span class="nv">PROFILE</span><span class="o">=</span>minimal <span class="nv">E2E_EXECUTOR</span><span class="o">=</span>emissary <span class="nv">AUTH_MODE</span><span class="o">=</span>client <span class="nv">STATIC_FILES</span><span class="o">=</span><span class="nb">false</span> <span class="nv">LOG_LEVEL</span><span class="o">=</span>info <span class="nv">API</span><span class="o">=</span><span class="nb">true</span> <span class="nv">UI</span><span class="o">=</span><span class="nb">false</span>
