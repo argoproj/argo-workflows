@@ -2,14 +2,15 @@ package cluster
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/spf13/cobra"
 	apiv1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/util/homedir"
-	"os"
-	"path/filepath"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -114,7 +115,7 @@ func remoteServiceAccountName(localNamespace, localCluster, remoteNamespace stri
 	suffix := ""
 	if read && write {
 		suffix = "rw"
-	} else if read && write {
+	} else if read {
 		suffix = "ro"
 	} else if write {
 		suffix = "wo"
