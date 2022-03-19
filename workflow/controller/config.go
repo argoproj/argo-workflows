@@ -102,7 +102,7 @@ func (wfc *WorkflowController) executorImage() string {
 	if v := wfc.Config.GetExecutor().Image; v != "" {
 		return v
 	}
-	return fmt.Sprintf("quay.io/argoproj/argoexec:" + argo.GetVersion().Version)
+	return fmt.Sprintf("quay.io/argoproj/argoexec:" + argo.ImageTag())
 }
 
 // executorImagePullPolicy returns the imagePullPolicy to use for the workflow executor
