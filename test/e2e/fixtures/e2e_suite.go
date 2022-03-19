@@ -60,7 +60,7 @@ func (s *E2ESuite) SetupSuite() {
 	s.CheckError(err)
 	s.KubeClient, err = kubernetes.NewForConfig(s.RestConfig)
 	s.CheckError(err)
-	configController := config.NewController(Namespace, "workflow-controller-configmap", s.KubeClient, config.EmptyConfigFunc)
+	configController := config.NewController(Namespace, common.ConfigMapName, s.KubeClient, config.EmptyConfigFunc)
 
 	ctx := context.Background()
 	c, err := configController.Get(ctx)

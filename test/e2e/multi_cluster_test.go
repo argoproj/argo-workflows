@@ -114,7 +114,7 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeErrored).
 		Then().
-		ExpectWorkflow(fixtures.StatusMessageContains(`profile not found for argo,cluster-1,argo,`))
+		ExpectWorkflow(fixtures.StatusMessageContains(`profile not found for policy argo,cluster-1,argo,1`))
 }
 
 func (s *MultiClusterSuite) TestDisallowedCluster() {
@@ -136,7 +136,7 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeErrored).
 		Then().
-		ExpectWorkflow(fixtures.StatusMessageContains(`profile not found for argo,cluster-1,argo,1`))
+		ExpectWorkflow(fixtures.StatusMessageContains(`profile not found for policy argo,cluster-1,argo,1`))
 }
 
 func TestMultiClusterSuite(t *testing.T) {

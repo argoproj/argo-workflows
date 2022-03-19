@@ -3630,7 +3630,7 @@ func (woc *wfOperationCtx) getServiceAccountTokenName(ctx context.Context, clust
 	if name == "" {
 		name = "default"
 	}
-	profile, err := woc.profile(cluster, woc.wf.Namespace, actRead)
+	profile, err := woc.profile(cluster, woc.wf.Namespace, roleRead)
 	if err != nil {
 		return "", err
 	}

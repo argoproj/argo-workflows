@@ -15,7 +15,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 )
 
-func (wfc *WorkflowController) newWorkflowTaskResultInformer(client workflow.Interface, cluster string) cache.SharedIndexInformer {
+func (wfc *WorkflowController) newWorkflowTaskResultInformer(client workflow.Interface, cluster, namespace string) cache.SharedIndexInformer {
 	labelSelector := labels.NewSelector().
 		Add(*workflowReq).
 		Add(wfc.instanceIDReq()).
@@ -25,7 +25,7 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer(client workflow.Int
 		Info("Watching task results")
 	return wfextvv1alpha1.NewFilteredWorkflowTaskResultInformer(
 		client,
-		wfc.GetManagedNamespace(),
+		namespace,
 		20*time.Minute,
 		cache.Indexers{
 			indexes.WorkflowIndex: indexes.MetaWorkflowIndexFunc,
@@ -45,6 +45,7 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 		objs, _ := p.taskResultInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.Namespace+"/"+woc.wf.Name)
 		woc.log.WithField("numObjs", len(objs)).
 			WithField("profileKey", profileKey).
+			WithField("policyDef", p.policyDef.String()).
 			Info("Task-result reconciliation")
 		for _, obj := range objs {
 			result := obj.(*wfv1.WorkflowTaskResult)

@@ -396,7 +396,11 @@ test: server/static/files.go dist/argosay
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
 
 .PHONY: install
+ifeq ($(PROFILE),multi-cluster)
+install: githooks ./dist/argo
+else
 install: githooks
+endif
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 	@echo "installing PROFILE=$(PROFILE), E2E_EXECUTOR=$(E2E_EXECUTOR)"
@@ -413,8 +417,6 @@ ifeq ($(PROFILE),multi-cluster)
 	kubectl config delete-context cluster-1 || true
 	kubectl config rename-context k3d-cluster-1 cluster-1
 
-	# this block of code is replicated in multi-cluster.md, if you change it here, copy it there
-
 	# install the taskresult crd
 	kubectl --context=cluster-1 apply -f manifests/base/crds/minimal/argoproj.io_workflowtaskresults.yaml
 	sleep 3s
@@ -423,22 +425,11 @@ ifeq ($(PROFILE),multi-cluster)
 	kubectl --context=cluster-1 create role executor --verb=create,patch --resource=workflowtaskresults.argoproj.io
 	kubectl --context=cluster-1 create rolebinding default-executor --role=executor --user=system:serviceaccount:default:default
 
-	# create a service account for the controller to use in the remote cluster
-	kubectl --context=cluster-1 create serviceaccount argo-cluster-0
-	kubectl --context=cluster-1 create clusterrole pod-read --verb=list,watch --resource=pods
-	kubectl --context=cluster-1 create clusterrole pod-write --verb=create,patch,delete --resource=pods,pods/exec
-	kubectl --context=cluster-1 create clusterrole workflowtaskresult-read --verb=list,watch --resource=workflowtaskresults.argoproj.io
-	kubectl --context=cluster-1 create clusterrole workflowtaskresult-write --verb=deletecollection --resource=workflowtaskresults.argoproj.io
-	kubectl --context=cluster-1 create clusterrolebinding argo-cluster-0-pod-read --clusterrole=pod-read --user=system:serviceaccount:default:argo-cluster-0
-	kubectl --context=cluster-1 create clusterrolebinding argo-cluster-0-pod-write --clusterrole=pod-write --user=system:serviceaccount:default:argo-cluster-0
-	kubectl --context=cluster-1 create clusterrolebinding argo-cluster-0-workflowtaskresult-read --clusterrole=workflowtaskresult-read --user=system:serviceaccount:default:argo-cluster-0
-	kubectl --context=cluster-1 create clusterrolebinding argo-cluster-0-workflowtaskresult-write --clusterrole=workflowtaskresult-write --user=system:serviceaccount:default:argo-cluster-0
+	# install remote resources
+	./dist/argo cluster get-remote-resources quick-start cluster-1 --local-namespace=argo --remote-namespace=default --read --write | kubectl --context=cluster-1 -n default apply -f  -
 
-	# create a secret containing a kubeconfig for that user
-	kubectl delete secret -l workflows.argoproj.io/cluster
-	kubectl create secret generic cluster-1 --from-literal="kubeconfig=`./hack/print-kubeconfig.sh cluster-1 default argo-cluster-0`"
-	kubectl label secret cluster-1 workflows.argoproj.io/cluster=cluster-1
-	kubectl annotate secret cluster-1 workflows.argoproj.io/namespace=default
+	# install profile
+	./dist/argo cluster get-profile quick-start cluster-1 --local-namespace=argo --remote-namespace=default | kubectl -n argo apply -f  -
 endif
 ifeq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml

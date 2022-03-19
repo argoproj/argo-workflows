@@ -20,6 +20,8 @@ const (
 
 	// AnnotationKeyNamespace is used to determine which namespace a profile should be used for.
 	AnnotationKeyNamespace = workflow.WorkflowFullName + "/namespace"
+	// AnnotationKeyDescription description of the resource
+	AnnotationKeyDescription = workflow.WorkflowFullName + "/description"
 
 	// AnnotationKeyNodeID is the ID of the node.
 	// Historically, the pod name was the same as the node ID.
@@ -261,6 +263,9 @@ const (
 
 	// ErrDeadlineExceeded is the pod status reason when exceed deadline
 	ErrDeadlineExceeded = "DeadlineExceeded"
+
+	// ConfigMapName is the name of the default configmap
+	ConfigMapName = "workflow-controller-configmap"
 )
 
 // AnnotationKeyKillCmd specifies the command to use to kill to container, useful for injected sidecars

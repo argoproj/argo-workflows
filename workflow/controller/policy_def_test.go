@@ -7,7 +7,7 @@ import (
 )
 
 func Test_policyDef_matches(t *testing.T) {
-	assert.False(t, policyDef{}.matches("", "", "", actRead))
-	assert.True(t, policyDef{act: actRead}.matches("", "", "", actRead))
-	assert.True(t, policyDef{act: actRead ^ actWrite}.matches("", "", "", actRead))
+	assert.False(t, policyDef{}.matches("", "", "", roleRead))
+	assert.True(t, policyDef{role: roleRead}.matches("", "", "", roleRead))
+	assert.True(t, policyDef{role: roleRead ^ roleWrite}.matches("", "", "", roleRead))
 }

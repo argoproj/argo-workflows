@@ -9,6 +9,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/archive"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/auth"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/cluster"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/clustertemplate"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/cron"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/executorplugin"
@@ -110,6 +111,7 @@ If your server is behind an ingress with a path (you'll be running "argo server 
 	command.AddCommand(NewVersionCommand())
 	command.AddCommand(template.NewTemplateCommand())
 	command.AddCommand(cron.NewCronWorkflowCommand())
+	command.AddCommand(cluster.NewRootCommand())
 	command.AddCommand(clustertemplate.NewClusterTemplateCommand())
 	command.AddCommand(executorplugin.NewRootCommand())
 

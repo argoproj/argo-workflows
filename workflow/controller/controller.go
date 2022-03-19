@@ -38,6 +38,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/config"
 	argoErr "github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions"
@@ -417,11 +418,11 @@ func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) 
 
 // Check if the controller has RBAC access to ClusterWorkflowTemplates
 func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context.Context) {
-	cwftGetAllowed, err := authutil.CanI(ctx, wfc.localProfile().kubernetesClient, "get", "clusterworkflowtemplates", wfc.namespace, "")
+	cwftGetAllowed, err := authutil.CanI(ctx, wfc.localProfile().kubernetesClient, "get", workflow.Group, "clusterworkflowtemplates", wfc.namespace, "")
 	errors.CheckError(err)
-	cwftListAllowed, err := authutil.CanI(ctx, wfc.localProfile().kubernetesClient, "list", "clusterworkflowtemplates", wfc.namespace, "")
+	cwftListAllowed, err := authutil.CanI(ctx, wfc.localProfile().kubernetesClient, "list", workflow.Group, "clusterworkflowtemplates", wfc.namespace, "")
 	errors.CheckError(err)
-	cwftWatchAllowed, err := authutil.CanI(ctx, wfc.localProfile().kubernetesClient, "watch", "clusterworkflowtemplates", wfc.namespace, "")
+	cwftWatchAllowed, err := authutil.CanI(ctx, wfc.localProfile().kubernetesClient, "watch", workflow.Group, "clusterworkflowtemplates", wfc.namespace, "")
 	errors.CheckError(err)
 
 	if cwftGetAllowed && cwftListAllowed && cwftWatchAllowed {
@@ -472,7 +473,7 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 	logCtx := log.WithFields(log.Fields{"key": key, "action": action})
 	logCtx.Info("cleaning up pod")
 	err := func() error {
-		profile, err := wfc.profile(workflowNamespace, cluster, namespace, actWrite)
+		profile, err := wfc.profile(workflowNamespace, cluster, namespace, roleWrite)
 		if err != nil {
 			return err
 		}
@@ -488,7 +489,7 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 			}
 			for _, c := range pod.Spec.Containers {
 				if c.Name == common.WaitContainerName {
-					profile, err := wfc.profile(workflowNamespace, cluster, pod.Namespace, actWrite)
+					profile, err := wfc.profile(workflowNamespace, cluster, pod.Namespace, roleWrite)
 					if err != nil {
 						return err
 					}
@@ -543,7 +544,7 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 }
 
 func (wfc *WorkflowController) getPod(workflowNamespace, cluster, namespace, podName string) (*apiv1.Pod, error) {
-	profile, err := wfc.profile(workflowNamespace, cluster, namespace, actRead)
+	profile, err := wfc.profile(workflowNamespace, cluster, namespace, roleRead)
 	if err != nil {
 		return nil, err
 	}
@@ -571,7 +572,7 @@ func (wfc *WorkflowController) signalContainers(workflowNamespace, cluster, name
 		if c.Name == common.WaitContainerName || c.State.Terminated != nil {
 			continue
 		}
-		profile, err := wfc.profile(workflowNamespace, cluster, namespace, actWrite)
+		profile, err := wfc.profile(workflowNamespace, cluster, namespace, roleWrite)
 		if err != nil {
 			return 0, err
 		}

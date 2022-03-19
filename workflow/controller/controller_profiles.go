@@ -33,7 +33,7 @@ func (wfc *WorkflowController) newDefaultProfiles(restConfig *rest.Config, kuber
 			metadataClient:     metadataClient,
 			podInformer:        wfc.newPodInformer(kubernetesClient, common.LocalCluster, wfc.GetManagedNamespace()),
 			podGCInformer:      wfc.newPodGCInformer(metadataClient, common.LocalCluster, wfc.GetManagedNamespace()),
-			taskResultInformer: wfc.newWorkflowTaskResultInformer(workflowClient, common.LocalCluster),
+			taskResultInformer: wfc.newWorkflowTaskResultInformer(workflowClient, common.LocalCluster, wfc.GetManagedNamespace()),
 		},
 	}
 }
@@ -43,16 +43,20 @@ func (wfc *WorkflowController) addProfile(secret *apiv1.Secret) error {
 	if _, ok := wfc.profiles[policyKey]; ok {
 		return nil
 	}
-	kc, err := clientcmd.Load(secret.Data["kubeconfig"])
+
+	clientConfig, err := clientcmd.Load(secret.Data["kubeconfig"])
 	if err != nil {
 		return err
 	}
-	config, err := clientcmd.NewNonInteractiveClientConfig(*kc, kc.CurrentContext, &clientcmd.ConfigOverrides{}, clientcmd.NewDefaultClientConfigLoadingRules()).ClientConfig()
+
+	config, err := clientcmd.NewNonInteractiveClientConfig(*clientConfig, clientConfig.CurrentContext, &clientcmd.ConfigOverrides{}, clientcmd.NewDefaultClientConfigLoadingRules()).ClientConfig()
 	if err != nil {
 		return err
 	}
+
 	logs.AddK8SLogTransportWrapper(config)
 	metrics.AddMetricsTransportWrapper(config)
+
 	kubernetesClient, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return err
@@ -60,34 +64,37 @@ func (wfc *WorkflowController) addProfile(secret *apiv1.Secret) error {
 
 	namespace := common.Namespace(secret)
 
-	write, err := authutil.CanI(context.Background(), kubernetesClient, "create", "pods", namespace, "")
+	write, err := authutil.CanI(context.Background(), kubernetesClient, "create", "", "pods", namespace, "")
 	if err != nil {
 		return err
 	}
-	read, err := authutil.CanI(context.Background(), kubernetesClient, "list", "pods", namespace, "")
+	read, err := authutil.CanI(context.Background(), kubernetesClient, "list", "", "pods", namespace, "g")
 	if err != nil {
 		return err
 	}
 
-	system := secret.Namespace == wfc.namespace
-	// we start an informer for each read profile, but if the read profile is in the user namespace, this would allow
-	// users to re-configure the controller, we disallow that
-	read = read && system
+	user := secret.Namespace != wfc.namespace
+	read = read && !user
 	workflowNamespace, cluster := common.ClusterWorkflowNamespace(secret)
-	misconfigured := (!write && !read) || (system && secret.Namespace != workflowNamespace)
-
 	log.
+		WithField("currentContext", clientConfig.CurrentContext).
+		WithField("configHost", config.Host).
 		WithField("secretNamespace", secret.Namespace).
+		WithField("secretName", secret.Name).
 		WithField("workflowNamespace", workflowNamespace).
 		WithField("cluster", cluster).
 		WithField("namespace", namespace).
 		WithField("read", read).
 		WithField("write", write).
-		WithField("misconfigured", misconfigured).
+		WithField("user", user).
 		Info("Profile configuration")
 
-	if misconfigured {
-		return fmt.Errorf("profile is misconfigured: either no read or write, or a user secret offering to be used in wrong namespace")
+	if !read && !write {
+		return fmt.Errorf(`p is mis-configured: must have "argo-read" and/or "argo-write" role`)
+	}
+
+	if user && secret.Namespace != workflowNamespace {
+		return fmt.Errorf("p is mis-configured: p us user namespace must specify user namespace")
 	}
 
 	workflowClient, err := wfclientset.NewForConfig(config)
@@ -98,50 +105,55 @@ func (wfc *WorkflowController) addProfile(secret *apiv1.Secret) error {
 	if err != nil {
 		return err
 	}
-	var act act
+	var r role
 	if read {
-		act = actRead
+		r = roleRead
 	}
 	if write {
-		act = act ^ actWrite
+		r = r ^ roleWrite
 	}
-	profile := &profile{
+	p := &profile{
 		policyDef: policyDef{
 			workflowNamespace: workflowNamespace,
 			cluster:           cluster,
 			namespace:         namespace,
-			act:               act,
+			role:              r,
 		},
 		done: func() {
 		},
 	}
 	if write {
-		profile.restConfig = config
-		profile.kubernetesClient = kubernetesClient
-		profile.workflowClient = workflowClient
-		profile.metadataClient = metadataClient
+		p.restConfig = config
+		p.kubernetesClient = kubernetesClient
+		p.workflowClient = workflowClient
+		p.metadataClient = metadataClient
 	}
 	if read {
 		done := make(chan struct{})
-		profile.podInformer = wfc.newPodInformer(kubernetesClient, cluster, namespace)
-		profile.podGCInformer = wfc.newPodGCInformer(metadataClient, cluster, namespace)
-		profile.taskResultInformer = wfc.newWorkflowTaskResultInformer(workflowClient, cluster)
-		profile.done = func() { done <- struct{}{} }
-		go profile.run(done)
+		p.podInformer = wfc.newPodInformer(kubernetesClient, cluster, namespace)
+		p.podGCInformer = wfc.newPodGCInformer(metadataClient, cluster, namespace)
+		p.taskResultInformer = wfc.newWorkflowTaskResultInformer(workflowClient, cluster, namespace)
+		p.done = func() { done <- struct{}{} }
+		go p.run(done)
 	}
 
-	wfc.profiles[policyKey] = profile
+	wfc.profiles[policyKey] = p
+
+	log.
+		WithField("policyKey", policyKey).
+		WithField("policyDef", p.policyDef.String()).
+		Info("Profile added")
 
 	return nil
 }
 
 func (wfc *WorkflowController) removeProfile(secret *apiv1.Secret) {
 	policyKey := policyKeyForSecret(secret)
-	profile, ok := wfc.profiles[policyKey]
+	p, ok := wfc.profiles[policyKey]
 	if !ok {
 		return
 	}
-	profile.done()
+	p.done()
 	delete(wfc.profiles, policyKey)
 }
 
@@ -151,7 +163,7 @@ func policyKeyForSecret(secret *apiv1.Secret) cache.ExplicitKey {
 
 func (wfc *WorkflowController) newProfileInformer() cache.SharedIndexInformer {
 
-	allowed, err := authutil.CanI(context.Background(), wfc.localProfile().kubernetesClient, "list", "secrets", wfc.GetManagedNamespace(), "")
+	allowed, err := authutil.CanI(context.Background(), wfc.localProfile().kubernetesClient, "", "list", "secrets", wfc.GetManagedNamespace(), "")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -199,7 +211,7 @@ func (wfc *WorkflowController) localPolicyDef() policyDef {
 		workflowNamespace: wfc.GetManagedNamespace(),
 		cluster:           common.LocalCluster,
 		namespace:         wfc.GetManagedNamespace(),
-		act:               actRead ^ actWrite,
+		role:              roleRead ^ roleWrite,
 	}
 }
 
@@ -207,6 +219,6 @@ func (wfc *WorkflowController) localProfile() *profile {
 	return wfc.profiles.local()
 }
 
-func (wfc *WorkflowController) profile(workflowNamespace, cluster, namespace string, act act) (*profile, error) {
+func (wfc *WorkflowController) profile(workflowNamespace, cluster, namespace string, act role) (*profile, error) {
 	return wfc.profiles.find(workflowNamespace, cluster, namespace, act)
 }

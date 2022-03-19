@@ -18,6 +18,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 type FunctionalSuite struct {
@@ -279,7 +280,7 @@ func (s *FunctionalSuite) TestEventOnNodeFailSentAsPod() {
 	ctx := context.Background()
 	configMap, err := s.KubeClient.CoreV1().ConfigMaps(fixtures.Namespace).Get(
 		ctx,
-		"workflow-controller-configmap",
+		common.ConfigMapName,
 		metav1.GetOptions{},
 	)
 	if err != nil {
@@ -294,7 +295,7 @@ func (s *FunctionalSuite) TestEventOnNodeFailSentAsPod() {
 		Workflow("@expectedfailures/failed-step-event.yaml").
 		When().
 		UpdateConfigMap(
-			"workflow-controller-configmap",
+			common.ConfigMapName,
 			configMap.Data,
 			map[string]string{}).
 		// Give controller enough time to update from config map change
@@ -343,7 +344,7 @@ func (s *FunctionalSuite) TestEventOnNodeFailSentAsPod() {
 		).
 		When().
 		// Reset config map to original settings
-		UpdateConfigMap("workflow-controller-configmap", originalData, map[string]string{}).
+		UpdateConfigMap(common.ConfigMapName, originalData, map[string]string{}).
 		// Give controller enough time to update from config map change
 		Wait(5 * time.Second)
 }
