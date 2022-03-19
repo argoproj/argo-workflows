@@ -2,6 +2,8 @@ package cluster
 
 import (
 	"context"
+	"os"
+
 	"github.com/spf13/cobra"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -9,7 +11,6 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
-	"os"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
