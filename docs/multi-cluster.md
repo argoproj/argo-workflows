@@ -22,10 +22,11 @@ When running workflows that creates resources (i.e. run tasks/steps) in other cl
 
 * The **local cluster** is where you'll create your workflows in. All cluster must be given a unique name. In examples
   we'll call this `cluster-0`.
-* The **workflow namespace** is where workflow is, which may be different to the resource's namespace. In the
+* The **workflow namespace** or **local namespace** is where workflow is, which may be different to the resource's namespace. In the
   examples, `argo`.
 * The **remote cluster** is where the workflow may create pods. In the examples, `cluster-1`.
 * The **remote namespace** is where remote resources are created. In the examples, `default`.
+* The **remote install namespace** is where remote RBAC resources are created. Usually the same as **remote namespace**.
 * A **profile** is a configuration profile used to connect to a remote cluster.
 
 ## Configuration

@@ -179,7 +179,7 @@ jobs:
       - run: make ${{matrix.test}} E2E_TIMEOUT=1m STATIC_FILES=false
       - if: ${{ failure() }}
         run: |
-          [ -e /tmp/argo.log ] && cat /tmp/argo.log
+          fi [ -e /tmp/argo.log ] ; then cat /tmp/argo.log; fi
       - if: ${{ failure() }}
         run: kubectl describe pod -l workflows.argoproj.io/workflow
       - if: ${{ failure() }}

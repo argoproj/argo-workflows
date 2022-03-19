@@ -47,8 +47,12 @@ func newGetProfileCommand() *cobra.Command {
 				remoteInstallNamespace = remoteNamespace
 			}
 
+			rules := &clientcmd.ClientConfigLoadingRules{}
+			if _, err := os.Stat(kubeconfig); !os.IsNotExist(err) {
+				rules.ExplicitPath = kubeconfig
+			}
 			clientConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
-				&clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeconfig},
+				rules,
 				&clientcmd.ConfigOverrides{CurrentContext: remoteContext},
 			)
 
