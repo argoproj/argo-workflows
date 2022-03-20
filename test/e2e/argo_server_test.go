@@ -1193,6 +1193,28 @@ spec:
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			uid = metadata.UID
 		})
+	var failedUid types.UID
+	s.Given().
+		Workflow(`
+metadata:
+  generateName: jughead-
+  labels:
+    foo: 3
+spec:
+  entrypoint: run-jughead
+  templates:
+    - name: run-jughead
+      container:
+        image: argoproj/argosay:v2
+        command: [sh, -c]
+        args: ["echo intentional failure; exit 1"]`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeArchived).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			failedUid = metadata.UID
+		})
 	s.Given().
 		Workflow(`
 metadata:
@@ -1218,11 +1240,11 @@ spec:
 		{"ListEquals", "foo=1", 1},
 		{"ListDoubleEquals", "foo==1", 1},
 		{"ListIn", "foo in (1)", 1},
-		{"ListNotEquals", "foo!=1", 1},
-		{"ListNotIn", "foo notin (1)", 1},
-		{"ListExists", "foo", 2},
-		{"ListGreaterThan0", "foo>0", 2},
-		{"ListGreaterThan1", "foo>1", 1},
+		{"ListNotEquals", "foo!=1", 2},
+		{"ListNotIn", "foo notin (1)", 2},
+		{"ListExists", "foo", 3},
+		{"ListGreaterThan0", "foo>0", 3},
+		{"ListGreaterThan1", "foo>1", 2},
 		{"ListLessThan1", "foo<1", 0},
 		{"ListLessThan2", "foo<2", 1},
 	} {
@@ -1295,6 +1317,26 @@ spec:
 			Expect().
 			Status(404)
 		s.e().GET("/api/v1/archived-workflows/{uid}", uid).
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.metadata.name").
+			NotNull()
+	})
+
+	s.Run("Retry", func() {
+		s.e().PUT("/api/v1/archived-workflows/{uid}/retry", failedUid).
+			WithBytes([]byte(`{"namespace": "argo"}`)).
+			Expect().
+			Status(200).
+			JSON().
+			NotNull()
+	})
+
+	s.Run("Resubmit", func() {
+		s.Need(fixtures.BaseLayerArtifacts)
+		s.e().PUT("/api/v1/archived-workflows/{uid}/resubmit", uid).
+			WithBytes([]byte(`{"namespace": "argo", "memoized": false}`)).
 			Expect().
 			Status(200).
 			JSON().

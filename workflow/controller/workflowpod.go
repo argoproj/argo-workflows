@@ -37,7 +37,7 @@ var (
 	}
 	volumeMountVarArgo = apiv1.VolumeMount{
 		Name:      volumeVarArgo.Name,
-		MountPath: "/var/run/argo",
+		MountPath: common.VarRunArgoPath,
 	}
 	hostPathSocket = apiv1.HostPathSocket
 )
@@ -317,9 +317,16 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		pod.Spec.InitContainers[i] = c
 	}
 
+	envVarTemplateValue := wfv1.MustMarshallJSON(tmpl)
+	templateSize := len(envVarTemplateValue)
+	if templateSize > 128000 {
+		err = fmt.Errorf("workflow templates are limited to 128KB, this workflow is %d bytes", templateSize)
+		return nil, err
+	}
+
 	// Add standard environment variables, making pod spec larger
 	envVars := []apiv1.EnvVar{
-		{Name: common.EnvVarTemplate, Value: wfv1.MustMarshallJSON(tmpl)},
+		{Name: common.EnvVarTemplate, Value: envVarTemplateValue},
 		{Name: common.EnvVarNodeID, Value: nodeID},
 		{Name: common.EnvVarIncludeScriptOutput, Value: strconv.FormatBool(opts.includeScriptOutput)},
 		{Name: common.EnvVarDeadline, Value: woc.getDeadline(opts).Format(time.RFC3339)},
@@ -432,9 +439,12 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			if len(c.Command) == 0 {
 				return nil, fmt.Errorf("container %q in template %q, does not have the command specified: when using the emissary executor you must either explicitly specify the command, or list the image's command in the index: https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary", c.Name, tmpl.Name)
 			}
-			c.Command = append([]string{"/var/run/argo/argoexec", "emissary", "--"}, c.Command...)
+			c.Command = append([]string{common.VarRunArgoPath + "/argoexec", "emissary", "--"}, c.Command...)
 		}
 		c.VolumeMounts = append(c.VolumeMounts, volumeMountVarArgo)
+		if x := pod.Spec.TerminationGracePeriodSeconds; x != nil && c.Name == common.WaitContainerName {
+			c.Env = append(c.Env, apiv1.EnvVar{Name: common.EnvVarTerminationGracePeriodSeconds, Value: fmt.Sprint(*x)})
+		}
 		pod.Spec.Containers[i] = c
 	}
 
@@ -635,6 +645,11 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 			Name:  common.EnvVarWorkflowUID,
 			Value: string(woc.wf.UID),
 		},
+	}
+	if v := woc.controller.Config.InstanceID; v != "" {
+		execEnvVars = append(execEnvVars,
+			apiv1.EnvVar{Name: common.EnvVarInstanceID, Value: v},
+		)
 	}
 	if woc.controller.Config.Executor != nil {
 		execEnvVars = append(execEnvVars, woc.controller.Config.Executor.Env...)

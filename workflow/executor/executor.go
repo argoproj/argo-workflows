@@ -17,6 +17,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -107,14 +108,6 @@ type ContainerRuntimeExecutor interface {
 
 	// List all the containers the executor is aware of, including any injected sidecars.
 	ListContainerNames(ctx context.Context) ([]string, error)
-}
-
-func errWithHelp(err error) error {
-	return fmt.Errorf("unable to get pods, you can check https://argoproj.github.io/argo-workflows/faq/: %w", err)
-}
-
-func isErrUnknownGetPods(err error) bool {
-	return strings.Contains(err.Error(), "unknown (get pods)")
 }
 
 // NewExecutor instantiates a new workflow executor
@@ -624,24 +617,6 @@ func (we *WorkflowExecutor) InitDriver(ctx context.Context, art *wfv1.Artifact) 
 	return driver, err
 }
 
-// getPod is a wrapper around the pod interface to get the current pod from kube API server
-func (we *WorkflowExecutor) getPod(ctx context.Context) (*apiv1.Pod, error) {
-	podsIf := we.ClientSet.CoreV1().Pods(we.Namespace)
-	var pod *apiv1.Pod
-	err := waitutil.Backoff(executorretry.ExecutorRetry, func() (bool, error) {
-		var err error
-		pod, err = podsIf.Get(ctx, we.PodName, metav1.GetOptions{})
-		if err != nil && isErrUnknownGetPods(err) {
-			return !errorsutil.IsTransientErr(err), errWithHelp(err)
-		}
-		return !errorsutil.IsTransientErr(err), err
-	})
-	if err != nil {
-		return nil, argoerrs.InternalWrapError(err)
-	}
-	return pod, nil
-}
-
 // GetConfigMapKey retrieves a configmap value and memoizes the result
 func (we *WorkflowExecutor) GetConfigMapKey(ctx context.Context, name, key string) (string, error) {
 	namespace := we.Namespace
@@ -700,13 +675,12 @@ func (we *WorkflowExecutor) GetSecrets(ctx context.Context, namespace, name, key
 }
 
 // GetTerminationGracePeriodDuration returns the terminationGracePeriodSeconds of podSpec in Time.Duration format
-func (we *WorkflowExecutor) GetTerminationGracePeriodDuration(ctx context.Context) (time.Duration, error) {
-	pod, err := we.getPod(ctx)
-	if err != nil || pod.Spec.TerminationGracePeriodSeconds == nil {
-		return time.Duration(0), err
+func getTerminationGracePeriodDuration() time.Duration {
+	x, _ := strconv.ParseInt(os.Getenv(common.EnvVarTerminationGracePeriodSeconds), 10, 64)
+	if x > 0 {
+		return time.Duration(x) * time.Second
 	}
-	terminationGracePeriodDuration := time.Second * time.Duration(*pod.Spec.TerminationGracePeriodSeconds)
-	return terminationGracePeriodDuration, nil
+	return 30 * time.Second
 }
 
 // CaptureScriptResult will add the stdout of a script template as output result
@@ -1089,7 +1063,7 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames 
 
 func (we *WorkflowExecutor) killContainers(ctx context.Context, containerNames []string) {
 	log.Infof("Killing containers")
-	terminationGracePeriodDuration, _ := we.GetTerminationGracePeriodDuration(ctx)
+	terminationGracePeriodDuration := getTerminationGracePeriodDuration()
 	if err := we.RuntimeExecutor.Kill(ctx, containerNames, terminationGracePeriodDuration); err != nil {
 		log.Warnf("Failed to kill %q: %v", containerNames, err)
 	}
@@ -1111,7 +1085,7 @@ func (we *WorkflowExecutor) KillSidecars(ctx context.Context) error {
 	if len(sidecarNames) == 0 {
 		return nil // exit early as GetTerminationGracePeriodDuration performs `get pod`
 	}
-	terminationGracePeriodDuration, _ := we.GetTerminationGracePeriodDuration(ctx)
+	terminationGracePeriodDuration := getTerminationGracePeriodDuration()
 	return we.RuntimeExecutor.Kill(ctx, sidecarNames, terminationGracePeriodDuration)
 }
 

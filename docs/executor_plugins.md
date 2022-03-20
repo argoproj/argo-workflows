@@ -84,7 +84,9 @@ We'll need to create a script that starts a HTTP server. Save this as `server.py
 ```python
 import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from pprint import pprint
+
+with open("/var/run/argo/token") as f:
+    token = f.read().strip()
 
 
 class Plugin(BaseHTTPRequestHandler):
@@ -97,16 +99,23 @@ class Plugin(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(json.dumps(reply).encode("UTF-8"))
 
+    def forbidden(self):
+        self.send_response(403)
+        self.end_headers()
+
     def unsupported(self):
         self.send_response(404)
         self.end_headers()
 
     def do_POST(self):
-        if self.path == '/api/v1/template.execute':
+        if self.headers.get("Authorization") != "Bearer " + token:
+            self.forbidden()
+        elif self.path == '/api/v1/template.execute':
             args = self.args()
-            pprint(args)
             if 'hello' in args['template'].get('plugin', {}):
-                self.reply({'node': {'phase': 'Succeeded', 'message': 'Hello template!'}})
+                self.reply(
+                    {'node': {'phase': 'Succeeded', 'message': 'Hello template!',
+                              'outputs': {'parameters': [{'name': 'foo', 'value': 'bar'}]}}})
             else:
                 self.reply({})
         else:
@@ -125,6 +134,7 @@ Some things to note here:
 
 * You only need to implement the calls you need. Return 404 and it won't be called again.
 * The path is the RPC method name.
+* You should check that the `Authorization` header contains the same value as `/var/run/argo/token`. Return 403 if not
 * The request body contains the template's input parameters.
 * The response body may contain the node's result, including the phase (e.g. "Succeeded" or "Failed") and a message.
 * If the response is `{}`, then the plugin is saying it cannot execute the plugin template, e.g. it is a Slack plugin,
@@ -289,8 +299,7 @@ kubectl get cm -l workflows.argoproj.io/configmap-type=ExecutorPlugin
 
 ## Examples and Community Contributed Plugins
 
-[Show examples and community contributed plugins](https://github.com/argoproj-labs?q=argo+workflows+plugin&type=all&language=&sort=)
-.
+[Plugin directory](plugin-directory.md)
 
 ## Publishing Your Plugin
 

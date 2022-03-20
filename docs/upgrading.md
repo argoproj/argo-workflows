@@ -4,7 +4,13 @@
 Breaking changes  typically (sometimes we don't realise they are breaking) have "!" in the commit message, as per
 the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary).
 
-### Upgrading to v3.4
+## Upgrading to v3.3
+
+### [662a7295b](https://github.com/argoproj/argo-workflows/commit/662a7295b) feat: Replace `patch pod` with `create workflowtaskresult`. Fixes #3961 (#8000)
+
+The PR changes the permissions that can be used by a workflow to remove the `pod patch` permission. 
+
+See [workflow RBAC](workflow-rbac.md) and [#8013](https://github.com/argoproj/argo-workflows/issues/3961).
 
 ### [06d4bf76f](https://github.com/argoproj/argo-workflows/commit/06d4bf76f) fix: Reduce agent permissions. Fixes #7986 (#7987)
 
@@ -27,8 +33,6 @@ rules:
 Workflows running during any upgrade should be give both permissions.
 
 See [#8013](https://github.com/argoproj/argo-workflows/issues/8013).
-
-## Upgrading to v3.3
 
 ### feat!: Remove deprecated config flags
 
@@ -154,7 +158,9 @@ This add the template name to the pod name, to make it easier to understand whic
 
 ### [be63efe89](https://github.com/argoproj/argo-workflows/commit/be63efe89) feat(executor)!: Change `argoexec` base image to alpine. Closes #5720 (#6006)
 
-Changing from Debian to Alpine reduces the size of the `argoexec` image, resulting is faster starting workflow pods, and it also reduce the risk of security issues. There is not such thing as a free lunch. There maybe other behaviour changes we don't know of yet. 
+Changing from Debian to Alpine reduces the size of the `argoexec` image, resulting is faster starting workflow pods, and it also reduce the risk of security issues. There is not such thing as a free lunch. There maybe other behaviour changes we don't know of yet.
+
+Some users found this change prevented workflow with very large parameters from running. See [#7586](https://github.com/argoproj/argo-workflows/issues/7586)
 
 ### [48d7ad3](https://github.com/argoproj/argo-workflows/commit/48d7ad36c14e4a50c50332d6decd543a1b732b69) chore: Remove onExit naming transition scaffolding code (#6297)
 

@@ -23,4 +23,4 @@ The database migration will only occur successfully if none of the tables exist.
 ## Required database permissions
 
 ### Postgres
-The database user/role needs to have `CREATE` and `USAGE` permissions on the `public` schema of the database so that the necessary table can be generted during the migration.
+The database user/role needs to have `CREATE` and `USAGE` permissions on the `public` schema of the database so that the necessary table can be generated during the migration.
