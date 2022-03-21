@@ -4,12 +4,9 @@ import (
 	"fmt"
 
 	log "github.com/sirupsen/logrus"
-	"k8s.io/client-go/tools/cache"
 )
 
-const localProfileKey cache.ExplicitKey = ""
-
-type profiles map[cache.ExplicitKey]*profile
+type profiles map[profileKey]*profile
 
 func (p profiles) find(workflowNamespace, cluster, namespace string, act role) (*profile, error) {
 	for _, p := range p {

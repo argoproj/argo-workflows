@@ -97,6 +97,8 @@ ifndef $(GOPATH)
 	export GOPATH
 endif
 
+export PATH:=dist:$(PATH)
+
 ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
 CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
 CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
@@ -425,11 +427,11 @@ ifeq ($(PROFILE),multi-cluster)
 	kubectl --context=cluster-1 create role executor --verb=create,patch --resource=workflowtaskresults.argoproj.io
 	kubectl --context=cluster-1 create rolebinding default-executor --role=executor --user=system:serviceaccount:default:default
 
-	# install remote resources
-	./dist/argo cluster get-remote-resources cluster-0 cluster-1 --local-namespace=argo --remote-namespace=default --read --write | kubectl --context=cluster-1 -n default apply -f  -
+	# install resources into remote cluster
+	argo cluster get-remote-resources cluster-0 cluster-1 --local-namespace=argo --remote-namespace=default --read --write | kubectl --context=cluster-1 -n default apply -f  -
 
-	# install profile
-	./dist/argo cluster get-profile cluster-0 cluster-1 --local-namespace=argo --remote-namespace=default --read --write | kubectl -n argo apply -f  -
+	# install profile into local cluster
+	argo cluster get-profile cluster-0 cluster-1 --local-namespace=argo --remote-namespace=default --read --write --remote-server=https://`ipconfig getifaddr en0`:`kubectl config view --raw --minify --context=cluster-1|grep server|cut -c 29-` --remote-insecure-skip-tls-verify | kubectl -n argo apply -f  -
 endif
 ifeq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml

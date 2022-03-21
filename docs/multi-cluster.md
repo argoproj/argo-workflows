@@ -1,9 +1,13 @@
 # Multi-cluster
 
+⚠️ Work in progress.
+
 Argo Workflows v3.4 will introduce a feature to allow you to run workflows where script, resource, and container
 templates can be run in a different cluster or namespace to the workflow itself:
 
 ```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
 metadata:
   generateName: main-
 spec:
@@ -22,8 +26,8 @@ When running workflows that creates resources (i.e. run tasks/steps) in other cl
 
 * The **local cluster** is where you'll create your workflows in. All cluster must be given a unique name. In examples
   we'll call this `cluster-0`.
-* The **workflow namespace** or **local namespace** is where workflow is, which may be different to the resource's namespace. In the
-  examples, `argo`.
+* The **workflow namespace** or **local namespace** is where workflow is, which may be different to the resource's
+  namespace. In the examples, `argo`.
 * The **remote cluster** is where the workflow may create pods. In the examples, `cluster-1`.
 * The **remote namespace** is where remote resources are created. In the examples, `default`.
 * The **remote install namespace** is where remote RBAC resources are created. Usually the same as **remote namespace**.
@@ -36,24 +40,7 @@ I'm going to make some assumptions:
 * Your default Kubernetes context is the local cluster.
 * There is a Kubernetes context for the remote cluster (named `cluster-1`).
 
-<!-- this block of code is replicated in Makefile, if you change it here, copy it there -->
-
-```bash
-# install the taskresult crd
-kubectl --context=cluster-1 apply -f manifests/base/crds/minimal/argoproj.io_workflowtaskresults.yaml
-
-# create default bindings for the executor
-kubectl --context=cluster-1 create role executor --verb=create,patch --resource=workflowtaskresults.argoproj.io
-kubectl --context=cluster-1 create rolebinding default-executor --role=executor --user=system:serviceaccount:default:default
-
-# install remote resources
-./dist/argo cluster get-remote-resources cluster-0 cluster-1 --local-namespace=argo --remote-namespace=default --read --write | kubectl --context=cluster-1 -n default apply -f  -
-
-# install profile
-./dist/argo cluster get-profile cluster-0 cluster-1 --local-namespace=argo --remote-namespace=default --read --write | kubectl -n argo apply -f  -
-```
-
-The workflow controller must be configured with it's name:
+The workflow controller must be configured with the name of its cluster:
 
 ```yaml
 apiVersion: v1
@@ -66,20 +53,28 @@ data:
   cluster: cluster-0
 ```
 
-Finally, run a test workflow.
-
-## Cluster Install
-
-The above configuration is for single namespace install. If you use a cluster scoped install, you'll want to install
-differently. Let's assume the local user namespace is named `user-ns`. We need to create separate profiles for read and
-write:
+Restart the controller:
 
 ```bash
-./dist/argo cluster get-remote-resources cluster-0 cluster-1 --local-namespace=user-ns --remote-namespace=default --read | kubectl --context=cluster-1 apply -f  -
-./dist/argo cluster get-remote-resources cluster-0 cluster-1 --local-namespace=user-ns --remote-namespace=default --write | kubectl --context=cluster-1 apply -f  -
-./dist/argo cluster get-profile cluster-0 cluster-1 --local-namespace=user-ns --remote-namespace=default --read | kubectl -n argo apply -f 
-./dist/argo cluster get-profile cluster-0 cluster-1 --local-namespace=user-ns --remote-namespace=default --write | kubectl -n user-ns apply -f 
+kubectl rollout restart deploy/workflow-controller
 ```
+
+```bash
+# install the taskresult crd
+kubectl --context=cluster-1 apply -f https://raw.githubusercontent.com/argoproj/argo-workflows/dev-mc/manifests/base/crds/full/argoproj.io_workflowtaskresults.yaml
+
+# create default bindings for the executor
+kubectl --context=cluster-1 create role executor --verb=create,patch --resource=workflowtaskresults.argoproj.io
+kubectl --context=cluster-1 create rolebinding default-executor --role=executor --user=system:serviceaccount:default:default
+
+# install resources into the remote cluster
+argo cluster get-remote-resources cluster-0 cluster-1 --local-namespace=argo --remote-namespace=default --read --write | kubectl --context=cluster-1 -n default apply -f  -
+
+# install profile into the local cluster
+argo cluster get-profile cluster-0 cluster-1 --local-namespace=argo --remote-namespace=default --read --write --remote-server https://192.168.0.109:58982 --remote-insecure-skip-tls-verify | kubectl -n argo apply -f  -
+```
+
+Finally, run a test workflow.
 
 ## Limitations
 

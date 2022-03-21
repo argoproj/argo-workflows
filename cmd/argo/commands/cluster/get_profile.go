@@ -18,16 +18,19 @@ import (
 
 func newGetProfileCommand() *cobra.Command {
 	var (
-		remoteServer           string
-		remoteContext          string
-		localNamespace         string
-		remoteNamespace        string
-		remoteInstallNamespace string
-		read                   bool
-		write                  bool
+		localNamespace                 string
+		remoteServer                   string
+		remoteCertificateAuthorityFile string
+		remoteInsecureSkipTLSVerify    bool
+		remoteContext                  string
+		remoteNamespace                string
+		remoteInstallNamespace         string
+		read                           bool
+		write                          bool
 	)
 	cmd := &cobra.Command{
-		Use: "get-profile local_cluster remote_cluster",
+		Use:   "get-profile local_cluster remote_cluster",
+		Short: "print the profile for the remote cluster",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := context.Background()
 			if len(args) != 2 {
@@ -76,11 +79,24 @@ func newGetProfileCommand() *cobra.Command {
 			ca := secret.Data[apiv1.ServiceAccountRootCAKey]
 			token := secret.Data[apiv1.ServiceAccountTokenKey]
 
+			if remoteCertificateAuthorityFile != "" {
+				ca, err = os.ReadFile(remoteCertificateAuthorityFile)
+				if err != nil {
+					return err
+				}
+			}
+
+			if remoteInsecureSkipTLSVerify {
+				println("⚠️ do not use insecure skip verify in production")
+				// specifying a root certificates file with the insecure flag is not allowed
+				ca = nil
+			}
+
 			kubeconfig := api.Config{
 				Kind:       "Config",
 				APIVersion: "v1",
 				Clusters: map[string]*api.Cluster{
-					remoteCluster: {Server: remoteServer, CertificateAuthorityData: ca},
+					remoteCluster: {Server: remoteServer, CertificateAuthorityData: ca, InsecureSkipTLSVerify: remoteInsecureSkipTLSVerify},
 				},
 				AuthInfos: map[string]*api.AuthInfo{
 					remoteServiceAccountName: {Token: string(token)},
@@ -116,8 +132,6 @@ func newGetProfileCommand() *cobra.Command {
 				return err
 			}
 
-			println("ALEX", remoteServer)
-
 			_, _ = os.Stdout.WriteString("# This is an auto-generated file. DO NOT EDIT\n")
 			_, _ = os.Stdout.Write(data)
 
@@ -125,6 +139,8 @@ func newGetProfileCommand() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&remoteServer, "remote-server", "", "URL for remote server")
+	cmd.Flags().StringVar(&remoteCertificateAuthorityFile, "remote-certificate-authority-file", "", "file containing remote certificate authority")
+	cmd.Flags().BoolVar(&remoteInsecureSkipTLSVerify, "remote-insecure-skip-tls-verify", false, "skip certificate for remote server, do not use in production")
 	cmd.Flags().StringVar(&remoteContext, "remote-context", "", "remote context")
 	cmd.Flags().StringVar(&localNamespace, "local-namespace", "", "restrict to this local namespace (empty for all namespaces)")
 	cmd.Flags().StringVar(&remoteNamespace, "remote-namespace", "", "restrict the this remote namespace (empty for all namespaces)")

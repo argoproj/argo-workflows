@@ -709,7 +709,7 @@ func (woc *wfOperationCtx) deleteTaskResults(ctx context.Context) error {
 				metav1.DeleteOptions{PropagationPolicy: &deletePropagationBackground},
 				metav1.ListOptions{LabelSelector: labelSelector},
 			)
-		if err != nil {
+		if err != nil && !apierr.IsNotFound(err) {
 			return fmt.Errorf("failed to delete task-results in cluster %q: %w", p.cluster, err)
 		}
 	}

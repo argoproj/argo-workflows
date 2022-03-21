@@ -38,9 +38,9 @@ func (wfc *WorkflowController) newDefaultProfiles(restConfig *rest.Config, kuber
 	}
 }
 
-func (wfc *WorkflowController) addProfile(secret *apiv1.Secret) error {
-	policyKey := policyKeyForSecret(secret)
-	if _, ok := wfc.profiles[policyKey]; ok {
+func (wfc *WorkflowController) addProfile(ctx context.Context, secret *apiv1.Secret) error {
+	key := newProfileKey(secret)
+	if _, ok := wfc.profiles[key]; ok {
 		return nil
 	}
 
@@ -64,11 +64,11 @@ func (wfc *WorkflowController) addProfile(secret *apiv1.Secret) error {
 
 	namespace := common.Namespace(secret)
 
-	write, err := authutil.CanI(context.Background(), kubernetesClient, "create", "", "pods", namespace, "")
+	write, err := authutil.CanI(ctx, kubernetesClient, "create", "", "pods", namespace, "")
 	if err != nil {
 		return err
 	}
-	read, err := authutil.CanI(context.Background(), kubernetesClient, "list", "", "pods", namespace, "g")
+	read, err := authutil.CanI(ctx, kubernetesClient, "list", "", "pods", namespace, "g")
 	if err != nil {
 		return err
 	}
@@ -137,10 +137,10 @@ func (wfc *WorkflowController) addProfile(secret *apiv1.Secret) error {
 		go p.run(done)
 	}
 
-	wfc.profiles[policyKey] = p
+	wfc.profiles[key] = p
 
 	log.
-		WithField("policyKey", policyKey).
+		WithField("key", key).
 		WithField("policyDef", p.policyDef.String()).
 		Info("Profile added")
 
@@ -148,28 +148,16 @@ func (wfc *WorkflowController) addProfile(secret *apiv1.Secret) error {
 }
 
 func (wfc *WorkflowController) removeProfile(secret *apiv1.Secret) {
-	policyKey := policyKeyForSecret(secret)
-	p, ok := wfc.profiles[policyKey]
+	key := newProfileKey(secret)
+	p, ok := wfc.profiles[key]
 	if !ok {
 		return
 	}
 	p.done()
-	delete(wfc.profiles, policyKey)
+	delete(wfc.profiles, key)
 }
 
-func policyKeyForSecret(secret *apiv1.Secret) cache.ExplicitKey {
-	return cache.ExplicitKey(fmt.Sprintf("%s,%s", secret.Namespace, secret.Name))
-}
-
-func (wfc *WorkflowController) newProfileInformer() cache.SharedIndexInformer {
-
-	allowed, err := authutil.CanI(context.Background(), wfc.localProfile().kubernetesClient, "", "list", "secrets", wfc.GetManagedNamespace(), "")
-	if err != nil {
-		log.Fatal(err)
-	}
-	if !allowed {
-		return nil
-	}
+func (wfc *WorkflowController) newProfileInformer(ctx context.Context) cache.SharedIndexInformer {
 
 	informer := v1.NewFilteredSecretInformer(
 		wfc.localProfile().kubernetesClient,
@@ -183,7 +171,7 @@ func (wfc *WorkflowController) newProfileInformer() cache.SharedIndexInformer {
 
 	addFunc := func(obj interface{}) {
 		secret := obj.(*apiv1.Secret)
-		if err := wfc.addProfile(secret); err != nil {
+		if err := wfc.addProfile(ctx, secret); err != nil {
 			log.WithError(err).
 				WithField("namespace", secret.Namespace).
 				WithField("name", secret.Name).

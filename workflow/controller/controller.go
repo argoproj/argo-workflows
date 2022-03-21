@@ -243,12 +243,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListOptions, indexers)
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
 	wfc.wfTaskSetInformer = wfc.newWorkflowTaskSetInformer()
-	wfc.profileInformer = wfc.newProfileInformer()
-
-	if wfc.profileInformer == nil {
-		log.Info("profile loading disabled (needs `secret list,watch`)")
-	}
-
+	wfc.profileInformer = wfc.newProfileInformer(ctx)
 	wfc.addWorkflowInformerHandlers(ctx)
 	wfc.updateEstimatorFactory()
 
@@ -276,9 +271,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		wfc.wfInformer.HasSynced,
 		wfc.wftmplInformer.Informer().HasSynced,
 		wfc.localProfile().hasSynced,
-		func() bool {
-			return wfc.profileInformer == nil || wfc.profileInformer.HasSynced()
-		},
+		wfc.profileInformer.HasSynced,
 		wfc.configMapInformer.HasSynced,
 		wfc.wfTaskSetInformer.Informer().HasSynced,
 	) {

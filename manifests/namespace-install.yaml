@@ -774,6 +774,8 @@ rules:
   - secrets
   verbs:
   - get
+  - list
+  - watch
 - apiGroups:
   - argoproj.io
   resources:
