@@ -314,6 +314,10 @@ export interface Template {
      * Affinity sets the pod's scheduling constraints Overrides the affinity set at the workflow level (if any)
      */
     affinity?: kubernetes.Affinity;
+
+    cluster?: string;
+    namespace?: string;
+
     /**
      * Container is the main container image to run in the pod
      */
@@ -900,4 +904,20 @@ export type ResourceScope = 'local' | 'namespaced' | 'cluster';
 export interface LogEntry {
     content: string;
     podName?: string;
+}
+
+export function getTemplateByName(wf: Workflow, name: string): Template {
+    {
+        const template = wf.spec.templates.find(t => t.name === name);
+        if (template) {
+            return template;
+        }
+    }
+    if (wf.status.storedWorkflowTemplateSpec) {
+        const template = wf.status.storedWorkflowTemplateSpec.templates.find(t => t.name === name);
+        if (template) {
+            return template;
+        }
+    }
+    return Object.values(wf.status.storedTemplates).find(t => t.name === name);
 }

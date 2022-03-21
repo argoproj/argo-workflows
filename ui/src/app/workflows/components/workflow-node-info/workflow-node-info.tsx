@@ -3,7 +3,7 @@ import * as moment from 'moment';
 import * as React from 'react';
 
 import * as models from '../../../../models';
-import {Artifact, NodeStatus, Workflow} from '../../../../models';
+import {Artifact, getTemplateByName, NodeStatus, Workflow} from '../../../../models';
 import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
 import {Button} from '../../../shared/components/button';
 import {ClipboardText} from '../../../shared/components/clipboard-text';
@@ -153,6 +153,14 @@ const WorkflowNodeSummary = (props: Props) => {
             }
         );
     }
+    const template = getTemplateByName(props.workflow, getTemplateNameFromNode(props.node));
+    if (template.namespace) {
+        attributes.splice(2, 0, {title: 'NAMESPACE', value: <ClipboardText text={template.namespace} />});
+    }
+    if (template.cluster) {
+        attributes.splice(2, 0, {title: 'CLUSTER', value: <ClipboardText text={template.cluster} />});
+    }
+
     if (props.node.type === 'Retry') {
         attributes.push({
             title: 'FAIL HOSTS',

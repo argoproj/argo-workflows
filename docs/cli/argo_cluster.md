@@ -48,6 +48,6 @@ argo cluster [flags]
 ### SEE ALSO
 
 * [argo](argo.md)	 - argo is the command line interface to Argo
-* [argo cluster get-profile](argo_cluster_get-profile.md)	 - 
-* [argo cluster get-remote-resources](argo_cluster_get-remote-resources.md)	 - 
+* [argo cluster get-profile](argo_cluster_get-profile.md)	 - print the profile for the remote cluster
+* [argo cluster get-remote-resources](argo_cluster_get-remote-resources.md)	 - print the resource manifests to set-up the the remote cluster
 

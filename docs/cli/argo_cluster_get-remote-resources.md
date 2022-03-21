@@ -1,6 +1,6 @@
 ## argo cluster get-remote-resources
 
-
+print the resource manifests to set-up the the remote cluster
 
 ```
 argo cluster get-remote-resources local_cluster remote_cluster [flags]
