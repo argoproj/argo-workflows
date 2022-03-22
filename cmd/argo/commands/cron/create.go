@@ -38,8 +38,10 @@ func NewCreateCommand() *cobra.Command {
 				os.Exit(1)
 			}
 
-			err := util.ReadParametersFile(parametersFile, &submitOpts)
-			errors.CheckError(err)
+			if parametersFile != "" {
+				err := util.ReadParametersFile(parametersFile, &submitOpts)
+				errors.CheckError(err)
+			}
 
 			CreateCronWorkflows(cmd.Context(), args, &cliCreateOpts, &submitOpts)
 		},

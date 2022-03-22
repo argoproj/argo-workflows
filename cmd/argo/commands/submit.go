@@ -73,8 +73,10 @@ func NewSubmitCommand() *cobra.Command {
 				log.Warn("--status should only be used with --watch")
 			}
 
-			err := util.ReadParametersFile(parametersFile, &submitOpts)
-			errors.CheckError(err)
+			if parametersFile != "" {
+				err := util.ReadParametersFile(parametersFile, &submitOpts)
+				errors.CheckError(err)
+			}
 
 			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient := apiClient.NewWorkflowServiceClient()
