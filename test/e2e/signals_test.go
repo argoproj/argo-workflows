@@ -24,12 +24,6 @@ type SignalsSuite struct {
 	fixtures.E2ESuite
 }
 
-func (s *SignalsSuite) SetupSuite() {
-	s.E2ESuite.SetupSuite()
-	// Because k8ssapi and kubelet execute `sh -c 'kill 15 1'` to they do not work.
-	s.Need(fixtures.None(fixtures.Kubelet))
-}
-
 func (s *SignalsSuite) TestStopBehavior() {
 	s.Given().
 		Workflow("@functional/stop-terminate.yaml").

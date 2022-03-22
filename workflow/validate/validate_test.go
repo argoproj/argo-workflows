@@ -1623,20 +1623,10 @@ func TestBaseImageOutputVerify(t *testing.T) {
 	wfBaseOutParam := unmarshalWf(baseImageOutputParameter)
 	wfEmptyDirOutArt := unmarshalWf(volumeMountOutputArtifact)
 	wfBaseWithEmptyDirOutArt := unmarshalWf(baseImageDirWithEmptyDirOutputArtifact)
-	wfNonPathOutputParam := unmarshalWf(nonPathOutputParameter)
 	var err error
 
-	for _, executor := range []string{common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorPNS, common.ContainerRuntimeExecutorEmissary, ""} {
+	for _, executor := range []string{common.ContainerRuntimeExecutorPNS, common.ContainerRuntimeExecutorEmissary, ""} {
 		switch executor {
-		case common.ContainerRuntimeExecutorKubelet:
-			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
-			assert.Error(t, err)
-			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseOutParam, ValidateOpts{ContainerRuntimeExecutor: executor})
-			assert.Error(t, err)
-			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseWithEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
-			assert.Error(t, err)
-			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfNonPathOutputParam, ValidateOpts{ContainerRuntimeExecutor: executor})
-			assert.NoError(t, err)
 		case common.ContainerRuntimeExecutorPNS:
 			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.NoError(t, err)
@@ -2518,10 +2508,6 @@ func TestDagAndStepLevelOutputArtifactsForDiffExecutor(t *testing.T) {
 	})
 	t.Run("PNSExecutor", func(t *testing.T) {
 		_, err := validateWithOptions(dagAndStepLevelOutputArtifacts, ValidateOpts{ContainerRuntimeExecutor: common.ContainerRuntimeExecutorPNS})
-		assert.NoError(t, err)
-	})
-	t.Run("KubeletExecutor", func(t *testing.T) {
-		_, err := validateWithOptions(dagAndStepLevelOutputArtifacts, ValidateOpts{ContainerRuntimeExecutor: common.ContainerRuntimeExecutorKubelet})
 		assert.NoError(t, err)
 	})
 }

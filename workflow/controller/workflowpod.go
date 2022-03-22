@@ -601,27 +601,6 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 	if woc.controller.Config.Executor != nil {
 		execEnvVars = append(execEnvVars, woc.controller.Config.Executor.Env...)
 	}
-	switch woc.getContainerRuntimeExecutor() {
-	case common.ContainerRuntimeExecutorKubelet:
-		execEnvVars = append(execEnvVars,
-			apiv1.EnvVar{
-				Name: common.EnvVarDownwardAPINodeIP,
-				ValueFrom: &apiv1.EnvVarSource{
-					FieldRef: &apiv1.ObjectFieldSelector{
-						FieldPath: "status.hostIP",
-					},
-				},
-			},
-			apiv1.EnvVar{
-				Name:  common.EnvVarKubeletPort,
-				Value: strconv.Itoa(woc.controller.Config.KubeletPort),
-			},
-			apiv1.EnvVar{
-				Name:  common.EnvVarKubeletInsecure,
-				Value: strconv.FormatBool(woc.controller.Config.KubeletInsecure),
-			},
-		)
-	}
 	return execEnvVars
 }
 

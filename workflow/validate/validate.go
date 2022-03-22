@@ -1011,24 +1011,6 @@ func (ctx *templateValidationCtx) validateBaseImageOutputs(tmpl *wfv1.Template) 
 				}
 			}
 		}
-	case common.ContainerRuntimeExecutorKubelet:
-		// for kubelet/k8s fail validation if we detect artifact is copied from base image layer
-		errMsg := fmt.Sprintf("%s executor does not support outputs from base image layer.  Use an emptyDir: https://argoproj.github.io/argo-workflows/empty-dir/", ctx.ContainerRuntimeExecutor)
-		for _, out := range tmpl.Outputs.Artifacts {
-			if common.FindOverlappingVolume(tmpl, out.Path) == nil {
-				return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs.artifacts.%s: %s", tmpl.Name, out.Name, errMsg)
-			}
-		}
-		for _, out := range tmpl.Outputs.Parameters {
-			if out.ValueFrom == nil {
-				continue
-			}
-			if out.ValueFrom.Path != "" {
-				if common.FindOverlappingVolume(tmpl, out.ValueFrom.Path) == nil {
-					return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs.parameters.%s: %s", tmpl.Name, out.Name, errMsg)
-				}
-			}
-		}
 	}
 	return nil
 }
