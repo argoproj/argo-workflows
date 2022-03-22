@@ -132,9 +132,9 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
 
         if (workflow?.spec?.workflowTemplateRef) {
 
-            const name : string = workflow.spec.workflowTemplateRef.name;
+            const templateName : string = workflow.spec.workflowTemplateRef.name;
             const clusterScope : boolean = workflow.spec.workflowTemplateRef.clusterScope;
-            const url : string = clusterScope ? `/cluster-workflow-templates/${name}` : `/workflow-templates/${workflow.metadata.namespace}/${name}`;
+            const url : string = clusterScope ? `/cluster-workflow-templates/${templateName}` : `/workflow-templates/${workflow.metadata.namespace}/${templateName}`;
 
             const templateLink : Link = {
                 name: "Workflow Template Link",

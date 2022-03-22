@@ -161,9 +161,9 @@ export const CronWorkflowDetails = ({match, location, history}: RouteComponentPr
         ]
 
         if (cronWorkflow?.spec?.workflowSpec?.workflowTemplateRef) {
-            const name = cronWorkflow.spec.workflowSpec.workflowTemplateRef.name;
+            const templateName = cronWorkflow.spec.workflowSpec.workflowTemplateRef.name;
             const clusterScope = cronWorkflow.spec.workflowSpec.workflowTemplateRef.clusterScope;
-            const url : string = clusterScope ? `/cluster-workflow-templates/${name}` : `/workflow-templates/${cronWorkflow.metadata.namespace}/${name}`;
+            const url : string = clusterScope ? `/cluster-workflow-templates/${templateName}` : `/workflow-templates/${cronWorkflow.metadata.namespace}/${templateName}`;
 
             const templateLink : Link = {
                 name: "Workflow Template Link",
