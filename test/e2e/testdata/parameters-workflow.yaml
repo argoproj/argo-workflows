@@ -1,0 +1,16 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: parameters-
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: message
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+        args:
+          - echo
+          - "{{workflow.parameters.message}}"
