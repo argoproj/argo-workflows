@@ -15,7 +15,6 @@ Name | Type | Description | Notes
 **labels** | **String** | Labels adds to metadata.labels |  [optional]
 **name** | **String** | Name overrides metadata.name |  [optional]
 **ownerReference** | [**OwnerReference**](OwnerReference.md) |  |  [optional]
-**parameterFile** | **String** | ParameterFile holds a reference to a parameter file. This option is not supported in API |  [optional]
 **parameters** | **List&lt;String&gt;** | Parameters passes input parameters to workflow |  [optional]
 **podPriorityClassName** | **String** | Set the podPriorityClassName of the workflow |  [optional]
 **priority** | **Integer** | Priority is used if controller is configured to process limited number of workflows in parallel, higher priority workflows are processed first. |  [optional]
