@@ -14,7 +14,6 @@ var (
 		met, _ := None(Kubelet)(s)
 		return met, "base layer artifact support"
 	}
-	Docker   = Executor("docker")
 	Emissary = Executor("emissary")
 	Kubelet  = Executor("kubelet")
 	PNS      = Executor("pns")

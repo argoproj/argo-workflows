@@ -88,7 +88,7 @@ type Initializer interface {
 
 //go:generate mockery --name=ContainerRuntimeExecutor
 
-// ContainerRuntimeExecutor is the interface for interacting with a container runtime (e.g. docker)
+// ContainerRuntimeExecutor is the interface for interacting with a container runtime
 type ContainerRuntimeExecutor interface {
 	// GetFileContents returns the file contents of a file in a container as a string
 	GetFileContents(containerName string, sourcePath string) (string, error)

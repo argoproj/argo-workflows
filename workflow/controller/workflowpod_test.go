@@ -715,31 +715,6 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		},
 	}
 
-	// For Docker executor
-	t.Run("Docker", func(t *testing.T) {
-		ctx := context.Background()
-		woc := newWoc()
-		woc.volumes = volumes
-		woc.execWf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
-		woc.controller.Config.ContainerRuntimeExecutor = common.ContainerRuntimeExecutorDocker
-
-		tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
-		assert.NoError(t, err)
-		_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
-		assert.NoError(t, err)
-		pods, err := listPods(woc)
-		assert.NoError(t, err)
-		assert.Len(t, pods.Items, 1)
-		pod := pods.Items[0]
-		assert.Equal(t, 3, len(pod.Spec.Volumes))
-		assert.Equal(t, "var-run-argo", pod.Spec.Volumes[0].Name)
-		assert.Equal(t, "docker-sock", pod.Spec.Volumes[1].Name)
-		assert.Equal(t, "volume-name", pod.Spec.Volumes[2].Name)
-		assert.Equal(t, 2, len(pod.Spec.Containers[1].VolumeMounts))
-		assert.Equal(t, "volume-name", pod.Spec.Containers[1].VolumeMounts[0].Name)
-		assert.Equal(t, "var-run-argo", pod.Spec.Containers[1].VolumeMounts[1].Name)
-	})
-
 	// For Kubelet executor
 	t.Run("Kubelet", func(t *testing.T) {
 		ctx := context.Background()
@@ -836,7 +811,7 @@ func TestVolumesPodSubstitution(t *testing.T) {
 	woc.volumes = volumes
 	woc.execWf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
 	woc.execWf.Spec.Templates[0].Inputs.Parameters = inputParameters
-	woc.controller.Config.ContainerRuntimeExecutor = common.ContainerRuntimeExecutorDocker
+	woc.controller.Config.ContainerRuntimeExecutor = common.ContainerRuntimeExecutorEmissary
 
 	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
 	assert.NoError(t, err)
@@ -1476,16 +1451,14 @@ spec:
         command: [echo]
         args: ["Hello from Linux Container!"]
 `
-
 func TestHybridWfVolumesWindows(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(helloWindowsWf)
 	woc := newWoc(*wf)
-	woc.controller.Config.ContainerRuntimeExecutor = common.ContainerRuntimeExecutorDocker
+	woc.controller.Config.ContainerRuntimeExecutor = common.ContainerRuntimeExecutorEmissary
 
 	ctx := context.Background()
 	mainCtr := woc.execWf.Spec.Templates[0].Container
 	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
-	assert.Equal(t, "\\\\.\\pipe\\docker_engine", pod.Spec.Containers[0].VolumeMounts[0].MountPath)
 	assert.Equal(t, false, pod.Spec.Containers[0].VolumeMounts[0].ReadOnly)
 	assert.Equal(t, (*apiv1.HostPathType)(nil), pod.Spec.Volumes[1].HostPath.Type)
 }
@@ -1541,12 +1514,11 @@ func TestWindowsUNCPathsAreRemoved(t *testing.T) {
 func TestHybridWfVolumesLinux(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(helloLinuxWf)
 	woc := newWoc(*wf)
-	woc.controller.Config.ContainerRuntimeExecutor = common.ContainerRuntimeExecutorDocker
+	woc.controller.Config.ContainerRuntimeExecutor = common.ContainerRuntimeExecutorEmissary
 
 	ctx := context.Background()
 	mainCtr := woc.execWf.Spec.Templates[0].Container
 	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
-	assert.Equal(t, "/var/run/docker.sock", pod.Spec.Containers[0].VolumeMounts[0].MountPath)
 	assert.Equal(t, true, pod.Spec.Containers[0].VolumeMounts[0].ReadOnly)
 	assert.Equal(t, &hostPathSocket, pod.Spec.Volumes[1].HostPath.Type)
 }
