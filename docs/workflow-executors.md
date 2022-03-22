@@ -45,6 +45,26 @@ a [configuration item](workflow-controller-configmap.yaml).
 
 The emissary will exit with code 64 if it fails. This may indicate a bug in the emissary.
 
+
+## Docker (docker) 
+
+⚠️Deprecated. 
+
+**default in <= v3.2**
+
+* Least secure:
+    * It requires `privileged` access to `docker.sock` of the host to be mounted which. Often rejected by Open Policy Agent (OPA) or your Pod Security Policy (PSP).
+    * It can escape the privileges of the pod's service account
+    * It cannot [`runAsNonRoot`](workflow-pod-security-context.md).
+* Equal most scalable:
+    * It communicates directly with the local Docker daemon.
+* Artifacts:
+    * Output artifacts can be located on the base layer (e.g. `/tmp`).
+* Configuration:
+    * No additional configuration needed.
+
+**Note**: when using docker as workflow executors, messages printed in both `stdout` and `stderr` are captured in the [Argo variable](./variables.md#scripttemplate) `.outputs.result`.
+
 ## Kubelet (kubelet)
 
 * Secure
