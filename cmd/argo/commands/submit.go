@@ -35,10 +35,11 @@ type cliSubmitOpts struct {
 
 func NewSubmitCommand() *cobra.Command {
 	var (
-		submitOpts    wfv1.SubmitOpts
-		cliSubmitOpts cliSubmitOpts
-		priority      int32
-		from          string
+		submitOpts     wfv1.SubmitOpts
+		parametersFile string
+		cliSubmitOpts  cliSubmitOpts
+		priority       int32
+		from           string
 	)
 	command := &cobra.Command{
 		Use:   "submit [FILE... | --from `kind/name]",
@@ -72,6 +73,11 @@ func NewSubmitCommand() *cobra.Command {
 				log.Warn("--status should only be used with --watch")
 			}
 
+			if parametersFile != "" {
+				err := util.ReadParametersFile(parametersFile, &submitOpts)
+				errors.CheckError(err)
+			}
+
 			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
@@ -86,7 +92,7 @@ func NewSubmitCommand() *cobra.Command {
 			}
 		},
 	}
-	util.PopulateSubmitOpts(command, &submitOpts, true)
+	util.PopulateSubmitOpts(command, &submitOpts, &parametersFile, true)
 	command.Flags().StringVarP(&cliSubmitOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
 	command.Flags().BoolVarP(&cliSubmitOpts.wait, "wait", "w", false, "wait for the workflow to complete")
 	command.Flags().BoolVar(&cliSubmitOpts.watch, "watch", false, "watch the workflow until it completes")

@@ -94,7 +94,6 @@ class IoArgoprojWorkflowV1alpha1SubmitOpts(ModelNormal):
             'labels': (str,),  # noqa: E501
             'name': (str,),  # noqa: E501
             'owner_reference': (OwnerReference,),  # noqa: E501
-            'parameter_file': (str,),  # noqa: E501
             'parameters': ([str],),  # noqa: E501
             'pod_priority_class_name': (str,),  # noqa: E501
             'priority': (int,),  # noqa: E501
@@ -115,7 +114,6 @@ class IoArgoprojWorkflowV1alpha1SubmitOpts(ModelNormal):
         'labels': 'labels',  # noqa: E501
         'name': 'name',  # noqa: E501
         'owner_reference': 'ownerReference',  # noqa: E501
-        'parameter_file': 'parameterFile',  # noqa: E501
         'parameters': 'parameters',  # noqa: E501
         'pod_priority_class_name': 'podPriorityClassName',  # noqa: E501
         'priority': 'priority',  # noqa: E501
@@ -171,7 +169,6 @@ class IoArgoprojWorkflowV1alpha1SubmitOpts(ModelNormal):
             labels (str): Labels adds to metadata.labels. [optional]  # noqa: E501
             name (str): Name overrides metadata.name. [optional]  # noqa: E501
             owner_reference (OwnerReference): [optional]  # noqa: E501
-            parameter_file (str): ParameterFile holds a reference to a parameter file. This option is not supported in API. [optional]  # noqa: E501
             parameters ([str]): Parameters passes input parameters to workflow. [optional]  # noqa: E501
             pod_priority_class_name (str): Set the podPriorityClassName of the workflow. [optional]  # noqa: E501
             priority (int): Priority is used if controller is configured to process limited number of workflows in parallel, higher priority workflows are processed first.. [optional]  # noqa: E501
@@ -265,7 +262,6 @@ class IoArgoprojWorkflowV1alpha1SubmitOpts(ModelNormal):
             labels (str): Labels adds to metadata.labels. [optional]  # noqa: E501
             name (str): Name overrides metadata.name. [optional]  # noqa: E501
             owner_reference (OwnerReference): [optional]  # noqa: E501
-            parameter_file (str): ParameterFile holds a reference to a parameter file. This option is not supported in API. [optional]  # noqa: E501
             parameters ([str]): Parameters passes input parameters to workflow. [optional]  # noqa: E501
             pod_priority_class_name (str): Set the podPriorityClassName of the workflow. [optional]  # noqa: E501
             priority (int): Priority is used if controller is configured to process limited number of workflows in parallel, higher priority workflows are processed first.. [optional]  # noqa: E501

@@ -382,6 +382,16 @@ func (s *CLISuite) TestLogProblems() {
 		})
 }
 
+func (s *CLISuite) TestParametersFile() {
+	err := os.WriteFile("/tmp/parameters-file.yaml", []byte("message: hello"), os.ModePerm)
+	assert.NoError(s.T(), err)
+	s.Given().
+		RunCli([]string{"submit", "testdata/parameters-workflow.yaml", "-l", "workflows.argoproj.io/test=true", "--parameter-file=/tmp/parameters-file.yaml"}, func(t *testing.T, output string, err error) {
+			assert.NoError(t, err)
+			assert.Contains(t, output, "message:           hello")
+		})
+}
+
 func (s *CLISuite) TestRoot() {
 	s.Run("Submit", func() {
 		s.Given().RunCli([]string{"submit", "testdata/basic-workflow.yaml", "-l", "workflows.argoproj.io/test=true"}, func(t *testing.T, output string, err error) {

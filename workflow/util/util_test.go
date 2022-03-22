@@ -589,27 +589,27 @@ func TestApplySubmitOpts(t *testing.T) {
 			assert.Equal(t, "81861780812", parameters[0].Value.String())
 		}
 	})
-	t.Run("ParameterFile", func(t *testing.T) {
-		wf := &wfv1.Workflow{}
-		file, err := ioutil.TempFile("", "")
-		assert.NoError(t, err)
-		defer func() { _ = os.Remove(file.Name()) }()
-		err = ioutil.WriteFile(file.Name(), []byte(`a: 81861780812`), 0o600)
-		assert.NoError(t, err)
-		err = ApplySubmitOpts(wf, &wfv1.SubmitOpts{ParameterFile: file.Name()})
-		assert.NoError(t, err)
-		parameters := wf.Spec.Arguments.Parameters
-		if assert.Len(t, parameters, 1) {
-			assert.Equal(t, "a", parameters[0].Name)
-			assert.Equal(t, "81861780812", parameters[0].Value.String())
-		}
-	})
 	t.Run("PodPriorityClassName", func(t *testing.T) {
 		wf := &wfv1.Workflow{}
 		err := ApplySubmitOpts(wf, &wfv1.SubmitOpts{PodPriorityClassName: "abc"})
 		assert.NoError(t, err)
 		assert.Equal(t, "abc", wf.Spec.PodPriorityClassName)
 	})
+}
+
+func TestReadParametersFile(t *testing.T) {
+	file, err := ioutil.TempFile("", "")
+	assert.NoError(t, err)
+	defer func() { _ = os.Remove(file.Name()) }()
+	err = ioutil.WriteFile(file.Name(), []byte(`a: 81861780812`), 0o600)
+	assert.NoError(t, err)
+	opts := &wfv1.SubmitOpts{}
+	err = ReadParametersFile(file.Name(), opts)
+	assert.NoError(t, err)
+	parameters := opts.Parameters
+	if assert.Len(t, parameters, 1) {
+		assert.Equal(t, "a=81861780812", parameters[0])
+	}
 }
 
 func TestFormulateResubmitWorkflow(t *testing.T) {

@@ -210,13 +210,13 @@ func CreateServerDryRun(ctx context.Context, wf *wfv1.Workflow, wfClientset wfcl
 	return wf, err
 }
 
-func PopulateSubmitOpts(command *cobra.Command, submitOpts *wfv1.SubmitOpts, includeDryRun bool) {
+func PopulateSubmitOpts(command *cobra.Command, submitOpts *wfv1.SubmitOpts, parameterFile *string, includeDryRun bool) {
 	command.Flags().StringVar(&submitOpts.Name, "name", "", "override metadata.name")
 	command.Flags().StringVar(&submitOpts.GenerateName, "generate-name", "", "override metadata.generateName")
 	command.Flags().StringVar(&submitOpts.Entrypoint, "entrypoint", "", "override entrypoint")
 	command.Flags().StringArrayVarP(&submitOpts.Parameters, "parameter", "p", []string{}, "pass an input parameter")
 	command.Flags().StringVar(&submitOpts.ServiceAccount, "serviceaccount", "", "run all pods in the workflow using specified serviceaccount")
-	command.Flags().StringVarP(&submitOpts.ParameterFile, "parameter-file", "f", "", "pass a file containing all input parameters")
+	command.Flags().StringVarP(parameterFile, "parameter-file", "f", "", "pass a file containing all input parameters")
 	command.Flags().StringVarP(&submitOpts.Labels, "labels", "l", "", "Comma separated labels to apply to the workflow. Will override previous values.")
 
 	if includeDryRun {
@@ -276,7 +276,7 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 		}
 	}
 	wf.SetAnnotations(wfAnnotations)
-	if len(opts.Parameters) > 0 || opts.ParameterFile != "" {
+	if len(opts.Parameters) > 0 {
 		newParams := make([]wfv1.Parameter, 0)
 		passedParams := make(map[string]bool)
 		for _, paramStr := range opts.Parameters {
@@ -288,46 +288,6 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 			newParams = append(newParams, param)
 			passedParams[param.Name] = true
 		}
-
-		// Add parameters from a parameter-file, if one was provided
-		if opts.ParameterFile != "" {
-			var body []byte
-			var err error
-			if cmdutil.IsURL(opts.ParameterFile) {
-				body, err = ReadFromUrl(opts.ParameterFile)
-				if err != nil {
-					return errors.InternalWrapError(err)
-				}
-			} else {
-				body, err = ioutil.ReadFile(opts.ParameterFile)
-				if err != nil {
-					return errors.InternalWrapError(err)
-				}
-			}
-
-			yamlParams := map[string]json.RawMessage{}
-			err = yaml.Unmarshal(body, &yamlParams)
-			if err != nil {
-				return errors.InternalWrapError(err)
-			}
-
-			for k, v := range yamlParams {
-				// We get quoted strings from the yaml file.
-				value, err := strconv.Unquote(string(v))
-				if err != nil {
-					// the string is already clean.
-					value = string(v)
-				}
-				param := wfv1.Parameter{Name: k, Value: wfv1.AnyStringPtr(value)}
-				if _, ok := passedParams[param.Name]; ok {
-					// this parameter was overridden via command line
-					continue
-				}
-				newParams = append(newParams, param)
-				passedParams[param.Name] = true
-			}
-		}
-
 		for _, param := range wf.Spec.Arguments.Parameters {
 			if _, ok := passedParams[param.Name]; ok {
 				// this parameter was overridden via command line
@@ -345,6 +305,39 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 	}
 	if opts.OwnerReference != nil {
 		wf.SetOwnerReferences(append(wf.GetOwnerReferences(), *opts.OwnerReference))
+	}
+	return nil
+}
+
+func ReadParametersFile(file string, opts *wfv1.SubmitOpts) error {
+	var body []byte
+	var err error
+	if cmdutil.IsURL(file) {
+		body, err = ReadFromUrl(file)
+		if err != nil {
+			return err
+		}
+	} else {
+		body, err = ioutil.ReadFile(file)
+		if err != nil {
+			return err
+		}
+	}
+
+	yamlParams := map[string]json.RawMessage{}
+	err = yaml.Unmarshal(body, &yamlParams)
+	if err != nil {
+		return err
+	}
+
+	for k, v := range yamlParams {
+		// We get quoted strings from the yaml file.
+		value, err := strconv.Unquote(string(v))
+		if err != nil {
+			// the string is already clean.
+			value = string(v)
+		}
+		opts.Parameters = append(opts.Parameters, fmt.Sprintf("%s=%s", k, value))
 	}
 	return nil
 }

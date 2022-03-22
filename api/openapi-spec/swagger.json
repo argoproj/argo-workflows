@@ -11259,10 +11259,6 @@
           "description": "OwnerReference creates a metadata.ownerReference",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.OwnerReference"
         },
-        "parameterFile": {
-          "description": "ParameterFile holds a reference to a parameter file. This option is not supported in API",
-          "type": "string"
-        },
         "parameters": {
           "description": "Parameters passes input parameters to workflow",
           "type": "array",
