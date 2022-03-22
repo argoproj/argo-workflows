@@ -31,7 +31,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers/internalinterfaces"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
@@ -210,13 +209,13 @@ func CreateServerDryRun(ctx context.Context, wf *wfv1.Workflow, wfClientset wfcl
 	return wf, err
 }
 
-func PopulateSubmitOpts(command *cobra.Command, submitOpts *wfv1.SubmitOpts, includeDryRun bool) {
+func PopulateSubmitOpts(command *cobra.Command, submitOpts *wfv1.SubmitOpts, parameterFile *string, includeDryRun bool) {
 	command.Flags().StringVar(&submitOpts.Name, "name", "", "override metadata.name")
 	command.Flags().StringVar(&submitOpts.GenerateName, "generate-name", "", "override metadata.generateName")
 	command.Flags().StringVar(&submitOpts.Entrypoint, "entrypoint", "", "override entrypoint")
 	command.Flags().StringArrayVarP(&submitOpts.Parameters, "parameter", "p", []string{}, "pass an input parameter")
 	command.Flags().StringVar(&submitOpts.ServiceAccount, "serviceaccount", "", "run all pods in the workflow using specified serviceaccount")
-	command.Flags().StringVarP(&submitOpts.ParameterFile, "parameter-file", "f", "", "pass a file containing all input parameters")
+	command.Flags().StringVarP(parameterFile, "parameter-file", "f", "", "pass a file containing all input parameters")
 	command.Flags().StringVarP(&submitOpts.Labels, "labels", "l", "", "Comma separated labels to apply to the workflow. Will override previous values.")
 
 	if includeDryRun {
@@ -276,7 +275,7 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 		}
 	}
 	wf.SetAnnotations(wfAnnotations)
-	if len(opts.Parameters) > 0 || opts.ParameterFile != "" {
+	if len(opts.Parameters) > 0 {
 		newParams := make([]wfv1.Parameter, 0)
 		passedParams := make(map[string]bool)
 		for _, paramStr := range opts.Parameters {
@@ -288,46 +287,6 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 			newParams = append(newParams, param)
 			passedParams[param.Name] = true
 		}
-
-		// Add parameters from a parameter-file, if one was provided
-		if opts.ParameterFile != "" {
-			var body []byte
-			var err error
-			if cmdutil.IsURL(opts.ParameterFile) {
-				body, err = ReadFromUrl(opts.ParameterFile)
-				if err != nil {
-					return errors.InternalWrapError(err)
-				}
-			} else {
-				body, err = ioutil.ReadFile(opts.ParameterFile)
-				if err != nil {
-					return errors.InternalWrapError(err)
-				}
-			}
-
-			yamlParams := map[string]json.RawMessage{}
-			err = yaml.Unmarshal(body, &yamlParams)
-			if err != nil {
-				return errors.InternalWrapError(err)
-			}
-
-			for k, v := range yamlParams {
-				// We get quoted strings from the yaml file.
-				value, err := strconv.Unquote(string(v))
-				if err != nil {
-					// the string is already clean.
-					value = string(v)
-				}
-				param := wfv1.Parameter{Name: k, Value: wfv1.AnyStringPtr(value)}
-				if _, ok := passedParams[param.Name]; ok {
-					// this parameter was overridden via command line
-					continue
-				}
-				newParams = append(newParams, param)
-				passedParams[param.Name] = true
-			}
-		}
-
 		for _, param := range wf.Spec.Arguments.Parameters {
 			if _, ok := passedParams[param.Name]; ok {
 				// this parameter was overridden via command line
@@ -345,6 +304,39 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 	}
 	if opts.OwnerReference != nil {
 		wf.SetOwnerReferences(append(wf.GetOwnerReferences(), *opts.OwnerReference))
+	}
+	return nil
+}
+
+func ReadParametersFile(file string, opts *wfv1.SubmitOpts) error {
+	var body []byte
+	var err error
+	if cmdutil.IsURL(file) {
+		body, err = ReadFromUrl(file)
+		if err != nil {
+			return err
+		}
+	} else {
+		body, err = ioutil.ReadFile(file)
+		if err != nil {
+			return err
+		}
+	}
+
+	yamlParams := map[string]json.RawMessage{}
+	err = yaml.Unmarshal(body, &yamlParams)
+	if err != nil {
+		return err
+	}
+
+	for k, v := range yamlParams {
+		// We get quoted strings from the yaml file.
+		value, err := strconv.Unquote(string(v))
+		if err != nil {
+			// the string is already clean.
+			value = string(v)
+		}
+		opts.Parameters = append(opts.Parameters, fmt.Sprintf("%s=%s", k, value))
 	}
 	return nil
 }
@@ -734,37 +726,16 @@ func convertNodeID(newWf *wfv1.Workflow, regex *regexp.Regexp, oldNodeID string,
 	return newWf.NodeID(newNodeName)
 }
 
-// RetryWorkflow updates a workflow, deleting all failed steps as well as the onExit node (and children)
-func RetryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrator hydrator.Interface, wfClient v1alpha1.WorkflowInterface, name string, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
-	var updated *wfv1.Workflow
-	err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
-		var err error
-		updated, err = retryWorkflow(ctx, kubeClient, hydrator, wfClient, name, restartSuccessful, nodeFieldSelector)
-		return !errorsutil.IsTransientErr(err), err
-	})
-	if err != nil {
-		return nil, err
-	}
-	return updated, err
-}
+// FormulateRetryWorkflow formulates a previous workflow to be retried, deleting all failed steps as well as the onExit node (and children)
+func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, []string, error) {
 
-func retryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrator hydrator.Interface, wfClient v1alpha1.WorkflowInterface, name string, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
-	wf, err := wfClient.Get(ctx, name, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
 	switch wf.Status.Phase {
 	case wfv1.WorkflowFailed, wfv1.WorkflowError:
 	default:
-		return nil, errors.Errorf(errors.CodeBadRequest, "workflow must be Failed/Error to retry")
-	}
-	err = hydrator.Hydrate(wf)
-	if err != nil {
-		return nil, err
+		return nil, nil, errors.Errorf(errors.CodeBadRequest, "workflow must be Failed/Error to retry")
 	}
 
 	newWF := wf.DeepCopy()
-	podIf := kubeClient.CoreV1().Pods(wf.ObjectMeta.Namespace)
 
 	// Delete/reset fields which indicate workflow completed
 	delete(newWF.Labels, common.LabelKeyCompleted)
@@ -786,11 +757,12 @@ func retryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrato
 	// Get all children of nodes that match filter
 	nodeIDsToReset, err := getNodeIDsToReset(restartSuccessful, nodeFieldSelector, wf.Status.Nodes)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Iterate the previous nodes. If it was successful Pod carry it forward
 	deletedNodes := make(map[string]bool)
+	var podsToDelete []string
 	for _, node := range wf.Status.Nodes {
 		doForceResetNode := false
 		if _, present := nodeIDsToReset[node.ID]; present {
@@ -818,17 +790,14 @@ func retryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrato
 			// do not add this status to the node. pretend as if this node never existed.
 		default:
 			// Do not allow retry of workflows with pods in Running/Pending phase
-			return nil, errors.InternalErrorf("Workflow cannot be retried with node %s in %s phase", node.Name, node.Phase)
+			return nil, nil, errors.InternalErrorf("Workflow cannot be retried with node %s in %s phase", node.Name, node.Phase)
 		}
+
 		if node.Type == wfv1.NodeTypePod {
 			templateName := getTemplateFromNode(node)
 			version := GetWorkflowPodNameVersion(wf)
 			podName := PodName(wf.Name, node.Name, templateName, node.ID, version)
-			log.Infof("Deleting pod: %s", podName)
-			err := podIf.Delete(ctx, podName, metav1.DeleteOptions{})
-			if err != nil && !apierr.IsNotFound(err) {
-				return nil, errors.InternalWrapError(err)
-			}
+			podsToDelete = append(podsToDelete, podName)
 		} else if node.Name == wf.ObjectMeta.Name {
 			newNode := node.DeepCopy()
 			newNode.Phase = wfv1.NodeRunning
@@ -862,17 +831,12 @@ func retryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrato
 		}
 	}
 
-	err = hydrator.Dehydrate(newWF)
-	if err != nil {
-		return nil, fmt.Errorf("unable to compress or offload workflow nodes: %s", err)
-	}
-
 	newWF.Status.StoredTemplates = make(map[string]wfv1.Template)
 	for id, tmpl := range wf.Status.StoredTemplates {
 		newWF.Status.StoredTemplates[id] = tmpl
 	}
 
-	return wfClient.Update(ctx, newWF, metav1.UpdateOptions{})
+	return newWF, podsToDelete, nil
 }
 
 func getTemplateFromNode(node wfv1.NodeStatus) string {

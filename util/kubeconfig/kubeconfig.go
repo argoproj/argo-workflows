@@ -2,6 +2,7 @@ package kubeconfig
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -10,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	clientauthenticationapi "k8s.io/client-go/pkg/apis/clientauthentication"
 	"k8s.io/client-go/plugin/pkg/client/auth/exec"
 	restclient "k8s.io/client-go/rest"
@@ -127,7 +127,7 @@ func GetAuthString(in *restclient.Config, explicitKubeConfigPath string) (string
 
 func GetBasicAuthToken(in *restclient.Config) (string, error) {
 	if in == nil {
-		return "", errors.Errorf("RestClient can't be nil")
+		return "", fmt.Errorf("RestClient can't be nil")
 	}
 
 	return encodeBasicAuthToken(in.Username, in.Password), nil
@@ -140,7 +140,7 @@ func GetBearerToken(in *restclient.Config, explicitKubeConfigPath string) (strin
 	}
 
 	if in == nil {
-		return "", errors.Errorf("RestClient can't be nil")
+		return "", fmt.Errorf("RestClient can't be nil")
 	}
 	if in.ExecProvider != nil {
 		tc, err := in.TransportConfig()
@@ -194,7 +194,7 @@ func GetBearerToken(in *restclient.Config, explicitKubeConfigPath string) (strin
 			return strings.TrimPrefix(token, "Bearer "), nil
 		}
 	}
-	return "", errors.Errorf("could not find a token")
+	return "", fmt.Errorf("could not find a token")
 }
 
 /*https://pkg.go.dev/k8s.io/client-go@v0.20.4/pkg/apis/clientauthentication#Cluster
@@ -281,7 +281,7 @@ func RefreshTokenIfExpired(restConfig *restclient.Config, explicitPath, curentTo
 		if timestr != "" {
 			t, err := time.Parse(time.RFC3339, timestr)
 			if err != nil {
-				return "", errors.Errorf("Invalid expiry date in Kubeconfig. %v", err)
+				return "", fmt.Errorf("Invalid expiry date in Kubeconfig. %v", err)
 			}
 			if time.Now().After(t) {
 				err = RefreshAuthToken(restConfig)

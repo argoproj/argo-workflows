@@ -27,9 +27,9 @@ import (
 )
 
 var (
-	varRunArgo          = "/var/run/argo"
+	varRunArgo          = common.VarRunArgoPath
 	containerName       = os.Getenv(common.EnvVarContainerName)
-	includeScriptOutput = os.Getenv(common.EnvVarIncludeScriptOutput) == "true" // capture stdout/stderr
+	includeScriptOutput = os.Getenv(common.EnvVarIncludeScriptOutput) == "true" // capture stdout/combined
 	template            = &wfv1.Template{}
 	logger              = log.WithField("argo", true)
 )
@@ -129,15 +129,15 @@ func NewEmissaryCommand() *cobra.Command {
 
 			var command *exec.Cmd
 			var stdout *os.File
-			var stderr *os.File
+			var combined *os.File
 			cmdErr := retry.OnError(backoff, func(error) bool { return true }, func() error {
 				if stdout != nil {
 					stdout.Close()
 				}
-				if stderr != nil {
-					stderr.Close()
+				if combined != nil {
+					combined.Close()
 				}
-				command, stdout, stderr, err = createCommand(name, args, template)
+				command, stdout, combined, err = createCommand(name, args, template)
 				if err != nil {
 					return fmt.Errorf("failed to create command: %w", err)
 				}
@@ -167,7 +167,7 @@ func NewEmissaryCommand() *cobra.Command {
 				return command.Wait()
 			})
 			defer stdout.Close()
-			defer stderr.Close()
+			defer combined.Close()
 
 			if _, ok := os.LookupEnv("ARGO_DEBUG_PAUSE_AFTER"); ok {
 				for {
@@ -225,7 +225,7 @@ func createCommand(name string, args []string, template *wfv1.Template) (*exec.C
 	command.Stderr = os.Stderr
 
 	var stdout *os.File
-	var stderr *os.File
+	var combined *os.File
 	var err error
 	// this may not be that important an optimisation, except for very long logs we don't want to capture
 	if includeScriptOutput || template.SaveLogsAsArtifact() {
@@ -233,17 +233,15 @@ func createCommand(name string, args []string, template *wfv1.Template) (*exec.C
 		stdout, err = os.OpenFile(varRunArgo+"/ctr/"+containerName+"/stdout", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err != nil {
 			return nil, nil, nil, fmt.Errorf("failed to open stdout: %w", err)
-
 		}
-		command.Stdout = io.MultiWriter(os.Stdout, stdout)
-		stderr, err = os.OpenFile(varRunArgo+"/ctr/"+containerName+"/stderr", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		combined, err = os.OpenFile(varRunArgo+"/ctr/"+containerName+"/combined", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err != nil {
-			return nil, nil, nil, fmt.Errorf("failed to open stderr: %w", err)
-
+			return nil, nil, nil, fmt.Errorf("failed to open combined: %w", err)
 		}
-		command.Stderr = io.MultiWriter(os.Stderr, stderr)
+		command.Stdout = io.MultiWriter(os.Stdout, stdout, combined)
+		command.Stderr = io.MultiWriter(os.Stderr, combined)
 	}
-	return command, stdout, stderr, nil
+	return command, stdout, combined, nil
 }
 
 func saveArtifact(srcPath string) error {

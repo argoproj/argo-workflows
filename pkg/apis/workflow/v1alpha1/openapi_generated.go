@@ -4889,13 +4889,6 @@ func schema_pkg_apis_workflow_v1alpha1_SubmitOpts(ref common.ReferenceCallback) 
 							},
 						},
 					},
-					"parameterFile": {
-						SchemaProps: spec.SchemaProps{
-							Description: "ParameterFile holds a reference to a parameter file. This option is not supported in API",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
 					"serviceAccount": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ServiceAccount runs all pods in the workflow using specified ServiceAccount.",

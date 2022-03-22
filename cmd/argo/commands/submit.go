@@ -24,6 +24,7 @@ import (
 func NewSubmitCommand() *cobra.Command {
 	var (
 		submitOpts    wfv1.SubmitOpts
+    parametersFile string
 		cliSubmitOpts common.CliSubmitOpts
 		priority      int32
 		from          string
@@ -60,6 +61,11 @@ func NewSubmitCommand() *cobra.Command {
 				log.Warn("--status should only be used with --watch")
 			}
 
+			if parametersFile != "" {
+				err := util.ReadParametersFile(parametersFile, &submitOpts)
+				errors.CheckError(err)
+			}
+
 			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
@@ -74,7 +80,7 @@ func NewSubmitCommand() *cobra.Command {
 			}
 		},
 	}
-	util.PopulateSubmitOpts(command, &submitOpts, true)
+	util.PopulateSubmitOpts(command, &submitOpts, &parametersFile, true)
 	command.Flags().StringVarP(&cliSubmitOpts.Output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
 	command.Flags().BoolVarP(&cliSubmitOpts.Wait, "wait", "w", false, "wait for the workflow to complete")
 	command.Flags().BoolVar(&cliSubmitOpts.Watch, "watch", false, "watch the workflow until it completes")

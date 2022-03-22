@@ -8,7 +8,7 @@ function check-used {
       | while read -r x; do
         var="${x%\`}";
         var="${var#\`}";
-        if ! grep -qR --exclude="*_test.go" "$var" ./workflow ./persist ./util ./server; then
+        if ! grep -qR --exclude="*_test.go" "$var" ./cmd/workflow-controller ./workflow ./persist ./util ./server ; then
           echo "Documented variable $var in docs/environment-variables.md is not used anywhere";
           exit 1;
         fi;
