@@ -23,11 +23,11 @@ import (
 
 func NewSubmitCommand() *cobra.Command {
 	var (
-		submitOpts    wfv1.SubmitOpts
-    parametersFile string
-		cliSubmitOpts common.CliSubmitOpts
-		priority      int32
-		from          string
+		submitOpts     wfv1.SubmitOpts
+		parametersFile string
+		cliSubmitOpts  common.CliSubmitOpts
+		priority       int32
+		from           string
 	)
 	command := &cobra.Command{
 		Use:   "submit [FILE... | --from `kind/name]",
