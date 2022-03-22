@@ -1234,9 +1234,6 @@ message SubmitOpts {
   // Parameters passes input parameters to workflow
   repeated string parameters = 5;
 
-  // ParameterFile holds a reference to a parameter file. This option is not supported in API
-  optional string parameterFile = 6;
-
   // ServiceAccount runs all pods in the workflow using specified ServiceAccount.
   optional string serviceAccount = 7;
 

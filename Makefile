@@ -301,7 +301,7 @@ $(GOPATH)/bin/openapi-gen:
 $(GOPATH)/bin/swagger:
 	go install github.com/go-swagger/go-swagger/cmd/swagger@v0.28.0
 $(GOPATH)/bin/goimports:
-	go install golang.org/x/tools/cmd/goimports@v0.1.6
+	go install golang.org/x/tools/cmd/goimports@v0.1.7
 
 pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(PROTO_BINARIES) $(TYPES) $(GOPATH)/src/github.com/gogo/protobuf
 	# These files are generated on a v3/ folder by the tool. Link them to the root folder

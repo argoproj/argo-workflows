@@ -45119,7 +45119,6 @@ with argo_workflows.ApiClient() as api_client:
                 name="name_example",
                 uid="uid_example",
             ),
-            parameter_file="parameter_file_example",
             parameters=[
                 "parameters_example",
             ],

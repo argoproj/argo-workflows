@@ -155,6 +155,7 @@ func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, re
 		}
 		if requeue > 0 {
 			time.AfterFunc(requeue, func() {
+				delete(ae.consideredTasks, nodeID)
 				taskQueue <- task
 			})
 		}

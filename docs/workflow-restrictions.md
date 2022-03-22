@@ -25,7 +25,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
-data: |
-  workflowRestrictions:
+data:
+  workflowRestrictions: |
     templateReferencing: Secure
 ```

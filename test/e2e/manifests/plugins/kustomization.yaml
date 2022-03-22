@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - ../minimal
+  - hello-executor-plugin-serviceaccount.yaml
   - hello-executor-plugin-configmap.yaml
 
 commonLabels:
