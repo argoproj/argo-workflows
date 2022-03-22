@@ -509,8 +509,8 @@ func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
 		var output *wfv1.AnyString
 		if we.isBaseImagePath(param.ValueFrom.Path) {
 			executorType := os.Getenv(common.EnvVarContainerRuntimeExecutor)
-			if executorType == common.ContainerRuntimeExecutorK8sAPI || executorType == common.ContainerRuntimeExecutorKubelet {
-				log.Infof("Copying output parameter %s from base image layer %s is not supported for k8sapi and kubelet executors. "+
+			if executorType == common.ContainerRuntimeExecutorKubelet {
+				log.Infof("Copying output parameter %s from base image layer %s is not supported for kubelet executor. "+
 					"Consider using an emptyDir volume: https://argoproj.github.io/argo-workflows/empty-dir/.", param.Name, param.ValueFrom.Path)
 				continue
 			}

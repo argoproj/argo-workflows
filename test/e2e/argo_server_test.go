@@ -854,7 +854,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 	})
 
 	s.Run("Terminate", func() {
-		s.Need(fixtures.None(fixtures.K8SAPI, fixtures.Kubelet))
+		s.Need(fixtures.None(fixtures.Kubelet))
 		s.e().PUT("/api/v1/workflows/argo/" + name + "/terminate").
 			Expect().
 			Status(200)

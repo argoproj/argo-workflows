@@ -25,7 +25,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/executor"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor/docker"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor/emissary"
-	"github.com/argoproj/argo-workflows/v3/workflow/executor/k8sapi"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor/kubelet"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor/pns"
 )
@@ -114,8 +113,6 @@ func initExecutor() *executor.WorkflowExecutor {
 	var cre executor.ContainerRuntimeExecutor
 	log.Infof("Creating a %s executor", executorType)
 	switch executorType {
-	case common.ContainerRuntimeExecutorK8sAPI:
-		cre = k8sapi.NewK8sAPIExecutor(clientset, config, podName, namespace)
 	case common.ContainerRuntimeExecutorKubelet:
 		cre, err = kubelet.NewKubeletExecutor(namespace, podName)
 	case common.ContainerRuntimeExecutorPNS:

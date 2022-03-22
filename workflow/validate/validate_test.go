@@ -1626,9 +1626,9 @@ func TestBaseImageOutputVerify(t *testing.T) {
 	wfNonPathOutputParam := unmarshalWf(nonPathOutputParameter)
 	var err error
 
-	for _, executor := range []string{common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorPNS, common.ContainerRuntimeExecutorDocker, common.ContainerRuntimeExecutorDocker, common.ContainerRuntimeExecutorEmissary, ""} {
+	for _, executor := range []string{common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorPNS, common.ContainerRuntimeExecutorDocker, common.ContainerRuntimeExecutorDocker, common.ContainerRuntimeExecutorEmissary, ""} {
 		switch executor {
-		case common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorKubelet:
+		case common.ContainerRuntimeExecutorKubelet:
 			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.Error(t, err)
 			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseOutParam, ValidateOpts{ContainerRuntimeExecutor: executor})
@@ -2522,10 +2522,6 @@ func TestDagAndStepLevelOutputArtifactsForDiffExecutor(t *testing.T) {
 	})
 	t.Run("PNSExecutor", func(t *testing.T) {
 		_, err := validateWithOptions(dagAndStepLevelOutputArtifacts, ValidateOpts{ContainerRuntimeExecutor: common.ContainerRuntimeExecutorPNS})
-		assert.NoError(t, err)
-	})
-	t.Run("K8SExecutor", func(t *testing.T) {
-		_, err := validateWithOptions(dagAndStepLevelOutputArtifacts, ValidateOpts{ContainerRuntimeExecutor: common.ContainerRuntimeExecutorK8sAPI})
 		assert.NoError(t, err)
 	})
 	t.Run("KubeletExecutor", func(t *testing.T) {

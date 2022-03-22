@@ -159,9 +159,6 @@ const (
 	// ContainerRuntimeExecutorKubelet to use the kubelet as container runtime executor
 	ContainerRuntimeExecutorKubelet = "kubelet"
 
-	// ContainerRuntimeExecutorK8sAPI to use the Kubernetes API server as container runtime executor
-	ContainerRuntimeExecutorK8sAPI = "k8sapi"
-
 	// ContainerRuntimeExecutorPNS indicates to use process namespace sharing as the container runtime executor
 	ContainerRuntimeExecutorPNS = "pns"
 

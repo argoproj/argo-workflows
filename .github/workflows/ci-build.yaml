@@ -105,9 +105,6 @@ jobs:
             containerRuntimeExecutor: docker
             profile: minimal
           - test: test-executor
-            containerRuntimeExecutor: k8sapi
-            profile: minimal
-          - test: test-executor
             containerRuntimeExecutor: kubelet
             profile: minimal
           - test: test-executor
