@@ -6,7 +6,7 @@ ARG DOCKER_VERSION=20.10.12
 ARG KUBECTL_VERSION=1.22.3
 ARG JQ_VERSION=1.6
 
-FROM golang:1.17 as builder
+FROM golang:1.17.8 as builder
 
 RUN apt-get update && apt-get --no-install-recommends install -y \
     git \
