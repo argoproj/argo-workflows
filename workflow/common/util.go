@@ -349,7 +349,7 @@ func Cluster(m metav1.Object) string {
 }
 
 func WorkflowNamespace(m metav1.Object) string {
-	if x, ok := m.GetLabels()[LabelKeyWorkflowNamespace]; ok {
+	if x, ok := m.GetAnnotations()[AnnotationKeyWorkflowNamespace]; ok {
 		return x
 	}
 	return m.GetNamespace()

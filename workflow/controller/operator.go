@@ -3630,11 +3630,11 @@ func (woc *wfOperationCtx) getServiceAccountTokenName(ctx context.Context, clust
 	if name == "" {
 		name = "default"
 	}
-	profile, err := woc.profile(cluster, woc.wf.Namespace, roleRead)
+	p, err := woc.profile(cluster, woc.wf.Namespace)
 	if err != nil {
 		return "", err
 	}
-	account, err := profile.kubernetesClient.CoreV1().ServiceAccounts(woc.wf.Namespace).Get(ctx, name, metav1.GetOptions{})
+	account, err := p.kubernetesClient.CoreV1().ServiceAccounts(woc.wf.Namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}

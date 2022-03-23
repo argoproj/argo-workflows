@@ -419,19 +419,17 @@ ifeq ($(PROFILE),multi-cluster)
 	kubectl config delete-context cluster-1 || true
 	kubectl config rename-context k3d-cluster-1 cluster-1
 
-	# install the taskresult crd
-	kubectl --context=cluster-1 apply -f manifests/base/crds/minimal/argoproj.io_workflowtaskresults.yaml
-	sleep 3s
+	# install resources into remote cluster
+	kubectl kustomize --load-restrictor=LoadRestrictionsNone manifests/quick-start/cluster-1 | kubectl --context=cluster-1 -n default apply -f -
+
+	# install profile into local cluster
+	argo cluster get-profile cluster-1 default argo.cluster-1 --server=https://`ipconfig getifaddr en0`:`kubectl config view --raw --minify --context=cluster-1|grep server|cut -c 29-` --insecure-skip-tls-verify | kubectl -n argo apply -f  -
+	kubectl annotate secret argo.cluster-1 --overwrite workflows.argoproj.io/workflow-namespace=argo
+	kubectl annotate secret argo.cluster-1 --overwrite workflows.argoproj.io/namespace=default
 
 	# create default bindings for the executor
 	kubectl --context=cluster-1 create role executor --verb=create,patch --resource=workflowtaskresults.argoproj.io
 	kubectl --context=cluster-1 create rolebinding default-executor --role=executor --user=system:serviceaccount:default:default
-
-	# install resources into remote cluster
-	argo cluster get-remote-resources cluster-0 cluster-1 --local-namespace=argo --remote-namespace=default --read --write | kubectl --context=cluster-1 -n default apply -f  -
-
-	# install profile into local cluster
-	argo cluster get-profile cluster-0 cluster-1 --local-namespace=argo --remote-namespace=default --read --write --remote-server=https://`ipconfig getifaddr en0`:`kubectl config view --raw --minify --context=cluster-1|grep server|cut -c 29-` --remote-insecure-skip-tls-verify | kubectl -n argo apply -f  -
 endif
 ifeq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml

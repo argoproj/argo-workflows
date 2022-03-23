@@ -64,11 +64,11 @@ func (we *WorkflowExecutor) createTaskResult(ctx context.Context, result wfv1.No
 	if cluster != common.LocalCluster {
 		taskResult.Labels[common.LabelKeyCluster] = cluster
 	}
-	if workflowNamespace != common.NamespaceUndefined {
-		taskResult.Labels[common.LabelKeyWorkflowNamespace] = workflowNamespace
-	}
 	if v := os.Getenv(common.EnvVarInstanceID); v != "" {
 		taskResult.Labels[common.LabelKeyControllerInstanceID] = v
+	}
+	if workflowNamespace != common.NamespaceUndefined {
+		taskResult.Annotations[common.AnnotationKeyWorkflowNamespace] = workflowNamespace
 	}
 	_, err := we.taskResultClient.Create(ctx,
 		taskResult,

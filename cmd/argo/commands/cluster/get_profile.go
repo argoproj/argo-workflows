@@ -1,7 +1,7 @@
 package cluster
 
 import (
-	"context"
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -18,60 +18,50 @@ import (
 
 func newGetProfileCommand() *cobra.Command {
 	var (
-		localNamespace                 string
-		remoteServer                   string
-		remoteCertificateAuthorityFile string
-		remoteInsecureSkipTLSVerify    bool
-		remoteContext                  string
-		remoteNamespace                string
-		remoteInstallNamespace         string
-		read                           bool
-		write                          bool
+		server                   string
+		certificateAuthorityFile string
+		insecureSkipTLSVerify    bool
+		context                  string
 	)
 	cmd := &cobra.Command{
-		Use:   "get-profile local_cluster remote_cluster",
-		Short: "print the profile for the remote cluster",
+		Use:          "get-profile cluster namespace service_account_name",
+		Short:        "print the profile for the  cluster",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := context.Background()
-			if len(args) != 2 {
+			ctx := cmd.Context()
+			if len(args) != 3 {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
 
-			localCluster, remoteCluster := args[0], args[1]
+			cluster, namespace, serviceAccountName := args[0], args[1], args[2]
 
-			if remoteContext == "" {
-				remoteContext = remoteCluster
-			}
-			if remoteInstallNamespace == "" {
-				remoteInstallNamespace = remoteNamespace
+			if context == "" {
+				context = cluster
 			}
 
 			clientConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
 				clientcmd.NewDefaultClientConfigLoadingRules(),
-				&clientcmd.ConfigOverrides{CurrentContext: remoteContext},
+				&clientcmd.ConfigOverrides{CurrentContext: context},
 			)
-
-			remoteServiceAccountName := remoteServiceAccountName(localNamespace, localCluster, remoteNamespace, read, write)
 
 			config, err := clientConfig.ClientConfig()
 			if err != nil {
 				return err
 			}
 
-			if remoteServer == "" {
-				remoteServer = config.Host
+			if server == "" {
+				server = config.Host
 			}
 
 			client := kubernetes.NewForConfigOrDie(config)
 
-			serviceAccount, err := client.CoreV1().ServiceAccounts(remoteInstallNamespace).Get(ctx, remoteServiceAccountName, metav1.GetOptions{})
+			serviceAccount, err := client.CoreV1().ServiceAccounts(namespace).Get(ctx, serviceAccountName, metav1.GetOptions{})
 			if err != nil {
 				return err
 			}
 			secretName := serviceAccount.Secrets[0].Name
 
-			secret, err := client.CoreV1().Secrets(remoteInstallNamespace).Get(ctx, secretName, metav1.GetOptions{})
+			secret, err := client.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
 			if err != nil {
 				return err
 			}
@@ -79,14 +69,14 @@ func newGetProfileCommand() *cobra.Command {
 			ca := secret.Data[apiv1.ServiceAccountRootCAKey]
 			token := secret.Data[apiv1.ServiceAccountTokenKey]
 
-			if remoteCertificateAuthorityFile != "" {
-				ca, err = os.ReadFile(remoteCertificateAuthorityFile)
+			if certificateAuthorityFile != "" {
+				ca, err = os.ReadFile(certificateAuthorityFile)
 				if err != nil {
 					return err
 				}
 			}
 
-			if remoteInsecureSkipTLSVerify {
+			if insecureSkipTLSVerify {
 				println("⚠️ do not use insecure skip verify in production")
 				// specifying a root certificates file with the insecure flag is not allowed
 				ca = nil
@@ -96,15 +86,15 @@ func newGetProfileCommand() *cobra.Command {
 				Kind:       "Config",
 				APIVersion: "v1",
 				Clusters: map[string]*api.Cluster{
-					remoteCluster: {Server: remoteServer, CertificateAuthorityData: ca, InsecureSkipTLSVerify: remoteInsecureSkipTLSVerify},
+					cluster: {Server: server, CertificateAuthorityData: ca, InsecureSkipTLSVerify: insecureSkipTLSVerify},
 				},
 				AuthInfos: map[string]*api.AuthInfo{
-					remoteServiceAccountName: {Token: string(token)},
+					serviceAccountName: {Token: string(token)},
 				},
 				Contexts: map[string]*api.Context{
-					remoteCluster: {Cluster: remoteCluster, AuthInfo: remoteServiceAccountName},
+					cluster: {Cluster: cluster, AuthInfo: serviceAccountName},
 				},
-				CurrentContext: remoteCluster,
+				CurrentContext: cluster,
 			}
 
 			data, err := clientcmd.Write(kubeconfig)
@@ -115,13 +105,9 @@ func newGetProfileCommand() *cobra.Command {
 			profile := &apiv1.Secret{
 				TypeMeta: metav1.TypeMeta{Kind: "Secret", APIVersion: "v1"},
 				ObjectMeta: metav1.ObjectMeta{
-					Name: remoteServiceAccountName,
+					Name: fmt.Sprintf("argo.%s", cluster),
 					Labels: map[string]string{
-						common.LabelKeyCluster:           remoteCluster,
-						common.LabelKeyWorkflowNamespace: localNamespace,
-					},
-					Annotations: map[string]string{
-						common.AnnotationKeyNamespace: remoteNamespace,
+						common.LabelKeyCluster: cluster,
 					},
 				},
 				Data: map[string][]byte{"kubeconfig": data},
@@ -138,14 +124,9 @@ func newGetProfileCommand() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&remoteServer, "remote-server", "", "URL for remote server")
-	cmd.Flags().StringVar(&remoteCertificateAuthorityFile, "remote-certificate-authority-file", "", "file containing remote certificate authority")
-	cmd.Flags().BoolVar(&remoteInsecureSkipTLSVerify, "remote-insecure-skip-tls-verify", false, "skip certificate for remote server, do not use in production")
-	cmd.Flags().StringVar(&remoteContext, "remote-context", "", "remote context")
-	cmd.Flags().StringVar(&localNamespace, "local-namespace", "", "restrict to this local namespace (empty for all namespaces)")
-	cmd.Flags().StringVar(&remoteNamespace, "remote-namespace", "", "restrict the this remote namespace (empty for all namespaces)")
-	cmd.Flags().StringVar(&remoteInstallNamespace, "remote-install-namespace", "", "the remote namespace that the service account is created in")
-	cmd.Flags().BoolVar(&read, "read", false, "create roles with read permissions")
-	cmd.Flags().BoolVar(&write, "write", false, "create roles with write permission")
+	cmd.Flags().StringVar(&server, "server", "", "URL for  server")
+	cmd.Flags().StringVar(&certificateAuthorityFile, "certificate-authority-file", "", "file containing  certificate authority")
+	cmd.Flags().BoolVar(&insecureSkipTLSVerify, "insecure-skip-tls-verify", false, "skip certificate for  server, do not use in production")
+	cmd.Flags().StringVar(&context, "context", "", " context")
 	return cmd
 }

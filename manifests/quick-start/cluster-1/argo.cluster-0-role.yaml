@@ -1,0 +1,24 @@
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: argo.cluster-0
+rules:
+  - verbs:
+      - list
+      - watch
+      - create
+      - patch
+      - delete
+    apiGroups:
+      - ""
+    resources:
+      - pods
+      - pods/exec
+  - verbs:
+      - list
+      - watch
+      - deletecollection
+    apiGroups:
+      - argproj.io/v1alpha1
+    resources:
+      - workflowtaskresults

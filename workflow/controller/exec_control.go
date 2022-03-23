@@ -35,7 +35,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 
 			if !woc.GetShutdownStrategy().ShouldExecute(onExitPod) {
 				woc.log.Infof("Deleting Pending pod %s/%s as part of workflow shutdown with strategy: %s", pod.Namespace, pod.Name, woc.GetShutdownStrategy())
-				profile, err := woc.profile(cluster, pod.Namespace, roleWrite)
+				profile, err := woc.profile(cluster, pod.Namespace)
 				if err != nil {
 					woc.handleExecutionControlError(nodeID, wfNodesLock, err.Error())
 					return
@@ -57,12 +57,12 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 			_, onExitPod := pod.Labels[common.LabelKeyOnExit]
 			if !onExitPod {
 				woc.log.Infof("Deleting Pending pod %s/%s which has exceeded workflow deadline %s", pod.Namespace, pod.Name, woc.workflowDeadline)
-				profile, err := woc.profile(cluster, pod.Namespace, roleWrite)
+				p, err := woc.profile(cluster, pod.Namespace)
 				if err != nil {
 					woc.handleExecutionControlError(nodeID, wfNodesLock, err.Error())
 					return
 				}
-				err = profile.kubernetesClient.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
+				err = p.kubernetesClient.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 				if err == nil {
 					woc.handleExecutionControlError(nodeID, wfNodesLock, "Step exceeded its deadline")
 					return

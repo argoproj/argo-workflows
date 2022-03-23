@@ -18,10 +18,10 @@ const (
 	// AnnotationKeyDefaultContainer is the annotation that specify container that will be used by default in case of kubectl commands for example
 	AnnotationKeyDefaultContainer = "kubectl.kubernetes.io/default-container"
 
+	// AnnotationKeyWorkflowNamespace is the namespace of the owner workflow, if different to the pod itself.
+	AnnotationKeyWorkflowNamespace = workflow.WorkflowFullName + "/workflow-namespace"
 	// AnnotationKeyNamespace is used to determine which namespace a profile should be used for.
 	AnnotationKeyNamespace = workflow.WorkflowFullName + "/namespace"
-	// AnnotationKeyDescription description of the resource
-	AnnotationKeyDescription = workflow.WorkflowFullName + "/description"
 
 	// AnnotationKeyNodeID is the ID of the node.
 	// Historically, the pod name was the same as the node ID.
@@ -74,8 +74,6 @@ const (
 	LabelKeyWorkflow = workflow.WorkflowFullName + "/workflow"
 	// LabelKeyCluster is the cluster. This is omitted for this cluster.
 	LabelKeyCluster = workflow.WorkflowFullName + "/cluster"
-	// LabelKeyWorkflowNamespace is the namespace of the owner workflow, if different to the pod itself.
-	LabelKeyWorkflowNamespace = workflow.WorkflowFullName + "/workflow-namespace"
 	// LabelKeyComponent determines what component within a workflow, intentionally similar to app.kubernetes.io/component.
 	// See https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
 	LabelKeyComponent = workflow.WorkflowFullName + "/component"

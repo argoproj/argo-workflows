@@ -466,7 +466,7 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 	logCtx := log.WithFields(log.Fields{"key": key, "action": action})
 	logCtx.Info("cleaning up pod")
 	err := func() error {
-		profile, err := wfc.profile(workflowNamespace, cluster, namespace, roleWrite)
+		profile, err := wfc.profile(workflowNamespace, cluster, namespace)
 		if err != nil {
 			return err
 		}
@@ -482,7 +482,7 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 			}
 			for _, c := range pod.Spec.Containers {
 				if c.Name == common.WaitContainerName {
-					profile, err := wfc.profile(workflowNamespace, cluster, pod.Namespace, roleWrite)
+					profile, err := wfc.profile(workflowNamespace, cluster, pod.Namespace)
 					if err != nil {
 						return err
 					}
@@ -537,7 +537,7 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 }
 
 func (wfc *WorkflowController) getPod(workflowNamespace, cluster, namespace, podName string) (*apiv1.Pod, error) {
-	profile, err := wfc.profile(workflowNamespace, cluster, namespace, roleRead)
+	profile, err := wfc.profile(workflowNamespace, cluster, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -565,7 +565,7 @@ func (wfc *WorkflowController) signalContainers(workflowNamespace, cluster, name
 		if c.Name == common.WaitContainerName || c.State.Terminated != nil {
 			continue
 		}
-		profile, err := wfc.profile(workflowNamespace, cluster, namespace, roleWrite)
+		profile, err := wfc.profile(workflowNamespace, cluster, namespace)
 		if err != nil {
 			return 0, err
 		}

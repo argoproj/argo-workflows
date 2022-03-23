@@ -30,7 +30,6 @@ When running workflows that creates resources (i.e. run tasks/steps) in other cl
   namespace. In the examples, `argo`.
 * The **remote cluster** is where the workflow may create pods. In the examples, `cluster-1`.
 * The **remote namespace** is where remote resources are created. In the examples, `default`.
-* The **remote install namespace** is where remote RBAC resources are created. Usually the same as **remote namespace**.
 * A **profile** is a configuration profile used to connect to a remote cluster.
 
 ## Configuration
@@ -60,18 +59,17 @@ kubectl rollout restart deploy/workflow-controller
 ```
 
 ```bash
-# install the taskresult crd
-kubectl --context=cluster-1 apply -f https://raw.githubusercontent.com/argoproj/argo-workflows/dev-mc/manifests/base/crds/full/argoproj.io_workflowtaskresults.yaml
+# install resources into remote cluster
+kubectl kustomize --load-restrictor=LoadRestrictionsNone manifests/quick-start/cluster-1 | kubectl --context=cluster-1 -n default apply -f -
+
+# install profile into local cluster
+argo cluster get-profile cluster-1 default argo.cluster-1 --server=https://`ipconfig getifaddr en0`:`kubectl config view --raw --minify --context=cluster-1|grep server|cut -c 29-` --insecure-skip-tls-verify | kubectl -n argo apply -f  -
+kubectl annotate secret argo.cluster-1 --overwrite workflows.argoproj.io/workflow-namespace=argo
+kubectl annotate secret argo.cluster-1 --overwrite workflows.argoproj.io/namespace=default
 
 # create default bindings for the executor
 kubectl --context=cluster-1 create role executor --verb=create,patch --resource=workflowtaskresults.argoproj.io
 kubectl --context=cluster-1 create rolebinding default-executor --role=executor --user=system:serviceaccount:default:default
-
-# install resources into the remote cluster
-argo cluster get-remote-resources cluster-0 cluster-1 --local-namespace=argo --remote-namespace=default --read --write | kubectl --context=cluster-1 -n default apply -f  -
-
-# install profile into the local cluster
-argo cluster get-profile cluster-0 cluster-1 --local-namespace=argo --remote-namespace=default --read --write --remote-server https://192.168.0.109:58982 --remote-insecure-skip-tls-verify | kubectl -n argo apply -f  -
 ```
 
 Finally, run a test workflow.

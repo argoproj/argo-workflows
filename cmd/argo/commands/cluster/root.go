@@ -10,6 +10,5 @@ func NewRootCommand() *cobra.Command {
 		},
 	}
 	cmd.AddCommand(newGetProfileCommand())
-	cmd.AddCommand(newGetRemoteResourcesCommand())
 	return cmd
 }

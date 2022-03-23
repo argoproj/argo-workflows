@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -16,7 +15,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	authutil "github.com/argoproj/argo-workflows/v3/util/auth"
 	"github.com/argoproj/argo-workflows/v3/util/logs"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
@@ -64,17 +62,7 @@ func (wfc *WorkflowController) addProfile(ctx context.Context, secret *apiv1.Sec
 
 	namespace := common.Namespace(secret)
 
-	write, err := authutil.CanI(ctx, kubernetesClient, "create", "", "pods", namespace, "")
-	if err != nil {
-		return err
-	}
-	read, err := authutil.CanI(ctx, kubernetesClient, "list", "", "pods", namespace, "g")
-	if err != nil {
-		return err
-	}
 
-	user := secret.Namespace != wfc.namespace
-	read = read && !user
 	workflowNamespace, cluster := common.ClusterWorkflowNamespace(secret)
 	log.
 		WithField("currentContext", clientConfig.CurrentContext).
@@ -84,18 +72,7 @@ func (wfc *WorkflowController) addProfile(ctx context.Context, secret *apiv1.Sec
 		WithField("workflowNamespace", workflowNamespace).
 		WithField("cluster", cluster).
 		WithField("namespace", namespace).
-		WithField("read", read).
-		WithField("write", write).
-		WithField("user", user).
 		Info("Profile configuration")
-
-	if !read && !write {
-		return fmt.Errorf(`p is mis-configured: must have "argo-read" and/or "argo-write" role`)
-	}
-
-	if user && secret.Namespace != workflowNamespace {
-		return fmt.Errorf("p is mis-configured: p us user namespace must specify user namespace")
-	}
 
 	workflowClient, err := wfclientset.NewForConfig(config)
 	if err != nil {
@@ -105,37 +82,28 @@ func (wfc *WorkflowController) addProfile(ctx context.Context, secret *apiv1.Sec
 	if err != nil {
 		return err
 	}
-	var r role
-	if read {
-		r = roleRead
-	}
-	if write {
-		r = r ^ roleWrite
-	}
 	p := &profile{
 		policyDef: policyDef{
 			workflowNamespace: workflowNamespace,
 			cluster:           cluster,
 			namespace:         namespace,
-			role:              r,
 		},
 		done: func() {
 		},
 	}
-	if write {
+
 		p.restConfig = config
 		p.kubernetesClient = kubernetesClient
 		p.workflowClient = workflowClient
 		p.metadataClient = metadataClient
-	}
-	if read {
+
 		done := make(chan struct{})
 		p.podInformer = wfc.newPodInformer(kubernetesClient, cluster, namespace)
 		p.podGCInformer = wfc.newPodGCInformer(metadataClient, cluster, namespace)
 		p.taskResultInformer = wfc.newWorkflowTaskResultInformer(workflowClient, cluster, namespace)
 		p.done = func() { done <- struct{}{} }
 		go p.run(done)
-	}
+
 
 	wfc.profiles[key] = p
 
@@ -199,7 +167,6 @@ func (wfc *WorkflowController) localPolicyDef() policyDef {
 		workflowNamespace: wfc.GetManagedNamespace(),
 		cluster:           common.LocalCluster,
 		namespace:         wfc.GetManagedNamespace(),
-		role:              roleRead ^ roleWrite,
 	}
 }
 
@@ -207,6 +174,6 @@ func (wfc *WorkflowController) localProfile() *profile {
 	return wfc.profiles.local()
 }
 
-func (wfc *WorkflowController) profile(workflowNamespace, cluster, namespace string, act role) (*profile, error) {
-	return wfc.profiles.find(workflowNamespace, cluster, namespace, act)
+func (wfc *WorkflowController) profile(workflowNamespace, cluster, namespace string) (*profile, error) {
+	return wfc.profiles.find(workflowNamespace, cluster, namespace)
 }
