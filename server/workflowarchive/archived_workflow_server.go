@@ -234,14 +234,15 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 		}
 	}
 
-	wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Update(ctx, wf, metav1.UpdateOptions{})
-	if apierr.IsNotFound(err) {
+	result, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Update(ctx, wf, metav1.UpdateOptions{})
+	if err != nil {
 		wf.ObjectMeta.ResourceVersion = ""
-		wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+		wf.ObjectMeta.UID = ""
+		result, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	return wf, nil
+	return result, nil
 }
