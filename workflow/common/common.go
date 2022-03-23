@@ -110,7 +110,7 @@ const (
 	ExecutorResourceManifestPath = "/tmp/manifest.yaml"
 
 	// LocalCluster is the alias of the local cluster.
-	// This is to help show the intention of code, must always be the empty string, same as ClusterUndefined.
+	// This is to help show the intention of code, must always be the empty string.
 	LocalCluster = ""
 	// NamespaceUndefined is indicates it was undefined.
 	// This is to help show the intention of code, must always be the empty string.

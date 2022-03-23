@@ -31,7 +31,7 @@ spec:
 		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 
-func (s *MultiClusterSuite) TestAllowedRemoteCluster() {
+func (s *MultiClusterSuite) TestRemoteCluster() {
 	s.Given().
 		Workflow(`
 metadata:
@@ -114,7 +114,7 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeErrored).
 		Then().
-		ExpectWorkflow(fixtures.StatusMessageContains(`profile not found for policy argo,cluster-1,argo,1`))
+		ExpectWorkflow(fixtures.StatusMessageContains(`profile not found for policy argo,cluster-1,argo`))
 }
 
 func (s *MultiClusterSuite) TestDisallowedCluster() {
@@ -136,7 +136,7 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeErrored).
 		Then().
-		ExpectWorkflow(fixtures.StatusMessageContains(`profile not found for policy argo,cluster-1,argo,1`))
+		ExpectWorkflow(fixtures.StatusMessageContains(`profile not found for policy argo,cluster-1,argo`))
 }
 
 func TestMultiClusterSuite(t *testing.T) {

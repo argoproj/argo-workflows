@@ -11,8 +11,8 @@ import (
 
 func NewBuildCommand() *cobra.Command {
 	return &cobra.Command{
-		Use:          "build DIR",
-		Short:        "build an executor plugin",
+		Use:   "build DIR",
+		Short: "build an executor plugin",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) != 1 {
 				cmd.HelpFunc()(cmd, args)

@@ -26,8 +26,8 @@ When running workflows that creates resources (i.e. run tasks/steps) in other cl
 
 * The **local cluster** is where you'll create your workflows in. All cluster must be given a unique name. In examples
   we'll call this `cluster-0`.
-* The **workflow namespace** or **local namespace** is where workflow is, which may be different to the resource's
-  namespace. In the examples, `argo`.
+* The **workflow namespace** is where workflow is, which may be different to the resource's namespace. In the
+  examples, `argo`.
 * The **remote cluster** is where the workflow may create pods. In the examples, `cluster-1`.
 * The **remote namespace** is where remote resources are created. In the examples, `default`.
 * A **profile** is a configuration profile used to connect to a remote cluster.
@@ -63,7 +63,7 @@ kubectl rollout restart deploy/workflow-controller
 kubectl kustomize --load-restrictor=LoadRestrictionsNone manifests/quick-start/cluster-1 | kubectl --context=cluster-1 -n default apply -f -
 
 # install profile into local cluster
-argo cluster get-profile cluster-1 default argo.cluster-1 --server=https://`ipconfig getifaddr en0`:`kubectl config view --raw --minify --context=cluster-1|grep server|cut -c 29-` --insecure-skip-tls-verify | kubectl -n argo apply -f  -
+argo cluster get-profile cluster-1 default argo.cluster-0 --server=https://`ipconfig getifaddr en0`:`kubectl config view --raw --minify --context=cluster-1|grep server|cut -c 29-` --insecure-skip-tls-verify | kubectl -n argo apply -f  -
 kubectl annotate secret argo.cluster-1 --overwrite workflows.argoproj.io/workflow-namespace=argo
 kubectl annotate secret argo.cluster-1 --overwrite workflows.argoproj.io/namespace=default
 

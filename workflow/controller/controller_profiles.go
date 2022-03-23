@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -36,7 +35,7 @@ func (wfc *WorkflowController) newDefaultProfiles(restConfig *rest.Config, kuber
 	}
 }
 
-func (wfc *WorkflowController) addProfile(ctx context.Context, secret *apiv1.Secret) error {
+func (wfc *WorkflowController) addProfile(secret *apiv1.Secret) error {
 	key := newProfileKey(secret)
 	if _, ok := wfc.profiles[key]; ok {
 		return nil
@@ -61,7 +60,6 @@ func (wfc *WorkflowController) addProfile(ctx context.Context, secret *apiv1.Sec
 	}
 
 	namespace := common.Namespace(secret)
-
 
 	workflowNamespace, cluster := common.ClusterWorkflowNamespace(secret)
 	log.
@@ -92,18 +90,17 @@ func (wfc *WorkflowController) addProfile(ctx context.Context, secret *apiv1.Sec
 		},
 	}
 
-		p.restConfig = config
-		p.kubernetesClient = kubernetesClient
-		p.workflowClient = workflowClient
-		p.metadataClient = metadataClient
+	p.restConfig = config
+	p.kubernetesClient = kubernetesClient
+	p.workflowClient = workflowClient
+	p.metadataClient = metadataClient
 
-		done := make(chan struct{})
-		p.podInformer = wfc.newPodInformer(kubernetesClient, cluster, namespace)
-		p.podGCInformer = wfc.newPodGCInformer(metadataClient, cluster, namespace)
-		p.taskResultInformer = wfc.newWorkflowTaskResultInformer(workflowClient, cluster, namespace)
-		p.done = func() { done <- struct{}{} }
-		go p.run(done)
-
+	done := make(chan struct{})
+	p.podInformer = wfc.newPodInformer(kubernetesClient, cluster, namespace)
+	p.podGCInformer = wfc.newPodGCInformer(metadataClient, cluster, namespace)
+	p.taskResultInformer = wfc.newWorkflowTaskResultInformer(workflowClient, cluster, namespace)
+	p.done = func() { done <- struct{}{} }
+	go p.run(done)
 
 	wfc.profiles[key] = p
 
@@ -125,7 +122,7 @@ func (wfc *WorkflowController) removeProfile(secret *apiv1.Secret) {
 	delete(wfc.profiles, key)
 }
 
-func (wfc *WorkflowController) newProfileInformer(ctx context.Context) cache.SharedIndexInformer {
+func (wfc *WorkflowController) newProfileInformer() cache.SharedIndexInformer {
 
 	informer := v1.NewFilteredSecretInformer(
 		wfc.localProfile().kubernetesClient,
@@ -139,7 +136,7 @@ func (wfc *WorkflowController) newProfileInformer(ctx context.Context) cache.Sha
 
 	addFunc := func(obj interface{}) {
 		secret := obj.(*apiv1.Secret)
-		if err := wfc.addProfile(ctx, secret); err != nil {
+		if err := wfc.addProfile(secret); err != nil {
 			log.WithError(err).
 				WithField("namespace", secret.Namespace).
 				WithField("name", secret.Name).

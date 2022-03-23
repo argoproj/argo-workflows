@@ -243,7 +243,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListOptions, indexers)
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
 	wfc.wfTaskSetInformer = wfc.newWorkflowTaskSetInformer()
-	wfc.profileInformer = wfc.newProfileInformer(ctx)
+	wfc.profileInformer = wfc.newProfileInformer()
 	wfc.addWorkflowInformerHandlers(ctx)
 	wfc.updateEstimatorFactory()
 

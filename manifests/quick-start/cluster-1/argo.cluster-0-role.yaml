@@ -19,6 +19,6 @@ rules:
       - watch
       - deletecollection
     apiGroups:
-      - argproj.io/v1alpha1
+      - argoproj.io
     resources:
       - workflowtaskresults

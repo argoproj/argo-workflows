@@ -24,8 +24,8 @@ func newGetProfileCommand() *cobra.Command {
 		context                  string
 	)
 	cmd := &cobra.Command{
-		Use:          "get-profile cluster namespace service_account_name",
-		Short:        "print the profile for the  cluster",
+		Use:   "get-profile cluster namespace service_account_name",
+		Short: "print the profile for the  cluster",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			if len(args) != 3 {

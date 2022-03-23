@@ -1,8 +1,9 @@
 package controller
 
 import (
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 const localProfileKey profileKey = ""
