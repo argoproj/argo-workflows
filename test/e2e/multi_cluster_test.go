@@ -14,7 +14,7 @@ type MultiClusterSuite struct {
 	fixtures.E2ESuite
 }
 
-func (s *MultiClusterSuite) TestLocalCluster() {
+func (s *MultiClusterSuite) TestPrimaryCluster() {
 	s.Given().
 		Workflow(`
 metadata:

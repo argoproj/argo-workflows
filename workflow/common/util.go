@@ -339,25 +339,3 @@ func IsDone(un *unstructured.Unstructured) bool {
 		un.GetLabels()[LabelKeyCompleted] == "true" &&
 		un.GetLabels()[LabelKeyWorkflowArchivingStatus] != "Pending"
 }
-
-func ClusterWorkflowNamespace(m metav1.Object) (namespace, cluster string) {
-	return WorkflowNamespace(m), Cluster(m)
-}
-
-func Cluster(m metav1.Object) string {
-	return m.GetLabels()[LabelKeyCluster]
-}
-
-func WorkflowNamespace(m metav1.Object) string {
-	if x, ok := m.GetAnnotations()[AnnotationKeyWorkflowNamespace]; ok {
-		return x
-	}
-	return m.GetNamespace()
-}
-
-func Namespace(m metav1.Object) string {
-	if v, ok := m.GetAnnotations()[AnnotationKeyNamespace]; ok {
-		return v
-	}
-	return m.GetNamespace()
-}

@@ -197,6 +197,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		cacheFactory:              controllercache.NewCacheFactory(kube, "default"),
 		progressPatchTickDuration: envutil.LookupEnvDurationOr(common.EnvVarProgressPatchTickDuration, 1*time.Minute),
 		progressFileTickDuration:  envutil.LookupEnvDurationOr(common.EnvVarProgressFileTickDuration, 3*time.Second),
+		profiles:                  profiles{},
 	}
 
 	for _, opt := range options {
@@ -214,7 +215,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		wfc.throttler = wfc.newThrottler()
 		wfc.podCleanupQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 		wfc.rateLimiter = wfc.newRateLimiter()
-		wfc.profiles = wfc.newDefaultProfiles(nil, kube, wfclientset, &fakeMetadataClient)
+		wfc.loadPrimaryProfile(nil, kube, wfclientset, &fakeMetadataClient)
 	}
 
 	// always compare to WorkflowController.Run to see what this block of code should be doing
@@ -229,7 +230,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 
 		go wfc.wfInformer.Run(ctx.Done())
 		go wfc.wftmplInformer.Informer().Run(ctx.Done())
-		go wfc.localProfile().run(ctx.Done())
+		go wfc.primaryProfile().run(ctx.Done())
 		go wfc.wfTaskSetInformer.Informer().Run(ctx.Done())
 		wfc.cwftmplInformer = informerFactory.Argoproj().V1alpha1().ClusterWorkflowTemplates()
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
@@ -291,7 +292,7 @@ func unmarshalArtifact(yamlStr string) *wfv1.Artifact {
 }
 
 func expectWorkflow(ctx context.Context, controller *WorkflowController, name string, test func(wf *wfv1.Workflow)) {
-	wf, err := controller.localProfile().workflowClient.ArgoprojV1alpha1().Workflows("").Get(ctx, name, metav1.GetOptions{})
+	wf, err := controller.primaryProfile().workflowClient.ArgoprojV1alpha1().Workflows("").Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		panic(err)
 	}
@@ -299,11 +300,11 @@ func expectWorkflow(ctx context.Context, controller *WorkflowController, name st
 }
 
 func getPod(woc *wfOperationCtx, name string) (*apiv1.Pod, error) {
-	return woc.controller.localProfile().kubernetesClient.CoreV1().Pods(woc.wf.Namespace).Get(context.Background(), name, metav1.GetOptions{})
+	return woc.controller.primaryProfile().kubernetesClient.CoreV1().Pods(woc.wf.Namespace).Get(context.Background(), name, metav1.GetOptions{})
 }
 
 func listPods(woc *wfOperationCtx) (*apiv1.PodList, error) {
-	return woc.controller.localProfile().kubernetesClient.CoreV1().Pods(woc.wf.Namespace).List(context.Background(), metav1.ListOptions{})
+	return woc.controller.primaryProfile().kubernetesClient.CoreV1().Pods(woc.wf.Namespace).List(context.Background(), metav1.ListOptions{})
 }
 
 type with func(pod *apiv1.Pod)
@@ -340,7 +341,7 @@ func withAnnotation(key, val string) with {
 // createRunningPods creates the pods that are marked as running in a given test so that they can be accessed by the
 // pod assessor
 func createRunningPods(ctx context.Context, woc *wfOperationCtx) {
-	podcs := woc.controller.localProfile().kubernetesClient.CoreV1().Pods(woc.wf.GetNamespace())
+	podcs := woc.controller.primaryProfile().kubernetesClient.CoreV1().Pods(woc.wf.GetNamespace())
 	for _, node := range woc.wf.Status.Nodes {
 		if node.Type == wfv1.NodeTypePod && node.Phase == wfv1.NodeRunning {
 			pod, _ := podcs.Create(ctx, &apiv1.Pod{
@@ -357,20 +358,20 @@ func createRunningPods(ctx context.Context, woc *wfOperationCtx) {
 					Phase: apiv1.PodRunning,
 				},
 			}, metav1.CreateOptions{})
-			_ = woc.controller.localProfile().podInformer.GetStore().Add(pod)
+			_ = woc.controller.primaryProfile().podInformer.GetStore().Add(pod)
 		}
 	}
 }
 
 func syncPodsInformer(ctx context.Context, woc *wfOperationCtx, podObjs ...apiv1.Pod) {
-	podcs := woc.controller.localProfile().kubernetesClient.CoreV1().Pods(woc.wf.GetNamespace())
+	podcs := woc.controller.primaryProfile().kubernetesClient.CoreV1().Pods(woc.wf.GetNamespace())
 	pods, err := podcs.List(ctx, metav1.ListOptions{})
 	if err != nil {
 		panic(err)
 	}
 	podObjs = append(podObjs, pods.Items...)
 	for _, pod := range podObjs {
-		err = woc.controller.localProfile().podInformer.GetIndexer().Add(&pod)
+		err = woc.controller.primaryProfile().podInformer.GetIndexer().Add(&pod)
 		if err != nil {
 			panic(err)
 		}
@@ -379,7 +380,7 @@ func syncPodsInformer(ctx context.Context, woc *wfOperationCtx, podObjs ...apiv1
 
 // makePodsPhase acts like a pod controller and simulates the transition of pods transitioning into a specified state
 func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhase, with ...with) {
-	podcs := woc.controller.localProfile().kubernetesClient.CoreV1().Pods(woc.wf.GetNamespace())
+	podcs := woc.controller.primaryProfile().kubernetesClient.CoreV1().Pods(woc.wf.GetNamespace())
 	pods, err := podcs.List(ctx, metav1.ListOptions{})
 	if err != nil {
 		panic(err)
@@ -397,7 +398,7 @@ func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhas
 			if err != nil {
 				panic(err)
 			}
-			err = woc.controller.localProfile().podInformer.GetStore().Update(updatedPod)
+			err = woc.controller.primaryProfile().podInformer.GetStore().Update(updatedPod)
 			if err != nil {
 				panic(err)
 			}
@@ -406,7 +407,7 @@ func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhas
 }
 
 func deletePods(ctx context.Context, woc *wfOperationCtx) {
-	p := woc.controller.localProfile()
+	p := woc.controller.primaryProfile()
 	for _, obj := range p.podInformer.GetStore().List() {
 		pod := obj.(*apiv1.Pod)
 		err := p.kubernetesClient.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
@@ -490,7 +491,7 @@ func TestNamespacedController(t *testing.T) {
 
 	cancel, controller := newController()
 	defer cancel()
-	controller.localProfile().kubernetesClient = kubernetes.Interface(&kubeClient)
+	controller.primaryProfile().kubernetesClient = kubernetes.Interface(&kubeClient)
 	controller.cwftmplInformer = nil
 	controller.createClusterWorkflowTemplateInformer(context.TODO())
 	assert.Nil(t, controller.cwftmplInformer)
@@ -507,7 +508,7 @@ func TestClusterController(t *testing.T) {
 
 	cancel, controller := newController()
 	defer cancel()
-	controller.localProfile().kubernetesClient = kubernetes.Interface(&kubeClient)
+	controller.primaryProfile().kubernetesClient = kubernetes.Interface(&kubeClient)
 	controller.cwftmplInformer = nil
 	controller.createClusterWorkflowTemplateInformer(context.TODO())
 	assert.NotNil(t, controller.cwftmplInformer)

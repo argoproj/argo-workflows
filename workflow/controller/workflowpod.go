@@ -1153,7 +1153,7 @@ func (woc *wfOperationCtx) setupServiceAccount(ctx context.Context, pod *apiv1.P
 		executorServiceAccountName = woc.execWf.Spec.Executor.ServiceAccountName
 	}
 	if executorServiceAccountName != "" {
-		tokenName, err := woc.getServiceAccountTokenName(ctx, common.Cluster(pod), executorServiceAccountName)
+		tokenName, err := woc.getServiceAccountTokenName(ctx, woc.clusterOf(pod), executorServiceAccountName)
 		if err != nil {
 			return err
 		}

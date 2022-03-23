@@ -42,11 +42,11 @@ func TestConfigMapCacheLoadHit(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	_, err := controller.localProfile().kubernetesClient.CoreV1().ConfigMaps("default").Create(ctx, &sampleConfigMapCacheEntry, metav1.CreateOptions{})
+	_, err := controller.primaryProfile().kubernetesClient.CoreV1().ConfigMaps("default").Create(ctx, &sampleConfigMapCacheEntry, metav1.CreateOptions{})
 	assert.NoError(t, err)
-	c := cache.NewConfigMapCache("default", controller.localProfile().kubernetesClient, "whalesay-cache")
+	c := cache.NewConfigMapCache("default", controller.primaryProfile().kubernetesClient, "whalesay-cache")
 
-	cm, err := controller.localProfile().kubernetesClient.CoreV1().ConfigMaps("default").Get(ctx, sampleConfigMapCacheEntry.Name, metav1.GetOptions{})
+	cm, err := controller.primaryProfile().kubernetesClient.CoreV1().ConfigMaps("default").Get(ctx, sampleConfigMapCacheEntry.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.Nil(t, cm.Labels)
 
@@ -67,9 +67,9 @@ func TestConfigMapCacheLoadMiss(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	_, err := controller.localProfile().kubernetesClient.CoreV1().ConfigMaps("default").Create(ctx, &sampleConfigMapEmptyCacheEntry, metav1.CreateOptions{})
+	_, err := controller.primaryProfile().kubernetesClient.CoreV1().ConfigMaps("default").Create(ctx, &sampleConfigMapEmptyCacheEntry, metav1.CreateOptions{})
 	assert.NoError(t, err)
-	c := cache.NewConfigMapCache("default", controller.localProfile().kubernetesClient, "whalesay-cache")
+	c := cache.NewConfigMapCache("default", controller.primaryProfile().kubernetesClient, "whalesay-cache")
 	entry, err := c.Load(ctx, "hi-there-world")
 	assert.NoError(t, err)
 	assert.Nil(t, entry)
@@ -83,7 +83,7 @@ func TestConfigMapCacheSave(t *testing.T) {
 	}
 	cancel, controller := newController()
 	defer cancel()
-	c := cache.NewConfigMapCache("default", controller.localProfile().kubernetesClient, "whalesay-cache")
+	c := cache.NewConfigMapCache("default", controller.primaryProfile().kubernetesClient, "whalesay-cache")
 
 	ctx := context.Background()
 	outputs := wfv1.Outputs{}
@@ -91,7 +91,7 @@ func TestConfigMapCacheSave(t *testing.T) {
 	err := c.Save(ctx, "hi-there-world", "", &outputs)
 	assert.NoError(t, err)
 
-	cm, err := controller.localProfile().kubernetesClient.CoreV1().ConfigMaps("default").Get(ctx, "whalesay-cache", metav1.GetOptions{})
+	cm, err := controller.primaryProfile().kubernetesClient.CoreV1().ConfigMaps("default").Get(ctx, "whalesay-cache", metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.NotNil(t, cm)
 	var entry cache.Entry

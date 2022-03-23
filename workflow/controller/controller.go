@@ -117,7 +117,6 @@ type WorkflowController struct {
 	// Default is 3s and can be configured using the env var ARGO_PROGRESS_FILE_TICK_DURATION
 	progressFileTickDuration time.Duration
 	executorPlugins          map[string]map[string]*spec.Plugin // namespace -> name -> plugin
-	profileInformer          cache.SharedIndexInformer
 }
 
 const (
@@ -163,18 +162,20 @@ func NewWorkflowController(
 		eventRecorderManager:       events.NewEventRecorderManager(kubernetesClient),
 		progressPatchTickDuration:  env.LookupEnvDurationOr(common.EnvVarProgressPatchTickDuration, 1*time.Minute),
 		progressFileTickDuration:   env.LookupEnvDurationOr(common.EnvVarProgressFileTickDuration, 3*time.Second),
+		profiles:                   profiles{},
 	}
 
 	if executorPlugins {
 		wfc.executorPlugins = map[string]map[string]*spec.Plugin{}
 	}
 
-	metadataClient := metadata.NewForConfigOrDie(restConfig)
-	wfc.profiles = wfc.newDefaultProfiles(restConfig, kubernetesClient, workflowClient, metadataClient)
+	wfc.UpdateConfig(ctx, kubernetesClient)
 
-	wfc.UpdateConfig(ctx)
+	wfc.loadPrimaryProfile(restConfig, kubernetesClient, workflowClient, metadata.NewForConfigOrDie(restConfig))
 
-	wfc.profiles = wfc.newDefaultProfiles(restConfig, kubernetesClient, workflowClient, metadataClient)
+	if err := wfc.loadProfiles(ctx, kubernetesClient); err != nil {
+		return nil, err
+	}
 
 	wfc.metrics = metrics.New(wfc.getMetricsServerConfig())
 
@@ -198,7 +199,7 @@ func (wfc *WorkflowController) newThrottler() sync.Throttler {
 func (wfc *WorkflowController) runGCcontroller(ctx context.Context, workflowTTLWorkers int) {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 
-	gcCtrl := gccontroller.NewController(wfc.localProfile().workflowClient, wfc.wfInformer, wfc.metrics, wfc.Config.RetentionPolicy)
+	gcCtrl := gccontroller.NewController(wfc.primaryProfile().workflowClient, wfc.wfInformer, wfc.metrics, wfc.Config.RetentionPolicy)
 	err := gcCtrl.Run(ctx.Done(), workflowTTLWorkers)
 	if err != nil {
 		panic(err)
@@ -208,7 +209,7 @@ func (wfc *WorkflowController) runGCcontroller(ctx context.Context, workflowTTLW
 func (wfc *WorkflowController) runCronController(ctx context.Context) {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 
-	cronController := cron.NewCronController(wfc.localProfile().workflowClient, wfc.dynamicInterface, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics, wfc.eventRecorderManager)
+	cronController := cron.NewCronController(wfc.primaryProfile().workflowClient, wfc.dynamicInterface, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics, wfc.eventRecorderManager)
 	cronController.Run(ctx)
 }
 
@@ -243,7 +244,6 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListOptions, indexers)
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
 	wfc.wfTaskSetInformer = wfc.newWorkflowTaskSetInformer()
-	wfc.profileInformer = wfc.newProfileInformer()
 	wfc.addWorkflowInformerHandlers(ctx)
 	wfc.updateEstimatorFactory()
 
@@ -256,12 +256,13 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		log.Fatal(err)
 	}
 
-	go wfc.profileInformer.Run(ctx.Done())
 	go wfc.runConfigMapWatcher(ctx.Done())
-	go wfc.configController.Run(ctx.Done(), wfc.updateConfig)
+	go wfc.configController.Run(ctx.Done(), func(config interface{}) error {
+		return wfc.updateConfig(wfc.primaryProfile().kubernetesClient, config)
+	})
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
-	go wfc.localProfile().run(ctx.Done())
+	go wfc.profiles.run(ctx.Done())
 	go wfc.configMapInformer.Run(ctx.Done())
 	go wfc.wfTaskSetInformer.Informer().Run(ctx.Done())
 
@@ -270,8 +271,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		ctx.Done(),
 		wfc.wfInformer.HasSynced,
 		wfc.wftmplInformer.Informer().HasSynced,
-		wfc.localProfile().hasSynced,
-		wfc.profileInformer.HasSynced,
+		wfc.profiles.hasSynced,
 		wfc.configMapInformer.HasSynced,
 		wfc.wfTaskSetInformer.Informer().HasSynced,
 	) {
@@ -312,7 +312,7 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 		if err != nil {
 			return 0, err
 		}
-		configMap, err := wfc.localProfile().kubernetesClient.CoreV1().ConfigMaps(lockName.Namespace).Get(ctx, lockName.ResourceName, metav1.GetOptions{})
+		configMap, err := wfc.primaryProfile().kubernetesClient.CoreV1().ConfigMaps(lockName.Namespace).Get(ctx, lockName.ResourceName, metav1.GetOptions{})
 		if err != nil {
 			return 0, err
 		}
@@ -348,7 +348,7 @@ func (wfc *WorkflowController) initManagers(ctx context.Context) error {
 		labelSelector = labelSelector.Add(*req)
 	}
 	listOpts := metav1.ListOptions{LabelSelector: labelSelector.String()}
-	wfList, err := wfc.localProfile().workflowClient.ArgoprojV1alpha1().Workflows(wfc.namespace).List(ctx, listOpts)
+	wfList, err := wfc.primaryProfile().workflowClient.ArgoprojV1alpha1().Workflows(wfc.namespace).List(ctx, listOpts)
 	if err != nil {
 		return err
 	}
@@ -367,7 +367,7 @@ func (wfc *WorkflowController) runConfigMapWatcher(stopCh <-chan struct{}) {
 	ctx := context.Background()
 	retryWatcher, err := apiwatch.NewRetryWatcher("1", &cache.ListWatch{
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return wfc.localProfile().kubernetesClient.CoreV1().ConfigMaps(wfc.managedNamespace).Watch(ctx, metav1.ListOptions{})
+			return wfc.primaryProfile().kubernetesClient.CoreV1().ConfigMaps(wfc.managedNamespace).Watch(ctx, metav1.ListOptions{})
 		},
 	})
 	if err != nil {
@@ -411,11 +411,11 @@ func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) 
 
 // Check if the controller has RBAC access to ClusterWorkflowTemplates
 func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context.Context) {
-	cwftGetAllowed, err := authutil.CanI(ctx, wfc.localProfile().kubernetesClient, "get", workflow.Group, "clusterworkflowtemplates", wfc.namespace, "")
+	cwftGetAllowed, err := authutil.CanI(ctx, wfc.primaryProfile().kubernetesClient, "get", workflow.Group, "clusterworkflowtemplates", wfc.namespace, "")
 	errors.CheckError(err)
-	cwftListAllowed, err := authutil.CanI(ctx, wfc.localProfile().kubernetesClient, "list", workflow.Group, "clusterworkflowtemplates", wfc.namespace, "")
+	cwftListAllowed, err := authutil.CanI(ctx, wfc.primaryProfile().kubernetesClient, "list", workflow.Group, "clusterworkflowtemplates", wfc.namespace, "")
 	errors.CheckError(err)
-	cwftWatchAllowed, err := authutil.CanI(ctx, wfc.localProfile().kubernetesClient, "watch", workflow.Group, "clusterworkflowtemplates", wfc.namespace, "")
+	cwftWatchAllowed, err := authutil.CanI(ctx, wfc.primaryProfile().kubernetesClient, "watch", workflow.Group, "clusterworkflowtemplates", wfc.namespace, "")
 	errors.CheckError(err)
 
 	if cwftGetAllowed && cwftListAllowed && cwftWatchAllowed {
@@ -426,12 +426,12 @@ func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context
 	}
 }
 
-func (wfc *WorkflowController) UpdateConfig(ctx context.Context) {
+func (wfc *WorkflowController) UpdateConfig(ctx context.Context, kubernetesClient kubernetes.Interface) {
 	config, err := wfc.configController.Get(ctx)
 	if err != nil {
 		log.Fatalf("Failed to register watch for controller config map: %v", err)
 	}
-	err = wfc.updateConfig(config)
+	err = wfc.updateConfig(kubernetesClient, config)
 	if err != nil {
 		log.Fatalf("Failed to update config: %v", err)
 	}
@@ -935,7 +935,7 @@ func (wfc *WorkflowController) archiveWorkflowAux(ctx context.Context, obj inter
 	if err != nil {
 		return fmt.Errorf("failed to marshal patch: %w", err)
 	}
-	_, err = wfc.localProfile().workflowClient.ArgoprojV1alpha1().Workflows(un.GetNamespace()).Patch(
+	_, err = wfc.primaryProfile().workflowClient.ArgoprojV1alpha1().Workflows(un.GetNamespace()).Patch(
 		ctx,
 		un.GetName(),
 		types.MergePatchType,
@@ -1083,7 +1083,7 @@ func (wfc *WorkflowController) newPodGCInformer(client metadata.Interface, clust
 }
 
 func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer {
-	indexInformer := v1.NewFilteredConfigMapInformer(wfc.localProfile().kubernetesClient, wfc.GetManagedNamespace(), 20*time.Minute, cache.Indexers{
+	indexInformer := v1.NewFilteredConfigMapInformer(wfc.primaryProfile().kubernetesClient, wfc.GetManagedNamespace(), 20*time.Minute, cache.Indexers{
 		indexes.ConfigMapLabelsIndex: indexes.ConfigMapIndexFunc,
 	}, func(opts *metav1.ListOptions) {
 		opts.LabelSelector = common.LabelKeyConfigMapType
@@ -1279,7 +1279,7 @@ func (wfc *WorkflowController) syncPodPhaseMetrics() {
 
 func (wfc *WorkflowController) newWorkflowTaskSetInformer() wfextvv1alpha1.WorkflowTaskSetInformer {
 	informer := externalversions.NewSharedInformerFactoryWithOptions(
-		wfc.localProfile().workflowClient,
+		wfc.primaryProfile().workflowClient,
 		workflowTaskSetResyncPeriod,
 		externalversions.WithNamespace(wfc.GetManagedNamespace()),
 		externalversions.WithTweakListOptions(func(x *metav1.ListOptions) {

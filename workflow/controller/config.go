@@ -8,6 +8,7 @@ import (
 	"golang.org/x/time/rate"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3"
@@ -18,7 +19,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 )
 
-func (wfc *WorkflowController) updateConfig(v interface{}) error {
+func (wfc *WorkflowController) updateConfig(kubernetesClient kubernetes.Interface, v interface{}) error {
 	config := v.(*config.Config)
 	bytes, err := yaml.Marshal(config)
 	if err != nil {
@@ -33,14 +34,14 @@ func (wfc *WorkflowController) updateConfig(v interface{}) error {
 		}
 	}
 	wfc.session = nil
-	wfc.artifactRepositories = artifactrepositories.New(wfc.localProfile().kubernetesClient, wfc.namespace, &wfc.Config.ArtifactRepository)
+	wfc.artifactRepositories = artifactrepositories.New(kubernetesClient, wfc.namespace, &wfc.Config.ArtifactRepository)
 	wfc.offloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo
 	wfc.wfArchive = sqldb.NullWorkflowArchive
 	wfc.archiveLabelSelector = labels.Everything()
 	persistence := wfc.Config.Persistence
 	if persistence != nil {
 		log.Info("Persistence configuration enabled")
-		session, tableName, err := sqldb.CreateDBSession(wfc.localProfile().kubernetesClient, wfc.namespace, persistence)
+		session, tableName, err := sqldb.CreateDBSession(kubernetesClient, wfc.namespace, persistence)
 		if err != nil {
 			return err
 		}

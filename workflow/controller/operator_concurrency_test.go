@@ -131,17 +131,17 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.localProfile().kubernetesClient), func(key string) {
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.primaryProfile().kubernetesClient), func(key string) {
 	}, workflowExistenceFunc)
 	var cm v1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
-	_, err := controller.localProfile().kubernetesClient.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	_, err := controller.primaryProfile().kubernetesClient.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	t.Run("TmplLevelAcquireAndRelease", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
 		wf.Name = "one"
-		wf, err := controller.localProfile().workflowClient.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+		wf, err := controller.primaryProfile().workflowClient.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(t, err)
 		woc := newWorkflowOperationCtx(wf, controller)
 
@@ -158,7 +158,7 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		// Try to Acquire the lock, But lock is not available
 		wf_Two := wf.DeepCopy()
 		wf_Two.Name = "two"
-		wf_Two, err = controller.localProfile().workflowClient.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf_Two, metav1.CreateOptions{})
+		wf_Two, err = controller.primaryProfile().workflowClient.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf_Two, metav1.CreateOptions{})
 		assert.NoError(t, err)
 		woc_two := newWorkflowOperationCtx(wf_Two, controller)
 		// Try Acquire the lock
@@ -192,17 +192,17 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.localProfile().kubernetesClient), func(key string) {
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.primaryProfile().kubernetesClient), func(key string) {
 	}, workflowExistenceFunc)
 	var cm v1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
-	_, err := controller.localProfile().kubernetesClient.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	_, err := controller.primaryProfile().kubernetesClient.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	t.Run("ScriptTmplLevelAcquireAndRelease", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(ScriptWfWithSemaphore)
 		wf.Name = "one"
-		wf, err := controller.localProfile().workflowClient.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+		wf, err := controller.primaryProfile().workflowClient.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(t, err)
 		woc := newWorkflowOperationCtx(wf, controller)
 
@@ -219,7 +219,7 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 		// Try to Acquire the lock, But lock is not available
 		wf_Two := wf.DeepCopy()
 		wf_Two.Name = "two"
-		wf_Two, err = controller.localProfile().workflowClient.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf_Two, metav1.CreateOptions{})
+		wf_Two, err = controller.primaryProfile().workflowClient.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf_Two, metav1.CreateOptions{})
 		assert.NoError(t, err)
 		woc_two := newWorkflowOperationCtx(wf_Two, controller)
 		// Try Acquire the lock
@@ -252,17 +252,17 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.localProfile().kubernetesClient), func(key string) {
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.primaryProfile().kubernetesClient), func(key string) {
 	}, workflowExistenceFunc)
 	var cm v1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
-	_, err := controller.localProfile().kubernetesClient.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	_, err := controller.primaryProfile().kubernetesClient.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	t.Run("ResourceTmplLevelAcquireAndRelease", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(ResourceWfWithSemaphore)
 		wf.Name = "one"
-		wf, err := controller.localProfile().workflowClient.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+		wf, err := controller.primaryProfile().workflowClient.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(t, err)
 		woc := newWorkflowOperationCtx(wf, controller)
 
@@ -279,7 +279,7 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 		// Try to Acquire the lock, But lock is not available
 		wf_Two := wf.DeepCopy()
 		wf_Two.Name = "two"
-		wf_Two, err = controller.localProfile().workflowClient.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf_Two, metav1.CreateOptions{})
+		wf_Two, err = controller.primaryProfile().workflowClient.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf_Two, metav1.CreateOptions{})
 		assert.NoError(t, err)
 		woc_two := newWorkflowOperationCtx(wf_Two, controller)
 		// Try Acquire the lock
@@ -314,13 +314,13 @@ func TestSemaphoreWithOutConfigMap(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.localProfile().kubernetesClient), func(key string) {
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.primaryProfile().kubernetesClient), func(key string) {
 	}, workflowExistenceFunc)
 
 	t.Run("SemaphoreRefWithOutConfigMap", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
 		wf.Name = "one"
-		wf, err := controller.localProfile().workflowClient.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+		wf, err := controller.primaryProfile().workflowClient.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(t, err)
 		woc := newWorkflowOperationCtx(wf, controller)
 		err = woc.podReconciliation(ctx)
@@ -370,11 +370,11 @@ func TestMutexInDAG(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.localProfile().kubernetesClient), func(key string) {
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.primaryProfile().kubernetesClient), func(key string) {
 	}, workflowExistenceFunc)
 	t.Run("MutexWithDAG", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(DAGWithMutex)
-		wf, err := controller.localProfile().workflowClient.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+		wf, err := controller.primaryProfile().workflowClient.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(err)
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
@@ -434,15 +434,15 @@ func TestSynchronizationWithRetry(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.localProfile().kubernetesClient), func(key string) {
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.primaryProfile().kubernetesClient), func(key string) {
 	}, workflowExistenceFunc)
 	var cm v1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
-	_, err := controller.localProfile().kubernetesClient.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	_, err := controller.primaryProfile().kubernetesClient.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(err)
 	t.Run("WorkflowWithRetry", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(RetryWfWithSemaphore)
-		wf, err := controller.localProfile().workflowClient.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+		wf, err := controller.primaryProfile().workflowClient.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(err)
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
@@ -642,17 +642,17 @@ func TestSynchronizationWithStep(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.localProfile().kubernetesClient), func(key string) {
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.primaryProfile().kubernetesClient), func(key string) {
 	}, workflowExistenceFunc)
 	var cm v1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
-	_, err := controller.localProfile().kubernetesClient.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	_, err := controller.primaryProfile().kubernetesClient.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(err)
 
 	t.Run("StepWithSychronization", func(t *testing.T) {
 		// First workflow Acquire the lock
 		wf := wfv1.MustUnmarshalWorkflow(StepWithSync)
-		wf, err := controller.localProfile().workflowClient.ArgoprojV1alpha1().Workflows("default").Create(ctx, wf, metav1.CreateOptions{})
+		wf, err := controller.primaryProfile().workflowClient.ArgoprojV1alpha1().Workflows("default").Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(err)
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
@@ -663,7 +663,7 @@ func TestSynchronizationWithStep(t *testing.T) {
 		// Second workflow try to acquire the lock and wait for lock
 		wf1 := wfv1.MustUnmarshalWorkflow(StepWithSync)
 		wf1.Name = "step2"
-		wf1, err = controller.localProfile().workflowClient.ArgoprojV1alpha1().Workflows("default").Create(ctx, wf1, metav1.CreateOptions{})
+		wf1, err = controller.primaryProfile().workflowClient.ArgoprojV1alpha1().Workflows("default").Create(ctx, wf1, metav1.CreateOptions{})
 		assert.NoError(err)
 		woc1 := newWorkflowOperationCtx(wf1, controller)
 		woc1.operate(ctx)
@@ -719,17 +719,17 @@ func TestSynchronizationWithStepRetry(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
-	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.localProfile().kubernetesClient), func(key string) {
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.primaryProfile().kubernetesClient), func(key string) {
 	}, workflowExistenceFunc)
 	var cm v1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
-	_, err := controller.localProfile().kubernetesClient.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	_, err := controller.primaryProfile().kubernetesClient.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(err)
 
 	t.Run("StepRetryWithSynchronization", func(t *testing.T) {
 		// First workflow Acquire the lock
 		wf := wfv1.MustUnmarshalWorkflow(wfWithStepRetry)
-		wf, err := controller.localProfile().workflowClient.ArgoprojV1alpha1().Workflows("default").Create(ctx, wf, metav1.CreateOptions{})
+		wf, err := controller.primaryProfile().workflowClient.ArgoprojV1alpha1().Workflows("default").Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(err)
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)

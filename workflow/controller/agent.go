@@ -72,7 +72,7 @@ func assessAgentPodStatus(pod *apiv1.Pod) (wfv1.WorkflowPhase, string) {
 }
 
 func (woc *wfOperationCtx) secretExists(ctx context.Context, name string) (bool, error) {
-	_, err := woc.controller.localProfile().kubernetesClient.CoreV1().Secrets(woc.wf.Namespace).Get(ctx, name, metav1.GetOptions{})
+	_, err := woc.controller.primaryProfile().kubernetesClient.CoreV1().Secrets(woc.wf.Namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		if apierr.IsNotFound(err) {
 			return false, nil
@@ -244,7 +244,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 
 	log.Debug("Creating Agent pod")
 
-	created, err := woc.controller.localProfile().kubernetesClient.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
+	created, err := woc.controller.primaryProfile().kubernetesClient.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
 		log.WithError(err).Info("Failed to create Agent pod")
 		if apierr.IsAlreadyExists(err) {
@@ -257,7 +257,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 }
 
 func (woc *wfOperationCtx) localProfile() *profile {
-	return woc.controller.localProfile()
+	return woc.controller.primaryProfile()
 }
 
 func (woc *wfOperationCtx) getExecutorPlugins(ctx context.Context) ([]apiv1.Container, []apiv1.Volume, error) {

@@ -2,18 +2,18 @@ package controller
 
 import "fmt"
 
-type policyDef struct {
+type policy struct {
 	workflowNamespace string
 	cluster           string
 	namespace         string
 }
 
-func (p policyDef) matches(workflowNamespace, cluster, namespace string) bool {
+func (p policy) matches(workflowNamespace, cluster, namespace string) bool {
 	return cluster == p.cluster &&
 		(workflowNamespace == p.workflowNamespace || p.workflowNamespace == "") &&
 		(namespace == p.namespace || p.namespace == "")
 }
 
-func (p policyDef) String() string {
+func (p policy) String() string {
 	return fmt.Sprintf("%s,%s,%s", p.workflowNamespace, p.cluster, p.namespace)
 }

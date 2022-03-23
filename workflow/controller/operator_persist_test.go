@@ -53,7 +53,7 @@ func TestPersistWithoutLargeWfSupport(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	wfcset := controller.localProfile().workflowClient.ArgoprojV1alpha1().Workflows("")
+	wfcset := controller.primaryProfile().workflowClient.ArgoprojV1alpha1().Workflows("")
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWfPersist)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
@@ -74,7 +74,7 @@ func TestPersistErrorWithoutLargeWfSupport(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	wfcset := controller.localProfile().workflowClient.ArgoprojV1alpha1().Workflows("")
+	wfcset := controller.primaryProfile().workflowClient.ArgoprojV1alpha1().Workflows("")
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWfPersist)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
@@ -94,7 +94,7 @@ func TestPersistWithLargeWfSupport(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	wfcset := controller.localProfile().workflowClient.ArgoprojV1alpha1().Workflows("")
+	wfcset := controller.primaryProfile().workflowClient.ArgoprojV1alpha1().Workflows("")
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWfPersist)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
@@ -122,7 +122,7 @@ func TestPersistErrorWithLargeWfSupport(t *testing.T) {
 	defer cancel()
 
 	ctx := context.Background()
-	wfcset := controller.localProfile().workflowClient.ArgoprojV1alpha1().Workflows("")
+	wfcset := controller.primaryProfile().workflowClient.ArgoprojV1alpha1().Workflows("")
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWfPersist)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)

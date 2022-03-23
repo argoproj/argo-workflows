@@ -745,14 +745,14 @@ func TestWorkflowOnExitHttpReconciliation(t *testing.T) {
 	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	taskSets, err := woc.controller.localProfile().workflowClient.ArgoprojV1alpha1().WorkflowTaskSets("").List(ctx, v1.ListOptions{})
+	taskSets, err := woc.controller.primaryProfile().workflowClient.ArgoprojV1alpha1().WorkflowTaskSets("").List(ctx, v1.ListOptions{})
 	if assert.NoError(t, err) {
 		assert.Len(t, taskSets.Items, 0)
 	}
 	woc.operate(ctx)
 
 	assert.Len(t, woc.wf.Status.Nodes, 2)
-	taskSets, err = woc.controller.localProfile().workflowClient.ArgoprojV1alpha1().WorkflowTaskSets("").List(ctx, v1.ListOptions{})
+	taskSets, err = woc.controller.primaryProfile().workflowClient.ArgoprojV1alpha1().WorkflowTaskSets("").List(ctx, v1.ListOptions{})
 	if assert.NoError(t, err) {
 		assert.Len(t, taskSets.Items, 1)
 	}

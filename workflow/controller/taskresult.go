@@ -45,7 +45,7 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 		objs, _ := p.taskResultInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.Namespace+"/"+woc.wf.Name)
 		woc.log.WithField("numObjs", len(objs)).
 			WithField("profileKey", profileKey).
-			WithField("policyDef", p.policyDef.String()).
+			WithField("policy", p.policy.String()).
 			Info("Task-result reconciliation")
 		for _, obj := range objs {
 			result := obj.(*wfv1.WorkflowTaskResult)

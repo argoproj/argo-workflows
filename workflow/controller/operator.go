@@ -611,7 +611,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	if woc.orig.ResourceVersion != woc.wf.ResourceVersion {
 		woc.log.Panic("cannot persist updates with mismatched resource versions")
 	}
-	wfClient := woc.controller.localProfile().workflowClient.ArgoprojV1alpha1().Workflows(woc.wf.ObjectMeta.Namespace)
+	wfClient := woc.controller.primaryProfile().workflowClient.ArgoprojV1alpha1().Workflows(woc.wf.ObjectMeta.Namespace)
 	// try and compress nodes if needed
 	nodes := woc.wf.Status.Nodes
 	err := woc.controller.hydrator.Dehydrate(woc.wf)
@@ -1341,7 +1341,7 @@ func podHasContainerNeedingTermination(pod *apiv1.Pod, tmpl wfv1.Template) bool 
 
 func (woc *wfOperationCtx) cleanUpPod(pod *apiv1.Pod, tmpl wfv1.Template) {
 	if podHasContainerNeedingTermination(pod, tmpl) {
-		woc.controller.queuePodForCleanup(woc.wf.Namespace, common.Cluster(pod), pod.Namespace, pod.Name, terminateContainers)
+		woc.controller.queuePodForCleanup(woc.wf.Namespace, woc.clusterOf(pod), pod.Namespace, pod.Name, terminateContainers)
 	}
 }
 
@@ -1472,7 +1472,7 @@ func (woc *wfOperationCtx) createPVCs(ctx context.Context) error {
 		// This will also handle the case where workflow has no volumeClaimTemplates.
 		return nil
 	}
-	pvcClient := woc.controller.localProfile().kubernetesClient.CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
+	pvcClient := woc.controller.primaryProfile().kubernetesClient.CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
 	for i, pvcTmpl := range woc.execWf.Spec.VolumeClaimTemplates {
 		if pvcTmpl.ObjectMeta.Name == "" {
 			return errors.Errorf(errors.CodeBadRequest, "volumeClaimTemplates[%d].metadata.name is required", i)
@@ -1549,7 +1549,7 @@ func (woc *wfOperationCtx) deletePVCs(ctx context.Context) error {
 		// PVC list already empty. nothing to do
 		return nil
 	}
-	pvcClient := woc.controller.localProfile().kubernetesClient.CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
+	pvcClient := woc.controller.primaryProfile().kubernetesClient.CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
 	newPVClist := make([]apiv1.Volume, 0)
 	// Attempt to delete all PVCs. Record first error encountered
 	var firstErr error
@@ -3338,7 +3338,7 @@ func (woc *wfOperationCtx) createPDBResource(ctx context.Context) error {
 		return nil
 	}
 
-	pdb, err := woc.controller.localProfile().kubernetesClient.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Get(
+	pdb, err := woc.controller.primaryProfile().kubernetesClient.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Get(
 		ctx,
 		woc.wf.Name,
 		metav1.GetOptions{},
@@ -3367,7 +3367,7 @@ func (woc *wfOperationCtx) createPDBResource(ctx context.Context) error {
 		},
 		Spec: pdbSpec,
 	}
-	_, err = woc.controller.localProfile().kubernetesClient.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Create(ctx, &newPDB, metav1.CreateOptions{})
+	_, err = woc.controller.primaryProfile().kubernetesClient.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Create(ctx, &newPDB, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -3381,7 +3381,7 @@ func (woc *wfOperationCtx) deletePDBResource(ctx context.Context) error {
 		return nil
 	}
 	err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
-		err := woc.controller.localProfile().kubernetesClient.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(ctx, woc.wf.Name, metav1.DeleteOptions{})
+		err := woc.controller.primaryProfile().kubernetesClient.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(ctx, woc.wf.Name, metav1.DeleteOptions{})
 		if apierr.IsNotFound(err) {
 			return true, nil
 		}
@@ -3473,8 +3473,8 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 	// Perform one-time workflow validation
 	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
 		validateOpts := validate.ValidateOpts{ContainerRuntimeExecutor: woc.getContainerRuntimeExecutor()}
-		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.controller.localProfile().workflowClient.ArgoprojV1alpha1().WorkflowTemplates(woc.wf.Namespace))
-		cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.controller.localProfile().workflowClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
+		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.controller.primaryProfile().workflowClient.ArgoprojV1alpha1().WorkflowTemplates(woc.wf.Namespace))
+		cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.controller.primaryProfile().workflowClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
 		// Validate the execution wfSpec
 		var wfConditions *wfv1.Conditions

@@ -11,7 +11,7 @@ import (
 func TestUpdateConfig(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
-	err := controller.updateConfig(&config.Config{})
+	err := controller.updateConfig(nil, &config.Config{})
 	assert.NoError(t, err)
 	assert.NotNil(t, controller.Config)
 	assert.NotNil(t, controller.archiveLabelSelector)
