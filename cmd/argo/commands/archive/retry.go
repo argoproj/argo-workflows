@@ -48,27 +48,27 @@ func NewRetryCommand() *cobra.Command {
 
 # Retry multiple workflows:
 
-  argo retry uid another-uid
+  argo archive retry uid another-uid
 
 # Retry multiple workflows by label selector:
 
-  argo retry -l workflows.argoproj.io/test=true
+  argo archive retry -l workflows.argoproj.io/test=true
 
 # Retry multiple workflows by field selector:
 
-  argo retry --field-selector metadata.namespace=argo
+  argo archive retry --field-selector metadata.namespace=argo
 
 # Retry and wait for completion:
 
-  argo retry --wait uid
+  argo archive retry --wait uid
 
 # Retry and watch until completion:
 
-  argo retry --watch uid
+  argo archive retry --watch uid
 		
 # Retry and tail logs until completion:
 
-  argo retry --log uid
+  argo archive retry --log uid
 `,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 && !retryOpts.hasSelector() {
