@@ -130,9 +130,10 @@ func retryArchivedWorkflows(ctx context.Context, archiveServiceClient workflowar
 		}
 		retriedUids[string(wf.UID)] = true
 
-		lastRetried, err = serviceClient.RetryWorkflow(ctx, &workflowpkg.WorkflowRetryRequest{
-			Name:              wf.Name,
+		lastRetried, err = archiveServiceClient.RetryArchivedWorkflow(ctx, &workflowarchivepkg.RetryArchivedWorkflowRequest{
+			Uid:               string(wf.UID),
 			Namespace:         wf.Namespace,
+			Name:              wf.Name,
 			RestartSuccessful: retryOpts.restartSuccessful,
 			NodeFieldSelector: selector.String(),
 		})

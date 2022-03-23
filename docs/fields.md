@@ -278,6 +278,8 @@ Workflow is the definition of a workflow resource
 
 - [`retry-container.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-container.yaml)
 
+- [`retry-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-fail.yaml)
+
 - [`retry-on-error.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-on-error.yaml)
 
 - [`retry-script.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-script.yaml)
@@ -682,6 +684,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`retry-container-to-completion.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-container-to-completion.yaml)
 
 - [`retry-container.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-container.yaml)
+
+- [`retry-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-fail.yaml)
 
 - [`retry-on-error.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-on-error.yaml)
 
@@ -1101,6 +1105,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`retry-container-to-completion.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-container-to-completion.yaml)
 
 - [`retry-container.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-container.yaml)
+
+- [`retry-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-fail.yaml)
 
 - [`retry-on-error.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-on-error.yaml)
 
@@ -4498,6 +4504,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`retry-container.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-container.yaml)
 
+- [`retry-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-fail.yaml)
+
 - [`retry-on-error.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-on-error.yaml)
 
 - [`retry-script.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-script.yaml)
@@ -5073,6 +5081,8 @@ A single application container that you want to run within a pod.
 - [`retry-container-to-completion.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-container-to-completion.yaml)
 
 - [`retry-container.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-container.yaml)
+
+- [`retry-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-fail.yaml)
 
 - [`retry-on-error.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-on-error.yaml)
 
@@ -5786,6 +5796,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`retry-container-to-completion.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-container-to-completion.yaml)
 
 - [`retry-container.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-container.yaml)
+
+- [`retry-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-fail.yaml)
 
 - [`retry-on-error.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-on-error.yaml)
 
