@@ -13,7 +13,7 @@
     
     
       
-        <title>argo archive - Argo Workflows - The workflow engine for Kubernetes</title>
+        <title>Argo archive resubmit - Argo Workflows - The workflow engine for Kubernetes</title>
       
     
     
@@ -72,7 +72,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#argo-archive" class="md-skip">
+        <a href="#argo-archive-resubmit" class="md-skip">
           Skip to content
         </a>
       
@@ -104,7 +104,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              argo archive
+              Argo archive resubmit
             
           </span>
         </div>
@@ -293,14 +293,12 @@
 
   
   
-    
-  
   
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
       
       
       
@@ -1279,14 +1277,12 @@
               
   
   
-    
-  
   
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5_9" type="checkbox" id="__nav_5_9" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5_9" type="checkbox" id="__nav_5_9" >
       
       
       
@@ -1321,75 +1317,11 @@
               
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-      
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          argo archive
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../argo_archive/" class="md-nav__link">
         argo archive
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#argo-archive" class="md-nav__link">
-    argo archive
-  </a>
-  
-    <nav class="md-nav" aria-label="argo archive">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#options" class="md-nav__link">
-    Options
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#options-inherited-from-parent-commands" class="md-nav__link">
-    Options inherited from parent commands
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
-    SEE ALSO
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -2791,12 +2723,19 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#argo-archive" class="md-nav__link">
-    argo archive
+  <a href="#argo-archive-resubmit" class="md-nav__link">
+    argo archive resubmit
   </a>
   
-    <nav class="md-nav" aria-label="argo archive">
+    <nav class="md-nav" aria-label="argo archive resubmit">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    Examples
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#options" class="md-nav__link">
@@ -2836,19 +2775,56 @@
             <article class="md-content__inner md-typeset">
               
                 
-<a href="https://github.com/argoproj/argo-workflows/edit/master/docs/cli/argo_archive.md" title="Edit this page" class="md-content__button md-icon">
+<a href="https://github.com/argoproj/argo-workflows/edit/master/docs/cli/argo_archive_resubmit.md" title="Edit this page" class="md-content__button md-icon">
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
 </a>
 
 
-  <h1>argo archive</h1>
+  <h1>Argo archive resubmit</h1>
 
-<h2 id="argo-archive">argo archive<a class="headerlink" href="#argo-archive" title="Permanent link">&para;</a></h2>
-<p>manage the workflow archive</p>
-<div class="highlight"><pre><span></span><code>argo archive [flags]
+<h2 id="argo-archive-resubmit">argo archive resubmit<a class="headerlink" href="#argo-archive-resubmit" title="Permanent link">&para;</a></h2>
+<p>resubmit one or more workflows</p>
+<div class="highlight"><pre><span></span><code>argo archive resubmit [WORKFLOW...] [flags]
+</code></pre></div>
+<h3 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code># Resubmit a workflow:
+
+  argo archive resubmit uid
+
+# Resubmit multiple workflows:
+
+  argo resubmit uid another-uid
+
+# Resubmit multiple workflows by label selector:
+
+  argo resubmit -l workflows.argoproj.io/test=true
+
+# Resubmit multiple workflows by field selector:
+
+  argo resubmit --field-selector metadata.namespace=argo
+
+# Resubmit and wait for completion:
+
+  argo resubmit --wait uid
+
+# Resubmit and watch until completion:
+
+  argo resubmit --watch uid
+
+# Resubmit and tail logs until completion:
+
+  argo resubmit --log uid
 </code></pre></div>
 <h3 id="options">Options<a class="headerlink" href="#options" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code>  -h, --help   help for archive
+<div class="highlight"><pre><span></span><code>      --field-selector string   Selector (field query) to filter on, supports &#39;=&#39;, &#39;==&#39;, and &#39;!=&#39;.(e.g. --field-selector key1=value1,key2=value2). The server only supports a limited number of field queries per type.
+  -h, --help                    help for resubmit
+      --log                     log the workflow until it completes
+      --memoized                re-use successful steps &amp; outputs from the previous run
+  -o, --output string           Output format. One of: name|json|yaml|wide
+      --priority int32          workflow priority
+  -l, --selector string         Selector (label query) to filter on, not including uninitialized ones, supports &#39;=&#39;, &#39;==&#39;, and &#39;!=&#39;.(e.g. -l key1=value1,key2=value2)
+  -w, --wait                    wait for the workflow to complete, only works when a single workflow is resubmitted
+      --watch                   watch the workflow until it completes, only works when a single workflow is resubmitted
 </code></pre></div>
 <h3 id="options-inherited-from-parent-commands">Options inherited from parent commands<a class="headerlink" href="#options-inherited-from-parent-commands" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code>      --argo-base-href string          An path to use with HTTP client (e.g. due to BASE_HREF). Defaults to the ARGO_BASE_HREF environment variable.
@@ -2882,13 +2858,7 @@
 </code></pre></div>
 <h3 id="see-also">SEE ALSO<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h3>
 <ul>
-<li><a href="../argo/">argo</a>    - argo is the command line interface to Argo</li>
-<li><a href="../argo_archive_delete/">argo archive delete</a>  - delete a workflow in the archive</li>
-<li><a href="../argo_archive_get/">argo archive get</a>    - get a workflow in the archive</li>
-<li><a href="../argo_archive_list/">argo archive list</a>  - list workflows in the archive</li>
-<li><a href="../argo_archive_list-label-keys/">argo archive list-label-keys</a>    - list workflows label keys in the archive</li>
-<li><a href="../argo_archive_list-label-values/">argo archive list-label-values</a>    - get workflow label values in the archive</li>
-<li><a href="../argo_archive_resubmit/">argo archive resubmit</a>  - resubmit one or more workflows</li>
+<li><a href="../argo_archive/">argo archive</a>    - manage the workflow archive</li>
 </ul>
 
               
@@ -2899,41 +2869,6 @@
       </main>
       
         <footer class="md-footer">
-  
-    <nav class="md-footer__inner md-grid" aria-label="Footer">
-      
-        
-        <a href="../argo/" class="md-footer__link md-footer__link--prev" aria-label="Previous: argo" rel="prev">
-          <div class="md-footer__button md-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
-          </div>
-          <div class="md-footer__title">
-            <div class="md-ellipsis">
-              <span class="md-footer__direction">
-                Previous
-              </span>
-              argo
-            </div>
-          </div>
-        </a>
-      
-      
-        
-        <a href="../argo_archive_delete/" class="md-footer__link md-footer__link--next" aria-label="Next: argo archive delete" rel="next">
-          <div class="md-footer__title">
-            <div class="md-ellipsis">
-              <span class="md-footer__direction">
-                Next
-              </span>
-              argo archive delete
-            </div>
-          </div>
-          <div class="md-footer__button md-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
-          </div>
-        </a>
-      
-    </nav>
   
   <div class="md-footer-meta md-typeset">
     <div class="md-footer-meta__inner md-grid">
