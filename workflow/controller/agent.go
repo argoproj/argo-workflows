@@ -128,7 +128,11 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		return nil, err
 	}
 
-	pluginSidecars := woc.getExecutorPlugins()
+	pluginSidecars, pluginVolumes, err := woc.getExecutorPlugins(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	envVars := []apiv1.EnvVar{
 		{Name: common.EnvVarWorkflowName, Value: woc.wf.Name},
 		{Name: common.EnvAgentPatchRate, Value: env.LookupEnvStringOr(common.EnvAgentPatchRate, GetRequeueTime().String())},
@@ -150,10 +154,11 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		return nil, fmt.Errorf("failed to get token volumes: %w", err)
 	}
 
-	podVolumes := []apiv1.Volume{
+	podVolumes := append(
+		pluginVolumes,
 		volumeVarArgo,
 		*tokenVolume,
-	}
+	)
 	podVolumeMounts := []apiv1.VolumeMount{
 		volumeMountVarArgo,
 		*tokenVolumeMount,
@@ -251,14 +256,16 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	return created, nil
 }
 
-func (woc *wfOperationCtx) getExecutorPlugins() []apiv1.Container {
+func (woc *wfOperationCtx) getExecutorPlugins(ctx context.Context) ([]apiv1.Container, []apiv1.Volume, error) {
 	var sidecars []apiv1.Container
+	var volumes []apiv1.Volume
 	namespaces := map[string]bool{} // de-dupes executorPlugins when their namespaces are the same
 	namespaces[woc.controller.namespace] = true
 	namespaces[woc.wf.Namespace] = true
 	for namespace := range namespaces {
 		for _, plug := range woc.controller.executorPlugins[namespace] {
-			c := plug.Spec.Sidecar.Container.DeepCopy()
+			s := plug.Spec.Sidecar
+			c := s.Container.DeepCopy()
 			c.VolumeMounts = append(c.VolumeMounts, apiv1.VolumeMount{
 				Name:      volumeMountVarArgo.Name,
 				MountPath: volumeMountVarArgo.MountPath,
@@ -266,10 +273,18 @@ func (woc *wfOperationCtx) getExecutorPlugins() []apiv1.Container {
 				// only mount the token for this plugin, not others
 				SubPath: c.Name,
 			})
+			if s.AutomountServiceAccountToken {
+				volume, volumeMount, err := woc.getServiceAccountTokenVolume(ctx, plug.Name+"-executor-plugin")
+				if err != nil {
+					return nil, nil, err
+				}
+				volumes = append(volumes, *volume)
+				c.VolumeMounts = append(c.VolumeMounts, *volumeMount)
+			}
 			sidecars = append(sidecars, *c)
 		}
 	}
-	return sidecars
+	return sidecars, volumes, nil
 }
 
 func addresses(containers []apiv1.Container) []string {

@@ -82,6 +82,8 @@ The emissary will exit with code 64 if it fails. This may indicate a bug in the 
 
 ## Kubernetes API (k8sapi)
 
+⚠️Deprecated.
+
 * Reliability:
     * Works on GKE Autopilot
 * Most secure:

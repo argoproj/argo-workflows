@@ -12,7 +12,6 @@ Name | Type | Description | Notes
 **labels** | **str** | Labels adds to metadata.labels | [optional] 
 **name** | **str** | Name overrides metadata.name | [optional] 
 **owner_reference** | [**OwnerReference**](OwnerReference.md) |  | [optional] 
-**parameter_file** | **str** | ParameterFile holds a reference to a parameter file. This option is not supported in API | [optional] 
 **parameters** | **[str]** | Parameters passes input parameters to workflow | [optional] 
 **pod_priority_class_name** | **str** | Set the podPriorityClassName of the workflow | [optional] 
 **priority** | **int** | Priority is used if controller is configured to process limited number of workflows in parallel, higher priority workflows are processed first. | [optional] 
