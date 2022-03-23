@@ -4,16 +4,24 @@ version: 2.1
 
 orbs:
   aws-cli: circleci/aws-cli@2.1.0
+  go: circleci/go@1.7.1
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/2.0/configuration-reference/#jobs
 jobs:
   example-job:
     docker:
-      # replace with your preferred image
+      # replace with your preferred image 
       - image: cimg/base:stable
     steps:
       - aws-cli/install
+  example-job-go:
+    docker:
+      # replace with your preferred image
+      - image: cimg/base:stable
+    steps:
+      - go/install
 workflows:
   example-workflow:
     jobs:
       - example-job
+      - example-job-go
