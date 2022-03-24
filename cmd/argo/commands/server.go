@@ -19,10 +19,12 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"golang.org/x/net/context"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	restclient "k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/utils/env"
 
 	"github.com/argoproj/argo-workflows/v3"
@@ -33,8 +35,11 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/types"
 	"github.com/argoproj/argo-workflows/v3/util/cmd"
 	"github.com/argoproj/argo-workflows/v3/util/help"
+	"github.com/argoproj/argo-workflows/v3/util/logs"
 	pprofutil "github.com/argoproj/argo-workflows/v3/util/pprof"
 	tlsutils "github.com/argoproj/argo-workflows/v3/util/tls"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
 )
 
 func NewServerCommand() *cobra.Command {
@@ -79,15 +84,33 @@ See %s`, help.ArgoServer),
 			config.QPS = 20.0
 
 			namespace := client.Namespace()
-			clients := &types.Clients{
-				Dynamic:     dynamic.NewForConfigOrDie(config),
-				EventSource: eventsource.NewForConfigOrDie(config),
-				Kubernetes:  kubernetes.NewForConfigOrDie(config),
-				Sensor:      sensor.NewForConfigOrDie(config),
-				Workflow:    wfclientset.NewForConfigOrDie(config),
-			}
-			ctx, cancel := context.WithCancel(context.Background())
+			clients := types.Profiles{common.PrimaryCluster(): newProfile(config)}
+
+			ctx, cancel := context.WithCancel(c.Context())
 			defer cancel()
+
+			items, err := kubernetes.NewForConfigOrDie(config).CoreV1().Secrets(namespace).List(ctx, metav1.ListOptions{LabelSelector: common.LabelKeyCluster})
+			if err != nil {
+				return err
+			}
+
+			for _, secret := range items.Items {
+				key := common.Cluster(&secret)
+
+				log.WithField("key", key).Info("Loading profile")
+
+				clientConfig, err := clientcmd.Load(secret.Data["kubeconfig"])
+				if err != nil {
+					return err
+				}
+
+				config, err := clientcmd.NewNonInteractiveClientConfig(*clientConfig, clientConfig.CurrentContext, &clientcmd.ConfigOverrides{}, clientcmd.NewDefaultClientConfigLoadingRules()).ClientConfig()
+				if err != nil {
+					return err
+				}
+
+				clients[key] = newProfile(config)
+			}
 
 			if !namespaced && managedNamespace != "" {
 				log.Warn("ignoring --managed-namespace because --namespaced is false")
@@ -114,7 +137,7 @@ See %s`, help.ArgoServer),
 
 				if tlsCertificateSecretName != "" {
 					log.Infof("Getting contents of Kubernetes secret %s for TLS Certificates", tlsCertificateSecretName)
-					tlsConfig, err = tlsutils.GetServerTLSConfigFromSecret(ctx, clients.Kubernetes, tlsCertificateSecretName, uint16(tlsMinVersion), namespace)
+					tlsConfig, err = tlsutils.GetServerTLSConfigFromSecret(ctx, clients.Primary().Kubernetes, tlsCertificateSecretName, uint16(tlsMinVersion), namespace)
 					if err != nil {
 						return err
 					}
@@ -248,4 +271,16 @@ See %s`, help.ArgoServer),
 	})
 
 	return &command
+}
+
+func newProfile(config *restclient.Config) *types.Profile {
+	logs.AddK8SLogTransportWrapper(config)
+	metrics.AddMetricsTransportWrapper(config)
+	return &types.Profile{
+		Dynamic:     dynamic.NewForConfigOrDie(config),
+		EventSource: eventsource.NewForConfigOrDie(config),
+		Kubernetes:  kubernetes.NewForConfigOrDie(config),
+		Sensor:      sensor.NewForConfigOrDie(config),
+		Workflow:    wfclientset.NewForConfigOrDie(config),
+	}
 }

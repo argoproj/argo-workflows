@@ -26,6 +26,7 @@ interface Chart {
 
 interface State {
     archivedWorkflows: boolean;
+    cluster: string;
     namespace: string;
     labels: string[];
     autocompleteLabels: string[];
@@ -58,6 +59,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
     constructor(props: RouteComponentProps<any>, context: any) {
         super(props, context);
         this.state = {
+            cluster: this.props.match.params.cluster,
             archivedWorkflows: !!this.queryParam('archivedWorkflows'),
             namespace: Utils.getNamespace(this.props.match.params.namespace) || '',
             labels: (this.queryParam('labels') || '').split(',').filter(v => v !== ''),
@@ -66,7 +68,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
     }
 
     public componentDidMount() {
-        this.fetchReport(this.state.namespace, this.state.labels, this.state.archivedWorkflows);
+        this.fetchReport(this.state.cluster, this.state.namespace, this.state.labels, this.state.archivedWorkflows);
         this.fetchWorkflowsLabels(this.state.archivedWorkflows);
     }
 
@@ -98,17 +100,22 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
     }
 
     private setLabel(name: string, value: string) {
-        this.fetchReport(this.state.namespace, this.state.labels.filter(label => !label.startsWith(name)).concat(name + '=' + value), this.state.archivedWorkflows);
+        this.fetchReport(
+            this.state.cluster,
+            this.state.namespace,
+            this.state.labels.filter(label => !label.startsWith(name)).concat(name + '=' + value),
+            this.state.archivedWorkflows
+        );
     }
 
-    private fetchReport(namespace: string, labels: string[], archivedWorkflows: boolean) {
+    private fetchReport(cluster: string, namespace: string, labels: string[], archivedWorkflows: boolean) {
         if (namespace === '' || labels.length === 0) {
             this.setState({namespace, labels, archivedWorkflows, charts: null});
             return;
         }
         (archivedWorkflows
             ? services.archivedWorkflows.list(namespace, '', '', [], labels, null, null, {limit})
-            : services.workflows.list(namespace, [], labels, {limit}, [
+            : services.workflows.list(cluster, namespace, [], labels, {limit}, [
                   'items.metadata.name',
                   'items.status.phase',
                   'items.status.startedAt',
@@ -281,7 +288,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                         <Checkbox
                             checked={this.state.archivedWorkflows}
                             onChange={checked => {
-                                this.fetchReport(this.state.namespace, this.state.labels, checked);
+                                this.fetchReport(this.state.cluster, this.state.namespace, this.state.labels, checked);
                                 this.fetchWorkflowsLabels(checked);
                             }}
                         />
@@ -291,7 +298,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                         <NamespaceFilter
                             value={this.state.namespace}
                             onChange={namespace => {
-                                this.fetchReport(namespace, this.state.labels, this.state.archivedWorkflows);
+                                this.fetchReport(this.state.cluster, namespace, this.state.labels, this.state.archivedWorkflows);
                             }}
                         />
                     </div>
@@ -302,12 +309,13 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                             tags={this.state.labels}
                             autocomplete={this.state.archivedWorkflows ? this.state.autocompleteLabels : null}
                             sublistQuery={this.state.archivedWorkflows ? this.fetchArchivedWorkflowsLabels : null}
-                            onChange={labels => this.fetchReport(this.state.namespace, labels, this.state.archivedWorkflows)}
+                            onChange={labels => this.fetchReport(this.state.cluster, this.state.namespace, labels, this.state.archivedWorkflows)}
                         />
                     </div>
                     <div className=' columns small-12 xlarge-12'>
                         <p className='wf-filters-container__title'>Workflow Template</p>
                         <DataLoaderDropdown
+                            value={this.workflowTemplate}
                             load={() =>
                                 services.workflowTemplate
                                     .list(this.state.namespace, [])
@@ -320,6 +328,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                     <div className=' columns small-12 xlarge-12'>
                         <p className='wf-filters-container__title'>Cron Workflow</p>
                         <DataLoaderDropdown
+                            value={this.cronWorkflow}
                             load={() => services.cronWorkflows.list(this.state.namespace).then(list => list.map(x => x.metadata.name))}
                             onChange={value => (this.cronWorkflow = value)}
                         />

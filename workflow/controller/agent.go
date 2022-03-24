@@ -149,7 +149,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	}
 
 	serviceAccountName := woc.execWf.Spec.ServiceAccountName
-	tokenVolume, tokenVolumeMount, err := woc.getServiceAccountTokenVolume(ctx, common.LocalCluster, serviceAccountName)
+	tokenVolume, tokenVolumeMount, err := woc.getServiceAccountTokenVolume(ctx, common.PrimaryCluster(), serviceAccountName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get token volumes: %w", err)
 	}
@@ -278,7 +278,7 @@ func (woc *wfOperationCtx) getExecutorPlugins(ctx context.Context) ([]apiv1.Cont
 				SubPath: c.Name,
 			})
 			if s.AutomountServiceAccountToken {
-				volume, volumeMount, err := woc.getServiceAccountTokenVolume(ctx, common.LocalCluster, plug.Name+"-executor-plugin")
+				volume, volumeMount, err := woc.getServiceAccountTokenVolume(ctx, common.PrimaryCluster(), plug.Name+"-executor-plugin")
 				if err != nil {
 					return nil, nil, err
 				}

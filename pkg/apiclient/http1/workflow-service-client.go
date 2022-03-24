@@ -26,6 +26,11 @@ func (h WorkflowServiceClient) ListWorkflows(_ context.Context, in *workflowpkg.
 	return out, h.Get(in, out, "/api/v1/workflows/{namespace}")
 }
 
+func (h WorkflowServiceClient) ListWorkflowsV2(_ context.Context, in *workflowpkg.WorkflowListRequest, _ ...grpc.CallOption) (*wfv1.WorkflowList, error) {
+	out := &wfv1.WorkflowList{}
+	return out, h.Get(in, out, "/api/v2/{cluster}/workflows/{namespace}")
+}
+
 func (h WorkflowServiceClient) WatchWorkflows(ctx context.Context, in *workflowpkg.WatchWorkflowsRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WatchWorkflowsClient, error) {
 	reader, err := h.EventStreamReader(in, "/api/v1/workflow-events/{namespace}")
 	if err != nil {

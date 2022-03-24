@@ -1166,7 +1166,6 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
-  cluster: cluster-0
   containerRuntimeExecutors: |
     - name: emissary
       selector:

@@ -87,6 +87,7 @@ class IoArgoprojWorkflowV1alpha1InfoResponse(ModelNormal):
         """
         lazy_import()
         return {
+            'clusters': ([str],),  # noqa: E501
             'links': ([IoArgoprojWorkflowV1alpha1Link],),  # noqa: E501
             'managed_namespace': (str,),  # noqa: E501
             'modals': ({str: (bool,)},),  # noqa: E501
@@ -99,6 +100,7 @@ class IoArgoprojWorkflowV1alpha1InfoResponse(ModelNormal):
 
 
     attribute_map = {
+        'clusters': 'clusters',  # noqa: E501
         'links': 'links',  # noqa: E501
         'managed_namespace': 'managedNamespace',  # noqa: E501
         'modals': 'modals',  # noqa: E501
@@ -146,6 +148,7 @@ class IoArgoprojWorkflowV1alpha1InfoResponse(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            clusters ([str]): [optional]  # noqa: E501
             links ([IoArgoprojWorkflowV1alpha1Link]): [optional]  # noqa: E501
             managed_namespace (str): [optional]  # noqa: E501
             modals ({str: (bool,)}): [optional]  # noqa: E501
@@ -231,6 +234,7 @@ class IoArgoprojWorkflowV1alpha1InfoResponse(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            clusters ([str]): [optional]  # noqa: E501
             links ([IoArgoprojWorkflowV1alpha1Link]): [optional]  # noqa: E501
             managed_namespace (str): [optional]  # noqa: E501
             modals ({str: (bool,)}): [optional]  # noqa: E501

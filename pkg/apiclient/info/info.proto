@@ -15,6 +15,7 @@ message InfoResponse {
     // which modals to show
     map<string,bool> modals = 3;
     string navColor = 4;
+    repeated string clusters = 5;
 }
 
 message GetVersionRequest {

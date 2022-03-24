@@ -26,6 +26,7 @@ import (
 	workflowtemplateserver "github.com/argoproj/argo-workflows/v3/server/workflowtemplate"
 	"github.com/argoproj/argo-workflows/v3/util/help"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 var (
@@ -64,12 +65,14 @@ func newArgoKubeClient(ctx context.Context, clientConfig clientcmd.ClientConfig,
 	if err != nil {
 		return nil, nil, err
 	}
-	clients := &types.Clients{
-		Dynamic:     dynamicClient,
-		EventSource: eventSourceInterface,
-		Kubernetes:  kubeClient,
-		Sensor:      sensorInterface,
-		Workflow:    wfClient,
+	clients := types.Profiles{
+		types.ProfileKey(common.PrimaryCluster()): &types.Clients{
+			Dynamic:     dynamicClient,
+			EventSource: eventSourceInterface,
+			Kubernetes:  kubeClient,
+			Sensor:      sensorInterface,
+			Workflow:    wfClient,
+		},
 	}
 	gatekeeper, err := auth.NewGatekeeper(auth.Modes{auth.Server: true}, clients, restConfig, nil, auth.DefaultClientForAuthorization, "unused", "unused", false, nil)
 	if err != nil {

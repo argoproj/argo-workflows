@@ -74,7 +74,7 @@ type argoServer struct {
 	hsts                     bool
 	namespace                string
 	managedNamespace         string
-	clients                  *types.Clients
+	clients                  types.Profiles
 	gatekeeper               auth.Gatekeeper
 	oAuth2Service            sso.Interface
 	configController         config.Controller
@@ -92,7 +92,7 @@ type ArgoServerOpts struct {
 	TLSConfig  *tls.Config
 	Namespaced bool
 	Namespace  string
-	Clients    *types.Clients
+	Clients    types.Profiles
 	RestConfig *rest.Config
 	AuthModes  auth.Modes
 	// config map name
@@ -123,7 +123,7 @@ func getResourceCacheNamespace(opts ArgoServerOpts) string {
 }
 
 func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error) {
-	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.Clients.Kubernetes, emptyConfigFunc)
+	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.Clients.Primary().Kubernetes, emptyConfigFunc)
 	var resourceCache *cache.ResourceCache = nil
 	ssoIf := sso.NullSSO
 	if opts.AuthModes[auth.SSO] {
@@ -131,11 +131,11 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		if err != nil {
 			return nil, err
 		}
-		ssoIf, err = sso.New(c.(*Config).SSO, opts.Clients.Kubernetes.CoreV1().Secrets(opts.Namespace), opts.BaseHRef, opts.TLSConfig != nil)
+		ssoIf, err = sso.New(c.(*Config).SSO, opts.Clients.Primary().Kubernetes.CoreV1().Secrets(opts.Namespace), opts.BaseHRef, opts.TLSConfig != nil)
 		if err != nil {
 			return nil, err
 		}
-		resourceCache = cache.NewResourceCache(opts.Clients.Kubernetes, ctx, getResourceCacheNamespace(opts))
+		resourceCache = cache.NewResourceCache(opts.Clients.Primary().Kubernetes, ctx, getResourceCacheNamespace(opts))
 		log.Info("SSO enabled")
 	} else {
 		log.Info("SSO disabled")
@@ -183,7 +183,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	wfArchive := sqldb.NullWorkflowArchive
 	persistence := config.Persistence
 	if persistence != nil {
-		session, tableName, err := sqldb.CreateDBSession(as.clients.Kubernetes, as.namespace, persistence)
+		session, tableName, err := sqldb.CreateDBSession(as.clients.Primary().Kubernetes, as.namespace, persistence)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -197,8 +197,8 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		// disable the archiving - and still read old records
 		wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), as.managedNamespace, instanceIDService)
 	}
-	eventRecorderManager := events.NewEventRecorderManager(as.clients.Kubernetes)
-	artifactRepositories := artifactrepositories.New(as.clients.Kubernetes, as.managedNamespace, &config.ArtifactRepository)
+	eventRecorderManager := events.NewEventRecorderManager(as.clients.Primary().Kubernetes)
+	artifactRepositories := artifactrepositories.New(as.clients.Primary().Kubernetes, as.managedNamespace, &config.ArtifactRepository)
 	artifactServer := artifacts.NewArtifactServer(as.gatekeeper, hydrator.New(offloadRepo), wfArchive, instanceIDService, artifactRepositories)
 	eventServer := event.NewController(instanceIDService, eventRecorderManager, as.eventQueueSize, as.eventWorkerCount, as.eventAsyncDispatch)
 	grpcServer := as.newGRPCServer(instanceIDService, offloadRepo, wfArchive, eventServer, config.Links, config.NavColor)
@@ -279,7 +279,7 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 
 	grpcServer := grpc.NewServer(sOpts...)
 
-	infopkg.RegisterInfoServiceServer(grpcServer, info.NewInfoServer(as.managedNamespace, links, navColor))
+	infopkg.RegisterInfoServiceServer(grpcServer, info.NewInfoServer(as.managedNamespace, links, navColor, as.clients.Keys()))
 	eventpkg.RegisterEventServiceServer(grpcServer, eventServer)
 	eventsourcepkg.RegisterEventSourceServiceServer(grpcServer, eventsource.NewEventSourceServer())
 	pipelinepkg.RegisterPipelineServiceServer(grpcServer, pipeline.NewPipelineServer())
@@ -313,7 +313,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
-	webhookInterceptor := webhook.Interceptor(as.clients.Kubernetes)
+	webhookInterceptor := webhook.Interceptor(as.clients.Primary().Kubernetes)
 
 	// HTTP 1.1+JSON Server
 	// grpc-ecosystem/grpc-gateway is used to proxy HTTP requests to the corresponding gRPC call

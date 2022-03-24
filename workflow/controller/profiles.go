@@ -2,20 +2,15 @@ package controller
 
 import (
 	"fmt"
-
-	log "github.com/sirupsen/logrus"
 )
 
 type profiles map[profileKey]*profile
 
-func (ps profiles) find(workflowNamespace, cluster, namespace string) (*profile, error) {
-	for _, p := range ps {
-		if p.matches(workflowNamespace, cluster, namespace) {
-			log.Infof("%s,%s,%s -> %s,%s,%s", workflowNamespace, cluster, namespace, p.workflowNamespace, p.cluster, p.namespace)
-			return p, nil
-		}
+func (ps profiles) find(cluster string) (*profile, error) {
+	if p, ok := ps[cluster]; ok {
+		return p, nil
 	}
-	return nil, fmt.Errorf("profile not found for policy %s,%s,%s", workflowNamespace, cluster, namespace)
+	return nil, fmt.Errorf("profile not found for cluster %q", cluster)
 }
 
 func (ps profiles) run(done <-chan struct{}) {

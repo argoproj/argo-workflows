@@ -31,28 +31,33 @@ func (wfc *WorkflowController) loadProfiles(ctx context.Context, kubernetesClien
 }
 
 func (wfc *WorkflowController) loadPrimaryProfile(restConfig *rest.Config, kubernetesClient kubernetes.Interface, workflowClient wfclientset.Interface, metadataClient metadata.Interface) {
-	log.Info("Loading primary profile")
-	wfc.profiles[wfc.primaryProfileKey()] = &profile{
-		policy: policy{
-			workflowNamespace: wfc.GetManagedNamespace(),
-			cluster:           common.LocalCluster,
-			namespace:         wfc.GetManagedNamespace(),
-		},
+
+	cluster := common.PrimaryCluster()
+	namespace := wfc.GetManagedNamespace()
+
+	log.WithField("cluster", cluster).
+		WithField("namespace", namespace).
+		Info("Loading primary profile")
+
+	wfc.profiles[cluster] = &profile{
 		restConfig:         restConfig,
 		kubernetesClient:   kubernetesClient,
 		workflowClient:     workflowClient,
 		metadataClient:     metadataClient,
-		podInformer:        wfc.newPodInformer(kubernetesClient, common.LocalCluster, wfc.GetManagedNamespace()),
-		podGCInformer:      wfc.newPodGCInformer(metadataClient, common.LocalCluster, wfc.GetManagedNamespace()),
-		taskResultInformer: wfc.newWorkflowTaskResultInformer(workflowClient, common.LocalCluster, wfc.GetManagedNamespace()),
+		podInformer:        wfc.newPodInformer(kubernetesClient, cluster, namespace),
+		podGCInformer:      wfc.newPodGCInformer(metadataClient, cluster, namespace),
+		taskResultInformer: wfc.newWorkflowTaskResultInformer(workflowClient, cluster, namespace),
 	}
 }
 
 func (wfc *WorkflowController) loadProfile(secret *apiv1.Secret) error {
 
-	key := profileKey(wfc.clusterOf(secret))
+	cluster := common.Cluster(secret)
+	namespace := common.Namespace(secret)
 
-	log.WithField("key", key).Info("Loading profile")
+	log.WithField("cluster", cluster).
+		WithField("namespace", namespace).
+		Info("Loading profile")
 
 	clientConfig, err := clientcmd.Load(secret.Data["kubeconfig"])
 	if err != nil {
@@ -72,19 +77,6 @@ func (wfc *WorkflowController) loadProfile(secret *apiv1.Secret) error {
 		return err
 	}
 
-	namespace := common.Namespace(secret)
-
-	workflowNamespace, cluster := common.ClusterWorkflowNamespace(secret, wfc.primaryCluster())
-	log.
-		WithField("currentContext", clientConfig.CurrentContext).
-		WithField("configHost", config.Host).
-		WithField("secretNamespace", secret.Namespace).
-		WithField("secretName", secret.Name).
-		WithField("workflowNamespace", workflowNamespace).
-		WithField("cluster", cluster).
-		WithField("namespace", namespace).
-		Info("Profile configuration")
-
 	workflowClient, err := wfclientset.NewForConfig(config)
 	if err != nil {
 		return err
@@ -94,11 +86,6 @@ func (wfc *WorkflowController) loadProfile(secret *apiv1.Secret) error {
 		return err
 	}
 	p := &profile{
-		policy: policy{
-			workflowNamespace: workflowNamespace,
-			cluster:           cluster,
-			namespace:         namespace,
-		},
 		restConfig:         config,
 		kubernetesClient:   kubernetesClient,
 		workflowClient:     workflowClient,
@@ -108,26 +95,14 @@ func (wfc *WorkflowController) loadProfile(secret *apiv1.Secret) error {
 		taskResultInformer: wfc.newWorkflowTaskResultInformer(workflowClient, cluster, namespace),
 		done:               make(chan struct{}),
 	}
-	wfc.profiles[key] = p
+	wfc.profiles[cluster] = p
 	return nil
 }
 
-func (wfc *WorkflowController) primaryCluster() string {
-	return wfc.Config.Cluster
-}
-
-func (wfc *WorkflowController) primaryProfileKey() profileKey {
-	return profileKey(wfc.Config.Cluster)
-}
-
 func (wfc *WorkflowController) primaryProfile() *profile {
-	return wfc.profiles[wfc.primaryProfileKey()]
+	return wfc.profiles[common.PrimaryCluster()]
 }
 
-func (wfc *WorkflowController) profile(workflowNamespace, cluster, namespace string) (*profile, error) {
-	return wfc.profiles.find(workflowNamespace, cluster, namespace)
-}
-
-func (wfc *WorkflowController) clusterOf(obj metav1.Object) string {
-	return common.Cluster(obj, wfc.primaryCluster())
+func (wfc *WorkflowController) profile(cluster string) (*profile, error) {
+	return wfc.profiles.find(cluster)
 }

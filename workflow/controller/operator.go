@@ -694,23 +694,32 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 
 func (woc *wfOperationCtx) deleteTaskResults(ctx context.Context) error {
 	deletePropagationBackground := metav1.DeletePropagationBackground
-	for _, p := range woc.controller.profiles {
-		if p.workflowClient == nil {
-			continue
+	for key := range woc.execWf.Spec.GetClusterNamespaces() {
+		parts := strings.Split(key, "/")
+		cluster, namespace := parts[0], parts[1]
+		if cluster == "" {
+			cluster = common.PrimaryCluster()
+		}
+		if namespace == "" {
+			namespace = woc.wf.Namespace
+		}
+		p, err := woc.profile(cluster)
+		if err != nil {
+			return err
 		}
 		labelSelector := labels.NewSelector().
-			Add(woc.controller.clusterReq(p.cluster)).
+			Add(woc.controller.clusterReq(cluster)).
 			Add(woc.workflowReq()).
 			String()
 		log.WithField("labelSelector", labelSelector).Info("deleting task results")
-		err := p.workflowClient.ArgoprojV1alpha1().WorkflowTaskResults(p.namespace).
+		err = p.workflowClient.ArgoprojV1alpha1().WorkflowTaskResults(namespace).
 			DeleteCollection(
 				ctx,
 				metav1.DeleteOptions{PropagationPolicy: &deletePropagationBackground},
 				metav1.ListOptions{LabelSelector: labelSelector},
 			)
 		if err != nil && !apierr.IsNotFound(err) {
-			return fmt.Errorf("failed to delete task-results in cluster %q: %w", p.cluster, err)
+			return fmt.Errorf("failed to delete task-results in cluster %q namespace %q: %w", cluster, namespace, err)
 		}
 	}
 	return nil
@@ -1341,7 +1350,7 @@ func podHasContainerNeedingTermination(pod *apiv1.Pod, tmpl wfv1.Template) bool 
 
 func (woc *wfOperationCtx) cleanUpPod(pod *apiv1.Pod, tmpl wfv1.Template) {
 	if podHasContainerNeedingTermination(pod, tmpl) {
-		woc.controller.queuePodForCleanup(woc.wf.Namespace, woc.clusterOf(pod), pod.Namespace, pod.Name, terminateContainers)
+		woc.controller.queuePodForCleanup(common.Cluster(pod), pod.Namespace, pod.Name, terminateContainers)
 	}
 }
 
@@ -2074,7 +2083,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 			}
 			woc.updated = true
 		}
-		woc.controller.queuePodForCleanup(woc.wf.Namespace, common.LocalCluster, woc.wf.Namespace, woc.getAgentPodName(), deletePod)
+		woc.controller.queuePodForCleanup(common.PrimaryCluster(), woc.wf.Namespace, woc.getAgentPodName(), deletePod)
 	}
 }
 
@@ -2278,7 +2287,7 @@ func (woc *wfOperationCtx) getPodByNode(node *wfv1.NodeStatus) (*apiv1.Pod, erro
 	}
 	cluster, namespace := woc.clusterNamespaceForTemplate(tmpl)
 	podName := woc.getPodName(node.Name, node.TemplateName)
-	return woc.controller.getPod(woc.wf.Namespace, cluster, namespace, podName)
+	return woc.controller.getPod(cluster, namespace, podName)
 }
 
 func (woc *wfOperationCtx) recordNodePhaseEvent(node *wfv1.NodeStatus) {
@@ -3630,7 +3639,7 @@ func (woc *wfOperationCtx) getServiceAccountTokenName(ctx context.Context, clust
 	if name == "" {
 		name = "default"
 	}
-	p, err := woc.profile(cluster, woc.wf.Namespace)
+	p, err := woc.profile(cluster)
 	if err != nil {
 		return "", err
 	}

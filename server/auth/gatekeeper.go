@@ -58,7 +58,7 @@ type ClientForAuthorization func(authorization string) (*rest.Config, *servertyp
 type gatekeeper struct {
 	Modes Modes
 	// global clients, not to be used if there are better ones
-	clients                *servertypes.Clients
+	clients                servertypes.Profiles
 	restConfig             *rest.Config
 	ssoIf                  sso.Interface
 	clientForAuthorization ClientForAuthorization
@@ -69,7 +69,7 @@ type gatekeeper struct {
 	cache        *cache.ResourceCache
 }
 
-func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.Config, ssoIf sso.Interface, clientForAuthorization ClientForAuthorization, namespace string, ssoNamespace string, namespaced bool, cache *cache.ResourceCache) (Gatekeeper, error) {
+func NewGatekeeper(modes Modes, clients servertypes.Profiles, restConfig *rest.Config, ssoIf sso.Interface, clientForAuthorization ClientForAuthorization, namespace string, ssoNamespace string, namespaced bool, cache *cache.ResourceCache) (Gatekeeper, error) {
 	if len(modes) == 0 {
 		return nil, fmt.Errorf("must specify at least one auth mode")
 	}
@@ -190,6 +190,10 @@ func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertyp
 	if !valid {
 		return nil, nil, status.Error(codes.Unauthenticated, "token not valid for running mode")
 	}
+
+	cluster := servertypes.Cluster(req)
+	log.WithField("cluster", cluster).Info("Getting clients")
+
 	switch mode {
 	case Client:
 		restConfig, clients, err := s.clientForAuthorization(authorization)
@@ -200,7 +204,8 @@ func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertyp
 		return clients, claims, nil
 	case Server:
 		claims, _ := serviceaccount.ClaimSetFor(s.restConfig)
-		return s.clients, claims, nil
+		p, err := s.clients.Find(cluster)
+		return p, claims, err
 	case SSO:
 		claims, err := s.ssoIf.Authorize(authorization)
 		if err != nil {
@@ -216,7 +221,8 @@ func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertyp
 		} else {
 			// important! write an audit entry (i.e. log entry) so we know which user performed an operation
 			log.WithFields(addClaimsLogFields(claims, nil)).Info("using the default service account for user")
-			return s.clients, claims, nil
+			p, err := s.clients.Find(cluster)
+			return p, claims, err
 		}
 	default:
 		panic("this should never happen")
@@ -292,7 +298,7 @@ func (s *gatekeeper) getClientsForServiceAccount(claims *types.Claims, serviceAc
 	return clients, nil
 }
 
-func (s *gatekeeper) rbacAuthorization(claims *types.Claims, req interface{}) (*servertypes.Clients, error) {
+func (s *gatekeeper) rbacAuthorization(claims *types.Claims, req interface{}) (*servertypes.Profile, error) {
 	ssoDelegationAllowed, ssoDelegated := false, false
 	loginAccount, err := s.getServiceAccount(claims, s.ssoNamespace)
 	if err != nil {

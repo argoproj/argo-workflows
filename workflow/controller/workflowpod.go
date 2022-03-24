@@ -224,13 +224,13 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 
 	cluster, namespace := woc.clusterNamespaceForTemplate(tmpl)
-	if cluster == common.LocalCluster && namespace == woc.wf.Namespace {
+	if cluster == common.PrimaryCluster() && namespace == woc.wf.Namespace {
 		pod.SetOwnerReferences([]metav1.OwnerReference{
 			*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
 		})
 	}
-	if cluster != common.LocalCluster {
-		pod.Labels[common.LabelKeyCluster] = woc.controller.Config.Cluster
+	if cluster != common.PrimaryCluster() {
+		pod.Labels[common.LabelKeyCluster] = common.PrimaryCluster()
 	}
 	if namespace != woc.wf.Namespace {
 		pod.Annotations[common.AnnotationKeyWorkflowNamespace] = woc.wf.Namespace
@@ -488,7 +488,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	log.Info("Creating Pod")
 
-	p, err := woc.profile(cluster, namespace)
+	p, err := woc.profile(cluster)
 	if err != nil {
 		return nil, err
 	}
@@ -515,8 +515,8 @@ func (woc *wfOperationCtx) podExists(nodeID string) (existing *apiv1.Pod, exists
 	if tmpl == nil {
 		return nil, false, nil
 	}
-	cluster, namespace := woc.clusterNamespaceForTemplate(tmpl)
-	p, err := woc.profile(cluster, namespace)
+	cluster := woc.clusterForTemplate(tmpl)
+	p, err := woc.profile(cluster)
 	if err != nil {
 		return nil, false, err
 	}
@@ -543,11 +543,18 @@ func (woc *wfOperationCtx) podExists(nodeID string) (existing *apiv1.Pod, exists
 }
 
 func (woc *wfOperationCtx) clusterNamespaceForTemplate(tmpl *wfv1.Template) (string, string) {
-	return tmpl.Cluster, woc.namespaceForTemplate(tmpl)
+	return woc.clusterForTemplate(tmpl), woc.namespaceForTemplate(tmpl)
+}
+
+func (woc *wfOperationCtx) clusterForTemplate(tmpl *wfv1.Template) string {
+	if tmpl.Cluster != "" {
+		return tmpl.Cluster
+	}
+	return common.PrimaryCluster()
 }
 
 func (woc *wfOperationCtx) namespaceForTemplate(tmpl *wfv1.Template) string {
-	if tmpl.Namespace != common.NamespaceUndefined {
+	if tmpl.Namespace != "" {
 		return tmpl.Namespace
 	}
 	return woc.wf.Namespace
@@ -679,9 +686,9 @@ func (woc *wfOperationCtx) createEnvVars(tmpl *wfv1.Template) []apiv1.EnvVar {
 	}
 
 	cluster, namespace := woc.clusterNamespaceForTemplate(tmpl)
-	if cluster != common.LocalCluster {
+	if cluster != common.PrimaryCluster() {
 		execEnvVars = append(execEnvVars,
-			apiv1.EnvVar{Name: common.EnvVarWorkflowCluster, Value: woc.controller.Config.Cluster},
+			apiv1.EnvVar{Name: common.EnvVarWorkflowCluster, Value: common.PrimaryCluster()},
 		)
 	}
 	if namespace != woc.wf.Namespace {
@@ -1153,7 +1160,7 @@ func (woc *wfOperationCtx) setupServiceAccount(ctx context.Context, pod *apiv1.P
 		executorServiceAccountName = woc.execWf.Spec.Executor.ServiceAccountName
 	}
 	if executorServiceAccountName != "" {
-		tokenName, err := woc.getServiceAccountTokenName(ctx, woc.clusterOf(pod), executorServiceAccountName)
+		tokenName, err := woc.getServiceAccountTokenName(ctx, common.Cluster(pod), executorServiceAccountName)
 		if err != nil {
 			return err
 		}

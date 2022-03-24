@@ -10,7 +10,6 @@ import (
 )
 
 type profile struct {
-	policy
 	// restConfig is used by controller to send a SIGUSR1 to the wait sidecar using remotecommand.NewSPDYExecutor().
 	restConfig         *rest.Config
 	kubernetesClient   kubernetes.Interface

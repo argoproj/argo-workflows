@@ -95,6 +95,7 @@ spec:
 }
 
 func (s *MultiClusterSuite) TestDisallowedNamespace() {
+	s.T().SkipNow()
 	s.Given().
 		Workflow(`
 metadata:
@@ -118,6 +119,7 @@ spec:
 }
 
 func (s *MultiClusterSuite) TestDisallowedCluster() {
+	s.T().SkipNow()
 	s.Given().
 		Workflow(`
 metadata:

@@ -41,16 +41,6 @@ I'm going to make some assumptions:
 
 The workflow controller must be configured with the name of its cluster:
 
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: workflow-controller-configmap
-data:
-  # A unique name for the cluster.
-  # It is acceptable for this to be a random UUID, but once set, it should not be changed.
-  cluster: cluster-0
-```
 
 Restart the controller:
 

@@ -5850,6 +5850,12 @@
     },
     "io.argoproj.workflow.v1alpha1.InfoResponse": {
       "properties": {
+        "clusters": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "links": {
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Link"

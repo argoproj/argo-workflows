@@ -29,6 +29,10 @@ func (o OfflineWorkflowServiceClient) ListWorkflows(context.Context, *workflowpk
 	return nil, OfflineErr
 }
 
+func (o OfflineWorkflowServiceClient) ListWorkflowsV2(context.Context, *workflowpkg.WorkflowListRequest, ...grpc.CallOption) (*wfv1.WorkflowList, error) {
+	return nil, OfflineErr
+}
+
 func (o OfflineWorkflowServiceClient) WatchWorkflows(context.Context, *workflowpkg.WatchWorkflowsRequest, ...grpc.CallOption) (workflowpkg.WorkflowService_WatchWorkflowsClient, error) {
 	return nil, OfflineErr
 }

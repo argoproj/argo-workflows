@@ -14,6 +14,7 @@ type infoServer struct {
 	managedNamespace string
 	links            []*wfv1.Link
 	navColor         string
+	clusters         []string
 }
 
 func (i *infoServer) GetUserInfo(ctx context.Context, _ *infopkg.GetUserInfoRequest) (*infopkg.GetUserInfoResponse, error) {
@@ -42,6 +43,7 @@ func (i *infoServer) GetInfo(context.Context, *infopkg.GetInfoRequest) (*infopkg
 		Links:            i.links,
 		Modals:           modals,
 		NavColor:         i.navColor,
+		Clusters:         i.clusters,
 	}, nil
 }
 
@@ -50,6 +52,6 @@ func (i *infoServer) GetVersion(context.Context, *infopkg.GetVersionRequest) (*w
 	return &version, nil
 }
 
-func NewInfoServer(managedNamespace string, links []*wfv1.Link, navColor string) infopkg.InfoServiceServer {
-	return &infoServer{managedNamespace, links, navColor}
+func NewInfoServer(managedNamespace string, links []*wfv1.Link, navColor string, clusters []string) infopkg.InfoServiceServer {
+	return &infoServer{managedNamespace, links, navColor, clusters}
 }

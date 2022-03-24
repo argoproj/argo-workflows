@@ -9,6 +9,7 @@ export interface Info {
     managedNamespace?: string;
     links?: Link[];
     navColor?: string;
+    clusters?: string[];
 }
 
 export interface Version {

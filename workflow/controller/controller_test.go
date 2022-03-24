@@ -817,6 +817,6 @@ spec:
 	woc.operate(ctx)
 	controller.processNextPodCleanupItem(ctx)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
-	podCleanupKey := newPodCleanupKey("my-wf-ns", common.LocalCluster, "test", "my-wf", labelPodCompleted)
+	podCleanupKey := newPodCleanupKey(common.PrimaryCluster(), "test", "my-wf", labelPodCompleted)
 	assert.Equal(t, 0, controller.podCleanupQueue.NumRequeues(podCleanupKey))
 }

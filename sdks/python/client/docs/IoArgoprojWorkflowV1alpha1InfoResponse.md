@@ -4,6 +4,7 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**clusters** | **[str]** |  | [optional] 
 **links** | [**[IoArgoprojWorkflowV1alpha1Link]**](IoArgoprojWorkflowV1alpha1Link.md) |  | [optional] 
 **managed_namespace** | **str** |  | [optional] 
 **modals** | **{str: (bool,)}** |  | [optional] 

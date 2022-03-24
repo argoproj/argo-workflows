@@ -1,24 +1,16 @@
 ## argo cluster get-profile
 
-print the profile for the remote cluster
+print the profile for the  cluster
 
 ```
-argo cluster get-profile local_cluster remote_cluster [flags]
+argo cluster get-profile cluster namespace service_account_name [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help                                       help for get-profile
-      --local-namespace string                     restrict to this local namespace (empty for all namespaces)
-      --read                                       create roles with read permissions
-      --remote-certificate-authority-file string   file containing remote certificate authority
-      --remote-context string                      remote context
-      --remote-insecure-skip-tls-verify            skip certificate for remote server, do not use in production
-      --remote-install-namespace string            the remote namespace that the service account is created in
-      --remote-namespace string                    restrict the this remote namespace (empty for all namespaces)
-      --remote-server string                       URL for remote server
-      --write                                      create roles with write permission
+      --certificate-authority-file string   file containing  certificate authority
+  -h, --help                                help for get-profile
 ```
 
 ### Options inherited from parent commands

@@ -86,7 +86,7 @@ const config = {
       'X-Frame-Options': 'SAMEORIGIN'
     },
     proxy: {
-      "/api/v1": {
+      "/api": {
         "target": isProd ? "" : "http://localhost:2746",
         "secure": false
       },

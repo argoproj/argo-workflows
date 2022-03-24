@@ -109,13 +109,6 @@ const (
 	// ExecutorResourceManifestPath is the path which init will write the a manifest file to for resource templates
 	ExecutorResourceManifestPath = "/tmp/manifest.yaml"
 
-	// LocalCluster is the alias of the local cluster.
-	// This is to help show the intention of code, must always be the empty string.
-	LocalCluster = ""
-	// NamespaceUndefined is indicates it was undefined.
-	// This is to help show the intention of code, must always be the empty string.
-	NamespaceUndefined = ""
-
 	// Various environment variables containing pod information exposed to the executor container(s)
 
 	// EnvVarPodName contains the name of the pod (currently unused)

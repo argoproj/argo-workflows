@@ -1,6 +1,7 @@
 package workflow
 
 import (
+	context2 "context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -119,6 +120,10 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *workflowpkg.Workf
 }
 
 func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.WorkflowListRequest) (*wfv1.WorkflowList, error) {
+	return s.ListWorkflowsV2(ctx, req)
+}
+
+func (s *workflowServer) ListWorkflowsV2(ctx context2.Context, req *workflowpkg.WorkflowListRequest) (*wfv1.WorkflowList, error) {
 	wfClient := auth.GetWfClient(ctx)
 
 	listOption := &metav1.ListOptions{}

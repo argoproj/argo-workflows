@@ -437,12 +437,12 @@ func (wfc *WorkflowController) UpdateConfig(ctx context.Context, kubernetesClien
 	}
 }
 
-func (wfc *WorkflowController) queuePodForCleanup(workflowNamespace, cluster, namespace, podName string, action podCleanupAction) {
-	wfc.podCleanupQueue.AddRateLimited(newPodCleanupKey(workflowNamespace, cluster, namespace, podName, action))
+func (wfc *WorkflowController) queuePodForCleanup(cluster, namespace, podName string, action podCleanupAction) {
+	wfc.podCleanupQueue.AddRateLimited(newPodCleanupKey(cluster, namespace, podName, action))
 }
 
-func (wfc *WorkflowController) queuePodForCleanupAfter(workflowNamespace, cluster, namespace, podName string, action podCleanupAction, duration time.Duration) {
-	wfc.podCleanupQueue.AddAfter(newPodCleanupKey(workflowNamespace, cluster, namespace, podName, action), duration)
+func (wfc *WorkflowController) queuePodForCleanupAfter(cluster, namespace, podName string, action podCleanupAction, duration time.Duration) {
+	wfc.podCleanupQueue.AddAfter(newPodCleanupKey(cluster, namespace, podName, action), duration)
 }
 
 func (wfc *WorkflowController) runPodCleanup(ctx context.Context) {
@@ -462,11 +462,11 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 		wfc.podCleanupQueue.Done(key)
 	}()
 
-	workflowNamespace, cluster, namespace, podName, action := parsePodCleanupKey(key.(podCleanupKey))
+	cluster, namespace, podName, action := parsePodCleanupKey(key.(podCleanupKey))
 	logCtx := log.WithFields(log.Fields{"key": key, "action": action})
 	logCtx.Info("cleaning up pod")
 	err := func() error {
-		profile, err := wfc.profile(workflowNamespace, cluster, namespace)
+		profile, err := wfc.profile(cluster)
 		if err != nil {
 			return err
 		}
@@ -476,13 +476,13 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 			// to shutdown a pod, we signal the wait container to terminate, the wait container in turn will
 			// kill the main container (using whatever mechanism the executor uses), and will then exit itself
 			// once the main container exited
-			pod, err := wfc.getPod(workflowNamespace, cluster, namespace, podName)
+			pod, err := wfc.getPod(cluster, namespace, podName)
 			if pod == nil || err != nil {
 				return err
 			}
 			for _, c := range pod.Spec.Containers {
 				if c.Name == common.WaitContainerName {
-					profile, err := wfc.profile(workflowNamespace, cluster, pod.Namespace)
+					profile, err := wfc.profile(cluster)
 					if err != nil {
 						return err
 					}
@@ -495,13 +495,13 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 			// no wait container found
 			fallthrough
 		case terminateContainers:
-			if terminationGracePeriod, err := wfc.signalContainers(workflowNamespace, cluster, namespace, podName, syscall.SIGTERM); err != nil {
+			if terminationGracePeriod, err := wfc.signalContainers(cluster, namespace, podName, syscall.SIGTERM); err != nil {
 				return err
 			} else if terminationGracePeriod > 0 {
-				wfc.queuePodForCleanupAfter(workflowNamespace, cluster, namespace, podName, killContainers, terminationGracePeriod)
+				wfc.queuePodForCleanupAfter(cluster, namespace, podName, killContainers, terminationGracePeriod)
 			}
 		case killContainers:
-			if _, err := wfc.signalContainers(workflowNamespace, cluster, namespace, podName, syscall.SIGKILL); err != nil {
+			if _, err := wfc.signalContainers(cluster, namespace, podName, syscall.SIGKILL); err != nil {
 				return err
 			}
 		case labelPodCompleted:
@@ -536,8 +536,8 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 	return true
 }
 
-func (wfc *WorkflowController) getPod(workflowNamespace, cluster, namespace, podName string) (*apiv1.Pod, error) {
-	profile, err := wfc.profile(workflowNamespace, cluster, namespace)
+func (wfc *WorkflowController) getPod(cluster, namespace, podName string) (*apiv1.Pod, error) {
+	profile, err := wfc.profile(cluster)
 	if err != nil {
 		return nil, err
 	}
@@ -555,8 +555,8 @@ func (wfc *WorkflowController) getPod(workflowNamespace, cluster, namespace, pod
 	return pod, nil
 }
 
-func (wfc *WorkflowController) signalContainers(workflowNamespace, cluster, namespace, podName string, sig syscall.Signal) (time.Duration, error) {
-	pod, err := wfc.getPod(workflowNamespace, cluster, namespace, podName)
+func (wfc *WorkflowController) signalContainers(cluster, namespace, podName string, sig syscall.Signal) (time.Duration, error) {
+	pod, err := wfc.getPod(cluster, namespace, podName)
 	if pod == nil || err != nil {
 		return 0, err
 	}
@@ -565,7 +565,7 @@ func (wfc *WorkflowController) signalContainers(workflowNamespace, cluster, name
 		if c.Name == common.WaitContainerName || c.State.Terminated != nil {
 			continue
 		}
-		profile, err := wfc.profile(workflowNamespace, cluster, namespace)
+		profile, err := wfc.profile(cluster)
 		if err != nil {
 			return 0, err
 		}
@@ -962,8 +962,8 @@ func (wfc *WorkflowController) instanceIDReq() labels.Requirement {
 
 func (wfc *WorkflowController) clusterReq(cluster string) labels.Requirement {
 	clusterReq, _ := labels.NewRequirement(common.LabelKeyCluster, selection.DoesNotExist, nil)
-	if cluster != common.LocalCluster {
-		clusterReq, _ = labels.NewRequirement(common.LabelKeyCluster, selection.Equals, []string{wfc.Config.Cluster})
+	if cluster != common.PrimaryCluster() {
+		clusterReq, _ = labels.NewRequirement(common.LabelKeyCluster, selection.Equals, []string{common.PrimaryCluster()})
 	}
 	return *clusterReq
 }
@@ -1068,7 +1068,7 @@ func (wfc *WorkflowController) newPodGCInformer(client metadata.Interface, clust
 				WithField("namespace", pod.GetNamespace()).
 				WithField("name", pod.GetName()).
 				Info("deleting orphan pod")
-			wfc.queuePodForCleanup(workflowNamespace, cluster, pod.GetNamespace(), pod.GetName(), deletePod)
+			wfc.queuePodForCleanup(cluster, pod.GetNamespace(), pod.GetName(), deletePod)
 		}
 	}
 	podGCInformer.AddEventHandler(

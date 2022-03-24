@@ -109,7 +109,7 @@ func TestServer_GetWFClient(t *testing.T) {
 	var clientForAuthorization ClientForAuthorization = func(authorization string) (*rest.Config, *servertypes.Clients, error) {
 		return &rest.Config{}, &servertypes.Clients{Workflow: &fakewfclientset.Clientset{}, Kubernetes: &kubefake.Clientset{}}, nil
 	}
-	clients := &servertypes.Clients{Workflow: wfClient, Kubernetes: kubeClient}
+	clients := servertypes.Profiles{common.PrimaryCluster(): &servertypes.Clients{Workflow: wfClient, Kubernetes: kubeClient}}
 	t.Run("None", func(t *testing.T) {
 		_, err := NewGatekeeper(Modes{}, clients, nil, nil, clientForAuthorization, "", "", true, resourceCache)
 		assert.Error(t, err)

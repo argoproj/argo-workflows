@@ -38,14 +38,13 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer(client workflow.Int
 
 func (woc *wfOperationCtx) taskResultReconciliation() {
 	woc.log.Info("task-result reconciliation")
-	for profileKey, p := range woc.controller.profiles {
+	for cluster, p := range woc.controller.profiles {
 		if p.taskResultInformer == nil {
 			continue
 		}
 		objs, _ := p.taskResultInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.Namespace+"/"+woc.wf.Name)
 		woc.log.WithField("numObjs", len(objs)).
-			WithField("profileKey", profileKey).
-			WithField("policy", p.policy.String()).
+			WithField("cluster", cluster).
 			Info("Task-result reconciliation")
 		for _, obj := range objs {
 			result := obj.(*wfv1.WorkflowTaskResult)

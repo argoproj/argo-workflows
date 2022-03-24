@@ -5,7 +5,7 @@ import {WorkflowsList} from './workflows-list/workflows-list';
 
 export const WorkflowsContainer = (props: RouteComponentProps<any>) => (
     <Switch>
-        <Route exact={true} path={`${props.match.path}/:namespace?`} component={WorkflowsList} />
-        <Route exact={true} path={`${props.match.path}/:namespace/:name`} component={WorkflowDetails} />
+        <Route exact={true} path={`${props.match.path}/:cluster?/:namespace?`} component={WorkflowsList} />
+        <Route exact={true} path={`${props.match.path}/:cluster/:namespace/:name`} component={WorkflowDetails} />
     </Switch>
 );

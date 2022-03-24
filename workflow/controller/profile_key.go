@@ -1,3 +1,3 @@
 package controller
 
-type profileKey string
+type profileKey = string

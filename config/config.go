@@ -51,9 +51,6 @@ type Config struct {
 	// Namespace is a label selector filter to limit the controller's watch to a specific namespace
 	Namespace string `json:"namespace,omitempty"`
 
-	// Cluster is the name of this cluster.
-	Cluster string `json:"cluster,omitempty"`
-
 	// InstanceID is a label selector to limit the controller's watch to a specific instance. It
 	// contains an arbitrary value that is carried forward into its pod labels, under the key
 	// workflows.argoproj.io/controller-instanceid, for the purposes of workflow segregation. This

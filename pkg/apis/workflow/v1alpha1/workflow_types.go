@@ -556,6 +556,14 @@ func (wfs *WorkflowSpec) HasPodSpecPatch() bool {
 	return wfs.PodSpecPatch != ""
 }
 
+func (wfs *WorkflowSpec) GetClusterNamespaces() map[string]bool {
+	v := map[string]bool{}
+	for _, t := range wfs.Templates {
+		v[t.Cluster+"/"+t.Namespace] = true
+	}
+	return v
+}
+
 // Template is a reusable and composable unit of execution in a workflow
 type Template struct {
 	// Name is the name of the template

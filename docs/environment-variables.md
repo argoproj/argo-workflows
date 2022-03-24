@@ -8,6 +8,7 @@ most users. Note that these environment variables may be removed at any time.
 
 | Name | Type | Default | Description | 
 |------|------|---------|-------------|
+| `ARGO_CLUSTER` | `string` | `undefined` | The name of the primary cluster. |
 | `ARGO_AGENT_TASK_WORKERS` | `int` | `16` | The number of task workers for the agent pod. |
 | `ALL_POD_CHANGES_SIGNIFICANT` | `bool` | `false` | Whether to consider all pod changes as significant during pod reconciliation. |
 | `ALWAYS_OFFLOAD_NODE_STATUS` | `bool` | `false` | Whether to always offload the node status. |
@@ -149,6 +150,7 @@ data:
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
+| `ARGO_CLUSTER` | `string` | `undefined` | The name of the primary cluster. |
 | `FIRST_TIME_USER_MODAL` | `bool` | `true` | Show this modal. |
 | `FEEDBACK_MODAL` | `bool` | `true` | Show this modal. |
 | `NEW_VERSION_MODAL` | `bool` | `true` | Show this modal. |

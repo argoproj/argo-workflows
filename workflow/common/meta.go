@@ -1,16 +1,23 @@
 package common
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	"os"
 
-func ClusterWorkflowNamespace(m metav1.Object, primaryCluster string) (namespace, cluster string) {
-	return WorkflowNamespace(m), Cluster(m, primaryCluster)
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+func PrimaryCluster() string {
+	if v, ok := os.LookupEnv("ARGO_CLUSTER"); ok {
+		return v
+	}
+	return "undefined"
 }
 
-func Cluster(m metav1.Object, defaultValue string) string {
+func Cluster(m metav1.Object) string {
 	if x, ok := m.GetLabels()[LabelKeyCluster]; ok {
 		return x
 	}
-	return defaultValue
+	return PrimaryCluster()
 }
 
 func WorkflowNamespace(m metav1.Object) string {
