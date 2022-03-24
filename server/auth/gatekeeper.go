@@ -66,7 +66,7 @@ type gatekeeper struct {
 	namespace    string
 	ssoNamespace string
 	namespaced   bool
-	cache       cache.ResourceCaches
+	cache        cache.ResourceCaches
 }
 
 func NewGatekeeper(
