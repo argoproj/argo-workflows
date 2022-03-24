@@ -105,9 +105,9 @@ func TestServer_GetWFClient(t *testing.T) {
 			},
 		},
 	)
-	resourceCache := cache.NewResourceCache(kubeClient, context.TODO(), corev1.NamespaceAll)
-	var clientForAuthorization ClientForAuthorization = func(authorization string) (*rest.Config, *servertypes.Clients, error) {
-		return &rest.Config{}, &servertypes.Clients{Workflow: &fakewfclientset.Clientset{}, Kubernetes: &kubefake.Clientset{}}, nil
+	resourceCache := cache.ResourceCaches{common.PrimaryCluster(): cache.NewResourceCache(kubeClient, context.TODO(), corev1.NamespaceAll)}
+	var clientForAuthorization ClientForAuthorization = func(cluster, authorization string) (*rest.Config, *servertypes.Profile, error) {
+		return &rest.Config{}, &servertypes.Profile{Workflow: &fakewfclientset.Clientset{}, Kubernetes: &kubefake.Clientset{}}, nil
 	}
 	clients := servertypes.Profiles{common.PrimaryCluster(): &servertypes.Clients{Workflow: wfClient, Kubernetes: kubeClient}}
 	t.Run("None", func(t *testing.T) {

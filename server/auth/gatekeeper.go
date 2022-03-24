@@ -53,7 +53,7 @@ type Gatekeeper interface {
 	StreamServerInterceptor() grpc.StreamServerInterceptor
 }
 
-type ClientForAuthorization func(authorization string) (*rest.Config, *servertypes.Clients, error)
+type ClientForAuthorization func(cluster, authorization string) (*rest.Config, *servertypes.Clients, error)
 
 type gatekeeper struct {
 	Modes Modes
@@ -66,10 +66,20 @@ type gatekeeper struct {
 	namespace    string
 	ssoNamespace string
 	namespaced   bool
-	cache        *cache.ResourceCache
+	cache       cache.ResourceCaches
 }
 
-func NewGatekeeper(modes Modes, clients servertypes.Profiles, restConfig *rest.Config, ssoIf sso.Interface, clientForAuthorization ClientForAuthorization, namespace string, ssoNamespace string, namespaced bool, cache *cache.ResourceCache) (Gatekeeper, error) {
+func NewGatekeeper(
+	modes Modes,
+	clients servertypes.Profiles,
+	restConfig *rest.Config,
+	ssoIf sso.Interface,
+	clientForAuthorization ClientForAuthorization,
+	namespace string,
+	ssoNamespace string,
+	namespaced bool,
+	cache cache.ResourceCaches,
+) (Gatekeeper, error) {
 	if len(modes) == 0 {
 		return nil, fmt.Errorf("must specify at least one auth mode")
 	}
@@ -192,16 +202,15 @@ func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertyp
 	}
 
 	cluster := servertypes.Cluster(req)
-	log.WithField("cluster", cluster).Info("Getting clients")
 
 	switch mode {
 	case Client:
-		restConfig, clients, err := s.clientForAuthorization(authorization)
+		restConfig, clients, err := s.clientForAuthorization(cluster, authorization)
 		if err != nil {
 			return nil, nil, status.Error(codes.Unauthenticated, err.Error())
 		}
 		claims, _ := serviceaccount.ClaimSetFor(restConfig)
-		return clients, claims, nil
+		return clients, claims, err
 	case Server:
 		claims, _ := serviceaccount.ClaimSetFor(s.restConfig)
 		p, err := s.clients.Find(cluster)
@@ -212,12 +221,12 @@ func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertyp
 			return nil, nil, status.Error(codes.Unauthenticated, err.Error())
 		}
 		if s.ssoIf.IsRBACEnabled() {
-			clients, err := s.rbacAuthorization(claims, req)
+			clients, err := s.rbacAuthorization(cluster, claims, req)
 			if err != nil {
 				log.WithError(err).Error("failed to perform RBAC authorization")
 				return nil, nil, status.Error(codes.PermissionDenied, "not allowed")
 			}
-			return clients, claims, nil
+			return clients, claims, err
 		} else {
 			// important! write an audit entry (i.e. log entry) so we know which user performed an operation
 			log.WithFields(addClaimsLogFields(claims, nil)).Info("using the default service account for user")
@@ -245,8 +254,8 @@ func precedence(serviceAccount *corev1.ServiceAccount) int {
 	return i
 }
 
-func (s *gatekeeper) getServiceAccount(claims *types.Claims, namespace string) (*corev1.ServiceAccount, error) {
-	list, err := s.cache.ServiceAccountLister.ServiceAccounts(namespace).List(labels.Everything())
+func (s *gatekeeper) getServiceAccount(cluster string, claims *types.Claims, namespace string) (*corev1.ServiceAccount, error) {
+	list, err := s.cache[cluster].ServiceAccountLister.ServiceAccounts(namespace).List(labels.Everything())
 	if err != nil {
 		return nil, fmt.Errorf("failed to list SSO RBAC service accounts: %w", err)
 	}
@@ -285,12 +294,12 @@ func (s *gatekeeper) canDelegateRBACToRequestNamespace(req interface{}) bool {
 	return len(namespace) != 0 && s.ssoNamespace != namespace
 }
 
-func (s *gatekeeper) getClientsForServiceAccount(claims *types.Claims, serviceAccount *corev1.ServiceAccount) (*servertypes.Clients, error) {
-	authorization, err := s.authorizationForServiceAccount(serviceAccount)
+func (s *gatekeeper) getClientsForServiceAccount(cluster string, claims *types.Claims, serviceAccount *corev1.ServiceAccount) (*servertypes.Clients, error) {
+	authorization, err := s.authorizationForServiceAccount(cluster, serviceAccount)
 	if err != nil {
 		return nil, err
 	}
-	_, clients, err := s.clientForAuthorization(authorization)
+	_, clients, err := s.clientForAuthorization(cluster, authorization)
 	if err != nil {
 		return nil, err
 	}
@@ -298,16 +307,16 @@ func (s *gatekeeper) getClientsForServiceAccount(claims *types.Claims, serviceAc
 	return clients, nil
 }
 
-func (s *gatekeeper) rbacAuthorization(claims *types.Claims, req interface{}) (*servertypes.Profile, error) {
+func (s *gatekeeper) rbacAuthorization(cluster string, claims *types.Claims, req interface{}) (*servertypes.Profile, error) {
 	ssoDelegationAllowed, ssoDelegated := false, false
-	loginAccount, err := s.getServiceAccount(claims, s.ssoNamespace)
+	loginAccount, err := s.getServiceAccount(cluster, claims, s.ssoNamespace)
 	if err != nil {
 		return nil, err
 	}
 	delegatedAccount := loginAccount
 	if s.canDelegateRBACToRequestNamespace(req) {
 		ssoDelegationAllowed = true
-		namespaceAccount, err := s.getServiceAccount(claims, getNamespace(req))
+		namespaceAccount, err := s.getServiceAccount(cluster, claims, getNamespace(req))
 		if err != nil {
 			log.WithError(err).Info("Error while SSO Delegation")
 		} else if precedence(namespaceAccount) > precedence(loginAccount) {
@@ -317,14 +326,14 @@ func (s *gatekeeper) rbacAuthorization(claims *types.Claims, req interface{}) (*
 	}
 	// important! write an audit entry (i.e. log entry) so we know which user performed an operation
 	log.WithFields(log.Fields{"serviceAccount": delegatedAccount.Name, "loginServiceAccount": loginAccount.Name, "subject": claims.Subject, "email": claims.Email, "ssoDelegationAllowed": ssoDelegationAllowed, "ssoDelegated": ssoDelegated}).Info("selected SSO RBAC service account for user")
-	return s.getClientsForServiceAccount(claims, delegatedAccount)
+	return s.getClientsForServiceAccount(cluster, claims, delegatedAccount)
 }
 
-func (s *gatekeeper) authorizationForServiceAccount(serviceAccount *corev1.ServiceAccount) (string, error) {
+func (s *gatekeeper) authorizationForServiceAccount(cluster string, serviceAccount *corev1.ServiceAccount) (string, error) {
 	if len(serviceAccount.Secrets) == 0 {
 		return "", fmt.Errorf("expected at least one secret for SSO RBAC service account: %s", serviceAccount.GetName())
 	}
-	secret, err := s.cache.SecretLister.Secrets(serviceAccount.GetNamespace()).Get(serviceAccount.Secrets[0].Name)
+	secret, err := s.cache[cluster].SecretLister.Secrets(serviceAccount.GetNamespace()).Get(serviceAccount.Secrets[0].Name)
 	if err != nil {
 		return "", fmt.Errorf("failed to get service account secret: %w", err)
 	}
@@ -342,7 +351,7 @@ func addClaimsLogFields(claims *types.Claims, fields log.Fields) log.Fields {
 	return fields
 }
 
-func DefaultClientForAuthorization(authorization string) (*rest.Config, *servertypes.Clients, error) {
+func DefaultClientForAuthorization(cluster, authorization string) (*rest.Config, *servertypes.Clients, error) {
 	restConfig, err := kubeconfig.GetRestConfig(authorization)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create REST config: %w", err)

@@ -66,7 +66,7 @@ func newArgoKubeClient(ctx context.Context, clientConfig clientcmd.ClientConfig,
 		return nil, nil, err
 	}
 	clients := types.Profiles{
-		types.ProfileKey(common.PrimaryCluster()): &types.Clients{
+		common.PrimaryCluster(): &types.Clients{
 			Dynamic:     dynamicClient,
 			EventSource: eventSourceInterface,
 			Kubernetes:  kubeClient,

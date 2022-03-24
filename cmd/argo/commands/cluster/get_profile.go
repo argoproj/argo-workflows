@@ -1,7 +1,6 @@
 package cluster
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -105,7 +104,7 @@ func newGetProfileCommand() *cobra.Command {
 			profile := &apiv1.Secret{
 				TypeMeta: metav1.TypeMeta{Kind: "Secret", APIVersion: "v1"},
 				ObjectMeta: metav1.ObjectMeta{
-					Name: fmt.Sprintf("argo.%s", cluster),
+					Name: common.ProfileSecretName(cluster),
 					Labels: map[string]string{
 						common.LabelKeyCluster: cluster,
 					},

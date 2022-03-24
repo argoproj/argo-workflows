@@ -85,6 +85,10 @@ func restConfigWithoutAuth() (*restclient.Config, error) {
 	if err != nil {
 		return nil, err
 	}
+	return RestConfigWithoutAuth(c)
+}
+
+func RestConfigWithoutAuth(c *restclient.Config) (*restclient.Config, error) {
 	t := c.TLSClientConfig
 	return &restclient.Config{
 		Host:          c.Host,

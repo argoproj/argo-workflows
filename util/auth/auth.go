@@ -20,6 +20,7 @@ func CanI(ctx context.Context, kubeclientset kubernetes.Interface, verb, group, 
 				Verb:      verb,
 				Group:     group,
 				Resource:  resource,
+				Name:      name,
 			},
 		},
 	}, metav1.CreateOptions{})

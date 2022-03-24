@@ -39,6 +39,7 @@ export const EventFlowPage = ({history, location, match}: RouteComponentProps<an
     const queryParams = new URLSearchParams(location.search);
 
     // state for URL and query parameters
+    const cluster = match.params.cluster;
     const [namespace, setNamespace] = useState(Utils.getNamespace(match.params.namespace) || '');
     const [showFlow, setShowFlow] = useState(queryParams.get('showFlow') === 'true');
     const [showWorkflows, setShowWorkflows] = useState(queryParams.get('showWorkflows') !== 'false');
@@ -60,7 +61,8 @@ export const EventFlowPage = ({history, location, match}: RouteComponentProps<an
     useEffect(
         () =>
             history.push(
-                historyUrl('event-flow' + (Utils.managedNamespace ? '' : '/{namespace}'), {
+                historyUrl('event-flow' + (Utils.managedNamespace ? '' : '/{cluster}/{namespace}'), {
+                    cluster,
                     namespace,
                     showFlow,
                     showWorkflows,
@@ -111,7 +113,7 @@ export const EventFlowPage = ({history, location, match}: RouteComponentProps<an
         }
         const listWatch = new ListWatch<Workflow>(
             () =>
-                services.workflows.list(namespace, null, ['events.argoproj.io/sensor', 'events.argoproj.io/trigger'], null, [
+                services.workflows.list(cluster, namespace, null, ['events.argoproj.io/sensor', 'events.argoproj.io/trigger'], null, [
                     'metadata',
                     'items.metadata.name',
                     'items.metadata.namespace',

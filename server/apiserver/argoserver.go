@@ -84,7 +84,7 @@ type argoServer struct {
 	eventAsyncDispatch       bool
 	xframeOptions            string
 	accessControlAllowOrigin string
-	cache                    *cache.ResourceCache
+	cache                    cache.ResourceCaches
 }
 
 type ArgoServerOpts struct {
@@ -124,7 +124,7 @@ func getResourceCacheNamespace(opts ArgoServerOpts) string {
 
 func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error) {
 	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.Clients.Primary().Kubernetes, emptyConfigFunc)
-	var resourceCache *cache.ResourceCache = nil
+	 resourceCache := cache.ResourceCaches{}
 	ssoIf := sso.NullSSO
 	if opts.AuthModes[auth.SSO] {
 		c, err := configController.Get(ctx)
@@ -135,7 +135,9 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		if err != nil {
 			return nil, err
 		}
-		resourceCache = cache.NewResourceCache(opts.Clients.Primary().Kubernetes, ctx, getResourceCacheNamespace(opts))
+		for cluster, p := range opts.Clients {
+			resourceCache[cluster] = cache.NewResourceCache(p.Kubernetes, ctx, getResourceCacheNamespace(opts))
+		}
 		log.Info("SSO enabled")
 	} else {
 		log.Info("SSO disabled")

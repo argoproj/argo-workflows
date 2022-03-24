@@ -1,6 +1,7 @@
 package common
 
 import (
+	"fmt"
 	"os"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,4 +33,8 @@ func Namespace(m metav1.Object) string {
 		return v
 	}
 	return m.GetNamespace()
+}
+
+func ProfileSecretName(cluster string) string {
+	return fmt.Sprintf("argo.profile.%s", cluster)
 }
