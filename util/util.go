@@ -53,7 +53,7 @@ func GetSecrets(ctx context.Context, clientSet kubernetes.Interface, namespace, 
 func WriteTerminateMessage(message string) {
 	err := ioutil.WriteFile("/dev/termination-log", []byte(message), 0o600)
 	if err != nil {
-		panic(err)
+		println("unable to write termination log: " + err.Error())
 	}
 }
 
