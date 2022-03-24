@@ -1,15 +1,56 @@
-## argo archive
+## argo archive resubmit
 
-manage the workflow archive
+resubmit one or more workflows
 
 ```
-argo archive [flags]
+argo archive resubmit [WORKFLOW...] [flags]
+```
+
+### Examples
+
+```
+# Resubmit a workflow:
+
+  argo archive resubmit uid
+
+# Resubmit multiple workflows:
+
+  argo resubmit uid another-uid
+
+# Resubmit multiple workflows by label selector:
+
+  argo resubmit -l workflows.argoproj.io/test=true
+
+# Resubmit multiple workflows by field selector:
+
+  argo resubmit --field-selector metadata.namespace=argo
+
+# Resubmit and wait for completion:
+
+  argo resubmit --wait uid
+
+# Resubmit and watch until completion:
+
+  argo resubmit --watch uid
+
+# Resubmit and tail logs until completion:
+
+  argo resubmit --log uid
+
 ```
 
 ### Options
 
 ```
-  -h, --help   help for archive
+      --field-selector string   Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selector key1=value1,key2=value2). The server only supports a limited number of field queries per type.
+  -h, --help                    help for resubmit
+      --log                     log the workflow until it completes
+      --memoized                re-use successful steps & outputs from the previous run
+  -o, --output string           Output format. One of: name|json|yaml|wide
+      --priority int32          workflow priority
+  -l, --selector string         Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)
+  -w, --wait                    wait for the workflow to complete, only works when a single workflow is resubmitted
+      --watch                   watch the workflow until it completes, only works when a single workflow is resubmitted
 ```
 
 ### Options inherited from parent commands
@@ -47,11 +88,5 @@ argo archive [flags]
 
 ### SEE ALSO
 
-* [argo](argo.md)	 - argo is the command line interface to Argo
-* [argo archive delete](argo_archive_delete.md)	 - delete a workflow in the archive
-* [argo archive get](argo_archive_get.md)	 - get a workflow in the archive
-* [argo archive list](argo_archive_list.md)	 - list workflows in the archive
-* [argo archive list-label-keys](argo_archive_list-label-keys.md)	 - list workflows label keys in the archive
-* [argo archive list-label-values](argo_archive_list-label-values.md)	 - get workflow label values in the archive
-* [argo archive resubmit](argo_archive_resubmit.md)	 - resubmit one or more workflows
+* [argo archive](argo_archive.md)	 - manage the workflow archive
 
