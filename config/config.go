@@ -39,12 +39,6 @@ type Config struct {
 
 	ContainerRuntimeExecutors ContainerRuntimeExecutors `json:"containerRuntimeExecutors,omitempty"`
 
-	// KubeletPort is needed when using the kubelet containerRuntimeExecutor, default to 10250
-	KubeletPort int `json:"kubeletPort,omitempty"`
-
-	// KubeletInsecure disable the TLS verification of the kubelet containerRuntimeExecutor, default to false
-	KubeletInsecure bool `json:"kubeletInsecure,omitempty"`
-
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
 	ArtifactRepository wfv1.ArtifactRepository `json:"artifactRepository,omitempty"`
 

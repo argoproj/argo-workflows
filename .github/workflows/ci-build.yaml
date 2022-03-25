@@ -109,9 +109,6 @@ jobs:
             containerRuntimeExecutor: emissary
             profile: minimal
           - test: test-executor
-            containerRuntimeExecutor: kubelet
-            profile: minimal
-          - test: test-executor
             containerRuntimeExecutor: pns
             profile: minimal
     steps:
