@@ -773,3 +773,162 @@ status:
 	assert.NotNil(t, woc.wf.Status.Nodes.FindByDisplayName("step-1.hooks.error"))
 
 }
+
+func TestWfTemplateRefWithHook(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: lifecycle-hook-fh7t4
+  namespace: argo
+spec:
+  workflowTemplateRef:
+    name: lifecycle-hook
+status:
+  conditions:
+  - status: "False"
+    type: PodRunning
+  - status: "True"
+    type: Completed
+  estimatedDuration: 7
+  nodes:
+    lifecycle-hook-fh7t4:
+      children:
+      - lifecycle-hook-fh7t4-2818004451
+      - lifecycle-hook-fh7t4-4144954648
+      displayName: lifecycle-hook-fh7t4
+      estimatedDuration: 5
+      finishedAt: "2022-03-25T05:45:49Z"
+      id: lifecycle-hook-fh7t4
+      name: lifecycle-hook-fh7t4
+      outboundNodes:
+      - lifecycle-hook-fh7t4-3883827164
+      phase: Running
+      progress: 2/2
+      resourcesDuration:
+        cpu: 2
+        memory: 0
+      startedAt: "2022-03-25T05:45:45Z"
+      templateName: main
+      templateScope: local/
+      type: Steps
+    lifecycle-hook-fh7t4-2818004451:
+      boundaryID: lifecycle-hook-fh7t4
+      children:
+      - lifecycle-hook-fh7t4-3883827164
+      displayName: '[0]'
+      estimatedDuration: 5
+      finishedAt: "2022-03-25T05:45:49Z"
+      id: lifecycle-hook-fh7t4-2818004451
+      name: lifecycle-hook-fh7t4[0]
+      phase: Running
+      progress: 1/1
+      resourcesDuration:
+        cpu: 2
+        memory: 0
+      startedAt: "2022-03-25T05:45:45Z"
+      templateScope: local/
+      type: StepGroup
+    lifecycle-hook-fh7t4-3883827164:
+      boundaryID: lifecycle-hook-fh7t4
+      displayName: step1
+      estimatedDuration: 4
+      finishedAt: "2022-03-25T05:45:47Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: lifecycle-hook-fh7t4-3883827164
+      name: lifecycle-hook-fh7t4[0].step1
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: lifecycle-hook-fh7t4/lifecycle-hook-fh7t4-3883827164/main.log
+        exitCode: "0"
+      phase: Running
+      progress: 1/1
+      resourcesDuration:
+        cpu: 2
+        memory: 0
+      startedAt: "2022-03-25T05:45:45Z"
+      templateName: heads
+      templateScope: local/
+      type: Pod
+  phase: Running
+  storedTemplates:
+    namespaced/lifecycle-hook/heads:
+      container:
+        args:
+        - echo "it was heads"
+        command:
+        - sh
+        - -c
+        image: alpine:3.6
+        name: ""
+        resources: {}
+      inputs: {}
+      metadata: {}
+      name: heads
+      outputs: {}
+    namespaced/lifecycle-hook/main:
+      inputs: {}
+      metadata: {}
+      name: main
+      outputs: {}
+      steps:
+      - - arguments: {}
+          name: step1
+          template: heads
+  storedWorkflowTemplateSpec:
+    activeDeadlineSeconds: 300
+    arguments: {}
+    entrypoint: main
+    hooks:
+      exit:
+        arguments: {}
+        template: http
+      Failed:
+        arguments: {}
+        expression: workflow.status == "Failed"
+        template: http
+    podSpecPatch: |
+      terminationGracePeriodSeconds: 3
+    templates:
+    - inputs: {}
+      metadata: {}
+      name: main
+      outputs: {}
+      steps:
+      - - arguments: {}
+          name: step1
+          template: heads
+    - container:
+        args:
+        - echo "it was heads"
+        command:
+        - sh
+        - -c
+        image: alpine:3.6
+        name: ""
+        resources: {}
+      inputs: {}
+      metadata: {}
+      name: heads
+      outputs: {}
+    - http:
+        url: http://dummy.restapiexample.com/api/v1/employees
+      inputs: {}
+      metadata: {}
+      name: http
+      outputs: {}
+    ttlStrategy:
+      secondsAfterCompletion: 600
+    workflowTemplateRef:
+      name: lifecycle-hook
+`)
+	cancel, controller := newController(wf, wfv1.MustUnmarshalWorkflowTemplate(wftWithHook))
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	node := woc.wf.Status.Nodes.FindByDisplayName("lifecycle-hook-fh7t4.hooks.Failed")
+	assert.NotNil(t, node)
+}
