@@ -25,7 +25,6 @@ type FunctionalSuite struct {
 }
 
 func (s *FunctionalSuite) TestArchiveStrategies() {
-	s.Need(fixtures.BaseLayerArtifacts)
 	s.Given().
 		Workflow(`@testdata/archive-strategies.yaml`).
 		When().
@@ -467,7 +466,6 @@ func (s *FunctionalSuite) TestEventOnPVCFail() {
 }
 
 func (s *FunctionalSuite) TestArtifactRepositoryRef() {
-	s.Need(fixtures.BaseLayerArtifacts)
 	s.Given().
 		Workflow("@testdata/artifact-repository-ref.yaml").
 		When().
@@ -615,7 +613,6 @@ spec:
 }
 
 func (s *FunctionalSuite) TestParameterAggregation() {
-	s.Need(fixtures.BaseLayerArtifacts)
 	s.Given().
 		Workflow("@functional/param-aggregation.yaml").
 		When().
@@ -939,7 +936,6 @@ spec:
 }
 
 func (s *FunctionalSuite) TestOutputArtifactS3BucketCreationEnabled() {
-	s.Need(fixtures.BaseLayerArtifacts)
 	s.Given().
 		Workflow("@testdata/output-artifact-with-s3-bucket-creation-enabled.yaml").
 		When().
