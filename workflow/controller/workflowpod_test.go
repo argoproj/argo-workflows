@@ -1435,34 +1435,6 @@ spec:
         args: ["echo", "Hello from Windows Container!"]
 `
 
-var helloLinuxWf = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-hybrid-lin
-spec:
-  entrypoint: hello-linux
-  templates:
-    - name: hello-linux
-      nodeSelector:
-        kubernetes.io/os: linux
-      container:
-        image: alpine
-        command: [echo]
-        args: ["Hello from Linux Container!"]
-`
-func TestHybridWfVolumesWindows(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(helloWindowsWf)
-	woc := newWoc(*wf)
-	woc.controller.Config.ContainerRuntimeExecutor = common.ContainerRuntimeExecutorEmissary
-
-	ctx := context.Background()
-	mainCtr := woc.execWf.Spec.Templates[0].Container
-	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
-	assert.Equal(t, false, pod.Spec.Containers[0].VolumeMounts[0].ReadOnly)
-	assert.Equal(t, (*apiv1.HostPathType)(nil), pod.Spec.Volumes[1].HostPath.Type)
-}
-
 func TestWindowsUNCPathsAreRemoved(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(helloWindowsWf)
 	uncVolume := apiv1.Volume{
@@ -1511,17 +1483,6 @@ func TestWindowsUNCPathsAreRemoved(t *testing.T) {
 	}
 }
 
-func TestHybridWfVolumesLinux(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(helloLinuxWf)
-	woc := newWoc(*wf)
-	woc.controller.Config.ContainerRuntimeExecutor = common.ContainerRuntimeExecutorEmissary
-
-	ctx := context.Background()
-	mainCtr := woc.execWf.Spec.Templates[0].Container
-	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
-	assert.Equal(t, true, pod.Spec.Containers[0].VolumeMounts[0].ReadOnly)
-	assert.Equal(t, &hostPathSocket, pod.Spec.Volumes[1].HostPath.Type)
-}
 
 var propagateMaxDuration = `
 name: retry-backoff
