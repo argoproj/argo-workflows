@@ -1483,7 +1483,6 @@ func TestWindowsUNCPathsAreRemoved(t *testing.T) {
 	}
 }
 
-
 var propagateMaxDuration = `
 name: retry-backoff
 retryStrategy:

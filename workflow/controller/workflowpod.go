@@ -39,7 +39,6 @@ var (
 		Name:      volumeVarArgo.Name,
 		MountPath: common.VarRunArgoPath,
 	}
-	hostPathSocket = apiv1.HostPathSocket
 )
 
 func (woc *wfOperationCtx) hasPodSpecPatch(tmpl *wfv1.Template) bool {
