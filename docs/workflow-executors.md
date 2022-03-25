@@ -80,25 +80,6 @@ The emissary will exit with code 64 if it fails. This may indicate a bug in the 
 * Configuration:
     * Additional Kubelet configuration maybe needed
 
-## Kubernetes API (k8sapi)
-
-⚠️Deprecated.
-
-* Reliability:
-    * Works on GKE Autopilot
-* Most secure:
-    * No `privileged` access
-    * Cannot escape the privileges of the pod's service account
-    * Can [`runAsNonRoot`](workflow-pod-security-context.md)
-* Least scalable:
-    * Log retrieval and container operations performed against the remote Kubernetes API
-* Artifacts:
-    * Output artifacts must be saved on volumes (e.g. [emptyDir](empty-dir.md)) and not the base image layer (e.g. `/tmp`)
-* Step/Task result:
-    * Warnings that normally goes to stderr will get captured in a step or a dag task's `outputs.result`. May require changes if your pipeline is conditioned on `steps/tasks.name.outputs.result`
-* Configuration:
-    * No additional configuration needed.
-
 ## Process Namespace Sharing (pns)
 
 * More secure:

@@ -24,7 +24,7 @@ kubectl create clusterrolebinding YOURNAME-cluster-admin-binding --clusterrole=c
 ```
 
 !!! note
-    To run Argo on GKE Autopilot, you must use the `emissary` executor or the `k8sapi` executor. Find more information on our [executors doc](workflow-executors.md).
+    To run Argo on GKE Autopilot, you must use the `emissary` executor. Find more information on our [executors doc](workflow-executors.md).
 
 If you are running Argo Workflows locally (e.g. using Minikube or Docker for Desktop), open a port-forward so you can access the namespace:
 

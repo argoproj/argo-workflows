@@ -24,7 +24,6 @@ Key:
 |---|---|---| 
 | `docker` | Any | Unsupported | 
 | `emissary` | Any | KubectlExec | 
-| `k8sapi` | Shell | KubectlExec | 
 | `kubelet` | Shell | KubectlExec | 
 | `pns` | Any | Any | 
 

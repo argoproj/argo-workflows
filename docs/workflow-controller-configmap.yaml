@@ -144,7 +144,7 @@ data:
 
 
   # Specifies the container runtime interface to use (default: emissary)
-  # must be one of: docker, kubelet, k8sapi, pns, emissary
+  # must be one of: docker, kubelet, pns, emissary
   # It has lower precedence than either `--container-runtime-executor` and `containerRuntimeExecutors`.
   containerRuntimeExecutor: emissary
 
